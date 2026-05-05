@@ -629,8 +629,8 @@ export default function App() {
     event.preventDefault();
     const amount = Number(clientForm.amount);
     if (!clientForm.name.trim() || !clientForm.service.trim() || !amount) return;
-    setClients((current) => [{ id: Date.now(), name: clientForm.name.trim(), service: clientForm.service.trim(), status: clientForm.status, amount, nextAction: clientForm.nextAction.trim() || "Hacer seguimiento" }, ...current]);
-    setClientForm({ name: "", service: "", status: "Seguimiento", amount: "", nextAction: "" });
+    setClients((current) => [{ id: Date.now(), name: clientForm.name.trim(), service: clientForm.service.trim(), status: clientForm.status, amount, nextAction: clientForm.nextAction.trim() || "Hacer seguimiento", lastContact: Date.now() }, ...current]);
+    setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "" });
   };
 
   const addContent = (event) => {
@@ -1130,49 +1130,113 @@ export default function App() {
         </div>
   function renderClients() {
     const stages = ["Lead frio", "Lead tibio", "Lead caliente", "Venta ganada"];
-    const paidClients = clients.filter((client) => client.status === "Venta ganada");
+    const alertDays = { "Lead frio": [7, 14], "Lead tibio": [3, 7], "Lead caliente": [1, 3], "Venta ganada": [14, 30] };
+    const today = Date.now();
+    const daysSince = (ts) => ts ? Math.floor((today - ts) / 86400000) : 999;
+    const getAlert = (client) => {
+      const days = daysSince(client.lastContact);
+      const [warn, danger] = alertDays[client.status] || [7, 14];
+      if (days >= danger) return "red";
+      if (days >= warn) return "yellow";
+      return "green";
+    };
+    const urgentClients = clients.filter((c) => getAlert(c) !== "green" && c.status !== "Venta ganada");
+    const urgentSubscriptions = clients.filter((c) => getAlert(c) !== "green" && c.status === "Venta ganada");
+    const stageTotal = (stage) => clients.filter((c) => c.status === stage).reduce((sum, c) => sum + (c.amount || 0), 0);
+    const paidClients = clients.filter((c) => c.status === "Venta ganada");
     return (
       <section className="panel workspace-panel">
-        <div className="section-title"><h2>Clientes</h2><p>{activeClients} en movimiento • {money.format(wonSalesTotal)} en ventas ganadas</p></div>
+        <div className="section-title"><h2>Clientes</h2><p>{activeClients} activas • {money.format(wonSalesTotal)} en ventas cerradas</p></div>
+
+        {(urgentClients.length > 0 || urgentSubscriptions.length > 0) && (
+          <div className="client-alerts">
+            {urgentClients.length > 0 && (
+              <div className="alert-banner alert-orange">
+                🔔 <strong>{urgentClients.length} lead{urgentClients.length > 1 ? "s" : ""} sin contacto:</strong> {urgentClients.map((c) => c.name).join(", ")} — actúas hoy o se enfriarán.
+              </div>
+            )}
+            {urgentSubscriptions.length > 0 && (
+              <div className="alert-banner alert-red">
+                ⚠️ <strong>{urgentSubscriptions.length} clienta{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong> {urgentSubscriptions.map((c) => c.name).join(", ")} — riesgo de perder la relación.
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="clients-kpi-row">
+          {stages.map((stage) => (
+            <div className="client-kpi" key={stage}>
+              <span>{stage}</span>
+              <strong>{clients.filter((c) => c.status === stage).length}</strong>
+              <small>{money.format(stageTotal(stage))}</small>
+            </div>
+          ))}
+        </div>
+
         <div className="clients-layout">
           <form className="card form-card section-form" onSubmit={addClient}>
-            <h3>Agregar clienta</h3>
-            <input placeholder="Nombre" value={clientForm.name} onChange={(event) => updateClientForm("name", event.target.value)} />
-            <input placeholder="Servicio o producto" value={clientForm.service} onChange={(event) => updateClientForm("service", event.target.value)} />
-            <select value={clientForm.status} onChange={(event) => updateClientForm("status", event.target.value)}>{stages.map((stage) => <option key={stage}>{stage}</option>)}</select>
-            <input placeholder="Proxima acción" value={clientForm.nextAction} onChange={(event) => updateClientForm("nextAction", event.target.value)} />
-            <input placeholder="Monto" type="number" min="0" value={clientForm.amount} onChange={(event) => updateClientForm("amount", event.target.value)} />
+            <h3>Nueva clienta</h3>
+            <input placeholder="Nombre" value={clientForm.name} onChange={(e) => updateClientForm("name", e.target.value)} />
+            <input placeholder="Servicio o producto" value={clientForm.service} onChange={(e) => updateClientForm("service", e.target.value)} />
+            <select value={clientForm.status} onChange={(e) => updateClientForm("status", e.target.value)}>{stages.map((s) => <option key={s}>{s}</option>)}</select>
+            <input placeholder="Próxima acción" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} />
+            <input placeholder="Monto" type="number" min="0" value={clientForm.amount} onChange={(e) => updateClientForm("amount", e.target.value)} />
             <button className="primary-button" type="submit">Guardar clienta</button>
           </form>
+
           <div className="pipeline-board">
             {stages.map((stage) => (
               <div className="pipeline-column" key={stage}>
-                <h3>{stage}</h3>
-                {clients.filter((client) => client.status === stage).map((client) => (
-                  <div className="lead-card" key={client.id}>
-                    <strong>{client.name}</strong>
-                    <small>{client.service} • {money.format(client.amount)}</small>
-                    <p>{client.nextAction || "Hacer seguimiento"}</p>
-                    <div className="lead-actions">
-                      {stages.map((nextStage) => <button type="button" key={nextStage} onClick={() => moveClientStatus(client.id, nextStage)}>{nextStage.replace("Lead ", "")}</button>)}
-                      <button type="button" onClick={() => confirmDelete("¿Eliminar esta clienta?", () => setClients((current) => current.filter((c) => c.id !== client.id)))}>Eliminar</button>
+                <div className="pipeline-col-header">
+                  <h3>{stage}</h3>
+                  <small>{money.format(stageTotal(stage))}</small>
+                </div>
+                {clients.filter((c) => c.status === stage).map((client) => {
+                  const alert = getAlert(client);
+                  const days = daysSince(client.lastContact);
+                  return (
+                    <div className={`lead-card lead-alert-${alert}`} key={client.id}>
+                      <div className="lead-card-top">
+                        <strong>{client.name}</strong>
+                        <span className={`alert-dot alert-dot-${alert}`}></span>
+                      </div>
+                      <small>{client.service} • {money.format(client.amount)}</small>
+                      <p>{client.nextAction || "Hacer seguimiento"}</p>
+                      <small className="last-contact">
+                        {client.lastContact ? `Último contacto: hace ${days} día${days !== 1 ? "s" : ""}` : "Sin contacto registrado"}
+                      </small>
+                      <button type="button" className="contact-today-btn" onClick={() => setClients((c) => c.map((cl) => cl.id === client.id ? { ...cl, lastContact: Date.now() } : cl))}>
+                        ✅ Contacté hoy
+                      </button>
+                      <div className="lead-stage-btns">
+                        {stages.filter((s) => s !== stage).map((s) => (
+                          <button type="button" key={s} onClick={() => moveClientStatus(client.id, s)}>{s.replace("Lead ", "")}</button>
+                        ))}
+                        <button type="button" className="delete-btn" onClick={() => confirmDelete("¿Eliminar?", () => setClients((c) => c.filter((cl) => cl.id !== client.id)))}>Eliminar</button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ))}
           </div>
         </div>
+
         <div className="paid-clients-section card">
-          <div className="section-title compact-title"><h2>Seguimiento a clientas que ya pagaron</h2><p>Notas por persona para cuidar experiencia, recompra y referidos.</p></div>
+          <div className="section-title compact-title"><h2>Clientas que ya pagaron</h2><p>Cuida la experiencia, fomenta la recompra y los referidos.</p></div>
           <div className="paid-client-grid">
             {paidClients.map((client) => (
               <article className="paid-client-card" key={client.id}>
-                <div>
-                  <strong>{client.name}</strong>
-                  <small>{client.service} • {money.format(client.amount)}</small>
+                <div className="paid-client-header">
+                  <div>
+                    <strong>{client.name}</strong>
+                    <small>{client.service} • {money.format(client.amount)}</small>
+                  </div>
+                  <span className={`alert-dot alert-dot-${getAlert(client)}`}></span>
                 </div>
-                <textarea placeholder="Notas de seguimiento, entrega, resultados o próxima recompra..." value={client.notes || ""} onChange={(event) => updateClientNotes(client.id, event.target.value)} />
+                <small className="last-contact">{client.lastContact ? `Último contacto: hace ${daysSince(client.lastContact)} días` : "Sin contacto registrado"}</small>
+                <button type="button" className="contact-today-btn" onClick={() => setClients((c) => c.map((cl) => cl.id === client.id ? { ...cl, lastContact: Date.now() } : cl))}>✅ Contacté hoy</button>
+                <textarea placeholder="Notas de seguimiento, entrega, resultados o próxima recompra..." value={client.notes || ""} onChange={(e) => updateClientNotes(client.id, e.target.value)} />
               </article>
             ))}
           </div>

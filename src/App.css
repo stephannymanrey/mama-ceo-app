@@ -2581,3 +2581,43 @@ button {
   .source-form { grid-template-columns:1fr 1fr; }
   .source-form button { grid-column:1/-1; }
 }
+
+/* ── Sistema de alertas de clientes ── */
+.client-alerts { display:grid; gap:8px; margin-bottom:14px; }
+.alert-banner { padding:12px 16px; border-radius:12px; font-size:14px; line-height:1.5; }
+.alert-orange { background:#fff3e0; border:1px solid #f0a500; color:#7a4a00; }
+.alert-red { background:var(--pink-soft); border:1px solid var(--pink); color:#8a1a2e; }
+
+.clients-kpi-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+.client-kpi { border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,0.88); padding:12px; text-align:center; display:grid; gap:4px; }
+.client-kpi span { font-size:11px; font-weight:800; text-transform:uppercase; color:var(--muted); }
+.client-kpi strong { font-size:22px; color:#6f2f4b; }
+.client-kpi small { font-size:12px; color:var(--muted); }
+
+.pipeline-col-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.pipeline-col-header h3 { margin:0; }
+.pipeline-col-header small { color:var(--muted); font-size:12px; font-weight:700; }
+
+.lead-card-top { display:flex; justify-content:space-between; align-items:center; }
+.alert-dot { width:10px; height:10px; border-radius:50%; flex:0 0 auto; }
+.alert-dot-green { background:var(--green); }
+.alert-dot-yellow { background:#f0a500; }
+.alert-dot-red { background:var(--pink); }
+
+.lead-alert-yellow { border-left:3px solid #f0a500 !important; }
+.lead-alert-red { border-left:3px solid var(--pink) !important; }
+
+.last-contact { display:block; color:var(--muted); font-size:11px; margin:4px 0; }
+
+.contact-today-btn { width:100%; min-height:32px; border:1px solid var(--green); border-radius:8px; background:var(--green-soft); color:var(--green); font-size:12px; font-weight:700; cursor:pointer; margin:4px 0; }
+.contact-today-btn:hover { background:var(--green); color:#fff; }
+
+.lead-stage-btns { display:flex; flex-wrap:wrap; gap:4px; margin-top:6px; }
+.lead-stage-btns button { min-height:28px; border:1px solid var(--line); border-radius:6px; background:#fffaf2; color:#3a2d34; font-size:11px; font-weight:700; padding:0 8px; cursor:pointer; }
+.lead-stage-btns .delete-btn { background:#fff7f9; color:var(--pink); border-color:var(--pink); }
+
+.paid-client-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
+
+@media (max-width:720px) {
+  .clients-kpi-row { grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
