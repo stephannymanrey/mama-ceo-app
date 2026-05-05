@@ -2644,3 +2644,107 @@ button {
   .action-day-banner { grid-template-columns:1fr; }
   .action-day-right { text-align:left; }
 }
+
+/* ── Avatar button ── */
+.avatar-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(155,45,111,0.3);
+  background: linear-gradient(145deg, #9b2d6f, #c9607a);
+  color: #fff;
+  font-weight: 800;
+  font-size: 18px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+.avatar-btn:hover { transform: scale(1.06); box-shadow: 0 8px 20px rgba(155,45,111,0.25); }
+
+/* ── Profile overlay & panel ── */
+.profile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(31,33,64,0.35);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: grid;
+  place-items: start end;
+}
+.profile-panel {
+  width: min(380px, 100vw);
+  height: 100vh;
+  background: #fff;
+  box-shadow: -20px 0 60px rgba(97,65,98,0.18);
+  padding: 28px 24px;
+  display: grid;
+  gap: 20px;
+  align-content: start;
+  overflow-y: auto;
+}
+.profile-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.profile-panel-header h3 { margin: 0; color: var(--purple); font-size: 20px; }
+
+.profile-photo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.profile-photo-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #9b2d6f, #c9607a);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 3px solid rgba(155,45,111,0.2);
+}
+.photo-upload-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  background: var(--purple-soft);
+  color: var(--purple);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(155,45,111,0.2);
+}
+.photo-remove-btn {
+  border: none;
+  background: none;
+  color: var(--pink);
+  font-size: 12px;
+  cursor: pointer;
+  text-decoration: underline;
+}
+.profile-fields { display: grid; gap: 14px; }
+.profile-field {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+.profile-field input {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  width: 100%;
+}

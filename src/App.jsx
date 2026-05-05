@@ -268,7 +268,13 @@ export default function App() {
     ...(stored?.businessSettings || {})
   });
 
-  const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "" });
+  const [profile, setProfile] = useState({
+    displayName: stored?.profile?.displayName || "",
+    businessName: stored?.profile?.businessName || "",
+    businessDesc: stored?.profile?.businessDesc || "",
+    photo: stored?.profile?.photo || ""
+  });
+  const [profileOpen, setProfileOpen] = useState(false);
   const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "" });
   const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
@@ -592,6 +598,7 @@ export default function App() {
       incomeSources,
       salesGoal,
       contactLog,
+      profile,
       businessSettings,
       banks,
       annualBudget,
@@ -890,17 +897,24 @@ export default function App() {
         <header className="topbar">
           <div>
             <p className="view-label">{activeLabel}</p>
-            <h1>¡Hola, {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mamá CEO"}!</h1>
-            <p>Enfocada • Organizada • Imparable</p>
+            <h1>¡Hola, {profile.displayName || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mamá CEO"}!</h1>
+            {profile.businessName && <p style={{margin:"4px 0 0",color:"var(--purple)",fontWeight:700,fontSize:"13px"}}>{profile.businessName}</p>}
+            {!profile.businessName && <p>Enfocada • Organizada • Imparable</p>}
           </div>
           <div className="profile-area">
-            <button className="icon-button" aria-label="Notificaciones">◌</button>
-            <div className="avatar">MC</div>
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
             {!supabaseActive && !isSyncing && <div className="status-chip">Modo local</div>}
-            {supabaseActive && user && (
-              <button className="signout-button" onClick={signOut}>Salir</button>
-            )}
+            <button
+              type="button"
+              className="avatar-btn"
+              onClick={() => setProfileOpen(true)}
+              title="Mi perfil"
+            >
+              {profile.photo
+                ? <img src={profile.photo} alt="perfil" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}} />
+                : <span>{(profile.displayName || user?.user_metadata?.full_name || user?.email || "M").charAt(0).toUpperCase()}</span>
+              }
+            </button>
           </div>
         </header>
 
@@ -917,6 +931,60 @@ export default function App() {
         {activeView === "home" && renderHome()}
         {activeView === "ceo" && renderCeo()}
         {activeView === "report" && renderWeeklyReport()}
+
+        {profileOpen && (
+          <div className="profile-overlay" onClick={() => setProfileOpen(false)}>
+            <div className="profile-panel" onClick={(e) => e.stopPropagation()}>
+              <div className="profile-panel-header">
+                <h3>Mi perfil</h3>
+                <button type="button" className="row-delete" style={{fontSize:"22px"}} onClick={() => setProfileOpen(false)}>×</button>
+              </div>
+              <div className="profile-photo-wrap">
+                <div className="profile-photo-circle">
+                  {profile.photo
+                    ? <img src={profile.photo} alt="perfil" style={{width:"100%",height:"100%",objectFit:"cover",borderRadius:"50%"}} />
+                    : <span style={{fontSize:"36px",fontWeight:800,color:"#fff"}}>{(profile.displayName || user?.user_metadata?.full_name || "M").charAt(0).toUpperCase()}</span>
+                  }
+                </div>
+                <label className="photo-upload-btn">
+                  📷 Cambiar foto
+                  <input type="file" accept="image/*" style={{display:"none"}} onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (ev) => setProfile((p) => ({ ...p, photo: ev.target.result }));
+                    reader.readAsDataURL(file);
+                  }} />
+                </label>
+                {profile.photo && <button type="button" className="photo-remove-btn" onClick={() => setProfile((p) => ({ ...p, photo: "" }))}>Quitar foto</button>}
+              </div>
+              <div className="profile-fields">
+                <label className="profile-field">
+                  <span>Tu nombre</span>
+                  <input type="text" placeholder="Cómo quieres que te llamemos" value={profile.displayName} onChange={(e) => setProfile((p) => ({ ...p, displayName: e.target.value }))} />
+                </label>
+                <label className="profile-field">
+                  <span>Nombre de tu negocio</span>
+                  <input type="text" placeholder="Ej: Mamá CEO Academy" value={profile.businessName} onChange={(e) => setProfile((p) => ({ ...p, businessName: e.target.value }))} />
+                </label>
+                <label className="profile-field">
+                  <span>¿Qué vendes y a quién?</span>
+                  <textarea className="purpose-textarea" style={{minHeight:"70px"}} placeholder="Ej: Mentoría para mamás emprendedoras que quieren vivir de su negocio" value={profile.businessDesc} onChange={(e) => setProfile((p) => ({ ...p, businessDesc: e.target.value }))} />
+                </label>
+                <label className="profile-field">
+                  <span>Moneda base</span>
+                  <select value={currency} onChange={(e) => setCurrency(e.target.value)} style={{minHeight:"42px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 12px",background:"#fff",color:"var(--ink)",font:"inherit",width:"100%"}}>
+                    <option>USD</option><option>COP</option><option>MXN</option><option>EUR</option>
+                  </select>
+                </label>
+              </div>
+              <div style={{display:"grid",gap:"8px",marginTop:"8px"}}>
+                <button className="primary-button" type="button" onClick={() => setProfileOpen(false)}>Guardar y cerrar</button>
+                {supabaseActive && user && <button type="button" className="signout-button" style={{width:"100%",textAlign:"center"}} onClick={signOut}>Cerrar sesión</button>}
+              </div>
+            </div>
+          </div>
+        )}
 
         <footer className="app-footer">
           <span>Hecho por una mamá con propósito S.A.S.</span>
