@@ -1173,18 +1173,19 @@ export default function App() {
           ))}
         </div>
 
-        <div className="clients-layout">
-          <form className="card form-card section-form" onSubmit={addClient}>
-            <h3>Nueva clienta</h3>
+        <form className="card form-card" onSubmit={addClient} style={{display:"grid",gap:"10px",marginBottom:"14px"}}>
+          <h3>Nueva clienta</h3>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"8px"}}>
             <input placeholder="Nombre" value={clientForm.name} onChange={(e) => updateClientForm("name", e.target.value)} />
             <input placeholder="Servicio o producto" value={clientForm.service} onChange={(e) => updateClientForm("service", e.target.value)} />
             <select value={clientForm.status} onChange={(e) => updateClientForm("status", e.target.value)}>{stages.map((s) => <option key={s}>{s}</option>)}</select>
             <input placeholder="Próxima acción" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} />
             <input placeholder="Monto" type="number" min="0" value={clientForm.amount} onChange={(e) => updateClientForm("amount", e.target.value)} />
             <button className="primary-button" type="submit">Guardar clienta</button>
-          </form>
+          </div>
+        </form>
 
-          <div className="pipeline-board">
+        <div className="pipeline-board">
             {stages.map((stage) => (
               <div className="pipeline-column" key={stage}>
                 <div className="pipeline-col-header">
@@ -1220,7 +1221,6 @@ export default function App() {
               </div>
             ))}
           </div>
-        </div>
 
         <div className="paid-clients-section card">
           <div className="section-title compact-title"><h2>Clientas que ya pagaron</h2><p>Cuida la experiencia, fomenta la recompra y los referidos.</p></div>
