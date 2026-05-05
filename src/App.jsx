@@ -754,6 +754,13 @@ export default function App() {
   const moveClientStatus = (clientId, status) => {
     setClients((current) => current.map((client) => client.id === clientId ? { ...client, status } : client));
   };
+  const logContact = (clientId, clientName) => {
+    const today = new Date().toISOString().split("T")[0];
+    setContactLog((prev) => ({ ...prev, [Date.now()]: { clientId, clientName, date: today } }));
+    setClients((c) => c.map((cl) => cl.id === clientId ? { ...cl, lastContact: Date.now() } : cl));
+  };
+  const weekStart = (() => { const d = new Date(); d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1)); d.setHours(0,0,0,0); return d.getTime(); })();
+  const contactsThisWeek = Object.values(contactLog).filter((e) => new Date(e.date).getTime() >= weekStart).length;
   const updateContentStatus = (contentId, status) => {
     setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, status } : item));
   };
@@ -1196,7 +1203,7 @@ export default function App() {
             </div>
             <div className="action-day-right">
               <p>{priorityClient.nextAction || "Hacer seguimiento"}</p>
-              <button type="button" className="contact-today-btn" onClick={() => setClients((c) => c.map((cl) => cl.id === priorityClient.id ? { ...cl, lastContact: Date.now() } : cl))}>✅ Contacté hoy</button>
+              <button type="button" className="contact-today-btn" onClick={() => logContact(priorityClient.id, priorityClient.name)}>✅ Contacté hoy</button>
             </div>
           </div>
         )}
@@ -1227,6 +1234,11 @@ export default function App() {
               <small>{topSource[1]} clienta{topSource[1] !== 1 ? "s" : ""}</small>
             </div>
           )}
+          <div className="client-kpi" style={{background:"linear-gradient(135deg,rgba(47,159,112,0.1),rgba(255,255,255,0.9))",border:"1px solid rgba(47,159,112,0.3)"}}>
+            <span>Contactos esta semana</span>
+            <strong style={{color:"var(--green)"}}>{contactsThisWeek}</strong>
+            <small>{contactsThisWeek >= 5 ? "🔥 excelente" : contactsThisWeek >= 3 ? "👍 buen avance" : "meta: 5+"}</small>
+          </div>
         </div>
 
         {(urgentClients.length > 0 || urgentSubscriptions.length > 0) && (
@@ -1286,7 +1298,7 @@ export default function App() {
                       <small className="last-contact">
                         {client.lastContact ? `Último contacto: hace ${days} día${days !== 1 ? "s" : ""}` : "Sin contacto registrado"}
                       </small>
-                      <button type="button" className="contact-today-btn" onClick={() => setClients((c) => c.map((cl) => cl.id === client.id ? { ...cl, lastContact: Date.now() } : cl))}>
+                      <button type="button" className="contact-today-btn" onClick={() => logContact(client.id, client.name)}>
                         ✅ Contacté hoy
                       </button>
                       <div className="lead-stage-btns">
@@ -1316,7 +1328,7 @@ export default function App() {
                 </div>
                 {client.source && <small style={{color:"var(--purple)",fontWeight:700}}>📍 {client.source}</small>}
                 <small className="last-contact">{client.lastContact ? `Último contacto: hace ${daysSince(client.lastContact)} días` : "Sin contacto registrado"}</small>
-                <button type="button" className="contact-today-btn" onClick={() => setClients((c) => c.map((cl) => cl.id === client.id ? { ...cl, lastContact: Date.now() } : cl))}>✅ Contacté hoy</button>
+                <button type="button" className="contact-today-btn" onClick={() => logContact(client.id, client.name)}>✅ Contacté hoy</button>
                 <textarea placeholder="Notas de seguimiento, entrega, resultados o próxima recompra..." value={client.notes || ""} onChange={(e) => updateClientNotes(client.id, e.target.value)} />
               </article>
             ))}
@@ -1785,6 +1797,8 @@ export default function App() {
             <div className="purpose-stat"><span>Ventas cerradas</span><strong>{totalWon} clientas</strong></div>
             <div className="purpose-stat"><span>Tasa de conversión</span><strong>{conversionRate}%</strong></div>
             <div className="purpose-stat"><span>Leads calientes ahora</span><strong>{hotLeads}</strong></div>
+            <div className="purpose-stat"><span>Contactos realizados</span><strong style={{color:"var(--green)"}}>{contactsThisWeek} esta semana</strong></div>
+            <ProgressLabel label="Meta contactos (5)" value={Math.min(Math.round((contactsThisWeek/5)*100),100)} tone="green" />
             {incomePerHour > 0 && <div className="purpose-stat"><span>Ingreso por hora</span><strong>{money.format(incomePerHour)}</strong></div>}
           </div>
 
