@@ -858,7 +858,6 @@ export default function App() {
         </div>
 
         <div className="quote-card">
-          <p className="brand-tagline">Negocio, hogar y visión en un solo lugar</p>
           <span>“</span>
           <p>{promesas[new Date().getDate() % promesas.length]}</p>
         </div>

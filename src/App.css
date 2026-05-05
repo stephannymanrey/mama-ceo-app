@@ -50,19 +50,20 @@ button {
   position: sticky;
   top: 0;
   height: 100vh;
-  padding: 30px 24px;
+  padding: 20px 18px;
   border-right: 1px solid rgba(155, 45, 111, 0.1);
   background: rgba(255, 252, 250, 0.92);
   backdrop-filter: blur(18px);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: 12px;
+  overflow-y: auto;
 }
 
 .brand {
   text-align: center;
-  padding: 18px 8px 8px;
+  padding: 8px 4px 4px;
 }
 
 .brand-mark {
@@ -72,53 +73,48 @@ button {
 .brand-script {
   color: #9b2d6f;
   font-family: "Segoe Script", "Brush Script MT", cursive;
-  font-size: 40px;
+  font-size: 32px;
   line-height: 1;
 }
 
 .brand-ceo {
   color: #c9a96e;
   font-family: Georgia, serif;
-  font-size: 28px;
-  letter-spacing: 12px;
-  margin-left: 12px;
+  font-size: 22px;
+  letter-spacing: 10px;
+  margin-left: 8px;
 }
 
 .brand-app {
-  font-size: 11px;
-  letter-spacing: 8px;
+  font-size: 10px;
+  letter-spacing: 6px;
   color: var(--muted);
-  margin: 6px 0 16px;
+  margin: 4px 0 0;
 }
 
 .brand-tagline {
-  margin: 0;
-  color: var(--muted);
-  font-size: 10px;
-  line-height: 1.5;
-  letter-spacing: 1.2px;
-  text-transform: uppercase;
-  border-top: 1px solid rgba(155, 45, 111, 0.12);
-  padding-top: 12px;
+  display: none;
 }
 
 .main-menu {
   display: grid;
-  gap: 8px;
+  gap: 4px;
+  flex: 1;
 }
 
 .menu-item {
   width: 100%;
-  min-height: 50px;
+  min-height: 44px;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   background: rgba(255, 255, 255, 0.82);
   color: var(--ink);
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 18px;
+  gap: 12px;
+  padding: 0 14px;
   text-align: left;
+  font-size: 14px;
   transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
 }
 
@@ -129,15 +125,15 @@ button {
 }
 
 .menu-item span {
-  width: 24px;
+  width: 22px;
   color: var(--purple);
-  font-size: 20px;
+  font-size: 18px;
 }
 
 .menu-item.active {
   color: #fff;
   background: linear-gradient(135deg, #9b2d6f, #c9607a);
-  box-shadow: 0 16px 32px rgba(155, 45, 111, 0.22);
+  box-shadow: 0 12px 24px rgba(155, 45, 111, 0.22);
 }
 
 .menu-item.active span {
@@ -145,26 +141,27 @@ button {
 }
 
 .quote-card {
-  margin-top: auto;
-  min-height: 190px;
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: 16px;
   background: linear-gradient(145deg, rgba(255, 240, 244, 0.95), rgba(255, 255, 255, 0.74));
-  display: grid;
-  place-items: center;
-  padding: 28px;
+  padding: 16px;
   text-align: center;
 }
 
 .quote-card span {
   color: var(--pink);
-  font-size: 44px;
+  font-size: 28px;
   line-height: 1;
+  display: block;
+  margin-bottom: 6px;
 }
 
 .quote-card p {
   margin: 0;
-  line-height: 1.7;
+  line-height: 1.5;
+  font-size: 12px;
+  color: #6f2f4b;
+  font-style: italic;
 }
 
 .dashboard {
