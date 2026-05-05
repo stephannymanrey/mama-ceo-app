@@ -87,13 +87,18 @@ const menu = [
   { id: "ceo", label: "Propósito", icon: "○" }
 ];
 
-const calendar = [
-  ["Lun 20", "Llamada con cliente", "10:00 AM"],
-  ["Mar 21", "Estrategia de contenido", "9:00 AM"],
-  ["Mie 22", "Mentoria grupal", "11:00 AM"],
-  ["Jue 23", "Revision de metas", "10:00 AM"],
-  ["Vie 24", "Grabacion de contenido", "2:00 PM"]
-];
+const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+function getWeekDays() {
+  const today = new Date();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (today.getDay() === 0 ? 6 : today.getDay() - 1));
+  return Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return `${diasSemana[d.getDay()]} ${d.getDate()}`;
+  });
+}
+const weekDays = getWeekDays();
 
 const currencyLocales = { USD: "en-US", COP: "es-CO", MXN: "es-MX", EUR: "de-DE" };
 
@@ -132,12 +137,13 @@ export default function App() {
   const stored = loadState();
   const [activeView, setActiveView] = useState(stored?.activeView || "dashboard");
   const [currency, setCurrency] = useState(stored?.currency || "USD");
-  const [movements, setMovements] = useState(stored?.movements || initialMovements);
-  const [tasks, setTasks] = useState(stored?.tasks || initialTasks);
-  const [clients, setClients] = useState(stored?.clients || initialClients);
-  const [contentItems, setContentItems] = useState(stored?.contentItems || initialContent);
-  const [goals, setGoals] = useState(stored?.goals || initialGoals);
-  const [homeTasks, setHomeTasks] = useState(stored?.homeTasks || initialHomeTasks);
+  const isNewUser = !stored;
+  const [movements, setMovements] = useState(isNewUser ? [] : (stored?.movements || initialMovements));
+  const [tasks, setTasks] = useState(isNewUser ? [] : (stored?.tasks || initialTasks));
+  const [clients, setClients] = useState(isNewUser ? [] : (stored?.clients || initialClients));
+  const [contentItems, setContentItems] = useState(isNewUser ? [] : (stored?.contentItems || initialContent));
+  const [goals, setGoals] = useState(isNewUser ? [] : (stored?.goals || initialGoals));
+  const [homeTasks, setHomeTasks] = useState(isNewUser ? [] : (stored?.homeTasks || initialHomeTasks));
   const [banks, setBanks] = useState(stored?.banks || initialBanks);
   const [newBank, setNewBank] = useState("");
   const [annualBudget, setAnnualBudget] = useState((stored?.annualBudget || initialAnnualBudget).map((row) => {
@@ -270,6 +276,7 @@ export default function App() {
   }, { fixed: 0, variable: 0, other: 0 });
 
   const budgetMonthlyIncome = annualTotals.income / 12;
+  const confirmDelete = (msg, onConfirm) => { if (window.confirm(msg)) onConfirm(); };
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -796,7 +803,8 @@ export default function App() {
           <div className="profile-area">
             <button className="icon-button" aria-label="Notificaciones">◌</button>
             <div className="avatar">MC</div>
-            {!supabaseActive && <div className="status-chip">Modo local</div>}
+            {isSyncing && <div className="status-chip syncing">Guardando…</div>}
+            {!supabaseActive && !isSyncing && <div className="status-chip">Modo local</div>}
             {supabaseActive && user && (
               <button className="signout-button" onClick={signOut}>Salir</button>
             )}
@@ -1041,6 +1049,7 @@ export default function App() {
                     <p>{client.nextAction || "Hacer seguimiento"}</p>
                     <div className="lead-actions">
                       {stages.map((nextStage) => <button type="button" key={nextStage} onClick={() => moveClientStatus(client.id, nextStage)}>{nextStage.replace("Lead ", "")}</button>)}
+                      <button type="button" onClick={() => confirmDelete("¿Eliminar esta clienta?", () => setClients((current) => current.filter((c) => c.id !== client.id)))}>Eliminar</button>
                     </div>
                   </div>
                 ))}
@@ -1085,7 +1094,7 @@ export default function App() {
             <button className="primary-button" type="submit">Guardar contenido</button>
           </form>
           <div className="card data-card content-record"><h3>Record de publicación</h3><div className="record-grid"><MetricCard title="Publicado" value={publishedContent} change="piezas" tone="green" /><MetricCard title="Pendiente" value={unpublished} change="por mover" tone="orange" /></div><p>{recordMessage}</p></div>
-          <div className="card data-card content-table"><h3>Tabla de contenido por semanas</h3>{["Semana 1", "Semana 2", "Semana 3", "Semana 4"].map((week) => <div className="content-week" key={week}><h4>{week}</h4>{contentItems.filter((item) => item.week === week).map((item) => <div className="content-row" key={item.id}><div><strong>{item.title}</strong><small>{item.hook || "Sin hook"} • {item.format} • {item.network}</small></div><select value={item.status} onChange={(event) => updateContentStatus(item.id, event.target.value)}><option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option></select><button type="button" onClick={() => setContentItems((current) => current.filter((content) => content.id !== item.id))}>Eliminar</button></div>)}</div>)}</div>
+          <div className="card data-card content-table"><h3>Tabla de contenido por semanas</h3>{["Semana 1", "Semana 2", "Semana 3", "Semana 4"].map((week) => <div className="content-week" key={week}><h4>{week}</h4>{contentItems.filter((item) => item.week === week).map((item) => <div className="content-row" key={item.id}><div><strong>{item.title}</strong><small>{item.hook || "Sin hook"} • {item.format} • {item.network}</small></div><select value={item.status} onChange={(event) => updateContentStatus(item.id, event.target.value)}><option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option></select><button type="button" onClick={() => confirmDelete("¿Eliminar este contenido?", () => setContentItems((current) => current.filter((content) => content.id !== item.id)))}>Eliminar</button></div>)}</div>)}</div>
         </div>
       </section>
     );
@@ -1126,7 +1135,7 @@ export default function App() {
             <select value={homeForm.category} onChange={(event) => updateHomeForm("category", event.target.value)}><option>Compras</option><option>Calendario</option><option>Rutina</option><option>Bienestar</option></select>
             <button className="primary-button" type="submit">Guardar tarea</button>
           </form>
-          <div className="card data-card"><h3>Rutinas y pendientes</h3><div className="weekly-goal"><span>Progreso semanal del hogar</span><strong>{homeProgress}%</strong><Progress value={homeProgress} tone="green" /></div>{homeTasks.map((task) => <label className="home-row" key={task.id}><input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} /><span><strong>{task.title}</strong><small>{task.category}</small></span><button type="button" onClick={() => setHomeTasks((current) => current.filter((item) => item.id !== task.id))}>Eliminar</button></label>)}</div>
+          <div className="card data-card"><h3>Rutinas y pendientes</h3><div className="weekly-goal"><span>Progreso semanal del hogar</span><strong>{homeProgress}%</strong><Progress value={homeProgress} tone="green" /></div>{homeTasks.map((task) => <label className="home-row" key={task.id}><input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} /><span><strong>{task.title}</strong><small>{task.category}</small></span><button type="button" onClick={() => confirmDelete("¿Eliminar esta tarea?", () => setHomeTasks((current) => current.filter((item) => item.id !== task.id)))}>Eliminar</button></label>)}</div>
         </div>
       </section>
     );
@@ -1261,7 +1270,7 @@ export default function App() {
               <small>{movement.classification} • {movement.category} • {movement.bank || "Sin banco"}</small>
             </div>
             <b>{money.format(movement.amount)}</b>
-            <button className="row-delete" type="button" onClick={() => setMovements((current) => current.filter((item) => item.id !== movement.id))}>×</button>
+            <button className="row-delete" type="button" onClick={() => confirmDelete("¿Eliminar este movimiento?", () => setMovements((current) => current.filter((item) => item.id !== movement.id)))}>×</button>
           </div>
         ))}
       </div>
@@ -1269,7 +1278,7 @@ export default function App() {
   }
 
   function CalendarCard() {
-    return <div className="card calendar-card"><h3>Calendario de la semana</h3><button className="ghost-button" type="button">Preparar conexión con Google Calendar</button><small className="helper-copy">La integración real requiere login con Google y permisos de calendario.</small>{calendar.map(([day, event, hour]) => <div className="calendar-row" key={`${day}-${event}`}><span>{day}</span><p>{event}</p><b>{hour}</b></div>)}</div>;
+    return <div className="card calendar-card"><h3>Calendario de la semana</h3><small className="helper-copy">Semana actual</small>{weekDays.map((day) => <div className="calendar-row" key={day}><span>{day}</span><p>—</p></div>)}</div>;
   }
 
   function GoalRow({ goal }) {
