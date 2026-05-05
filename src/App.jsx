@@ -1194,19 +1194,33 @@ export default function App() {
         <div className="section-title"><h2>Clientes</h2><p>{activeClients} activas • {money.format(wonSalesTotal)} en ventas cerradas</p></div>
 
         {/* 1. Acción del día */}
-        {priorityClient && (
-          <div className="action-day-banner">
-            <div className="action-day-left">
-              <span className="action-day-label">🎯 Acción del día</span>
-              <strong>{priorityClient.name}</strong>
-              <span>{priorityClient.status} • {money.format(priorityClient.amount)} • hace {daysSince(priorityClient.lastContact)} días sin contacto</span>
+        {priorityClient && (() => {
+          const waMsg = encodeURIComponent(`Hola ${priorityClient.name}! 💛 No quería dejar nuestra conversación sin un final. Aquí estoy para retomar cuando sea buen momento para ti. ¿Sigues interesada en ${priorityClient.service}?`);
+          return (
+            <div className="action-day-banner">
+              <div className="action-day-left">
+                <span className="action-day-label">🎯 Acción del día</span>
+                <strong>{priorityClient.name}</strong>
+                <span>{priorityClient.status} • {money.format(priorityClient.amount)} • hace {daysSince(priorityClient.lastContact)} días sin contacto</span>
+                <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"8px"}}>
+                  <button type="button" className="contact-today-btn" style={{width:"auto",padding:"0 14px"}} onClick={() => logContact(priorityClient.id, priorityClient.name)}>✅ Contacté hoy</button>
+                  <a href={`https://wa.me/?text=${waMsg}`} target="_blank" rel="noreferrer"
+                    style={{display:"inline-flex",alignItems:"center",gap:"6px",padding:"0 14px",minHeight:"32px",borderRadius:"8px",background:"#25d366",color:"#fff",fontSize:"12px",fontWeight:700,textDecoration:"none"}}>
+                    📲 WhatsApp
+                  </a>
+                </div>
+              </div>
+              <div className="action-day-right">
+                <p>{priorityClient.nextAction || "Hacer seguimiento"}</p>
+                <div style={{marginTop:"8px",textAlign:"center"}}>
+                  <strong style={{fontSize:"28px",color:"var(--green)",display:"block",lineHeight:1}}>{contactsThisWeek}</strong>
+                  <small style={{color:"var(--muted)",fontSize:"11px",textTransform:"uppercase",fontWeight:800,letterSpacing:"0.5px"}}>contactos esta semana</small>
+                  <small style={{color:"var(--green)",fontSize:"11px",fontWeight:700}}>{contactsThisWeek >= 5 ? "🔥 excelente ritmo" : contactsThisWeek >= 3 ? "👍 buen avance" : "meta: 5+"}</small>
+                </div>
+              </div>
             </div>
-            <div className="action-day-right">
-              <p>{priorityClient.nextAction || "Hacer seguimiento"}</p>
-              <button type="button" className="contact-today-btn" onClick={() => logContact(priorityClient.id, priorityClient.name)}>✅ Contacté hoy</button>
-            </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* 2 y 3. KPIs inteligentes */}
         <div className="clients-kpi-row">
@@ -1234,11 +1248,6 @@ export default function App() {
               <small>{topSource[1]} clienta{topSource[1] !== 1 ? "s" : ""}</small>
             </div>
           )}
-          <div className="client-kpi" style={{background:"linear-gradient(135deg,rgba(47,159,112,0.1),rgba(255,255,255,0.9))",border:"1px solid rgba(47,159,112,0.3)"}}>
-            <span>Contactos esta semana</span>
-            <strong style={{color:"var(--green)"}}>{contactsThisWeek}</strong>
-            <small>{contactsThisWeek >= 5 ? "🔥 excelente" : contactsThisWeek >= 3 ? "👍 buen avance" : "meta: 5+"}</small>
-          </div>
         </div>
 
         {(urgentClients.length > 0 || urgentSubscriptions.length > 0) && (
