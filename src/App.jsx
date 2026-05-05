@@ -565,6 +565,15 @@ export default function App() {
     setAnnualBudget(loaded.annualBudget || initialAnnualBudget);
     setHomeBudget(loaded.homeBudget || initialHomeBudget);
     setPurpose(loaded.purpose || purpose);
+    if (loaded.profile) setProfile({
+      displayName: loaded.profile.displayName || "",
+      businessName: loaded.profile.businessName || "",
+      businessDesc: loaded.profile.businessDesc || "",
+      photo: loaded.profile.photo || ""
+    });
+    if (loaded.salesGoal !== undefined) setSalesGoal(loaded.salesGoal);
+    if (loaded.contactLog) setContactLog(loaded.contactLog);
+    if (loaded.incomeSources) setIncomeSources(loaded.incomeSources);
   };
 
   useEffect(() => {
