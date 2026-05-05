@@ -84,7 +84,7 @@ const menu = [
   { id: "clients", label: "Clientes", icon: "◇" },
   { id: "content", label: "Contenido", icon: "▷" },
   { id: "home", label: "Hogar", icon: "⌁" },
-  { id: "ceo", label: "Propósito", icon: "○" }
+  { id: "ceo", label: "Propósito & Impacto", icon: "○" }
 ];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
@@ -160,14 +160,23 @@ export default function App() {
   const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "" });
   const [purpose, setPurpose] = useState({
     mood: "inspirada",
+    energy: "medio",
     mentalLoad: "",
     microVictory: "",
     victoryDone: false,
     water: false,
     walk: false,
     silence: false,
-    familyMomentDone: false,
+    devotional: false,
     familyDays: { L: false, M: false, X: false, J: false, V: false, S: false, D: false },
+    connectionMoments: 0,
+    hoursWorked: 0,
+    recurringIncomePercent: 0,
+    systemsPercent: 0,
+    clientsImpacted: 0,
+    weekTestimony: "",
+    passionLevel: 3,
+    visionClarity: "",
     ...(stored?.purpose || {})
   });
   const [user, setUser] = useState(null);
@@ -1140,21 +1149,180 @@ export default function App() {
   }
 
   function renderCeo() {
-    const selfCareScore = [purpose.water, purpose.walk, purpose.silence].filter(Boolean).length;
+    const selfCareScore = [purpose.water, purpose.walk, purpose.silence, purpose.devotional].filter(Boolean).length;
+    const familyDaysCount = Object.values(purpose.familyDays || {}).filter(Boolean).length;
+    const incomePerHour = purpose.hoursWorked > 0 ? Math.round(totals.income / purpose.hoursWorked) : 0;
+    const peaceScore = ["inspirada", "feliz"].includes(purpose.mood) ? 100 : ["cansada"].includes(purpose.mood) ? 50 : 20;
     const mentalAdvice = purpose.mood === "controladora"
-      ? "Psicologicamente: cambia control por presencia. Elige una cosa que si depende de ti y suelta una que no. Biblicamente: 'Estad quietos, y conoced que yo soy Dios' puede recordarte que no todo se sostiene con tu fuerza."
+      ? "Cambia control por presencia. Elige una cosa que sí depende de ti y suelta una que no."
       : purpose.mood === "abrumada"
-        ? "Psicologicamente: reduce la lista a una sola accion visible. Biblicamente: 'Venid a mi todos los que estais trabajados y cargados' te recuerda que puedes descargar el peso antes de producir."
-        : "Psicologicamente: usa tu energia sin sobreexigirte. Biblicamente: administra bien tu dia, pero deja espacio para gracia y descanso.";
+        ? "Reduce la lista a una sola acción visible. No tienes que hacerlo todo hoy."
+        : purpose.mood === "cansada"
+          ? "Protégete. El descanso también es productividad."
+          : "Usa tu energía sin sobreexigirte. Deja espacio para gracia y descanso.";
     return (
       <section className="panel workspace-panel">
-        <div className="section-title"><h2>Propósito</h2><p>Salud mental, maternidad, fe y energia para liderar con paz</p></div>
-        <div className="workspace-grid">
-          <div className="card affirmation-card"><h3>Afirmación dinámica</h3><p>{todayAffirmation}</p></div>
-          <div className="card purpose-card"><h3>Radar de emociones</h3><div className="mood-grid">{["abrumada", "inspirada", "feliz", "controladora", "cansada"].map((mood) => <button type="button" className={purpose.mood === mood ? "selected" : ""} key={mood} onClick={() => updatePurpose("mood", mood)}>{mood}</button>)}</div><textarea placeholder="¿Con qué estás cargando esta semana en tu familia o maternidad?" value={purpose.mentalLoad} onChange={(event) => updatePurpose("mentalLoad", event.target.value)} /><p>{mentalAdvice}</p></div>
-          <div className="card purpose-card"><h3>Micro-victoria</h3><input placeholder="Hoy me sentiré orgullosa de..." value={purpose.microVictory} onChange={(event) => updatePurpose("microVictory", event.target.value)} /><label className="task-row"><input type="checkbox" checked={purpose.victoryDone} onChange={(event) => updatePurpose("victoryDone", event.target.checked)} /><span>Ya hice mi mínimo indispensable</span></label></div>
-          <div className="card progress-card"><h3>Autocuidado real</h3><label className="task-row"><input type="checkbox" checked={purpose.water} onChange={(event) => updatePurpose("water", event.target.checked)} /><span>Bebí agua</span></label><label className="task-row"><input type="checkbox" checked={purpose.walk} onChange={(event) => updatePurpose("walk", event.target.checked)} /><span>Caminé 10 minutos</span></label><label className="task-row"><input type="checkbox" checked={purpose.silence} onChange={(event) => updatePurpose("silence", event.target.checked)} /><span>Tuve silencio</span></label><ProgressLabel label="Record" value={Math.round((selfCareScore / 3) * 100)} tone="green" /></div>
-          <div className="card family-card"><h3>Crecimiento integral</h3><p>Esta semana busca un momento sencillo con tus hijos: bolos, helado, caminar, leer juntos o cocinar algo fácil. No tiene que ser perfecto para ser memorable.</p><div className="week-checks">{["L", "M", "X", "J", "V", "S", "D"].map((day) => <button type="button" className={purpose.familyDays?.[day] ? "checked" : ""} key={day} onClick={() => toggleFamilyDay(day)}>{day}</button>)}</div><div className="family-circle"><strong>{familyDaysCount >= 4 ? "Más tiempo en familia" : "Menos tiempo en familia"}</strong><span>{familyDaysCount >= 4 ? "Esta semana estuviste más presente con ellos." : "Aún puedes regalarles un momento simple."}</span></div></div>
+        <div className="section-title">
+          <h2>Propósito &amp; Impacto</h2>
+          <p>Mide lo que realmente importa — presencia, energía, sistemas e impacto</p>
+        </div>
+
+        <div className="purpose-kpi-grid">
+          <div className="purpose-kpi">
+            <span className="purpose-kpi-icon">👩‍👦</span>
+            <strong>{purpose.connectionMoments}</strong>
+            <small>momentos de conexión hoy</small>
+            <span className={purpose.connectionMoments >= 2 ? "kpi-badge good" : "kpi-badge alert"}>meta: 2–3</span>
+          </div>
+          <div className="purpose-kpi">
+            <span className="purpose-kpi-icon">💸</span>
+            <strong>{money.format(incomePerHour)}</strong>
+            <small>ingreso por hora trabajada</small>
+            <span className="kpi-badge neutral">KPI estrella</span>
+          </div>
+          <div className="purpose-kpi">
+            <span className="purpose-kpi-icon">⚡</span>
+            <strong>{purpose.energy === "alto" ? "Alta" : purpose.energy === "medio" ? "Media" : "Baja"}</strong>
+            <small>energía del día</small>
+            <span className={peaceScore >= 80 ? "kpi-badge good" : peaceScore >= 50 ? "kpi-badge neutral" : "kpi-badge alert"}>{purpose.mood}</span>
+          </div>
+          <div className="purpose-kpi">
+            <span className="purpose-kpi-icon">👥</span>
+            <strong>{purpose.clientsImpacted}</strong>
+            <small>clientes impactados esta semana</small>
+            <span className="kpi-badge neutral">impacto real</span>
+          </div>
+          <div className="purpose-kpi">
+            <span className="purpose-kpi-icon">📅</span>
+            <strong>{familyDaysCount}</strong>
+            <small>días de presencia consciente</small>
+            <span className={familyDaysCount >= 4 ? "kpi-badge good" : "kpi-badge alert"}>{familyDaysCount >= 4 ? "excelente" : "puedes mejorar"}</span>
+          </div>
+          <div className="purpose-kpi">
+            <span className="purpose-kpi-icon">🔄</span>
+            <strong>{purpose.systemsPercent}%</strong>
+            <small>tareas sistematizadas</small>
+            <span className={purpose.systemsPercent >= 60 ? "kpi-badge good" : "kpi-badge neutral"}>meta: 60%+</span>
+          </div>
+        </div>
+
+        <div className="purpose-sections">
+
+          <div className="card purpose-block">
+            <h3>👩‍👦 Presencia real</h3>
+            <p className="helper-copy">Puedes pasar todo el día en casa y no estar. Mide lo que importa.</p>
+            <label className="purpose-field">
+              <span>Momentos de conexión hoy (sin celular, sin multitarea)</span>
+              <div className="counter-row">
+                <button type="button" onClick={() => updatePurpose("connectionMoments", Math.max(0, (purpose.connectionMoments || 0) - 1))}>-</button>
+                <strong>{purpose.connectionMoments || 0}</strong>
+                <button type="button" onClick={() => updatePurpose("connectionMoments", (purpose.connectionMoments || 0) + 1)}>+</button>
+              </div>
+            </label>
+            <label className="purpose-field"><span>Días de presencia consciente esta semana</span></label>
+            <div className="week-checks">
+              {["L","M","X","J","V","S","D"].map((day) => (
+                <button type="button" className={purpose.familyDays?.[day] ? "checked" : ""} key={day}
+                  onClick={() => setPurpose((c) => ({ ...c, familyDays: { ...c.familyDays, [day]: !c.familyDays?.[day] } }))}>{day}</button>
+              ))}
+            </div>
+            <textarea className="purpose-textarea" placeholder="¿Cómo crees que se sintió tu hijo/a esta semana? (reflexión libre)" value={purpose.mentalLoad} onChange={(e) => updatePurpose("mentalLoad", e.target.value)} />
+          </div>
+
+          <div className="card purpose-block">
+            <h3>💰 Negocio inteligente</h3>
+            <p className="helper-copy">Más horas no es más éxito. Mide lo que escala.</p>
+            <label className="purpose-field">
+              <span>Horas trabajadas esta semana</span>
+              <input type="number" min="0" max="80" value={purpose.hoursWorked || 0} onChange={(e) => updatePurpose("hoursWorked", Number(e.target.value))} />
+            </label>
+            <div className="purpose-stat">
+              <span>Ingreso por hora trabajada</span>
+              <strong>{incomePerHour > 0 ? money.format(incomePerHour) : "Registra horas"}</strong>
+            </div>
+            <label className="purpose-field">
+              <span>% de ingresos recurrentes (membresías, productos escalables)</span>
+              <input type="range" min="0" max="100" value={purpose.recurringIncomePercent || 0} onChange={(e) => updatePurpose("recurringIncomePercent", Number(e.target.value))} />
+              <small>{purpose.recurringIncomePercent || 0}% recurrente</small>
+            </label>
+          </div>
+
+          <div className="card purpose-block">
+            <h3>⚡ Energía y salud emocional</h3>
+            <p className="helper-copy">Si tú te quiebras, todo se cae. Tu energía es un recurso.</p>
+            <label className="purpose-field"><span>Nivel de energía hoy</span></label>
+            <div className="mood-grid">
+              {["alto","medio","bajo"].map((e) => (
+                <button type="button" key={e} className={purpose.energy === e ? "selected" : ""} onClick={() => updatePurpose("energy", e)}>{e}</button>
+              ))}
+            </div>
+            <label className="purpose-field"><span>Ánimo general</span></label>
+            <div className="mood-grid">
+              {["abrumada","inspirada","feliz","controladora","cansada"].map((mood) => (
+                <button type="button" key={mood} className={purpose.mood === mood ? "selected" : ""} onClick={() => updatePurpose("mood", mood)}>{mood}</button>
+              ))}
+            </div>
+            <p className="helper-copy" style={{marginTop:"10px"}}>{mentalAdvice}</p>
+            <div className="selfcare-checks">
+              {[["water","Bebí agua"],["walk","Caminé 10 min"],["silence","Tuve silencio"],["devotional","Devocional / oración"]].map(([key, label]) => (
+                <label key={key} className="task-row">
+                  <input type="checkbox" checked={!!purpose[key]} onChange={(e) => updatePurpose(key, e.target.checked)} />
+                  <span>{label}</span>
+                </label>
+              ))}
+            </div>
+            <ProgressLabel label="Autocuidado" value={Math.round((selfCareScore / 4) * 100)} tone="green" />
+          </div>
+
+          <div className="card purpose-block">
+            <h3>🏗️ Sistemas</h3>
+            <p className="helper-copy">No necesitas hacer más, necesitas repetir mejor.</p>
+            <label className="purpose-field">
+              <span>% de tareas repetibles sistematizadas</span>
+              <input type="range" min="0" max="100" value={purpose.systemsPercent || 0} onChange={(e) => updatePurpose("systemsPercent", Number(e.target.value))} />
+              <small>{purpose.systemsPercent || 0}% sistematizado</small>
+            </label>
+            <label className="purpose-field">
+              <span>Micro-victoria de hoy</span>
+              <input type="text" placeholder="Hoy me sentiré orgullosa de..." value={purpose.microVictory || ""} onChange={(e) => updatePurpose("microVictory", e.target.value)} />
+            </label>
+            <label className="task-row">
+              <input type="checkbox" checked={!!purpose.victoryDone} onChange={(e) => updatePurpose("victoryDone", e.target.checked)} />
+              <span>Ya hice mi mínimo indispensable</span>
+            </label>
+          </div>
+
+          <div className="card purpose-block purpose-block-wide">
+            <h3>📛 Propósito e impacto</h3>
+            <p className="helper-copy">5 clientes transformados &gt; 5.000 vistas vacías.</p>
+            <div className="purpose-impact-grid">
+              <label className="purpose-field">
+                <span>Clientes impactados esta semana</span>
+                <div className="counter-row">
+                  <button type="button" onClick={() => updatePurpose("clientsImpacted", Math.max(0, (purpose.clientsImpacted || 0) - 1))}>-</button>
+                  <strong>{purpose.clientsImpacted || 0}</strong>
+                  <button type="button" onClick={() => updatePurpose("clientsImpacted", (purpose.clientsImpacted || 0) + 1)}>+</button>
+                </div>
+              </label>
+              <label className="purpose-field">
+                <span>Nivel de pasión al crear / trabajar (1–5)</span>
+                <div className="passion-stars">
+                  {[1,2,3,4,5].map((n) => (
+                    <button type="button" key={n} className={n <= (purpose.passionLevel || 3) ? "star active" : "star"} onClick={() => updatePurpose("passionLevel", n)}>★</button>
+                  ))}
+                </div>
+              </label>
+              <label className="purpose-field">
+                <span>Testimonio o transformación de esta semana</span>
+                <textarea className="purpose-textarea" placeholder="¿Qué cambió en un cliente gracias a tu trabajo?" value={purpose.weekTestimony || ""} onChange={(e) => updatePurpose("weekTestimony", e.target.value)} />
+              </label>
+              <label className="purpose-field">
+                <span>Claridad de visión — ¿sabes hacia dónde vas?</span>
+                <textarea className="purpose-textarea" placeholder="Mi visión esta semana es..." value={purpose.visionClarity || ""} onChange={(e) => updatePurpose("visionClarity", e.target.value)} />
+              </label>
+            </div>
+          </div>
+
         </div>
       </section>
     );
