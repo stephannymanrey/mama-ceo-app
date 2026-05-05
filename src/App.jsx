@@ -145,7 +145,8 @@ const menu = [
   { id: "clients", label: "Clientes", icon: "◇" },
   { id: "content", label: "Contenido", icon: "▷" },
   { id: "home", label: "Hogar", icon: "⌁" },
-  { id: "ceo", label: "Propósito & Impacto", icon: "○" }
+  { id: "ceo", label: "Propósito & Impacto", icon: "○" },
+  { id: "report", label: "Reporte semanal", icon: "◈" }
 ];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
@@ -269,6 +270,8 @@ export default function App() {
 
   const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "" });
   const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "" });
+  const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
+  const [contactLog, setContactLog] = useState(stored?.contactLog || {});
   const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer" });
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Operaciones" });
@@ -587,6 +590,8 @@ export default function App() {
       maternalTasks,
       wellnessTasks,
       incomeSources,
+      salesGoal,
+      contactLog,
       businessSettings,
       banks,
       annualBudget,
@@ -904,6 +909,7 @@ export default function App() {
         {activeView === "content" && renderContent()}
         {activeView === "home" && renderHome()}
         {activeView === "ceo" && renderCeo()}
+        {activeView === "report" && renderWeeklyReport()}
 
         <footer className="app-footer">
           <span>Hecho por una mamá con propósito S.A.S.</span>
@@ -1706,6 +1712,139 @@ export default function App() {
 
   function CalendarCard() {
     return <div className="card calendar-card"><h3>Calendario de la semana</h3><small className="helper-copy">Semana actual</small>{weekDays.map((day) => <div className="calendar-row" key={day}><span>{day}</span><p>—</p></div>)}</div>;
+  }
+
+  function renderWeeklyReport() {
+    const totalLeads = clients.length;
+    const totalWon = clients.filter((c) => c.status === "Venta ganada").length;
+    const conversionRate = totalLeads > 0 ? Math.round((totalWon / totalLeads) * 100) : 0;
+    const hotLeads = clients.filter((c) => c.status === "Lead caliente").length;
+    const homeProgress = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
+    const selfCareScore = [purpose.water, purpose.walk, purpose.silence, purpose.devotional].filter(Boolean).length;
+    const incomePerHour = purpose.hoursWorked > 0 ? Math.round(totals.income / purpose.hoursWorked) : 0;
+    const salesGoalProgress = salesGoal > 0 ? Math.min(Math.round((wonSalesTotal / salesGoal) * 100), 100) : 0;
+
+    const whatsappMsg = (client) => {
+      const msgs = {
+        "Lead frio": `Hola ${client.name}! 👋 Quería retomar el contacto contigo. ¿Sigues interesada en ${client.service}? Con gusto te cuento más.`,
+        "Lead tibio": `Hola ${client.name}! 😊 Estaba pensando en ti. ¿Cómo vas? Me encantaría contarte sobre ${client.service} y cómo puede ayudarte.`,
+        "Lead caliente": `Hola ${client.name}! 🔥 Quería hacer seguimiento a nuestra conversación sobre ${client.service}. ¿Tienes 5 minutos para hablar hoy?`,
+        "Venta ganada": `Hola ${client.name}! 💛 ¿Cómo vas con ${client.service}? Quería saber cómo te ha ido y si tienes alguna pregunta.`
+      };
+      return encodeURIComponent(msgs[client.status] || `Hola ${client.name}, quería hacer seguimiento sobre ${client.service}.`);
+    };
+
+    const urgentFollowUps = clients
+      .filter((c) => c.status !== "Venta ganada")
+      .sort((a, b) => {
+        const score = { "Lead caliente": 3, "Lead tibio": 2, "Lead frio": 1 };
+        return (score[b.status] || 0) - (score[a.status] || 0);
+      })
+      .slice(0, 5);
+
+    const sourceCounts = clients.reduce((acc, c) => {
+      const src = c.source || "Sin fuente";
+      acc[src] = (acc[src] || 0) + 1;
+      return acc;
+    }, {});
+
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Reporte semanal</h2>
+          <p>Tu resumen inteligente de ventas, hogar y energía</p>
+        </div>
+
+        {/* Meta de ventas del mes */}
+        <div className="card" style={{marginBottom:"14px",display:"grid",gap:"12px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"12px"}}>
+            <div>
+              <h3 style={{margin:0}}>💰 Meta de ventas del mes</h3>
+              <p className="helper-copy" style={{marginTop:"4px"}}>{money.format(wonSalesTotal)} cerrados de {money.format(salesGoal || monthlyGoal)} meta</p>
+            </div>
+            <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+              <span style={{fontSize:"13px",color:"var(--muted)"}}>Meta:</span>
+              <input type="number" min="0" value={salesGoal || ""} placeholder={money.format(monthlyGoal)}
+                onChange={(e) => setSalesGoal(Number(e.target.value))}
+                style={{width:"120px",minHeight:"36px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 10px",font:"inherit"}} />
+            </div>
+          </div>
+          <Progress value={salesGoalProgress} tone="green" />
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:"13px",color:"var(--muted)"}}>
+            <span>{salesGoalProgress}% completado</span>
+            <span>Faltan {money.format(Math.max(0, (salesGoal || monthlyGoal) - wonSalesTotal))}</span>
+          </div>
+        </div>
+
+        <div className="purpose-sections">
+          {/* Resumen ventas */}
+          <div className="card purpose-block">
+            <h3>📊 Ventas esta semana</h3>
+            <div className="purpose-stat"><span>Ingresos registrados</span><strong>{money.format(totals.income)}</strong></div>
+            <div className="purpose-stat"><span>Utilidad</span><strong style={{color: totals.profit >= 0 ? "var(--green)" : "var(--pink)"}}>{money.format(totals.profit)}</strong></div>
+            <div className="purpose-stat"><span>Ventas cerradas</span><strong>{totalWon} clientas</strong></div>
+            <div className="purpose-stat"><span>Tasa de conversión</span><strong>{conversionRate}%</strong></div>
+            <div className="purpose-stat"><span>Leads calientes ahora</span><strong>{hotLeads}</strong></div>
+            {incomePerHour > 0 && <div className="purpose-stat"><span>Ingreso por hora</span><strong>{money.format(incomePerHour)}</strong></div>}
+          </div>
+
+          {/* Recordatorios WhatsApp */}
+          <div className="card purpose-block">
+            <h3>💬 Recordatorios de seguimiento</h3>
+            <p className="helper-copy">Toca el botón para abrir WhatsApp con el mensaje listo.</p>
+            {urgentFollowUps.length === 0 && <p className="helper-copy">No hay leads activos por seguir.</p>}
+            {urgentFollowUps.map((client) => (
+              <div key={client.id} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--line)"}}>
+                <div>
+                  <strong style={{fontSize:"14px"}}>{client.name}</strong>
+                  <small style={{display:"block",color:"var(--muted)"}}>{client.status} • {client.nextAction || "Hacer seguimiento"}</small>
+                </div>
+                <a href={`https://wa.me/?text=${whatsappMsg(client)}`} target="_blank" rel="noreferrer"
+                  style={{display:"inline-flex",alignItems:"center",gap:"6px",padding:"8px 12px",borderRadius:"8px",background:"#25d366",color:"#fff",fontSize:"12px",fontWeight:700,textDecoration:"none",whiteSpace:"nowrap"}}>
+                  📲 WhatsApp
+                </a>
+              </div>
+            ))}
+          </div>
+
+          {/* Hogar */}
+          <div className="card purpose-block">
+            <h3>🏠 Hogar esta semana</h3>
+            <div className="purpose-stat"><span>Tareas completadas</span><strong>{completedHomeTasks}/{homeTasks.length}</strong></div>
+            <ProgressLabel label="Progreso hogar" value={homeProgress} tone="orange" />
+            <div className="purpose-stat"><span>Disponible familiar</span><strong>{money.format(homeAvailable)}</strong></div>
+            <div className="purpose-stat"><span>Días de presencia</span><strong>{Object.values(purpose.familyDays || {}).filter(Boolean).length} días</strong></div>
+          </div>
+
+          {/* Energía */}
+          <div className="card purpose-block">
+            <h3>⚡ Energía y bienestar</h3>
+            <div className="purpose-stat"><span>Ánimo de la semana</span><strong>{purpose.mood}</strong></div>
+            <div className="purpose-stat"><span>Nivel de energía</span><strong>{purpose.energy}</strong></div>
+            <ProgressLabel label="Autocuidado" value={Math.round((selfCareScore / 4) * 100)} tone="green" />
+            <div className="purpose-stat"><span>Horas trabajadas</span><strong>{purpose.hoursWorked || 0}h</strong></div>
+            <div className="purpose-stat"><span>Momentos de conexión</span><strong>{purpose.connectionMoments || 0}</strong></div>
+          </div>
+
+          {/* Fuentes de origen */}
+          <div className="card purpose-block purpose-block-wide">
+            <h3>📍 ¿De dónde vienen tus clientas?</h3>
+            <p className="helper-copy">Invierte tu tiempo donde más resultado produce.</p>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"10px",marginTop:"8px"}}>
+              {Object.entries(sourceCounts).sort((a,b) => b[1]-a[1]).map(([src, count]) => (
+                <div key={src} style={{border:"1px solid var(--line)",borderRadius:"12px",padding:"14px",textAlign:"center",background:"rgba(255,255,255,0.8)"}}>
+                  <strong style={{fontSize:"28px",color:"#6f2f4b",display:"block"}}>{count}</strong>
+                  <small style={{color:"var(--muted)"}}>{src}</small>
+                  <div style={{marginTop:"6px"}}><Progress value={Math.round((count/totalLeads)*100)} tone="purple" /></div>
+                  <small style={{color:"var(--muted)"}}>{Math.round((count/totalLeads)*100)}%</small>
+                </div>
+              ))}
+              {Object.keys(sourceCounts).length === 0 && <p className="helper-copy">Agrega clientas con fuente de origen para ver este análisis.</p>}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
   }
 
 
