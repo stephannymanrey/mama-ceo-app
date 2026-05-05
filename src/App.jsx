@@ -268,7 +268,7 @@ export default function App() {
   });
 
   const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "" });
-  const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "" });
+  const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "" });
   const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer" });
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Operaciones" });
@@ -629,8 +629,8 @@ export default function App() {
     event.preventDefault();
     const amount = Number(clientForm.amount);
     if (!clientForm.name.trim() || !clientForm.service.trim() || !amount) return;
-    setClients((current) => [{ id: Date.now(), name: clientForm.name.trim(), service: clientForm.service.trim(), status: clientForm.status, amount, nextAction: clientForm.nextAction.trim() || "Hacer seguimiento", lastContact: Date.now() }, ...current]);
-    setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "" });
+    setClients((current) => [{ id: Date.now(), name: clientForm.name.trim(), service: clientForm.service.trim(), status: clientForm.status, amount, nextAction: clientForm.nextAction.trim() || "Hacer seguimiento", lastContact: Date.now(), source: clientForm.source === "Otra" ? clientForm.customSource.trim() || "Otra" : clientForm.source, createdAt: Date.now() }, ...current]);
+    setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "" });
   };
 
   const addContent = (event) => {
@@ -1144,9 +1144,84 @@ export default function App() {
     const urgentSubscriptions = clients.filter((c) => getAlert(c) !== "green" && c.status === "Venta ganada");
     const stageTotal = (stage) => clients.filter((c) => c.status === stage).reduce((sum, c) => sum + (c.amount || 0), 0);
     const paidClients = clients.filter((c) => c.status === "Venta ganada");
+
+    // 1. Acción del día — clienta más prioritaria
+    const priorityClient = [...clients]
+      .filter((c) => c.status !== "Venta ganada")
+      .sort((a, b) => {
+        const stageScore = { "Lead caliente": 3, "Lead tibio": 2, "Lead frio": 1 };
+        const aScore = (stageScore[a.status] || 0) * 100 + daysSince(a.lastContact) + (a.amount || 0) / 100;
+        const bScore = (stageScore[b.status] || 0) * 100 + daysSince(b.lastContact) + (b.amount || 0) / 100;
+        return bScore - aScore;
+      })[0];
+
+    // 2. Tasa de conversión
+    const totalLeads = clients.length;
+    const totalWon = clients.filter((c) => c.status === "Venta ganada").length;
+    const conversionRate = totalLeads > 0 ? Math.round((totalWon / totalLeads) * 100) : 0;
+
+    // 3. Tiempo promedio de cierre
+    const closedWithDates = clients.filter((c) => c.status === "Venta ganada" && c.createdAt && c.lastContact);
+    const avgCloseDays = closedWithDates.length > 0
+      ? Math.round(closedWithDates.reduce((sum, c) => sum + Math.floor((c.lastContact - c.createdAt) / 86400000), 0) / closedWithDates.length)
+      : null;
+
+    // 4. Fuentes de origen
+    const sourceCounts = clients.reduce((acc, c) => {
+      const src = c.source || "Sin fuente";
+      acc[src] = (acc[src] || 0) + 1;
+      return acc;
+    }, {});
+    const topSource = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1])[0];
+
+    const defaultSources = ["Instagram", "Referido", "Contenido / Reel", "WhatsApp", "TikTok", "Email", "Otra"];
+
     return (
       <section className="panel workspace-panel">
         <div className="section-title"><h2>Clientes</h2><p>{activeClients} activas • {money.format(wonSalesTotal)} en ventas cerradas</p></div>
+
+        {/* 1. Acción del día */}
+        {priorityClient && (
+          <div className="action-day-banner">
+            <div className="action-day-left">
+              <span className="action-day-label">🎯 Acción del día</span>
+              <strong>{priorityClient.name}</strong>
+              <span>{priorityClient.status} • {money.format(priorityClient.amount)} • hace {daysSince(priorityClient.lastContact)} días sin contacto</span>
+            </div>
+            <div className="action-day-right">
+              <p>{priorityClient.nextAction || "Hacer seguimiento"}</p>
+              <button type="button" className="contact-today-btn" onClick={() => setClients((c) => c.map((cl) => cl.id === priorityClient.id ? { ...cl, lastContact: Date.now() } : cl))}>✅ Contacté hoy</button>
+            </div>
+          </div>
+        )}
+
+        {/* 2 y 3. KPIs inteligentes */}
+        <div className="clients-kpi-row">
+          {stages.map((stage) => (
+            <div className="client-kpi" key={stage}>
+              <span>{stage}</span>
+              <strong>{clients.filter((c) => c.status === stage).length}</strong>
+              <small>{money.format(stageTotal(stage))}</small>
+            </div>
+          ))}
+          <div className="client-kpi">
+            <span>Conversión</span>
+            <strong>{conversionRate}%</strong>
+            <small>{totalWon} de {totalLeads} leads</small>
+          </div>
+          <div className="client-kpi">
+            <span>Cierre promedio</span>
+            <strong>{avgCloseDays !== null ? `${avgCloseDays}d` : "—"}</strong>
+            <small>{avgCloseDays !== null ? "días hasta venta" : "sin datos aún"}</small>
+          </div>
+          {topSource && (
+            <div className="client-kpi">
+              <span>Mejor fuente</span>
+              <strong style={{fontSize:"14px"}}>{topSource[0]}</strong>
+              <small>{topSource[1]} clienta{topSource[1] !== 1 ? "s" : ""}</small>
+            </div>
+          )}
+        </div>
 
         {(urgentClients.length > 0 || urgentSubscriptions.length > 0) && (
           <div className="client-alerts">
@@ -1163,16 +1238,7 @@ export default function App() {
           </div>
         )}
 
-        <div className="clients-kpi-row">
-          {stages.map((stage) => (
-            <div className="client-kpi" key={stage}>
-              <span>{stage}</span>
-              <strong>{clients.filter((c) => c.status === stage).length}</strong>
-              <small>{money.format(stageTotal(stage))}</small>
-            </div>
-          ))}
-        </div>
-
+        {/* 4. Fuentes de origen en formulario */}
         <form className="card form-card" onSubmit={addClient} style={{display:"grid",gap:"10px",marginBottom:"14px"}}>
           <h3>Nueva clienta</h3>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"8px"}}>
@@ -1181,6 +1247,13 @@ export default function App() {
             <select value={clientForm.status} onChange={(e) => updateClientForm("status", e.target.value)}>{stages.map((s) => <option key={s}>{s}</option>)}</select>
             <input placeholder="Próxima acción" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} />
             <input placeholder="Monto" type="number" min="0" value={clientForm.amount} onChange={(e) => updateClientForm("amount", e.target.value)} />
+            <select value={clientForm.source} onChange={(e) => updateClientForm("source", e.target.value)}>
+              <option value="">¿De dónde llegó?</option>
+              {defaultSources.map((s) => <option key={s}>{s}</option>)}
+            </select>
+            {clientForm.source === "Otra" && (
+              <input placeholder="¿Cuál fuente?" value={clientForm.customSource} onChange={(e) => updateClientForm("customSource", e.target.value)} />
+            )}
             <button className="primary-button" type="submit">Guardar clienta</button>
           </div>
         </form>
@@ -1202,6 +1275,7 @@ export default function App() {
                         <span className={`alert-dot alert-dot-${alert}`}></span>
                       </div>
                       <small>{client.service} • {money.format(client.amount)}</small>
+                      {client.source && <small style={{color:"var(--purple)",fontWeight:700}}>📍 {client.source}</small>}
                       <p>{client.nextAction || "Hacer seguimiento"}</p>
                       <small className="last-contact">
                         {client.lastContact ? `Último contacto: hace ${days} día${days !== 1 ? "s" : ""}` : "Sin contacto registrado"}
@@ -1234,6 +1308,7 @@ export default function App() {
                   </div>
                   <span className={`alert-dot alert-dot-${getAlert(client)}`}></span>
                 </div>
+                {client.source && <small style={{color:"var(--purple)",fontWeight:700}}>📍 {client.source}</small>}
                 <small className="last-contact">{client.lastContact ? `Último contacto: hace ${daysSince(client.lastContact)} días` : "Sin contacto registrado"}</small>
                 <button type="button" className="contact-today-btn" onClick={() => setClients((c) => c.map((cl) => cl.id === client.id ? { ...cl, lastContact: Date.now() } : cl))}>✅ Contacté hoy</button>
                 <textarea placeholder="Notas de seguimiento, entrega, resultados o próxima recompra..." value={client.notes || ""} onChange={(e) => updateClientNotes(client.id, e.target.value)} />

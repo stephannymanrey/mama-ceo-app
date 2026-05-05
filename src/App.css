@@ -2585,7 +2585,7 @@ button {
 .alert-orange { background:#fff3e0; border:1px solid #f0a500; color:#7a4a00; }
 .alert-red { background:var(--pink-soft); border:1px solid var(--pink); color:#8a1a2e; }
 
-.clients-kpi-row { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; margin-bottom:14px; }
+.clients-kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:14px; }
 .client-kpi { border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,0.88); padding:12px; text-align:center; display:grid; gap:4px; }
 .client-kpi span { font-size:11px; font-weight:800; text-transform:uppercase; color:var(--muted); }
 .client-kpi strong { font-size:22px; color:#6f2f4b; }
@@ -2615,6 +2615,25 @@ button {
 
 .paid-client-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
 
+/* ── Acción del día ── */
+.action-day-banner {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+  padding: 18px 22px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(155,45,111,0.08), rgba(201,96,122,0.06));
+  border: 1px solid rgba(155,45,111,0.2);
+  margin-bottom: 14px;
+}
+.action-day-left { display:grid; gap:4px; }
+.action-day-label { font-size:11px; font-weight:900; text-transform:uppercase; letter-spacing:1px; color:var(--purple); }
+.action-day-left strong { font-size:18px; color:var(--ink); }
+.action-day-left span { font-size:13px; color:var(--muted); }
+.action-day-right { display:grid; gap:8px; text-align:right; min-width:180px; }
+.action-day-right p { margin:0; font-size:14px; color:var(--ink); font-weight:600; }
 @media (max-width:720px) {
-  .clients-kpi-row { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .action-day-banner { grid-template-columns:1fr; }
+  .action-day-right { text-align:left; }
 }
