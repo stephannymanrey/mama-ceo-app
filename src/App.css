@@ -2380,3 +2380,77 @@ button {
 .systems-donut-labels { display: grid; gap: 6px; }
 .systems-donut-label { display: flex; align-items: center; gap: 8px; font-size: 13px; }
 .systems-donut-dot { width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto; }
+
+/* ── Carrusel de sistemas ── */
+.systems-top {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 20px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.systems-summary p {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.6;
+}
+
+.ump-link {
+  display: inline-block;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #9b2d6f, #c9607a);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 180ms;
+}
+
+.ump-link:hover { opacity: 0.88; }
+
+.carousel-wrap { display: grid; gap: 12px; }
+
+.carousel-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.carousel-nav {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-size: 18px;
+  color: var(--purple);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.carousel-nav:disabled { opacity: 0.3; cursor: default; }
+.carousel-counter { font-size: 13px; color: var(--muted); font-weight: 700; }
+
+.carousel-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255,255,255,0.9);
+  padding: 22px;
+  display: grid;
+  gap: 14px;
+  min-height: 160px;
+}
+
+.carousel-card h4 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--ink);
+}
+
+@media (max-width: 720px) {
+  .systems-top { grid-template-columns: 1fr; }
+}

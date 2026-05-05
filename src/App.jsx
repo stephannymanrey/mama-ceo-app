@@ -200,6 +200,7 @@ export default function App() {
   const [homeTasks, setHomeTasks] = useState(isNewUser ? [] : (stored?.homeTasks || initialHomeTasks));
   const [systemTasks, setSystemTasks] = useState(stored?.systemTasks || initialSystemTasks);
   const [newSystemTask, setNewSystemTask] = useState("");
+  const [systemSlide, setSystemSlide] = useState(0);
   const [banks, setBanks] = useState(stored?.banks || initialBanks);
   const [newBank, setNewBank] = useState("");
   const [annualBudget, setAnnualBudget] = useState((stored?.annualBudget || initialAnnualBudget).map((row) => {
@@ -1276,6 +1277,170 @@ export default function App() {
         : purpose.mood === "cansada"
           ? "Protégete. El descanso también es productividad."
           : "Usa tu energía sin sobreexigirte. Deja espacio para gracia y descanso.";
+    const manualCount = systemTasks.filter((t) => t.mode === "manual" && t.canDelegate).length;
+    const currentTask = systemTasks[systemSlide] || systemTasks[0];
+    const suggestion = currentTask ? systemSuggestions[currentTask.title] : null;
+    const systemSummary = manualCount === 0
+      ? "¡Excelente! Has liberado tu agenda. Sigue protegiendo ese espacio."
+      : manualCount <= 3
+        ? `Tienes ${manualCount} tarea${manualCount > 1 ? "s" : ""} manual${manualCount > 1 ? "es" : ""}. Pequeños cambios pueden darte horas de vuelta."
+        : `Tienes ${manualCount} tareas que aún dependen solo de ti. Si delegas o automatizas 3, recuperas tiempo real para lo que importa.`;
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Propósito &amp; Impacto</h2>
+          <p>Mide lo que realmente importa — presencia, energía, impacto y sistemas</p>
+        </div>
+
+        <div className="purpose-kpi-grid">
+          <div className="purpose-kpi"><span className="purpose-kpi-icon">👩👦</span><strong>{purpose.connectionMoments || 0}</strong><small>momentos de conexión hoy</small><span className={(purpose.connectionMoments || 0) >= 2 ? "kpi-badge good" : "kpi-badge alert"}>meta: 2–3</span></div>
+          <div className="purpose-kpi"><span className="purpose-kpi-icon">💸</span><strong>{incomePerHour > 0 ? money.format(incomePerHour) : "—"}</strong><small>ingreso por hora</small><span className="kpi-badge neutral">KPI estrella</span></div>
+          <div className="purpose-kpi"><span className="purpose-kpi-icon">⚡</span><strong>{purpose.energy === "alto" ? "Alta" : purpose.energy === "medio" ? "Media" : "Baja"}</strong><small>energía del día</small><span className={peaceScore >= 80 ? "kpi-badge good" : peaceScore >= 50 ? "kpi-badge neutral" : "kpi-badge alert"}>{purpose.mood}</span></div>
+          <div className="purpose-kpi"><span className="purpose-kpi-icon">👥</span><strong>{purpose.clientsImpacted || 0}</strong><small>clientes impactados</small><span className="kpi-badge neutral">esta semana</span></div>
+          <div className="purpose-kpi"><span className="purpose-kpi-icon">📅</span><strong>{familyDaysCount}</strong><small>días de presencia</small><span className={familyDaysCount >= 4 ? "kpi-badge good" : "kpi-badge alert"}>{familyDaysCount >= 4 ? "excelente" : "puedes mejorar"}</span></div>
+          <div className="purpose-kpi"><span className="purpose-kpi-icon">🔄</span><strong>{systemTasks.filter(t => t.mode !== "manual").length}/{systemTasks.length}</strong><small>tareas liberadas</small><span className={systemTasks.filter(t => t.mode !== "manual").length >= systemTasks.length * 0.6 ? "kpi-badge good" : "kpi-badge neutral"}>meta: 60%+</span></div>
+        </div>
+
+        <div className="purpose-sections">
+
+          <div className="card purpose-block">
+            <h3>⚡ ¿Cómo estás hoy?</h3>
+            <p className="helper-copy">Tu energía es un recurso. Protégela.</p>
+            <label className="purpose-field"><span>Nivel de energía</span></label>
+            <div className="mood-grid">{["alto","medio","bajo"].map((e) => (<button type="button" key={e} className={purpose.energy === e ? "selected" : ""} onClick={() => updatePurpose("energy", e)}>{e}</button>))}</div>
+            <label className="purpose-field"><span>Ánimo general</span></label>
+            <div className="mood-grid">{["abrumada","inspirada","feliz","controladora","cansada"].map((mood) => (<button type="button" key={mood} className={purpose.mood === mood ? "selected" : ""} onClick={() => updatePurpose("mood", mood)}>{mood}</button>))}</div>
+            <p className="helper-copy" style={{marginTop:"10px",fontStyle:"italic"}}>{mentalAdvice}</p>
+            <div className="selfcare-checks">
+              {[["water","Bebí agua"],["walk","Caminé 10 min"],["silence","Tuve silencio"],["devotional","Devocional / oración"]].map(([key, label]) => (
+                <label key={key} className="task-row"><input type="checkbox" checked={!!purpose[key]} onChange={(e) => updatePurpose(key, e.target.checked)} /><span>{label}</span></label>
+              ))}
+            </div>
+            <ProgressLabel label="Autocuidado" value={Math.round((selfCareScore / 4) * 100)} tone="green" />
+          </div>
+
+          <div className="card purpose-block">
+            <h3>👩👦 Presencia real</h3>
+            <p className="helper-copy">Puedes pasar todo el día en casa y no estar. Mide lo que importa.</p>
+            <label className="purpose-field">
+              <span>Momentos de conexión hoy (sin celular, sin multitarea)</span>
+              <div className="counter-row">
+                <button type="button" onClick={() => updatePurpose("connectionMoments", Math.max(0, (purpose.connectionMoments || 0) - 1))}>-</button>
+                <strong>{purpose.connectionMoments || 0}</strong>
+                <button type="button" onClick={() => updatePurpose("connectionMoments", (purpose.connectionMoments || 0) + 1)}>+</button>
+              </div>
+            </label>
+            <label className="purpose-field"><span>Días de presencia consciente esta semana</span></label>
+            <div className="week-checks">{["L","M","X","J","V","S","D"].map((day) => (<button type="button" className={purpose.familyDays?.[day] ? "checked" : ""} key={day} onClick={() => setPurpose((c) => ({ ...c, familyDays: { ...c.familyDays, [day]: !c.familyDays?.[day] } }))}>{day}</button>))}</div>
+            <textarea className="purpose-textarea" placeholder="¿Cómo crees que se sintió tu hijo/a esta semana?" value={purpose.mentalLoad || ""} onChange={(e) => updatePurpose("mentalLoad", e.target.value)} />
+          </div>
+
+          <div className="card purpose-block">
+            <h3>💰 Negocio inteligente</h3>
+            <p className="helper-copy">Más horas no es más éxito. Mide lo que escala.</p>
+            <label className="purpose-field">
+              <span>Horas trabajadas esta semana</span>
+              <input type="number" min="0" max="80" value={purpose.hoursWorked || 0} onChange={(e) => updatePurpose("hoursWorked", Number(e.target.value))} />
+            </label>
+            <div className="purpose-stat"><span>Ingreso por hora trabajada</span><strong>{incomePerHour > 0 ? money.format(incomePerHour) : "Registra horas"}</strong></div>
+            <p className="helper-copy">Este número se calcula con los ingresos registrados en Negocio divididos entre las horas que trabajaste esta semana.</p>
+            <label className="purpose-field">
+              <span>% de ingresos recurrentes (membresías, productos escalables)</span>
+              <input type="range" min="0" max="100" value={purpose.recurringIncomePercent || 0} onChange={(e) => updatePurpose("recurringIncomePercent", Number(e.target.value))} />
+              <small>{purpose.recurringIncomePercent || 0}% recurrente</small>
+            </label>
+          </div>
+
+          <div className="card purpose-block">
+            <h3>📛 Propósito e impacto</h3>
+            <p className="helper-copy">5 clientes transformados &gt; 5.000 vistas vacías.</p>
+            <label className="purpose-field">
+              <span>Clientes impactados esta semana</span>
+              <div className="counter-row">
+                <button type="button" onClick={() => updatePurpose("clientsImpacted", Math.max(0, (purpose.clientsImpacted || 0) - 1))}>-</button>
+                <strong>{purpose.clientsImpacted || 0}</strong>
+                <button type="button" onClick={() => updatePurpose("clientsImpacted", (purpose.clientsImpacted || 0) + 1)}>+</button>
+              </div>
+            </label>
+            <label className="purpose-field">
+              <span>Nivel de pasión al crear / trabajar (1–5)</span>
+              <div className="passion-stars">{[1,2,3,4,5].map((n) => (<button type="button" key={n} className={n <= (purpose.passionLevel || 3) ? "star active" : "star"} onClick={() => updatePurpose("passionLevel", n)}>★</button>))}</div>
+            </label>
+            <label className="purpose-field">
+              <span>Testimonio o transformación de esta semana</span>
+              <textarea className="purpose-textarea" placeholder="¿Qué cambió en un cliente gracias a tu trabajo?" value={purpose.weekTestimony || ""} onChange={(e) => updatePurpose("weekTestimony", e.target.value)} />
+            </label>
+            <label className="purpose-field">
+              <span>Claridad de visión</span>
+              <textarea className="purpose-textarea" placeholder="Mi visión esta semana es..." value={purpose.visionClarity || ""} onChange={(e) => updatePurpose("visionClarity", e.target.value)} />
+            </label>
+          </div>
+
+          <div className="card purpose-block purpose-block-wide">
+            <h3>🔍 Autoevaluación de sistemas — ¿Qué sigue dependiendo solo de ti?</h3>
+            <p className="helper-copy">No necesitas hacer más, necesitas soltar más. Evalúa una tarea a la vez y el sistema te dice cómo mejorar.</p>
+
+            <div className="systems-top">
+              <SystemsDonut tasks={systemTasks} />
+              <div className="systems-summary">
+                <p>{systemSummary}</p>
+                {manualCount > 2 && (
+                  <a href="https://www.umpacademy.co/membresia" target="_blank" rel="noreferrer" className="ump-link">
+                    🎓 Aprende a automatizar y delegar en <strong>UMP Academy</strong> →
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div className="carousel-wrap">
+              <div className="carousel-header">
+                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.max(0, s - 1))} disabled={systemSlide === 0}>←</button>
+                <span className="carousel-counter">{systemSlide + 1} de {systemTasks.length}</span>
+                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.min(systemTasks.length - 1, s + 1))} disabled={systemSlide === systemTasks.length - 1}>→</button>
+              </div>
+
+              {currentTask && (
+                <div className="carousel-card">
+                  <span className={`system-cat system-cat-${currentTask.category}`}>{currentTask.category}</span>
+                  <h4>{currentTask.title}</h4>
+                  <div className="system-modes">
+                    {currentTask.canDelegate ? (
+                      <>
+                        <button type="button" className={currentTask.mode === "manual" ? "mode-btn active-manual" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === currentTask.id ? { ...t, mode: "manual" } : t))}>🔴 Lo hago yo</button>
+                        <button type="button" className={currentTask.mode === "delegado" ? "mode-btn active-delegado" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === currentTask.id ? { ...t, mode: "delegado" } : t))}>🟡 Lo delego</button>
+                        <button type="button" className={currentTask.mode === "automatizado" ? "mode-btn active-auto" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === currentTask.id ? { ...t, mode: "automatizado" } : t))}>🟢 Está automatizado</button>
+                      </>
+                    ) : (
+                      <span className="mode-btn mode-protect">💛 Presencia materna — no se delega</span>
+                    )}
+                  </div>
+                  {currentTask.mode === "manual" && suggestion && (
+                    <div className="system-suggestion">
+                      {suggestion.protect ? (
+                        <p>📌 {suggestion.protect}</p>
+                      ) : (
+                        <>
+                          {suggestion.auto && <p>⚡ <strong>Automatizar:</strong> {suggestion.auto}</p>}
+                          {suggestion.delegate && <p>🤝 <strong>Delegar:</strong> {suggestion.delegate}</p>}
+                          <a href="https://www.umpacademy.co/membresia" target="_blank" rel="noreferrer" className="ump-link">🎓 Aprende cómo en UMP Academy →</a>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <form className="home-zone-form" style={{marginTop:"12px"}} onSubmit={(e) => { e.preventDefault(); if (!newSystemTask.trim()) return; setSystemTasks((c) => [...c, { id: Date.now(), title: newSystemTask.trim(), category: "negocio", mode: "manual", canDelegate: true }]); setNewSystemTask(""); setSystemSlide(systemTasks.length); }}>
+                <input placeholder="Agregar mi propia tarea..." value={newSystemTask} onChange={(e) => setNewSystemTask(e.target.value)} />
+                <button className="primary-button" type="submit">+</button>
+              </form>
+            </div>
+          </div>
+
+        </div>
+      </section>
+    );
+  }
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
