@@ -281,9 +281,9 @@ button {
 }
 
 .signout-button {
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  background: rgba(255, 255, 255, 0.14);
-  color: #fff;
+  border: 1px solid rgba(140, 62, 189, 0.35);
+  background: rgba(140, 62, 189, 0.08);
+  color: var(--purple);
   padding: 0 16px;
   min-height: 44px;
   border-radius: 999px;
