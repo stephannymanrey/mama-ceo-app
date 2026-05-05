@@ -1,21 +1,21 @@
 ﻿:root {
-  --ink: #1f2140;
-  --muted: #6e7185;
-  --line: rgba(180, 120, 100, 0.18);
+  --ink: #1A1A1A;
+  --muted: #8A7F7A;
+  --line: rgba(180, 160, 140, 0.18);
   --surface: rgba(255, 255, 255, 0.86);
   --surface-strong: #ffffff;
-  --purple: #FF6F61;
-  --purple-soft: #fff0ee;
-  --pink: #e05a4e;
-  --pink-soft: #ffe8e6;
+  --purple: #D4687A;
+  --purple-soft: #faeef0;
+  --pink: #C9A96E;
+  --pink-soft: #faf3e7;
   --green: #2f9f70;
   --green-soft: #def3e8;
-  --orange: #F4C542;
-  --orange-soft: #fef9e7;
-  --shadow: 0 20px 50px rgba(180, 80, 60, 0.10);
+  --orange: #E8836E;
+  --orange-soft: #fdf0ec;
+  --shadow: 0 20px 50px rgba(180, 140, 120, 0.08);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
-  background: #fff9f8;
+  background: #FAF7F5;
 }
 
 * {
@@ -26,9 +26,9 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    radial-gradient(circle at top left, rgba(255, 111, 97, 0.12), transparent 28rem),
-    radial-gradient(circle at bottom right, rgba(244, 197, 66, 0.15), transparent 32rem),
-    linear-gradient(135deg, #fff9f8 0%, #fffdf8 48%, #ffffff 100%);
+    radial-gradient(circle at top left, rgba(212, 104, 122, 0.06), transparent 28rem),
+    radial-gradient(circle at bottom right, rgba(201, 169, 110, 0.08), transparent 32rem),
+    linear-gradient(135deg, #FAF7F5 0%, #F8F4F1 48%, #ffffff 100%);
 }
 
 button,
@@ -51,8 +51,8 @@ button {
   top: 0;
   height: 100vh;
   padding: 20px 18px;
-  border-right: 1px solid rgba(255, 111, 97, 0.1);
-  background: rgba(255, 253, 252, 0.95);
+  border-right: 1px solid rgba(180, 160, 140, 0.15);
+  background: rgba(250, 247, 245, 0.97);
   backdrop-filter: blur(18px);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
   display: flex;
@@ -71,21 +71,21 @@ button {
 }
 
 .brand-script {
-  color: #FF6F61;
+  color: #C4526A;
   font-family: "Segoe Script", "Brush Script MT", cursive;
   font-size: 32px;
   line-height: 1;
-  text-shadow: 0 2px 8px rgba(255,111,97,0.3);
+  text-shadow: 0 2px 8px rgba(196,82,106,0.2);
 }
 
 .brand-ceo {
-  color: #F4C542;
+  color: #C9A96E;
   font-family: Georgia, serif;
   font-size: 22px;
   letter-spacing: 10px;
   margin-left: 8px;
   font-weight: 900;
-  text-shadow: 0 2px 12px rgba(244,197,66,0.5), 0 0 20px rgba(244,197,66,0.2);
+  text-shadow: 0 2px 12px rgba(201,169,110,0.4);
 }
 
 .brand-app {
@@ -135,8 +135,8 @@ button {
 
 .menu-item.active {
   color: #fff;
-  background: linear-gradient(135deg, #FF6F61, #e05a4e);
-  box-shadow: 0 12px 24px rgba(255, 111, 97, 0.28);
+  background: linear-gradient(135deg, #C4526A, #a8394f);
+  box-shadow: 0 12px 24px rgba(196, 82, 106, 0.22);
 }
 
 .menu-item.active span {
@@ -146,13 +146,13 @@ button {
 .quote-card {
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: linear-gradient(145deg, rgba(255, 240, 238, 0.95), rgba(255, 255, 255, 0.74));
+  background: linear-gradient(145deg, rgba(245, 238, 232, 0.95), rgba(255, 255, 255, 0.74));
   padding: 16px;
   text-align: center;
 }
 
 .quote-card span {
-  color: #FF6F61;
+  color: #C9A96E;
   font-size: 28px;
   line-height: 1;
   display: block;
@@ -163,7 +163,7 @@ button {
   margin: 0;
   line-height: 1.5;
   font-size: 12px;
-  color: #8a3a30;
+  color: #6B5744;
   font-style: italic;
 }
 
@@ -204,9 +204,9 @@ button {
   margin-bottom: 28px;
   padding: 20px 24px;
   border-radius: 22px;
-  border: 1px solid rgba(183, 146, 162, 0.15);
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: 0 18px 40px rgba(140, 86, 124, 0.08);
+  border: 1px solid rgba(180, 160, 140, 0.15);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 18px 40px rgba(140, 120, 100, 0.07);
 }
 
 .topbar h1 {
@@ -374,7 +374,7 @@ button {
   gap: 18px;
   align-items: center;
   background:
-    linear-gradient(135deg, rgba(255, 253, 248, 0.9), rgba(255, 247, 249, 0.78)),
+    linear-gradient(135deg, rgba(250, 247, 245, 0.95), rgba(245, 240, 237, 0.85)),
     #fff;
 }
 
@@ -532,7 +532,7 @@ button {
 .section-title h2,
 .card h3 {
   margin: 0;
-  color: #c94a38;
+  color: #2A1A1A;
   font-size: 18px;
   letter-spacing: 0.2px;
   text-transform: uppercase;
@@ -759,7 +759,7 @@ button {
 }
 
 .summary-row strong {
-  color: #6f2f4b;
+  color: #C4526A;
   font-size: 18px;
   text-align: right;
 }
@@ -814,7 +814,7 @@ button {
 }
 
 .reinvestment-amount strong {
-  color: #6f2f4b;
+  color: #C9A96E;
   font-size: 30px;
   line-height: 1.1;
 }
@@ -898,11 +898,11 @@ button {
 }
 
 .avoid-card {
-  background: linear-gradient(135deg, rgba(255, 244, 237, 0.88), rgba(255, 255, 255, 0.74));
+  background: linear-gradient(135deg, rgba(245, 240, 237, 0.88), rgba(255, 255, 255, 0.74));
 }
 
 .avoid-card h3 {
-  color: #d20c2c;
+  color: #C4526A;
 }
 
 .avoid-card p {
@@ -1139,23 +1139,23 @@ button {
   display: grid;
   place-items: center;
   padding: 24px;
-  background: radial-gradient(circle at top, rgba(255, 234, 243, 0.62), transparent 30rem),
-    linear-gradient(180deg, #fff8fb 0%, #fef6f8 60%, #fefdfd 100%);
+  background: radial-gradient(circle at top, rgba(212, 104, 122, 0.07), transparent 30rem),
+    linear-gradient(180deg, #FAF7F5 0%, #F5F0ED 60%, #ffffff 100%);
 }
 
 .auth-card {
   width: min(520px, 100%);
   border-radius: 28px;
   padding: 32px 34px;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(179, 122, 149, 0.18);
-  box-shadow: 0 22px 60px rgba(121, 81, 112, 0.12);
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(180, 160, 140, 0.18);
+  box-shadow: 0 22px 60px rgba(140, 120, 100, 0.10);
 }
 
 .auth-card h2 {
   margin: 0 0 10px;
   font-size: 28px;
-  color: #3f1b45;
+  color: #2A1A1A;
 }
 
 .auth-card p {
@@ -1189,11 +1189,11 @@ button {
   min-height: 48px;
   border: 0;
   border-radius: 14px;
-  background: linear-gradient(135deg, #FF6F61, #e05a4e);
+  background: linear-gradient(135deg, #C4526A, #a8394f);
   color: #fff;
   font-weight: 700;
   letter-spacing: 0.6px;
-  box-shadow: 0 18px 30px rgba(255, 111, 97, 0.22);
+  box-shadow: 0 18px 30px rgba(196, 82, 106, 0.18);
 }
 
 .auth-switch {
@@ -1238,7 +1238,7 @@ button {
 
 .view-label {
   margin: 0 0 6px;
-  color: #FF6F61;
+  color: #C9A96E;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 1px;
@@ -1529,7 +1529,7 @@ button {
 
 .budget-total strong {
   display: block;
-  color: #6f2f4b;
+  color: #C9A96E;
   font-size: 24px;
   margin-top: 4px;
 }
@@ -1744,7 +1744,7 @@ button {
 
 .pipeline-column h3 {
   margin: 0;
-  color: #c94a38;
+  color: #8A7F7A;
   font-size: 14px;
   text-transform: uppercase;
 }
@@ -1844,7 +1844,7 @@ button {
 
 .content-week h4 {
   margin: 10px 0 0;
-  color: #6f2f4b;
+  color: #8A7F7A;
 }
 
 .content-row {
@@ -1907,7 +1907,7 @@ button {
 }
 
 .home-money-insights strong {
-  color: #6f2f4b;
+  color: #C9A96E;
   font-size: 20px;
 }
 
@@ -1943,7 +1943,7 @@ button {
 
 .affirmation-card p {
   margin: 0;
-  color: #6f2f4b;
+  color: #6B5744;
   font-family: Georgia, serif;
   font-size: 22px;
   line-height: 1.35;
@@ -2117,7 +2117,7 @@ button {
 }
 
 .purpose-kpi-icon { font-size: 22px; }
-.purpose-kpi strong { font-size: 22px; color: #6f2f4b; line-height: 1; }
+.purpose-kpi strong { font-size: 22px; color: #2A1A1A; line-height: 1; }
 .purpose-kpi small { font-size: 11px; color: var(--muted); }
 
 .kpi-badge {
@@ -2194,7 +2194,7 @@ button {
 }
 
 .purpose-stat span { font-size: 13px; color: var(--muted); }
-.purpose-stat strong { font-size: 20px; color: #6f2f4b; }
+.purpose-stat strong { font-size: 20px; color: #C9A96E; }
 
 .counter-row {
   display: flex;
@@ -2215,7 +2215,7 @@ button {
   place-items: center;
 }
 
-.counter-row strong { font-size: 28px; color: #6f2f4b; min-width: 32px; text-align: center; }
+.counter-row strong { font-size: 28px; color: #2A1A1A; min-width: 32px; text-align: center; }
 
 .selfcare-checks { display: grid; gap: 8px; }
 
