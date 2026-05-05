@@ -1,21 +1,21 @@
 ﻿:root {
   --ink: #1f2140;
   --muted: #6e7185;
-  --line: rgba(147, 114, 126, 0.18);
+  --line: rgba(180, 120, 100, 0.18);
   --surface: rgba(255, 255, 255, 0.86);
   --surface-strong: #ffffff;
-  --purple: #9b2d6f;
-  --purple-soft: #f9e6f0;
-  --pink: #c9607a;
-  --pink-soft: #fde8ed;
+  --purple: #FF6F61;
+  --purple-soft: #fff0ee;
+  --pink: #e05a4e;
+  --pink-soft: #ffe8e6;
   --green: #2f9f70;
   --green-soft: #def3e8;
-  --orange: #c9a96e;
-  --orange-soft: #fdf3e3;
-  --shadow: 0 20px 50px rgba(97, 65, 98, 0.12);
+  --orange: #F4C542;
+  --orange-soft: #fef9e7;
+  --shadow: 0 20px 50px rgba(180, 80, 60, 0.10);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
-  background: #fbf6f9;
+  background: #fff9f8;
 }
 
 * {
@@ -26,9 +26,9 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    radial-gradient(circle at top left, rgba(220, 180, 200, 0.35), transparent 28rem),
-    radial-gradient(circle at bottom right, rgba(222, 244, 236, 0.5), transparent 32rem),
-    linear-gradient(135deg, #fdf6f9 0%, #fffaf8 48%, #ffffff 100%);
+    radial-gradient(circle at top left, rgba(255, 111, 97, 0.12), transparent 28rem),
+    radial-gradient(circle at bottom right, rgba(244, 197, 66, 0.15), transparent 32rem),
+    linear-gradient(135deg, #fff9f8 0%, #fffdf8 48%, #ffffff 100%);
 }
 
 button,
@@ -51,8 +51,8 @@ button {
   top: 0;
   height: 100vh;
   padding: 20px 18px;
-  border-right: 1px solid rgba(155, 45, 111, 0.1);
-  background: rgba(255, 252, 250, 0.92);
+  border-right: 1px solid rgba(255, 111, 97, 0.1);
+  background: rgba(255, 253, 252, 0.95);
   backdrop-filter: blur(18px);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
   display: flex;
@@ -71,18 +71,21 @@ button {
 }
 
 .brand-script {
-  color: #9b2d6f;
+  color: #FF6F61;
   font-family: "Segoe Script", "Brush Script MT", cursive;
   font-size: 32px;
   line-height: 1;
+  text-shadow: 0 2px 8px rgba(255,111,97,0.25);
 }
 
 .brand-ceo {
-  color: #c9a96e;
+  color: #F4C542;
   font-family: Georgia, serif;
   font-size: 22px;
   letter-spacing: 10px;
   margin-left: 8px;
+  font-weight: 900;
+  text-shadow: 0 2px 12px rgba(244,197,66,0.4), 0 0 20px rgba(244,197,66,0.2);
 }
 
 .brand-app {
@@ -132,8 +135,8 @@ button {
 
 .menu-item.active {
   color: #fff;
-  background: linear-gradient(135deg, #9b2d6f, #c9607a);
-  box-shadow: 0 12px 24px rgba(155, 45, 111, 0.22);
+  background: linear-gradient(135deg, #FF6F61, #e05a4e);
+  box-shadow: 0 12px 24px rgba(255, 111, 97, 0.28);
 }
 
 .menu-item.active span {
@@ -143,13 +146,13 @@ button {
 .quote-card {
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: linear-gradient(145deg, rgba(255, 240, 244, 0.95), rgba(255, 255, 255, 0.74));
+  background: linear-gradient(145deg, rgba(255, 240, 238, 0.95), rgba(255, 255, 255, 0.74));
   padding: 16px;
   text-align: center;
 }
 
 .quote-card span {
-  color: var(--pink);
+  color: #FF6F61;
   font-size: 28px;
   line-height: 1;
   display: block;
@@ -160,7 +163,7 @@ button {
   margin: 0;
   line-height: 1.5;
   font-size: 12px;
-  color: #6f2f4b;
+  color: #8a3a30;
   font-style: italic;
 }
 
@@ -492,8 +495,8 @@ button {
   text-align: center;
   justify-self: center;
   background:
-    radial-gradient(circle at center, #fff7fb 57%, transparent 59%),
-    conic-gradient(var(--purple) calc(var(--value) * 1%), #e9d5ec 0);
+    radial-gradient(circle at center, #fff9f8 57%, transparent 59%),
+    conic-gradient(var(--purple) calc(var(--value) * 1%), #fde0dc 0);
 }
 
 .week-ring span,
@@ -529,7 +532,7 @@ button {
 .section-title h2,
 .card h3 {
   margin: 0;
-  color: #37117b;
+  color: #c94a38;
   font-size: 18px;
   letter-spacing: 0.2px;
   text-transform: uppercase;
@@ -756,7 +759,7 @@ button {
 }
 
 .summary-row strong {
-  color: #6f2f4b;
+  color: #c94a38;
   font-size: 18px;
   text-align: right;
 }
@@ -811,7 +814,7 @@ button {
 }
 
 .reinvestment-amount strong {
-  color: #6f2f4b;
+  color: #c94a38;
   font-size: 30px;
   line-height: 1.1;
 }
@@ -829,9 +832,7 @@ button {
   accent-color: #8a4a5e;
 }
 
-.range-field b {
-  color: #8a4a5e;
-}
+.range-field b { color: #c94a38; }
 
 .segmented {
   display: grid;
@@ -918,7 +919,7 @@ button {
 
 .weekly-goal span {
   text-transform: uppercase;
-  color: var(--pink);
+  color: #FF6F61;
   font-size: 12px;
   font-weight: 800;
 }
@@ -941,18 +942,6 @@ button {
 .progress span {
   display: block;
   background: var(--purple);
-}
-
-.progress.green span {
-  background: var(--green);
-}
-
-.progress.pink span {
-  background: var(--pink);
-}
-
-.progress.orange span {
-  background: var(--orange);
 }
 
 .progress-label {
@@ -1194,17 +1183,17 @@ button {
   min-height: 48px;
   border: 0;
   border-radius: 14px;
-  background: linear-gradient(135deg, #8d3dbd, #c43d9d);
+  background: linear-gradient(135deg, #FF6F61, #e05a4e);
   color: #fff;
   font-weight: 700;
   letter-spacing: 0.6px;
-  box-shadow: 0 18px 30px rgba(141, 61, 189, 0.18);
+  box-shadow: 0 18px 30px rgba(255, 111, 97, 0.22);
 }
 
 .auth-switch {
   margin-top: 12px;
   width: 100%;
-  border: 1px solid rgba(147, 114, 126, 0.18);
+  border: 1px solid rgba(255, 111, 97, 0.2);
   background: #fff;
   color: var(--purple);
   padding: 12px 14px;
@@ -1243,7 +1232,7 @@ button {
 
 .view-label {
   margin: 0 0 6px;
-  color: var(--purple);
+  color: #FF6F61;
   font-size: 12px;
   font-weight: 900;
   letter-spacing: 1px;
@@ -1749,7 +1738,7 @@ button {
 
 .pipeline-column h3 {
   margin: 0;
-  color: #6f2f4b;
+  color: #c94a38;
   font-size: 14px;
   text-transform: uppercase;
 }
@@ -2122,7 +2111,7 @@ button {
 }
 
 .purpose-kpi-icon { font-size: 22px; }
-.purpose-kpi strong { font-size: 22px; color: #6f2f4b; line-height: 1; }
+.purpose-kpi strong { font-size: 22px; color: #c94a38; line-height: 1; }
 .purpose-kpi small { font-size: 11px; color: var(--muted); }
 
 .kpi-badge {
@@ -2199,7 +2188,7 @@ button {
 }
 
 .purpose-stat span { font-size: 13px; color: var(--muted); }
-.purpose-stat strong { font-size: 20px; color: #6f2f4b; }
+.purpose-stat strong { font-size: 20px; color: #c94a38; }
 
 .counter-row {
   display: flex;
@@ -2220,7 +2209,7 @@ button {
   place-items: center;
 }
 
-.counter-row strong { font-size: 28px; color: #6f2f4b; min-width: 32px; text-align: center; }
+.counter-row strong { font-size: 28px; color: #c94a38; min-width: 32px; text-align: center; }
 
 .selfcare-checks { display: grid; gap: 8px; }
 
@@ -2570,7 +2559,7 @@ button {
 .carousel-card h4 { margin:0; font-size:20px; color:var(--ink); }
 
 /* ── UMP link ── */
-.ump-link { display:inline-block; padding:10px 16px; border-radius:10px; background:linear-gradient(135deg,#9b2d6f,#c9607a); color:#fff; font-size:13px; font-weight:700; text-decoration:none; margin-top:6px; }
+.ump-link { display:inline-block; padding:10px 16px; border-radius:10px; background:linear-gradient(135deg,#FF6F61,#e05a4e); color:#fff; font-size:13px; font-weight:700; text-decoration:none; margin-top:6px; }
 .ump-link:hover { opacity:0.88; }
 
 @media (max-width:1180px) {
@@ -2650,8 +2639,8 @@ button {
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 2px solid rgba(155,45,111,0.3);
-  background: linear-gradient(145deg, #9b2d6f, #c9607a);
+  border: 2px solid rgba(255,111,97,0.3);
+  background: linear-gradient(145deg, #FF6F61, #e05a4e);
   color: #fff;
   font-weight: 800;
   font-size: 18px;
@@ -2661,7 +2650,7 @@ button {
   overflow: hidden;
   transition: transform 180ms ease, box-shadow 180ms ease;
 }
-.avatar-btn:hover { transform: scale(1.06); box-shadow: 0 8px 20px rgba(155,45,111,0.25); }
+.avatar-btn:hover { transform: scale(1.06); box-shadow: 0 8px 20px rgba(255,111,97,0.3); }
 
 /* ── Profile overlay & panel ── */
 .profile-overlay {

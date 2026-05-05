@@ -987,9 +987,8 @@ export default function App() {
         )}
 
         <footer className="app-footer">
-          <span>Hecho por una mamá con propósito S.A.S.</span>
-          <span>Marca registrada</span>
-          <span>Todos los derechos reservados</span>
+          <span>© 2026 UMP S.A.S • Todos los derechos reservados</span>
+          <span>Hecho por Una mamá con propósito®</span>
         </footer>
       </main>
     </div>
