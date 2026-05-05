@@ -340,75 +340,6 @@ export default function App() {
     }
   };
 
-  if (!ready) {
-    return (
-      <div className="auth-shell">
-        <div className="auth-card">
-          <h2>Cargando aplicación...</h2>
-          <p>Preparando tu espacio de trabajo</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user && supabaseActive) {
-    return (
-      <div className="auth-shell">
-        <div className="auth-card">
-          <h2>{resetPassword ? "Restablecer contraseña" : authMode === "login" ? "Iniciar sesión" : "Crear cuenta"}</h2>
-          <p>{resetPassword ? "Ingresa tu nueva contraseña." : "Ingresa con tu correo para acceder a tu tablero Mamá CEO."}</p>
-          {resetPassword ? (
-            <form className="auth-form" onSubmit={handleResetPassword}>
-              <label>
-                Nueva contraseña
-                <input type="password" value={authNewPassword} onChange={(event) => setAuthNewPassword(event.target.value)} required minLength={6} />
-              </label>
-              {authError && <p className="auth-error">{authError}</p>}
-              <button type="submit" className="auth-button" disabled={authLoading}>
-                Actualizar contraseña
-              </button>
-            </form>
-          ) : (
-            <form className="auth-form" onSubmit={handleAuthSubmit}>
-              <label>
-                Correo electrónico
-                <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} required />
-              </label>
-              <label>
-                Contraseña
-                <input type="password" value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={6} />
-              </label>
-              {authMode === "signup" && (
-                <label>
-                  Repite la contraseña
-                  <input type="password" value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={6} />
-                </label>
-              )}
-              {authError && <p className="auth-error">{authError}</p>}
-              <button type="submit" className="auth-button" disabled={authLoading}>
-                {authMode === "login" ? "Entrar" : "Registrarme"}
-              </button>
-            </form>
-          )}
-          {!resetPassword && (
-            <>
-              <button className="auth-switch" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}> 
-                {authMode === "login" ? "Quiero crear una cuenta" : "Ya tengo cuenta"}
-              </button>
-              {authMode === "login" && (
-                <button type="button" className="auth-forgot" onClick={handleForgotPassword} disabled={authLoading}>
-                  Olvidé mi contraseña
-                </button>
-              )}
-              <button type="button" className="auth-demo" onClick={() => { setUser({ id: "demo", email: "demo@example.com" }); setSupabaseActive(false); }}>
-                Ver demo del dashboard
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  }
   const monthlyIncomeRatio = budgetMonthlyIncome ? totals.income / budgetMonthlyIncome : 0;
   const actualVariableShare = totals.expenses ? actualExpenseBreakdown.variable / totals.expenses : 0;
   const actualFixedShare = totals.expenses ? actualExpenseBreakdown.fixed / totals.expenses : 0;
@@ -737,6 +668,76 @@ export default function App() {
   };
 
   const activeLabel = menu.find((item) => item.id === activeView)?.label || "Dashboard";
+
+  if (!ready) {
+    return (
+      <div className="auth-shell">
+        <div className="auth-card">
+          <h2>Cargando aplicación...</h2>
+          <p>Preparando tu espacio de trabajo</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user && supabaseActive) {
+    return (
+      <div className="auth-shell">
+        <div className="auth-card">
+          <h2>{resetPassword ? "Restablecer contraseña" : authMode === "login" ? "Iniciar sesión" : "Crear cuenta"}</h2>
+          <p>{resetPassword ? "Ingresa tu nueva contraseña." : "Ingresa con tu correo para acceder a tu tablero Mamá CEO."}</p>
+          {resetPassword ? (
+            <form className="auth-form" onSubmit={handleResetPassword}>
+              <label>
+                Nueva contraseña
+                <input type="password" value={authNewPassword} onChange={(event) => setAuthNewPassword(event.target.value)} required minLength={6} />
+              </label>
+              {authError && <p className="auth-error">{authError}</p>}
+              <button type="submit" className="auth-button" disabled={authLoading}>
+                Actualizar contraseña
+              </button>
+            </form>
+          ) : (
+            <form className="auth-form" onSubmit={handleAuthSubmit}>
+              <label>
+                Correo electrónico
+                <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} required />
+              </label>
+              <label>
+                Contraseña
+                <input type="password" value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={6} />
+              </label>
+              {authMode === "signup" && (
+                <label>
+                  Repite la contraseña
+                  <input type="password" value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={6} />
+                </label>
+              )}
+              {authError && <p className="auth-error">{authError}</p>}
+              <button type="submit" className="auth-button" disabled={authLoading}>
+                {authMode === "login" ? "Entrar" : "Registrarme"}
+              </button>
+            </form>
+          )}
+          {!resetPassword && (
+            <>
+              <button className="auth-switch" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>
+                {authMode === "login" ? "Quiero crear una cuenta" : "Ya tengo cuenta"}
+              </button>
+              {authMode === "login" && (
+                <button type="button" className="auth-forgot" onClick={handleForgotPassword} disabled={authLoading}>
+                  Olvidé mi contraseña
+                </button>
+              )}
+              <button type="button" className="auth-demo" onClick={() => { setUser({ id: "demo", email: "demo@example.com" }); setSupabaseActive(false); }}>
+                Ver demo del dashboard
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-shell">
