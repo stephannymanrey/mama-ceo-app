@@ -645,6 +645,15 @@ button {
   margin-top: 12px;
 }
 
+.line-chart-empty {
+  display: grid;
+  place-items: center;
+  min-height: 190px;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
+}
+
 .grid-lines line {
   stroke: #efe1e6;
 }

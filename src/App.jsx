@@ -884,7 +884,7 @@ export default function App() {
           </div>
 
           <div className="content-grid">
-            <div className="card chart-card"><h3>Ingresos vs gastos</h3><LineChart /></div>
+            <div className="card chart-card"><h3>Ingresos vs gastos</h3><LineChart movements={movements} /></div>
             <div className="card donut-card">
               <h3>Distribución de gastos</h3>
               <div className="donut-wrap">
@@ -1292,14 +1292,32 @@ function MiniGoal({ label, amount, value }) {
   return <div className="mini-goal"><span>{label}</span><strong>{amount}</strong><Progress value={value} tone="green" /><small>{value}%</small></div>;
 }
 
-function LineChart() {
+function LineChart({ movements }) {
+  const last7 = movements.slice(0, 7).reverse();
+  if (last7.length === 0) {
+    return <div className="line-chart-empty">Agrega movimientos para ver la gráfica</div>;
+  }
+  const incomes = last7.map((m) => m.type === "income" ? m.amount : 0);
+  const expenses = last7.map((m) => m.type === "expense" ? m.amount : 0);
+  const maxVal = Math.max(...incomes, ...expenses, 1);
+  const W = 420, H = 200, padX = 30, padY = 20;
+  const chartW = W - padX * 2;
+  const chartH = H - padY * 2;
+  const toX = (i) => padX + (i / (last7.length - 1 || 1)) * chartW;
+  const toY = (v) => padY + chartH - (v / maxVal) * chartH;
+  const pointsIncome = last7.map((_, i) => `${toX(i)},${toY(incomes[i])}`).join(" ");
+  const pointsExpense = last7.map((_, i) => `${toX(i)},${toY(expenses[i])}`).join(" ");
   return (
-    <svg className="line-chart" viewBox="0 0 420 220" role="img" aria-label="Grafica de ingresos y gastos">
-      <g className="grid-lines"><line x1="20" y1="40" x2="400" y2="40" /><line x1="20" y1="85" x2="400" y2="85" /><line x1="20" y1="130" x2="400" y2="130" /><line x1="20" y1="175" x2="400" y2="175" /></g>
-      <polyline className="line income-line" points="35,145 95,135 155,150 215,120 275,92 335,88 390,62" />
-      <polyline className="line expense-line" points="35,170 95,160 155,172 215,158 275,142 335,150 390,128" />
-      {[35, 95, 155, 215, 275, 335, 390].map((x, index) => <circle className="income-dot" cx={x} cy={[145, 135, 150, 120, 92, 88, 62][index]} r="6" key={`i-${x}`} />)}
-      {[35, 95, 155, 215, 275, 335, 390].map((x, index) => <circle className="expense-dot" cx={x} cy={[170, 160, 172, 158, 142, 150, 128][index]} r="6" key={`e-${x}`} />)}
+    <svg className="line-chart" viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Grafica de ingresos y gastos">
+      <g className="grid-lines">
+        {[0.25, 0.5, 0.75, 1].map((t) => (
+          <line key={t} x1={padX} y1={padY + chartH * (1 - t)} x2={W - padX} y2={padY + chartH * (1 - t)} />
+        ))}
+      </g>
+      <polyline className="line income-line" points={pointsIncome} />
+      <polyline className="line expense-line" points={pointsExpense} />
+      {last7.map((_, i) => <circle className="income-dot" cx={toX(i)} cy={toY(incomes[i])} r="6" key={`i-${i}`} />)}
+      {last7.map((_, i) => <circle className="expense-dot" cx={toX(i)} cy={toY(expenses[i])} r="6" key={`e-${i}`} />)}
     </svg>
   );
 }
