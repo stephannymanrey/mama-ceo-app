@@ -944,6 +944,10 @@ button {
   background: var(--purple);
 }
 
+.progress.green span { background: var(--green); }
+.progress.pink span { background: var(--pink); }
+.progress.orange span { background: var(--orange); }
+
 .progress-label {
   display: grid;
   grid-template-columns: 86px 1fr 42px;

@@ -2,7 +2,7 @@
 import { supabase, isSupabaseConfigured } from "./lib/supabaseClient";
 import "./App.css";
 
-const STORAGE_KEY = "mama-ceo-app-state-v4";
+const STORAGE_KEY = "mama-ceo-app-state-v5";
 
 const initialMovements = [
   { id: 1, type: "income", description: "Mentoria grupal", category: "Servicios", classification: "Servicios", amount: 4200, bank: "Bancolombia" },
@@ -280,7 +280,7 @@ export default function App() {
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
   const [contentForm, setContentForm] = useState({ title: "", hook: "", type: "Educativo", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer" });
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
-  const [homeForm, setHomeForm] = useState({ title: "", category: "Operaciones" });
+  const [homeForm, setHomeForm] = useState({ title: "", category: "Compras" });
 
   const money = useMemo(() => new Intl.NumberFormat(currencyLocales[currency] || "en-US", {
     style: "currency",
