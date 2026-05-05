@@ -78,6 +78,24 @@ const affirmations = [
   "Una accion correcta vale mas que diez hechas desde ansiedad."
 ];
 
+const promesas = [
+  "Dios tiene planes de bien para ti, no de mal. Tu futuro tiene esperanza.",
+  "Cuando pides sabiduría con fe, él la da generosamente y sin reproche.",
+  "Todo lo puedes cuando él te fortalece. No en tus fuerzas, sino en las suyas.",
+  "Dios cuida de ti. No tienes que cargar sola con la ansiedad de mañana.",
+  "Cuando estás cansada y cargada, hay descanso real esperando por ti.",
+  "Dios completa lo que empieza en ti. Tu negocio y tu familia están en sus manos.",
+  "No te ha dado espíritu de temor, sino de poder, amor y dominio propio.",
+  "Busca primero lo que importa de verdad, y lo demás se añade.",
+  "Confía en él con todo tu corazón y él enderezará tus caminos.",
+  "Eres más que vencedora. No solo sobrevives, triunfas.",
+  "Dios conoce cada detalle de tu vida y tiene cuidado de ti.",
+  "La mujer que teme a Dios es digna de alabanza. Tú eres esa mujer.",
+  "Con él, lo que parece imposible se vuelve posible.",
+  "Tu trabajo no es en vano cuando lo haces con propósito y fe.",
+  "Dios te da la fuerza que necesitas exactamente cuando la necesitas."
+];
+
 const menu = [
   { id: "dashboard", label: "Dashboard", icon: "⌂" },
   { id: "business", label: "Negocio", icon: "▣" },
@@ -796,7 +814,7 @@ export default function App() {
         <div className="quote-card">
           <p className="brand-tagline">Negocio, hogar y visión en un solo lugar</p>
           <span>“</span>
-          <p>La excelencia no es suerte, es decisión diaria.</p>
+          <p>{promesas[new Date().getDate() % promesas.length]}</p>
         </div>
       </aside>
 
