@@ -2451,3 +2451,75 @@ button {
 @media (max-width: 720px) {
   .systems-top { grid-template-columns: 1fr; }
 }
+
+/* ── Negocio mejorado ── */
+.health-banner {
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 16px;
+  display: grid;
+  gap: 8px;
+}
+.health-banner strong { font-size: 18px; }
+.health-banner p { margin: 0; font-size: 14px; }
+.health-stats { display: flex; gap: 20px; flex-wrap: wrap; font-size: 13px; }
+.health-stats b { color: inherit; }
+.health-green { background: var(--green-soft); color: #1a5c3a; border: 1px solid rgba(47,159,112,0.2); }
+.health-orange { background: var(--orange-soft); color: #7a4a00; border: 1px solid rgba(201,169,110,0.3); }
+.health-red { background: var(--pink-soft); color: #8a1a2e; border: 1px solid rgba(201,96,122,0.2); }
+
+.health-badge {
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  display: inline-block;
+}
+.health-badge.health-green { background: var(--green-soft); color: #1a5c3a; }
+.health-badge.health-orange { background: var(--orange-soft); color: #7a4a00; }
+.health-badge.health-red { background: var(--pink-soft); color: #8a1a2e; }
+
+.business-sources-grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.source-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.source-row:last-of-type { border-bottom: none; }
+.source-info strong { display: block; font-size: 14px; }
+.source-info small { color: var(--muted); font-size: 12px; }
+.source-right { display: flex; align-items: center; gap: 8px; }
+.source-right input { width: 90px; min-height: 34px; border: 1px solid var(--line); border-radius: 8px; padding: 0 8px; font: inherit; }
+.source-right small { font-size: 12px; color: var(--muted); white-space: nowrap; }
+
+.source-form {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) 120px auto;
+  gap: 8px;
+  margin-top: 12px;
+}
+.source-form input {
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font: inherit;
+  background: #fff;
+  color: var(--ink);
+}
+
+@media (max-width: 1180px) {
+  .business-sources-grid { grid-template-columns: 1fr; }
+  .source-form { grid-template-columns: 1fr 1fr; }
+  .source-form button { grid-column: 1 / -1; }
+}
