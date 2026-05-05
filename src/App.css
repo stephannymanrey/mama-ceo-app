@@ -4,14 +4,14 @@
   --line: rgba(147, 114, 126, 0.18);
   --surface: rgba(255, 255, 255, 0.86);
   --surface-strong: #ffffff;
-  --purple: #7f48c9;
-  --purple-soft: #f0e6ff;
-  --pink: #ec5c8f;
-  --pink-soft: #ffe7f1;
+  --purple: #9b2d6f;
+  --purple-soft: #f9e6f0;
+  --pink: #c9607a;
+  --pink-soft: #fde8ed;
   --green: #2f9f70;
   --green-soft: #def3e8;
-  --orange: #fb9e51;
-  --orange-soft: #fff2df;
+  --orange: #c9a96e;
+  --orange-soft: #fdf3e3;
   --shadow: 0 20px 50px rgba(97, 65, 98, 0.12);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
@@ -26,9 +26,9 @@ body {
   margin: 0;
   min-width: 320px;
   background:
-    radial-gradient(circle at top left, rgba(255, 221, 236, 0.65), transparent 28rem),
-    radial-gradient(circle at bottom right, rgba(222, 244, 236, 0.7), transparent 32rem),
-    linear-gradient(135deg, #fcf5f8 0%, #fff9fb 48%, #ffffff 100%);
+    radial-gradient(circle at top left, rgba(220, 180, 200, 0.35), transparent 28rem),
+    radial-gradient(circle at bottom right, rgba(222, 244, 236, 0.5), transparent 32rem),
+    linear-gradient(135deg, #fdf6f9 0%, #fffaf8 48%, #ffffff 100%);
 }
 
 button,
@@ -51,10 +51,10 @@ button {
   top: 0;
   height: 100vh;
   padding: 30px 24px;
-  border-right: 1px solid rgba(183, 146, 162, 0.16);
-  background: rgba(255, 255, 255, 0.78);
+  border-right: 1px solid rgba(155, 45, 111, 0.1);
+  background: rgba(255, 252, 250, 0.92);
   backdrop-filter: blur(18px);
-  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.5);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -62,56 +62,44 @@ button {
 
 .brand {
   text-align: center;
-  padding: 8px 8px 18px;
+  padding: 18px 8px 8px;
 }
 
 .brand-mark {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 14px;
-  border: 1px solid #d8c3a1;
-  border-radius: 50%;
-  background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(250, 244, 235, 0.86)),
-    #fff;
-  color: #6f2f4b;
-  display: grid;
-  place-items: center;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 23px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  box-shadow: 0 14px 30px rgba(111, 47, 75, 0.12);
+  display: none;
 }
 
 .brand-script {
-  color: #8a4a5e;
+  color: #9b2d6f;
   font-family: "Segoe Script", "Brush Script MT", cursive;
-  font-size: 44px;
-  line-height: 0.9;
+  font-size: 40px;
+  line-height: 1;
 }
 
 .brand-ceo {
-  color: #b9965a;
+  color: #c9a96e;
   font-family: Georgia, serif;
-  font-size: 36px;
-  letter-spacing: 9px;
-  margin-left: 8px;
+  font-size: 28px;
+  letter-spacing: 12px;
+  margin-left: 12px;
 }
 
 .brand-app {
-  font-size: 13px;
+  font-size: 11px;
   letter-spacing: 8px;
-  margin: 4px 0 12px;
+  color: var(--muted);
+  margin: 6px 0 16px;
 }
 
-.brand p {
+.brand-tagline {
   margin: 0;
-  color: #293044;
-  font-size: 11px;
+  color: var(--muted);
+  font-size: 10px;
   line-height: 1.5;
-  letter-spacing: 1.1px;
+  letter-spacing: 1.2px;
   text-transform: uppercase;
+  border-top: 1px solid rgba(155, 45, 111, 0.12);
+  padding-top: 12px;
 }
 
 .main-menu {
@@ -148,8 +136,8 @@ button {
 
 .menu-item.active {
   color: #fff;
-  background: linear-gradient(135deg, #8c3ebd, #b05acc);
-  box-shadow: 0 16px 32px rgba(109, 64, 169, 0.24);
+  background: linear-gradient(135deg, #9b2d6f, #c9607a);
+  box-shadow: 0 16px 32px rgba(155, 45, 111, 0.22);
 }
 
 .menu-item.active span {

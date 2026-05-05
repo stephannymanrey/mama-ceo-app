@@ -759,11 +759,10 @@ export default function App() {
     <div className="app-shell">
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark">MC</div>
+          <div className="brand-mark"></div>
           <div className="brand-script">Mamá</div>
           <div className="brand-ceo">CEO</div>
           <div className="brand-app">APP</div>
-          <p>Negocio, hogar y visión en un solo lugar</p>
         </div>
 
         <nav className="main-menu" aria-label="Navegacion principal">
@@ -786,6 +785,7 @@ export default function App() {
         </div>
 
         <div className="quote-card">
+          <p className="brand-tagline">Negocio, hogar y visión en un solo lugar</p>
           <span>“</span>
           <p>La excelencia no es suerte, es decisión diaria.</p>
         </div>
