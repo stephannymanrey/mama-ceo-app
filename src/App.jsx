@@ -80,6 +80,7 @@ const initialHomeWellnessTasks = [
   { id: 1, title: "Ejercicio o caminata", category: "Bienestar", done: false },
   { id: 2, title: "Tiempo para mí", category: "Bienestar", done: false }
 ];
+
 const initialIncomeSources = [
   { id: 1, name: "Servicios 1:1", monthlyGoal: 3000, color: "purple" },
   { id: 2, name: "Cursos / Productos digitales", monthlyGoal: 2000, color: "pink" },
@@ -205,10 +206,14 @@ export default function App() {
   const [goals, setGoals] = useState(isNewUser ? [] : (stored?.goals || initialGoals));
   const [homeTasks, setHomeTasks] = useState(isNewUser ? [] : (stored?.homeTasks || initialHomeTasks));
   const [systemTasks, setSystemTasks] = useState(stored?.systemTasks || initialSystemTasks);
-  const [newSystemTask, setNewSystemTask] = useState("");
   const [systemSlide, setSystemSlide] = useState(0);
+  const [newSystemTask, setNewSystemTask] = useState("");
   const [incomeSources, setIncomeSources] = useState(stored?.incomeSources || initialIncomeSources);
   const [incomeSourceForm, setIncomeSourceForm] = useState({ name: "", monthlyGoal: "" });
+  const [maternalTasks, setMaternalTasks] = useState(stored?.maternalTasks || initialHomeMaternalTasks);
+  const [wellnessTasks, setWellnessTasks] = useState(stored?.wellnessTasks || initialHomeWellnessTasks);
+  const [maternalForm, setMaternalForm] = useState("");
+  const [wellnessForm, setWellnessForm] = useState("");
   const [banks, setBanks] = useState(stored?.banks || initialBanks);
   const [newBank, setNewBank] = useState("");
   const [annualBudget, setAnnualBudget] = useState((stored?.annualBudget || initialAnnualBudget).map((row) => {
@@ -267,10 +272,6 @@ export default function App() {
   const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer" });
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Operaciones" });
-  const [maternalTasks, setMaternalTasks] = useState(stored?.maternalTasks || initialHomeMaternalTasks);
-  const [wellnessTasks, setWellnessTasks] = useState(stored?.wellnessTasks || initialHomeWellnessTasks);
-  const [maternalForm, setMaternalForm] = useState("");
-  const [wellnessForm, setWellnessForm] = useState("");
 
   const money = useMemo(() => new Intl.NumberFormat(currencyLocales[currency] || "en-US", {
     style: "currency",
@@ -867,6 +868,7 @@ export default function App() {
         </div>
 
         <div className="quote-card">
+          <p className="brand-tagline">Negocio, hogar y visión en un solo lugar</p>
           <span>“</span>
           <p>{promesas[new Date().getDate() % promesas.length]}</p>
         </div>
@@ -997,25 +999,23 @@ export default function App() {
   }
 
   function renderBusiness() {
-    const incomeBySource = incomeSources.map((src) => {
-      const actual = movements
-        .filter((m) => m.type === "income" && m.classification === src.name)
-        .reduce((sum, m) => sum + m.amount, 0);
-      const progress = src.monthlyGoal > 0 ? Math.min(Math.round((actual / src.monthlyGoal) * 100), 100) : 0;
-      return { ...src, actual, progress };
-    });
     const healthScore = totals.profit >= 0 && monthlyProgress >= 75 ? "green"
       : totals.profit >= 0 || monthlyProgress >= 50 ? "orange" : "red";
     const healthLabel = healthScore === "green" ? "🟢 Negocio saludable"
       : healthScore === "orange" ? "🟡 Atención requerida" : "🔴 Alerta financiera";
     const healthMsg = healthScore === "green"
-      ? "Tus ingresos superan tus gastos y vas bien hacia tu meta. Sigue así."
+      ? "Tus ingresos superan tus gastos y vas bien hacia tu meta."
       : healthScore === "orange"
-        ? "Hay margen pero necesitas acelerar ventas o reducir gastos esta semana."
+        ? "Hay margen pero necesitas acelerar ventas o reducir gastos."
         : "Tus gastos superan tus ingresos. Prioriza cobros y reduce gastos no esenciales hoy.";
+    const incomeBySource = incomeSources.map((src) => {
+      const actual = movements.filter((m) => m.type === "income" && m.classification === src.name).reduce((sum, m) => sum + m.amount, 0);
+      const progress = src.monthlyGoal > 0 ? Math.min(Math.round((actual / src.monthlyGoal) * 100), 100) : 0;
+      return { ...src, actual, progress };
+    });
     return (
       <section className="panel workspace-panel">
-        <div className="section-title"><h2>Negocio</h2><p>Presupuesto, fuentes de ingreso y flujo financiero con propósito.</p></div>
+        <div className="section-title"><h2>Negocio</h2><p>Salud financiera, fuentes de ingreso y presupuesto.</p></div>
 
         <div className={`health-banner health-${healthScore}`}>
           <strong>{healthLabel}</strong>
@@ -1031,7 +1031,7 @@ export default function App() {
         <div className="business-sources-grid">
           <div className="card">
             <h3>Fuentes de ingreso</h3>
-            <p className="helper-copy">Define tus fuentes y metas mensuales por tipo de servicio o producto.</p>
+            <p className="helper-copy">Define tus fuentes y metas mensuales. Los ingresos se calculan desde tus movimientos registrados.</p>
             {incomeBySource.map((src) => (
               <div className="source-row" key={src.id}>
                 <div className="source-info">
@@ -1041,9 +1041,8 @@ export default function App() {
                 <div className="source-right">
                   <Progress value={src.progress} tone={src.color} />
                   <small>{src.progress}%</small>
-                  <input type="number" min="0" value={src.monthlyGoal}
-                    onChange={(e) => setIncomeSources((c) => c.map((s) => s.id === src.id ? { ...s, monthlyGoal: Number(e.target.value) } : s))} />
-                  <button type="button" className="row-delete" onClick={() => confirmDelete("¿Eliminar esta fuente?", () => setIncomeSources((c) => c.filter((s) => s.id !== src.id)))}>×</button>
+                  <input type="number" min="0" value={src.monthlyGoal} onChange={(e) => setIncomeSources((c) => c.map((s) => s.id === src.id ? { ...s, monthlyGoal: Number(e.target.value) } : s))} />
+                  <button type="button" className="row-delete" onClick={() => confirmDelete("¿Eliminar?", () => setIncomeSources((c) => c.filter((s) => s.id !== src.id)))}>×</button>
                 </div>
               </div>
             ))}
@@ -1053,7 +1052,6 @@ export default function App() {
               <button className="primary-button" type="submit">Agregar</button>
             </form>
           </div>
-
           <div className="card insight-card">
             <h3>Lectura CEO</h3>
             {insights.map((insight) => <p key={insight}>{insight}</p>)}
@@ -1067,7 +1065,7 @@ export default function App() {
 
         <div className="annual-budget-card card">
           <div className="budget-head">
-            <div><h3>Presupuesto anual</h3><p>Edita ingresos y fees. Los gastos se calculan automáticamente pero puedes ajustarlos.</p></div>
+            <div><h3>Presupuesto anual</h3><p>Todos los campos son editables. Los gastos ya no se calculan solos.</p></div>
             <div className="budget-total"><span>Utilidad anual estimada</span><strong>{money.format(annualProfit)}</strong></div>
           </div>
           <div className="budget-table">
@@ -1089,7 +1087,6 @@ export default function App() {
         </div>
 
         <div className="bank-section">{BanksCard()}</div>
-
         <div className="card movement-detail-card">
           <div className="movement-detail-header">
             <div><h3>Detalles de movimientos</h3><p className="helper-copy">Consulta y descarga tus movimientos.</p></div>
@@ -1103,7 +1100,34 @@ export default function App() {
       </section>
     );
   }
-
+        <div className="annual-budget-card card">
+          <div className="budget-head">
+            <div>
+              <h3>Presupuesto anual</h3>
+              <p>Ingresos proyectados definen automáticamente gastos fijos y variables.</p>
+            </div>
+            <div className="budget-total">
+              <span>Utilidad anual estimada</span>
+              <strong>{money.format(annualProfit)}</strong>
+            </div>
+          </div>
+          <div className="budget-table">
+            <div className="budget-row budget-header"><span>Mes</span><span>Ingresos</span><span>Gastos fijos</span><span>Gastos variables</span><span>Fees</span><span>Utilidad</span></div>
+            {annualBudget.map((row) => {
+              const profit = Number(row.income || 0) - Number(row.fixedExpenses || 0) - Number(row.variableExpenses || 0) - Number(row.platformFees || 0);
+              return (
+                <div className="budget-row" key={row.month}>
+                  <strong>{row.month}</strong>
+                  <input type="number" min="0" value={row.income} onChange={(event) => updateAnnualBudget(row.month, "income", event.target.value)} />
+                  <span>{money.format(row.fixedExpenses)}</span>
+                  <span>{money.format(row.variableExpenses)}</span>
+                  <input type="number" min="0" value={row.platformFees} onChange={(event) => updateAnnualBudget(row.month, "platformFees", event.target.value)} />
+                  <b>{money.format(profit)}</b>
+                </div>
+              );
+            })}
+          </div>
+        </div>
   function renderClients() {
     const stages = ["Lead frio", "Lead tibio", "Lead caliente", "Venta ganada"];
     const paidClients = clients.filter((client) => client.status === "Venta ganada");
@@ -1183,94 +1207,41 @@ export default function App() {
   }
 
   function renderHome() {
-    const opsProgress = homeTasks.length ? Math.round((homeTasks.filter(t => t.done).length / homeTasks.length) * 100) : 0;
-    const maternalProgress = maternalTasks.length ? Math.round((maternalTasks.filter(t => t.done).length / maternalTasks.length) * 100) : 0;
-    const wellnessProgress = wellnessTasks.length ? Math.round((wellnessTasks.filter(t => t.done).length / wellnessTasks.length) * 100) : 0;
+    const homeProgress = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
     return (
       <section className="panel workspace-panel">
-        <div className="section-title"><h2>Hogar</h2><p>Finanzas, operaciones, maternidad y bienestar en un solo lugar</p></div>
-
+        <div className="section-title"><h2>Hogar</h2><p>{completedHomeTasks}/{homeTasks.length} tareas hechas para bajar carga mental</p></div>
         <div className="home-budget-card card">
           <div className="budget-head">
-            <div><h3>💰 Finanzas del hogar</h3><p>Ingresos, gastos, deudas y disponible familiar.</p></div>
+            <div><h3>Presupuesto mensual del hogar</h3><p>Ingresos, gastos, deudas y disponible familiar.</p></div>
             <div className="budget-total"><span>Disponible</span><strong>{money.format(homeAvailable)}</strong></div>
           </div>
           <form className="home-budget-form" onSubmit={addHomeBudgetItem}>
-            <select value={homeBudgetForm.type} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, type: e.target.value }))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
-            <input placeholder="Descripción" value={homeBudgetForm.description} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, description: e.target.value }))} />
-            <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, amount: e.target.value }))} />
+            <select value={homeBudgetForm.type} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, type: event.target.value }))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
+            <input placeholder="Descripcion" value={homeBudgetForm.description} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, description: event.target.value }))} />
+            <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, amount: event.target.value }))} />
             <button className="primary-button" type="submit">Agregar</button>
           </form>
           <div className="home-money-insights">
-            <article><span>Ganando</span><strong>{money.format(homeBudgetTotals.income)}</strong></article>
-            <article><span>Gastando</span><strong>{money.format(homeSpent)}</strong></article>
+            <article><span>Estás ganando</span><strong>{money.format(homeBudgetTotals.income)}</strong></article>
+            <article><span>Estás gastando</span><strong>{money.format(homeSpent)}</strong></article>
             <article><span>Mayor fuga</span><strong>{biggestHomeLeak[0]}</strong><small>{money.format(biggestHomeLeak[1])}</small></article>
-            <article><span>Ahorro</span><strong>{money.format(homeBudgetTotals.savings)}</strong><small>{homeBudgetTotals.savings > 0 ? "Construyendo paz financiera" : "Empieza con algo pequeño"}</small></article>
+            <article><span>Fondo/ahorro</span><strong>{money.format(homeBudgetTotals.savings)}</strong><small>{homeBudgetTotals.savings > 0 ? "Excelente, estás construyendo paz financiera." : "Empieza con una reserva pequeña esta semana."}</small></article>
           </div>
-          <div className="money-track"><span style={{ width: `${Math.min(100, homeBudgetTotals.income ? (homeSpent / homeBudgetTotals.income) * 100 : 0)}%` }}></span><small>Gastado vs ingresos del hogar</small></div>
-          <div className="budget-list">{homeBudget.map((item) => <DataRow key={item.id} title={item.description} meta={item.type} value={money.format(item.amount)} onDelete={() => setHomeBudget((c) => c.filter((r) => r.id !== item.id))} />)}</div>
+          <div className="money-track">
+            <span style={{ width: `${Math.min(100, homeBudgetTotals.income ? (homeSpent / homeBudgetTotals.income) * 100 : 0)}%` }}></span>
+            <small>Track: gastado frente a ingresos del hogar</small>
+          </div>
+          <div className="budget-list">{homeBudget.map((item) => <DataRow key={item.id} title={item.description} meta={item.type} value={money.format(item.amount)} onDelete={() => setHomeBudget((current) => current.filter((row) => row.id !== item.id))} />)}</div>
         </div>
-
-        <div className="home-zones-grid">
-          <div className="card home-zone">
-            <div className="home-zone-header">
-              <h3>🏠 Operaciones del hogar</h3>
-              <small className="helper-copy">Estas tareas se pueden delegar o automatizar</small>
-            </div>
-            <Progress value={opsProgress} tone="purple" />
-            <small className="helper-copy">{opsProgress}% completado</small>
-            <form className="home-zone-form" onSubmit={(e) => { e.preventDefault(); if (!homeForm.title.trim()) return; setHomeTasks((c) => [...c, { id: Date.now(), title: homeForm.title.trim(), category: homeForm.category, done: false }]); setHomeForm({ title: "", category: "Operaciones" }); }}>
-              <input placeholder="Nueva tarea operativa" value={homeForm.title} onChange={(e) => setHomeForm((c) => ({ ...c, title: e.target.value }))} />
-              <button className="primary-button" type="submit">+</button>
-            </form>
-            {homeTasks.map((task) => (
-              <label className="home-row" key={task.id}>
-                <input type="checkbox" checked={task.done} onChange={() => setHomeTasks((c) => c.map((t) => t.id === task.id ? { ...t, done: !t.done } : t))} />
-                <span><strong>{task.title}</strong><small>{task.category}</small></span>
-                <button type="button" onClick={() => confirmDelete("¿Eliminar?", () => setHomeTasks((c) => c.filter((t) => t.id !== task.id)))}>Eliminar</button>
-              </label>
-            ))}
-          </div>
-
-          <div className="card home-zone home-zone-maternal">
-            <div className="home-zone-header">
-              <h3>💛 Maternidad activa</h3>
-              <small className="helper-copy">Este tiempo no se delega — se protege y simplifica</small>
-            </div>
-            <Progress value={maternalProgress} tone="pink" />
-            <small className="helper-copy">{maternalProgress}% completado</small>
-            <form className="home-zone-form" onSubmit={(e) => { e.preventDefault(); if (!maternalForm.trim()) return; setMaternalTasks((c) => [...c, { id: Date.now(), title: maternalForm.trim(), category: "Maternidad", done: false }]); setMaternalForm(""); }}>
-              <input placeholder="Momento de presencia" value={maternalForm} onChange={(e) => setMaternalForm(e.target.value)} />
-              <button className="primary-button" type="submit">+</button>
-            </form>
-            {maternalTasks.map((task) => (
-              <label className="home-row maternal" key={task.id}>
-                <input type="checkbox" checked={task.done} onChange={() => setMaternalTasks((c) => c.map((t) => t.id === task.id ? { ...t, done: !t.done } : t))} />
-                <span><strong>{task.title}</strong><small>💛 Presencia materna</small></span>
-                <button type="button" onClick={() => confirmDelete("¿Eliminar?", () => setMaternalTasks((c) => c.filter((t) => t.id !== task.id)))}>Eliminar</button>
-              </label>
-            ))}
-          </div>
-
-          <div className="card home-zone">
-            <div className="home-zone-header">
-              <h3>🧘 Bienestar personal</h3>
-              <small className="helper-copy">Tu energía es un recurso — protégela como una cita</small>
-            </div>
-            <Progress value={wellnessProgress} tone="green" />
-            <small className="helper-copy">{wellnessProgress}% completado</small>
-            <form className="home-zone-form" onSubmit={(e) => { e.preventDefault(); if (!wellnessForm.trim()) return; setWellnessTasks((c) => [...c, { id: Date.now(), title: wellnessForm.trim(), category: "Bienestar", done: false }]); setWellnessForm(""); }}>
-              <input placeholder="Hábito de bienestar" value={wellnessForm} onChange={(e) => setWellnessForm(e.target.value)} />
-              <button className="primary-button" type="submit">+</button>
-            </form>
-            {wellnessTasks.map((task) => (
-              <label className="home-row" key={task.id}>
-                <input type="checkbox" checked={task.done} onChange={() => setWellnessTasks((c) => c.map((t) => t.id === task.id ? { ...t, done: !t.done } : t))} />
-                <span><strong>{task.title}</strong><small>{task.category}</small></span>
-                <button type="button" onClick={() => confirmDelete("¿Eliminar?", () => setWellnessTasks((c) => c.filter((t) => t.id !== task.id)))}>Eliminar</button>
-              </label>
-            ))}
-          </div>
+        <div className="section-layout">
+          <form className="card form-card section-form" onSubmit={addHomeTask}>
+            <h3>Agregar tarea del hogar</h3>
+            <input placeholder="Tarea" value={homeForm.title} onChange={(event) => updateHomeForm("title", event.target.value)} />
+            <select value={homeForm.category} onChange={(event) => updateHomeForm("category", event.target.value)}><option>Compras</option><option>Calendario</option><option>Rutina</option><option>Bienestar</option></select>
+            <button className="primary-button" type="submit">Guardar tarea</button>
+          </form>
+          <div className="card data-card"><h3>Rutinas y pendientes</h3><div className="weekly-goal"><span>Progreso semanal del hogar</span><strong>{homeProgress}%</strong><Progress value={homeProgress} tone="green" /></div>{homeTasks.map((task) => <label className="home-row" key={task.id}><input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} /><span><strong>{task.title}</strong><small>{task.category}</small></span><button type="button" onClick={() => confirmDelete("¿Eliminar esta tarea?", () => setHomeTasks((current) => current.filter((item) => item.id !== task.id)))}>Eliminar</button></label>)}</div>
         </div>
       </section>
     );
@@ -1288,170 +1259,6 @@ export default function App() {
         : purpose.mood === "cansada"
           ? "Protégete. El descanso también es productividad."
           : "Usa tu energía sin sobreexigirte. Deja espacio para gracia y descanso.";
-    const manualCount = systemTasks.filter((t) => t.mode === "manual" && t.canDelegate).length;
-    const currentTask = systemTasks[systemSlide] || systemTasks[0];
-    const suggestion = currentTask ? systemSuggestions[currentTask.title] : null;
-    const systemSummary = manualCount === 0
-      ? "¡Excelente! Has liberado tu agenda. Sigue protegiendo ese espacio."
-      : manualCount <= 3
-        ? `Tienes ${manualCount} tarea${manualCount > 1 ? "s" : ""} manual${manualCount > 1 ? "es" : ""}. Pequeños cambios pueden darte horas de vuelta."
-        : `Tienes ${manualCount} tareas que aún dependen solo de ti. Si delegas o automatizas 3, recuperas tiempo real para lo que importa.`;
-    return (
-      <section className="panel workspace-panel">
-        <div className="section-title">
-          <h2>Propósito &amp; Impacto</h2>
-          <p>Mide lo que realmente importa — presencia, energía, impacto y sistemas</p>
-        </div>
-
-        <div className="purpose-kpi-grid">
-          <div className="purpose-kpi"><span className="purpose-kpi-icon">👩👦</span><strong>{purpose.connectionMoments || 0}</strong><small>momentos de conexión hoy</small><span className={(purpose.connectionMoments || 0) >= 2 ? "kpi-badge good" : "kpi-badge alert"}>meta: 2–3</span></div>
-          <div className="purpose-kpi"><span className="purpose-kpi-icon">💸</span><strong>{incomePerHour > 0 ? money.format(incomePerHour) : "—"}</strong><small>ingreso por hora</small><span className="kpi-badge neutral">KPI estrella</span></div>
-          <div className="purpose-kpi"><span className="purpose-kpi-icon">⚡</span><strong>{purpose.energy === "alto" ? "Alta" : purpose.energy === "medio" ? "Media" : "Baja"}</strong><small>energía del día</small><span className={peaceScore >= 80 ? "kpi-badge good" : peaceScore >= 50 ? "kpi-badge neutral" : "kpi-badge alert"}>{purpose.mood}</span></div>
-          <div className="purpose-kpi"><span className="purpose-kpi-icon">👥</span><strong>{purpose.clientsImpacted || 0}</strong><small>clientes impactados</small><span className="kpi-badge neutral">esta semana</span></div>
-          <div className="purpose-kpi"><span className="purpose-kpi-icon">📅</span><strong>{familyDaysCount}</strong><small>días de presencia</small><span className={familyDaysCount >= 4 ? "kpi-badge good" : "kpi-badge alert"}>{familyDaysCount >= 4 ? "excelente" : "puedes mejorar"}</span></div>
-          <div className="purpose-kpi"><span className="purpose-kpi-icon">🔄</span><strong>{systemTasks.filter(t => t.mode !== "manual").length}/{systemTasks.length}</strong><small>tareas liberadas</small><span className={systemTasks.filter(t => t.mode !== "manual").length >= systemTasks.length * 0.6 ? "kpi-badge good" : "kpi-badge neutral"}>meta: 60%+</span></div>
-        </div>
-
-        <div className="purpose-sections">
-
-          <div className="card purpose-block">
-            <h3>⚡ ¿Cómo estás hoy?</h3>
-            <p className="helper-copy">Tu energía es un recurso. Protégela.</p>
-            <label className="purpose-field"><span>Nivel de energía</span></label>
-            <div className="mood-grid">{["alto","medio","bajo"].map((e) => (<button type="button" key={e} className={purpose.energy === e ? "selected" : ""} onClick={() => updatePurpose("energy", e)}>{e}</button>))}</div>
-            <label className="purpose-field"><span>Ánimo general</span></label>
-            <div className="mood-grid">{["abrumada","inspirada","feliz","controladora","cansada"].map((mood) => (<button type="button" key={mood} className={purpose.mood === mood ? "selected" : ""} onClick={() => updatePurpose("mood", mood)}>{mood}</button>))}</div>
-            <p className="helper-copy" style={{marginTop:"10px",fontStyle:"italic"}}>{mentalAdvice}</p>
-            <div className="selfcare-checks">
-              {[["water","Bebí agua"],["walk","Caminé 10 min"],["silence","Tuve silencio"],["devotional","Devocional / oración"]].map(([key, label]) => (
-                <label key={key} className="task-row"><input type="checkbox" checked={!!purpose[key]} onChange={(e) => updatePurpose(key, e.target.checked)} /><span>{label}</span></label>
-              ))}
-            </div>
-            <ProgressLabel label="Autocuidado" value={Math.round((selfCareScore / 4) * 100)} tone="green" />
-          </div>
-
-          <div className="card purpose-block">
-            <h3>👩👦 Presencia real</h3>
-            <p className="helper-copy">Puedes pasar todo el día en casa y no estar. Mide lo que importa.</p>
-            <label className="purpose-field">
-              <span>Momentos de conexión hoy (sin celular, sin multitarea)</span>
-              <div className="counter-row">
-                <button type="button" onClick={() => updatePurpose("connectionMoments", Math.max(0, (purpose.connectionMoments || 0) - 1))}>-</button>
-                <strong>{purpose.connectionMoments || 0}</strong>
-                <button type="button" onClick={() => updatePurpose("connectionMoments", (purpose.connectionMoments || 0) + 1)}>+</button>
-              </div>
-            </label>
-            <label className="purpose-field"><span>Días de presencia consciente esta semana</span></label>
-            <div className="week-checks">{["L","M","X","J","V","S","D"].map((day) => (<button type="button" className={purpose.familyDays?.[day] ? "checked" : ""} key={day} onClick={() => setPurpose((c) => ({ ...c, familyDays: { ...c.familyDays, [day]: !c.familyDays?.[day] } }))}>{day}</button>))}</div>
-            <textarea className="purpose-textarea" placeholder="¿Cómo crees que se sintió tu hijo/a esta semana?" value={purpose.mentalLoad || ""} onChange={(e) => updatePurpose("mentalLoad", e.target.value)} />
-          </div>
-
-          <div className="card purpose-block">
-            <h3>💰 Negocio inteligente</h3>
-            <p className="helper-copy">Más horas no es más éxito. Mide lo que escala.</p>
-            <label className="purpose-field">
-              <span>Horas trabajadas esta semana</span>
-              <input type="number" min="0" max="80" value={purpose.hoursWorked || 0} onChange={(e) => updatePurpose("hoursWorked", Number(e.target.value))} />
-            </label>
-            <div className="purpose-stat"><span>Ingreso por hora trabajada</span><strong>{incomePerHour > 0 ? money.format(incomePerHour) : "Registra horas"}</strong></div>
-            <p className="helper-copy">Este número se calcula con los ingresos registrados en Negocio divididos entre las horas que trabajaste esta semana.</p>
-            <label className="purpose-field">
-              <span>% de ingresos recurrentes (membresías, productos escalables)</span>
-              <input type="range" min="0" max="100" value={purpose.recurringIncomePercent || 0} onChange={(e) => updatePurpose("recurringIncomePercent", Number(e.target.value))} />
-              <small>{purpose.recurringIncomePercent || 0}% recurrente</small>
-            </label>
-          </div>
-
-          <div className="card purpose-block">
-            <h3>📛 Propósito e impacto</h3>
-            <p className="helper-copy">5 clientes transformados &gt; 5.000 vistas vacías.</p>
-            <label className="purpose-field">
-              <span>Clientes impactados esta semana</span>
-              <div className="counter-row">
-                <button type="button" onClick={() => updatePurpose("clientsImpacted", Math.max(0, (purpose.clientsImpacted || 0) - 1))}>-</button>
-                <strong>{purpose.clientsImpacted || 0}</strong>
-                <button type="button" onClick={() => updatePurpose("clientsImpacted", (purpose.clientsImpacted || 0) + 1)}>+</button>
-              </div>
-            </label>
-            <label className="purpose-field">
-              <span>Nivel de pasión al crear / trabajar (1–5)</span>
-              <div className="passion-stars">{[1,2,3,4,5].map((n) => (<button type="button" key={n} className={n <= (purpose.passionLevel || 3) ? "star active" : "star"} onClick={() => updatePurpose("passionLevel", n)}>★</button>))}</div>
-            </label>
-            <label className="purpose-field">
-              <span>Testimonio o transformación de esta semana</span>
-              <textarea className="purpose-textarea" placeholder="¿Qué cambió en un cliente gracias a tu trabajo?" value={purpose.weekTestimony || ""} onChange={(e) => updatePurpose("weekTestimony", e.target.value)} />
-            </label>
-            <label className="purpose-field">
-              <span>Claridad de visión</span>
-              <textarea className="purpose-textarea" placeholder="Mi visión esta semana es..." value={purpose.visionClarity || ""} onChange={(e) => updatePurpose("visionClarity", e.target.value)} />
-            </label>
-          </div>
-
-          <div className="card purpose-block purpose-block-wide">
-            <h3>🔍 Autoevaluación de sistemas — ¿Qué sigue dependiendo solo de ti?</h3>
-            <p className="helper-copy">No necesitas hacer más, necesitas soltar más. Evalúa una tarea a la vez y el sistema te dice cómo mejorar.</p>
-
-            <div className="systems-top">
-              <SystemsDonut tasks={systemTasks} />
-              <div className="systems-summary">
-                <p>{systemSummary}</p>
-                {manualCount > 2 && (
-                  <a href="https://www.umpacademy.co/membresia" target="_blank" rel="noreferrer" className="ump-link">
-                    🎓 Aprende a automatizar y delegar en <strong>UMP Academy</strong> →
-                  </a>
-                )}
-              </div>
-            </div>
-
-            <div className="carousel-wrap">
-              <div className="carousel-header">
-                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.max(0, s - 1))} disabled={systemSlide === 0}>←</button>
-                <span className="carousel-counter">{systemSlide + 1} de {systemTasks.length}</span>
-                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.min(systemTasks.length - 1, s + 1))} disabled={systemSlide === systemTasks.length - 1}>→</button>
-              </div>
-
-              {currentTask && (
-                <div className="carousel-card">
-                  <span className={`system-cat system-cat-${currentTask.category}`}>{currentTask.category}</span>
-                  <h4>{currentTask.title}</h4>
-                  <div className="system-modes">
-                    {currentTask.canDelegate ? (
-                      <>
-                        <button type="button" className={currentTask.mode === "manual" ? "mode-btn active-manual" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === currentTask.id ? { ...t, mode: "manual" } : t))}>🔴 Lo hago yo</button>
-                        <button type="button" className={currentTask.mode === "delegado" ? "mode-btn active-delegado" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === currentTask.id ? { ...t, mode: "delegado" } : t))}>🟡 Lo delego</button>
-                        <button type="button" className={currentTask.mode === "automatizado" ? "mode-btn active-auto" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === currentTask.id ? { ...t, mode: "automatizado" } : t))}>🟢 Está automatizado</button>
-                      </>
-                    ) : (
-                      <span className="mode-btn mode-protect">💛 Presencia materna — no se delega</span>
-                    )}
-                  </div>
-                  {currentTask.mode === "manual" && suggestion && (
-                    <div className="system-suggestion">
-                      {suggestion.protect ? (
-                        <p>📌 {suggestion.protect}</p>
-                      ) : (
-                        <>
-                          {suggestion.auto && <p>⚡ <strong>Automatizar:</strong> {suggestion.auto}</p>}
-                          {suggestion.delegate && <p>🤝 <strong>Delegar:</strong> {suggestion.delegate}</p>}
-                          <a href="https://www.umpacademy.co/membresia" target="_blank" rel="noreferrer" className="ump-link">🎓 Aprende cómo en UMP Academy →</a>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <form className="home-zone-form" style={{marginTop:"12px"}} onSubmit={(e) => { e.preventDefault(); if (!newSystemTask.trim()) return; setSystemTasks((c) => [...c, { id: Date.now(), title: newSystemTask.trim(), category: "negocio", mode: "manual", canDelegate: true }]); setNewSystemTask(""); setSystemSlide(systemTasks.length); }}>
-                <input placeholder="Agregar mi propia tarea..." value={newSystemTask} onChange={(e) => setNewSystemTask(e.target.value)} />
-                <button className="primary-button" type="submit">+</button>
-              </form>
-            </div>
-          </div>
-
-        </div>
-      </section>
-    );
-  }
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
@@ -1566,50 +1373,22 @@ export default function App() {
             <ProgressLabel label="Autocuidado" value={Math.round((selfCareScore / 4) * 100)} tone="green" />
           </div>
 
-          <div className="card purpose-block purpose-block-wide">
-            <h3>🛠️ Sistemas — ¿Qué sigue dependiendo solo de ti?</h3>
-            <p className="helper-copy">No necesitas hacer más, necesitas soltar más. Marca cada tarea según cómo la manejas hoy.</p>
-            <SystemsDonut tasks={systemTasks} />
-            <div className="systems-list">
-              {systemTasks.map((task) => {
-                const suggestion = systemSuggestions[task.title];
-                return (
-                  <div className="system-task" key={task.id}>
-                    <div className="system-task-header">
-                      <span className={`system-cat system-cat-${task.category}`}>{task.category}</span>
-                      <strong>{task.title}</strong>
-                      <div className="system-modes">
-                        {task.canDelegate ? (
-                          <>
-                            <button type="button" className={task.mode === "manual" ? "mode-btn active-manual" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "manual" } : t))}>🔴 Manual</button>
-                            <button type="button" className={task.mode === "delegado" ? "mode-btn active-delegado" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "delegado" } : t))}>🟡 Delego</button>
-                            <button type="button" className={task.mode === "automatizado" ? "mode-btn active-auto" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "automatizado" } : t))}>🟢 Automatizado</button>
-                          </>
-                        ) : (
-                          <span className="mode-btn mode-protect">💛 Presencia materna</span>
-                        )}
-                      </div>
-                    </div>
-                    {task.mode === "manual" && suggestion && (
-                      <div className="system-suggestion">
-                        {suggestion.protect ? (
-                          <p>📌 {suggestion.protect}</p>
-                        ) : (
-                          <>
-                            {suggestion.auto && <p>⚡ <strong>Automatizar:</strong> {suggestion.auto}</p>}
-                            {suggestion.delegate && <p>🤝 <strong>Delegar:</strong> {suggestion.delegate}</p>}
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <form className="home-zone-form" onSubmit={(e) => { e.preventDefault(); if (!newSystemTask.trim()) return; setSystemTasks((c) => [...c, { id: Date.now(), title: newSystemTask.trim(), category: "negocio", mode: "manual", canDelegate: true }]); setNewSystemTask(""); }}>
-              <input placeholder="Agregar tarea propia..." value={newSystemTask} onChange={(e) => setNewSystemTask(e.target.value)} />
-              <button className="primary-button" type="submit">+</button>
-            </form>
+          <div className="card purpose-block">
+            <h3>🏗️ Sistemas</h3>
+            <p className="helper-copy">No necesitas hacer más, necesitas repetir mejor.</p>
+            <label className="purpose-field">
+              <span>% de tareas repetibles sistematizadas</span>
+              <input type="range" min="0" max="100" value={purpose.systemsPercent || 0} onChange={(e) => updatePurpose("systemsPercent", Number(e.target.value))} />
+              <small>{purpose.systemsPercent || 0}% sistematizado</small>
+            </label>
+            <label className="purpose-field">
+              <span>Micro-victoria de hoy</span>
+              <input type="text" placeholder="Hoy me sentiré orgullosa de..." value={purpose.microVictory || ""} onChange={(e) => updatePurpose("microVictory", e.target.value)} />
+            </label>
+            <label className="task-row">
+              <input type="checkbox" checked={!!purpose.victoryDone} onChange={(e) => updatePurpose("victoryDone", e.target.checked)} />
+              <span>Ya hice mi mínimo indispensable</span>
+            </label>
           </div>
 
           <div className="card purpose-block purpose-block-wide">
@@ -1720,21 +1499,16 @@ export default function App() {
   }
 
   function DashboardSummaryCard() {
-    const healthScore = totals.profit >= 0 && monthlyProgress >= 75 ? "green"
-      : totals.profit >= 0 || monthlyProgress >= 50 ? "orange" : "red";
-    const healthLabel = healthScore === "green" ? "🟢 Negocio saludable"
-      : healthScore === "orange" ? "🟡 Atención" : "🔴 Alerta";
     return (
       <div className="card summary-card">
         <h3>Resumen desde tus pestañas</h3>
-        <div className={`health-badge health-${healthScore}`}>{healthLabel} — {monthlyProgress}% de meta mensual</div>
-        <div className="summary-row"><span>Ingresos</span><strong>{money.format(totals.income)}</strong><small>vs meta {money.format(monthlyGoal)}</small></div>
-        <div className="summary-row"><span>Utilidad</span><strong style={{color: totals.profit >= 0 ? 'var(--green)' : 'var(--pink)'}}>{money.format(totals.profit)}</strong><small>{totals.margin}% margen</small></div>
         <div className="summary-row"><span>Clientas</span><strong>{followUpClients.length}</strong><small>requieren seguimiento</small></div>
         <div className="summary-row"><span>Contenido</span><strong>{contentItems.length - publishedContent}</strong><small>piezas por mover</small></div>
         <div className="summary-row"><span>Hogar</span><strong>{pendingHomeTasks.length}</strong><small>pendientes visibles</small></div>
-        <div className="summary-row"><span>Ánimo</span><strong>{purpose.mood}</strong><small>Energía: {purpose.energy}</small></div>
-        <div className="summary-row"><span>Presupuesto hogar</span><strong>{money.format(homeAvailable)}</strong><small>disponible</small></div>
+        <div className="summary-row"><span>Mejor ingreso</span><strong>{topIncomeSource?.category || "Sin datos"}</strong><small>{topIncomeSource?.description || "Registra ventas"}</small></div>
+        <div className="summary-row"><span>Ánimo</span><strong>{purpose.mood}</strong><small>La semana pasada te sentiste así. Esta semana puede ser más liviana.</small></div>
+        <div className="summary-row"><span>Ventas cerradas</span><strong>{money.format(wonSalesTotal)}</strong><small>Registradas en clientas ganadas</small></div>
+        <div className="summary-row"><span>Presupuesto hogar</span><strong>{money.format(homeAvailable)}</strong><small>Disponible después de gastos y deudas</small></div>
       </div>
     );
   }
@@ -1763,48 +1537,6 @@ export default function App() {
   }
 
 
-}
-
-function SystemsDonut({ tasks }) {
-  const manual = tasks.filter((t) => t.mode === "manual").length;
-  const delegado = tasks.filter((t) => t.mode === "delegado").length;
-  const auto = tasks.filter((t) => t.mode === "automatizado").length;
-  const total = tasks.length || 1;
-  const pManual = Math.round((manual / total) * 100);
-  const pDelegado = Math.round((delegado / total) * 100);
-  const pAuto = Math.round((auto / total) * 100);
-  const r = 40, cx = 50, cy = 50, circ = 2 * Math.PI * r;
-  const segments = [
-    { pct: pManual / 100, color: "#c9607a", label: `Manual ${pManual}%` },
-    { pct: pDelegado / 100, color: "#c9a96e", label: `Delegado ${pDelegado}%` },
-    { pct: pAuto / 100, color: "#2f9f70", label: `Automatizado ${pAuto}%` }
-  ];
-  let offset = 0;
-  return (
-    <div className="systems-donut-wrap">
-      <svg width="100" height="100" viewBox="0 0 100 100">
-        {segments.map((s, i) => {
-          const dash = s.pct * circ;
-          const el = <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={s.color} strokeWidth="18"
-            strokeDasharray={`${dash} ${circ - dash}`}
-            strokeDashoffset={-offset * circ}
-            style={{ transform: "rotate(-90deg)", transformOrigin: "50% 50%" }} />;
-          offset += s.pct;
-          return el;
-        })}
-        <circle cx={cx} cy={cy} r="28" fill="white" />
-        <text x={cx} y={cy + 5} textAnchor="middle" fontSize="13" fontWeight="bold" fill="#6f2f4b">{pAuto}%</text>
-      </svg>
-      <div className="systems-donut-labels">
-        {segments.map((s) => (
-          <div className="systems-donut-label" key={s.label}>
-            <span className="systems-donut-dot" style={{ background: s.color }}></span>
-            <span>{s.label}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
 }
 
 function MetricCard({ title, value, change, tone }) {
