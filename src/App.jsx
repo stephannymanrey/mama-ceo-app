@@ -167,6 +167,7 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
+  const [authName, setAuthName] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authPasswordConfirm, setAuthPasswordConfirm] = useState("");
   const [authNewPassword, setAuthNewPassword] = useState("");
@@ -307,7 +308,11 @@ export default function App() {
       const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
       if (error) setAuthError(translateError(error.message));
     } else {
-      const { error } = await supabase.auth.signUp({ email: authEmail, password: authPassword });
+      const { error } = await supabase.auth.signUp({
+        email: authEmail,
+        password: authPassword,
+        options: { data: { full_name: authName.trim() } }
+      });
       if (error) setAuthError(translateError(error.message));
       else setAuthError("Revisa tu correo para confirmar tu cuenta.");
     }
@@ -703,6 +708,12 @@ export default function App() {
                 Correo electrónico
                 <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} required />
               </label>
+              {authMode === "signup" && (
+                <label>
+                  Tu nombre
+                  <input type="text" placeholder="¿Cómo te llamamos?" value={authName} onChange={(event) => setAuthName(event.target.value)} required />
+                </label>
+              )}
               <label>
                 Contraseña
                 <input type="password" value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={6} />
@@ -779,7 +790,7 @@ export default function App() {
         <header className="topbar">
           <div>
             <p className="view-label">{activeLabel}</p>
-            <h1>¡Hola, Mamá CEO!</h1>
+            <h1>¡Hola, {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mamá CEO"}!</h1>
             <p>Enfocada • Organizada • Imparable</p>
           </div>
           <div className="profile-area">
