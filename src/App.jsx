@@ -747,9 +747,7 @@ export default function App() {
                   Olvidé mi contraseña
                 </button>
               )}
-              <button type="button" className="auth-demo" onClick={() => { setUser({ id: "demo", email: "demo@example.com" }); setSupabaseActive(false); }}>
-                Ver demo del dashboard
-              </button>
+
             </>
           )}
         </div>
@@ -813,7 +811,7 @@ export default function App() {
 
         {!supabaseActive && (
           <div className="local-banner">
-            <strong>Modo local</strong> — estás trabajando con datos guardados en el navegador. Agrega tus variables de Supabase en `.env` para activar sincronización en la nube.
+            <strong>Modo sin conexión</strong> — tus datos se guardan en este navegador. Si cambias de dispositivo o navegador, no verás tus datos.
           </div>
         )}
 
@@ -1211,17 +1209,7 @@ export default function App() {
     );
   }
 
-  function GoalSettingsCard() {
-    return (
-      <div className="card settings-card">
-        <h3>Metas de ingresos</h3>
-        <label><span>Meta mensual</span><input type="number" min="0" value={businessSettings.monthlyGoal} onChange={(event) => updateMonthlyIncomeGoal(event.target.value)} /></label>
-        <label><span>Meta semanal calculada</span><input type="number" min="0" value={businessSettings.weeklyGoal} onChange={(event) => updateBusinessSetting("weeklyGoal", event.target.value)} /></label>
-        <label><span>Meta diaria calculada</span><input type="number" min="0" value={businessSettings.dailyGoal} onChange={(event) => updateBusinessSetting("dailyGoal", event.target.value)} /></label>
-        <p className="helper-copy">Puedes ajustar semana y día manualmente si tu mes tiene campañas o temporadas especiales.</p>
-      </div>
-    );
-  }
+
 
   function ReinvestmentCard() {
     return (
@@ -1281,10 +1269,7 @@ export default function App() {
     return <div className="card calendar-card"><h3>Calendario de la semana</h3><small className="helper-copy">Semana actual</small>{weekDays.map((day) => <div className="calendar-row" key={day}><span>{day}</span><p>—</p></div>)}</div>;
   }
 
-  function GoalRow({ goal }) {
-    const fill = Math.min(Math.round((totals.income / goal.amount) * 100), 100);
-    return <div className="goal-row"><div><strong>{goal.title}</strong><small>{goal.period} • {goal.status} • {money.format(goal.amount)}</small></div><Progress value={fill} tone="purple" /><b>{fill}%</b>{typeof goal.id === "number" ? <button className="row-delete" type="button" onClick={() => setGoals((current) => current.filter((item) => item.id !== goal.id))}>×</button> : <span></span>}</div>;
-  }
+
 }
 
 function MetricCard({ title, value, change, tone }) {
