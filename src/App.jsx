@@ -44,6 +44,42 @@ const initialHomeTasks = [
   { id: 3, title: "Preparar loncheras y rutina AM", category: "Rutina", done: false }
 ];
 
+const initialSystemTasks = [
+  { id: 1, title: "Prospectar clientes nuevos", category: "negocio", mode: "manual", canDelegate: true },
+  { id: 2, title: "Vender y hacer seguimiento", category: "negocio", mode: "manual", canDelegate: true },
+  { id: 3, title: "Crear y publicar contenido", category: "negocio", mode: "manual", canDelegate: true },
+  { id: 4, title: "Cobrar y facturar", category: "negocio", mode: "manual", canDelegate: true },
+  { id: 5, title: "Diseñar piezas gráficas", category: "negocio", mode: "manual", canDelegate: true },
+  { id: 6, title: "Responder mensajes y comentarios", category: "negocio", mode: "manual", canDelegate: true },
+  { id: 7, title: "Mercado y compras del hogar", category: "hogar", mode: "manual", canDelegate: true },
+  { id: 8, title: "Limpieza y orden del hogar", category: "hogar", mode: "manual", canDelegate: true },
+  { id: 9, title: "Rutina de mañana con los niños", category: "maternidad", mode: "manual", canDelegate: false },
+  { id: 10, title: "Tiempo de conexión y juego", category: "maternidad", mode: "manual", canDelegate: false }
+];
+
+const systemSuggestions = {
+  "Prospectar clientes nuevos": { auto: "Crea un embudo con ManyChat o una landing page que capture leads sola.", delegate: "Contrata una asistente virtual para hacer outreach en DMs." },
+  "Vender y hacer seguimiento": { auto: "Usa un CRM simple como HubSpot gratuito para automatizar recordatorios.", delegate: "Una asistente de ventas puede hacer el seguimiento inicial." },
+  "Crear y publicar contenido": { auto: "Programa con Meta Business Suite o Buffer. Graba en lote una vez a la semana.", delegate: "Una editora de contenido puede tomar el material en bruto y publicarlo." },
+  "Cobrar y facturar": { auto: "Usa Stripe, PayU o Wompi — el cobro llega solo sin que escribas a nadie.", delegate: "Una asistente administrativa puede gestionar facturas y cobros." },
+  "Diseñar piezas gráficas": { auto: "Crea plantillas en Canva que solo cambias de texto cada semana.", delegate: "Una diseñadora freelance puede hacer el paquete mensual por horas." },
+  "Responder mensajes y comentarios": { auto: "Configura respuestas rápidas en WhatsApp Business e Instagram.", delegate: "Una community manager puede manejar la bandeja de entrada." },
+  "Mercado y compras del hogar": { auto: "Crea una lista fija en Rappi o el supermercado online de tu ciudad.", delegate: "Puedes delegar las compras a un familiar o servicio de domicilios." },
+  "Limpieza y orden del hogar": { auto: "Establece una rutina de 15 min diarios para mantener el orden.", delegate: "Un servicio de limpieza semanal libera horas valiosas." },
+  "Rutina de mañana con los niños": { protect: "Este tiempo no se delega — se simplifica. Crea una rutina visual que los niños puedan seguir solos con tu guía." },
+  "Tiempo de conexión y juego": { protect: "Este es tu tiempo de presencia real. Bloquéalo en tu agenda como una cita inamovible." }
+};
+
+const initialHomeMaternalTasks = [
+  { id: 1, title: "Rutina de mañana con los niños", category: "Maternidad", done: false },
+  { id: 2, title: "Tiempo de juego y conexión", category: "Maternidad", done: false },
+  { id: 3, title: "Tareas del colegio", category: "Maternidad", done: false }
+];
+
+const initialHomeWellnessTasks = [
+  { id: 1, title: "Ejercicio o caminata", category: "Bienestar", done: false },
+  { id: 2, title: "Tiempo para mí", category: "Bienestar", done: false }
+];
 const initialBusinessSettings = {
   dailyGoal: 750,
   weeklyGoal: 3750,
@@ -162,6 +198,8 @@ export default function App() {
   const [contentItems, setContentItems] = useState(isNewUser ? [] : (stored?.contentItems || initialContent));
   const [goals, setGoals] = useState(isNewUser ? [] : (stored?.goals || initialGoals));
   const [homeTasks, setHomeTasks] = useState(isNewUser ? [] : (stored?.homeTasks || initialHomeTasks));
+  const [systemTasks, setSystemTasks] = useState(stored?.systemTasks || initialSystemTasks);
+  const [newSystemTask, setNewSystemTask] = useState("");
   const [banks, setBanks] = useState(stored?.banks || initialBanks);
   const [newBank, setNewBank] = useState("");
   const [annualBudget, setAnnualBudget] = useState((stored?.annualBudget || initialAnnualBudget).map((row) => {
@@ -219,7 +257,11 @@ export default function App() {
   const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "" });
   const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer" });
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
-  const [homeForm, setHomeForm] = useState({ title: "", category: "Compras" });
+  const [homeForm, setHomeForm] = useState({ title: "", category: "Operaciones" });
+  const [maternalTasks, setMaternalTasks] = useState(stored?.maternalTasks || initialHomeMaternalTasks);
+  const [wellnessTasks, setWellnessTasks] = useState(stored?.wellnessTasks || initialHomeWellnessTasks);
+  const [maternalForm, setMaternalForm] = useState("");
+  const [wellnessForm, setWellnessForm] = useState("");
 
   const money = useMemo(() => new Intl.NumberFormat(currencyLocales[currency] || "en-US", {
     style: "currency",
@@ -531,6 +573,9 @@ export default function App() {
       contentItems,
       goals,
       homeTasks,
+      systemTasks,
+      maternalTasks,
+      wellnessTasks,
       businessSettings,
       banks,
       annualBudget,
@@ -1126,41 +1171,94 @@ export default function App() {
   }
 
   function renderHome() {
-    const homeProgress = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
+    const opsProgress = homeTasks.length ? Math.round((homeTasks.filter(t => t.done).length / homeTasks.length) * 100) : 0;
+    const maternalProgress = maternalTasks.length ? Math.round((maternalTasks.filter(t => t.done).length / maternalTasks.length) * 100) : 0;
+    const wellnessProgress = wellnessTasks.length ? Math.round((wellnessTasks.filter(t => t.done).length / wellnessTasks.length) * 100) : 0;
     return (
       <section className="panel workspace-panel">
-        <div className="section-title"><h2>Hogar</h2><p>{completedHomeTasks}/{homeTasks.length} tareas hechas para bajar carga mental</p></div>
+        <div className="section-title"><h2>Hogar</h2><p>Finanzas, operaciones, maternidad y bienestar en un solo lugar</p></div>
+
         <div className="home-budget-card card">
           <div className="budget-head">
-            <div><h3>Presupuesto mensual del hogar</h3><p>Ingresos, gastos, deudas y disponible familiar.</p></div>
+            <div><h3>💰 Finanzas del hogar</h3><p>Ingresos, gastos, deudas y disponible familiar.</p></div>
             <div className="budget-total"><span>Disponible</span><strong>{money.format(homeAvailable)}</strong></div>
           </div>
           <form className="home-budget-form" onSubmit={addHomeBudgetItem}>
-            <select value={homeBudgetForm.type} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, type: event.target.value }))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
-            <input placeholder="Descripcion" value={homeBudgetForm.description} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, description: event.target.value }))} />
-            <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, amount: event.target.value }))} />
+            <select value={homeBudgetForm.type} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, type: e.target.value }))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
+            <input placeholder="Descripción" value={homeBudgetForm.description} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, description: e.target.value }))} />
+            <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, amount: e.target.value }))} />
             <button className="primary-button" type="submit">Agregar</button>
           </form>
           <div className="home-money-insights">
-            <article><span>Estás ganando</span><strong>{money.format(homeBudgetTotals.income)}</strong></article>
-            <article><span>Estás gastando</span><strong>{money.format(homeSpent)}</strong></article>
+            <article><span>Ganando</span><strong>{money.format(homeBudgetTotals.income)}</strong></article>
+            <article><span>Gastando</span><strong>{money.format(homeSpent)}</strong></article>
             <article><span>Mayor fuga</span><strong>{biggestHomeLeak[0]}</strong><small>{money.format(biggestHomeLeak[1])}</small></article>
-            <article><span>Fondo/ahorro</span><strong>{money.format(homeBudgetTotals.savings)}</strong><small>{homeBudgetTotals.savings > 0 ? "Excelente, estás construyendo paz financiera." : "Empieza con una reserva pequeña esta semana."}</small></article>
+            <article><span>Ahorro</span><strong>{money.format(homeBudgetTotals.savings)}</strong><small>{homeBudgetTotals.savings > 0 ? "Construyendo paz financiera" : "Empieza con algo pequeño"}</small></article>
           </div>
-          <div className="money-track">
-            <span style={{ width: `${Math.min(100, homeBudgetTotals.income ? (homeSpent / homeBudgetTotals.income) * 100 : 0)}%` }}></span>
-            <small>Track: gastado frente a ingresos del hogar</small>
-          </div>
-          <div className="budget-list">{homeBudget.map((item) => <DataRow key={item.id} title={item.description} meta={item.type} value={money.format(item.amount)} onDelete={() => setHomeBudget((current) => current.filter((row) => row.id !== item.id))} />)}</div>
+          <div className="money-track"><span style={{ width: `${Math.min(100, homeBudgetTotals.income ? (homeSpent / homeBudgetTotals.income) * 100 : 0)}%` }}></span><small>Gastado vs ingresos del hogar</small></div>
+          <div className="budget-list">{homeBudget.map((item) => <DataRow key={item.id} title={item.description} meta={item.type} value={money.format(item.amount)} onDelete={() => setHomeBudget((c) => c.filter((r) => r.id !== item.id))} />)}</div>
         </div>
-        <div className="section-layout">
-          <form className="card form-card section-form" onSubmit={addHomeTask}>
-            <h3>Agregar tarea del hogar</h3>
-            <input placeholder="Tarea" value={homeForm.title} onChange={(event) => updateHomeForm("title", event.target.value)} />
-            <select value={homeForm.category} onChange={(event) => updateHomeForm("category", event.target.value)}><option>Compras</option><option>Calendario</option><option>Rutina</option><option>Bienestar</option></select>
-            <button className="primary-button" type="submit">Guardar tarea</button>
-          </form>
-          <div className="card data-card"><h3>Rutinas y pendientes</h3><div className="weekly-goal"><span>Progreso semanal del hogar</span><strong>{homeProgress}%</strong><Progress value={homeProgress} tone="green" /></div>{homeTasks.map((task) => <label className="home-row" key={task.id}><input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} /><span><strong>{task.title}</strong><small>{task.category}</small></span><button type="button" onClick={() => confirmDelete("¿Eliminar esta tarea?", () => setHomeTasks((current) => current.filter((item) => item.id !== task.id)))}>Eliminar</button></label>)}</div>
+
+        <div className="home-zones-grid">
+          <div className="card home-zone">
+            <div className="home-zone-header">
+              <h3>🏠 Operaciones del hogar</h3>
+              <small className="helper-copy">Estas tareas se pueden delegar o automatizar</small>
+            </div>
+            <Progress value={opsProgress} tone="purple" />
+            <small className="helper-copy">{opsProgress}% completado</small>
+            <form className="home-zone-form" onSubmit={(e) => { e.preventDefault(); if (!homeForm.title.trim()) return; setHomeTasks((c) => [...c, { id: Date.now(), title: homeForm.title.trim(), category: homeForm.category, done: false }]); setHomeForm({ title: "", category: "Operaciones" }); }}>
+              <input placeholder="Nueva tarea operativa" value={homeForm.title} onChange={(e) => setHomeForm((c) => ({ ...c, title: e.target.value }))} />
+              <button className="primary-button" type="submit">+</button>
+            </form>
+            {homeTasks.map((task) => (
+              <label className="home-row" key={task.id}>
+                <input type="checkbox" checked={task.done} onChange={() => setHomeTasks((c) => c.map((t) => t.id === task.id ? { ...t, done: !t.done } : t))} />
+                <span><strong>{task.title}</strong><small>{task.category}</small></span>
+                <button type="button" onClick={() => confirmDelete("¿Eliminar?", () => setHomeTasks((c) => c.filter((t) => t.id !== task.id)))}>Eliminar</button>
+              </label>
+            ))}
+          </div>
+
+          <div className="card home-zone home-zone-maternal">
+            <div className="home-zone-header">
+              <h3>💛 Maternidad activa</h3>
+              <small className="helper-copy">Este tiempo no se delega — se protege y simplifica</small>
+            </div>
+            <Progress value={maternalProgress} tone="pink" />
+            <small className="helper-copy">{maternalProgress}% completado</small>
+            <form className="home-zone-form" onSubmit={(e) => { e.preventDefault(); if (!maternalForm.trim()) return; setMaternalTasks((c) => [...c, { id: Date.now(), title: maternalForm.trim(), category: "Maternidad", done: false }]); setMaternalForm(""); }}>
+              <input placeholder="Momento de presencia" value={maternalForm} onChange={(e) => setMaternalForm(e.target.value)} />
+              <button className="primary-button" type="submit">+</button>
+            </form>
+            {maternalTasks.map((task) => (
+              <label className="home-row maternal" key={task.id}>
+                <input type="checkbox" checked={task.done} onChange={() => setMaternalTasks((c) => c.map((t) => t.id === task.id ? { ...t, done: !t.done } : t))} />
+                <span><strong>{task.title}</strong><small>💛 Presencia materna</small></span>
+                <button type="button" onClick={() => confirmDelete("¿Eliminar?", () => setMaternalTasks((c) => c.filter((t) => t.id !== task.id)))}>Eliminar</button>
+              </label>
+            ))}
+          </div>
+
+          <div className="card home-zone">
+            <div className="home-zone-header">
+              <h3>🧘 Bienestar personal</h3>
+              <small className="helper-copy">Tu energía es un recurso — protégela como una cita</small>
+            </div>
+            <Progress value={wellnessProgress} tone="green" />
+            <small className="helper-copy">{wellnessProgress}% completado</small>
+            <form className="home-zone-form" onSubmit={(e) => { e.preventDefault(); if (!wellnessForm.trim()) return; setWellnessTasks((c) => [...c, { id: Date.now(), title: wellnessForm.trim(), category: "Bienestar", done: false }]); setWellnessForm(""); }}>
+              <input placeholder="Hábito de bienestar" value={wellnessForm} onChange={(e) => setWellnessForm(e.target.value)} />
+              <button className="primary-button" type="submit">+</button>
+            </form>
+            {wellnessTasks.map((task) => (
+              <label className="home-row" key={task.id}>
+                <input type="checkbox" checked={task.done} onChange={() => setWellnessTasks((c) => c.map((t) => t.id === task.id ? { ...t, done: !t.done } : t))} />
+                <span><strong>{task.title}</strong><small>{task.category}</small></span>
+                <button type="button" onClick={() => confirmDelete("¿Eliminar?", () => setWellnessTasks((c) => c.filter((t) => t.id !== task.id)))}>Eliminar</button>
+              </label>
+            ))}
+          </div>
         </div>
       </section>
     );
@@ -1292,22 +1390,50 @@ export default function App() {
             <ProgressLabel label="Autocuidado" value={Math.round((selfCareScore / 4) * 100)} tone="green" />
           </div>
 
-          <div className="card purpose-block">
-            <h3>🏗️ Sistemas</h3>
-            <p className="helper-copy">No necesitas hacer más, necesitas repetir mejor.</p>
-            <label className="purpose-field">
-              <span>% de tareas repetibles sistematizadas</span>
-              <input type="range" min="0" max="100" value={purpose.systemsPercent || 0} onChange={(e) => updatePurpose("systemsPercent", Number(e.target.value))} />
-              <small>{purpose.systemsPercent || 0}% sistematizado</small>
-            </label>
-            <label className="purpose-field">
-              <span>Micro-victoria de hoy</span>
-              <input type="text" placeholder="Hoy me sentiré orgullosa de..." value={purpose.microVictory || ""} onChange={(e) => updatePurpose("microVictory", e.target.value)} />
-            </label>
-            <label className="task-row">
-              <input type="checkbox" checked={!!purpose.victoryDone} onChange={(e) => updatePurpose("victoryDone", e.target.checked)} />
-              <span>Ya hice mi mínimo indispensable</span>
-            </label>
+          <div className="card purpose-block purpose-block-wide">
+            <h3>🛠️ Sistemas — ¿Qué sigue dependiendo solo de ti?</h3>
+            <p className="helper-copy">No necesitas hacer más, necesitas soltar más. Marca cada tarea según cómo la manejas hoy.</p>
+            <SystemsDonut tasks={systemTasks} />
+            <div className="systems-list">
+              {systemTasks.map((task) => {
+                const suggestion = systemSuggestions[task.title];
+                return (
+                  <div className="system-task" key={task.id}>
+                    <div className="system-task-header">
+                      <span className={`system-cat system-cat-${task.category}`}>{task.category}</span>
+                      <strong>{task.title}</strong>
+                      <div className="system-modes">
+                        {task.canDelegate ? (
+                          <>
+                            <button type="button" className={task.mode === "manual" ? "mode-btn active-manual" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "manual" } : t))}>🔴 Manual</button>
+                            <button type="button" className={task.mode === "delegado" ? "mode-btn active-delegado" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "delegado" } : t))}>🟡 Delego</button>
+                            <button type="button" className={task.mode === "automatizado" ? "mode-btn active-auto" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "automatizado" } : t))}>🟢 Automatizado</button>
+                          </>
+                        ) : (
+                          <span className="mode-btn mode-protect">💛 Presencia materna</span>
+                        )}
+                      </div>
+                    </div>
+                    {task.mode === "manual" && suggestion && (
+                      <div className="system-suggestion">
+                        {suggestion.protect ? (
+                          <p>📌 {suggestion.protect}</p>
+                        ) : (
+                          <>
+                            {suggestion.auto && <p>⚡ <strong>Automatizar:</strong> {suggestion.auto}</p>}
+                            {suggestion.delegate && <p>🤝 <strong>Delegar:</strong> {suggestion.delegate}</p>}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <form className="home-zone-form" onSubmit={(e) => { e.preventDefault(); if (!newSystemTask.trim()) return; setSystemTasks((c) => [...c, { id: Date.now(), title: newSystemTask.trim(), category: "negocio", mode: "manual", canDelegate: true }]); setNewSystemTask(""); }}>
+              <input placeholder="Agregar tarea propia..." value={newSystemTask} onChange={(e) => setNewSystemTask(e.target.value)} />
+              <button className="primary-button" type="submit">+</button>
+            </form>
           </div>
 
           <div className="card purpose-block purpose-block-wide">
@@ -1456,6 +1582,48 @@ export default function App() {
   }
 
 
+}
+
+function SystemsDonut({ tasks }) {
+  const manual = tasks.filter((t) => t.mode === "manual").length;
+  const delegado = tasks.filter((t) => t.mode === "delegado").length;
+  const auto = tasks.filter((t) => t.mode === "automatizado").length;
+  const total = tasks.length || 1;
+  const pManual = Math.round((manual / total) * 100);
+  const pDelegado = Math.round((delegado / total) * 100);
+  const pAuto = Math.round((auto / total) * 100);
+  const r = 40, cx = 50, cy = 50, circ = 2 * Math.PI * r;
+  const segments = [
+    { pct: pManual / 100, color: "#c9607a", label: `Manual ${pManual}%` },
+    { pct: pDelegado / 100, color: "#c9a96e", label: `Delegado ${pDelegado}%` },
+    { pct: pAuto / 100, color: "#2f9f70", label: `Automatizado ${pAuto}%` }
+  ];
+  let offset = 0;
+  return (
+    <div className="systems-donut-wrap">
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        {segments.map((s, i) => {
+          const dash = s.pct * circ;
+          const el = <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={s.color} strokeWidth="18"
+            strokeDasharray={`${dash} ${circ - dash}`}
+            strokeDashoffset={-offset * circ}
+            style={{ transform: "rotate(-90deg)", transformOrigin: "50% 50%" }} />;
+          offset += s.pct;
+          return el;
+        })}
+        <circle cx={cx} cy={cy} r="28" fill="white" />
+        <text x={cx} y={cy + 5} textAnchor="middle" fontSize="13" fontWeight="bold" fill="#6f2f4b">{pAuto}%</text>
+      </svg>
+      <div className="systems-donut-labels">
+        {segments.map((s) => (
+          <div className="systems-donut-label" key={s.label}>
+            <span className="systems-donut-dot" style={{ background: s.color }}></span>
+            <span>{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function MetricCard({ title, value, change, tone }) {
