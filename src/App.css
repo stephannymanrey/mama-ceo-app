@@ -2633,6 +2633,13 @@ button {
 .action-day-left span { font-size:13px; color:var(--muted); }
 .action-day-right { display:grid; gap:8px; text-align:right; min-width:180px; }
 .action-day-right p { margin:0; font-size:14px; color:var(--ink); font-weight:600; }
+/* ── Content type badges ── */
+.content-type-badge { display:inline-block; padding:1px 7px; border-radius:999px; font-size:10px; font-weight:800; text-transform:uppercase; margin-right:4px; }
+.content-type-educativo { background:var(--purple-soft); color:var(--purple); }
+.content-type-storytelling { background:var(--pink-soft); color:var(--pink); }
+.content-type-entretenido { background:var(--orange-soft); color:#8a5a00; }
+.content-type-oferta { background:var(--green-soft); color:var(--green); }
+
 @media (max-width:720px) {
   .action-day-banner { grid-template-columns:1fr; }
   .action-day-right { text-align:left; }

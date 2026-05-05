@@ -27,9 +27,9 @@ const initialClients = [
 ];
 
 const initialContent = [
-  { id: 1, title: "Reel: enfoque semanal", hook: "Deja de hacer mil cosas", format: "Reel", network: "Instagram", week: "Semana 1", status: "Publicado" },
-  { id: 2, title: "Post: como ordenar tus ventas", hook: "Tu negocio necesita claridad", format: "Post", network: "Instagram", week: "Semana 2", status: "Programado" },
-  { id: 3, title: "Email: oferta de mentoria", hook: "Hoy puedes vender con calma", format: "Email", network: "Website", week: "Semana 3", status: "Por hacer" }
+  { id: 1, title: "Reel: enfoque semanal", hook: "Deja de hacer mil cosas", format: "Reel", network: "Instagram", week: "Semana 1", status: "Publicado", type: "Educativo" },
+  { id: 2, title: "Post: como ordenar tus ventas", hook: "Tu negocio necesita claridad", format: "Post", network: "Instagram", week: "Semana 2", status: "Programado", type: "Educativo" },
+  { id: 3, title: "Email: oferta de mentoria", hook: "Hoy puedes vender con calma", format: "Email", network: "Website", week: "Semana 3", status: "Por hacer", type: "Oferta" }
 ];
 
 const initialGoals = [
@@ -272,7 +272,7 @@ export default function App() {
   const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "" });
   const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
-  const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer" });
+  const [contentForm, setContentForm] = useState({ title: "", hook: "", type: "Educativo", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer" });
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Operaciones" });
 
@@ -643,7 +643,7 @@ export default function App() {
     if (!contentForm.title.trim()) return;
     const network = contentForm.network === "Otra" ? contentForm.customNetwork.trim() || "Otra" : contentForm.network;
     setContentItems((current) => [{ id: Date.now(), ...contentForm, network, title: contentForm.title.trim(), hook: contentForm.hook.trim() }, ...current]);
-    setContentForm({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer" });
+    setContentForm({ title: "", hook: "", type: "Educativo", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer" });
   };
 
   const addGoal = (event) => {
@@ -1348,25 +1348,132 @@ export default function App() {
   }
 
   function renderContent() {
-    const unpublished = contentItems.filter((item) => item.status !== "Publicado").length;
-    const recordMessage = publishedContent >= 3 ? "Estás on fire con tu consistencia de publicación." : publishedContent >= 1 ? "Vas tomando ritmo. El siguiente paso es sostenerlo una semana más." : "Empieza con una pieza simple que venda, no con perfección.";
+    const contentTypes = [
+      { key: "Educativo", color: "purple", pct: 40, desc: "Demuestra que sabes" },
+      { key: "Storytelling", color: "pink", pct: 30, desc: "Genera conexión" },
+      { key: "Entretenido", color: "orange", pct: 20, desc: "Construye audiencia" },
+      { key: "Oferta", color: "green", pct: 10, desc: "Convierte a ventas" }
+    ];
+    const published = contentItems.filter((i) => i.status === "Publicado");
+    const total = published.length || 1;
+    const typeCounts = contentTypes.map((t) => ({
+      ...t,
+      actual: published.filter((i) => i.type === t.key).length,
+      actualPct: Math.round((published.filter((i) => i.type === t.key).length / total) * 100)
+    }));
+
+    // Semaforo de marketing
+    const ofertaCount = published.filter((i) => i.type === "Oferta").length;
+    const leadsFromContent = clients.filter((c) => c.source === "Contenido / Reel").length;
+    const consistencyWeeks = ["Semana 1","Semana 2","Semana 3","Semana 4"].filter((w) => contentItems.some((i) => i.week === w && i.status === "Publicado")).length;
+    const marketingScore = published.length >= 4 && ofertaCount >= 1 && consistencyWeeks >= 3 ? "green"
+      : published.length >= 2 || ofertaCount >= 1 ? "orange" : "red";
+    const marketingMsg = marketingScore === "green"
+      ? "🟢 Tu contenido está trabajando bien. Mantén la consistencia y sigue mezclando tipos."
+      : marketingScore === "orange"
+        ? "🟡 Vas bien pero falta consistencia o contenido de oferta directa."
+        : "🔴 Tu contenido aún no está atrayendo. Publica más seguido y agrega al menos 1 oferta clara.";
+
+    // Que publicar esta semana
+    const missingType = typeCounts.find((t) => t.actualPct < t.pct / 2);
+    const nextSuggestion = missingType
+      ? `Publicas poco contenido de tipo “${missingType.key}” (tienes ${missingType.actualPct}%, meta ${missingType.pct}%). Esta semana crea uno.`
+      : "Tu mezcla de contenido está balanceada. Sigue publicando con consistencia.";
+
+    const unpublished = contentItems.filter((i) => i.status !== "Publicado").length;
+
     return (
       <section className="panel workspace-panel">
-        <div className="section-title"><h2>Contenido</h2><p>{publishedContent} publicado • {contentItems.length} piezas en pipeline</p></div>
+        <div className="section-title"><h2>Marketing &amp; Contenido</h2><p>{published.length} publicados • {consistencyWeeks}/4 semanas activas</p></div>
+
+        {/* Semáforo */}
+        <div className={`health-banner health-${marketingScore}`} style={{marginBottom:"14px"}}>
+          <strong>{marketingMsg}</strong>
+          <div className="health-stats">
+            <span>Publicados: <b>{published.length}</b></span>
+            <span>Semanas activas: <b>{consistencyWeeks}/4</b></span>
+            <span>Ofertas directas: <b>{ofertaCount}</b></span>
+            <span>Leads por contenido: <b>{leadsFromContent}</b></span>
+          </div>
+        </div>
+
+        {/* Mezcla de contenido */}
+        <div className="card" style={{marginBottom:"14px",display:"grid",gap:"14px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <h3 style={{margin:0}}>🎯 Tu mezcla de contenido</h3>
+            <small style={{color:"var(--muted)",fontSize:"12px"}}>basado en publicados</small>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(140px,1fr))",gap:"10px"}}>
+            {typeCounts.map((t) => {
+              const ok = t.actualPct >= t.pct * 0.7;
+              return (
+                <div key={t.key} style={{border:`2px solid ${ok ? "var(--green)" : "var(--orange)"}`,borderRadius:"12px",padding:"12px",background:ok ? "var(--green-soft)" : "var(--orange-soft)"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
+                    <strong style={{fontSize:"13px"}}>{t.key}</strong>
+                    <span style={{fontSize:"11px",fontWeight:800,color:ok ? "var(--green)" : "#8a5a00"}}>{t.actualPct}% / {t.pct}%</span>
+                  </div>
+                  <Progress value={t.actualPct} tone={ok ? "green" : "orange"} />
+                  <small style={{color:"var(--muted)",fontSize:"11px",marginTop:"4px",display:"block"}}>{t.desc} • {t.actual} pieza{t.actual !== 1 ? "s" : ""}</small>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{padding:"12px 14px",borderRadius:"10px",background:"var(--purple-soft)",borderLeft:"3px solid var(--purple)"}}>
+            <p style={{margin:0,fontSize:"13px",color:"#3a1a4a"}}>💡 <strong>Esta semana publica:</strong> {nextSuggestion}</p>
+          </div>
+        </div>
+
         <div className="section-layout">
           <form className="card form-card section-form" onSubmit={addContent}>
             <h3>Agregar contenido</h3>
-            <input placeholder="Titulo del contenido" value={contentForm.title} onChange={(event) => updateContentForm("title", event.target.value)} />
-            <input placeholder="Hook o primera frase" value={contentForm.hook} onChange={(event) => updateContentForm("hook", event.target.value)} />
-            <select value={contentForm.format} onChange={(event) => updateContentForm("format", event.target.value)}><option>Reel</option><option>Historia</option><option>Post</option><option>Carrusel</option><option>Foto</option><option>Articulo</option><option>Episodio</option></select>
-            <select value={contentForm.network} onChange={(event) => updateContentForm("network", event.target.value)}><option>Instagram</option><option>YouTube</option><option>Spotify</option><option>TikTok</option><option>Website</option><option>Otra</option></select>
-            {contentForm.network === "Otra" && <input placeholder="Cual red social" value={contentForm.customNetwork} onChange={(event) => updateContentForm("customNetwork", event.target.value)} />}
-            <select value={contentForm.week} onChange={(event) => updateContentForm("week", event.target.value)}><option>Semana 1</option><option>Semana 2</option><option>Semana 3</option><option>Semana 4</option></select>
-            <select value={contentForm.status} onChange={(event) => updateContentForm("status", event.target.value)}><option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option></select>
-            <button className="primary-button" type="submit">Guardar contenido</button>
+            <input placeholder="Título del contenido" value={contentForm.title} onChange={(e) => updateContentForm("title", e.target.value)} />
+            <input placeholder="Hook o primera frase" value={contentForm.hook} onChange={(e) => updateContentForm("hook", e.target.value)} />
+            <select value={contentForm.type} onChange={(e) => updateContentForm("type", e.target.value)}>
+              <option>Educativo</option>
+              <option>Storytelling</option>
+              <option>Entretenido</option>
+              <option>Oferta</option>
+            </select>
+            <select value={contentForm.format} onChange={(e) => updateContentForm("format", e.target.value)}><option>Reel</option><option>Historia</option><option>Post</option><option>Carrusel</option><option>Foto</option><option>Articulo</option><option>Episodio</option></select>
+            <select value={contentForm.network} onChange={(e) => updateContentForm("network", e.target.value)}><option>Instagram</option><option>YouTube</option><option>Spotify</option><option>TikTok</option><option>Website</option><option>Otra</option></select>
+            {contentForm.network === "Otra" && <input placeholder="Cuál red social" value={contentForm.customNetwork} onChange={(e) => updateContentForm("customNetwork", e.target.value)} />}
+            <select value={contentForm.week} onChange={(e) => updateContentForm("week", e.target.value)}><option>Semana 1</option><option>Semana 2</option><option>Semana 3</option><option>Semana 4</option></select>
+            <select value={contentForm.status} onChange={(e) => updateContentForm("status", e.target.value)}><option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option></select>
+            <button className="primary-button" type="submit">Guardar</button>
           </form>
-          <div className="card data-card content-record"><h3>Record de publicación</h3><div className="record-grid"><MetricCard title="Publicado" value={publishedContent} change="piezas" tone="green" /><MetricCard title="Pendiente" value={unpublished} change="por mover" tone="orange" /></div><p>{recordMessage}</p></div>
-          <div className="card data-card content-table"><h3>Tabla de contenido por semanas</h3>{["Semana 1", "Semana 2", "Semana 3", "Semana 4"].map((week) => <div className="content-week" key={week}><h4>{week}</h4>{contentItems.filter((item) => item.week === week).map((item) => <div className="content-row" key={item.id}><div><strong>{item.title}</strong><small>{item.hook || "Sin hook"} • {item.format} • {item.network}</small></div><select value={item.status} onChange={(event) => updateContentStatus(item.id, event.target.value)}><option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option></select><button type="button" onClick={() => confirmDelete("¿Eliminar este contenido?", () => setContentItems((current) => current.filter((content) => content.id !== item.id)))}>Eliminar</button></div>)}</div>)}</div>
+
+          <div style={{display:"grid",gap:"14px"}}>
+            <div className="card data-card">
+              <h3>Resumen</h3>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                <MetricCard title="Publicado" value={published.length} change="piezas" tone="green" />
+                <MetricCard title="Pendiente" value={unpublished} change="por mover" tone="orange" />
+              </div>
+              <p className="helper-copy">{published.length >= 3 ? "Estás on fire con tu consistencia." : published.length >= 1 ? "Vas tomando ritmo. Sosténlo una semana más." : "Empieza con una pieza simple que venda."}</p>
+            </div>
+
+            <div className="card data-card content-table">
+              <h3>Tabla por semanas</h3>
+              {["Semana 1","Semana 2","Semana 3","Semana 4"].map((week) => (
+                <div className="content-week" key={week}>
+                  <h4>{week}</h4>
+                  {contentItems.filter((i) => i.week === week).map((item) => (
+                    <div className="content-row" key={item.id}>
+                      <div>
+                        <strong>{item.title}</strong>
+                        <small>
+                          <span className={`content-type-badge content-type-${(item.type || "Educativo").toLowerCase()}`}>{item.type || "Educativo"}</span>
+                          {" "}{item.hook || "Sin hook"} • {item.format} • {item.network}
+                        </small>
+                      </div>
+                      <select value={item.status} onChange={(e) => updateContentStatus(item.id, e.target.value)}><option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option></select>
+                      <button type="button" onClick={() => confirmDelete("¿Eliminar?", () => setContentItems((c) => c.filter((x) => x.id !== item.id)))}>Eliminar</button>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
     );
@@ -1374,40 +1481,95 @@ export default function App() {
 
   function renderHome() {
     const homeProgress = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
+    const catConfig = {
+      Compras: { icon: "🛒", color: "var(--orange)", bg: "var(--orange-soft)" },
+      Calendario: { icon: "📅", color: "var(--purple)", bg: "var(--purple-soft)" },
+      Rutina: { icon: "☀️", color: "#c9607a", bg: "var(--pink-soft)" },
+      Bienestar: { icon: "💚", color: "var(--green)", bg: "var(--green-soft)" }
+    };
+    const tasksByCategory = ["Compras","Calendario","Rutina","Bienestar"].map((cat) => ({
+      cat,
+      ...catConfig[cat],
+      tasks: homeTasks.filter((t) => t.category === cat)
+    }));
     return (
       <section className="panel workspace-panel">
-        <div className="section-title"><h2>Hogar</h2><p>{completedHomeTasks}/{homeTasks.length} tareas hechas para bajar carga mental</p></div>
+        <div className="section-title"><h2>Hogar</h2><p>{completedHomeTasks}/{homeTasks.length} tareas • {money.format(homeAvailable)} disponible</p></div>
+
+        {/* Presupuesto del hogar */}
         <div className="home-budget-card card">
           <div className="budget-head">
             <div><h3>Presupuesto mensual del hogar</h3><p>Ingresos, gastos, deudas y disponible familiar.</p></div>
-            <div className="budget-total"><span>Disponible</span><strong>{money.format(homeAvailable)}</strong></div>
+            <div className="budget-total"><span>Disponible</span><strong style={{color: homeAvailable >= 0 ? "#6f2f4b" : "var(--pink)"}}>{money.format(homeAvailable)}</strong></div>
           </div>
           <form className="home-budget-form" onSubmit={addHomeBudgetItem}>
-            <select value={homeBudgetForm.type} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, type: event.target.value }))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
-            <input placeholder="Descripcion" value={homeBudgetForm.description} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, description: event.target.value }))} />
-            <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, amount: event.target.value }))} />
+            <select value={homeBudgetForm.type} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, type: e.target.value }))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
+            <input placeholder="Descripción" value={homeBudgetForm.description} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, description: e.target.value }))} />
+            <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, amount: e.target.value }))} />
             <button className="primary-button" type="submit">Agregar</button>
           </form>
           <div className="home-money-insights">
-            <article><span>Estás ganando</span><strong>{money.format(homeBudgetTotals.income)}</strong></article>
-            <article><span>Estás gastando</span><strong>{money.format(homeSpent)}</strong></article>
-            <article><span>Mayor fuga</span><strong>{biggestHomeLeak[0]}</strong><small>{money.format(biggestHomeLeak[1])}</small></article>
-            <article><span>Fondo/ahorro</span><strong>{money.format(homeBudgetTotals.savings)}</strong><small>{homeBudgetTotals.savings > 0 ? "Excelente, estás construyendo paz financiera." : "Empieza con una reserva pequeña esta semana."}</small></article>
+            <article><span>Ganando</span><strong>{money.format(homeBudgetTotals.income)}</strong></article>
+            <article><span>Gastando</span><strong>{money.format(homeSpent)}</strong></article>
+            <article><span>Mayor fuga</span><strong style={{fontSize:"14px"}}>{biggestHomeLeak[0]}</strong><small>{money.format(biggestHomeLeak[1])}</small></article>
+            <article><span>Ahorro</span><strong>{money.format(homeBudgetTotals.savings)}</strong><small>{homeBudgetTotals.savings > 0 ? "✅ construyendo paz" : "empieza con poco"}</small></article>
           </div>
           <div className="money-track">
             <span style={{ width: `${Math.min(100, homeBudgetTotals.income ? (homeSpent / homeBudgetTotals.income) * 100 : 0)}%` }}></span>
-            <small>Track: gastado frente a ingresos del hogar</small>
+            <small>Gastado vs ingresos del hogar</small>
           </div>
-          <div className="budget-list">{homeBudget.map((item) => <DataRow key={item.id} title={item.description} meta={item.type} value={money.format(item.amount)} onDelete={() => setHomeBudget((current) => current.filter((row) => row.id !== item.id))} />)}</div>
+          <div className="budget-list">{homeBudget.map((item) => <DataRow key={item.id} title={item.description} meta={item.type} value={money.format(item.amount)} onDelete={() => setHomeBudget((c) => c.filter((r) => r.id !== item.id))} />)}</div>
         </div>
-        <div className="section-layout">
-          <form className="card form-card section-form" onSubmit={addHomeTask}>
-            <h3>Agregar tarea del hogar</h3>
-            <input placeholder="Tarea" value={homeForm.title} onChange={(event) => updateHomeForm("title", event.target.value)} />
-            <select value={homeForm.category} onChange={(event) => updateHomeForm("category", event.target.value)}><option>Compras</option><option>Calendario</option><option>Rutina</option><option>Bienestar</option></select>
+
+        {/* Tareas por categoría */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(220px,1fr))",gap:"14px",marginBottom:"14px"}}>
+          {tasksByCategory.map(({ cat, icon, color, bg, tasks: catTasks }) => (
+            <div key={cat} className="card" style={{display:"grid",gap:"10px",alignContent:"start",minHeight:"auto",borderTop:`3px solid ${color}`}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <h3 style={{margin:0,fontSize:"14px"}}>{icon} {cat}</h3>
+                <span style={{fontSize:"11px",fontWeight:800,color,background:bg,padding:"2px 8px",borderRadius:"999px"}}>{catTasks.filter((t) => t.done).length}/{catTasks.length}</span>
+              </div>
+              {catTasks.map((task) => (
+                <label key={task.id} className="home-row" style={{gridTemplateColumns:"auto 1fr auto",minHeight:"44px"}}>
+                  <input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} />
+                  <span><strong style={{fontSize:"13px"}}>{task.title}</strong></span>
+                  <button type="button" className="row-delete" onClick={() => confirmDelete("¿Eliminar?", () => setHomeTasks((c) => c.filter((t) => t.id !== task.id)))}>×</button>
+                </label>
+              ))}
+              {catTasks.length === 0 && <small style={{color:"var(--muted)"}}>Sin tareas en esta categoría</small>}
+            </div>
+          ))}
+        </div>
+
+        {/* Agregar tarea + progreso */}
+        <div style={{display:"grid",gridTemplateColumns:"300px 1fr",gap:"14px",alignItems:"start"}}>
+          <form className="card form-card" onSubmit={addHomeTask} style={{display:"grid",gap:"10px",minHeight:"auto"}}>
+            <h3>Agregar tarea</h3>
+            <input placeholder="Tarea" value={homeForm.title} onChange={(e) => updateHomeForm("title", e.target.value)} />
+            <select value={homeForm.category} onChange={(e) => updateHomeForm("category", e.target.value)}><option>Compras</option><option>Calendario</option><option>Rutina</option><option>Bienestar</option></select>
             <button className="primary-button" type="submit">Guardar tarea</button>
           </form>
-          <div className="card data-card"><h3>Rutinas y pendientes</h3><div className="weekly-goal"><span>Progreso semanal del hogar</span><strong>{homeProgress}%</strong><Progress value={homeProgress} tone="green" /></div>{homeTasks.map((task) => <label className="home-row" key={task.id}><input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} /><span><strong>{task.title}</strong><small>{task.category}</small></span><button type="button" onClick={() => confirmDelete("¿Eliminar esta tarea?", () => setHomeTasks((current) => current.filter((item) => item.id !== task.id)))}>Eliminar</button></label>)}</div>
+          <div className="card" style={{display:"grid",gap:"12px",minHeight:"auto"}}>
+            <h3>Progreso semanal del hogar</h3>
+            <div className="weekly-goal">
+              <span>Tareas completadas</span>
+              <strong>{homeProgress}%</strong>
+              <Progress value={homeProgress} tone="green" />
+            </div>
+            <p className="helper-copy">{homeProgress >= 80 ? "🔥 Semana del hogar excelente. Tu mente está más libre para vender." : homeProgress >= 50 ? "👍 Buen avance. Delega o simplifica lo que queda." : "⚠️ La carga del hogar pesa. Elige 1 tarea urgente y delega el resto."}</p>
+            <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+              {["Compras","Calendario","Rutina","Bienestar"].map((cat) => {
+                const cfg = catConfig[cat];
+                const done = homeTasks.filter((t) => t.category === cat && t.done).length;
+                const total = homeTasks.filter((t) => t.category === cat).length;
+                return total > 0 ? (
+                  <span key={cat} style={{fontSize:"12px",fontWeight:700,padding:"4px 10px",borderRadius:"999px",background:cfg.bg,color:cfg.color}}>
+                    {cfg.icon} {cat} {done}/{total}
+                  </span>
+                ) : null;
+              })}
+            </div>
+          </div>
         </div>
       </section>
     );
