@@ -1374,21 +1374,54 @@ export default function App() {
           </div>
 
           <div className="card purpose-block">
-            <h3>🏗️ Sistemas</h3>
-            <p className="helper-copy">No necesitas hacer más, necesitas repetir mejor.</p>
-            <label className="purpose-field">
-              <span>% de tareas repetibles sistematizadas</span>
-              <input type="range" min="0" max="100" value={purpose.systemsPercent || 0} onChange={(e) => updatePurpose("systemsPercent", Number(e.target.value))} />
-              <small>{purpose.systemsPercent || 0}% sistematizado</small>
-            </label>
-            <label className="purpose-field">
-              <span>Micro-victoria de hoy</span>
-              <input type="text" placeholder="Hoy me sentiré orgullosa de..." value={purpose.microVictory || ""} onChange={(e) => updatePurpose("microVictory", e.target.value)} />
-            </label>
-            <label className="task-row">
-              <input type="checkbox" checked={!!purpose.victoryDone} onChange={(e) => updatePurpose("victoryDone", e.target.checked)} />
-              <span>Ya hice mi mínimo indispensable</span>
-            </label>
+            <h3>🏗️ Autoevaluación de sistemas</h3>
+            <p className="helper-copy">No necesitas hacer más, necesitas soltar más. Evalúa una tarea a la vez.</p>
+            <SystemsDonut tasks={systemTasks} />
+            <div className="carousel-wrap">
+              <div className="carousel-header">
+                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.max(0, s - 1))} disabled={systemSlide === 0}>←</button>
+                <span className="carousel-counter">{systemSlide + 1} de {systemTasks.length}</span>
+                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.min(systemTasks.length - 1, s + 1))} disabled={systemSlide === systemTasks.length - 1}>→</button>
+              </div>
+              {(() => {
+                const task = systemTasks[systemSlide];
+                const suggestion = task ? systemSuggestions[task.title] : null;
+                return task ? (
+                  <div className="carousel-card">
+                    <span className={`system-cat system-cat-${task.category}`}>{task.category}</span>
+                    <h4>{task.title}</h4>
+                    <div className="system-modes">
+                      {task.canDelegate ? (
+                        <>
+                          <button type="button" className={task.mode === "manual" ? "mode-btn active-manual" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "manual" } : t))}>🔴 Lo hago yo</button>
+                          <button type="button" className={task.mode === "delegado" ? "mode-btn active-delegado" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "delegado" } : t))}>🟡 Lo delego</button>
+                          <button type="button" className={task.mode === "automatizado" ? "mode-btn active-auto" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "automatizado" } : t))}>🟢 Automatizado</button>
+                        </>
+                      ) : (
+                        <span className="mode-btn mode-protect">💛 Presencia materna — no se delega</span>
+                      )}
+                    </div>
+                    {task.mode === "manual" && suggestion && (
+                      <div className="system-suggestion">
+                        {suggestion.protect ? (
+                          <p>📌 {suggestion.protect}</p>
+                        ) : (
+                          <>
+                            {suggestion.auto && <p>⚡ <strong>Automatizar:</strong> {suggestion.auto}</p>}
+                            {suggestion.delegate && <p>🤝 <strong>Delegar:</strong> {suggestion.delegate}</p>}
+                            <a href="https://www.umpacademy.co/membresia" target="_blank" rel="noreferrer" className="ump-link">🎓 Aprende cómo en UMP Academy →</a>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ) : null;
+              })()}
+              <form className="source-form" style={{marginTop:"12px"}} onSubmit={(e) => { e.preventDefault(); if (!newSystemTask.trim()) return; setSystemTasks((c) => [...c, { id: Date.now(), title: newSystemTask.trim(), category: "negocio", mode: "manual", canDelegate: true }]); setNewSystemTask(""); setSystemSlide(systemTasks.length); }}>
+                <input placeholder="Agregar mi propia tarea..." value={newSystemTask} onChange={(e) => setNewSystemTask(e.target.value)} />
+                <button className="primary-button" type="submit">+</button>
+              </form>
+            </div>
           </div>
 
           <div className="card purpose-block purpose-block-wide">
@@ -1537,6 +1570,48 @@ export default function App() {
   }
 
 
+}
+
+function SystemsDonut({ tasks }) {
+  const manual = tasks.filter((t) => t.mode === "manual").length;
+  const delegado = tasks.filter((t) => t.mode === "delegado").length;
+  const auto = tasks.filter((t) => t.mode === "automatizado").length;
+  const total = tasks.length || 1;
+  const pManual = Math.round((manual / total) * 100);
+  const pDelegado = Math.round((delegado / total) * 100);
+  const pAuto = Math.round((auto / total) * 100);
+  const r = 40, cx = 50, cy = 50, circ = 2 * Math.PI * r;
+  const segments = [
+    { pct: pManual / 100, color: "#c9607a", label: `Manual ${pManual}%` },
+    { pct: pDelegado / 100, color: "#c9a96e", label: `Delegado ${pDelegado}%` },
+    { pct: pAuto / 100, color: "#2f9f70", label: `Automatizado ${pAuto}%` }
+  ];
+  let offset = 0;
+  return (
+    <div className="systems-donut-wrap">
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        {segments.map((s, i) => {
+          const dash = s.pct * circ;
+          const el = <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={s.color} strokeWidth="18"
+            strokeDasharray={`${dash} ${circ - dash}`}
+            strokeDashoffset={-offset * circ}
+            style={{ transform: "rotate(-90deg)", transformOrigin: "50% 50%" }} />;
+          offset += s.pct;
+          return el;
+        })}
+        <circle cx={cx} cy={cy} r="28" fill="white" />
+        <text x={cx} y={cy + 5} textAnchor="middle" fontSize="13" fontWeight="bold" fill="#6f2f4b">{pAuto}%</text>
+      </svg>
+      <div className="systems-donut-labels">
+        {segments.map((s) => (
+          <div className="systems-donut-label" key={s.label}>
+            <span className="systems-donut-dot" style={{ background: s.color }}></span>
+            <span>{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function MetricCard({ title, value, change, tone }) {

@@ -2523,3 +2523,61 @@ button {
   .source-form { grid-template-columns: 1fr 1fr; }
   .source-form button { grid-column: 1 / -1; }
 }
+
+/* ── Health banner ── */
+.health-banner { border-radius:14px; padding:18px 22px; margin-bottom:16px; display:grid; gap:8px; }
+.health-banner strong { font-size:18px; }
+.health-banner p { margin:0; font-size:14px; }
+.health-stats { display:flex; gap:20px; flex-wrap:wrap; font-size:13px; }
+.health-green { background:var(--green-soft); color:#1a5c3a; border:1px solid rgba(47,159,112,0.2); }
+.health-orange { background:var(--orange-soft); color:#7a4a00; border:1px solid rgba(201,169,110,0.3); }
+.health-red { background:var(--pink-soft); color:#8a1a2e; border:1px solid rgba(201,96,122,0.2); }
+
+/* ── Fuentes de ingreso ── */
+.business-sources-grid { display:grid; grid-template-columns:1.2fr 1fr; gap:16px; margin-bottom:16px; }
+.source-row { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
+.source-row:last-of-type { border-bottom:none; }
+.source-info strong { display:block; font-size:14px; }
+.source-info small { color:var(--muted); font-size:12px; }
+.source-right { display:flex; align-items:center; gap:8px; }
+.source-right input { width:90px; min-height:34px; border:1px solid var(--line); border-radius:8px; padding:0 8px; font:inherit; }
+.source-right small { font-size:12px; color:var(--muted); white-space:nowrap; }
+.source-form { display:grid; grid-template-columns:minmax(0,1fr) 120px auto; gap:8px; margin-top:12px; }
+.source-form input { min-height:40px; border:1px solid var(--line); border-radius:8px; padding:0 10px; font:inherit; background:#fff; color:var(--ink); }
+
+/* ── Sistemas ── */
+.system-cat { font-size:11px; font-weight:800; padding:3px 8px; border-radius:999px; text-transform:uppercase; }
+.system-cat-negocio { background:var(--purple-soft); color:var(--purple); }
+.system-cat-hogar { background:var(--orange-soft); color:#8a5a00; }
+.system-cat-maternidad { background:var(--pink-soft); color:var(--pink); }
+.system-modes { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+.mode-btn { min-height:32px; border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--muted); font-size:12px; font-weight:700; padding:0 10px; cursor:pointer; }
+.mode-btn.active-manual { background:var(--pink-soft); color:var(--pink); border-color:var(--pink); }
+.mode-btn.active-delegado { background:var(--orange-soft); color:#8a5a00; border-color:var(--orange); }
+.mode-btn.active-auto { background:var(--green-soft); color:var(--green); border-color:var(--green); }
+.mode-btn.mode-protect { background:var(--pink-soft); color:var(--pink); border-color:var(--pink); cursor:default; }
+.system-suggestion { border-left:3px solid var(--purple); padding:10px 14px; background:var(--purple-soft); border-radius:0 8px 8px 0; display:grid; gap:6px; margin-top:10px; }
+.system-suggestion p { margin:0; font-size:13px; color:#3a1a4a; line-height:1.5; }
+.systems-donut-wrap { display:flex; align-items:center; gap:20px; padding:14px; border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,0.7); margin-bottom:12px; }
+.systems-donut-labels { display:grid; gap:6px; }
+.systems-donut-label { display:flex; align-items:center; gap:8px; font-size:13px; }
+.systems-donut-dot { width:12px; height:12px; border-radius:50%; flex:0 0 auto; }
+
+/* ── Carrusel ── */
+.carousel-wrap { display:grid; gap:12px; }
+.carousel-header { display:flex; align-items:center; gap:16px; }
+.carousel-nav { width:38px; height:38px; border-radius:50%; border:1px solid var(--line); background:#fff; font-size:18px; color:var(--purple); display:grid; place-items:center; cursor:pointer; }
+.carousel-nav:disabled { opacity:0.3; cursor:default; }
+.carousel-counter { font-size:13px; color:var(--muted); font-weight:700; }
+.carousel-card { border:1px solid var(--line); border-radius:16px; background:rgba(255,255,255,0.9); padding:22px; display:grid; gap:10px; min-height:140px; }
+.carousel-card h4 { margin:0; font-size:20px; color:var(--ink); }
+
+/* ── UMP link ── */
+.ump-link { display:inline-block; padding:10px 16px; border-radius:10px; background:linear-gradient(135deg,#9b2d6f,#c9607a); color:#fff; font-size:13px; font-weight:700; text-decoration:none; margin-top:6px; }
+.ump-link:hover { opacity:0.88; }
+
+@media (max-width:1180px) {
+  .business-sources-grid { grid-template-columns:1fr; }
+  .source-form { grid-template-columns:1fr 1fr; }
+  .source-form button { grid-column:1/-1; }
+}
