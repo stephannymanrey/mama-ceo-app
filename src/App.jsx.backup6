@@ -1044,37 +1044,29 @@ export default function App() {
   );
 
   function renderDashboard() {
-    const hotLeads = clients.filter((c) => c.status === "Lead caliente").length;
-    const familyDaysCount = Object.values(purpose.familyDays || {}).filter(Boolean).length;
-    const presenceMsg = familyDaysCount >= 5 ? "Semana excelente de presencia 💛" : familyDaysCount >= 3 ? "Buen ritmo, sigue presente" : "Puedes mejorar tu presencia esta semana";
-    const unpublishedContent = contentItems.filter((i) => i.status !== "Publicado").length;
-    const hotClient = clients.filter((c) => c.status === "Lead caliente")[0];
-
     return (
       <>
-        {/* Banner de enfoque */}
         <section className="focus-banner">
           <div className="focus-copy">
             <span className="target-icon">◎</span>
             <div>
-              <p className="eyebrow">Tu enfoque de la semana</p>
-              <h2>{monthlyProgress >= 80 ? "Cierra ventas pendientes y protege tu energía." : "Haz seguimiento a clientas y prioriza acciones que generan caja."}</h2>
+              <p className="eyebrow">Tu enfoque de excelencia de la semana</p>
+              <h2>{monthlyProgress >= 80 ? "Cierra ventas pendientes y protege tu energia." : "Haz seguimiento a clientas y prioriza acciones que generan caja."}</h2>
               <span className="pill">Elige la acción pequeña que más resultado produce</span>
             </div>
           </div>
           <div className="goal-box">
-            <p>Meta mensual</p>
+            <p>Tu meta financiera mensual</p>
             <strong>{money.format(monthlyGoal)}</strong>
             <Progress value={monthlyProgress} tone="purple" />
             <small>{monthlyProgress}% completado</small>
           </div>
-          <div className="week-ring" style={{"--value": 75}}>
+          <div className="week-ring" style={{ "--value": 75 }}>
             <span>Semana</span>
             <strong>3 de 4</strong>
           </div>
         </section>
 
-        {/* Acciones clave */}
         <section className="excellence-panel">
           <div className="excellence-copy">
             <p className="eyebrow">Tus acciones clave de hoy</p>
@@ -1091,11 +1083,11 @@ export default function App() {
         </section>
 
         <section className="panel">
-          {/* KPIs financieros */}
           <div className="section-title">
-            <h2>Resumen financiero</h2>
+            <h2>Resumen financiero del negocio</h2>
             <p>Actualizado con tus movimientos</p>
           </div>
+
           <div className="kpi-grid">
             <MetricCard title="Ingresos" value={money.format(totals.income)} change="Dinero generado" tone="green" />
             <MetricCard title="Gastos" value={money.format(totals.expenses)} change="Dinero invertido" tone="pink" />
@@ -1103,130 +1095,33 @@ export default function App() {
             <MetricCard title="Reinversión" value={money.format(reinvestmentAmount)} change={`${reinvestmentPercent}% de tus ventas`} tone="orange" />
           </div>
 
-          {/* Fila principal: gráfica + acciones */}
-          <div className="dash-main-row">
-            <div className="card chart-card-wide">
-              <h3>Ingresos vs gastos</h3>
-              <LineChart movements={movements} />
+          <div className="content-grid">
+            <div className="card chart-card"><h3>Ingresos vs gastos</h3><LineChart movements={movements} /></div>
+            <div className="card donut-card">
+              <h3>Distribución de gastos</h3>
+              <div className="donut-wrap">
+                <div className="donut"><strong>{money.format(totals.expenses)}</strong><span>Total</span></div>
+                <ul>
+                  <li><span className="dot purple"></span>Marketing <b>35%</b></li>
+                  <li><span className="dot pink"></span>Herramientas <b>25%</b></li>
+                  <li><span className="dot orange"></span>Operaciones <b>20%</b></li>
+                  <li><span className="dot green"></span>Servicios <b>20%</b></li>
+                </ul>
+              </div>
             </div>
+            {MovementForm()}
             <div className="card task-card">
               <h3>Acciones clave ({completedTasks}/{tasks.length})</h3>
-              <p className="helper-copy">Marca las que ya completaste hoy.</p>
-              {tasks.map((task) => (
-                <label key={task.id} className="task-row">
-                  <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} />
-                  <span>{task.text}</span>
-                </label>
-              ))}
-              <ProgressLabel label="Progreso" value={tasks.length ? Math.round((completedTasks/tasks.length)*100) : 0} tone="green" />
+              {tasks.map((task) => <label key={task.id} className="task-row"><input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} /><span>{task.text}</span></label>)}
             </div>
-          </div>
-
-          {/* Metas */}
-          <div className="dash-goals-row">
-            <div className="card">
-              <h3>Progreso de metas</h3>
-              <div className="mini-goals">
-                <MiniGoal label="Meta diaria" value={dailyProgress} amount={money.format(dailyGoal)} />
-                <MiniGoal label="Meta semanal" value={weeklyProgress} amount={money.format(weeklyGoal)} />
-                <MiniGoal label="Meta mensual" value={monthlyProgress} amount={money.format(monthlyGoal)} />
-              </div>
-            </div>
-          </div>
-
-          {/* Resúmenes de otras pestañas */}
-          <div className="section-title" style={{marginTop:"20px"}}>
-            <h2>Tu semana de un vistazo</h2>
-            <p>Resumen de todas las áreas</p>
-          </div>
-          <div className="dash-summary-grid">
-
-            {/* Clientes */}
-            <div className="card dash-summary-card">
-              <div className="dash-summary-icon">🧑‍💼</div>
-              <h3>Clientes</h3>
-              <div className="dash-summary-stat">
-                <span>Leads calientes</span>
-                <strong style={{color:"var(--purple)"}}>{hotLeads}</strong>
-              </div>
-              <div className="dash-summary-stat">
-                <span>Ventas cerradas</span>
-                <strong style={{color:"var(--green)"}}>{money.format(wonSalesTotal)}</strong>
-              </div>
-              <div className="dash-summary-stat">
-                <span>Contactos esta semana</span>
-                <strong>{contactsThisWeek}</strong>
-              </div>
-              {hotClient && (
-                <p className="helper-copy" style={{marginTop:"6px"}}>Prioridad: <b>{hotClient.name}</b> — {hotClient.nextAction || "hacer seguimiento"}</p>
-              )}
-            </div>
-
-            {/* Contenido */}
-            <div className="card dash-summary-card">
-              <div className="dash-summary-icon">📱</div>
-              <h3>Contenido</h3>
-              <div className="dash-summary-stat">
-                <span>Publicadas</span>
-                <strong style={{color:"var(--green)"}}>{publishedContent}</strong>
-              </div>
-              <div className="dash-summary-stat">
-                <span>Por publicar</span>
-                <strong style={{color:"var(--orange)"}}>{unpublishedContent}</strong>
-              </div>
-              <ProgressLabel label="Pipeline" value={contentItems.length ? Math.round((publishedContent/contentItems.length)*100) : 0} tone="orange" />
-              {nextContent && (
-                <p className="helper-copy" style={{marginTop:"6px"}}>Siguiente: <b>{nextContent.title}</b></p>
-              )}
-            </div>
-
-            {/* Hogar y presencia */}
-            <div className="card dash-summary-card">
-              <div className="dash-summary-icon">🏠</div>
-              <h3>Hogar y presencia</h3>
-              <div className="dash-summary-stat">
-                <span>Tareas del hogar</span>
-                <strong>{completedHomeTasks}/{homeTasks.length}</strong>
-              </div>
-              <ProgressLabel label="Hogar" value={homeTasks.length ? Math.round((completedHomeTasks/homeTasks.length)*100) : 0} tone="green" />
-              <div className="dash-summary-stat" style={{marginTop:"8px"}}>
-                <span>Días presente esta semana</span>
-                <strong style={{color: familyDaysCount >= 4 ? "var(--green)" : "var(--orange)"}}>{familyDaysCount} días</strong>
-              </div>
-              <div className="dash-summary-stat">
-                <span>Momentos de conexión</span>
-                <strong>{purpose.connectionMoments || 0}</strong>
-              </div>
-              <p className="helper-copy" style={{marginTop:"6px"}}>{presenceMsg}</p>
-            </div>
-
-            {/* Energía */}
-            <div className="card dash-summary-card">
-              <div className="dash-summary-icon">⚡</div>
-              <h3>Energía y bienestar</h3>
-              <div className="dash-summary-stat">
-                <span>Ánimo</span>
-                <strong style={{textTransform:"capitalize"}}>{purpose.mood}</strong>
-              </div>
-              <div className="dash-summary-stat">
-                <span>Nivel de energía</span>
-                <strong style={{textTransform:"capitalize"}}>{purpose.energy}</strong>
-              </div>
-              <ProgressLabel label="Autocuidado" value={Math.round(([purpose.water,purpose.walk,purpose.silence,purpose.devotional].filter(Boolean).length/4)*100)} tone="green" />
-              <div className="dash-summary-stat" style={{marginTop:"4px"}}>
-                <span>Horas trabajadas</span>
-                <strong>{purpose.hoursWorked || 0}h</strong>
-              </div>
-            </div>
-
-          </div>
-
-          {/* Últimos movimientos + planificador */}
-          <div className="dash-bottom-row">
+            <div className="card avoid-card"><h3>Qué no hacer esta semana</h3><p>No responder desde culpa o ansiedad.</p><p>No intentar controlar cada emoción de tus hijos.</p><p>No llenar tu agenda para sentirte productiva.</p><p>{purpose.mood === "controladora" ? "Practica soltar una cosa pequeña y respirar antes de corregir." : "Protege tu paz antes de decir sí a otra carga."}</p></div>
+            <div className="card progress-card"><h3>Tu semana de excelencia</h3><div className="weekly-goal"><span>Meta semanal de ingresos</span><strong>{money.format(weeklyGoal)}</strong><Progress value={weeklyProgress} tone="pink" /></div><p className="helper-copy">Esta tarjeta muestra si tus acciones de la semana están acercando dinero, calma y ejecución.</p><ProgressLabel label="Ventas" value={weeklyProgress} tone="green" /><ProgressLabel label="Paz" value={purpose.silence ? 80 : 45} tone="purple" /><ProgressLabel label="Acción" value={completedTasks ? Math.round((completedTasks / tasks.length) * 100) : 0} tone="orange" /></div>
+            <div className="card goals-card"><h3>Progreso de tus metas</h3><p className="helper-copy">Esta semana enfócate en seguimiento, cobros y una oferta clara antes de crear más tareas.</p><div className="mini-goals"><MiniGoal label="Meta diaria" value={dailyProgress} amount={money.format(dailyGoal)} /><MiniGoal label="Meta semanal" value={weeklyProgress} amount={money.format(weeklyGoal)} /><MiniGoal label="Meta mensual" value={monthlyProgress} amount={money.format(monthlyGoal)} /></div></div>
+            {ReinvestmentCard()}
+            {DashboardSummaryCard()}
             {MovementList()}
             {CalendarCard()}
           </div>
-
         </section>
       </>
     );
