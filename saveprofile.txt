@@ -1,0 +1,19 @@
+﻿  };
+
+  const saveProfile = (e) => {
+    e.preventDefault();
+    const monthly = Math.max(0, Number(profileForm.monthlyGoalSetup) || 0);
+    const setup = { ...profileForm, monthlyGoalSetup: monthly, completedAt: Date.now() };
+    setProfileSetup(setup);
+    if (monthly > 0) {
+      setBusinessSettings((c) => ({
+        ...c,
+        monthlyGoal: monthly,
+        weeklyGoal: Math.round(monthly / 4),
+        dailyGoal: Math.round(monthly / 20)
+      }));
+    }
+    setShowProfileModal(false);
+  };
+
+  const activeLabel = menu.find((item) => item.id === activeView)?.label || "Dashboard";

@@ -252,7 +252,6 @@ export default function App() {
   });
   const [profileSetup, setProfileSetup] = useState(stored?.profileSetup || null);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [profileSaved, setProfileSaved] = useState(false);
   const [profileForm, setProfileForm] = useState({
     name: "",
     businessName: "",
@@ -812,8 +811,6 @@ export default function App() {
       }));
     }
     setShowProfileModal(false);
-    setProfileSaved(true);
-    setTimeout(() => setProfileSaved(false), 4000);
   };
 
   const activeLabel = menu.find((item) => item.id === activeView)?.label || "Dashboard";
@@ -955,17 +952,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {profileSaved && (
-        <div className="profile-toast">
-          <span>🌸</span>
-          <div>
-            <strong>¡Todo listo, {profileSetup?.name || "Mamá CEO"}!</strong>
-            <p>Tu perfil está guardado. La app ya trabaja para ti.</p>
-          </div>
-        </div>
-      )}
-
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark"></div>

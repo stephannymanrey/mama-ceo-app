@@ -2815,3 +2815,53 @@ button {
   border-color: rgba(201, 169, 110, 0.3);
   font-weight: 600;
 }
+
+/* ── Toast de confirmación de perfil ── */
+.profile-toast {
+  position: fixed;
+  bottom: 32px;
+  right: 32px;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid rgba(201, 169, 110, 0.3);
+  border-radius: 18px;
+  padding: 16px 22px;
+  box-shadow: 0 20px 50px rgba(26, 20, 18, 0.14);
+  animation: toast-in 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 340px;
+}
+
+.profile-toast span {
+  font-size: 28px;
+  flex: 0 0 auto;
+}
+
+.profile-toast strong {
+  display: block;
+  font-size: 15px;
+  color: #2A1A1A;
+  margin-bottom: 3px;
+}
+
+.profile-toast p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (max-width: 720px) {
+  .profile-toast {
+    bottom: 16px;
+    right: 16px;
+    left: 16px;
+    max-width: 100%;
+  }
+}
