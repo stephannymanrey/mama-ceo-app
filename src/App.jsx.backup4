@@ -535,7 +535,10 @@ export default function App() {
         if (event === 'PASSWORD_RECOVERY') {
           setResetPassword(true);
         }
-
+        if (event === 'SIGNED_IN') {
+          const saved = loadState();
+          if (!saved?.profileSetup) setShowProfileModal(true);
+        }
       });
       subscription = listenerData?.subscription;
     }
@@ -590,11 +593,6 @@ export default function App() {
     };
     restore();
   }, [ready, user, supabaseActive]);
-
-  useEffect(() => {
-    if (!ready || !user) return;
-    if (!profileSetup) setShowProfileModal(true);
-  }, [ready, user]);
 
   useEffect(() => {
     if (!ready) return;
@@ -896,14 +894,8 @@ export default function App() {
         <div className="profile-modal-overlay">
           <div className="profile-modal">
             <div className="profile-modal-header">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                <h2>{profileSetup ? "Editar mi perfil ✏️" : "Antes de comenzar... 🌸"}</h2>
-                {profileSetup && (
-                  <button type="button" onClick={() => setShowProfileModal(false)}
-                    style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>×</button>
-                )}
-              </div>
-              <p>{profileSetup ? "Actualiza tu información cuando quieras." : "Configuremos tu perfil para que la app trabaje para ti desde el primer día."}</p>
+              <h2>Antes de comenzar... 🌸</h2>
+              <p>Configuremos tu perfil para que la app trabaje para ti desde el primer día.</p>
             </div>
             <form className="profile-modal-form" onSubmit={saveProfile}>
               <label>
@@ -947,7 +939,7 @@ export default function App() {
                   <option>Equilibrar negocio y hogar</option>
                 </select>
               </label>
-              <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ✨"}</button>
+              <button className="primary-button" type="submit" style={{marginTop:"8px"}}>Guardar y comenzar ✨</button>
             </form>
           </div>
         </div>
@@ -996,7 +988,7 @@ export default function App() {
           <div className="profile-area">
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
             {!supabaseActive && !isSyncing && <div className="status-chip">Modo local</div>}
-            <button className="profile-edit-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
+            <button className="profile-edit-btn" onClick={() => setShowProfileModal(true)} title="Editar perfil">
               <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
               <span className="profile-edit-name">{profileSetup?.name || "Mi perfil"}</span>
               <span className="profile-edit-icon">⚙️</span>
@@ -2038,5 +2030,4 @@ function LineChart({ movements }) {
     </svg>
   );
 }
-
 

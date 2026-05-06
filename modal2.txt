@@ -1,0 +1,26 @@
+﻿        }
+      } catch (err) {
+        console.error("Error restaurando estado:", err);
+      }
+    };
+    restore();
+  }, [ready, user, supabaseActive]);
+
+  useEffect(() => {
+    if (!ready) return;
+    const stateToSave = {
+      activeView,
+      currency,
+      movements,
+      tasks,
+      clients,
+      contentItems,
+      goals,
+      homeTasks,
+      systemTasks,
+      maternalTasks,
+      wellnessTasks,
+      incomeSources,
+      salesGoal,
+      contactLog,
+      weekBlocks,

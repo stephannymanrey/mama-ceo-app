@@ -1,0 +1,73 @@
+﻿    <div className="app-shell">
+      {showProfileModal && (
+        <div className="profile-modal-overlay">
+          <div className="profile-modal">
+            <div className="profile-modal-header">
+              <h2>Antes de comenzar... 🌸</h2>
+              <p>Configuremos tu perfil para que la app trabaje para ti desde el primer día.</p>
+            </div>
+            <form className="profile-modal-form" onSubmit={saveProfile}>
+              <label>
+                ¿Cómo te llamamos?
+                <input placeholder="Tu nombre" value={profileForm.name} onChange={(e) => setProfileForm((c) => ({ ...c, name: e.target.value }))} required />
+              </label>
+              <label>
+                Nombre de tu negocio
+                <input placeholder="Ej: Coaching con Ana" value={profileForm.businessName} onChange={(e) => setProfileForm((c) => ({ ...c, businessName: e.target.value }))} required />
+              </label>
+              <label>
+                Tipo de negocio
+                <select value={profileForm.businessType} onChange={(e) => setProfileForm((c) => ({ ...c, businessType: e.target.value }))}>
+                  <option>Servicios 1:1</option>
+                  <option>Coaching o mentoría</option>
+                  <option>Productos digitales</option>
+                  <option>E-commerce</option>
+                  <option>Membresías / Recurrente</option>
+                  <option>Otro</option>
+                </select>
+              </label>
+              <label>
+                ¿En qué etapa está tu negocio?
+                <select value={profileForm.stage} onChange={(e) => setProfileForm((c) => ({ ...c, stage: e.target.value }))}>
+                  <option>Comenzando</option>
+                  <option>Creciendo</option>
+                  <option>Escalando</option>
+                </select>
+              </label>
+              <label>
+                Meta de ingresos mensual
+                <input type="number" min="0" placeholder="Ej: 3000" value={profileForm.monthlyGoalSetup} onChange={(e) => setProfileForm((c) => ({ ...c, monthlyGoalSetup: e.target.value }))} required />
+              </label>
+              <label>
+                Tu mayor reto ahora mismo
+                <select value={profileForm.mainChallenge} onChange={(e) => setProfileForm((c) => ({ ...c, mainChallenge: e.target.value }))}>
+                  <option>Conseguir clientes</option>
+                  <option>Organizar mis finanzas</option>
+                  <option>Tener más tiempo</option>
+                  <option>Escalar mi negocio</option>
+                  <option>Equilibrar negocio y hogar</option>
+                </select>
+              </label>
+              <button className="primary-button" type="submit" style={{marginTop:"8px"}}>Guardar y comenzar ✨</button>
+            </form>
+          </div>
+        </div>
+      )}
+      <aside className="sidebar">
+        <div className="brand">
+          <div className="brand-mark"></div>
+          <div className="brand-script">Mamá</div>
+          <div className="brand-ceo">CEO</div>
+          <div className="brand-app">APP</div>
+        </div>
+
+        <nav className="main-menu" aria-label="Navegacion principal">
+          {menu.map((item) => (
+            <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id} onClick={() => setActiveView(item.id)}>
+              <span>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="currency-box">

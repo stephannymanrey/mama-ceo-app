@@ -1,0 +1,10 @@
+﻿            {isSyncing && <div className="status-chip syncing">Guardando…</div>}
+            {!supabaseActive && !isSyncing && <div className="status-chip">Modo local</div>}
+            <button className="profile-edit-btn" onClick={() => setShowProfileModal(true)} title="Editar perfil">
+              <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
+              <span className="profile-edit-name">{profileSetup?.name || "Mi perfil"}</span>
+              <span className="profile-edit-icon">⚙️</span>
+            </button>
+            {supabaseActive && user && (
+              <button className="signout-button" onClick={signOut}>Salir</button>
+            )}
