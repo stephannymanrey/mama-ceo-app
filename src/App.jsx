@@ -281,6 +281,7 @@ export default function App() {
 
   const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "" });
   const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "" });
+  const [contentFilter, setContentFilter] = useState("");
   const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
   const [clientSearch, setClientSearch] = useState("");
@@ -1604,7 +1605,7 @@ export default function App() {
     const daysSincePublish = lastPublished ? Math.floor((Date.now() - lastPublished.createdAt) / 86400000) : null;
     const oldPending = contentItems.filter((i) => i.status === "Por hacer" && i.createdAt && Math.floor((Date.now() - i.createdAt) / 86400000) > 7);
     const goalColors = { "Vender": "var(--green)", "Educar": "var(--pink)", "Conectar": "var(--orange)", "Entretener": "#8a7f7a" };
-    const [contentFilter, setContentFilter] = React.useState("");
+
 
     return (
       <section className="panel workspace-panel">
