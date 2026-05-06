@@ -1235,8 +1235,8 @@ export default function App() {
   function renderBusiness() {
     const healthScore = totals.profit >= 0 && monthlyProgress >= 75 ? "green"
       : totals.profit >= 0 || monthlyProgress >= 50 ? "orange" : "red";
-    const healthLabel = healthScore === "green" ? "ðŸŸ¢ Negocio saludable"
-      : healthScore === "orange" ? "ðŸŸ¡ AtenciÃ³n requerida" : "ðŸ”´ Alerta financiera";
+    const healthLabel = healthScore === "green" ? "🟢 Negocio saludable"
+      : healthScore === "orange" ? "🟡 Atención requerida" : "🔴 Alerta financiera";
     const healthMsg = healthScore === "green"
       ? "Tus ingresos superan tus gastos y vas bien hacia tu meta."
       : healthScore === "orange"
@@ -1247,56 +1247,25 @@ export default function App() {
       const progress = src.monthlyGoal > 0 ? Math.min(Math.round((actual / src.monthlyGoal) * 100), 100) : 0;
       return { ...src, actual, progress };
     });
-    const fixedExpensesTotal = movements.filter((m) => m.type === "expense" && m.classification === "Gasto fijo").reduce((sum, m) => sum + m.amount, 0);
-    const cashFlow = totals.income - fixedExpensesTotal;
-    const cashFlowScore = cashFlow > 0 ? "green" : "red";
     return (
       <section className="panel workspace-panel">
-        <div className="section-title">
-          <h2>Negocio</h2>
-          <p>{profileSetup?.businessName || "Tu negocio"} â€¢ {profileSetup?.stage || ""}</p>
-        </div>
+        <div className="section-title"><h2>Negocio</h2><p>Salud financiera, fuentes de ingreso y presupuesto.</p></div>
 
-        <div className="business-top-grid">
-          <div className={`health-banner health-${healthScore}`}>
-            <strong>{healthLabel}</strong>
-            <p>{healthMsg}</p>
-            <div className="health-stats">
-              <span>Ingresos: <b>{money.format(totals.income)}</b></span>
-              <span>Gastos: <b>{money.format(totals.expenses)}</b></span>
-              <span>Utilidad: <b>{money.format(totals.profit)}</b></span>
-              <span>Meta: <b>{monthlyProgress}%</b></span>
-            </div>
-          </div>
-          <div className={`cashflow-card cashflow-${cashFlowScore}`}>
-            <div className="cashflow-label">Flujo de caja del mes</div>
-            <div className="cashflow-amount">{money.format(cashFlow)}</div>
-            <div className="cashflow-detail">
-              <span>Ingresos <b>{money.format(totals.income)}</b></span>
-              <span>Gastos fijos <b>{money.format(fixedExpensesTotal)}</b></span>
-            </div>
-            <p className="helper-copy">{cashFlow >= 0 ? "Tienes margen positivo este mes. Cuida los gastos variables." : "Tus gastos fijos superan tus ingresos. Revisa quÃ© puedes reducir."}</p>
-          </div>
-        </div>
-
-        <div className="business-movements-grid">
-          <div className="card">{MovementForm()}</div>
-          <div className="card movement-detail-card">
-            <div className="movement-detail-header">
-              <div><h3>Movimientos</h3><p className="helper-copy">Tus Ãºltimos registros.</p></div>
-              <div className="export-buttons">
-                <button type="button" onClick={exportMovementsToExcel}>Excel</button>
-                <button type="button" onClick={exportMovementsToPdf}>PDF</button>
-              </div>
-            </div>
-            {MovementList({ compact: true })}
+        <div className={`health-banner health-${healthScore}`}>
+          <strong>{healthLabel}</strong>
+          <p>{healthMsg}</p>
+          <div className="health-stats">
+            <span>Ingresos: <b>{money.format(totals.income)}</b></span>
+            <span>Gastos: <b>{money.format(totals.expenses)}</b></span>
+            <span>Utilidad: <b>{money.format(totals.profit)}</b></span>
+            <span>Meta mensual: <b>{monthlyProgress}%</b></span>
           </div>
         </div>
 
         <div className="business-sources-grid">
           <div className="card">
             <h3>Fuentes de ingreso</h3>
-            <p className="helper-copy">Define tus fuentes y metas mensuales.</p>
+            <p className="helper-copy">Define tus fuentes y metas mensuales. Los ingresos se calculan desde tus movimientos registrados.</p>
             {incomeBySource.map((src) => (
               <div className="source-row" key={src.id}>
                 <div className="source-info">
@@ -1307,7 +1276,7 @@ export default function App() {
                   <Progress value={src.progress} tone={src.color} />
                   <small>{src.progress}%</small>
                   <input type="number" min="0" value={src.monthlyGoal} onChange={(e) => setIncomeSources((c) => c.map((s) => s.id === src.id ? { ...s, monthlyGoal: Number(e.target.value) } : s))} />
-                  <button type="button" className="row-delete" onClick={() => confirmDelete("Â¿Eliminar?", () => setIncomeSources((c) => c.filter((s) => s.id !== src.id)))}>Ã—</button>
+                  <button type="button" className="row-delete" onClick={() => confirmDelete("¿Eliminar?", () => setIncomeSources((c) => c.filter((s) => s.id !== src.id)))}>×</button>
                 </div>
               </div>
             ))}
@@ -1319,42 +1288,53 @@ export default function App() {
           </div>
           <div className="card insight-card">
             <h3>Lectura CEO</h3>
-            <p className="helper-copy">AnÃ¡lisis inteligente de tu situaciÃ³n actual.</p>
-            {insights.map((insight) => <p key={insight} style={{borderLeft:"3px solid var(--pink)",paddingLeft:"12px",margin:"8px 0"}}>{insight}</p>)}
+            {insights.map((insight) => <p key={insight}>{insight}</p>)}
           </div>
         </div>
 
         <div className="business-panel-row">
+          <div className="card movement-small-card">{MovementForm()}</div>
           {ReinvestmentCard()}
-          <div>{BanksCard()}</div>
         </div>
 
         <div className="annual-budget-card card">
           <div className="budget-head">
-            <div><h3>Presupuesto anual</h3><p>Planifica mes a mes.</p></div>
+            <div><h3>Presupuesto anual</h3><p>Todos los campos son editables. Los gastos ya no se calculan solos.</p></div>
             <div className="budget-total"><span>Utilidad anual estimada</span><strong>{money.format(annualProfit)}</strong></div>
           </div>
           <div className="budget-table">
             <div className="budget-row budget-header"><span>Mes</span><span>Ingresos</span><span>Gastos fijos</span><span>Gastos variables</span><span>Fees</span><span>Utilidad</span></div>
             {annualBudget.map((row) => {
-              const profit = Number(row.income||0)-Number(row.fixedExpenses||0)-Number(row.variableExpenses||0)-Number(row.platformFees||0);
+              const profit = Number(row.income || 0) - Number(row.fixedExpenses || 0) - Number(row.variableExpenses || 0) - Number(row.platformFees || 0);
               return (
                 <div className="budget-row" key={row.month}>
                   <strong>{row.month}</strong>
-                  <input type="number" min="0" value={row.income} onChange={(e) => updateAnnualBudget(row.month,"income",e.target.value)} />
-                  <input type="number" min="0" value={row.fixedExpenses} onChange={(e) => updateAnnualBudget(row.month,"fixedExpenses",e.target.value)} />
-                  <input type="number" min="0" value={row.variableExpenses} onChange={(e) => updateAnnualBudget(row.month,"variableExpenses",e.target.value)} />
-                  <input type="number" min="0" value={row.platformFees} onChange={(e) => updateAnnualBudget(row.month,"platformFees",e.target.value)} />
+                  <input type="number" min="0" value={row.income} onChange={(e) => updateAnnualBudget(row.month, "income", e.target.value)} />
+                  <input type="number" min="0" value={row.fixedExpenses} onChange={(e) => updateAnnualBudget(row.month, "fixedExpenses", e.target.value)} />
+                  <input type="number" min="0" value={row.variableExpenses} onChange={(e) => updateAnnualBudget(row.month, "variableExpenses", e.target.value)} />
+                  <input type="number" min="0" value={row.platformFees} onChange={(e) => updateAnnualBudget(row.month, "platformFees", e.target.value)} />
                   <b style={{color: profit >= 0 ? "var(--green)" : "var(--pink)"}}>{money.format(profit)}</b>
                 </div>
               );
             })}
           </div>
         </div>
+
+        <div className="bank-section">{BanksCard()}</div>
+        <div className="card movement-detail-card">
+          <div className="movement-detail-header">
+            <div><h3>Detalles de movimientos</h3><p className="helper-copy">Consulta y descarga tus movimientos.</p></div>
+            <div className="export-buttons">
+              <button type="button" onClick={exportMovementsToExcel}>Exportar a Excel</button>
+              <button type="button" onClick={exportMovementsToPdf}>Exportar a PDF</button>
+            </div>
+          </div>
+          {MovementList({ compact: true })}
+        </div>
       </section>
     );
   }
-    function renderClients() {
+  function renderClients() {
     const stages = ["Lead frio", "Lead tibio", "Lead caliente", "Venta ganada"];
     const alertDays = { "Lead frio": [7, 14], "Lead tibio": [3, 7], "Lead caliente": [1, 3], "Venta ganada": [14, 30] };
     const today = Date.now();
@@ -2177,6 +2157,5 @@ function LineChart({ movements }) {
     </svg>
   );
 }
-
 
 

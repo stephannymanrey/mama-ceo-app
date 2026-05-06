@@ -1,0 +1,101 @@
+﻿          </div>
+          <div className="dash-summary-grid">
+
+            {/* Clientes */}
+            <div className="card dash-summary-card">
+              <div className="dash-summary-icon">🧑‍💼</div>
+              <h3>Clientes</h3>
+              <div className="dash-summary-stat">
+                <span>Leads calientes</span>
+                <strong style={{color:"var(--purple)"}}>{hotLeads}</strong>
+              </div>
+              <div className="dash-summary-stat">
+                <span>Ventas cerradas</span>
+                <strong style={{color:"var(--green)"}}>{money.format(wonSalesTotal)}</strong>
+              </div>
+              <div className="dash-summary-stat">
+                <span>Contactos esta semana</span>
+                <strong>{contactsThisWeek}</strong>
+              </div>
+              {hotClient && (
+                <p className="helper-copy" style={{marginTop:"6px"}}>Prioridad: <b>{hotClient.name}</b> — {hotClient.nextAction || "hacer seguimiento"}</p>
+              )}
+            </div>
+
+            {/* Contenido */}
+            <div className="card dash-summary-card">
+              <div className="dash-summary-icon">📱</div>
+              <h3>Contenido</h3>
+              <div className="dash-summary-stat">
+                <span>Publicadas</span>
+                <strong style={{color:"var(--green)"}}>{publishedContent}</strong>
+              </div>
+              <div className="dash-summary-stat">
+                <span>Por publicar</span>
+                <strong style={{color:"var(--orange)"}}>{unpublishedContent}</strong>
+              </div>
+              <ProgressLabel label="Pipeline" value={contentItems.length ? Math.round((publishedContent/contentItems.length)*100) : 0} tone="orange" />
+              {nextContent && (
+                <p className="helper-copy" style={{marginTop:"6px"}}>Siguiente: <b>{nextContent.title}</b></p>
+              )}
+            </div>
+
+            {/* Hogar y presencia */}
+            <div className="card dash-summary-card">
+              <div className="dash-summary-icon">🏠</div>
+              <h3>Hogar y presencia</h3>
+              <div className="dash-summary-stat">
+                <span>Tareas del hogar</span>
+                <strong>{completedHomeTasks}/{homeTasks.length}</strong>
+              </div>
+              <ProgressLabel label="Hogar" value={homeTasks.length ? Math.round((completedHomeTasks/homeTasks.length)*100) : 0} tone="green" />
+              <div className="dash-summary-stat" style={{marginTop:"8px"}}>
+                <span>Días presente esta semana</span>
+                <strong style={{color: familyDaysCount >= 4 ? "var(--green)" : "var(--orange)"}}>{familyDaysCount} días</strong>
+              </div>
+              <div className="dash-summary-stat">
+                <span>Momentos de conexión</span>
+                <strong>{purpose.connectionMoments || 0}</strong>
+              </div>
+              <p className="helper-copy" style={{marginTop:"6px"}}>{presenceMsg}</p>
+            </div>
+
+            {/* Energía */}
+            <div className="card dash-summary-card">
+              <div className="dash-summary-icon">⚡</div>
+              <h3>Energía y bienestar</h3>
+              <div className="dash-summary-stat">
+                <span>Ánimo</span>
+                <strong style={{textTransform:"capitalize"}}>{purpose.mood}</strong>
+              </div>
+              <div className="dash-summary-stat">
+                <span>Nivel de energía</span>
+                <strong style={{textTransform:"capitalize"}}>{purpose.energy}</strong>
+              </div>
+              <ProgressLabel label="Autocuidado" value={Math.round(([purpose.water,purpose.walk,purpose.silence,purpose.devotional].filter(Boolean).length/4)*100)} tone="green" />
+              <div className="dash-summary-stat" style={{marginTop:"4px"}}>
+                <span>Horas trabajadas</span>
+                <strong>{purpose.hoursWorked || 0}h</strong>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Últimos movimientos + planificador */}
+          <div className="dash-bottom-row">
+            {MovementList()}
+            {CalendarCard()}
+          </div>
+
+        </section>
+      </>
+    );
+  }
+
+  function renderBusiness() {
+    const healthScore = totals.profit >= 0 && monthlyProgress >= 75 ? "green"
+      : totals.profit >= 0 || monthlyProgress >= 50 ? "orange" : "red";
+    const healthLabel = healthScore === "green" ? "🟢 Negocio saludable"
+      : healthScore === "orange" ? "🟡 Atención requerida" : "🔴 Alerta financiera";
+    const healthMsg = healthScore === "green"
+      ? "Tus ingresos superan tus gastos y vas bien hacia tu meta."
