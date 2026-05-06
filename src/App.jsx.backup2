@@ -250,16 +250,6 @@ export default function App() {
     visionClarity: "",
     ...(stored?.purpose || {})
   });
-  const [profileSetup, setProfileSetup] = useState(stored?.profileSetup || null);
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    name: "",
-    businessName: "",
-    businessType: "Servicios 1:1",
-    stage: "Creciendo",
-    monthlyGoalSetup: "",
-    mainChallenge: "Conseguir clientes"
-  });
   const [user, setUser] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
@@ -534,10 +524,6 @@ export default function App() {
         if (event === 'PASSWORD_RECOVERY') {
           setResetPassword(true);
         }
-        if (event === 'SIGNED_IN') {
-          const saved = loadState();
-          if (!saved?.profileSetup) setShowProfileModal(true);
-        }
       });
       subscription = listenerData?.subscription;
     }
@@ -614,8 +600,7 @@ export default function App() {
       banks,
       annualBudget,
       homeBudget,
-      purpose,
-      profileSetup
+      purpose
     };
 
     if (user && supabaseActive) {
@@ -793,22 +778,6 @@ export default function App() {
     }));
   };
 
-  const saveProfile = (e) => {
-    e.preventDefault();
-    const monthly = Math.max(0, Number(profileForm.monthlyGoalSetup) || 0);
-    const setup = { ...profileForm, monthlyGoalSetup: monthly, completedAt: Date.now() };
-    setProfileSetup(setup);
-    if (monthly > 0) {
-      setBusinessSettings((c) => ({
-        ...c,
-        monthlyGoal: monthly,
-        weeklyGoal: Math.round(monthly / 4),
-        dailyGoal: Math.round(monthly / 20)
-      }));
-    }
-    setShowProfileModal(false);
-  };
-
   const activeLabel = menu.find((item) => item.id === activeView)?.label || "Dashboard";
 
   if (!ready) {
@@ -888,60 +857,6 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      {showProfileModal && (
-        <div className="profile-modal-overlay">
-          <div className="profile-modal">
-            <div className="profile-modal-header">
-              <h2>Antes de comenzar... 🌸</h2>
-              <p>Configuremos tu perfil para que la app trabaje para ti desde el primer día.</p>
-            </div>
-            <form className="profile-modal-form" onSubmit={saveProfile}>
-              <label>
-                ¿Cómo te llamamos?
-                <input placeholder="Tu nombre" value={profileForm.name} onChange={(e) => setProfileForm((c) => ({ ...c, name: e.target.value }))} required />
-              </label>
-              <label>
-                Nombre de tu negocio
-                <input placeholder="Ej: Coaching con Ana" value={profileForm.businessName} onChange={(e) => setProfileForm((c) => ({ ...c, businessName: e.target.value }))} required />
-              </label>
-              <label>
-                Tipo de negocio
-                <select value={profileForm.businessType} onChange={(e) => setProfileForm((c) => ({ ...c, businessType: e.target.value }))}>
-                  <option>Servicios 1:1</option>
-                  <option>Coaching o mentoría</option>
-                  <option>Productos digitales</option>
-                  <option>E-commerce</option>
-                  <option>Membresías / Recurrente</option>
-                  <option>Otro</option>
-                </select>
-              </label>
-              <label>
-                ¿En qué etapa está tu negocio?
-                <select value={profileForm.stage} onChange={(e) => setProfileForm((c) => ({ ...c, stage: e.target.value }))}>
-                  <option>Comenzando</option>
-                  <option>Creciendo</option>
-                  <option>Escalando</option>
-                </select>
-              </label>
-              <label>
-                Meta de ingresos mensual
-                <input type="number" min="0" placeholder="Ej: 3000" value={profileForm.monthlyGoalSetup} onChange={(e) => setProfileForm((c) => ({ ...c, monthlyGoalSetup: e.target.value }))} required />
-              </label>
-              <label>
-                Tu mayor reto ahora mismo
-                <select value={profileForm.mainChallenge} onChange={(e) => setProfileForm((c) => ({ ...c, mainChallenge: e.target.value }))}>
-                  <option>Conseguir clientes</option>
-                  <option>Organizar mis finanzas</option>
-                  <option>Tener más tiempo</option>
-                  <option>Escalar mi negocio</option>
-                  <option>Equilibrar negocio y hogar</option>
-                </select>
-              </label>
-              <button className="primary-button" type="submit" style={{marginTop:"8px"}}>Guardar y comenzar ✨</button>
-            </form>
-          </div>
-        </div>
-      )}
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark"></div>
@@ -980,17 +895,14 @@ export default function App() {
         <header className="topbar">
           <div>
             <p className="view-label">{activeLabel}</p>
-            <h1>¡Hola, {profileSetup?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mamá CEO"}!</h1>
+            <h1>¡Hola, {user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mamá CEO"}!</h1>
             <p>Enfocada • Organizada • Imparable</p>
           </div>
           <div className="profile-area">
+            <button className="icon-button" aria-label="Notificaciones">◌</button>
+            <div className="avatar">MC</div>
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
             {!supabaseActive && !isSyncing && <div className="status-chip">Modo local</div>}
-            <button className="profile-edit-btn" onClick={() => setShowProfileModal(true)} title="Editar perfil">
-              <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
-              <span className="profile-edit-name">{profileSetup?.name || "Mi perfil"}</span>
-              <span className="profile-edit-icon">⚙️</span>
-            </button>
             {supabaseActive && user && (
               <button className="signout-button" onClick={signOut}>Salir</button>
             )}

@@ -2632,3 +2632,115 @@ button {
   .action-day-banner { grid-template-columns:1fr; }
   .action-day-right { text-align:left; }
 }
+
+/* ── Modal de perfil ── */
+.profile-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 20, 18, 0.45);
+  backdrop-filter: blur(4px);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 24px;
+}
+
+.profile-modal {
+  width: min(560px, 100%);
+  background: #fff;
+  border-radius: 28px;
+  padding: 36px;
+  box-shadow: 0 30px 80px rgba(26, 20, 18, 0.18);
+  border: 1px solid rgba(180, 160, 140, 0.15);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.profile-modal-header h2 {
+  margin: 0 0 8px;
+  font-size: 26px;
+  color: #2A1A1A;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.profile-modal-header p {
+  margin: 0 0 24px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.profile-modal-form {
+  display: grid;
+  gap: 16px;
+}
+
+.profile-modal-form label {
+  display: grid;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.profile-modal-form input,
+.profile-modal-form select {
+  min-height: 46px;
+  border: 1px solid rgba(180, 160, 140, 0.25);
+  border-radius: 12px;
+  padding: 0 14px;
+  background: #FAF7F5;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+}
+
+.profile-modal-form input:focus,
+.profile-modal-form select:focus {
+  outline: none;
+  border-color: #C9A96E;
+  background: #fff;
+}
+
+/* ── Botón de perfil en topbar ── */
+.profile-edit-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(180, 160, 140, 0.2);
+  border-radius: 999px;
+  background: rgba(250, 247, 245, 0.9);
+  padding: 6px 14px 6px 6px;
+  cursor: pointer;
+  transition: box-shadow 180ms ease, background 180ms ease;
+}
+
+.profile-edit-btn:hover {
+  background: #fff;
+  box-shadow: 0 4px 16px rgba(180, 140, 120, 0.12);
+}
+
+.profile-edit-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #C4526A, #C9A96E);
+  color: #fff;
+  font-weight: 800;
+  font-size: 15px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.profile-edit-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.profile-edit-icon {
+  font-size: 14px;
+}
