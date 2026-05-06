@@ -1,0 +1,42 @@
+﻿  function renderHome() {
+    const homeProgress = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title"><h2>Hogar</h2><p>{completedHomeTasks}/{homeTasks.length} tareas hechas para bajar carga mental</p></div>
+        <div className="home-budget-card card">
+          <div className="budget-head">
+            <div><h3>Presupuesto mensual del hogar</h3><p>Ingresos, gastos, deudas y disponible familiar.</p></div>
+            <div className="budget-total"><span>Disponible</span><strong>{money.format(homeAvailable)}</strong></div>
+          </div>
+          <form className="home-budget-form" onSubmit={addHomeBudgetItem}>
+            <select value={homeBudgetForm.type} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, type: event.target.value }))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
+            <input placeholder="Descripcion" value={homeBudgetForm.description} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, description: event.target.value }))} />
+            <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={(event) => setHomeBudgetForm((current) => ({ ...current, amount: event.target.value }))} />
+            <button className="primary-button" type="submit">Agregar</button>
+          </form>
+          <div className="home-money-insights">
+            <article><span>Estás ganando</span><strong>{money.format(homeBudgetTotals.income)}</strong></article>
+            <article><span>Estás gastando</span><strong>{money.format(homeSpent)}</strong></article>
+            <article><span>Mayor fuga</span><strong>{biggestHomeLeak[0]}</strong><small>{money.format(biggestHomeLeak[1])}</small></article>
+            <article><span>Fondo/ahorro</span><strong>{money.format(homeBudgetTotals.savings)}</strong><small>{homeBudgetTotals.savings > 0 ? "Excelente, estás construyendo paz financiera." : "Empieza con una reserva pequeña esta semana."}</small></article>
+          </div>
+          <div className="money-track">
+            <span style={{ width: `${Math.min(100, homeBudgetTotals.income ? (homeSpent / homeBudgetTotals.income) * 100 : 0)}%` }}></span>
+            <small>Track: gastado frente a ingresos del hogar</small>
+          </div>
+          <div className="budget-list">{homeBudget.map((item) => <DataRow key={item.id} title={item.description} meta={item.type} value={money.format(item.amount)} onDelete={() => setHomeBudget((current) => current.filter((row) => row.id !== item.id))} />)}</div>
+        </div>
+        <div className="section-layout">
+          <form className="card form-card section-form" onSubmit={addHomeTask}>
+            <h3>Agregar tarea del hogar</h3>
+            <input placeholder="Tarea" value={homeForm.title} onChange={(event) => updateHomeForm("title", event.target.value)} />
+            <select value={homeForm.category} onChange={(event) => updateHomeForm("category", event.target.value)}><option>Compras</option><option>Calendario</option><option>Rutina</option><option>Bienestar</option></select>
+            <button className="primary-button" type="submit">Guardar tarea</button>
+          </form>
+          <div className="card data-card"><h3>Rutinas y pendientes</h3><div className="weekly-goal"><span>Progreso semanal del hogar</span><strong>{homeProgress}%</strong><Progress value={homeProgress} tone="green" /></div>{homeTasks.map((task) => <label className="home-row" key={task.id}><input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} /><span><strong>{task.title}</strong><small>{task.category}</small></span><button type="button" onClick={() => confirmDelete("¿Eliminar esta tarea?", () => setHomeTasks((current) => current.filter((item) => item.id !== task.id)))}>Eliminar</button></label>)}</div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderCeo() {

@@ -1,0 +1,8 @@
+﻿          {/* Últimos movimientos + planificador */}
+          <div className="dash-bottom-row">
+            {MovementList()}
+            {CalendarCard()}
+          </div>
+
+        </section>
+      </>
