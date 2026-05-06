@@ -1407,7 +1407,7 @@ export default function App() {
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Clientes</h2>
-          <p>{activeClients} activas â€¢ {money.format(wonSalesTotal)} en ventas cerradas</p>
+          <p>{activeClients} activas - {money.format(wonSalesTotal)} en ventas cerradas</p>
         </div>
 
         {/* KPIs */}
@@ -2212,6 +2212,7 @@ function LineChart({ movements }) {
     </svg>
   );
 }
+
 
 
 
