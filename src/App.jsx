@@ -1275,7 +1275,7 @@ export default function App() {
               <span>Ingresos <b>{money.format(totals.income)}</b></span>
               <span>Gastos fijos <b>{money.format(fixedExpensesTotal)}</b></span>
             </div>
-            <p className="helper-copy">{cashFlow >= 0 ? "Tienes margen positivo este mes. Cuida los gastos variables." : "Tus gastos fijos superan tus ingresos. Revisa quÃ© puedes reducir."}</p>
+            <p className="helper-copy">{cashFlow >= 0 ? "Tienes margen positivo este mes. Cuida los gastos variables." : "Tus gastos fijos superan tus ingresos. Revisa que puedes reducir."}</p>
           </div>
         </div>
 
@@ -1283,7 +1283,7 @@ export default function App() {
           <div className="card">{MovementForm()}</div>
           <div className="card movement-detail-card">
             <div className="movement-detail-header">
-              <div><h3>Movimientos</h3><p className="helper-copy">Tus Ãºltimos registros.</p></div>
+              <div><h3>Movimientos</h3><p className="helper-copy">Tus ultimos registros.</p></div>
               <div className="export-buttons">
                 <button type="button" onClick={exportMovementsToExcel}>Excel</button>
                 <button type="button" onClick={exportMovementsToPdf}>PDF</button>
@@ -1307,7 +1307,7 @@ export default function App() {
                   <Progress value={src.progress} tone={src.color} />
                   <small>{src.progress}%</small>
                   <input type="number" min="0" value={src.monthlyGoal} onChange={(e) => setIncomeSources((c) => c.map((s) => s.id === src.id ? { ...s, monthlyGoal: Number(e.target.value) } : s))} />
-                  <button type="button" className="row-delete" onClick={() => confirmDelete("Â¿Eliminar?", () => setIncomeSources((c) => c.filter((s) => s.id !== src.id)))}>Ã—</button>
+                  <button type="button" className="row-delete" onClick={() => confirmDelete("Eliminar?", () => setIncomeSources((c) => c.filter((s) => s.id !== src.id)))}>x</button>
                 </div>
               </div>
             ))}
@@ -1319,7 +1319,7 @@ export default function App() {
           </div>
           <div className="card insight-card">
             <h3>Lectura CEO</h3>
-            <p className="helper-copy">AnÃ¡lisis inteligente de tu situaciÃ³n actual.</p>
+            <p className="helper-copy">Analisis inteligente de tu situacion actual.</p>
             {insights.map((insight) => <p key={insight} style={{borderLeft:"3px solid var(--pink)",paddingLeft:"12px",margin:"8px 0"}}>{insight}</p>)}
           </div>
         </div>
