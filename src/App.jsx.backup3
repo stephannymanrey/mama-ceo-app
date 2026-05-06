@@ -282,7 +282,6 @@ export default function App() {
   const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "" });
   const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
-  const [weekBlocks, setWeekBlocks] = useState(stored?.weekBlocks || {});
   const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer" });
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Operaciones" });
@@ -611,7 +610,6 @@ export default function App() {
       incomeSources,
       salesGoal,
       contactLog,
-      weekBlocks,
       businessSettings,
       banks,
       annualBudget,
@@ -1047,8 +1045,8 @@ export default function App() {
 
         <section className="excellence-panel">
           <div className="excellence-copy">
-            <p className="eyebrow">Tus acciones clave de hoy</p>
-            <h2>Una sola acción bien elegida mueve más que diez hechas desde el agotamiento.</h2>
+            <p className="eyebrow">La ley de la excelencia aplicada</p>
+            <h2>Haz menos cosas, pero mejor elegidas: una acción correcta puede mover ventas, paz mental y hogar.</h2>
           </div>
           <div className="excellence-actions">
             {excellenceActions.map((action, index) => (
@@ -2030,4 +2028,3 @@ function LineChart({ movements }) {
     </svg>
   );
 }
-

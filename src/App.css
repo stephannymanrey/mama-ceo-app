@@ -2744,3 +2744,74 @@ button {
 .profile-edit-icon {
   font-size: 14px;
 }
+
+/* ── Planificador semanal ── */
+.calendar-card {
+  grid-column: 1 / -1 !important;
+  min-height: auto !important;
+}
+
+.week-planner {
+  overflow-x: auto;
+  margin-top: 12px;
+}
+
+.week-planner-header {
+  display: grid;
+  grid-template-columns: 52px repeat(5, minmax(100px, 1fr));
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.week-planner-day-label {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 6px 0;
+  background: rgba(201, 169, 110, 0.08);
+  border-radius: 8px;
+}
+
+.week-planner-row {
+  display: grid;
+  grid-template-columns: 52px repeat(5, minmax(100px, 1fr));
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.week-planner-time {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+}
+
+.week-planner-input {
+  min-height: 36px;
+  border: 1px solid rgba(180, 160, 140, 0.18);
+  border-radius: 8px;
+  background: rgba(250, 247, 245, 0.7);
+  padding: 0 8px;
+  font-size: 12px;
+  color: var(--ink);
+  text-align: center;
+  transition: border-color 150ms, background 150ms;
+  width: 100%;
+}
+
+.week-planner-input:focus {
+  outline: none;
+  border-color: #C9A96E;
+  background: #fff;
+}
+
+.week-planner-input:not(:placeholder-shown) {
+  background: rgba(201, 169, 110, 0.08);
+  border-color: rgba(201, 169, 110, 0.3);
+  font-weight: 600;
+}
