@@ -1235,8 +1235,8 @@ export default function App() {
   function renderBusiness() {
     const healthScore = totals.profit >= 0 && monthlyProgress >= 75 ? "green"
       : totals.profit >= 0 || monthlyProgress >= 50 ? "orange" : "red";
-    const healthLabel = healthScore === "green" ? "ðŸŸ¢ Negocio saludable"
-      : healthScore === "orange" ? "ðŸŸ¡ AtenciÃ³n requerida" : "ðŸ”´ Alerta financiera";
+    const healthLabel = healthScore === "green" ? "Negocio saludable"
+      : healthScore === "orange" ? "Atencion requerida" : "Alerta financiera";
     const healthMsg = healthScore === "green"
       ? "Tus ingresos superan tus gastos y vas bien hacia tu meta."
       : healthScore === "orange"
@@ -2177,6 +2177,7 @@ function LineChart({ movements }) {
     </svg>
   );
 }
+
 
 
 
