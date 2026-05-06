@@ -1,0 +1,26 @@
+﻿  function renderContent() {
+    const unpublished = contentItems.filter((item) => item.status !== "Publicado").length;
+    const recordMessage = publishedContent >= 3 ? "Estás on fire con tu consistencia de publicación." : publishedContent >= 1 ? "Vas tomando ritmo. El siguiente paso es sostenerlo una semana más." : "Empieza con una pieza simple que venda, no con perfección.";
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title"><h2>Contenido</h2><p>{publishedContent} publicado • {contentItems.length} piezas en pipeline</p></div>
+        <div className="section-layout">
+          <form className="card form-card section-form" onSubmit={addContent}>
+            <h3>Agregar contenido</h3>
+            <input placeholder="Titulo del contenido" value={contentForm.title} onChange={(event) => updateContentForm("title", event.target.value)} />
+            <input placeholder="Hook o primera frase" value={contentForm.hook} onChange={(event) => updateContentForm("hook", event.target.value)} />
+            <select value={contentForm.format} onChange={(event) => updateContentForm("format", event.target.value)}><option>Reel</option><option>Historia</option><option>Post</option><option>Carrusel</option><option>Foto</option><option>Articulo</option><option>Episodio</option></select>
+            <select value={contentForm.network} onChange={(event) => updateContentForm("network", event.target.value)}><option>Instagram</option><option>YouTube</option><option>Spotify</option><option>TikTok</option><option>Website</option><option>Otra</option></select>
+            {contentForm.network === "Otra" && <input placeholder="Cual red social" value={contentForm.customNetwork} onChange={(event) => updateContentForm("customNetwork", event.target.value)} />}
+            <select value={contentForm.week} onChange={(event) => updateContentForm("week", event.target.value)}><option>Semana 1</option><option>Semana 2</option><option>Semana 3</option><option>Semana 4</option></select>
+            <select value={contentForm.status} onChange={(event) => updateContentForm("status", event.target.value)}><option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option></select>
+            <button className="primary-button" type="submit">Guardar contenido</button>
+          </form>
+          <div className="card data-card content-record"><h3>Record de publicación</h3><div className="record-grid"><MetricCard title="Publicado" value={publishedContent} change="piezas" tone="green" /><MetricCard title="Pendiente" value={unpublished} change="por mover" tone="orange" /></div><p>{recordMessage}</p></div>
+          <div className="card data-card content-table"><h3>Tabla de contenido por semanas</h3>{["Semana 1", "Semana 2", "Semana 3", "Semana 4"].map((week) => <div className="content-week" key={week}><h4>{week}</h4>{contentItems.filter((item) => item.week === week).map((item) => <div className="content-row" key={item.id}><div><strong>{item.title}</strong><small>{item.hook || "Sin hook"} • {item.format} • {item.network}</small></div><select value={item.status} onChange={(event) => updateContentStatus(item.id, event.target.value)}><option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option></select><button type="button" onClick={() => confirmDelete("¿Eliminar este contenido?", () => setContentItems((current) => current.filter((content) => content.id !== item.id)))}>Eliminar</button></div>)}</div>)}</div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderHome() {
