@@ -291,6 +291,7 @@ export default function App() {
   const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
   const [groceryForm, setGroceryForm] = useState("");
+  const [reportWeekOffset, setReportWeekOffset] = useState(0);
 
   const money = useMemo(() => new Intl.NumberFormat(currencyLocales[currency] || "en-US", {
     style: "currency",
@@ -1961,6 +1962,8 @@ export default function App() {
         : purpose.mood === "cansada"
           ? "Protégete. El descanso también es productividad."
           : "Usa tu energía sin sobreexigirte. Deja espacio para gracia y descanso.";
+    const impactScore = Math.round(((familyDaysCount/7)*0.3 + (selfCareScore/4)*0.2 + (purpose.connectionMoments/3)*0.2 + (purpose.clientsImpacted/5)*0.15 + (purpose.systemsPercent/100)*0.15) * 100);
+    
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
@@ -1968,6 +1971,25 @@ export default function App() {
           <p>Mide lo que realmente importa — presencia, energía, sistemas e impacto</p>
         </div>
 
+        {/* Banner de afirmación destacado */}
+        <div className="card" style={{background:"linear-gradient(135deg, #f8f4f1 0%, #fef9f6 100%)",border:"2px solid #e8d5c4",padding:"24px",marginBottom:"20px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"16px",marginBottom:"12px"}}>
+            <span style={{fontSize:"32px"}}>✨</span>
+            <div style={{flex:1}}>
+              <p style={{fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--purple)",margin:0}}>Tu afirmación de hoy</p>
+              <h3 style={{fontSize:"18px",lineHeight:1.4,margin:"6px 0 0",color:"#6f2f4b"}}>{todayAffirmation}</h3>
+            </div>
+          </div>
+          <div style={{display:"flex",gap:"20px",alignItems:"center",marginTop:"16px",paddingTop:"16px",borderTop:"1px solid #e8d5c4"}}>
+            <div style={{flex:1}}>
+              <p style={{fontSize:"12px",color:"var(--muted)",margin:"0 0 4px"}}>Índice de impacto esta semana</p>
+              <Progress value={impactScore} tone="purple" />
+            </div>
+            <strong style={{fontSize:"28px",color:"var(--purple)"}}>{impactScore}%</strong>
+          </div>
+        </div>
+
+        {/* KPIs visuales mejorados */}
         <div className="purpose-kpi-grid">
           <div className="purpose-kpi">
             <span className="purpose-kpi-icon">👩‍👦</span>
@@ -2272,6 +2294,60 @@ export default function App() {
   }
 
   function renderWeeklyReport() {
+    // Calcular rango de fechas de la semana
+    const getWeekRange = (offset) => {
+      const today = new Date();
+      const currentDay = today.getDay();
+      const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + mondayOffset + (offset * 7));
+      monday.setHours(0, 0, 0, 0);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      return { start: monday.getTime(), end: sunday.getTime(), monday, sunday };
+    };
+
+    const currentWeek = getWeekRange(reportWeekOffset);
+    const previousWeek = getWeekRange(reportWeekOffset - 1);
+
+    const formatDateRange = (start, end) => {
+      const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+      const startD = new Date(start);
+      const endD = new Date(end);
+      return `${startD.getDate()} ${months[startD.getMonth()]} - ${endD.getDate()} ${months[endD.getMonth()]}`;
+    };
+
+    // Filtrar datos por semana actual
+    const isInWeek = (timestamp, week) => timestamp >= week.start && timestamp <= week.end;
+
+    const currentMovements = movements.filter((m) => m.createdAt && isInWeek(m.createdAt, currentWeek));
+    const previousMovements = movements.filter((m) => m.createdAt && isInWeek(m.createdAt, previousWeek));
+
+    const currentClients = clients.filter((c) => c.createdAt && isInWeek(c.createdAt, currentWeek));
+    const previousClients = clients.filter((c) => c.createdAt && isInWeek(c.createdAt, previousWeek));
+
+    const currentIncome = currentMovements.filter((m) => m.type === "income").reduce((sum, m) => sum + m.amount, 0);
+    const previousIncome = previousMovements.filter((m) => m.type === "income").reduce((sum, m) => sum + m.amount, 0);
+    const incomeChange = previousIncome > 0 ? Math.round(((currentIncome - previousIncome) / previousIncome) * 100) : 0;
+
+    const currentWon = currentClients.filter((c) => c.status === "Venta ganada").length;
+    const previousWon = previousClients.filter((c) => c.status === "Venta ganada").length;
+    const wonChange = previousWon > 0 ? Math.round(((currentWon - previousWon) / previousWon) * 100) : 0;
+
+    const currentContactsThisWeek = Object.values(contactLog).filter((e) => {
+      const contactDate = new Date(e.date).getTime();
+      return contactDate >= currentWeek.start && contactDate <= currentWeek.end;
+    }).length;
+
+    const previousContactsCount = Object.values(contactLog).filter((e) => {
+      const contactDate = new Date(e.date).getTime();
+      return contactDate >= previousWeek.start && contactDate <= previousWeek.end;
+    }).length;
+
+    const contactsChange = previousContactsCount > 0 ? Math.round(((currentContactsThisWeek - previousContactsCount) / previousContactsCount) * 100) : 0;
+
+    // Datos generales (no filtrados por semana)
     const totalLeads = clients.length;
     const totalWon = clients.filter((c) => c.status === "Venta ganada").length;
     const conversionRate = totalLeads > 0 ? Math.round((totalWon / totalLeads) * 100) : 0;
@@ -2280,6 +2356,51 @@ export default function App() {
     const selfCareScore = [purpose.water, purpose.walk, purpose.silence, purpose.devotional].filter(Boolean).length;
     const incomePerHour = purpose.hoursWorked > 0 ? Math.round(totals.income / purpose.hoursWorked) : 0;
     const salesGoalProgress = salesGoal > 0 ? Math.min(Math.round((wonSalesTotal / salesGoal) * 100), 100) : 0;
+
+    // Insights automáticos
+    const insights = [];
+
+    // Mejor día de ingresos
+    const incomeByDay = {};
+    currentMovements.filter((m) => m.type === "income").forEach((m) => {
+      const day = new Date(m.createdAt).toLocaleDateString('es', { weekday: 'long' });
+      incomeByDay[day] = (incomeByDay[day] || 0) + m.amount;
+    });
+    const bestDay = Object.entries(incomeByDay).sort((a, b) => b[1] - a[1])[0];
+    if (bestDay) {
+      insights.push(`Tu mejor día fue ${bestDay[0]} con ${money.format(bestDay[1])} en ingresos.`);
+    }
+
+    // Mejor fuente de leads
+    const sourceCounts = currentClients.reduce((acc, c) => {
+      const src = c.source || "Sin fuente";
+      acc[src] = (acc[src] || 0) + 1;
+      return acc;
+    }, {});
+    const topSource = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1])[0];
+    if (topSource && topSource[1] > 0) {
+      const percentage = Math.round((topSource[1] / currentClients.length) * 100);
+      insights.push(`${topSource[0]} trajo ${percentage}% de tus leads esta semana.`);
+    }
+
+    // Tendencia de contactos
+    if (currentContactsThisWeek >= 5) {
+      insights.push(`Excelente ritmo de contactos: ${currentContactsThisWeek} esta semana.`);
+    } else if (currentContactsThisWeek < 3) {
+      insights.push(`Solo ${currentContactsThisWeek} contactos esta semana. Meta: 5+ para mantener el pipeline activo.`);
+    }
+
+    // Alertas urgentes
+    const urgentAlerts = [];
+    if (currentIncome < weeklyGoal * 0.5 && reportWeekOffset === 0) {
+      urgentAlerts.push({ type: "danger", message: `Ingresos por debajo del 50% de la meta semanal (${money.format(currentIncome)} de ${money.format(weeklyGoal)})` });
+    }
+    if (currentContactsThisWeek < 3 && reportWeekOffset === 0) {
+      urgentAlerts.push({ type: "warning", message: `Solo ${currentContactsThisWeek} contactos esta semana. Necesitas acelerar el seguimiento.` });
+    }
+    if (hotLeads >= 3 && reportWeekOffset === 0) {
+      urgentAlerts.push({ type: "success", message: `Tienes ${hotLeads} leads calientes esperando. ¡Es momento de cerrar ventas!` });
+    }
 
     const whatsappMsg = (client) => {
       const msgs = {
@@ -2309,7 +2430,81 @@ export default function App() {
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Reporte semanal</h2>
-          <p>Tu resumen inteligente de ventas, hogar y energía</p>
+          <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}}>
+            <button type="button" onClick={() => setReportWeekOffset(reportWeekOffset - 1)}
+              style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Anterior</button>
+            <span style={{fontSize:"14px",fontWeight:700,color:"var(--purple)"}}>{formatDateRange(currentWeek.start, currentWeek.end)}</span>
+            <button type="button" onClick={() => setReportWeekOffset(reportWeekOffset + 1)} disabled={reportWeekOffset >= 0}
+              style={{border:"1px solid var(--line)",background:reportWeekOffset >= 0 ? "#f5f5f5" : "#fff",borderRadius:"8px",padding:"6px 12px",cursor:reportWeekOffset >= 0 ? "not-allowed" : "pointer",fontSize:"13px",fontWeight:700,opacity:reportWeekOffset >= 0 ? 0.5 : 1}}>Siguiente →</button>
+            {reportWeekOffset !== 0 && (
+              <button type="button" onClick={() => setReportWeekOffset(0)}
+                style={{border:"1px solid var(--purple)",background:"var(--purple-soft)",color:"var(--purple)",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>Semana actual</button>
+            )}
+          </div>
+        </div>
+
+        {/* Alertas urgentes */}
+        {urgentAlerts.length > 0 && (
+          <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
+            {urgentAlerts.map((alert, i) => (
+              <div key={i} className={`alert-banner alert-${alert.type === "danger" ? "red" : alert.type === "warning" ? "orange" : "green"}`}
+                style={{fontSize:"15px",fontWeight:700,padding:"16px 20px"}}>
+                {alert.type === "danger" && "🚨 "}{alert.type === "warning" && "⚠️ "}{alert.type === "success" && "🎯 "}
+                {alert.message}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Resumen ejecutivo de 30 segundos */}
+        <div className="card" style={{background:"linear-gradient(135deg, rgba(212,104,122,0.08), rgba(201,169,110,0.08))",border:"2px solid var(--purple)",marginBottom:"20px",padding:"24px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px"}}>
+            <span style={{fontSize:"32px"}}>⚡</span>
+            <h3 style={{margin:0,fontSize:"22px",color:"var(--purple)"}}>Resumen ejecutivo — 30 segundos</h3>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:"20px",marginBottom:"16px"}}>
+            <div>
+              <p style={{margin:"0 0 4px",fontSize:"13px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Ingresos esta semana</p>
+              <div style={{display:"flex",alignItems:"baseline",gap:"8px"}}>
+                <strong style={{fontSize:"32px",color:"var(--green)",lineHeight:1}}>{money.format(currentIncome)}</strong>
+                {incomeChange !== 0 && (
+                  <span style={{fontSize:"16px",fontWeight:700,color:incomeChange > 0 ? "var(--green)" : "var(--pink)"}}>
+                    {incomeChange > 0 ? "↑" : "↓"} {Math.abs(incomeChange)}%
+                  </span>
+                )}
+              </div>
+            </div>
+            <div>
+              <p style={{margin:"0 0 4px",fontSize:"13px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Ventas cerradas</p>
+              <div style={{display:"flex",alignItems:"baseline",gap:"8px"}}>
+                <strong style={{fontSize:"32px",color:"var(--purple)",lineHeight:1}}>{currentWon}</strong>
+                {wonChange !== 0 && (
+                  <span style={{fontSize:"16px",fontWeight:700,color:wonChange > 0 ? "var(--green)" : "var(--pink)"}}>
+                    {wonChange > 0 ? "↑" : "↓"} {Math.abs(wonChange)}%
+                  </span>
+                )}
+              </div>
+            </div>
+            <div>
+              <p style={{margin:"0 0 4px",fontSize:"13px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Contactos realizados</p>
+              <div style={{display:"flex",alignItems:"baseline",gap:"8px"}}>
+                <strong style={{fontSize:"32px",color:"var(--orange)",lineHeight:1}}>{currentContactsThisWeek}</strong>
+                {contactsChange !== 0 && (
+                  <span style={{fontSize:"16px",fontWeight:700,color:contactsChange > 0 ? "var(--green)" : "var(--pink)"}}>
+                    {contactsChange > 0 ? "↑" : "↓"} {Math.abs(contactsChange)}%
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          {insights.length > 0 && (
+            <div style={{borderTop:"1px solid var(--line)",paddingTop:"16px"}}>
+              <p style={{margin:"0 0 10px",fontSize:"13px",fontWeight:800,textTransform:"uppercase",color:"var(--purple)"}}>💡 Insights clave</p>
+              {insights.map((insight, i) => (
+                <p key={i} style={{margin:"6px 0",fontSize:"14px",lineHeight:1.6,color:"var(--ink)"}}>• {insight}</p>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Meta de ventas del mes */}

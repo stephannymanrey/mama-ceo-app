@@ -2579,6 +2579,7 @@ button {
 .alert-banner { padding:12px 16px; border-radius:12px; font-size:14px; line-height:1.5; }
 .alert-orange { background:#fff3e0; border:1px solid #f0a500; color:#7a4a00; }
 .alert-red { background:var(--pink-soft); border:1px solid var(--pink); color:#8a1a2e; }
+.alert-green { background:var(--green-soft); border:1px solid var(--green); color:#1a5c3a; }
 
 .clients-kpi-row { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-bottom:14px; }
 .client-kpi { border:1px solid var(--line); border-radius:12px; background:rgba(255,255,255,0.88); padding:12px; text-align:center; display:grid; gap:4px; }
