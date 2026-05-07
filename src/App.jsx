@@ -4,6 +4,22 @@ import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
 
+// Sistema de planes
+const PLAN_LIMITS = {
+  free: {
+    movements: 30,
+    clients: 15,
+    content: 15,
+    homeTasks: 30
+  },
+  premium: {
+    movements: Infinity,
+    clients: Infinity,
+    content: Infinity,
+    homeTasks: Infinity
+  }
+};
+
 const initialMovements = [
   { id: 1, type: "income", description: "Mentoria grupal", category: "Servicios", classification: "Servicios", amount: 4200, bank: "Bancolombia" },
   { id: 2, type: "income", description: "Plantillas digitales", category: "Productos", classification: "Productos", amount: 2600, bank: "Stripe" },
@@ -146,7 +162,8 @@ const menu = [
   { id: "content", label: "Contenido", icon: "▷" },
   { id: "home", label: "Hogar", icon: "⌁" },
   { id: "ceo", label: "Propósito & Impacto", icon: "○" },
-  { id: "report", label: "Reporte semanal", icon: "◈" }
+  { id: "report", label: "Reporte semanal", icon: "◈" },
+  { id: "pricing", label: "Planes", icon: "★" }
 ];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
@@ -292,6 +309,50 @@ export default function App() {
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
   const [groceryForm, setGroceryForm] = useState("");
   const [reportWeekOffset, setReportWeekOffset] = useState(0);
+  const [userPlan, setUserPlan] = useState(stored?.userPlan || "free");
+  const [premiumExpiresAt, setPremiumExpiresAt] = useState(stored?.premiumExpiresAt || null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState("");
+  const [betaCode, setBetaCode] = useState("");
+  const [betaCodeError, setBetaCodeError] = useState("");
+  const [showBetaInput, setShowBetaInput] = useState(false);
+
+  const BETA_CODE = "MAMACEO2026";
+  const BETA_CODE_EXPIRY = new Date("2026-12-31T23:59:59").getTime();
+
+  const effectivePlan = useMemo(() => {
+    if (userPlan === "premium") {
+      if (premiumExpiresAt && Date.now() > premiumExpiresAt) return "free";
+      return "premium";
+    }
+    return "free";
+  }, [userPlan, premiumExpiresAt]);
+
+  const betaDaysLeft = useMemo(() => {
+    if (effectivePlan !== "premium" || !premiumExpiresAt) return null;
+    const days = Math.ceil((premiumExpiresAt - Date.now()) / 86400000);
+    return days > 0 ? days : 0;
+  }, [effectivePlan, premiumExpiresAt]);
+
+  const isBetaUser = premiumExpiresAt !== null;
+
+  const activateBetaCode = (e) => {
+    e.preventDefault();
+    setBetaCodeError("");
+    if (betaCode.trim().toUpperCase() !== BETA_CODE) {
+      setBetaCodeError("Código incorrecto. Verifica el correo de bienvenida de UMP Academy.");
+      return;
+    }
+    if (Date.now() > BETA_CODE_EXPIRY) {
+      setBetaCodeError("Este código ya expiró.");
+      return;
+    }
+    const expiresAt = Date.now() + 90 * 86400000;
+    setUserPlan("premium");
+    setPremiumExpiresAt(expiresAt);
+    setShowBetaInput(false);
+    setBetaCode("");
+  };
 
   const money = useMemo(() => new Intl.NumberFormat(currencyLocales[currency] || "en-US", {
     style: "currency",
@@ -645,7 +706,9 @@ export default function App() {
       homeBudget,
       purpose,
       profileSetup,
-      groceryList
+      groceryList,
+      userPlan,
+      premiumExpiresAt
     };
 
     if (user && supabaseActive) {
@@ -670,6 +733,14 @@ export default function App() {
     event.preventDefault();
     const amount = Number(form.amount);
     if (!form.description.trim() || !form.category.trim() || !amount) return;
+    
+    // Validar límite del plan
+    if (userPlan === "free" && effectivePlan === "free" && movements.length >= PLAN_LIMITS.free.movements) {
+      setUpgradeReason(`Has alcanzado el límite de ${PLAN_LIMITS.free.movements} movimientos del plan gratis.`);
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     setMovements((current) => [{
       id: Date.now(),
       type: form.type,
@@ -693,15 +764,51 @@ export default function App() {
     event.preventDefault();
     const amount = Number(clientForm.amount);
     if (!clientForm.name.trim() || !clientForm.service.trim() || !amount) return;
-    setClients((current) => [{ id: Date.now(), name: clientForm.name.trim(), service: clientForm.service.trim(), status: clientForm.status, amount, nextAction: clientForm.nextAction.trim() || "Hacer seguimiento", lastContact: Date.now(), source: clientForm.source === "Otra" ? clientForm.customSource.trim() || "Otra" : clientForm.source, phone: clientForm.phone.trim(), createdAt: Date.now() }, ...current]);
+    
+    // Validar límite del plan
+    if (userPlan === "free" && effectivePlan === "free" && clients.length >= PLAN_LIMITS.free.clients) {
+      setUpgradeReason(`Has alcanzado el límite de ${PLAN_LIMITS.free.clients} clientes del plan gratis.`);
+      setShowUpgradeModal(true);
+      return;
+    }
+    
+    const now = Date.now();
+    setClients((current) => [{ 
+      id: now, 
+      name: clientForm.name.trim(), 
+      service: clientForm.service.trim(), 
+      status: clientForm.status, 
+      amount, 
+      nextAction: clientForm.nextAction.trim() || "Hacer seguimiento", 
+      lastContact: now, 
+      source: clientForm.source === "Otra" ? clientForm.customSource.trim() || "Otra" : clientForm.source, 
+      phone: clientForm.phone.trim(), 
+      createdAt: now 
+    }, ...current]);
     setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "", phone: "" });
   };
 
   const addContent = (event) => {
     event.preventDefault();
     if (!contentForm.title.trim()) return;
+    
+    // Validar límite del plan
+    if (userPlan === "free" && effectivePlan === "free" && contentItems.length >= PLAN_LIMITS.free.content) {
+      setUpgradeReason(`Has alcanzado el límite de ${PLAN_LIMITS.free.content} contenidos del plan gratis.`);
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     const network = contentForm.network === "Otra" ? contentForm.customNetwork.trim() || "Otra" : contentForm.network;
-    setContentItems((current) => [{ id: Date.now(), ...contentForm, network, title: contentForm.title.trim(), hook: contentForm.hook.trim(), createdAt: Date.now() }, ...current]);
+    const now = Date.now();
+    setContentItems((current) => [{ 
+      id: now, 
+      ...contentForm, 
+      network, 
+      title: contentForm.title.trim(), 
+      hook: contentForm.hook.trim(), 
+      createdAt: now 
+    }, ...current]);
     setContentForm({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer", goal: "Vender" });
   };
 
@@ -716,6 +823,14 @@ export default function App() {
   const addHomeTask = (event) => {
     event.preventDefault();
     if (!homeForm.title.trim()) return;
+    
+    // Validar límite del plan
+    if (userPlan === "free" && effectivePlan === "free" && homeTasks.length >= PLAN_LIMITS.free.homeTasks) {
+      setUpgradeReason(`Has alcanzado el límite de ${PLAN_LIMITS.free.homeTasks} tareas del hogar del plan gratis.`);
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     setHomeTasks((current) => [{ id: Date.now(), title: homeForm.title.trim(), category: homeForm.category, priority: homeForm.priority || "Normal", delegate: homeForm.delegate || "", done: false }, ...current]);
     setHomeForm({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
   };
@@ -753,11 +868,14 @@ export default function App() {
       if (row.month !== month) return row;
       const nextValue = Math.max(0, Number(value) || 0);
       if (field === "income") {
+        // Solo recalcular gastos si están en 0 o vacíos (no sobrescribir valores personalizados)
+        const shouldRecalculateFixed = !row.fixedExpenses || row.fixedExpenses === 0;
+        const shouldRecalculateVariable = !row.variableExpenses || row.variableExpenses === 0;
         return {
           ...row,
           income: nextValue,
-          fixedExpenses: Math.round(nextValue * 0.45),
-          variableExpenses: Math.round(nextValue * 0.35)
+          fixedExpenses: shouldRecalculateFixed ? Math.round(nextValue * 0.45) : row.fixedExpenses,
+          variableExpenses: shouldRecalculateVariable ? Math.round(nextValue * 0.35) : row.variableExpenses
         };
       }
       return { ...row, [field]: nextValue };
@@ -1001,6 +1119,58 @@ export default function App() {
         </div>
       )}
 
+      {showUpgradeModal && (
+        <div className="profile-modal-overlay">
+          <div className="profile-modal" style={{maxWidth:"500px"}}>
+            <div className="profile-modal-header">
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+                <h2>✨ Desbloquea todo tu potencial</h2>
+                <button type="button" onClick={() => setShowUpgradeModal(false)}
+                  style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>×</button>
+              </div>
+              <p style={{marginTop:"8px",fontSize:"15px",color:"var(--purple)"}}>{upgradeReason}</p>
+            </div>
+            <div style={{padding:"24px"}}>
+              <div style={{background:"linear-gradient(135deg, rgba(212,104,122,0.1), rgba(201,169,110,0.1))",border:"2px solid var(--purple)",borderRadius:"16px",padding:"24px",marginBottom:"20px"}}>
+                <h3 style={{margin:"0 0 16px",fontSize:"20px",color:"var(--purple)"}}>Plan Premium</h3>
+                <div style={{display:"grid",gap:"12px",marginBottom:"16px"}}>
+                  <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                    <span style={{fontSize:"20px"}}>✓</span>
+                    <span>Movimientos financieros ilimitados</span>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                    <span style={{fontSize:"20px"}}>✓</span>
+                    <span>Clientes ilimitados</span>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                    <span style={{fontSize:"20px"}}>✓</span>
+                    <span>Contenido ilimitado</span>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                    <span style={{fontSize:"20px"}}>✓</span>
+                    <span>Tareas del hogar ilimitadas</span>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                    <span style={{fontSize:"20px"}}>✓</span>
+                    <span>Sincronización en la nube</span>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                    <span style={{fontSize:"20px"}}>✓</span>
+                    <span>Soporte prioritario</span>
+                  </div>
+                </div>
+                <div style={{borderTop:"1px solid var(--line)",paddingTop:"16px",textAlign:"center"}}>
+                  <div style={{fontSize:"32px",fontWeight:800,color:"var(--purple)",lineHeight:1}}>$29.900 COP</div>
+                  <div style={{fontSize:"14px",color:"var(--muted)",marginTop:"4px"}}>por mes</div>
+                </div>
+              </div>
+              <button className="primary-button" onClick={() => { setShowUpgradeModal(false); setActiveView('pricing'); }} style={{width:"100%",padding:"14px",fontSize:"16px"}}>Ver planes y precios</button>
+              <button type="button" onClick={() => setShowUpgradeModal(false)} style={{width:"100%",marginTop:"10px",padding:"12px",border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",cursor:"pointer",fontSize:"14px",fontWeight:700}}>Continuar con plan gratis</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark"></div>
@@ -1062,6 +1232,21 @@ export default function App() {
           </div>
         )}
 
+        {/* Banner beta motivacional */}
+        {isBetaUser && effectivePlan === "premium" && betaDaysLeft !== null && (
+          <div className="beta-banner">
+            {betaDaysLeft > 30 ? (
+              <><span>🌸</span><div><strong>Bienvenida al grupo beta de Mamá CEO</strong><p>Tienes <b>{betaDaysLeft} días</b> de acceso Premium gratis. ¡Úsalos para construir el hábito de organizar tu negocio y hogar!</p></div></>
+            ) : betaDaysLeft > 7 ? (
+              <><span>✨</span><div><strong>Ya llevas un buen camino, {profileSetup?.name || "Mamá CEO"}</strong><p>Te quedan <b>{betaDaysLeft} días</b> de Premium gratis. Todo lo que organizaste aquí ya es tuyo — sigue construyendo.</p></div></>
+            ) : betaDaysLeft > 0 ? (
+              <><span>💛</span><div><strong>Últimos {betaDaysLeft} días de tu acceso beta</strong><p>Has avanzado mucho. Activa Premium cuando estés lista, sin presión.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Ver planes →</button></div></>
+            ) : (
+              <><span>🎯</span><div><strong>Tu período beta terminó</strong><p>Tus datos están seguros. Activa Premium para seguir con acceso ilimitado.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Activar Premium →</button></div></>
+            )}
+          </div>
+        )}
+
         {activeView === "dashboard" && renderDashboard()}
         {activeView === "business" && renderBusiness()}
         {activeView === "clients" && renderClients()}
@@ -1069,14 +1254,17 @@ export default function App() {
         {activeView === "home" && renderHome()}
         {activeView === "ceo" && renderCeo()}
         {activeView === "report" && renderWeeklyReport()}
+        {activeView === "pricing" && renderPricing()}
+        {activeView === "terminos" && renderTerminos()}
+        {activeView === "privacidad" && renderPrivacidad()}
 
         <footer className="app-footer">
           <span>© 2026 UMP S.A.S • Todos los derechos reservados</span>
           <span>Hecho por Una mamá con propósito®</span>
           <span>
-            <a href="#" onClick={(e) => { e.preventDefault(); alert('Próximamente: Términos y Condiciones'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>Términos</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('terminos'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>Términos</a>
             {" • "}
-            <a href="#" onClick={(e) => { e.preventDefault(); alert('Próximamente: Política de Privacidad'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>Privacidad</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('privacidad'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>Privacidad</a>
           </span>
         </footer>
       </main>
@@ -2635,6 +2823,197 @@ export default function App() {
     );
   }
 
+  function renderPricing() {
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Planes y Precios</h2>
+          <p>Elige el plan que mejor se adapte a tu negocio</p>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(320px, 1fr))",gap:"24px",maxWidth:"900px",margin:"0 auto"}}>
+          {/* Plan Gratis */}
+          <div className="card" style={{border: userPlan === "free" ? "2px solid var(--purple)" : "1px solid var(--line)",position:"relative"}}>
+            {userPlan === "free" && (
+              <div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:"var(--purple)",color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:800}}>PLAN ACTUAL</div>
+            )}
+            <div style={{padding:"24px"}}>
+              <h3 style={{margin:"0 0 8px",fontSize:"24px"}}>Plan Gratis</h3>
+              <div style={{fontSize:"36px",fontWeight:800,color:"var(--purple)",lineHeight:1,marginBottom:"8px"}}>$0</div>
+              <p style={{fontSize:"14px",color:"var(--muted)",marginBottom:"24px"}}>Perfecto para empezar</p>
+              
+              <div style={{display:"grid",gap:"12px",marginBottom:"24px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>{PLAN_LIMITS.free.movements} movimientos financieros/mes</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>{PLAN_LIMITS.free.clients} clientes</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>{PLAN_LIMITS.free.content} contenidos/mes</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>{PLAN_LIMITS.free.homeTasks} tareas del hogar/mes</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>Sincronización en la nube</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>Todas las funcionalidades básicas</span>
+                </div>
+              </div>
+              
+              {userPlan === "free" ? (
+                <div style={{padding:"12px",background:"var(--purple-soft)",borderRadius:"8px",textAlign:"center",color:"var(--purple)",fontWeight:700}}>Plan actual</div>
+              ) : (
+                <button className="primary-button" onClick={() => setUserPlan("free")} style={{width:"100%"}}>Cambiar a gratis</button>
+              )}
+            </div>
+          </div>
+
+          {/* Plan Premium */}
+          <div className="card" style={{border: userPlan === "premium" ? "2px solid var(--purple)" : "2px solid var(--purple)",background:"linear-gradient(135deg, rgba(212,104,122,0.05), rgba(201,169,110,0.05))",position:"relative"}}>
+            {userPlan === "premium" && (
+              <div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:"var(--purple)",color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:800}}>PLAN ACTUAL</div>
+            )}
+            <div style={{position:"absolute",top:"16px",right:"16px",background:"var(--green)",color:"#fff",padding:"4px 12px",borderRadius:"20px",fontSize:"11px",fontWeight:800}}>RECOMENDADO</div>
+            <div style={{padding:"24px"}}>
+              <h3 style={{margin:"0 0 8px",fontSize:"24px",color:"var(--purple)"}}>Plan Premium</h3>
+              <div style={{fontSize:"36px",fontWeight:800,color:"var(--purple)",lineHeight:1,marginBottom:"4px"}}>$29.900</div>
+              <p style={{fontSize:"14px",color:"var(--muted)",marginBottom:"24px"}}>COP/mes • $7.99 USD/mes</p>
+              
+              <div style={{display:"grid",gap:"12px",marginBottom:"24px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span><strong>Movimientos ilimitados</strong></span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span><strong>Clientes ilimitados</strong></span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span><strong>Contenido ilimitado</strong></span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span><strong>Tareas ilimitadas</strong></span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span>Sincronización en la nube</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span>Soporte prioritario</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span>Acceso anticipado a nuevas funciones</span>
+                </div>
+              </div>
+              
+              {userPlan === "premium" ? (
+                <div style={{padding:"12px",background:"var(--purple)",color:"#fff",borderRadius:"8px",textAlign:"center",fontWeight:700}}>Plan actual</div>
+              ) : (
+                <button className="primary-button" onClick={() => setUserPlan("premium")} style={{width:"100%",background:"var(--purple)",fontSize:"16px"}}>Actualizar a Premium</button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Indicadores de uso */}
+        <div className="card" style={{maxWidth:"900px",margin:"32px auto 0",padding:"24px"}}>
+          <h3 style={{margin:"0 0 20px"}}>Tu uso actual</h3>
+          <div style={{display:"grid",gap:"16px"}}>
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
+                <span>Movimientos financieros</span>
+                <span><strong>{movements.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.movements : "∞"}</span>
+              </div>
+              <Progress value={userPlan === "free" ? Math.min(Math.round((movements.length / PLAN_LIMITS.free.movements) * 100), 100) : 0} tone={movements.length >= PLAN_LIMITS.free.movements ? "pink" : "green"} />
+            </div>
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
+                <span>Clientes</span>
+                <span><strong>{clients.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.clients : "∞"}</span>
+              </div>
+              <Progress value={userPlan === "free" ? Math.min(Math.round((clients.length / PLAN_LIMITS.free.clients) * 100), 100) : 0} tone={clients.length >= PLAN_LIMITS.free.clients ? "pink" : "green"} />
+            </div>
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
+                <span>Contenidos</span>
+                <span><strong>{contentItems.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.content : "∞"}</span>
+              </div>
+              <Progress value={userPlan === "free" ? Math.min(Math.round((contentItems.length / PLAN_LIMITS.free.content) * 100), 100) : 0} tone={contentItems.length >= PLAN_LIMITS.free.content ? "pink" : "green"} />
+            </div>
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
+                <span>Tareas del hogar</span>
+                <span><strong>{homeTasks.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.homeTasks : "∞"}</span>
+              </div>
+              <Progress value={userPlan === "free" ? Math.min(Math.round((homeTasks.length / PLAN_LIMITS.free.homeTasks) * 100), 100) : 0} tone={homeTasks.length >= PLAN_LIMITS.free.homeTasks ? "pink" : "green"} />
+            </div>
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="card" style={{maxWidth:"900px",margin:"24px auto 0",padding:"24px"}}>
+          <h3 style={{margin:"0 0 20px"}}>Preguntas frecuentes</h3>
+          <div style={{display:"grid",gap:"16px"}}>
+            <div>
+              <strong style={{display:"block",marginBottom:"6px"}}>¿Puedo cambiar de plan en cualquier momento?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Sí, puedes actualizar o cambiar tu plan cuando quieras desde esta página.</p>
+            </div>
+            <div>
+              <strong style={{display:"block",marginBottom:"6px"}}>¿Qué pasa si alcanzo el límite del plan gratis?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Te mostraremos una notificación invitándote a actualizar a Premium para continuar agregando más datos.</p>
+            </div>
+            <div>
+              <strong style={{display:"block",marginBottom:"6px"}}>¿Los datos se mantienen al cambiar de plan?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Sí, todos tus datos se mantienen intactos al cambiar entre planes.</p>
+            </div>
+            <div>
+              <strong style={{display:"block",marginBottom:"6px"}}>¿Cómo realizo el pago?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Próximamente integraremos Mercado Pago (Colombia) y PayPal (internacional) como pasarelas de pago seguras.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Código beta */}
+        <div className="card" style={{maxWidth:"900px",margin:"24px auto 0",padding:"24px",border:"2px dashed var(--line)"}}>
+          <h3 style={{margin:"0 0 8px"}}>¿Tienes un código de acceso beta?</h3>
+          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu código de acceso Premium gratis por 90 días.</p>
+          {!showBetaInput ? (
+            <button className="primary-button" style={{padding:"10px 24px"}} onClick={() => setShowBetaInput(true)}>Tengo un código</button>
+          ) : (
+            <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
+              <input
+                placeholder="Ingresa tu código (ej: MAMACEO2026)"
+                value={betaCode}
+                onChange={(e) => setBetaCode(e.target.value)}
+                style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit",fontSize:"15px"}}
+                autoFocus
+              />
+              <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
+              {betaCodeError && <p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
+            </form>
+          )}
+          {isBetaUser && effectivePlan === "premium" && (
+            <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
+              ✅ Código activo — Premium gratis por {betaDaysLeft} días más
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
 
 }
 
@@ -2738,3 +3117,153 @@ function LineChart({ movements }) {
 
 
 
+
+  function renderTerminos() {
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Términos y Condiciones</h2>
+          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Volver</button>
+        </div>
+        <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 5 de junio de 2026</p>
+          
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Aceptación de los Términos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Al acceder y utilizar Mamá CEO App, aceptas estar sujeto a estos Términos y Condiciones. Si no estás de acuerdo con alguna parte de estos términos, no deberías usar la aplicación.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. Descripción del Servicio</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App es una plataforma de gestión integral diseñada para mamás emprendedoras que permite organizar y administrar su negocio, hogar y propósito en un solo lugar. El servicio incluye herramientas para gestión financiera, seguimiento de clientes, planificación de contenido, organización del hogar y seguimiento de objetivos personales.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. Registro y Cuenta de Usuario</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para utilizar Mamá CEO App, debes crear una cuenta proporcionando información precisa y completa. Eres responsable de mantener la confidencialidad de tu contraseña y de todas las actividades que ocurran bajo tu cuenta. Debes notificarnos inmediatamente sobre cualquier uso no autorizado de tu cuenta.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Uso Aceptable</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Te comprometes a utilizar Mamá CEO App únicamente para fines legales y de acuerdo con estos Términos. No debes:</p>
+          <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
+            <li>Usar la aplicación de manera que viole leyes locales, nacionales o internacionales</li>
+            <li>Intentar acceder sin autorización a otras cuentas, sistemas o redes</li>
+            <li>Interferir o interrumpir el servicio o los servidores conectados al servicio</li>
+            <li>Transmitir virus, malware o cualquier código malicioso</li>
+            <li>Usar la aplicación para propósitos comerciales no autorizados</li>
+          </ul>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Propiedad Intelectual</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todo el contenido, características y funcionalidad de Mamá CEO App, incluyendo pero no limitado a texto, gráficos, logos, iconos, imágenes y software, son propiedad exclusiva de UMP S.A.S y están protegidos por las leyes de propiedad intelectual de Colombia y tratados internacionales.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Privacidad y Protección de Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu privacidad es importante para nosotros. El uso de tu información personal está regido por nuestra Política de Privacidad, que forma parte integral de estos Términos. Al usar Mamá CEO App, aceptas la recolección y uso de tu información de acuerdo con nuestra Política de Privacidad y la Ley 1581 de 2012 de Protección de Datos Personales de Colombia.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. Suscripciones y Pagos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App puede ofrecer diferentes planes de suscripción. Los precios, características y términos de cada plan se especificarán claramente antes de la compra. Las suscripciones se renovarán automáticamente a menos que se cancelen antes de la fecha de renovación. Todos los pagos son procesados de forma segura a través de proveedores de pago certificados.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. Cancelación y Reembolsos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Puedes cancelar tu suscripción en cualquier momento desde la configuración de tu cuenta. La cancelación será efectiva al final del período de facturación actual. No se ofrecen reembolsos por períodos de suscripción parcialmente utilizados, excepto cuando lo requiera la ley aplicable.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Limitación de Responsabilidad</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App se proporciona "tal cual" y "según disponibilidad". No garantizamos que el servicio será ininterrumpido, seguro o libre de errores. En ningún caso UMP S.A.S será responsable por daños indirectos, incidentales, especiales, consecuentes o punitivos, incluyendo pérdida de beneficios, datos, uso o cualquier otra pérdida intangible.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Modificaciones del Servicio y Términos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Nos reservamos el derecho de modificar o discontinuar, temporal o permanentemente, el servicio (o cualquier parte del mismo) con o sin previo aviso. También podemos actualizar estos Términos periódicamente. Te notificaremos sobre cambios significativos publicando los nuevos Términos en la aplicación. Tu uso continuado del servicio después de dichos cambios constituye tu aceptación de los nuevos Términos.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Ley Aplicable y Jurisdicción</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Estos Términos se regirán e interpretarán de acuerdo con las leyes de la República de Colombia. Cualquier disputa relacionada con estos Términos estará sujeta a la jurisdicción exclusiva de los tribunales de Colombia.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre estos Términos y Condiciones, puedes contactarnos a través de:</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S</strong></p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Sitio web: www.umpacademy.co</p>
+        </div>
+      </section>
+    );
+  }
+
+  function renderPrivacidad() {
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Política de Privacidad</h2>
+          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Volver</button>
+        </div>
+        <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 5 de junio de 2026</p>
+          
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Introducción</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>En UMP S.A.S, operadores de Mamá CEO App, nos comprometemos a proteger tu privacidad y tus datos personales. Esta Política de Privacidad explica cómo recopilamos, usamos, compartimos y protegemos tu información personal de acuerdo con la Ley 1581 de 2012 de Protección de Datos Personales de Colombia y el Reglamento General de Protección de Datos (GDPR) cuando aplique.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. Información que Recopilamos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Recopilamos la siguiente información cuando usas Mamá CEO App:</p>
+          <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
+            <li><strong>Información de cuenta:</strong> Nombre, correo electrónico, contraseña (encriptada)</li>
+            <li><strong>Información de perfil:</strong> Nombre del negocio, tipo de negocio, etapa empresarial, metas financieras</li>
+            <li><strong>Datos de uso:</strong> Información sobre cómo usas la aplicación, incluyendo movimientos financieros, clientes, contenido, tareas del hogar y objetivos personales que tú ingresas voluntariamente</li>
+            <li><strong>Información técnica:</strong> Dirección IP, tipo de navegador, sistema operativo, identificadores de dispositivo</li>
+            <li><strong>Cookies y tecnologías similares:</strong> Usamos cookies para mejorar tu experiencia y mantener tu sesión activa</li>
+          </ul>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. Cómo Usamos tu Información</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Utilizamos tu información personal para:</p>
+          <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
+            <li>Proporcionar, mantener y mejorar Mamá CEO App</li>
+            <li>Crear y gestionar tu cuenta de usuario</li>
+            <li>Procesar transacciones y gestionar suscripciones</li>
+            <li>Enviarte notificaciones importantes sobre el servicio</li>
+            <li>Responder a tus consultas y proporcionar soporte al cliente</li>
+            <li>Personalizar tu experiencia en la aplicación</li>
+            <li>Analizar el uso de la aplicación para mejorar nuestros servicios</li>
+            <li>Cumplir con obligaciones legales y regulatorias</li>
+            <li>Enviarte comunicaciones de marketing (solo con tu consentimiento explícito)</li>
+          </ul>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Base Legal para el Procesamiento</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Procesamos tu información personal bajo las siguientes bases legales: (a) Tu consentimiento explícito al crear una cuenta y usar la aplicación; (b) Ejecución del contrato de servicios contigo; (c) Cumplimiento de obligaciones legales; (d) Nuestros intereses legítimos en mejorar y proteger nuestros servicios.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Compartir tu Información</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>No vendemos tu información personal. Podemos compartir tu información con:</p>
+          <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
+            <li><strong>Proveedores de servicios:</strong> Supabase (almacenamiento de datos y autenticación), procesadores de pago, servicios de hosting</li>
+            <li><strong>Cumplimiento legal:</strong> Cuando sea requerido por ley o para proteger nuestros derechos legales</li>
+            <li><strong>Transferencia de negocio:</strong> En caso de fusión, adquisición o venta de activos</li>
+          </ul>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todos nuestros proveedores de servicios están obligados contractualmente a proteger tu información y solo pueden usarla para los propósitos específicos que les autorizamos.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Seguridad de los Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Implementamos medidas de seguridad técnicas y organizativas apropiadas para proteger tu información personal contra acceso no autorizado, alteración, divulgación o destrucción. Esto incluye encriptación de datos en tránsito y en reposo, controles de acceso estrictos, y auditorías de seguridad regulares. Sin embargo, ningún método de transmisión por Internet o almacenamiento electrónico es 100% seguro.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. Retención de Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Conservamos tu información personal mientras tu cuenta esté activa o según sea necesario para proporcionarte servicios. Si solicitas la eliminación de tu cuenta, eliminaremos o anonimizaremos tu información personal dentro de 30 días, excepto cuando debamos retenerla para cumplir con obligaciones legales, resolver disputas o hacer cumplir nuestros acuerdos.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. Tus Derechos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>De acuerdo con la Ley 1581 de 2012 y el GDPR, tienes los siguientes derechos:</p>
+          <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
+            <li><strong>Acceso:</strong> Solicitar una copia de tu información personal</li>
+            <li><strong>Rectificación:</strong> Corregir información inexacta o incompleta</li>
+            <li><strong>Eliminación:</strong> Solicitar la eliminación de tu información personal</li>
+            <li><strong>Portabilidad:</strong> Recibir tu información en un formato estructurado y de uso común</li>
+            <li><strong>Oposición:</strong> Oponerte al procesamiento de tu información personal</li>
+            <li><strong>Limitación:</strong> Solicitar la limitación del procesamiento de tu información</li>
+            <li><strong>Revocación del consentimiento:</strong> Retirar tu consentimiento en cualquier momento</li>
+          </ul>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para ejercer estos derechos, contáctanos en hola@umpacademy.co. Responderemos a tu solicitud dentro de 15 días hábiles.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Transferencias Internacionales de Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu información puede ser transferida y almacenada en servidores ubicados fuera de Colombia. Cuando transferimos datos internacionalmente, nos aseguramos de que existan garantías adecuadas para proteger tu información de acuerdo con esta Política de Privacidad y las leyes aplicables.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Menores de Edad</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App no está dirigida a menores de 18 años. No recopilamos intencionalmente información personal de menores. Si descubrimos que hemos recopilado información de un menor sin el consentimiento parental verificable, eliminaremos esa información inmediatamente.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Cambios a esta Política</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Podemos actualizar esta Política de Privacidad periódicamente. Te notificaremos sobre cambios significativos publicando la nueva Política en la aplicación y actualizará la fecha de "Última actualización" en la parte superior. Te recomendamos revisar esta Política regularmente.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre esta Política de Privacidad o deseas ejercer tus derechos, puedes contactarnos:</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S</strong></p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Responsable de Protección de Datos</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Sitio web: www.umpacademy.co</p>
+          
+          <p style={{lineHeight:1.7,marginBottom:"16px",marginTop:"24px",padding:"16px",background:"var(--purple-soft)",borderRadius:"12px",border:"1px solid var(--purple)"}}>Si no estás satisfecho con nuestra respuesta, tienes derecho a presentar una queja ante la Superintendencia de Industria y Comercio de Colombia.</p>
+        </div>
+      </section>
+    );
+  }
