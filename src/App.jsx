@@ -1074,9 +1074,9 @@ export default function App() {
           <span>© 2026 UMP S.A.S • Todos los derechos reservados</span>
           <span>Hecho por Una mamá con propósito®</span>
           <span>
-            <a href="https://www.umpacademy.co/terminos" target="_blank" rel="noopener noreferrer" style={{color:"inherit",textDecoration:"underline"}}>Términos</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); alert('Próximamente: Términos y Condiciones'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>Términos</a>
             {" • "}
-            <a href="https://www.umpacademy.co/privacidad" target="_blank" rel="noopener noreferrer" style={{color:"inherit",textDecoration:"underline"}}>Privacidad</a>
+            <a href="#" onClick={(e) => { e.preventDefault(); alert('Próximamente: Política de Privacidad'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>Privacidad</a>
           </span>
         </footer>
       </main>
