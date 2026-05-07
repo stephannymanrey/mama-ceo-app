@@ -2372,12 +2372,12 @@ export default function App() {
     }
 
     // Mejor fuente de leads
-    const sourceCounts = currentClients.reduce((acc, c) => {
+    const weekSourceCounts = currentClients.reduce((acc, c) => {
       const src = c.source || "Sin fuente";
       acc[src] = (acc[src] || 0) + 1;
       return acc;
     }, {});
-    const topSource = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1])[0];
+    const topSource = Object.entries(weekSourceCounts).sort((a, b) => b[1] - a[1])[0];
     if (topSource && topSource[1] > 0) {
       const percentage = Math.round((topSource[1] / currentClients.length) * 100);
       insights.push(`${topSource[0]} trajo ${percentage}% de tus leads esta semana.`);
