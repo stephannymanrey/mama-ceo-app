@@ -403,26 +403,45 @@ export default function App() {
   const handleAuthSubmit = async (event) => {
     event.preventDefault();
     setAuthError("");
+    
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(authEmail)) {
+      setAuthError("Por favor ingresa un correo electrónico válido.");
+      return;
+    }
+    
     if (authMode === "signup") {
       if (authPassword !== authPasswordConfirm) {
         setAuthError("Las contraseñas no coinciden.");
         return;
       }
+      if (authPassword.length < 6) {
+        setAuthError("La contraseña debe tener al menos 6 caracteres.");
+        return;
+      }
     }
+    
     setAuthLoading(true);
-    if (authMode === "login") {
-      const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
-      if (error) setAuthError(translateError(error.message));
-    } else {
-      const { error } = await supabase.auth.signUp({
-        email: authEmail,
-        password: authPassword,
-        options: { data: { full_name: authName.trim() } }
-      });
-      if (error) setAuthError(translateError(error.message));
-      else setAuthError("Revisa tu correo para confirmar tu cuenta.");
+    try {
+      if (authMode === "login") {
+        const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+        if (error) setAuthError(translateError(error.message));
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email: authEmail,
+          password: authPassword,
+          options: { data: { full_name: authName.trim() } }
+        });
+        if (error) setAuthError(translateError(error.message));
+        else setAuthError("✅ Revisa tu correo para confirmar tu cuenta.");
+      }
+    } catch (err) {
+      setAuthError("Error de conexión. Por favor verifica tu internet e intenta de nuevo.");
+      console.error("Error de autenticación:", err);
+    } finally {
+      setAuthLoading(false);
     }
-    setAuthLoading(false);
   };
 
   const handleForgotPassword = async () => {
@@ -631,9 +650,19 @@ export default function App() {
 
     if (user && supabaseActive) {
       setIsSyncing(true);
-      saveRemoteState(user.id, stateToSave).finally(() => setIsSyncing(false));
+      saveRemoteState(user.id, stateToSave)
+        .catch((err) => {
+          console.error("Error guardando en la nube:", err);
+          // Fallback a localStorage si falla Supabase
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+        })
+        .finally(() => setIsSyncing(false));
     } else {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      } catch (err) {
+        console.error("Error guardando en localStorage:", err);
+      }
     }
   }, [ready, user, supabaseActive, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose]);
 
@@ -1044,6 +1073,11 @@ export default function App() {
         <footer className="app-footer">
           <span>© 2026 UMP S.A.S • Todos los derechos reservados</span>
           <span>Hecho por Una mamá con propósito®</span>
+          <span>
+            <a href="https://www.umpacademy.co/terminos" target="_blank" rel="noopener noreferrer" style={{color:"inherit",textDecoration:"underline"}}>Términos</a>
+            {" • "}
+            <a href="https://www.umpacademy.co/privacidad" target="_blank" rel="noopener noreferrer" style={{color:"inherit",textDecoration:"underline"}}>Privacidad</a>
+          </span>
         </footer>
       </main>
     </div>
