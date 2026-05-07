@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿import React, { useEffect, useMemo, useState } from "react";
 import { supabase, isSupabaseConfigured } from "./lib/supabaseClient";
 import "./App.css";
 
@@ -6,19 +6,23 @@ const STORAGE_KEY = "mama-ceo-app-state-v4";
 
 // Sistema de planes
 const PLAN_LIMITS = {
-  free: {
-    movements: 30,
-    clients: 15,
-    content: 15,
-    homeTasks: 30
-  },
-  premium: {
-    movements: Infinity,
-    clients: Infinity,
-    content: Infinity,
-    homeTasks: Infinity
-  }
+  free:          { movements: 30,       clients: 15,       content: 15,       homeTasks: 30 },
+  emprendedora:  { movements: 100,      clients: 50,       content: 50,       homeTasks: 100 },
+  ceo:           { movements: Infinity, clients: Infinity, content: Infinity, homeTasks: Infinity }
 };
+
+const PLAN_PRICES = {
+  emprendedora: { cop: "$59.900", usd: "$14.99", copYear: "$599.000", usdYear: "$149" },
+  ceo:          { cop: "$99.900", usd: "$24.99", copYear: "$999.000", usdYear: "$249" }
+};
+
+const POMODORO_MESSAGES = [
+  "Respira. Lo que hiciste en este bloque importa.",
+  "Tómate el descanso — tu cerebro lo necesita para rendir.",
+  "Una pausa consciente es parte del trabajo.",
+  "Hidratáte. Mueve el cuerpo. Vuelve con más claridad.",
+  "Cada bloque completado es una victoria real."
+];
 
 const initialMovements = [
   { id: 1, type: "income", description: "Mentoria grupal", category: "Servicios", classification: "Servicios", amount: 4200, bank: "Bancolombia" },
@@ -317,16 +321,76 @@ export default function App() {
   const [betaCodeError, setBetaCodeError] = useState("");
   const [showBetaInput, setShowBetaInput] = useState(false);
 
+  // Temporizador Pomodoro
+  const [pomodoroActive, setPomodoroActive] = useState(false);
+  const [pomodoroMode, setPomodoroMode] = useState("work"); // work | break
+  const [pomodoroMinutes, setPomodoroMinutes] = useState(25);
+  const [pomodoroSeconds, setPomodoroSeconds] = useState(0);
+  const [pomodoroRunning, setPomodoroRunning] = useState(false);
+  const [pomodoroBlocks, setPomodoroBlocks] = useState(0);
+  const [pomodoroWorkDuration, setPomodoroWorkDuration] = useState(25);
+  const [pomodoroBreakDuration, setPomodoroBreakDuration] = useState(5);
+  const pomodoroRef = React.useRef(null);
+
+  useEffect(() => {
+    if (pomodoroRunning) {
+      pomodoroRef.current = setInterval(() => {
+        setPomodoroSeconds((s) => {
+          if (s > 0) return s - 1;
+          setPomodoroMinutes((m) => {
+            if (m > 0) return m - 1;
+            // Tiempo terminado
+            setPomodoroRunning(false);
+            if (pomodoroMode === "work") {
+              setPomodoroBlocks((b) => b + 1);
+              setPomodoroMode("break");
+              setPomodoroMinutes(pomodoroBreakDuration);
+              if (Notification.permission === "granted") new Notification("\u23f0 Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)] });
+            } else {
+              setPomodoroMode("work");
+              setPomodoroMinutes(pomodoroWorkDuration);
+              if (Notification.permission === "granted") new Notification("\u25b6 A trabajar", { body: "Nuevo bloque de enfoque. \u00a1T\u00fa puedes!" });
+            }
+            return 0;
+          });
+          return 59;
+        });
+      }, 1000);
+    } else {
+      clearInterval(pomodoroRef.current);
+    }
+    return () => clearInterval(pomodoroRef.current);
+  }, [pomodoroRunning, pomodoroMode, pomodoroWorkDuration, pomodoroBreakDuration]);
+
+  const pomodoroReset = () => {
+    setPomodoroRunning(false);
+    setPomodoroMode("work");
+    setPomodoroMinutes(pomodoroWorkDuration);
+    setPomodoroSeconds(0);
+  };
+
+  const requestNotificationPermission = () => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  };
+
   const BETA_CODE = "MAMACEO2026";
   const BETA_CODE_EXPIRY = new Date("2026-12-31T23:59:59").getTime();
 
   const effectivePlan = useMemo(() => {
+    if (userPlan === "ceo" || userPlan === "emprendedora") {
+      if (premiumExpiresAt && Date.now() > premiumExpiresAt) return "free";
+      return userPlan;
+    }
     if (userPlan === "premium") {
       if (premiumExpiresAt && Date.now() > premiumExpiresAt) return "free";
-      return "premium";
+      return "ceo"; // legacy: premium = ceo
     }
     return "free";
   }, [userPlan, premiumExpiresAt]);
+
+  const currentLimits = PLAN_LIMITS[effectivePlan] || PLAN_LIMITS.free;
 
   const betaDaysLeft = useMemo(() => {
     if (effectivePlan !== "premium" || !premiumExpiresAt) return null;
@@ -735,8 +799,8 @@ export default function App() {
     if (!form.description.trim() || !form.category.trim() || !amount) return;
     
     // Validar límite del plan
-    if (userPlan === "free" && effectivePlan === "free" && movements.length >= PLAN_LIMITS.free.movements) {
-      setUpgradeReason(`Has alcanzado el límite de ${PLAN_LIMITS.free.movements} movimientos del plan gratis.`);
+    if (movements.length >= currentLimits.movements) {
+      setUpgradeReason(`Has alcanzado el límite de ${currentLimits.movements} movimientos de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
@@ -766,8 +830,8 @@ export default function App() {
     if (!clientForm.name.trim() || !clientForm.service.trim() || !amount) return;
     
     // Validar límite del plan
-    if (userPlan === "free" && effectivePlan === "free" && clients.length >= PLAN_LIMITS.free.clients) {
-      setUpgradeReason(`Has alcanzado el límite de ${PLAN_LIMITS.free.clients} clientes del plan gratis.`);
+    if (clients.length >= currentLimits.clients) {
+      setUpgradeReason(`Has alcanzado el límite de ${currentLimits.clients} clientes de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
@@ -793,8 +857,8 @@ export default function App() {
     if (!contentForm.title.trim()) return;
     
     // Validar límite del plan
-    if (userPlan === "free" && effectivePlan === "free" && contentItems.length >= PLAN_LIMITS.free.content) {
-      setUpgradeReason(`Has alcanzado el límite de ${PLAN_LIMITS.free.content} contenidos del plan gratis.`);
+    if (contentItems.length >= currentLimits.content) {
+      setUpgradeReason(`Has alcanzado el límite de ${currentLimits.content} contenidos de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
@@ -825,8 +889,8 @@ export default function App() {
     if (!homeForm.title.trim()) return;
     
     // Validar límite del plan
-    if (userPlan === "free" && effectivePlan === "free" && homeTasks.length >= PLAN_LIMITS.free.homeTasks) {
-      setUpgradeReason(`Has alcanzado el límite de ${PLAN_LIMITS.free.homeTasks} tareas del hogar del plan gratis.`);
+    if (homeTasks.length >= currentLimits.homeTasks) {
+      setUpgradeReason(`Has alcanzado el límite de ${currentLimits.homeTasks} tareas del hogar de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
@@ -2824,6 +2888,55 @@ export default function App() {
   }
 
   function renderPricing() {
+    const plans = [
+      {
+        id: "free", name: "Gratis", price: "$0", period: "", desc: "Para empezar a organizarte",
+        features: [
+          `${PLAN_LIMITS.free.movements} movimientos financieros/mes`,
+          `${PLAN_LIMITS.free.clients} clientes`,
+          `${PLAN_LIMITS.free.content} contenidos/mes`,
+          `${PLAN_LIMITS.free.homeTasks} tareas del hogar/mes`,
+          "Sincronización en la nube",
+          "Todas las funciones básicas"
+        ],
+        color: "var(--muted)"
+      },
+      {
+        id: "emprendedora", name: "Emprendedora", price: PLAN_PRICES.emprendedora.usd, period: "/mes USD",
+        priceCop: PLAN_PRICES.emprendedora.cop + " COP/mes",
+        priceYear: PLAN_PRICES.emprendedora.usdYear + " USD/año (2 meses gratis)",
+        desc: "Para mamás que están creciendo",
+        features: [
+          `${PLAN_LIMITS.emprendedora.movements} movimientos financieros/mes`,
+          `${PLAN_LIMITS.emprendedora.clients} clientes`,
+          `${PLAN_LIMITS.emprendedora.content} contenidos/mes`,
+          `${PLAN_LIMITS.emprendedora.homeTasks} tareas del hogar/mes`,
+          "Exportar a Excel y PDF",
+          "Historial 6 meses",
+          "Soporte email 48h"
+        ],
+        color: "var(--pink)"
+      },
+      {
+        id: "ceo", name: "CEO", price: PLAN_PRICES.ceo.usd, period: "/mes USD",
+        priceCop: PLAN_PRICES.ceo.cop + " COP/mes",
+        priceYear: PLAN_PRICES.ceo.usdYear + " USD/año (2 meses gratis)",
+        desc: "Para mamás CEO que van en serio",
+        badge: "RECOMENDADO",
+        features: [
+          "Todo ilimitado",
+          "Exportar Excel y PDF",
+          "Historial ilimitado",
+          "Calculadora de precio de servicios ✨",
+          "Proyección de ingresos ✨",
+          "Temporizador Pomodoro flotante ✨",
+          "Acceso anticipado a nuevas funciones",
+          "Soporte prioritario 24h"
+        ],
+        color: "var(--purple)"
+      }
+    ];
+
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
@@ -2831,7 +2944,84 @@ export default function App() {
           <p>Elige el plan que mejor se adapte a tu negocio</p>
         </div>
 
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(320px, 1fr))",gap:"24px",maxWidth:"900px",margin:"0 auto"}}>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))",gap:"20px",maxWidth:"1000px",margin:"0 auto"}}>
+          {plans.map((plan) => {
+            const isCurrent = effectivePlan === plan.id || (plan.id === "ceo" && effectivePlan === "premium");
+            return (
+              <div key={plan.id} className="card" style={{border: isCurrent ? `2px solid ${plan.color}` : plan.id === "ceo" ? `2px solid ${plan.color}` : "1px solid var(--line)",background: plan.id === "ceo" ? "linear-gradient(135deg, rgba(212,104,122,0.05), rgba(201,169,110,0.05))" : "#fff",position:"relative"}}>
+                {isCurrent && <div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:plan.color,color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:800}}>PLAN ACTUAL</div>}
+                {plan.badge && !isCurrent && <div style={{position:"absolute",top:"12px",right:"12px",background:"var(--green)",color:"#fff",padding:"3px 10px",borderRadius:"20px",fontSize:"11px",fontWeight:800}}>{plan.badge}</div>}
+                <div style={{padding:"24px"}}>
+                  <h3 style={{margin:"0 0 4px",fontSize:"22px",color:plan.color}}>{plan.name}</h3>
+                  <div style={{fontSize:"34px",fontWeight:800,color:plan.color,lineHeight:1,marginBottom:"2px"}}>{plan.price}<span style={{fontSize:"14px",fontWeight:400,color:"var(--muted)"}}>{plan.period}</span></div>
+                  {plan.priceCop && <p style={{margin:"0 0 2px",fontSize:"13px",color:"var(--muted)"}}>{plan.priceCop}</p>}
+                  {plan.priceYear && <p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>{plan.priceYear}</p>}
+                  {!plan.priceCop && <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>{plan.desc}</p>}
+                  <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
+                    {plan.features.map((f) => (
+                      <div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}>
+                        <span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>✓</span>
+                        <span>{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {isCurrent ? (
+                    <div style={{padding:"10px",background:plan.id === "free" ? "var(--purple-soft)" : "rgba(0,0,0,0.06)",borderRadius:"8px",textAlign:"center",color:plan.color,fontWeight:700,fontSize:"14px"}}>Plan actual</div>
+                  ) : plan.id === "free" ? (
+                    <button className="primary-button" onClick={() => setUserPlan("free")} style={{width:"100%",background:"var(--muted)"}}>Cambiar a gratis</button>
+                  ) : (
+                    <button className="primary-button" onClick={() => setActiveView("pricing")} style={{width:"100%",background:plan.color,fontSize:"15px"}}>Próximamente</button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Uso actual */}
+        <div className="card" style={{maxWidth:"1000px",margin:"28px auto 0",padding:"24px"}}>
+          <h3 style={{margin:"0 0 16px"}}>Tu uso actual — Plan {effectivePlan === "free" ? "Gratis" : effectivePlan === "emprendedora" ? "Emprendedora" : "CEO"}</h3>
+          <div style={{display:"grid",gap:"14px"}}>
+            {[
+              { label: "Movimientos financieros", used: movements.length, limit: currentLimits.movements },
+              { label: "Clientes", used: clients.length, limit: currentLimits.clients },
+              { label: "Contenidos", used: contentItems.length, limit: currentLimits.content },
+              { label: "Tareas del hogar", used: homeTasks.length, limit: currentLimits.homeTasks }
+            ].map(({ label, used, limit }) => (
+              <div key={label}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:"6px",fontSize:"14px"}}>
+                  <span>{label}</span>
+                  <span><strong>{used}</strong> / {limit === Infinity ? "∞" : limit}</span>
+                </div>
+                <Progress value={limit === Infinity ? 0 : Math.min(Math.round((used/limit)*100), 100)} tone={limit !== Infinity && used >= limit ? "pink" : "green"} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Código beta */}
+        <div className="card" style={{maxWidth:"1000px",margin:"20px auto 0",padding:"24px",border:"2px dashed var(--line)"}}>
+          <h3 style={{margin:"0 0 8px"}}>🎟️ ¿Tienes un código de acceso beta?</h3>
+          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu código de acceso CEO gratis por 90 días.</p>
+          {!showBetaInput ? (
+            <button className="primary-button" style={{padding:"10px 24px"}} onClick={() => setShowBetaInput(true)}>Tengo un código</button>
+          ) : (
+            <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
+              <input placeholder="Ingresa tu código (ej: MAMACEO2026)" value={betaCode} onChange={(e) => setBetaCode(e.target.value)}
+                style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
+              <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
+              {betaCodeError && <p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
+            </form>
+          )}
+          {isBetaUser && (effectivePlan === "ceo" || effectivePlan === "premium") && (
+            <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
+              ✅ Código activo — Plan CEO gratis por {betaDaysLeft} días más
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
           {/* Plan Gratis */}
           <div className="card" style={{border: userPlan === "free" ? "2px solid var(--purple)" : "1px solid var(--line)",position:"relative"}}>
             {userPlan === "free" && (
