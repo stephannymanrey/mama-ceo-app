@@ -160,14 +160,13 @@ const promesas = [
 ];
 
 const menu = [
-  { id: "dashboard", label: "Dashboard", icon: "⌂" },
-  { id: "business", label: "Negocio", icon: "▣" },
-  { id: "clients", label: "Clientes", icon: "◇" },
-  { id: "content", label: "Contenido", icon: "▷" },
-  { id: "home", label: "Hogar", icon: "⌁" },
-  { id: "ceo", label: "Propósito & Impacto", icon: "○" },
-  { id: "report", label: "Reporte semanal", icon: "◈" },
-  { id: "pricing", label: "Planes", icon: "★" }
+  { id: "dashboard", label: "Dashboard", icon: "🏠" },
+  { id: "business", label: "Negocio", icon: "💼" },
+  { id: "clients", label: "Clientes", icon: "👩‍💼" },
+  { id: "content", label: "Contenido", icon: "📱" },
+  { id: "home", label: "Hogar", icon: "🌸" },
+  { id: "ceo", label: "Propósito & Impacto", icon: "✨" },
+  { id: "report", label: "Reporte semanal", icon: "📊" }
 ];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
@@ -2979,7 +2978,7 @@ export default function App() {
             <button className="primary-button" style={{padding:"10px 24px"}} onClick={()=>setShowBetaInput(true)}>Tengo un código</button>
           ):(
             <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
-              <input placeholder="Ingresa tu código (ej: MAMACEO2026)" value={betaCode} onChange={(e)=>setBetaCode(e.target.value)} style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
+              <input placeholder="Ingresa tu código de acceso" value={betaCode} onChange={(e)=>setBetaCode(e.target.value)} style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
               <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
               {betaCodeError&&<p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
