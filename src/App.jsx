@@ -1174,6 +1174,27 @@ export default function App() {
                 </select>
               </label>
               <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ✨"}</button>
+              {profileSetup && (
+                <button type="button" onClick={async () => {
+                  if (!window.confirm("\u00bfEstás segura de que quieres eliminar tu cuenta? Esta acción no se puede deshacer y perderás todos tus datos.")) return;
+                  if (!window.confirm("\u00daltima confirmación: se eliminarán todos tus datos permanentemente.")) return;
+                  try {
+                    if (user && supabaseActive) {
+                      await supabase.from("user_states").delete().eq("user_id", user.id);
+                      await supabase.auth.signOut();
+                    }
+                    window.localStorage.removeItem(STORAGE_KEY);
+                    setUser(null);
+                    setShowProfileModal(false);
+                  } catch (err) {
+                    console.error("Error eliminando cuenta:", err);
+                    alert("Hubo un error al eliminar la cuenta. Contáctanos en hola@umpacademy.co");
+                  }
+                }}
+                style={{marginTop:"8px",width:"100%",padding:"12px",border:"1px solid #e05a4e",background:"#fff5f4",color:"#e05a4e",borderRadius:"8px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>
+                  Eliminar mi cuenta y todos mis datos
+                </button>
+              )}
             </form>
           </div>
         </div>
@@ -3399,7 +3420,7 @@ function LineChart({ movements }) {
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Nos reservamos el derecho de modificar o discontinuar, temporal o permanentemente, el servicio (o cualquier parte del mismo) con o sin previo aviso. También podemos actualizar estos Términos periódicamente. Te notificaremos sobre cambios significativos publicando los nuevos Términos en la aplicación. Tu uso continuado del servicio después de dichos cambios constituye tu aceptación de los nuevos Términos.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Ley Aplicable y Jurisdicción</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Estos Términos se regirán e interpretarán de acuerdo con las leyes de la República de Colombia. Cualquier disputa relacionada con estos Términos estará sujeta a la jurisdicción exclusiva de los tribunales de Colombia.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Estos Términos se regirán e interpretarán de acuerdo con las leyes de la República de Colombia. Cualquier disputa relacionada con estos Términos estará sujeta a la jurisdicción exclusiva del Centro de Arbitraje y Conciliación de la Cámara de Comercio de Bogotá.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre estos Términos y Condiciones, puedes contactarnos a través de:</p>
@@ -3454,7 +3475,7 @@ function LineChart({ movements }) {
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Compartir tu Información</h3>
           <p style={{lineHeight:1.7,marginBottom:"8px"}}>No vendemos tu información personal. Podemos compartir tu información con:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li><strong>Proveedores de servicios:</strong> Supabase (almacenamiento de datos y autenticación), procesadores de pago, servicios de hosting</li>
+            <li><strong>Proveedores de servicios tecnológicos:</strong> Plataformas de almacenamiento de datos, autenticación y hosting que utilizamos para operar la aplicación</li>
             <li><strong>Cumplimiento legal:</strong> Cuando sea requerido por ley o para proteger nuestros derechos legales</li>
             <li><strong>Transferencia de negocio:</strong> En caso de fusión, adquisición o venta de activos</li>
           </ul>
@@ -3495,7 +3516,7 @@ function LineChart({ movements }) {
           <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Sitio web: www.umpacademy.co</p>
           
-          <p style={{lineHeight:1.7,marginBottom:"16px",marginTop:"24px",padding:"16px",background:"var(--purple-soft)",borderRadius:"12px",border:"1px solid var(--purple)"}}>Si no estás satisfecho con nuestra respuesta, tienes derecho a presentar una queja ante la Superintendencia de Industria y Comercio de Colombia.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px",marginTop:"24px",padding:"16px",background:"var(--purple-soft)",borderRadius:"12px",border:"1px solid var(--purple)"}}>Para cualquier consulta sobre esta Política de Privacidad, contáctanos en hola@umpacademy.co.</p>
         </div>
       </section>
     );
