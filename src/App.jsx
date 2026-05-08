@@ -1616,7 +1616,9 @@ export default function App() {
     const incomeBySource = incomeSources.map((src) => {
       const actual = movements.filter((m) => m.type === "income" && m.classification === src.name).reduce((sum, m) => sum + m.amount, 0);
       const progress = src.monthlyGoal > 0 ? Math.min(Math.round((actual / src.monthlyGoal) * 100), 100) : 0;
-      return { ...src, actual, progress };
+      const feeEstimated = calcFee(src.monthlyGoal, src.platform);
+      const netEstimated = src.monthlyGoal - feeEstimated;
+      return { ...src, actual, progress, feeEstimated, netEstimated };
     });
     const fixedExpensesTotal = movements.filter((m) => m.type === "expense" && m.classification === "Gasto fijo").reduce((sum, m) => sum + m.amount, 0);
     const cashFlow = totals.income - fixedExpensesTotal;
@@ -1669,8 +1671,6 @@ export default function App() {
             <h3>Fuentes de ingreso</h3>
             <p className="helper-copy">Define tus fuentes, plataforma de cobro y metas mensuales.</p>
             {incomeBySource.map((src) => {
-              const fee = calcFee(src.actual, src.platform);
-              const net = src.actual - fee;
               const feeInfo = PLATFORM_FEES[src.platform];
               return (
                 <div className="source-row" key={src.id} style={{flexWrap:"wrap",gap:"10px"}}>
@@ -1686,8 +1686,8 @@ export default function App() {
                     </select>
                     {feeInfo && feeInfo.pct > 0 && (
                       <div style={{display:"flex",gap:"12px",fontSize:"12px",flexWrap:"wrap"}}>
-                        <span style={{color:"var(--pink)",fontWeight:700}}>Fee: {feeInfo.label} = -{money.format(fee)}</span>
-                        <span style={{color:"var(--green)",fontWeight:700}}>Neto: {money.format(net)}</span>
+                        <span style={{color:"var(--pink)",fontWeight:700}}>Fee est.: {feeInfo.label} ≈ -{money.format(src.feeEstimated)}</span>
+                        <span style={{color:"var(--green)",fontWeight:700}}>Neto est.: {money.format(src.netEstimated)}</span>
                       </div>
                     )}
                   </div>
@@ -1708,16 +1708,13 @@ export default function App() {
 
             {/* Resumen total de fees */}
             {(() => {
-              const totalFees = incomeSources.reduce((sum, src) => {
-                const actual = movements.filter((m) => m.type === "income" && m.classification === src.name).reduce((s, m) => s + m.amount, 0);
-                return sum + calcFee(actual, src.platform);
-              }, 0);
-              const totalNet = totals.income - totalFees;
+              const totalFees = incomeSources.reduce((sum, src) => sum + calcFee(src.monthlyGoal, src.platform), 0);
+              const totalNet = incomeSources.reduce((sum, src) => sum + (src.monthlyGoal - calcFee(src.monthlyGoal, src.platform)), 0);
               if (totalFees === 0) return null;
               return (
                 <div style={{marginTop:"12px",padding:"12px 14px",background:"var(--pink-soft)",borderRadius:"10px",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:"8px"}}>
-                  <div><span style={{fontSize:"12px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Total fees plataformas</span><br/><strong style={{color:"var(--pink)",fontSize:"18px"}}>-{money.format(totalFees)}</strong></div>
-                  <div style={{textAlign:"right"}}><span style={{fontSize:"12px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Ingreso neto real</span><br/><strong style={{color:"var(--green)",fontSize:"18px"}}>{money.format(totalNet)}</strong></div>
+                  <div><span style={{fontSize:"12px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Fees estimados (sobre meta)</span><br/><strong style={{color:"var(--pink)",fontSize:"18px"}}>-{money.format(totalFees)}</strong></div>
+                  <div style={{textAlign:"right"}}><span style={{fontSize:"12px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Neto estimado</span><br/><strong style={{color:"var(--green)",fontSize:"18px"}}>{money.format(totalNet)}</strong></div>
                 </div>
               );
             })()}
