@@ -6,9 +6,9 @@ const STORAGE_KEY = "mama-ceo-app-state-v4";
 
 // Sistema de planes
 const PLAN_LIMITS = {
-  free:          { movements: 30,       clients: 15,       content: 15,       homeTasks: 30 },
-  emprendedora:  { movements: 100,      clients: 50,       content: 50,       homeTasks: 100 },
-  ceo:           { movements: Infinity, clients: Infinity, content: Infinity, homeTasks: Infinity }
+  free:         { movements: 30,       clients: 15,       content: 15,       homeTasks: 30 },
+  emprendedora: { movements: 100,      clients: 50,       content: 50,       homeTasks: 100 },
+  ceo:          { movements: Infinity, clients: Infinity, content: Infinity, homeTasks: Infinity }
 };
 
 const PLAN_PRICES = {
@@ -20,7 +20,7 @@ const POMODORO_MESSAGES = [
   "Respira. Lo que hiciste en este bloque importa.",
   "Tómate el descanso — tu cerebro lo necesita para rendir.",
   "Una pausa consciente es parte del trabajo.",
-  "Hidratáte. Mueve el cuerpo. Vuelve con más claridad.",
+  "Hidrátate. Mueve el cuerpo. Vuelve con más claridad.",
   "Cada bloque completado es una victoria real."
 ];
 
@@ -323,7 +323,7 @@ export default function App() {
 
   // Temporizador Pomodoro
   const [pomodoroActive, setPomodoroActive] = useState(false);
-  const [pomodoroMode, setPomodoroMode] = useState("work"); // work | break
+  const [pomodoroMode, setPomodoroMode] = useState("work");
   const [pomodoroMinutes, setPomodoroMinutes] = useState(25);
   const [pomodoroSeconds, setPomodoroSeconds] = useState(0);
   const [pomodoroRunning, setPomodoroRunning] = useState(false);
@@ -339,17 +339,16 @@ export default function App() {
           if (s > 0) return s - 1;
           setPomodoroMinutes((m) => {
             if (m > 0) return m - 1;
-            // Tiempo terminado
             setPomodoroRunning(false);
             if (pomodoroMode === "work") {
               setPomodoroBlocks((b) => b + 1);
               setPomodoroMode("break");
               setPomodoroMinutes(pomodoroBreakDuration);
-              if (Notification.permission === "granted") new Notification("\u23f0 Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)] });
+              if (Notification.permission === "granted") new Notification("⏰ Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)] });
             } else {
               setPomodoroMode("work");
               setPomodoroMinutes(pomodoroWorkDuration);
-              if (Notification.permission === "granted") new Notification("\u25b6 A trabajar", { body: "Nuevo bloque de enfoque. \u00a1T\u00fa puedes!" });
+              if (Notification.permission === "granted") new Notification("▶ A trabajar", { body: "¡Nuevo bloque de enfoque!" });
             }
             return 0;
           });
@@ -362,18 +361,8 @@ export default function App() {
     return () => clearInterval(pomodoroRef.current);
   }, [pomodoroRunning, pomodoroMode, pomodoroWorkDuration, pomodoroBreakDuration]);
 
-  const pomodoroReset = () => {
-    setPomodoroRunning(false);
-    setPomodoroMode("work");
-    setPomodoroMinutes(pomodoroWorkDuration);
-    setPomodoroSeconds(0);
-  };
-
-  const requestNotificationPermission = () => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-  };
+  const pomodoroReset = () => { setPomodoroRunning(false); setPomodoroMode("work"); setPomodoroMinutes(pomodoroWorkDuration); setPomodoroSeconds(0); };
+  const requestNotificationPermission = () => { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); };
 
   const BETA_CODE = "MAMACEO2026";
   const BETA_CODE_EXPIRY = new Date("2026-12-31T23:59:59").getTime();
@@ -385,7 +374,7 @@ export default function App() {
     }
     if (userPlan === "premium") {
       if (premiumExpiresAt && Date.now() > premiumExpiresAt) return "free";
-      return "ceo"; // legacy: premium = ceo
+      return "ceo";
     }
     return "free";
   }, [userPlan, premiumExpiresAt]);
@@ -1321,6 +1310,45 @@ export default function App() {
         {activeView === "pricing" && renderPricing()}
         {activeView === "terminos" && renderTerminos()}
         {activeView === "privacidad" && renderPrivacidad()}
+
+        {/* Widget Pomodoro flotante - solo plan CEO */}
+        {effectivePlan === "ceo" && (
+          <div className={`pomodoro-widget ${pomodoroActive ? "pomodoro-open" : ""}`}>
+            <button className="pomodoro-toggle" onClick={() => { setPomodoroActive((v) => !v); requestNotificationPermission(); }} title="Temporizador de enfoque">
+              {pomodoroRunning ? "⏸" : "⏱"}
+              {pomodoroRunning && <span className="pomodoro-pulse" />}
+            </button>
+            {pomodoroActive && (
+              <div className="pomodoro-panel">
+                <div className="pomodoro-header">
+                  <span className="pomodoro-mode-label">{pomodoroMode === "work" ? "🎯 Enfoque" : "☕ Descanso"}</span>
+                  <span className="pomodoro-blocks">{pomodoroBlocks} bloques hoy</span>
+                </div>
+                <div className="pomodoro-clock">{String(pomodoroMinutes).padStart(2,"0")}:{String(pomodoroSeconds).padStart(2,"0")}</div>
+                <div className="pomodoro-controls">
+                  <button onClick={() => setPomodoroRunning((r) => !r)}>{pomodoroRunning ? "⏸ Pausar" : "▶ Iniciar"}</button>
+                  <button onClick={pomodoroReset}>↺</button>
+                </div>
+                <div className="pomodoro-settings">
+                  <label>Trabajo
+                    <select value={pomodoroWorkDuration} onChange={(e) => { const v=Number(e.target.value); setPomodoroWorkDuration(v); if(!pomodoroRunning&&pomodoroMode==="work") setPomodoroMinutes(v); }}>
+                      <option value={25}>25 min</option><option value={45}>45 min</option><option value={60}>60 min</option>
+                    </select>
+                  </label>
+                  <label>Descanso
+                    <select value={pomodoroBreakDuration} onChange={(e) => { const v=Number(e.target.value); setPomodoroBreakDuration(v); if(!pomodoroRunning&&pomodoroMode==="break") setPomodoroMinutes(v); }}>
+                      <option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {effectivePlan === "free" && (
+          <button className="upgrade-fab" onClick={() => setActiveView("pricing")}>✨ Upgrade</button>
+        )}
 
         <footer className="app-footer">
           <span>© 2026 UMP S.A.S • Todos los derechos reservados</span>
@@ -2889,88 +2917,42 @@ export default function App() {
 
   function renderPricing() {
     const plans = [
-      {
-        id: "free", name: "Gratis", price: "$0", period: "", desc: "Para empezar a organizarte",
-        features: [
-          `${PLAN_LIMITS.free.movements} movimientos financieros/mes`,
-          `${PLAN_LIMITS.free.clients} clientes`,
-          `${PLAN_LIMITS.free.content} contenidos/mes`,
-          `${PLAN_LIMITS.free.homeTasks} tareas del hogar/mes`,
-          "Sincronización en la nube",
-          "Todas las funciones básicas"
-        ],
-        color: "var(--muted)"
-      },
-      {
-        id: "emprendedora", name: "Emprendedora", price: PLAN_PRICES.emprendedora.usd, period: "/mes USD",
-        priceCop: PLAN_PRICES.emprendedora.cop + " COP/mes",
-        priceYear: PLAN_PRICES.emprendedora.usdYear + " USD/año (2 meses gratis)",
-        desc: "Para mamás que están creciendo",
-        features: [
-          `${PLAN_LIMITS.emprendedora.movements} movimientos financieros/mes`,
-          `${PLAN_LIMITS.emprendedora.clients} clientes`,
-          `${PLAN_LIMITS.emprendedora.content} contenidos/mes`,
-          `${PLAN_LIMITS.emprendedora.homeTasks} tareas del hogar/mes`,
-          "Exportar a Excel y PDF",
-          "Historial 6 meses",
-          "Soporte email 48h"
-        ],
-        color: "var(--pink)"
-      },
-      {
-        id: "ceo", name: "CEO", price: PLAN_PRICES.ceo.usd, period: "/mes USD",
-        priceCop: PLAN_PRICES.ceo.cop + " COP/mes",
-        priceYear: PLAN_PRICES.ceo.usdYear + " USD/año (2 meses gratis)",
-        desc: "Para mamás CEO que van en serio",
-        badge: "RECOMENDADO",
-        features: [
-          "Todo ilimitado",
-          "Exportar Excel y PDF",
-          "Historial ilimitado",
-          "Calculadora de precio de servicios ✨",
-          "Proyección de ingresos ✨",
-          "Temporizador Pomodoro flotante ✨",
-          "Acceso anticipado a nuevas funciones",
-          "Soporte prioritario 24h"
-        ],
-        color: "var(--purple)"
-      }
+      { id: "free", name: "Gratis", price: "$0", period: "", color: "var(--muted)",
+        features: [`${PLAN_LIMITS.free.movements} movimientos/mes`,`${PLAN_LIMITS.free.clients} clientes`,`${PLAN_LIMITS.free.content} contenidos/mes`,`${PLAN_LIMITS.free.homeTasks} tareas hogar/mes`,"Sincronización en la nube","Todas las funciones básicas"] },
+      { id: "emprendedora", name: "Emprendedora", price: PLAN_PRICES.emprendedora.usd, period: "/mes USD",
+        priceCop: PLAN_PRICES.emprendedora.cop+" COP/mes", priceYear: PLAN_PRICES.emprendedora.usdYear+" USD/año (2 meses gratis)",
+        color: "var(--pink)",
+        features: [`${PLAN_LIMITS.emprendedora.movements} movimientos/mes`,`${PLAN_LIMITS.emprendedora.clients} clientes`,`${PLAN_LIMITS.emprendedora.content} contenidos/mes`,`${PLAN_LIMITS.emprendedora.homeTasks} tareas hogar/mes`,"Exportar Excel y PDF","Historial 6 meses","Soporte email 48h"] },
+      { id: "ceo", name: "CEO", price: PLAN_PRICES.ceo.usd, period: "/mes USD",
+        priceCop: PLAN_PRICES.ceo.cop+" COP/mes", priceYear: PLAN_PRICES.ceo.usdYear+" USD/año (2 meses gratis)",
+        badge: "RECOMENDADO", color: "var(--purple)",
+        features: ["Todo ilimitado","Exportar Excel y PDF","Historial ilimitado","Calculadora de precio de servicios ✨","Proyección de ingresos ✨","Temporizador Pomodoro flotante ✨","Acceso anticipado a nuevas funciones","Soporte prioritario 24h"] }
     ];
-
     return (
       <section className="panel workspace-panel">
-        <div className="section-title">
-          <h2>Planes y Precios</h2>
-          <p>Elige el plan que mejor se adapte a tu negocio</p>
-        </div>
-
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(280px, 1fr))",gap:"20px",maxWidth:"1000px",margin:"0 auto"}}>
+        <div className="section-title"><h2>Planes y Precios</h2><p>Elige el plan que mejor se adapte a tu negocio</p></div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"20px",maxWidth:"1000px",margin:"0 auto"}}>
           {plans.map((plan) => {
-            const isCurrent = effectivePlan === plan.id || (plan.id === "ceo" && effectivePlan === "premium");
+            const isCurrent = effectivePlan===plan.id||(plan.id==="ceo"&&effectivePlan==="premium");
             return (
-              <div key={plan.id} className="card" style={{border: isCurrent ? `2px solid ${plan.color}` : plan.id === "ceo" ? `2px solid ${plan.color}` : "1px solid var(--line)",background: plan.id === "ceo" ? "linear-gradient(135deg, rgba(212,104,122,0.05), rgba(201,169,110,0.05))" : "#fff",position:"relative"}}>
-                {isCurrent && <div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:plan.color,color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:800}}>PLAN ACTUAL</div>}
-                {plan.badge && !isCurrent && <div style={{position:"absolute",top:"12px",right:"12px",background:"var(--green)",color:"#fff",padding:"3px 10px",borderRadius:"20px",fontSize:"11px",fontWeight:800}}>{plan.badge}</div>}
+              <div key={plan.id} className="card" style={{border:`2px solid ${isCurrent||plan.id==="ceo"?plan.color:"var(--line)"}`,background:plan.id==="ceo"?"linear-gradient(135deg,rgba(212,104,122,0.05),rgba(201,169,110,0.05))":"#fff",position:"relative"}}>
+                {isCurrent&&<div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:plan.color,color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:800}}>PLAN ACTUAL</div>}
+                {plan.badge&&!isCurrent&&<div style={{position:"absolute",top:"12px",right:"12px",background:"var(--green)",color:"#fff",padding:"3px 10px",borderRadius:"20px",fontSize:"11px",fontWeight:800}}>{plan.badge}</div>}
                 <div style={{padding:"24px"}}>
                   <h3 style={{margin:"0 0 4px",fontSize:"22px",color:plan.color}}>{plan.name}</h3>
                   <div style={{fontSize:"34px",fontWeight:800,color:plan.color,lineHeight:1,marginBottom:"2px"}}>{plan.price}<span style={{fontSize:"14px",fontWeight:400,color:"var(--muted)"}}>{plan.period}</span></div>
-                  {plan.priceCop && <p style={{margin:"0 0 2px",fontSize:"13px",color:"var(--muted)"}}>{plan.priceCop}</p>}
-                  {plan.priceYear && <p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>{plan.priceYear}</p>}
-                  {!plan.priceCop && <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>{plan.desc}</p>}
+                  {plan.priceCop&&<p style={{margin:"0 0 2px",fontSize:"13px",color:"var(--muted)"}}>{plan.priceCop}</p>}
+                  {plan.priceYear&&<p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>{plan.priceYear}</p>}
+                  {!plan.priceCop&&<p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Para empezar a organizarte</p>}
                   <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
-                    {plan.features.map((f) => (
-                      <div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}>
-                        <span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>✓</span>
-                        <span>{f}</span>
-                      </div>
-                    ))}
+                    {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>✓</span><span>{f}</span></div>))}
                   </div>
-                  {isCurrent ? (
-                    <div style={{padding:"10px",background:plan.id === "free" ? "var(--purple-soft)" : "rgba(0,0,0,0.06)",borderRadius:"8px",textAlign:"center",color:plan.color,fontWeight:700,fontSize:"14px"}}>Plan actual</div>
-                  ) : plan.id === "free" ? (
-                    <button className="primary-button" onClick={() => setUserPlan("free")} style={{width:"100%",background:"var(--muted)"}}>Cambiar a gratis</button>
-                  ) : (
-                    <button className="primary-button" onClick={() => setActiveView("pricing")} style={{width:"100%",background:plan.color,fontSize:"15px"}}>Próximamente</button>
+                  {isCurrent?(
+                    <div style={{padding:"10px",background:"rgba(0,0,0,0.05)",borderRadius:"8px",textAlign:"center",color:plan.color,fontWeight:700,fontSize:"14px"}}>Plan actual</div>
+                  ):plan.id==="free"?(
+                    <button className="primary-button" onClick={()=>setUserPlan("free")} style={{width:"100%",background:"var(--muted)"}}>Cambiar a gratis</button>
+                  ):(
+                    <button className="primary-button" style={{width:"100%",background:plan.color,fontSize:"15px",opacity:0.7,cursor:"not-allowed"}} disabled>Próximamente</button>
                   )}
                 </div>
               </div>
@@ -2978,42 +2960,31 @@ export default function App() {
           })}
         </div>
 
-        {/* Uso actual */}
         <div className="card" style={{maxWidth:"1000px",margin:"28px auto 0",padding:"24px"}}>
-          <h3 style={{margin:"0 0 16px"}}>Tu uso actual — Plan {effectivePlan === "free" ? "Gratis" : effectivePlan === "emprendedora" ? "Emprendedora" : "CEO"}</h3>
+          <h3 style={{margin:"0 0 16px"}}>Tu uso actual — Plan {effectivePlan==="free"?"Gratis":effectivePlan==="emprendedora"?"Emprendedora":"CEO"}</h3>
           <div style={{display:"grid",gap:"14px"}}>
-            {[
-              { label: "Movimientos financieros", used: movements.length, limit: currentLimits.movements },
-              { label: "Clientes", used: clients.length, limit: currentLimits.clients },
-              { label: "Contenidos", used: contentItems.length, limit: currentLimits.content },
-              { label: "Tareas del hogar", used: homeTasks.length, limit: currentLimits.homeTasks }
-            ].map(({ label, used, limit }) => (
+            {[{label:"Movimientos",used:movements.length,limit:currentLimits.movements},{label:"Clientes",used:clients.length,limit:currentLimits.clients},{label:"Contenidos",used:contentItems.length,limit:currentLimits.content},{label:"Tareas hogar",used:homeTasks.length,limit:currentLimits.homeTasks}].map(({label,used,limit})=>(
               <div key={label}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:"6px",fontSize:"14px"}}>
-                  <span>{label}</span>
-                  <span><strong>{used}</strong> / {limit === Infinity ? "∞" : limit}</span>
-                </div>
-                <Progress value={limit === Infinity ? 0 : Math.min(Math.round((used/limit)*100), 100)} tone={limit !== Infinity && used >= limit ? "pink" : "green"} />
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:"6px",fontSize:"14px"}}><span>{label}</span><span><strong>{used}</strong> / {limit===Infinity?"∞":limit}</span></div>
+                <Progress value={limit===Infinity?0:Math.min(Math.round((used/limit)*100),100)} tone={limit!==Infinity&&used>=limit?"pink":"green"} />
               </div>
             ))}
           </div>
         </div>
 
-        {/* Código beta */}
         <div className="card" style={{maxWidth:"1000px",margin:"20px auto 0",padding:"24px",border:"2px dashed var(--line)"}}>
           <h3 style={{margin:"0 0 8px"}}>🎟️ ¿Tienes un código de acceso beta?</h3>
           <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu código de acceso CEO gratis por 90 días.</p>
-          {!showBetaInput ? (
-            <button className="primary-button" style={{padding:"10px 24px"}} onClick={() => setShowBetaInput(true)}>Tengo un código</button>
-          ) : (
+          {!showBetaInput?(
+            <button className="primary-button" style={{padding:"10px 24px"}} onClick={()=>setShowBetaInput(true)}>Tengo un código</button>
+          ):(
             <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
-              <input placeholder="Ingresa tu código (ej: MAMACEO2026)" value={betaCode} onChange={(e) => setBetaCode(e.target.value)}
-                style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
+              <input placeholder="Ingresa tu código (ej: MAMACEO2026)" value={betaCode} onChange={(e)=>setBetaCode(e.target.value)} style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
               <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
-              {betaCodeError && <p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
+              {betaCodeError&&<p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
           )}
-          {isBetaUser && (effectivePlan === "ceo" || effectivePlan === "premium") && (
+          {isBetaUser&&(effectivePlan==="ceo"||effectivePlan==="premium")&&(
             <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
               ✅ Código activo — Plan CEO gratis por {betaDaysLeft} días más
             </div>
@@ -3022,6 +2993,17 @@ export default function App() {
       </section>
     );
   }
+
+  // ---- FIN renderPricing ----
+  function _renderPricingOLD_PLACEHOLDER() {
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Planes y Precios</h2>
+          <p>Elige el plan que mejor se adapte a tu negocio</p>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(320px, 1fr))",gap:"24px",maxWidth:"900px",margin:"0 auto"}}>
           {/* Plan Gratis */}
           <div className="card" style={{border: userPlan === "free" ? "2px solid var(--purple)" : "1px solid var(--line)",position:"relative"}}>
             {userPlan === "free" && (

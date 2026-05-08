@@ -3400,167 +3400,28 @@ button {
 }
 
 /* ── Widget Pomodoro flotante ── */
-.pomodoro-widget {
-  position: fixed;
-  bottom: 32px;
-  right: 32px;
-  z-index: 1500;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 10px;
-}
+.pomodoro-widget { position:fixed; bottom:32px; right:32px; z-index:1500; display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+.pomodoro-toggle { width:56px; height:56px; border-radius:50%; border:none; background:linear-gradient(135deg,#C4526A,#C9A96E); color:#fff; font-size:22px; cursor:pointer; box-shadow:0 8px 24px rgba(196,82,106,0.35); display:grid; place-items:center; position:relative; transition:transform 180ms; }
+.pomodoro-toggle:hover { transform:scale(1.08); }
+.pomodoro-pulse { position:absolute; inset:-4px; border-radius:50%; border:3px solid rgba(196,82,106,0.5); animation:pomodoro-ring 1.5s ease-out infinite; pointer-events:none; }
+@keyframes pomodoro-ring { 0%{transform:scale(1);opacity:1} 100%{transform:scale(1.5);opacity:0} }
+.pomodoro-panel { background:#fff; border:1px solid rgba(180,160,140,0.2); border-radius:20px; padding:20px; width:240px; box-shadow:0 20px 50px rgba(26,20,18,0.14); animation:toast-in 0.3s cubic-bezier(0.34,1.56,0.64,1); display:grid; gap:14px; }
+.pomodoro-header { display:flex; justify-content:space-between; align-items:center; }
+.pomodoro-mode-label { font-size:13px; font-weight:800; color:var(--purple); }
+.pomodoro-blocks { font-size:11px; color:var(--muted); font-weight:700; }
+.pomodoro-clock { font-size:48px; font-weight:800; color:#2A1A1A; text-align:center; line-height:1; font-variant-numeric:tabular-nums; letter-spacing:-2px; }
+.pomodoro-controls { display:grid; grid-template-columns:1fr auto; gap:8px; }
+.pomodoro-controls button { min-height:38px; border-radius:10px; border:none; font-weight:700; font-size:13px; cursor:pointer; }
+.pomodoro-controls button:first-child { background:var(--purple); color:#fff; }
+.pomodoro-controls button:last-child { background:var(--purple-soft); color:var(--purple); padding:0 14px; }
+.pomodoro-settings { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.pomodoro-settings label { display:grid; gap:4px; font-size:11px; font-weight:800; text-transform:uppercase; color:var(--muted); }
+.pomodoro-settings select { min-height:34px; border:1px solid var(--line); border-radius:8px; background:#FAF7F5; padding:0 8px; font:inherit; font-size:12px; color:var(--ink); }
 
-.pomodoro-toggle {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: none;
-  background: linear-gradient(135deg, #C4526A, #C9A96E);
-  color: #fff;
-  font-size: 22px;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(196,82,106,0.35);
-  display: grid;
-  place-items: center;
-  position: relative;
-  transition: transform 180ms, box-shadow 180ms;
-}
+/* ── Botón upgrade flotante animado ── */
+.upgrade-fab { position:fixed; bottom:32px; right:32px; z-index:1400; border:none; background:linear-gradient(135deg,#C9A96E,#C4526A); color:#fff; font-size:13px; font-weight:800; padding:12px 20px; border-radius:999px; cursor:pointer; box-shadow:0 8px 24px rgba(196,82,106,0.3); animation:upgrade-glow 2.5s ease-in-out infinite; letter-spacing:0.3px; }
+@keyframes upgrade-glow { 0%,100%{box-shadow:0 8px 24px rgba(196,82,106,0.3)} 50%{box-shadow:0 8px 32px rgba(196,82,106,0.6),0 0 0 6px rgba(196,82,106,0.1)} }
 
-.pomodoro-toggle:hover {
-  transform: scale(1.08);
-  box-shadow: 0 12px 32px rgba(196,82,106,0.45);
-}
-
-.pomodoro-pulse {
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  border: 3px solid rgba(196,82,106,0.5);
-  animation: pomodoro-ring 1.5s ease-out infinite;
-}
-
-@keyframes pomodoro-ring {
-  0%   { transform: scale(1); opacity: 1; }
-  100% { transform: scale(1.5); opacity: 0; }
-}
-
-.pomodoro-panel {
-  background: #fff;
-  border: 1px solid rgba(180,160,140,0.2);
-  border-radius: 20px;
-  padding: 20px;
-  width: 240px;
-  box-shadow: 0 20px 50px rgba(26,20,18,0.14);
-  animation: toast-in 0.3s cubic-bezier(0.34,1.56,0.64,1);
-  display: grid;
-  gap: 14px;
-}
-
-.pomodoro-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.pomodoro-mode-label {
-  font-size: 13px;
-  font-weight: 800;
-  color: var(--purple);
-}
-
-.pomodoro-blocks {
-  font-size: 11px;
-  color: var(--muted);
-  font-weight: 700;
-}
-
-.pomodoro-clock {
-  font-size: 48px;
-  font-weight: 800;
-  color: #2A1A1A;
-  text-align: center;
-  line-height: 1;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: -2px;
-}
-
-.pomodoro-controls {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 8px;
-}
-
-.pomodoro-controls button {
-  min-height: 38px;
-  border-radius: 10px;
-  border: none;
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.pomodoro-controls button:first-child {
-  background: var(--purple);
-  color: #fff;
-}
-
-.pomodoro-controls button:last-child {
-  background: var(--purple-soft);
-  color: var(--purple);
-  padding: 0 12px;
-}
-
-.pomodoro-settings {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-
-.pomodoro-settings label {
-  display: grid;
-  gap: 4px;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.pomodoro-settings select {
-  min-height: 34px;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #FAF7F5;
-  padding: 0 8px;
-  font: inherit;
-  font-size: 12px;
-  color: var(--ink);
-}
-
-/* ── Botón upgrade flotante ── */
-.upgrade-fab {
-  position: fixed;
-  bottom: 32px;
-  right: 32px;
-  z-index: 1400;
-  border: none;
-  background: linear-gradient(135deg, #C9A96E, #C4526A);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 800;
-  padding: 12px 20px;
-  border-radius: 999px;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(196,82,106,0.3);
-  animation: upgrade-glow 2.5s ease-in-out infinite;
-  letter-spacing: 0.3px;
-}
-
-@keyframes upgrade-glow {
-  0%, 100% { box-shadow: 0 8px 24px rgba(196,82,106,0.3); }
-  50%       { box-shadow: 0 8px 32px rgba(196,82,106,0.6), 0 0 0 6px rgba(196,82,106,0.1); }
-}
-
-@media (max-width: 720px) {
-  .pomodoro-widget, .upgrade-fab { bottom: 16px; right: 16px; }
+@media (max-width:720px) {
+  .pomodoro-widget, .upgrade-fab { bottom:16px; right:16px; }
 }
