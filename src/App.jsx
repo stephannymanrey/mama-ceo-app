@@ -102,9 +102,9 @@ const initialHomeWellnessTasks = [
 ];
 
 const initialIncomeSources = [
-  { id: 1, name: "Servicios 1:1", monthlyGoal: 3000, color: "purple" },
-  { id: 2, name: "Cursos / Productos digitales", monthlyGoal: 2000, color: "pink" },
-  { id: 3, name: "Membresías / Recurrente", monthlyGoal: 1500, color: "green" }
+  { id: 1, name: "Servicios 1:1", monthlyGoal: 3000, color: "purple", platform: "Transferencia bancaria" },
+  { id: 2, name: "Cursos / Productos digitales", monthlyGoal: 2000, color: "pink", platform: "Hotmart" },
+  { id: 3, name: "Membresías / Recurrente", monthlyGoal: 1500, color: "green", platform: "Mercado Pago" }
 ];
 
 const initialBusinessSettings = {
@@ -114,7 +114,25 @@ const initialBusinessSettings = {
   reinvestmentPercent: 10
 };
 
-const initialBanks = ["Bancolombia", "Nequi", "Daviplata", "Stripe", "Tarjeta negocio"];
+const initialBanks = ["Bancolombia", "Daviplata", "Stripe", "Tarjeta negocio"];
+
+const PLATFORM_FEES = {
+  "Mercado Pago":           { pct: 3.49, fixed: 900,  currency: "COP", label: "3.49% + $900 COP" },
+  "PayU":                   { pct: 3.49, fixed: 900,  currency: "COP", label: "3.49% + $900 COP" },
+  "Bold":                   { pct: 2.99, fixed: 0,    currency: "",    label: "2.99%" },
+  "PayPal":                 { pct: 3.49, fixed: 0.30, currency: "USD", label: "3.49% + $0.30 USD" },
+  "Hotmart":                { pct: 9.9,  fixed: 0,    currency: "",    label: "9.9%" },
+  "Wise":                   { pct: 0.41, fixed: 0,    currency: "",    label: "0.41%" },
+  "Payoneer":               { pct: 3.0,  fixed: 0,    currency: "",    label: "3%" },
+  "Transferencia bancaria": { pct: 0,    fixed: 0,    currency: "",    label: "Sin fee" },
+  "Efectivo":               { pct: 0,    fixed: 0,    currency: "",    label: "Sin fee" }
+};
+
+function calcFee(amount, platform) {
+  const p = PLATFORM_FEES[platform];
+  if (!p || p.pct === 0) return 0;
+  return Math.round((amount * p.pct) / 100);
+}
 
 const initialAnnualBudget = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -1649,26 +1667,60 @@ export default function App() {
         <div className="business-sources-grid">
           <div className="card">
             <h3>Fuentes de ingreso</h3>
-            <p className="helper-copy">Define tus fuentes y metas mensuales.</p>
-            {incomeBySource.map((src) => (
-              <div className="source-row" key={src.id}>
-                <div className="source-info">
-                  <strong>{src.name}</strong>
-                  <small>{money.format(src.actual)} de {money.format(src.monthlyGoal)} meta</small>
+            <p className="helper-copy">Define tus fuentes, plataforma de cobro y metas mensuales.</p>
+            {incomeBySource.map((src) => {
+              const fee = calcFee(src.actual, src.platform);
+              const net = src.actual - fee;
+              const feeInfo = PLATFORM_FEES[src.platform];
+              return (
+                <div className="source-row" key={src.id} style={{flexWrap:"wrap",gap:"10px"}}>
+                  <div className="source-info" style={{minWidth:"140px"}}>
+                    <strong>{src.name}</strong>
+                    <small>{money.format(src.actual)} de {money.format(src.monthlyGoal)} meta</small>
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:"4px",flex:1,minWidth:"160px"}}>
+                    <select value={src.platform || "Transferencia bancaria"}
+                      onChange={(e) => setIncomeSources((c) => c.map((s) => s.id === src.id ? { ...s, platform: e.target.value } : s))}
+                      style={{minHeight:"32px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 8px",font:"inherit",fontSize:"12px",background:"#FAF7F5"}}>
+                      {Object.keys(PLATFORM_FEES).map((k) => <option key={k}>{k}</option>)}
+                    </select>
+                    {feeInfo && feeInfo.pct > 0 && (
+                      <div style={{display:"flex",gap:"12px",fontSize:"12px",flexWrap:"wrap"}}>
+                        <span style={{color:"var(--pink)",fontWeight:700}}>Fee: {feeInfo.label} = -{money.format(fee)}</span>
+                        <span style={{color:"var(--green)",fontWeight:700}}>Neto: {money.format(net)}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="source-right">
+                    <Progress value={src.progress} tone={src.color} />
+                    <small>{src.progress}%</small>
+                    <input type="number" min="0" value={src.monthlyGoal} onChange={(e) => setIncomeSources((c) => c.map((s) => s.id === src.id ? { ...s, monthlyGoal: Number(e.target.value) } : s))} />
+                    <button type="button" className="row-delete" onClick={() => confirmDelete("Eliminar?", () => setIncomeSources((c) => c.filter((s) => s.id !== src.id)))}>x</button>
+                  </div>
                 </div>
-                <div className="source-right">
-                  <Progress value={src.progress} tone={src.color} />
-                  <small>{src.progress}%</small>
-                  <input type="number" min="0" value={src.monthlyGoal} onChange={(e) => setIncomeSources((c) => c.map((s) => s.id === src.id ? { ...s, monthlyGoal: Number(e.target.value) } : s))} />
-                  <button type="button" className="row-delete" onClick={() => confirmDelete("Eliminar?", () => setIncomeSources((c) => c.filter((s) => s.id !== src.id)))}>x</button>
-                </div>
-              </div>
-            ))}
-            <form className="source-form" onSubmit={(e) => { e.preventDefault(); if (!incomeSourceForm.name.trim()) return; setIncomeSources((c) => [...c, { id: Date.now(), name: incomeSourceForm.name.trim(), monthlyGoal: Number(incomeSourceForm.monthlyGoal) || 0, color: "purple" }]); setIncomeSourceForm({ name: "", monthlyGoal: "" }); }}>
+              );
+            })}
+            <form className="source-form" onSubmit={(e) => { e.preventDefault(); if (!incomeSourceForm.name.trim()) return; setIncomeSources((c) => [...c, { id: Date.now(), name: incomeSourceForm.name.trim(), monthlyGoal: Number(incomeSourceForm.monthlyGoal) || 0, color: "purple", platform: "Transferencia bancaria" }]); setIncomeSourceForm({ name: "", monthlyGoal: "" }); }}>
               <input placeholder="Nombre de la fuente" value={incomeSourceForm.name} onChange={(e) => setIncomeSourceForm((c) => ({ ...c, name: e.target.value }))} />
               <input type="number" min="0" placeholder="Meta mensual" value={incomeSourceForm.monthlyGoal} onChange={(e) => setIncomeSourceForm((c) => ({ ...c, monthlyGoal: e.target.value }))} />
               <button className="primary-button" type="submit">Agregar</button>
             </form>
+
+            {/* Resumen total de fees */}
+            {(() => {
+              const totalFees = incomeSources.reduce((sum, src) => {
+                const actual = movements.filter((m) => m.type === "income" && m.classification === src.name).reduce((s, m) => s + m.amount, 0);
+                return sum + calcFee(actual, src.platform);
+              }, 0);
+              const totalNet = totals.income - totalFees;
+              if (totalFees === 0) return null;
+              return (
+                <div style={{marginTop:"12px",padding:"12px 14px",background:"var(--pink-soft)",borderRadius:"10px",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:"8px"}}>
+                  <div><span style={{fontSize:"12px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Total fees plataformas</span><br/><strong style={{color:"var(--pink)",fontSize:"18px"}}>-{money.format(totalFees)}</strong></div>
+                  <div style={{textAlign:"right"}}><span style={{fontSize:"12px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Ingreso neto real</span><br/><strong style={{color:"var(--green)",fontSize:"18px"}}>{money.format(totalNet)}</strong></div>
+                </div>
+              );
+            })()}
           </div>
           <div className="card insight-card">
             <h3>Lectura CEO</h3>
@@ -2847,6 +2899,19 @@ export default function App() {
             <h3>📊 Ventas esta semana</h3>
             <div className="purpose-stat"><span>Ingresos registrados</span><strong>{money.format(totals.income)}</strong></div>
             <div className="purpose-stat"><span>Utilidad</span><strong style={{color: totals.profit >= 0 ? "var(--green)" : "var(--pink)"}}>{money.format(totals.profit)}</strong></div>
+            {(() => {
+              const totalFees = incomeSources.reduce((sum, src) => {
+                const actual = movements.filter((m) => m.type === "income" && m.classification === src.name).reduce((s, m) => s + m.amount, 0);
+                return sum + calcFee(actual, src.platform);
+              }, 0);
+              if (totalFees === 0) return null;
+              return (
+                <>
+                  <div className="purpose-stat"><span>Fees de plataformas</span><strong style={{color:"var(--pink)"}}>-{money.format(totalFees)}</strong></div>
+                  <div className="purpose-stat"><span>Ingreso neto real</span><strong style={{color:"var(--green)"}}>{money.format(totals.income - totalFees)}</strong></div>
+                </>
+              );
+            })()}
             <div className="purpose-stat"><span>Ventas cerradas</span><strong>{totalWon} clientas</strong></div>
             <div className="purpose-stat"><span>Tasa de conversión</span><strong>{conversionRate}%</strong></div>
             <div className="purpose-stat"><span>Leads calientes ahora</span><strong>{hotLeads}</strong></div>
