@@ -530,9 +530,11 @@ export default function App() {
 
   const translateError = (message) => {
     const translations = {
-      "Invalid login credentials": "Credenciales de inicio de sesión inválidas",
+      "Password did not conform with policy: Password not long enough": "La contraseña debe tener al menos 8 caracteres.",
+      "Password did not conform with policy: Password must have uppercase characters": "La contraseña debe tener al menos una letra mayúscula.",
+      "Password did not conform with policy: Password must have numeric characters": "La contraseña debe incluir al menos un número.",
       "User already registered": "El usuario ya está registrado",
-      "Password should be at least 6 characters": "La contraseña debe tener al menos 6 caracteres",
+      "Password should be at least 6 characters": "La contraseña debe tener al menos 8 caracteres",
       "Unable to validate email address: invalid format": "Formato de correo electrónico inválido",
       "Email not confirmed": "Correo electrónico no confirmado",
       "Signup is disabled": "El registro está deshabilitado",
@@ -563,8 +565,8 @@ export default function App() {
         setAuthError("Las contraseñas no coinciden.");
         return;
       }
-      if (authPassword.length < 6) {
-        setAuthError("La contraseña debe tener al menos 6 caracteres.");
+      if (authPassword.length < 8) {
+        setAuthError("La contraseña debe tener al menos 8 caracteres.");
         return;
       }
     }
@@ -1142,7 +1144,7 @@ export default function App() {
               <label>
                 Contraseña
                 <div style={{position:"relative"}}>
-                  <input type={showAuthPassword?"text":"password"} value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={6} style={{paddingRight:"44px",width:"100%"}} />
+                  <input type={showAuthPassword?"text":"password"} value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={8} style={{paddingRight:"44px",width:"100%"}} />
                   <button type="button" onClick={()=>setShowAuthPassword(v=>!v)} style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",border:"none",background:"none",cursor:"pointer",fontSize:"18px",color:"var(--muted)",padding:0,lineHeight:1}}>{showAuthPassword?"🙈":"👁"}</button>
                 </div>
               </label>
@@ -1150,7 +1152,7 @@ export default function App() {
                 <label>
                   Repite la contraseña
                   <div style={{position:"relative"}}>
-                    <input type={showAuthPasswordConfirm?"text":"password"} value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={6} style={{paddingRight:"44px",width:"100%"}} />
+                    <input type={showAuthPasswordConfirm?"text":"password"} value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={8} style={{paddingRight:"44px",width:"100%"}} />
                     <button type="button" onClick={()=>setShowAuthPasswordConfirm(v=>!v)} style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",border:"none",background:"none",cursor:"pointer",fontSize:"18px",color:"var(--muted)",padding:0,lineHeight:1}}>{showAuthPasswordConfirm?"🙈":"👁"}</button>
                   </div>
                 </label>
