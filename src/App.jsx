@@ -306,6 +306,9 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [authPasswordConfirm, setAuthPasswordConfirm] = useState("");
   const [authNewPassword, setAuthNewPassword] = useState("");
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
+  const [showAuthPasswordConfirm, setShowAuthPasswordConfirm] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [resetPassword, setResetPassword] = useState(false);
@@ -797,7 +800,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, supabaseActive, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose]);
+  }, [ready, user, supabaseActive, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, profileSetup, systemTasks, weekBlocks]);
 
   const addMovement = (event) => {
     event.preventDefault();
@@ -1084,12 +1087,18 @@ export default function App() {
               )}
               <label>
                 Contraseña
-                <input type="password" value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={6} />
+                <div style={{position:"relative"}}>
+                  <input type={showAuthPassword?"text":"password"} value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={6} style={{paddingRight:"44px",width:"100%"}} />
+                  <button type="button" onClick={()=>setShowAuthPassword(v=>!v)} style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",border:"none",background:"none",cursor:"pointer",fontSize:"18px",color:"var(--muted)",padding:0,lineHeight:1}}>{showAuthPassword?"🙈":"👁"}</button>
+                </div>
               </label>
               {authMode === "signup" && (
                 <label>
                   Repite la contraseña
-                  <input type="password" value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={6} />
+                  <div style={{position:"relative"}}>
+                    <input type={showAuthPasswordConfirm?"text":"password"} value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={6} style={{paddingRight:"44px",width:"100%"}} />
+                    <button type="button" onClick={()=>setShowAuthPasswordConfirm(v=>!v)} style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",border:"none",background:"none",cursor:"pointer",fontSize:"18px",color:"var(--muted)",padding:0,lineHeight:1}}>{showAuthPasswordConfirm?"🙈":"👁"}</button>
+                  </div>
                 </label>
               )}
               {authError && <p className="auth-error">{authError}</p>}
@@ -1270,9 +1279,14 @@ export default function App() {
           <div className="brand-app">APP</div>
         </div>
 
-        <nav className="main-menu" aria-label="Navegacion principal">
+        {/* Botón hamburguesa solo en móvil */}
+        <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(v => !v)} aria-label="Menú">
+          {mobileMenuOpen ? "✕" : "☰"}
+        </button>
+
+        <nav className={`main-menu ${mobileMenuOpen ? "mobile-open" : ""}`} aria-label="Navegacion principal">
           {menu.map((item) => (
-            <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id} onClick={() => setActiveView(item.id)}>
+            <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id} onClick={() => { setActiveView(item.id); setMobileMenuOpen(false); }}>
               <span>{item.icon}</span>
               {item.label}
             </button>

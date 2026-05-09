@@ -3425,3 +3425,45 @@ button {
 @media (max-width:720px) {
   .pomodoro-widget, .upgrade-fab { bottom:16px; right:16px; }
 }
+
+/* ── Menú hamburguesa móvil ── */
+.mobile-menu-toggle {
+  display: none;
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.9);
+  color: var(--purple);
+  font-size: 22px;
+  font-weight: 700;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+@media (max-width: 1180px) {
+  .mobile-menu-toggle { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 18px; }
+  .mobile-menu-toggle::after { content: "Menú"; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .main-menu {
+    display: none;
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+
+  .main-menu.mobile-open {
+    display: grid;
+  }
+
+  .menu-item {
+    min-height: 48px;
+    font-size: 15px;
+  }
+}
+
+/* Ojito contraseña */
+.auth-form label { position: relative; }
+.auth-form input[type="text"],
+.auth-form input[type="password"] {
+  padding-right: 44px;
+}
