@@ -1,5 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
-import { supabase, isSupabaseConfigured } from "./lib/supabaseClient";
+import { awsAuth, isAwsConfigured } from "./lib/awsClient";
+const supabase = { auth: awsAuth, from: () => ({ select: async () => ({ data: null, error: null }), upsert: async () => ({ error: null }), delete: () => ({ eq: async () => ({ error: null }) }) }) };
+const isSupabaseConfigured = isAwsConfigured;
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
