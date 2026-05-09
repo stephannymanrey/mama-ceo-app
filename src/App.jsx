@@ -213,26 +213,31 @@ function loadState() {
   }
 }
 
+const API_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-user-data";
+
 async function loadRemoteState(userId) {
   if (!userId) return null;
-  const { data, error } = await supabase
-    .from("user_states")
-    .select("data")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) {
-    console.error("Error cargando estado remoto:", error);
+  try {
+    const res = await fetch(`${API_URL}?userId=${userId}`);
+    const json = await res.json();
+    return json.data ?? null;
+  } catch (err) {
+    console.error("Error cargando estado remoto:", err);
     return null;
   }
-  return data?.data ?? null;
 }
 
 async function saveRemoteState(userId, data) {
   if (!userId) return;
-  const { error } = await supabase
-    .from("user_states")
-    .upsert({ user_id: userId, data }, { onConflict: "user_id" });
-  if (error) console.error("Error guardando estado remoto:", error);
+  try {
+    await fetch(`${API_URL}?userId=${userId}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data })
+    });
+  } catch (err) {
+    console.error("Error guardando estado remoto:", err);
+  }
 }
 
 export default function App() {
