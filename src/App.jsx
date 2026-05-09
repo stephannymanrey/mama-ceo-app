@@ -314,6 +314,12 @@ export default function App() {
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [resetPassword, setResetPassword] = useState(false);
+  const [confirmMode, setConfirmMode] = useState(false);
+  const [confirmCode, setConfirmCode] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetStep, setResetStep] = useState(1);
   const [ready, setReady] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [supabaseActive, setSupabaseActive] = useState(isSupabaseConfigured);
@@ -561,8 +567,9 @@ export default function App() {
     setAuthLoading(true);
     try {
       if (authMode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+        const { data, error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
         if (error) setAuthError(translateError(error.message));
+        else if (data?.user) setUser(data.user);
       } else {
         const { error } = await supabase.auth.signUp({
           email: authEmail,
@@ -570,7 +577,7 @@ export default function App() {
           options: { data: { full_name: authName.trim() } }
         });
         if (error) setAuthError(translateError(error.message));
-        else setAuthError("✅ Revisa tu correo para confirmar tu cuenta.");
+        else { setConfirmMode(true); setAuthError(""); }
       }
     } catch (err) {
       setAuthError("Error de conexión. Por favor verifica tu internet e intenta de nuevo.");
@@ -580,29 +587,49 @@ export default function App() {
     }
   };
 
-  const handleForgotPassword = async () => {
-    if (!authEmail) {
-      setAuthError("Ingresa tu correo electrónico primero.");
-      return;
+  const handleConfirmCode = async (e) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthLoading(true);
+    try {
+      const { error } = await awsAuth.confirmSignUp({ email: authEmail, code: confirmCode });
+      if (error) { setAuthError(translateError(error.message)); }
+      else {
+        const { data } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+        if (data?.user) setUser(data.user);
+        setConfirmMode(false);
+      }
+    } catch (err) {
+      setAuthError("Error al confirmar. Intenta de nuevo.");
+    } finally {
+      setAuthLoading(false);
     }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!authEmail) { setAuthError("Ingresa tu correo electrónico primero."); return; }
     setAuthError("");
     setAuthLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(authEmail);
     setAuthLoading(false);
     if (error) setAuthError(translateError(error.message));
-    else setAuthError("Revisa tu correo para restablecer tu contraseña.");
+    else { setResetEmail(authEmail); setResetStep(2); setResetPassword(true); }
   };
 
   const handleResetPassword = async (event) => {
     event.preventDefault();
     setAuthError("");
     setAuthLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: authNewPassword });
-    setAuthLoading(false);
-    if (error) setAuthError(translateError(error.message));
-    else {
+    try {
+      const { confirmResetPassword } = await import('aws-amplify/auth');
+      await confirmResetPassword({ username: resetEmail, confirmationCode: resetCode, newPassword: resetNewPassword });
       setResetPassword(false);
-      setAuthError("Contraseña actualizada. Ya puedes iniciar sesión.");
+      setResetStep(1);
+      setAuthError("✅ Contraseña actualizada. Ya puedes iniciar sesión.");
+    } catch (err) {
+      setAuthError(translateError(err.message));
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -1062,20 +1089,40 @@ export default function App() {
     return (
       <div className="auth-shell">
         <div className="auth-card">
-          <h2>{resetPassword ? "Restablecer contraseña" : authMode === "login" ? "Iniciar sesión" : "Crear cuenta"}</h2>
-          <p>{resetPassword ? "Ingresa tu nueva contraseña." : "Ingresa con tu correo para acceder a tu tablero Mamá CEO."}</p>
-          {resetPassword ? (
-            <form className="auth-form" onSubmit={handleResetPassword}>
-              <label>
-                Nueva contraseña
-                <input type="password" value={authNewPassword} onChange={(event) => setAuthNewPassword(event.target.value)} required minLength={6} />
-              </label>
-              {authError && <p className="auth-error">{authError}</p>}
-              <button type="submit" className="auth-button" disabled={authLoading}>
-                Actualizar contraseña
-              </button>
-            </form>
+          {confirmMode ? (
+            <>
+              <h2>Confirma tu correo 📬</h2>
+              <p>Te enviamos un código de 6 dígitos a <strong>{authEmail}</strong>. Ingrésalo aquí para activar tu cuenta.</p>
+              <form className="auth-form" onSubmit={handleConfirmCode}>
+                <label>
+                  Código de verificación
+                  <input type="text" placeholder="123456" value={confirmCode} onChange={(e) => setConfirmCode(e.target.value)} required maxLength={6} style={{letterSpacing:"8px",fontSize:"22px",textAlign:"center"}} autoFocus />
+                </label>
+                {authError && <p className="auth-error">{authError}</p>}
+                <button type="submit" className="auth-button" disabled={authLoading}>Verificar y entrar</button>
+              </form>
+              <button className="auth-switch" onClick={() => { setConfirmMode(false); setConfirmCode(""); setAuthError(""); }}>← Volver</button>
+            </>
+          ) : resetPassword ? (
+            <>
+              <h2>Restablecer contraseña</h2>
+              <p>Ingresa el código que llegó a <strong>{resetEmail}</strong> y tu nueva contraseña.</p>
+              <form className="auth-form" onSubmit={handleResetPassword}>
+                <label>
+                  Código de verificación
+                  <input type="text" placeholder="123456" value={resetCode} onChange={(e) => setResetCode(e.target.value)} required maxLength={6} style={{letterSpacing:"8px",fontSize:"22px",textAlign:"center"}} />
+                </label>
+                <label>
+                  Nueva contraseña
+                  <input type="password" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required minLength={8} />
+                </label>
+                {authError && <p className="auth-error">{authError}</p>}
+                <button type="submit" className="auth-button" disabled={authLoading}>Actualizar contraseña</button>
+              </form>
+              <button className="auth-switch" onClick={() => { setResetPassword(false); setAuthError(""); }}>← Volver</button>
+            </>
           ) : (
+            <>
             <form className="auth-form" onSubmit={handleAuthSubmit}>
               <label>
                 Correo electrónico
@@ -1108,18 +1155,14 @@ export default function App() {
                 {authMode === "login" ? "Entrar" : "Registrarme"}
               </button>
             </form>
-          )}
-          {!resetPassword && (
-            <>
-              <button className="auth-switch" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>
-                {authMode === "login" ? "Quiero crear una cuenta" : "Ya tengo cuenta"}
+            <button className="auth-switch" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>
+              {authMode === "login" ? "Quiero crear una cuenta" : "Ya tengo cuenta"}
+            </button>
+            {authMode === "login" && (
+              <button type="button" className="auth-forgot" onClick={handleForgotPassword} disabled={authLoading}>
+                Olvidé mi contraseña
               </button>
-              {authMode === "login" && (
-                <button type="button" className="auth-forgot" onClick={handleForgotPassword} disabled={authLoading}>
-                  Olvidé mi contraseña
-                </button>
-              )}
-
+            )}
             </>
           )}
         </div>
