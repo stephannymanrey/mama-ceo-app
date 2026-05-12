@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
-import { awsAuth, isAwsConfigured } from "./lib/awsClient";
+import { awsAuth, getAwsAuthToken, isAwsConfigured } from "./lib/awsClient";
 const supabase = { auth: awsAuth, from: () => ({ select: async () => ({ data: null, error: null }), upsert: async () => ({ error: null }), delete: () => ({ eq: async () => ({ error: null }) }) }) };
 const isSupabaseConfigured = isAwsConfigured;
 import "./App.css";
@@ -213,31 +213,131 @@ function loadState() {
   }
 }
 
-const API_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-user-data";
+const initialProfileForm = {
+  name: "",
+  businessName: "",
+  businessType: "Servicios 1:1",
+  stage: "Creciendo",
+  monthlyGoalSetup: "",
+  mainChallenge: "Conseguir clientes"
+};
 
-async function loadRemoteState(userId) {
-  if (!userId) return null;
-  try {
-    const res = await fetch(`${API_URL}?userId=${userId}`);
-    const json = await res.json();
-    return json.data ?? null;
-  } catch (err) {
-    console.error("Error cargando estado remoto:", err);
-    return null;
-  }
+const initialPurposeState = {
+  mood: "inspirada",
+  energy: "medio",
+  mentalLoad: "",
+  microVictory: "",
+  victoryDone: false,
+  water: false,
+  walk: false,
+  silence: false,
+  devotional: false,
+  familyDays: { L: false, M: false, X: false, J: false, V: false, S: false, D: false },
+  connectionMoments: 0,
+  hoursWorked: 0,
+  recurringIncomePercent: 0,
+  systemsPercent: 0,
+  clientsImpacted: 0,
+  weekTestimony: "",
+  passionLevel: 3,
+  visionClarity: ""
+};
+
+function cloneList(items) {
+  return items.map((item) => ({ ...item }));
 }
 
-async function saveRemoteState(userId, data) {
-  if (!userId) return;
-  try {
-    await fetch(`${API_URL}?userId=${userId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ data })
-    });
-  } catch (err) {
-    console.error("Error guardando estado remoto:", err);
+function createInitialPurpose(overrides = {}) {
+  return {
+    ...initialPurposeState,
+    ...overrides,
+    familyDays: {
+      ...initialPurposeState.familyDays,
+      ...(overrides.familyDays || {})
+    }
+  };
+}
+
+function normalizeAnnualBudget(rows = initialAnnualBudget) {
+  return rows.map((row) => {
+    const income = Number(row.income || 0);
+    return {
+      month: row.month,
+      income,
+      fixedExpenses: row.fixedExpenses ?? Math.round(income * 0.45),
+      variableExpenses: row.variableExpenses ?? Math.round(income * 0.35),
+      platformFees: row.platformFees ?? 0
+    };
+  });
+}
+
+function createBlankUserState(currency = "USD") {
+  return {
+    activeView: "dashboard",
+    currency,
+    movements: [],
+    tasks: [],
+    clients: [],
+    contentItems: [],
+    goals: [],
+    homeTasks: [],
+    systemTasks: cloneList(initialSystemTasks),
+    maternalTasks: cloneList(initialHomeMaternalTasks),
+    wellnessTasks: cloneList(initialHomeWellnessTasks),
+    incomeSources: cloneList(initialIncomeSources),
+    salesGoal: 0,
+    contactLog: {},
+    weekBlocks: {},
+    businessSettings: { ...initialBusinessSettings },
+    banks: [...initialBanks],
+    annualBudget: normalizeAnnualBudget(initialAnnualBudget),
+    homeBudget: cloneList(initialHomeBudget),
+    purpose: createInitialPurpose(),
+    profileSetup: null,
+    groceryList: [],
+    userPlan: "free",
+    premiumExpiresAt: null
+  };
+}
+
+const API_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-user-data";
+
+async function getRemoteAuthHeaders(includeJson = false) {
+  const token = await getAwsAuthToken();
+  if (!token) {
+    throw new Error("No hay token seguro de AWS. Inicia sesión nuevamente.");
   }
+  return {
+    ...(includeJson ? { "Content-Type": "application/json" } : {}),
+    Authorization: `Bearer ${token}`
+  };
+}
+
+async function loadRemoteState() {
+  const headers = await getRemoteAuthHeaders();
+  const res = await fetch(API_URL, { headers });
+  if (!res.ok) throw new Error(`AWS respondió ${res.status}`);
+  const json = await res.json();
+  return json.data ?? null;
+}
+
+async function saveRemoteState(data) {
+  const headers = await getRemoteAuthHeaders(true);
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ data })
+  });
+  if (!res.ok) throw new Error(`AWS respondió ${res.status}`);
+}
+
+async function deleteRemoteState() {
+  const headers = await getRemoteAuthHeaders();
+  const res = await fetch(API_URL, {
+    method: "DELETE",
+    headers
+  });
+  if (!res.ok) throw new Error(`AWS respondió ${res.status}`);
 }
 
 export default function App() {
@@ -262,50 +362,14 @@ export default function App() {
   const [wellnessForm, setWellnessForm] = useState("");
   const [banks, setBanks] = useState(stored?.banks || initialBanks);
   const [newBank, setNewBank] = useState("");
-  const [annualBudget, setAnnualBudget] = useState((stored?.annualBudget || initialAnnualBudget).map((row) => {
-    const income = Number(row.income || 0);
-    return {
-      month: row.month,
-      income: income,
-      fixedExpenses: row.fixedExpenses ?? Math.round(income * 0.45),
-      variableExpenses: row.variableExpenses ?? Math.round(income * 0.35),
-      platformFees: row.platformFees ?? 0
-    };
-  }));
+  const [annualBudget, setAnnualBudget] = useState(normalizeAnnualBudget(stored?.annualBudget || initialAnnualBudget));
   const [homeBudget, setHomeBudget] = useState(stored?.homeBudget || initialHomeBudget);
   const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "" });
-  const [purpose, setPurpose] = useState({
-    mood: "inspirada",
-    energy: "medio",
-    mentalLoad: "",
-    microVictory: "",
-    victoryDone: false,
-    water: false,
-    walk: false,
-    silence: false,
-    devotional: false,
-    familyDays: { L: false, M: false, X: false, J: false, V: false, S: false, D: false },
-    connectionMoments: 0,
-    hoursWorked: 0,
-    recurringIncomePercent: 0,
-    systemsPercent: 0,
-    clientsImpacted: 0,
-    weekTestimony: "",
-    passionLevel: 3,
-    visionClarity: "",
-    ...(stored?.purpose || {})
-  });
+  const [purpose, setPurpose] = useState(createInitialPurpose(stored?.purpose || {}));
   const [profileSetup, setProfileSetup] = useState(stored?.profileSetup || null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    name: "",
-    businessName: "",
-    businessType: "Servicios 1:1",
-    stage: "Creciendo",
-    monthlyGoalSetup: "",
-    mainChallenge: "Conseguir clientes"
-  });
+  const [profileForm, setProfileForm] = useState({ ...initialProfileForm });
   const [user, setUser] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
@@ -327,7 +391,10 @@ export default function App() {
   const [resetStep, setResetStep] = useState(1);
   const [ready, setReady] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [supabaseActive, setSupabaseActive] = useState(isSupabaseConfigured);
+  const [syncError, setSyncError] = useState("");
+  const [isRestoringRemote, setIsRestoringRemote] = useState(false);
+  const [cloudReadyUserId, setCloudReadyUserId] = useState(null);
+  const supabaseActive = isSupabaseConfigured;
   const [businessSettings, setBusinessSettings] = useState({
     ...initialBusinessSettings,
     ...(stored?.businessSettings || {})
@@ -525,6 +592,8 @@ export default function App() {
   const confirmDelete = (msg, onConfirm) => { if (window.confirm(msg)) onConfirm(); };
   const signOut = async () => {
     await supabase.auth.signOut();
+    setCloudReadyUserId(null);
+    window.localStorage.removeItem(STORAGE_KEY);
     setUser(null);
   };
 
@@ -700,24 +769,24 @@ export default function App() {
       }
 
       const timeout = setTimeout(() => {
-        console.warn("Supabase auth tardó demasiado. Usando modo local temporalmente.");
-        setSupabaseActive(false);
+        console.warn("AWS Auth tardó más de lo esperado.");
+        setAuthError("La conexión segura tardó más de lo esperado. Revisa tu internet e intenta de nuevo.");
         setReady(true);
-      }, 4000);
+      }, 8000);
 
       try {
         const { data, error } = await supabase.auth.getSession();
         clearTimeout(timeout);
         if (error) {
           console.error("Error al inicializar auth:", error);
-          setSupabaseActive(false);
+          setAuthError("No pudimos conectar con el inicio de sesión seguro. Intenta de nuevo en unos minutos.");
         } else {
           setUser(data?.session?.user ?? null);
         }
       } catch (initError) {
         clearTimeout(timeout);
         console.error("Error inesperado al inicializar auth:", initError);
-        setSupabaseActive(false);
+        setAuthError("No pudimos conectar con el inicio de sesión seguro. Intenta de nuevo en unos minutos.");
       } finally {
         setReady(true);
       }
@@ -752,44 +821,72 @@ export default function App() {
   }, [ready, supabaseActive, user, authMode, authLoading, authError, resetPassword]);
 
   const applyLoadedState = (loaded) => {
-    if (!loaded) return;
-    setActiveView(loaded.activeView || "dashboard");
-    setCurrency(loaded.currency || "USD");
-    setMovements(loaded.movements || initialMovements);
-    setTasks(loaded.tasks || initialTasks);
-    setClients(loaded.clients || initialClients);
-    setContentItems(loaded.contentItems || initialContent);
-    setGoals(loaded.goals || initialGoals);
-    setHomeTasks(loaded.homeTasks || initialHomeTasks);
-    setBusinessSettings(loaded.businessSettings || initialBusinessSettings);
-    setBanks(loaded.banks || initialBanks);
-    setAnnualBudget(loaded.annualBudget || initialAnnualBudget);
-    setHomeBudget(loaded.homeBudget || initialHomeBudget);
-    setPurpose(loaded.purpose || purpose);
+    const state = loaded || createBlankUserState(currency);
+    setActiveView(state.activeView || "dashboard");
+    setCurrency(state.currency || "USD");
+    setMovements(state.movements || []);
+    setTasks(state.tasks || []);
+    setClients(state.clients || []);
+    setContentItems(state.contentItems || []);
+    setGoals(state.goals || []);
+    setHomeTasks(state.homeTasks || []);
+    setSystemTasks(state.systemTasks || cloneList(initialSystemTasks));
+    setMaternalTasks(state.maternalTasks || cloneList(initialHomeMaternalTasks));
+    setWellnessTasks(state.wellnessTasks || cloneList(initialHomeWellnessTasks));
+    setIncomeSources(state.incomeSources || cloneList(initialIncomeSources));
+    setSalesGoal(state.salesGoal || 0);
+    setContactLog(state.contactLog || {});
+    setWeekBlocks(state.weekBlocks || {});
+    setBusinessSettings(state.businessSettings || { ...initialBusinessSettings });
+    setBanks(state.banks || [...initialBanks]);
+    setAnnualBudget(normalizeAnnualBudget(state.annualBudget || initialAnnualBudget));
+    setHomeBudget(state.homeBudget || cloneList(initialHomeBudget));
+    setPurpose(createInitialPurpose(state.purpose || {}));
+    setProfileSetup(state.profileSetup || null);
+    setProfileForm(state.profileSetup ? { ...initialProfileForm, ...state.profileSetup } : { ...initialProfileForm });
+    setGroceryList(state.groceryList || []);
+    setUserPlan(state.userPlan || "free");
+    setPremiumExpiresAt(state.premiumExpiresAt || null);
   };
 
   useEffect(() => {
     if (!ready) return;
+    let cancelled = false;
     const restore = async () => {
       try {
         if (user && supabaseActive) {
-          const remoteState = await loadRemoteState(user.id);
-          if (remoteState) applyLoadedState(remoteState);
+          setIsRestoringRemote(true);
+          setCloudReadyUserId(null);
+          applyLoadedState(createBlankUserState());
+          const remoteState = await loadRemoteState();
+          if (cancelled) return;
+          applyLoadedState(remoteState || createBlankUserState());
+          setCloudReadyUserId(user.id);
+          setSyncError("");
         } else {
           const storedState = loadState();
-          if (storedState) applyLoadedState(storedState);
+          if (!cancelled && storedState) applyLoadedState(storedState);
         }
       } catch (err) {
         console.error("Error restaurando estado:", err);
+        if (!cancelled) {
+          setSyncError("No se pudo cargar tu información desde AWS. No uses la beta con datos reales hasta actualizar Lambda/API Gateway.");
+        }
+      } finally {
+        if (!cancelled) setIsRestoringRemote(false);
       }
     };
     restore();
+    return () => {
+      cancelled = true;
+    };
   }, [ready, user, supabaseActive]);
 
   useEffect(() => {
-    if (!ready || !user) return;
+    if (!ready || !user || isRestoringRemote) return;
     if (!profileSetup) setShowProfileModal(true);
-  }, [ready, user]);
+    else setShowProfileModal(false);
+  }, [ready, user, isRestoringRemote, profileSetup]);
 
   useEffect(() => {
     if (!ready) return;
@@ -821,22 +918,23 @@ export default function App() {
     };
 
     if (user && supabaseActive) {
+      if (isRestoringRemote || cloudReadyUserId !== user.id) return;
       setIsSyncing(true);
-      saveRemoteState(user.id, stateToSave)
+      saveRemoteState(stateToSave)
+        .then(() => setSyncError(""))
         .catch((err) => {
           console.error("Error guardando en la nube:", err);
-          // Fallback a localStorage si falla Supabase
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+          setSyncError("No se pudo guardar en la nube de forma segura. Evita cargar datos reales hasta terminar el ajuste de AWS.");
         })
         .finally(() => setIsSyncing(false));
-    } else {
+    } else if (!supabaseActive) {
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
       } catch (err) {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, supabaseActive, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, profileSetup, systemTasks, weekBlocks]);
+  }, [ready, user, supabaseActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, profileSetup, systemTasks, maternalTasks, wellnessTasks, weekBlocks]);
 
   const addMovement = (event) => {
     event.preventDefault();
@@ -1080,13 +1178,13 @@ export default function App() {
 
   const activeLabel = menu.find((item) => item.id === activeView)?.label || "Dashboard";
 
-  if (!ready) {
+  if (!ready || isRestoringRemote) {
     return (
       <div className="auth-shell">
         <div className="auth-card" style={{textAlign:"center"}}>
           <div style={{fontSize:"32px",marginBottom:"12px"}}>✨</div>
           <h2>Cargando tu espacio...</h2>
-          <p>Un momento, preparando todo para ti.</p>
+          <p>Un momento, preparando solo la información de esta cuenta.</p>
         </div>
       </div>
     );
@@ -1241,7 +1339,7 @@ export default function App() {
                   if (!window.confirm("\u00daltima confirmación: se eliminarán todos tus datos permanentemente.")) return;
                   try {
                     if (user && supabaseActive) {
-                      await supabase.from("user_states").delete().eq("user_id", user.id);
+                      await deleteRemoteState();
                       await supabase.auth.signOut();
                     }
                     window.localStorage.removeItem(STORAGE_KEY);
@@ -1249,7 +1347,7 @@ export default function App() {
                     setShowProfileModal(false);
                   } catch (err) {
                     console.error("Error eliminando cuenta:", err);
-                    alert("Hubo un error al eliminar la cuenta. Contáctanos en hola@umpacademy.co");
+                    alert("No pudimos eliminar los datos en AWS de forma segura. No se cerró la cuenta; intenta más tarde o contáctanos en hola@umpacademy.co");
                   }
                 }}
                 style={{marginTop:"8px",width:"100%",padding:"12px",border:"1px solid #e05a4e",background:"#fff5f4",color:"#e05a4e",borderRadius:"8px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>
@@ -1386,6 +1484,11 @@ export default function App() {
         {!supabaseActive && (
           <div className="local-banner">
             <strong>Modo sin conexión</strong> — tus datos se guardan en este navegador. Si cambias de dispositivo o navegador, no verás tus datos.
+          </div>
+        )}
+        {syncError && (
+          <div className="local-banner">
+            <strong>Sincronización segura pendiente</strong> — {syncError}
           </div>
         )}
 
