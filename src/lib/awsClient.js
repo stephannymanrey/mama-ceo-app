@@ -2,7 +2,7 @@ import { Amplify } from 'aws-amplify';
 import {
   signIn, signUp, signOut, confirmSignUp,
   getCurrentUser, fetchAuthSession, resetPassword,
-  confirmResetPassword, updatePassword
+  updatePassword
 } from 'aws-amplify/auth';
 
 Amplify.configure({
@@ -17,11 +17,19 @@ Amplify.configure({
 
 export const isAwsConfigured = true;
 
+export async function getAwsAuthToken() {
+  try {
+    const session = await fetchAuthSession();
+    return session.tokens?.idToken?.toString() || session.tokens?.accessToken?.toString() || "";
+  } catch {
+    return "";
+  }
+}
+
 export const awsAuth = {
   getSession: async () => {
     try {
       const user = await getCurrentUser();
-      const session = await fetchAuthSession();
       return { data: { session: { user: { id: user.userId, email: user.signInDetails?.loginId, user_metadata: { full_name: user.username } } } }, error: null };
     } catch {
       return { data: { session: null }, error: null };
