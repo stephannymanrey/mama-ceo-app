@@ -203,6 +203,80 @@ function getWeekDays() {
 const weekDays = getWeekDays();
 
 const currencyLocales = { USD: "en-US", COP: "es-CO", MXN: "es-MX", EUR: "de-DE" };
+const monthShortNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+function toInputDate(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayInputValue() {
+  return toInputDate(new Date());
+}
+
+function parseDateValue(value) {
+  if (!value) return null;
+  if (typeof value === "number") {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function inputDateFromValue(value) {
+  const date = parseDateValue(value);
+  return date ? toInputDate(date) : getTodayInputValue();
+}
+
+function timestampFromInputDate(value) {
+  const date = parseDateValue(value);
+  if (!date) return Date.now();
+  date.setHours(12, 0, 0, 0);
+  return date.getTime();
+}
+
+function formatShortDate(value) {
+  const date = parseDateValue(value);
+  if (!date) return "Sin fecha";
+  return `${date.getDate()} ${monthShortNames[date.getMonth()]}`;
+}
+
+function getCurrentWeekRange(baseDate = new Date()) {
+  const start = new Date(baseDate);
+  start.setHours(0, 0, 0, 0);
+  const day = start.getDay();
+  start.setDate(start.getDate() - (day === 0 ? 6 : day - 1));
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start, end, startTime: start.getTime(), endTime: end.getTime() };
+}
+
+function isDateThisWeek(value, range = getCurrentWeekRange()) {
+  const date = parseDateValue(value);
+  if (!date) return false;
+  const time = date.getTime();
+  return time >= range.startTime && time <= range.endTime;
+}
+
+function getMonthWeekInfo(baseDate = new Date()) {
+  const day = baseDate.getDate();
+  const total = 4;
+  const current = Math.min(total, Math.max(1, Math.ceil(day / 7)));
+  return {
+    current,
+    total,
+    month: monthShortNames[baseDate.getMonth()],
+    progress: Math.min(100, Math.round((current / total) * 100))
+  };
+}
 
 function loadState() {
   try {
@@ -271,6 +345,43 @@ function normalizeAnnualBudget(rows = initialAnnualBudget) {
   });
 }
 
+function normalizeMovements(items = []) {
+  return items.map((item) => {
+    const fallback = item.createdAt || item.id;
+    const date = item.date || (fallback && fallback > 1000000000000 ? inputDateFromValue(fallback) : getTodayInputValue());
+    return {
+      ...item,
+      date,
+      createdAt: item.createdAt || timestampFromInputDate(date)
+    };
+  });
+}
+
+function normalizeClients(items = []) {
+  return items.map((item) => {
+    const lastContactDate = item.lastContactDate || inputDateFromValue(item.lastContact || item.updatedAt || item.createdAt || Date.now());
+    const lastContact = item.lastContact || timestampFromInputDate(lastContactDate);
+    return {
+      ...item,
+      lastContact,
+      lastContactDate,
+      createdAt: item.createdAt || lastContact,
+      updatedAt: item.updatedAt || lastContact
+    };
+  });
+}
+
+function normalizeHomeBudget(items = []) {
+  return items.map((item) => {
+    const dueDate = item.dueDate || inputDateFromValue(item.createdAt || Date.now());
+    return {
+      ...item,
+      dueDate,
+      createdAt: item.createdAt || timestampFromInputDate(dueDate)
+    };
+  });
+}
+
 function createBlankUserState(currency = "USD") {
   return {
     activeView: "dashboard",
@@ -291,7 +402,7 @@ function createBlankUserState(currency = "USD") {
     businessSettings: { ...initialBusinessSettings },
     banks: [...initialBanks],
     annualBudget: normalizeAnnualBudget(initialAnnualBudget),
-    homeBudget: cloneList(initialHomeBudget),
+    homeBudget: normalizeHomeBudget(cloneList(initialHomeBudget)),
     purpose: createInitialPurpose(),
     profileSetup: null,
     groceryList: [],
@@ -345,9 +456,9 @@ export default function App() {
   const [activeView, setActiveView] = useState(stored?.activeView || "dashboard");
   const [currency, setCurrency] = useState(stored?.currency || "USD");
   const isNewUser = !stored;
-  const [movements, setMovements] = useState(isNewUser ? [] : (stored?.movements || initialMovements));
+  const [movements, setMovements] = useState(isNewUser ? [] : normalizeMovements(stored?.movements || initialMovements));
   const [tasks, setTasks] = useState(isNewUser ? [] : (stored?.tasks || initialTasks));
-  const [clients, setClients] = useState(isNewUser ? [] : (stored?.clients || initialClients));
+  const [clients, setClients] = useState(isNewUser ? [] : normalizeClients(stored?.clients || initialClients));
   const [contentItems, setContentItems] = useState(isNewUser ? [] : (stored?.contentItems || initialContent));
   const [goals, setGoals] = useState(isNewUser ? [] : (stored?.goals || initialGoals));
   const [homeTasks, setHomeTasks] = useState(isNewUser ? [] : (stored?.homeTasks || initialHomeTasks));
@@ -363,8 +474,8 @@ export default function App() {
   const [banks, setBanks] = useState(stored?.banks || initialBanks);
   const [newBank, setNewBank] = useState("");
   const [annualBudget, setAnnualBudget] = useState(normalizeAnnualBudget(stored?.annualBudget || initialAnnualBudget));
-  const [homeBudget, setHomeBudget] = useState(stored?.homeBudget || initialHomeBudget);
-  const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "" });
+  const [homeBudget, setHomeBudget] = useState(normalizeHomeBudget(stored?.homeBudget || initialHomeBudget));
+  const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue() });
   const [purpose, setPurpose] = useState(createInitialPurpose(stored?.purpose || {}));
   const [profileSetup, setProfileSetup] = useState(stored?.profileSetup || null);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -400,8 +511,8 @@ export default function App() {
     ...(stored?.businessSettings || {})
   });
 
-  const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "" });
-  const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "" });
+  const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "", date: getTodayInputValue() });
+  const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue() });
   const [contentFilter, setContentFilter] = useState("");
   const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
@@ -529,6 +640,9 @@ export default function App() {
   const monthlyProgress = Math.min(Math.round((totals.income / monthlyGoal) * 100), 100);
   const weeklyProgress = Math.min(Math.round((totals.income / weeklyGoal) * 100), 100);
   const dailyProgress = Math.min(Math.round((totals.income / dailyGoal) * 100), 100);
+  const monthWeekInfo = useMemo(() => getMonthWeekInfo(), []);
+  const currentWeekRange = useMemo(() => getCurrentWeekRange(), []);
+  const sortedMovements = useMemo(() => [...movements].sort((a, b) => timestampFromInputDate(b.date || b.createdAt) - timestampFromInputDate(a.date || a.createdAt)), [movements]);
   const completedTasks = tasks.filter((task) => task.done).length;
   const completedHomeTasks = homeTasks.filter((task) => task.done).length;
   const activeClients = clients.filter((client) => ["Lead tibio", "Lead caliente", "Venta ganada"].includes(client.status)).length;
@@ -567,6 +681,9 @@ export default function App() {
   }, { income: 0, fixed: 0, variable: 0, smallLeaks: 0, debt: 0, savings: 0 });
   const homeSpent = homeBudgetTotals.fixed + homeBudgetTotals.variable + homeBudgetTotals.smallLeaks + homeBudgetTotals.debt;
   const homeAvailable = homeBudgetTotals.income - homeSpent - homeBudgetTotals.savings;
+  const homePaymentsThisWeek = homeBudget
+    .filter((item) => !["Ingreso", "Ahorro"].includes(item.type) && isDateThisWeek(item.dueDate || item.createdAt, currentWeekRange))
+    .sort((a, b) => timestampFromInputDate(a.dueDate) - timestampFromInputDate(b.dueDate));
   const biggestHomeLeak = [
     ["gastos fijos", homeBudgetTotals.fixed],
     ["gastos variables", homeBudgetTotals.variable],
@@ -824,9 +941,9 @@ export default function App() {
     const state = loaded || createBlankUserState(currency);
     setActiveView(state.activeView || "dashboard");
     setCurrency(state.currency || "USD");
-    setMovements(state.movements || []);
+    setMovements(normalizeMovements(state.movements || []));
     setTasks(state.tasks || []);
-    setClients(state.clients || []);
+    setClients(normalizeClients(state.clients || []));
     setContentItems(state.contentItems || []);
     setGoals(state.goals || []);
     setHomeTasks(state.homeTasks || []);
@@ -840,7 +957,7 @@ export default function App() {
     setBusinessSettings(state.businessSettings || { ...initialBusinessSettings });
     setBanks(state.banks || [...initialBanks]);
     setAnnualBudget(normalizeAnnualBudget(state.annualBudget || initialAnnualBudget));
-    setHomeBudget(state.homeBudget || cloneList(initialHomeBudget));
+    setHomeBudget(normalizeHomeBudget(state.homeBudget || cloneList(initialHomeBudget)));
     setPurpose(createInitialPurpose(state.purpose || {}));
     setProfileSetup(state.profileSetup || null);
     setProfileForm(state.profileSetup ? { ...initialProfileForm, ...state.profileSetup } : { ...initialProfileForm });
@@ -948,6 +1065,7 @@ export default function App() {
       return;
     }
     
+    const movementDate = form.date || getTodayInputValue();
     setMovements((current) => [{
       id: Date.now(),
       type: form.type,
@@ -955,7 +1073,9 @@ export default function App() {
       description: form.description.trim(),
       category: form.category.trim(),
       amount,
-      bank: form.bank || banks[0] || ""
+      bank: form.bank || banks[0] || "",
+      date: movementDate,
+      createdAt: timestampFromInputDate(movementDate)
     }, ...current]);
     setForm({
       type: form.type,
@@ -963,7 +1083,8 @@ export default function App() {
       description: "",
       category: "",
       amount: "",
-      bank: form.bank || banks[0] || ""
+      bank: form.bank || banks[0] || "",
+      date: getTodayInputValue()
     });
   };
 
@@ -979,6 +1100,8 @@ export default function App() {
       return;
     }
     
+    const contactDate = clientForm.lastContactDate || getTodayInputValue();
+    const contactTimestamp = timestampFromInputDate(contactDate);
     const now = Date.now();
     setClients((current) => [{ 
       id: now, 
@@ -987,12 +1110,14 @@ export default function App() {
       status: clientForm.status, 
       amount, 
       nextAction: clientForm.nextAction.trim() || "Hacer seguimiento", 
-      lastContact: now, 
+      lastContact: contactTimestamp,
+      lastContactDate: contactDate,
       source: clientForm.source === "Otra" ? clientForm.customSource.trim() || "Otra" : clientForm.source, 
       phone: clientForm.phone.trim(), 
-      createdAt: now 
+      createdAt: now,
+      updatedAt: now
     }, ...current]);
-    setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "", phone: "" });
+    setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue() });
   };
 
   const addContent = (event) => {
@@ -1048,6 +1173,13 @@ export default function App() {
     type,
     classification: type === "income" ? "Servicios" : "Gasto fijo"
   }));
+  const updateMovementDate = (movementId, date) => {
+    setMovements((current) => current.map((movement) => movement.id === movementId ? {
+      ...movement,
+      date,
+      createdAt: timestampFromInputDate(date)
+    } : movement));
+  };
   const updateClientForm = (field, value) => setClientForm((current) => ({ ...current, [field]: value }));
   const updateContentForm = (field, value) => setContentForm((current) => ({ ...current, [field]: value }));
   const updateGoalForm = (field, value) => setGoalForm((current) => ({ ...current, [field]: value }));
@@ -1107,8 +1239,9 @@ export default function App() {
     });
   };
   const exportMovementsToExcel = () => {
-    const headers = ["Tipo", "Clasificación", "Descripción", "Categoría", "Banco", "Monto"];
-    const rows = movements.map((movement) => [
+    const headers = ["Fecha", "Tipo", "Clasificación", "Descripción", "Categoría", "Banco", "Monto"];
+    const rows = sortedMovements.map((movement) => [
+      inputDateFromValue(movement.date || movement.createdAt),
       movement.type === "income" ? "Ingreso" : "Gasto",
       movement.classification || "",
       movement.description,
@@ -1132,24 +1265,36 @@ export default function App() {
     event.preventDefault();
     const amount = Number(homeBudgetForm.amount);
     if (!homeBudgetForm.description.trim() || !amount) return;
-    setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount }, ...current]);
-    setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "" });
+    const dueDate = homeBudgetForm.dueDate || getTodayInputValue();
+    setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount, dueDate, createdAt: timestampFromInputDate(dueDate) }, ...current]);
+    setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue() });
+  };
+  const updateHomeBudgetDate = (itemId, dueDate) => {
+    setHomeBudget((current) => current.map((item) => item.id === itemId ? { ...item, dueDate, createdAt: timestampFromInputDate(dueDate) } : item));
   };
   const moveClientStatus = (clientId, status) => {
-    setClients((current) => current.map((client) => client.id === clientId ? { ...client, status } : client));
+    setClients((current) => current.map((client) => client.id === clientId ? { ...client, status, updatedAt: Date.now() } : client));
   };
   const logContact = (clientId, clientName) => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayInputValue();
     setContactLog((prev) => ({ ...prev, [Date.now()]: { clientId, clientName, date: today } }));
-    setClients((c) => c.map((cl) => cl.id === clientId ? { ...cl, lastContact: Date.now() } : cl));
+    setClients((c) => c.map((cl) => cl.id === clientId ? { ...cl, lastContact: timestampFromInputDate(today), lastContactDate: today, updatedAt: Date.now() } : cl));
   };
   const weekStart = (() => { const d = new Date(); d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1)); d.setHours(0,0,0,0); return d.getTime(); })();
-  const contactsThisWeek = Object.values(contactLog).filter((e) => new Date(e.date).getTime() >= weekStart).length;
+  const contactsThisWeek = Object.values(contactLog).filter((e) => timestampFromInputDate(e.date) >= weekStart).length;
   const updateContentStatus = (contentId, status) => {
     setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, status } : item));
   };
   const updateClientNotes = (clientId, notes) => {
-    setClients((current) => current.map((client) => client.id === clientId ? { ...client, notes } : client));
+    setClients((current) => current.map((client) => client.id === clientId ? { ...client, notes, updatedAt: Date.now() } : client));
+  };
+  const updateClientLastContact = (clientId, date) => {
+    setClients((current) => current.map((client) => client.id === clientId ? {
+      ...client,
+      lastContactDate: date,
+      lastContact: timestampFromInputDate(date),
+      updatedAt: Date.now()
+    } : client));
   };
   const toggleFamilyDay = (day) => {
     setPurpose((current) => ({
@@ -1194,6 +1339,12 @@ export default function App() {
     return (
       <div className="auth-shell">
         <div className="auth-card">
+          <div className="auth-brand">
+            <div className="auth-brand-seal">MC</div>
+            <div className="auth-brand-script">Mamá</div>
+            <div className="auth-brand-ceo">CEO</div>
+            <div className="auth-brand-app">APP</div>
+          </div>
           {confirmMode ? (
             <>
               <h2>Confirma tu correo 📬</h2>
@@ -1270,6 +1421,9 @@ export default function App() {
             )}
             </>
           )}
+          <footer className="auth-footer">
+            Hecho por Una mamá con propósito® | 2026 UMP S.A.S Todos los derechos reservados
+          </footer>
         </div>
       </div>
     );
@@ -1595,9 +1749,10 @@ export default function App() {
             <Progress value={monthlyProgress} tone="purple" />
             <small>{monthlyProgress}% completado</small>
           </div>
-          <div className="week-ring" style={{"--value": 75}}>
+          <div className="week-ring" style={{"--value": monthWeekInfo.progress}}>
             <span>Semana</span>
-            <strong>3 de 4</strong>
+            <strong>{monthWeekInfo.current} de {monthWeekInfo.total}</strong>
+            <small>{monthWeekInfo.month}</small>
           </div>
         </section>
 
@@ -1634,7 +1789,7 @@ export default function App() {
           <div className="dash-main-row">
             <div className="card chart-card-wide">
               <h3>Ingresos vs gastos</h3>
-              <LineChart movements={movements} />
+              <LineChart movements={sortedMovements} />
             </div>
             <div className="card task-card">
               <h3>Acciones clave ({completedTasks}/{tasks.length})</h3>
@@ -1723,6 +1878,10 @@ export default function App() {
               <div className="dash-summary-stat">
                 <span>Momentos de conexión</span>
                 <strong>{purpose.connectionMoments || 0}</strong>
+              </div>
+              <div className="dash-summary-stat">
+                <span>Pagos esta semana</span>
+                <strong>{homePaymentsThisWeek.length}</strong>
               </div>
               <p className="helper-copy" style={{marginTop:"6px"}}>{presenceMsg}</p>
             </div>
@@ -1813,6 +1972,8 @@ export default function App() {
     const fixedExpensesTotal = movements.filter((m) => m.type === "expense" && m.classification === "Gasto fijo").reduce((sum, m) => sum + m.amount, 0);
     const cashFlow = totals.income - fixedExpensesTotal;
     const cashFlowScore = cashFlow > 0 ? "green" : "red";
+    const latestMovement = sortedMovements[0];
+    const businessMovementsThisWeek = sortedMovements.filter((movement) => isDateThisWeek(movement.date || movement.createdAt, currentWeekRange));
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
@@ -1912,6 +2073,10 @@ export default function App() {
           <div className="card insight-card">
             <h3>Lectura CEO</h3>
             <p className="helper-copy">Analisis inteligente de tu situacion actual.</p>
+            <div className="ceo-reading-meta">
+              <span>{businessMovementsThisWeek.length} movimientos registrados esta semana</span>
+              <strong>{latestMovement ? `Ultimo: ${formatShortDate(latestMovement.date || latestMovement.createdAt)}` : "Sin movimientos aun"}</strong>
+            </div>
             {insights.map((insight) => <p key={insight} style={{borderLeft:"3px solid var(--pink)",paddingLeft:"12px",margin:"8px 0"}}>{insight}</p>)}
           </div>
         </div>
@@ -2088,6 +2253,10 @@ export default function App() {
             <select value={clientForm.status} onChange={(e) => updateClientForm("status", e.target.value)}>
               {stages.map((s) => <option key={s}>{s}</option>)}
             </select>
+            <label className="inline-date-field">
+              <span>Último contacto</span>
+              <input type="date" value={clientForm.lastContactDate} onChange={(e) => updateClientForm("lastContactDate", e.target.value)} />
+            </label>
             <input placeholder="Proxima accion" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} />
             <input placeholder="Monto potencial" type="number" min="0" value={clientForm.amount} onChange={(e) => updateClientForm("amount", e.target.value)} required />
             <select value={clientForm.source} onChange={(e) => updateClientForm("source", e.target.value)}>
@@ -2125,8 +2294,10 @@ export default function App() {
                         {client.source && <small style={{color:"var(--purple)",fontWeight:700}}>{client.source}</small>}
                         <p>{client.nextAction || "Hacer seguimiento"}</p>
                         <small className="last-contact">
-                          {client.lastContact ? `Hace ${days} dia${days !== 1 ? "s" : ""}` : "Sin contacto"}
+                          {client.lastContact ? `Último contacto: ${formatShortDate(client.lastContactDate || client.lastContact)} · hace ${days} dia${days !== 1 ? "s" : ""}` : "Sin contacto"}
                         </small>
+                        <input className="client-date-input" type="date" value={inputDateFromValue(client.lastContactDate || client.lastContact)} onChange={(e) => updateClientLastContact(client.id, e.target.value)} aria-label={`Último contacto de ${client.name}`} />
+                        <small className="last-contact">Actualizado: {formatShortDate(client.updatedAt || client.lastContact)}</small>
                         <div style={{display:"flex",gap:"6px",marginTop:"6px"}}>
                           <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>Contacte hoy</button>
                           <a href={waLink(client)} target="_blank" rel="noreferrer"
@@ -2170,7 +2341,9 @@ export default function App() {
                   <span className={`alert-dot alert-dot-${getAlert(client)}`}></span>
                 </div>
                 {client.source && <small style={{color:"var(--purple)",fontWeight:700}}>{client.source}</small>}
-                <small className="last-contact">{client.lastContact ? `Ultimo contacto: hace ${daysSince(client.lastContact)} dias` : "Sin contacto registrado"}</small>
+                <small className="last-contact">{client.lastContact ? `Último contacto: ${formatShortDate(client.lastContactDate || client.lastContact)} · hace ${daysSince(client.lastContact)} dias` : "Sin contacto registrado"}</small>
+                <input className="client-date-input" type="date" value={inputDateFromValue(client.lastContactDate || client.lastContact)} onChange={(e) => updateClientLastContact(client.id, e.target.value)} aria-label={`Último contacto de ${client.name}`} />
+                <small className="last-contact">Actualizado: {formatShortDate(client.updatedAt || client.lastContact)}</small>
                 <div style={{display:"flex",gap:"6px"}}>
                   <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>Contacte hoy</button>
                   <a href={waLink(client)} target="_blank" rel="noreferrer"
@@ -2355,6 +2528,11 @@ export default function App() {
             <small>{mentalLoad} pendientes</small>
           </div>
           <div className="client-kpi">
+            <span>Pagos por hacer esta semana</span>
+            <strong style={{color: homePaymentsThisWeek.length ? "var(--orange)" : "var(--green)"}}>{homePaymentsThisWeek.length}</strong>
+            <small>{homePaymentsThisWeek.length ? `(${homePaymentsThisWeek.slice(0, 2).map((p) => p.description).join(" y ")}${homePaymentsThisWeek.length > 2 ? "..." : ""})` : "sin pagos pendientes"}</small>
+          </div>
+          <div className="client-kpi">
             <span>Disponible familiar</span>
             <strong style={{fontSize:"14px"}}>{money.format(homeAvailable)}</strong>
             <small>despues de gastos</small>
@@ -2483,6 +2661,7 @@ export default function App() {
                 <select value={homeBudgetForm.type} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, type: e.target.value }))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
                 <input placeholder="Descripcion" value={homeBudgetForm.description} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, description: e.target.value }))} />
                 <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, amount: e.target.value }))} />
+                <input type="date" value={homeBudgetForm.dueDate} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, dueDate: e.target.value }))} />
                 <button className="primary-button" type="submit">Agregar</button>
               </form>
               <div className="home-money-insights">
@@ -2495,7 +2674,19 @@ export default function App() {
                 <span style={{width:`${Math.min(100, homeBudgetTotals.income ? (homeSpent/homeBudgetTotals.income)*100 : 0)}%`}}></span>
                 <small>Gastado vs ingresos del hogar</small>
               </div>
-              <div className="budget-list">{homeBudget.map((item) => <DataRow key={item.id} title={item.description} meta={item.type} value={money.format(item.amount)} onDelete={() => setHomeBudget((c) => c.filter((r) => r.id !== item.id))} />)}</div>
+              <div className="budget-list">
+                {homeBudget.map((item) => (
+                  <div className="home-budget-row" key={item.id}>
+                    <div>
+                      <strong>{item.description}</strong>
+                      <small>{item.type} · pago: {formatShortDate(item.dueDate || item.createdAt)}</small>
+                    </div>
+                    <input type="date" value={inputDateFromValue(item.dueDate || item.createdAt)} onChange={(e) => updateHomeBudgetDate(item.id, e.target.value)} aria-label={`Fecha de pago de ${item.description}`} />
+                    <b>{money.format(item.amount)}</b>
+                    <button className="row-delete" type="button" onClick={() => setHomeBudget((c) => c.filter((r) => r.id !== item.id))}>×</button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -2759,6 +2950,7 @@ export default function App() {
           )}
         </select>
         <select value={form.bank} onChange={(event) => updateForm("bank", event.target.value)}>{banks.map((bank) => <option key={bank}>{bank}</option>)}</select>
+        <input type="date" value={form.date} onChange={(event) => updateForm("date", event.target.value)} />
         <input placeholder="Monto" type="number" min="0" value={form.amount} onChange={(event) => updateForm("amount", event.target.value)} />
         <button className="primary-button" type="submit">Guardar movimiento</button>
       </form>
@@ -2826,13 +3018,15 @@ export default function App() {
     return (
       <div className={`card movement-card ${compact ? "compact" : ""}`}>
         <h3>Últimos movimientos</h3>
-        {movements.slice(0, 10).map((movement) => (
+        {sortedMovements.slice(0, 10).map((movement) => (
           <div className="movement-row" key={movement.id}>
             <span className={movement.type}>{movement.type === "income" ? "+" : "-"}</span>
             <div>
               <strong>{movement.description}</strong>
               <small>{movement.classification} • {movement.category} • {movement.bank || "Sin banco"}</small>
+              <small>Fecha: {formatShortDate(movement.date || movement.createdAt)}</small>
             </div>
+            <input className="movement-date-input" type="date" value={inputDateFromValue(movement.date || movement.createdAt)} onChange={(event) => updateMovementDate(movement.id, event.target.value)} aria-label={`Fecha de ${movement.description}`} />
             <b>{money.format(movement.amount)}</b>
             <button className="row-delete" type="button" onClick={() => confirmDelete("¿Eliminar este movimiento?", () => setMovements((current) => current.filter((item) => item.id !== movement.id)))}>×</button>
           </div>
@@ -2873,27 +3067,28 @@ export default function App() {
     // Filtrar datos por semana actual
     const isInWeek = (timestamp, week) => timestamp >= week.start && timestamp <= week.end;
 
-    const currentMovements = movements.filter((m) => m.createdAt && isInWeek(m.createdAt, currentWeek));
-    const previousMovements = movements.filter((m) => m.createdAt && isInWeek(m.createdAt, previousWeek));
+    const currentMovements = sortedMovements.filter((m) => isInWeek(timestampFromInputDate(m.date || m.createdAt), currentWeek));
+    const previousMovements = sortedMovements.filter((m) => isInWeek(timestampFromInputDate(m.date || m.createdAt), previousWeek));
 
     const currentClients = clients.filter((c) => c.createdAt && isInWeek(c.createdAt, currentWeek));
-    const previousClients = clients.filter((c) => c.createdAt && isInWeek(c.createdAt, previousWeek));
 
     const currentIncome = currentMovements.filter((m) => m.type === "income").reduce((sum, m) => sum + m.amount, 0);
     const previousIncome = previousMovements.filter((m) => m.type === "income").reduce((sum, m) => sum + m.amount, 0);
     const incomeChange = previousIncome > 0 ? Math.round(((currentIncome - previousIncome) / previousIncome) * 100) : 0;
+    const currentExpenses = currentMovements.filter((m) => m.type === "expense").reduce((sum, m) => sum + m.amount, 0);
+    const currentProfit = currentIncome - currentExpenses;
 
-    const currentWon = currentClients.filter((c) => c.status === "Venta ganada").length;
-    const previousWon = previousClients.filter((c) => c.status === "Venta ganada").length;
+    const currentWon = clients.filter((c) => c.status === "Venta ganada" && isInWeek(timestampFromInputDate(c.updatedAt || c.lastContact || c.createdAt), currentWeek)).length;
+    const previousWon = clients.filter((c) => c.status === "Venta ganada" && isInWeek(timestampFromInputDate(c.updatedAt || c.lastContact || c.createdAt), previousWeek)).length;
     const wonChange = previousWon > 0 ? Math.round(((currentWon - previousWon) / previousWon) * 100) : 0;
 
     const currentContactsThisWeek = Object.values(contactLog).filter((e) => {
-      const contactDate = new Date(e.date).getTime();
+      const contactDate = timestampFromInputDate(e.date);
       return contactDate >= currentWeek.start && contactDate <= currentWeek.end;
     }).length;
 
     const previousContactsCount = Object.values(contactLog).filter((e) => {
-      const contactDate = new Date(e.date).getTime();
+      const contactDate = timestampFromInputDate(e.date);
       return contactDate >= previousWeek.start && contactDate <= previousWeek.end;
     }).length;
 
@@ -2915,7 +3110,8 @@ export default function App() {
     // Mejor día de ingresos
     const incomeByDay = {};
     currentMovements.filter((m) => m.type === "income").forEach((m) => {
-      const day = new Date(m.createdAt).toLocaleDateString('es', { weekday: 'long' });
+      const movementDay = parseDateValue(m.date || m.createdAt) || new Date();
+      const day = movementDay.toLocaleDateString('es', { weekday: 'long' });
       incomeByDay[day] = (incomeByDay[day] || 0) + m.amount;
     });
     const bestDay = Object.entries(incomeByDay).sort((a, b) => b[1] - a[1])[0];
@@ -3084,18 +3280,18 @@ export default function App() {
           {/* Resumen ventas */}
           <div className="card purpose-block">
             <h3>📊 Ventas esta semana</h3>
-            <div className="purpose-stat"><span>Ingresos registrados</span><strong>{money.format(totals.income)}</strong></div>
-            <div className="purpose-stat"><span>Utilidad</span><strong style={{color: totals.profit >= 0 ? "var(--green)" : "var(--pink)"}}>{money.format(totals.profit)}</strong></div>
+            <div className="purpose-stat"><span>Ingresos registrados</span><strong>{money.format(currentIncome)}</strong></div>
+            <div className="purpose-stat"><span>Utilidad</span><strong style={{color: currentProfit >= 0 ? "var(--green)" : "var(--pink)"}}>{money.format(currentProfit)}</strong></div>
             {(() => {
               const totalFees = incomeSources.reduce((sum, src) => {
-                const actual = movements.filter((m) => m.type === "income" && m.classification === src.name).reduce((s, m) => s + m.amount, 0);
+                const actual = currentMovements.filter((m) => m.type === "income" && m.classification === src.name).reduce((s, m) => s + m.amount, 0);
                 return sum + calcFee(actual, src.platform);
               }, 0);
               if (totalFees === 0) return null;
               return (
                 <>
                   <div className="purpose-stat"><span>Fees de plataformas</span><strong style={{color:"var(--pink)"}}>-{money.format(totalFees)}</strong></div>
-                  <div className="purpose-stat"><span>Ingreso neto real</span><strong style={{color:"var(--green)"}}>{money.format(totals.income - totalFees)}</strong></div>
+                  <div className="purpose-stat"><span>Ingreso neto real</span><strong style={{color:"var(--green)"}}>{money.format(currentIncome - totalFees)}</strong></div>
                 </>
               );
             })()}
@@ -3105,6 +3301,15 @@ export default function App() {
             <div className="purpose-stat"><span>Contactos realizados</span><strong style={{color:"var(--green)"}}>{contactsThisWeek} esta semana</strong></div>
             <ProgressLabel label="Meta contactos (5)" value={Math.min(Math.round((contactsThisWeek/5)*100),100)} tone="green" />
             {incomePerHour > 0 && <div className="purpose-stat"><span>Ingreso por hora</span><strong>{money.format(incomePerHour)}</strong></div>}
+            <div className="weekly-movement-list">
+              <small>Movimientos de la semana</small>
+              {currentMovements.slice(0, 4).map((movement) => (
+                <span key={movement.id}>
+                  {formatShortDate(movement.date || movement.createdAt)} · {movement.description} · {movement.type === "income" ? "+" : "-"}{money.format(movement.amount)}
+                </span>
+              ))}
+              {currentMovements.length === 0 && <span>Sin movimientos registrados en esta semana.</span>}
+            </div>
           </div>
 
           {/* Recordatorios WhatsApp */}
