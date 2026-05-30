@@ -180,13 +180,13 @@ const promesas = [
 ];
 
 const menu = [
-  { id: "dashboard", label: "Dashboard", icon: "🏠" },
-  { id: "business", label: "Negocio", icon: "💼" },
-  { id: "clients", label: "Clientes", icon: "👩‍💼" },
-  { id: "content", label: "Contenido", icon: "📱" },
-  { id: "home", label: "Hogar", icon: "🌸" },
-  { id: "ceo", label: "Propósito & Impacto", icon: "✨" },
-  { id: "report", label: "Reporte semanal", icon: "📊" }
+  { id: "dashboard", label: "Mi enfoque", icon: "🧭" },
+  { id: "content", label: "Mi Studio", icon: "🎨" },
+  { id: "business", label: "Mi negocio", icon: "💼" },
+  { id: "clients", label: "Mis clientes", icon: "🤝" },
+  { id: "home", label: "Mi hogar", icon: "🏡" },
+  { id: "ceo", label: "Mi propósito", icon: "✨" },
+  { id: "report", label: "Cierre semanal", icon: "📝" }
 ];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
@@ -977,7 +977,18 @@ export default function App() {
           applyLoadedState(createBlankUserState());
           const remoteState = await loadRemoteState();
           if (cancelled) return;
-          applyLoadedState(remoteState || createBlankUserState());
+          const storedState = loadState();
+          let mergedState = remoteState || createBlankUserState();
+          if ((!remoteState || !remoteState.profileSetup) && storedState?.profileSetup) {
+            mergedState = {
+              ...mergedState,
+              profileSetup: storedState.profileSetup,
+              businessSettings: mergedState.businessSettings || storedState.businessSettings || { ...initialBusinessSettings },
+              userPlan: mergedState.userPlan || storedState.userPlan || "free",
+              premiumExpiresAt: mergedState.premiumExpiresAt || storedState.premiumExpiresAt || null
+            };
+          }
+          applyLoadedState(mergedState);
           setCloudReadyUserId(user.id);
           setSyncError("");
         } else {
@@ -1034,6 +1045,12 @@ export default function App() {
       premiumExpiresAt
     };
 
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+    } catch (err) {
+      console.error("Error guardando en localStorage:", err);
+    }
+
     if (user && supabaseActive) {
       if (isRestoringRemote || cloudReadyUserId !== user.id) return;
       setIsSyncing(true);
@@ -1044,12 +1061,6 @@ export default function App() {
           setSyncError("No se pudo guardar en la nube de forma segura. Evita cargar datos reales hasta terminar el ajuste de AWS.");
         })
         .finally(() => setIsSyncing(false));
-    } else if (!supabaseActive) {
-      try {
-        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-      } catch (err) {
-        console.error("Error guardando en localStorage:", err);
-      }
     }
   }, [ready, user, supabaseActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, profileSetup, systemTasks, maternalTasks, wellnessTasks, weekBlocks]);
 
@@ -1321,7 +1332,7 @@ export default function App() {
     setTimeout(() => setProfileSaved(false), 4000);
   };
 
-  const activeLabel = menu.find((item) => item.id === activeView)?.label || "Dashboard";
+  const activeLabel = menu.find((item) => item.id === activeView)?.label || "Mi enfoque";
 
   if (!ready || isRestoringRemote) {
     return (
@@ -1977,7 +1988,7 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Negocio</h2>
+          <h2>Mi negocio</h2>
           <p>{profileSetup?.businessName || "Tu negocio"} â€¢ {profileSetup?.stage || ""}</p>
         </div>
 
@@ -2162,7 +2173,7 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Clientes</h2>
+          <h2>Mis clientes</h2>
           <p>{activeClients} activas - {money.format(wonSalesTotal)} en ventas cerradas</p>
         </div>
 
@@ -2373,8 +2384,8 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Contenido</h2>
-          <p>{publishedContent} publicadas - {contentItems.length} piezas en pipeline</p>
+          <h2>Mi Studio</h2>
+          <p>{publishedContent} publicadas - {contentItems.length} ideas en flujo creativo</p>
         </div>
 
         {/* KPIs */}
@@ -2410,12 +2421,12 @@ export default function App() {
           )}
           {daysSincePublish !== null && daysSincePublish > 3 && (
             <div className="alert-banner alert-orange">
-              Llevas {daysSincePublish} dias sin publicar. Tu audiencia te extrana - una pieza simple hoy vale mas que la perfeccion manana.
+              Llevas {daysSincePublish} días sin publicar. Tu audiencia te extraña — una pieza simple hoy vale más que la perfección mañana.
             </div>
           )}
           {daysSincePublish === null && contentItems.length === 0 && (
             <div className="alert-banner alert-orange">
-              Aun no tienes contenido registrado. Empieza con una pieza simple que venda, no con perfeccion.
+              Aún no tienes contenido aquí. Empieza con una pieza simple que conecte y te libere de la perfección.
             </div>
           )}
           {oldPending.length > 0 && (
@@ -2511,7 +2522,7 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Hogar</h2>
+          <h2>Mi hogar</h2>
           <p>{completedHomeTasks}/{homeTasks.length} tareas completadas esta semana</p>
         </div>
 
@@ -2710,7 +2721,7 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Propósito &amp; Impacto</h2>
+          <h2>Mi propósito</h2>
           <p>Mide lo que realmente importa — presencia, energía, sistemas e impacto</p>
         </div>
 
@@ -3177,7 +3188,7 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Reporte semanal</h2>
+          <h2>Cierre semanal</h2>
           <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}}>
             <button type="button" onClick={() => setReportWeekOffset(reportWeekOffset - 1)}
               style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Anterior</button>
