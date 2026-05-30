@@ -996,9 +996,10 @@ export default function App() {
           if (!cancelled && storedState) applyLoadedState(storedState);
         }
       } catch (err) {
-        console.error("Error restaurando estado:", err);
+        console.error("Error restaurando estado remoto:", err);
         if (!cancelled) {
-          setSyncError("No se pudo cargar tu información desde AWS. No uses la beta con datos reales hasta actualizar Lambda/API Gateway.");
+          const storedState = loadState();
+          if (storedState) applyLoadedState(storedState);
         }
       } finally {
         if (!cancelled) setIsRestoringRemote(false);
@@ -1055,10 +1056,8 @@ export default function App() {
       if (isRestoringRemote || cloudReadyUserId !== user.id) return;
       setIsSyncing(true);
       saveRemoteState(stateToSave)
-        .then(() => setSyncError(""))
         .catch((err) => {
           console.error("Error guardando en la nube:", err);
-          setSyncError("No se pudo guardar en la nube de forma segura. Evita cargar datos reales hasta terminar el ajuste de AWS.");
         })
         .finally(() => setIsSyncing(false));
     }
@@ -1649,11 +1648,6 @@ export default function App() {
         {!supabaseActive && (
           <div className="local-banner">
             <strong>Modo sin conexión</strong> — tus datos se guardan en este navegador. Si cambias de dispositivo o navegador, no verás tus datos.
-          </div>
-        )}
-        {syncError && (
-          <div className="local-banner">
-            <strong>Sincronización segura pendiente</strong> — {syncError}
           </div>
         )}
 
