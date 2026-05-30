@@ -278,12 +278,24 @@ function getMonthWeekInfo(baseDate = new Date()) {
   };
 }
 
-function loadState() {
+function getStorageKey(userId = null) {
+  return userId ? `${STORAGE_KEY}-${userId}` : STORAGE_KEY;
+}
+
+function loadState(userId = null) {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(getStorageKey(userId));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
+  }
+}
+
+function saveState(data, userId = null) {
+  try {
+    window.localStorage.setItem(getStorageKey(userId), JSON.stringify(data));
+  } catch (err) {
+    console.error("Error guardando en localStorage:", err);
   }
 }
 
@@ -514,6 +526,12 @@ export default function App() {
   const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "", date: getTodayInputValue() });
   const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue() });
   const [contentFilter, setContentFilter] = useState("");
+  const [studioTab, setStudioTab] = useState("overview");
+  const [selectedStudioProduct, setSelectedStudioProduct] = useState(null);
+  const [savedStudioRoute, setSavedStudioRoute] = useState(stored?.savedStudioRoute || null);
+  const [studioSolutionForm, setStudioSolutionForm] = useState({ purpose: "", mission: "", audience: "", transformation: "" });
+  const [studioScriptTopic, setStudioScriptTopic] = useState("");
+  const [studioRouteSaved, setStudioRouteSaved] = useState(false);
   const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
   const [clientSearch, setClientSearch] = useState("");
@@ -710,7 +728,6 @@ export default function App() {
   const signOut = async () => {
     await supabase.auth.signOut();
     setCloudReadyUserId(null);
-    window.localStorage.removeItem(STORAGE_KEY);
     setUser(null);
   };
 
@@ -962,6 +979,7 @@ export default function App() {
     setProfileSetup(state.profileSetup || null);
     setProfileForm(state.profileSetup ? { ...initialProfileForm, ...state.profileSetup } : { ...initialProfileForm });
     setGroceryList(state.groceryList || []);
+    setSavedStudioRoute(state.savedStudioRoute || null);
     setUserPlan(state.userPlan || "free");
     setPremiumExpiresAt(state.premiumExpiresAt || null);
   };
@@ -977,7 +995,7 @@ export default function App() {
           applyLoadedState(createBlankUserState());
           const remoteState = await loadRemoteState();
           if (cancelled) return;
-          const storedState = loadState();
+                const storedState = loadState(user.id);
           let mergedState = remoteState || createBlankUserState();
           if ((!remoteState || !remoteState.profileSetup) && storedState?.profileSetup) {
             mergedState = {
@@ -1042,15 +1060,12 @@ export default function App() {
       purpose,
       profileSetup,
       groceryList,
+      savedStudioRoute,
       userPlan,
       premiumExpiresAt
     };
 
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-    } catch (err) {
-      console.error("Error guardando en localStorage:", err);
-    }
+    saveState(stateToSave, user?.id);
 
     if (user && supabaseActive) {
       if (isRestoringRemote || cloudReadyUserId !== user.id) return;
@@ -1192,6 +1207,7 @@ export default function App() {
   };
   const updateClientForm = (field, value) => setClientForm((current) => ({ ...current, [field]: value }));
   const updateContentForm = (field, value) => setContentForm((current) => ({ ...current, [field]: value }));
+  const updateStudioSolutionForm = (field, value) => setStudioSolutionForm((current) => ({ ...current, [field]: value }));
   const updateGoalForm = (field, value) => setGoalForm((current) => ({ ...current, [field]: value }));
   const updateHomeForm = (field, value) => setHomeForm((current) => ({ ...current, [field]: value }));
   const updatePurpose = (field, value) => setPurpose((current) => ({ ...current, [field]: value }));
@@ -1294,6 +1310,145 @@ export default function App() {
   const contactsThisWeek = Object.values(contactLog).filter((e) => timestampFromInputDate(e.date) >= weekStart).length;
   const updateContentStatus = (contentId, status) => {
     setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, status } : item));
+  };
+  const studioProductIdeas = useMemo(() => {
+    const challenge = profileSetup?.mainChallenge || "conseguir clientes";
+    const businessType = profileSetup?.businessType || "Servicios 1:1";
+    const audience = profileSetup?.businessName ? `personas que buscan ${profileSetup.businessName}` : "mamás emprendedoras";
+    return [
+      {
+        id: "curso",
+        label: "Curso rápido",
+        title: `Mini curso para ${challenge}`,
+        description: `Una formación clara y práctica para ${audience} que quiere avanzar con menos ruido.`,
+        productType: "Curso",
+        entryPrice: "$97 - $197",
+        steps: [
+          "Define el resultado transformador en 4 lecciones.",
+          "Diseña recursos simples: video + checklist.",
+          "Crea una propuesta de valor que hable del cambio rápido.",
+          "Lanza con una oferta limitada para validar." 
+        ]
+      },
+      {
+        id: "mentor",
+        label: "Mentoría personalizada",
+        title: `Mentoría de 1:1 para ${challenge}`,
+        description: `Acompaña a una pequeña comunidad y véndelo como experiencia de resultado.`,
+        productType: "Mentoría",
+        entryPrice: "$297 - $597",
+        steps: [
+          "Define quién se beneficia más de tu acompañamiento.",
+          "Estructura sesiones semanales con entregables simples.",
+          "Incluye acciones prácticas y seguimiento.",
+          "Ofrece un plan de 4 semanas con resultados claros." 
+        ]
+      },
+      {
+        id: "ebook",
+        label: "Ebook premium",
+        title: `Guía práctica para ${challenge}`,
+        description: `Un recurso descargable que posiciona tu experiencia y gana autoridad.`,
+        productType: "Ebook",
+        entryPrice: "$19 - $47",
+        steps: [
+          "Escribe 5 capítulos simples con ejemplos reales.",
+          "Incluye plantillas listas para usar.",
+          "Entrega valor inmediato y un ejercicio práctico.",
+          "Promociona como solución concreta en redes." 
+        ]
+      },
+      {
+        id: "membresia",
+        label: "Membresía ligera",
+        title: `Club de apoyo para ${audience}`,
+        description: `Comunidades pequeñas con contenido mensual y soporte práctico.`,
+        productType: "Membresía",
+        entryPrice: "$27 - $57 / mes",
+        steps: [
+          "Define un tema central que resuelva un dolor específico.",
+          "Planifica contenidos breves y reuniones cortas.",
+          "Ofrece plantillas, guías y espacio para preguntas.",
+          "Habla de crecimiento sostenible y acompañamiento." 
+        ]
+      }
+    ];
+  }, [profileSetup]);
+  const studioContentIdeas = useMemo(() => {
+    if (!selectedStudioProduct) return [];
+    return [
+      {
+        title: `Reel: Por qué ${selectedStudioProduct.productType} es la forma más amable de avanzar`,
+        objective: "Conectar con emociones y confianza",
+        format: "Reel",
+        explanation: "Muestra el problema, tu solución rápida y una invitación suave a querer saber más."
+      },
+      {
+        title: `Carrusel: 5 pasos para lograr resultados reales con tu ${selectedStudioProduct.productType.toLowerCase()}`,
+        objective: "Educación y autoridad",
+        format: "Carrusel",
+        explanation: "Divide el proceso en pasos claros para que tu audiencia vea el camino fácil."
+      },
+      {
+        title: `Post educativo: Qué ganarás con un ${selectedStudioProduct.productType.toLowerCase()} bien diseñado`,
+        objective: "Posicionar confianza",
+        format: "Post",
+        explanation: "Explica el resultado, el tiempo y cómo lo entregas sin abrumar."
+      }
+    ];
+  }, [selectedStudioProduct]);
+  const studioMessage = useMemo(() => {
+    const { purpose, mission, audience, transformation } = studioSolutionForm;
+    if (!purpose && !mission && !audience && !transformation) return null;
+    return `Ayudo a ${audience || "mamás emprendedoras"} a ${transformation || "avanzar con menos estrés"} mediante ${purpose || "herramientas prácticas"}, para que ${mission || "logren resultados claros"} en poco tiempo.`;
+  }, [studioSolutionForm]);
+  const createStudioRouteText = (idea) => {
+    const steps = idea?.steps ? idea.steps.map((step, index) => `${index + 1}. ${step}`).join("\n") : "Sigue el plan paso a paso.";
+    return `Mi Studio - Ruta para: ${idea?.title || "producto digital"}\n\nDescripción:\n${idea?.description || "Una idea alineada con tu propósito."}\n\nQué incluir:\n- Resultado claro\n- Estructura simple\n- Entregables accionables\n\nPasos:\n${steps}\n\nPrecio inicial sugerido: ${idea?.entryPrice || "-"}\n\nCómo promocionarlo:\n- Comparte tu mensaje desde el beneficio real.
+- Usa contenido que explique por qué es valioso.
+\nValidación:\n- Ofrece a un pequeño grupo primero.
+- Recoge testimonios y mejora rápido.
+\nOrganización de contenido:\n- Planifica temas para 4 publicaciones.
+- Incluye llamadas a la acción suaves.
+`;
+  };
+  const addProductToStudioCalendar = (idea) => {
+    if (!idea) return;
+    const now = Date.now();
+    setContentItems((current) => [{
+      id: now,
+      title: idea.title,
+      hook: `${idea.productType} para ${profileSetup?.mainChallenge || "avanzar"}`,
+      format: "Reel",
+      network: "Instagram",
+      customNetwork: "",
+      week: "Semana 1",
+      status: "Por hacer",
+      goal: "Vender",
+      createdAt: now
+    }, ...current]);
+    setSelectedStudioProduct(idea);
+    setStudioTab("overview");
+  };
+  const saveStudioRoute = () => {
+    if (!selectedStudioProduct) return;
+    const route = createStudioRouteText(selectedStudioProduct);
+    setSavedStudioRoute({ product: selectedStudioProduct, text: route, savedAt: Date.now() });
+    setStudioRouteSaved(true);
+    setTimeout(() => setStudioRouteSaved(false), 3000);
+  };
+  const downloadStudioRoute = () => {
+    if (!savedStudioRoute) return;
+    const blob = new Blob([savedStudioRoute.text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `${savedStudioRoute.product.title.replace(/\s+/g, "_") || "ruta"}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+  const printStudioRoute = () => {
+    window.print();
   };
   const updateClientNotes = (clientId, notes) => {
     setClients((current) => current.map((client) => client.id === clientId ? { ...client, notes, updatedAt: Date.now() } : client));
@@ -1506,6 +1661,7 @@ export default function App() {
                       await deleteRemoteState();
                       await supabase.auth.signOut();
                     }
+                    window.localStorage.removeItem(getStorageKey(user?.id));
                     window.localStorage.removeItem(STORAGE_KEY);
                     setUser(null);
                     setShowProfileModal(false);
@@ -2365,26 +2521,49 @@ export default function App() {
     );
   }
   function renderContent() {
-    const unpublished = contentItems.filter((i) => i.status !== "Publicado").length;
+    const unpublished = contentItems.filter((i) => i.status === "Por hacer").length;
+    const recorded = contentItems.filter((i) => ["Grabacion", "Edicion"].includes(i.status)).length;
+    const inProduction = contentItems.filter((i) => ["Guion hecho", "Programado"].includes(i.status)).length;
     const byNetwork = contentItems.reduce((acc, i) => { acc[i.network] = (acc[i.network] || 0) + 1; return acc; }, {});
     const topNetwork = Object.entries(byNetwork).sort((a, b) => b[1] - a[1])[0];
-    const publishedThisWeek = contentItems.filter((i) => i.status === "Publicado" && i.week === "Semana 1").length;
     const lastPublished = contentItems.filter((i) => i.status === "Publicado" && i.createdAt).sort((a, b) => b.createdAt - a.createdAt)[0];
     const daysSincePublish = lastPublished ? Math.floor((Date.now() - lastPublished.createdAt) / 86400000) : null;
     const oldPending = contentItems.filter((i) => i.status === "Por hacer" && i.createdAt && Math.floor((Date.now() - i.createdAt) / 86400000) > 7);
     const goalColors = { "Vender": "var(--green)", "Educar": "var(--pink)", "Conectar": "var(--orange)", "Entretener": "#8a7f7a" };
+    const studioTabs = [
+      { id: "overview", label: "Mi Studio" },
+      { id: "solution", label: "Mi Solución" },
+      { id: "products", label: "Mis Contenidos" },
+      { id: "scripts", label: "Mis Guiones" }
+    ];
+    const weeks = ["Semana 1", "Semana 2", "Semana 3", "Semana 4"];
 
 
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Mi Studio</h2>
-          <p>{publishedContent} publicadas - {contentItems.length} ideas en flujo creativo</p>
+          <p>Tu asistente creativa para planificar contenido y productos digitales con calma.</p>
+        </div>
+        <div className="studio-tab-row" style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "20px" }}>
+          {studioTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={studioTab === tab.id ? "studio-tab active" : "studio-tab"}
+              style={{ padding: "10px 16px", borderRadius: "999px", border: studioTab === tab.id ? "1px solid var(--purple)" : "1px solid var(--line)", background: studioTab === tab.id ? "var(--purple-soft)" : "#fff", color: studioTab === tab.id ? "var(--purple)" : "inherit", cursor: "pointer", fontWeight: 700 }}
+              onClick={() => setStudioTab(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* KPIs */}
-        <div className="content-kpi-row">
-          <div className="client-kpi">
+        {studioTab === "overview" && (
+          <>
+            {/* KPIs */}
+            <div className="content-kpi-row">
+              <div className="client-kpi">
             <span>Publicadas</span>
             <strong style={{color:"var(--green)"}}>{publishedContent}</strong>
             <small>piezas listas</small>
@@ -2431,7 +2610,7 @@ export default function App() {
         </div>
 
         {/* Layout principal */}
-        <div className="content-main-layout">
+          <div className="content-main-layout">
 
           {/* Formulario */}
           <form className="card content-form-card" onSubmit={addContent}>
@@ -2501,6 +2680,163 @@ export default function App() {
             {contentItems.length === 0 && <p className="helper-copy" style={{padding:"20px 0"}}>Agrega tu primera pieza de contenido para empezar.</p>}
           </div>
         </div>
+        </>
+        )}
+
+        {studioTab === "solution" && (
+          <div className="studio-solution-section" style={{ display: "grid", gap: "20px" }}>
+            <div className="card" style={{ padding: "24px" }}>
+              <h3>Mi Solución</h3>
+              <p style={{ color: "var(--muted)", marginTop: "8px" }}>Responde estas preguntas y genera un mensaje claro y emocional para tus redes.</p>
+              <div style={{ display: "grid", gap: "16px", marginTop: "20px" }}>
+                <label>
+                  ¿Cuál es tu propósito?
+                  <textarea value={studioSolutionForm.purpose} onChange={(e) => updateStudioSolutionForm("purpose", e.target.value)} placeholder="Ej: ayudar a mamás emprendedoras a vender sin agotarse" rows={2} />
+                </label>
+                <label>
+                  ¿Cuál es tu misión?
+                  <textarea value={studioSolutionForm.mission} onChange={(e) => updateStudioSolutionForm("mission", e.target.value)} placeholder="Ej: enseñar pasos prácticos para crear ofertas con confianza" rows={2} />
+                </label>
+                <label>
+                  ¿A quién ayudas?
+                  <input value={studioSolutionForm.audience} onChange={(e) => updateStudioSolutionForm("audience", e.target.value)} placeholder="Ej: mamás con negocio online que quieren menos estrés" />
+                </label>
+                <label>
+                  ¿Qué transformas?
+                  <textarea value={studioSolutionForm.transformation} onChange={(e) => updateStudioSolutionForm("transformation", e.target.value)} placeholder="Ej: de abrumadas a seguras con un plan sencillo" rows={2} />
+                </label>
+              </div>
+            </div>
+            <div className="card" style={{ padding: "24px" }}>
+              <h4>Mensaje perfecto</h4>
+              {studioMessage ? (
+                <>
+                  <p style={{ margin: "12px 0", lineHeight: 1.7 }}>{studioMessage}</p>
+                  <div style={{ display: "grid", gap: "10px", marginTop: "16px" }}>
+                    <div style={{ padding: "14px", borderRadius: "14px", background: "#fff8f5", border: "1px solid var(--line)" }}>
+                      <strong>Recomendación para redes</strong>
+                      <p style={{ margin: "6px 0 0", color: "var(--muted)" }}>Usa este mensaje como tu bio, presentación corta y pie de post.</p>
+                    </div>
+                    <div style={{ padding: "14px", borderRadius: "14px", background: "#f3f0ff", border: "1px solid var(--purple-soft)" }}>
+                      <strong>Elevator pitch</strong>
+                      <p style={{ margin: "6px 0 0", color: "var(--muted)" }}>Soy {studioSolutionForm.audience || "una mamá emprendedora"} que ayuda a {studioSolutionForm.audience || "otras mamás"} a {studioSolutionForm.transformation || "avanzar con menos estrés"} usando {studioSolutionForm.purpose || "estrategias prácticas"}. En pocas semanas, verán resultados claros sin gastar más tiempo del necesario.</p>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <p style={{ color: "var(--muted)", marginTop: "12px" }}>Completa los campos para generar tu mensaje y elevator pitch.</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {studioTab === "products" && (
+          <div className="studio-products-section" style={{ display: "grid", gap: "20px" }}>
+            <div className="card" style={{ padding: "24px" }}>
+              <h3>Mis Contenidos</h3>
+              <p style={{ color: "var(--muted)", marginTop: "8px" }}>Encuentra ideas estratégicas de productos digitales alineadas con tu propósito.</p>
+            </div>
+            <div className="product-ideas-grid" style={{ display: "grid", gap: "16px" }}>
+              {studioProductIdeas.map((idea) => (
+                <div className="card" key={idea.id} style={{ padding: "20px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
+                    <strong>{idea.title}</strong>
+                    <span style={{ color: "var(--muted)", fontSize: "13px" }}>{idea.productType}</span>
+                  </div>
+                  <p style={{ margin: "12px 0", color: "var(--muted)" }}>{idea.description}</p>
+                  <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
+                    <span className="small-badge">Precio sugerido: {idea.entryPrice}</span>
+                  </div>
+                  <button type="button" className="primary-button" onClick={() => setSelectedStudioProduct(idea)} style={{ width: "100%" }}>Explorar ruta</button>
+                </div>
+              ))}
+            </div>
+            {selectedStudioProduct && (
+              <div className="card" style={{ padding: "24px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "16px", flexWrap: "wrap" }}>
+                  <div>
+                    <h4 style={{ margin: "0 0 8px" }}>{selectedStudioProduct.title}</h4>
+                    <p style={{ margin: 0, color: "var(--muted)" }}>{selectedStudioProduct.description}</p>
+                  </div>
+                  <button type="button" className="primary-button" onClick={() => addProductToStudioCalendar(selectedStudioProduct)} style={{ whiteSpace: "nowrap" }}>Crear en calendario</button>
+                </div>
+                <div style={{ display: "grid", gap: "12px", marginTop: "20px" }}>
+                  {selectedStudioProduct.steps.map((step, index) => (
+                    <div key={index} style={{ padding: "14px", borderRadius: "14px", background: "#fff8f5", border: "1px solid var(--line)" }}>
+                      <strong>Paso {index + 1}</strong>
+                      <p style={{ margin: "6px 0 0", color: "var(--muted)" }}>{step}</p>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ marginTop: "20px", display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  <button type="button" className="primary-button" onClick={saveStudioRoute}>Guardar dentro de la app</button>
+                  <button type="button" onClick={downloadStudioRoute} style={{ padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--line)", background: "#fff" }}>Descargar ruta</button>
+                  <button type="button" onClick={printStudioRoute} style={{ padding: "12px 16px", borderRadius: "12px", border: "1px solid var(--line)", background: "#fff" }}>Imprimir</button>
+                </div>
+                {studioRouteSaved && <p style={{ marginTop: "14px", color: "var(--green)" }}>Ruta guardada en la app.</p>}
+              </div>
+            )}
+            {selectedStudioProduct && (
+              <div className="card" style={{ padding: "24px" }}>
+                <h4>Ideas de contenido</h4>
+                <div style={{ display: "grid", gap: "14px", marginTop: "16px" }}>
+                  {studioContentIdeas.map((idea, index) => (
+                    <div key={index} style={{ padding: "16px", borderRadius: "16px", background: "#fff8f5", border: "1px solid var(--line)" }}>
+                      <strong>{idea.title}</strong>
+                      <p style={{ margin: "8px 0 0", color: "var(--muted)" }}>{idea.explanation}</p>
+                      <small style={{ color: "var(--muted)" }}>Formato: {idea.format} · Objetivo: {idea.objective}</small>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {savedStudioRoute && !selectedStudioProduct && (
+              <div className="card" style={{ padding: "20px" }}>
+                <h4>Ruta guardada</h4>
+                <p style={{ color: "var(--muted)", margin: "8px 0" }}>Tu plan actual está guardado en la app. Selecciona una idea para verla o agrega una nueva.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {studioTab === "scripts" && (
+          <div className="studio-scripts-section" style={{ display: "grid", gap: "20px" }}>
+            <div className="card" style={{ padding: "24px" }}>
+              <h3>Mis Guiones</h3>
+              <p style={{ color: "var(--muted)", marginTop: "8px" }}>Genera hooks, estructura y consejos simples para grabar desde casa.</p>
+              <label style={{ display: "grid", gap: "10px", marginTop: "18px" }}>
+                Tema para tu guión
+                <input value={studioScriptTopic} onChange={(e) => setStudioScriptTopic(e.target.value)} placeholder="Ej: Ventas sin presión para mamás" />
+              </label>
+            </div>
+            <div className="card" style={{ padding: "24px" }}>
+              <h4>Guión sugerido</h4>
+              <div style={{ marginTop: "16px", display: "grid", gap: "14px" }}>
+                <div style={{ padding: "16px", borderRadius: "16px", background: "#fff8f5", border: "1px solid var(--line)" }}>
+                  <strong>Hook</strong>
+                  <p style={{ margin: "8px 0 0", color: "var(--muted)" }}>¿Cansada de sentir que debes hacerlo todo? Este método te permite crear contenidos con menos estrés y más claridad.</p>
+                </div>
+                <div style={{ padding: "16px", borderRadius: "16px", background: "#f3f0ff", border: "1px solid var(--purple-soft)" }}>
+                  <strong>Deseo</strong>
+                  <p style={{ margin: "8px 0 0", color: "var(--muted)" }}>Imagina tener una idea lista en minutos, grabarla con el celular y publicar sin bloqueo creativo.</p>
+                </div>
+                <div style={{ padding: "16px", borderRadius: "16px", background: "#fff8f5", border: "1px solid var(--line)" }}>
+                  <strong>Acción</strong>
+                  <p style={{ margin: "8px 0 0", color: "var(--muted)" }}>Graba este clip hoy, etiquétalo con una invitación suave y comparte tu siguiente paso.</p>
+                </div>
+              </div>
+            </div>
+            <div className="card" style={{ padding: "24px", display: "grid", gap: "16px" }}>
+              <h4>Consejos para grabar desde casa</h4>
+              <ul style={{ paddingLeft: "18px", margin: 0, color: "var(--muted)" }}>
+                <li>Elige un lugar tranquilo y con luz natural suave.</li>
+                <li>Usa tu mano o un trípode sencillo para estabilizar la cámara.</li>
+                <li>Habla despacio y con confianza, como si contaras a una amiga.</li>
+                <li>Haz una prueba de audio: hablar cerca del celular ayuda.</li>
+              </ul>
+            </div>
+          </div>
+        )}
       </section>
     );
   }
