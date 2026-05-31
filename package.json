@@ -11,6 +11,7 @@
     "deploy:aws": "powershell -NoProfile -ExecutionPolicy Bypass -File ./deploy-aws.ps1"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.106.2",
     "aws-amplify": "^6.17.0",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
