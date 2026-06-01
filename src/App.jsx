@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
-import { awsAuth, getAwsAuthToken, isAwsConfigured } from "./lib/awsClient";
+import { awsAuth, getAwsAuthToken, isAwsConfigured, confirmAwsResetPassword } from "./lib/awsClient";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -424,7 +424,7 @@ async function getRemoteAuthHeaders(includeJson = false) {
 
 async function loadRemoteState() {
   const headers = await getRemoteAuthHeaders();
-  const res = await fetch(API_URL, { headers });
+  const res = await fetch(API_URL, { mode: "cors", headers });
   if (!res.ok) throw new Error(`AWS respondi� ${res.status}`);
   const json = await res.json();
   return json.data ?? null;
@@ -433,6 +433,7 @@ async function loadRemoteState() {
 async function saveRemoteState(data) {
   const headers = await getRemoteAuthHeaders(true);
   const res = await fetch(API_URL, {
+    mode: "cors",
     method: "POST",
     headers,
     body: JSON.stringify({ data })
@@ -443,6 +444,7 @@ async function saveRemoteState(data) {
 async function deleteRemoteState() {
   const headers = await getRemoteAuthHeaders();
   const res = await fetch(API_URL, {
+    mode: "cors",
     method: "DELETE",
     headers
   });
@@ -503,6 +505,7 @@ export default function App() {
   const [syncError, setSyncError] = useState("");
   const [isRestoringRemote, setIsRestoringRemote] = useState(false);
   const [cloudReadyUserId, setCloudReadyUserId] = useState(null);
+  const [remoteStorageEnabled, setRemoteStorageEnabled] = useState(true);
   const awsActive = isAwsConfigured;
   const [businessSettings, setBusinessSettings] = useState({
     ...initialBusinessSettings,
@@ -812,11 +815,14 @@ export default function App() {
     setAuthError("");
     setAuthLoading(true);
     try {
-      const { confirmResetPassword } = await import('aws-amplify/auth');
-      await confirmResetPassword({ username: resetEmail, confirmationCode: resetCode, newPassword: resetNewPassword });
-      setResetPassword(false);
-      setResetStep(1);
-      setAuthError("? Contrase�a actualizada. Ya puedes iniciar sesi�n.");
+      const { error } = await confirmAwsResetPassword({ email: resetEmail, code: resetCode, newPassword: resetNewPassword });
+      if (error) {
+        setAuthError(translateError(error.message));
+      } else {
+        setResetPassword(false);
+        setResetStep(1);
+        setAuthError("? Contrase�a actualizada. Ya puedes iniciar sesi�n.");
+      }
     } catch (err) {
       setAuthError(translateError(err.message));
     } finally {
@@ -969,7 +975,7 @@ export default function App() {
     let cancelled = false;
     const restore = async () => {
       try {
-        if (user && awsActive) {
+        if (user && awsActive && remoteStorageEnabled) {
           setIsRestoringRemote(true);
           setCloudReadyUserId(null);
           applyLoadedState(createBlankUserState());
@@ -980,12 +986,16 @@ export default function App() {
           setSyncError("");
         } else {
           const storedState = loadState();
-          if (!cancelled && storedState) applyLoadedState(storedState);
+          if (!cancelled) applyLoadedState(storedState || createBlankUserState());
         }
       } catch (err) {
         console.error("Error restaurando estado:", err);
         if (!cancelled) {
-          setSyncError("No se pudo cargar tu informaci�n desde AWS. No uses la beta con datos reales hasta actualizar Lambda/API Gateway.");
+          setRemoteStorageEnabled(false);
+          setSyncError("No se pudo cargar tu informaci�n desde AWS. Usando almacenamiento local por ahora.");
+          const storedState = loadState();
+          if (storedState) applyLoadedState(storedState);
+          else applyLoadedState(createBlankUserState());
         }
       } finally {
         if (!cancelled) setIsRestoringRemote(false);
@@ -995,12 +1005,15 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [ready, user, awsActive]);
+  }, [ready, user, awsActive, remoteStorageEnabled]);
 
   useEffect(() => {
-    if (!ready || !user || isRestoringRemote) return;
-    const hasSeenModal = window.sessionStorage.getItem('profile-modal-seen'); if (!profileSetup `&`& !hasSeenModal) { setShowProfileModal(true); window.sessionStorage.setItem('profile-modal-seen', 'true'); }
-    
+    if (!ready) return;
+    const hasSeenModal = window.sessionStorage.getItem('profile-modal-seen');
+    if (!profileSetup && !hasSeenModal) {
+      setShowProfileModal(true);
+      window.sessionStorage.setItem('profile-modal-seen', 'true');
+    }
   }, [ready, user, isRestoringRemote, profileSetup]);
 
   useEffect(() => {
@@ -1032,17 +1045,23 @@ export default function App() {
       premiumExpiresAt
     };
 
-    if (user && awsActive) {
+    if (user && awsActive && remoteStorageEnabled) {
       if (isRestoringRemote || cloudReadyUserId !== user.id) return;
       setIsSyncing(true);
       saveRemoteState(stateToSave)
         .then(() => setSyncError(""))
         .catch((err) => {
           console.error("Error guardando en la nube:", err);
-          setSyncError("No se pudo guardar en la nube de forma segura. Evita cargar datos reales hasta terminar el ajuste de AWS.");
+          setRemoteStorageEnabled(false);
+          setSyncError("No se pudo guardar en la nube de forma segura. Usando almacenamiento local por ahora.");
+          try {
+            window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+          } catch (err2) {
+            console.error("Error guardando en localStorage tras falla de AWS:", err2);
+          }
         })
         .finally(() => setIsSyncing(false));
-    } else if (!awsActive) {
+    } else {
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
       } catch (err) {
@@ -1484,7 +1503,7 @@ export default function App() {
                   if (!window.confirm("\u00bfEst�s segura de que quieres eliminar tu cuenta? Esta acci�n no se puede deshacer y perder�s todos tus datos.")) return;
                   if (!window.confirm("\u00daltima confirmaci�n: se eliminar�n todos tus datos permanentemente.")) return;
                   try {
-                    if (user && awsActive) {
+                    if (user && awsActive && remoteStorageEnabled) {
                       await deleteRemoteState();
                       await awsAuth.signOut();
                     }
@@ -1615,7 +1634,7 @@ export default function App() {
           </div>
           <div className="profile-area">
             {isSyncing && <div className="status-chip syncing">Guardando�</div>}
-            {!awsActive && !isSyncing && <div className="status-chip">Modo local</div>}
+            {(!awsActive || !remoteStorageEnabled) && !isSyncing && <div className="status-chip">Modo local</div>}
             <button className="profile-edit-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
               <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
               <span className="profile-edit-name">{profileSetup?.name || "Mi perfil"}</span>

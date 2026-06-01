@@ -2,18 +2,17 @@ import { Amplify } from 'aws-amplify';
 import {
   signIn, signUp, signOut, confirmSignUp,
   getCurrentUser, fetchAuthSession, resetPassword,
-  updatePassword
+  updatePassword, confirmResetPassword
 } from 'aws-amplify/auth';
 
 Amplify.configure({
   Auth: {
-    Cognito: {
-      userPoolId: 'us-east-1_ZvJgj7iG1',
-      userPoolClientId: '5hjqj36u9oeud7cs8onj93d36j',
-      loginWith: {
-        email: true
-      }
-    }
+    region: 'us-east-1',
+    userPoolId: 'us-east-1_ZvJgj7iG1',
+    userPoolWebClientId: '5hjqj36u9oeud7cs8onj93d36j',
+    mandatorySignIn: false,
+    authenticationFlowType: 'USER_PASSWORD_AUTH',
+    loginMechanisms: ['EMAIL']
   }
 });
 
@@ -103,3 +102,12 @@ export const awsAuth = {
     }
   }
 };
+
+export async function confirmAwsResetPassword({ email, code, newPassword }) {
+  try {
+    await confirmResetPassword({ username: email, confirmationCode: code, newPassword });
+    return { error: null };
+  } catch (err) {
+    return { error: { message: err.message } };
+  }
+}
