@@ -1,7 +1,7 @@
 param(
   [string]$Bucket = $env:AWS_S3_BUCKET,
   [string]$DistributionId = $env:AWS_CLOUDFRONT_DISTRIBUTION_ID,
-  [string]$Profile = $env:AWS_PROFILE
+  [string]$AwsProfile = $env:AWS_PROFILE
 )
 
 if (-not (Get-Command aws -ErrorAction SilentlyContinue)) {
@@ -23,7 +23,7 @@ if ($LASTEXITCODE -ne 0) {
 
 Write-Host "Sincronizando ./dist con s3://$Bucket ..." -ForegroundColor Cyan
 $syncArgs = @("s3", "sync", "./dist", "s3://$Bucket", "--delete", "--acl", "public-read", "--cache-control", "max-age=3600,public")
-if ($Profile) { $syncArgs += @("--profile", $Profile) }
+if ($AwsProfile) { $syncArgs += @("--profile", $AwsProfile) }
 aws @syncArgs
 if ($LASTEXITCODE -ne 0) {
   Write-Error "La sincronización con S3 falló."
@@ -33,7 +33,7 @@ if ($LASTEXITCODE -ne 0) {
 if ($DistributionId) {
   Write-Host "Invalidando cache de CloudFront ($DistributionId)..." -ForegroundColor Cyan
   $invArgs = @("cloudfront", "create-invalidation", "--distribution-id", $DistributionId, "--paths", "/*")
-  if ($Profile) { $invArgs += @("--profile", $Profile) }
+  if ($AwsProfile) { $invArgs += @("--profile", $AwsProfile) }
   aws @invArgs
   if ($LASTEXITCODE -ne 0) {
     Write-Warning "No se pudo invalidar CloudFront. Verifica el Distribution ID o tus permisos."
