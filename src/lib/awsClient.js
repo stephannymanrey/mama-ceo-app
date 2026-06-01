@@ -22,7 +22,7 @@ try {
   console.warn('Amplify configuration warning:', err.message);
 }
 
-export const isAwsConfigured = amplifyConfigured;
+export const isAwsConfigured = false;
 
 export async function getAwsAuthToken() {
   try {
