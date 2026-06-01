@@ -1,12 +1,8 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { awsAuth, isAwsConfigured } from "./lib/awsClient";
+﻿import React, { useEffect, useMemo, useState } from "react";
+import { supabase, isSupabaseConfigured } from "./lib/supabaseClient";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
-const STUDIO_TAB_KEY = "mama-studio-active-tab";
-const STUDIO_DRAFT_KEY = "mama-studio-draft";
-const STUDIO_TEMPLATES_KEY = "mama-studio-templates";
-const STUDIO_FOCUSABLES = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
 
 // Sistema de planes
 const PLAN_LIMITS = {
@@ -215,16 +211,27 @@ function loadState() {
   }
 }
 
-// async function loadRemoteState(userId) {
-//   if (!userId) return null;
-//   // Remote state load será implementado en Lambda / DynamoDB
-//   return null;
-// }
+async function loadRemoteState(userId) {
+  if (!userId) return null;
+  const { data, error } = await supabase
+    .from("user_states")
+    .select("data")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("Error cargando estado remoto:", error);
+    return null;
+  }
+  return data?.data ?? null;
+}
 
-// async function saveRemoteState(userId, data) {
-//   if (!userId) return;
-//   // Remote state sync será implementado en Lambda / DynamoDB
-// }
+async function saveRemoteState(userId, data) {
+  if (!userId) return;
+  const { error } = await supabase
+    .from("user_states")
+    .upsert({ user_id: userId, data }, { onConflict: "user_id" });
+  if (error) console.error("Error guardando estado remoto:", error);
+}
 
 export default function App() {
   const stored = loadState();
@@ -292,41 +299,6 @@ export default function App() {
     monthlyGoalSetup: "",
     mainChallenge: "Conseguir clientes"
   });
-  const [userPlan, setUserPlan] = useState(stored?.userPlan || "free");
-  const [premiumExpiresAt, setPremiumExpiresAt] = useState(stored?.premiumExpiresAt || null);
-  const [contactLog, setContactLog] = useState(stored?.contactLog || {});
-  const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
-  const [betaCode, setBetaCode] = useState("");
-  const [betaCodeError, setBetaCodeError] = useState("");
-  const [studioOpen, setStudioOpen] = useState(false);
-  const [savedActiveViewBeforeStudio, setSavedActiveViewBeforeStudio] = useState(null);
-  const [studioTab, setStudioTab] = useState(() => typeof window !== "undefined" ? window.localStorage.getItem(STUDIO_TAB_KEY) || "mensaje" : "mensaje");
-  const [studioMessageDraft, setStudioMessageDraft] = useState(() => typeof window !== "undefined" ? window.localStorage.getItem(STUDIO_DRAFT_KEY) || "" : "");
-  const [studioMessageGoal, setStudioMessageGoal] = useState("Conectar con clientas ideales y ganar confianza");
-  const [studioMessagePrompt, setStudioMessagePrompt] = useState("Promociona tu oferta de manera cálida y directa, enfocada en mamás emprendedoras que buscan tiempo y libertad.");
-  const [studioAudience, setStudioAudience] = useState("mamás emprendedoras");
-  const [studioOffer, setStudioOffer] = useState("tu servicio estrella");
-  const [studioTone, setStudioTone] = useState("cálido y cercano");
-  const [studioMessages, setStudioMessages] = useState(() => {
-    if (typeof window === "undefined") return [];
-    try {
-      return JSON.parse(window.localStorage.getItem(STUDIO_TEMPLATES_KEY) || "[]");
-    } catch {
-      return [];
-    }
-  });
-  const [studioDirty, setStudioDirty] = useState(false);
-  const [studioShowConfirmClose, setStudioShowConfirmClose] = useState(false);
-  const [studioSavedBanner, setStudioSavedBanner] = useState(false);
-  const [studioContentType, setStudioContentType] = useState("post");
-  const [studioContentIdeas, setStudioContentIdeas] = useState([]);
-  const [studioContentTopic, setStudioContentTopic] = useState("");
-  const [studioContentSchedule, setStudioContentSchedule] = useState([]);
-  const [studioGeneratedAt, setStudioGeneratedAt] = useState(null);
-  const [studioScriptInput, setStudioScriptInput] = useState("");
-  const [studioScriptOutput, setStudioScriptOutput] = useState("");
-  const studioModalRef = useRef(null);
-  const studioOverlayRef = useRef(null);
   const [user, setUser] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
@@ -339,17 +311,31 @@ export default function App() {
   const [resetPassword, setResetPassword] = useState(false);
   const [ready, setReady] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [awsActive, setAwsActive] = useState(isAwsConfigured);
+  const [supabaseActive, setSupabaseActive] = useState(isSupabaseConfigured);
   const [businessSettings, setBusinessSettings] = useState({
     ...initialBusinessSettings,
     ...(stored?.businessSettings || {})
   });
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeReason, setUpgradeReason] = useState("");
+
+  const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "" });
+  const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "" });
+  const [contentFilter, setContentFilter] = useState("");
+  const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
+  const [contactLog, setContactLog] = useState(stored?.contactLog || {});
   const [clientSearch, setClientSearch] = useState("");
+  const [weekBlocks, setWeekBlocks] = useState(stored?.weekBlocks || {});
+  const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer", goal: "Vender" });
+  const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
+  const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
   const [groceryForm, setGroceryForm] = useState("");
-  const [weekBlocks, setWeekBlocks] = useState(stored?.weekBlocks || {});
+  const [reportWeekOffset, setReportWeekOffset] = useState(0);
+  const [userPlan, setUserPlan] = useState(stored?.userPlan || "free");
+  const [premiumExpiresAt, setPremiumExpiresAt] = useState(stored?.premiumExpiresAt || null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState("");
+  const [betaCode, setBetaCode] = useState("");
+  const [betaCodeError, setBetaCodeError] = useState("");
   const [showBetaInput, setShowBetaInput] = useState(false);
 
   // Temporizador Pomodoro
@@ -393,179 +379,7 @@ export default function App() {
   }, [pomodoroRunning, pomodoroMode, pomodoroWorkDuration, pomodoroBreakDuration]);
 
   const pomodoroReset = () => { setPomodoroRunning(false); setPomodoroMode("work"); setPomodoroMinutes(pomodoroWorkDuration); setPomodoroSeconds(0); };
-  const requestNotificationPermission = () => { if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "default") Notification.requestPermission(); };
-
-  const openStudio = () => {
-    setSavedActiveViewBeforeStudio(activeView);
-    setStudioOpen(true);
-  };
-
-  const closeStudio = () => {
-    if (studioDirty) {
-      setStudioShowConfirmClose(true);
-      return;
-    }
-    setStudioOpen(false);
-    if (savedActiveViewBeforeStudio) setActiveView(savedActiveViewBeforeStudio);
-  };
-
-  const confirmCloseStudio = () => {
-    setStudioShowConfirmClose(false);
-    setStudioDirty(false);
-    setStudioOpen(false);
-    if (savedActiveViewBeforeStudio) setActiveView(savedActiveViewBeforeStudio);
-  };
-
-  const discardStudioChanges = () => {
-    const savedDraft = typeof window !== "undefined" ? window.localStorage.getItem(STUDIO_DRAFT_KEY) || "" : "";
-    setStudioMessageDraft(savedDraft);
-    setStudioShowConfirmClose(false);
-    setStudioDirty(false);
-    setStudioOpen(false);
-    if (savedActiveViewBeforeStudio) setActiveView(savedActiveViewBeforeStudio);
-  };
-
-  const saveStudioTemplate = () => {
-    if (!studioMessageDraft.trim()) return;
-    const next = [{
-      title: `${studioOffer} • ${studioAudience}`,
-      subtitle: studioMessageGoal,
-      text: studioMessageDraft,
-      offer: studioOffer,
-      audience: studioAudience,
-      tone: studioTone,
-      goal: studioMessageGoal,
-      createdAt: Date.now()
-    }, ...studioMessages].slice(0, 12);
-    setStudioMessages(next);
-    setStudioSavedBanner(true);
-    setStudioDirty(false);
-    setTimeout(() => setStudioSavedBanner(false), 2500);
-  };
-
-  const generateStudioMessage = () => {
-    const greeting = `Hola ${studioAudience},`;
-    const opening = `Te escribo porque quiero ayudarte a ${studioMessageGoal.toLowerCase()}.`;
-    const value = `Tengo ${studioOffer} pensado para mamás como tú que buscan más tranquilidad y resultados sin agotarse.`;
-    const promise = `Con un enfoque ${studioTone}, te muestro cómo esto puede darte más tiempo, claridad y clientes fieles.`;
-    const cta = `Si quieres que te acompañe a poner esto en marcha con un mensaje auténtico, responde a este chat y te muestro cómo empezar.`;
-    const message = `${greeting}\n\n${opening}\n${value}\n${promise}\n\n${studioMessagePrompt}\n\n${cta}`;
-    setStudioMessageDraft(message);
-    setStudioDirty(true);
-  };
-
-  const generateContentIdeas = () => {
-    if (!studioContentTopic.trim()) return;
-    const topic = studioContentTopic.trim();
-    const formatName = studioContentType === "post" ? "publicación" : studioContentType === "reel" ? "reel" : studioContentType === "email" ? "email" : "historia";
-    const verbs = [
-      "mostrar cómo simplificar", "conectar con", "inspirar a", "resolver dudas de", "mostrar resultados de",
-      "mostrar el paso a paso para", "crear confianza con", "invitar a", "posicionar tu marca con", "hablar desde el corazón sobre",
-      "sacar a la luz lo verdaderamente útil de", "contar una historia real sobre", "poner en valor", "explicar los beneficios de", "despejar miedos sobre",
-      "destacar la transformación que ofrece", "hacer sentir acompañada a", "dar razones para elegir", "hablar de tiempo y tranquilidad con", "acompañar en la decisión de"
-    ];
-    const ideas = Array.from({ length: 20 }, (_, index) => {
-      const action = verbs[index % verbs.length];
-      return `Idea ${index + 1}: ${action} ${topic} en un ${formatName} para mamás emprendedoras que quieren atraer más clientes sin perder paz.`;
-    });
-    setStudioContentIdeas(ideas);
-    setStudioContentSchedule(createEditorialSchedule(ideas, studioContentType));
-    setStudioGeneratedAt(Date.now());
-    setStudioDirty(true);
-  };
-
-  const createEditorialSchedule = (ideas, contentType) => {
-    const labels = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
-    const baseDate = new Date();
-    return ideas.slice(0, 7).map((idea, index) => {
-      const date = new Date(baseDate);
-      date.setDate(baseDate.getDate() + index);
-      return {
-        day: labels[date.getDay()] || "Día",
-        date: `${date.getDate()} ${date.toLocaleString("es-CO", { month: "short" })}`,
-        contentType: contentType === "post" ? "Publicación" : contentType === "reel" ? "Reel" : contentType === "email" ? "Email" : "Historia",
-        title: idea.replace(/^Idea \d+: /, ""),
-        status: index === 0 ? "Listo" : "Planificado"
-      };
-    });
-  };
-
-  const generateStudioScript = () => {
-    if (!studioScriptInput.trim()) return;
-    const prompt = studioScriptInput.trim();
-    const script = `1. Gancho: Comienza con una pregunta o afirmación que identifique el dolor de tu clienta, por ejemplo, ¿Cansada de sentir que trabajas mucho y no ves resultados?\n2. Empatía: Reconoce su realidad como mamá emprendedora y muestra que la entiendes.\n3. Solución: Presenta tu servicio u oferta como el paso claro para ganar más tiempo, clientes o tranquilidad.\n4. Beneficio: Explica qué cambia en su día cuando trabaja contigo.\n5. Prueba social: Menciona un resultado breve o cómo ya ayudaste a otra mamá.\n6. CTA: Termina con una invitación directa y amable a contactarte o responder.\n\nEjemplo:\nHola, soy [tu nombre]. Si estás cansada de sentir que tu negocio no avanza mientras atiendes a tu familia, tengo una forma más tranquila de atraer clientas que te respete. Mi servicio ayuda a mamás emprendedoras a organizar su oferta, hablar con claridad y conectar con mujeres que quieren comprar sin sentirse presionadas. Si quieres una sugerencia personalizada para tu próxima publicación, responde este mensaje y te escribo con ideas concretas.`;
-    setStudioScriptOutput(script);
-    setStudioDirty(true);
-  };
-
-  const copyStudioMessage = async () => {
-    if (!studioMessageDraft.trim() || typeof navigator === "undefined" || !navigator.clipboard) return;
-    await navigator.clipboard.writeText(studioMessageDraft);
-    setStudioSavedBanner(true);
-    setTimeout(() => setStudioSavedBanner(false), 2000);
-  };
-
-  const copyStudioIdeas = async () => {
-    if (!studioContentIdeas.length || typeof navigator === "undefined" || !navigator.clipboard) return;
-    await navigator.clipboard.writeText(studioContentIdeas.join("\n"));
-    setStudioSavedBanner(true);
-    setTimeout(() => setStudioSavedBanner(false), 2000);
-  };
-
-  const copyStudioScript = async () => {
-    if (!studioScriptOutput.trim() || typeof navigator === "undefined" || !navigator.clipboard) return;
-    await navigator.clipboard.writeText(studioScriptOutput);
-    setStudioSavedBanner(true);
-    setTimeout(() => setStudioSavedBanner(false), 2000);
-  };
-
-  useEffect(() => {
-    if (!studioOpen) return;
-    const focusable = studioModalRef.current?.querySelectorAll(STUDIO_FOCUSABLES);
-    const firstFocusable = focusable?.[0];
-    const lastFocusable = focusable?.[focusable.length - 1];
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeStudio();
-      }
-      if (event.key === "Tab" && focusable?.length > 0) {
-        if (event.shiftKey && document.activeElement === firstFocusable) {
-          event.preventDefault();
-          lastFocusable.focus();
-        } else if (!event.shiftKey && document.activeElement === lastFocusable) {
-          event.preventDefault();
-          firstFocusable.focus();
-        }
-      }
-      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        if (studioOpen) closeStudio(); else openStudio();
-      }
-    };
-    firstFocusable?.focus();
-    document.body.style.overflow = "hidden";
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [studioOpen, studioDirty]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STUDIO_TAB_KEY, studioTab);
-  }, [studioTab]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STUDIO_DRAFT_KEY, studioMessageDraft);
-  }, [studioMessageDraft]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem(STUDIO_TEMPLATES_KEY, JSON.stringify(studioMessages));
-  }, [studioMessages]);
+  const requestNotificationPermission = () => { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); };
 
   const BETA_CODE = "MAMACEO2026";
   const BETA_CODE_EXPIRY = new Date("2026-12-31T23:59:59").getTime();
@@ -694,7 +508,7 @@ export default function App() {
   const budgetMonthlyIncome = annualTotals.income / 12;
   const confirmDelete = (msg, onConfirm) => { if (window.confirm(msg)) onConfirm(); };
   const signOut = async () => {
-    await awsAuth.signOut();
+    await supabase.auth.signOut();
     setUser(null);
   };
 
@@ -741,14 +555,11 @@ export default function App() {
     
     setAuthLoading(true);
     try {
-      // Cerrar cualquier sesión previa antes de intentar login
-      await awsAuth.signOut().catch(() => {});
-      
       if (authMode === "login") {
-        const { error } = await awsAuth.signInWithPassword({ email: authEmail, password: authPassword });
+        const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
         if (error) setAuthError(translateError(error.message));
       } else {
-        const { error } = await awsAuth.signUp({
+        const { error } = await supabase.auth.signUp({
           email: authEmail,
           password: authPassword,
           options: { data: { full_name: authName.trim() } }
@@ -771,7 +582,7 @@ export default function App() {
     }
     setAuthError("");
     setAuthLoading(true);
-    const { error } = await awsAuth.resetPassword({ email: authEmail });
+    const { error } = await supabase.auth.resetPasswordForEmail(authEmail);
     setAuthLoading(false);
     if (error) setAuthError(translateError(error.message));
     else setAuthError("Revisa tu correo para restablecer tu contraseña.");
@@ -781,7 +592,7 @@ export default function App() {
     event.preventDefault();
     setAuthError("");
     setAuthLoading(true);
-    const { error } = await awsAuth.updatePassword({ oldPassword: authPassword, newPassword: authNewPassword });
+    const { error } = await supabase.auth.updateUser({ password: authNewPassword });
     setAuthLoading(false);
     if (error) setAuthError(translateError(error.message));
     else {
@@ -844,38 +655,38 @@ export default function App() {
   useEffect(() => {
     let subscription;
     const initAuth = async () => {
-      if (!awsActive) {
+      if (!supabaseActive) {
         setReady(true);
         return;
       }
 
       const timeout = setTimeout(() => {
-        console.warn("AWS Cognito auth tardó demasiado. Usando modo local temporalmente.");
-        setAwsActive(false);
+        console.warn("Supabase auth tardó demasiado. Usando modo local temporalmente.");
+        setSupabaseActive(false);
         setReady(true);
-      }, 8000); // Aumentado a 8 segundos
+      }, 4000);
 
       try {
-        const { data, error } = await awsAuth.getSession();
+        const { data, error } = await supabase.auth.getSession();
         clearTimeout(timeout);
         if (error) {
           console.error("Error al inicializar auth:", error);
-          setAwsActive(false);
+          setSupabaseActive(false);
         } else {
           setUser(data?.session?.user ?? null);
         }
       } catch (initError) {
         clearTimeout(timeout);
         console.error("Error inesperado al inicializar auth:", initError);
-        setAwsActive(false);
+        setSupabaseActive(false);
       } finally {
         setReady(true);
       }
     };
 
     initAuth();
-    if (awsActive) {
-      const { data: listenerData } = awsAuth.onAuthStateChange((event, session) => {
+    if (supabaseActive) {
+      const { data: listenerData } = supabase.auth.onAuthStateChange((event, session) => {
         setUser(session?.user ?? null);
         if (event === 'PASSWORD_RECOVERY') {
           setResetPassword(true);
@@ -885,13 +696,13 @@ export default function App() {
       subscription = listenerData?.subscription;
     }
     return () => subscription?.unsubscribe?.();
-  }, [awsActive]);
+  }, [supabaseActive]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.__MAMACEO_DEBUG = {
         ready,
-        awsActive,
+        supabaseActive,
         user,
         authMode,
         authLoading,
@@ -899,7 +710,7 @@ export default function App() {
         resetPassword
       };
     }
-  }, [ready, awsActive, user, authMode, authLoading, authError, resetPassword]);
+  }, [ready, supabaseActive, user, authMode, authLoading, authError, resetPassword]);
 
   const applyLoadedState = (loaded) => {
     if (!loaded) return;
@@ -922,27 +733,24 @@ export default function App() {
     if (!ready) return;
     const restore = async () => {
       try {
-        const storedState = loadState();
-        if (user && awsActive) {
-          // Remote state load será implementado en Lambda
-          // const remoteState = await loadRemoteState(user.id);
-          // if (remoteState) {
-          //   applyLoadedState(remoteState);
-          // } else if (storedState) {
-          //   applyLoadedState(storedState);
-          // }
-          if (storedState) {
-            applyLoadedState(storedState);
-          }
-        } else if (storedState) {
-          applyLoadedState(storedState);
+        if (user && supabaseActive) {
+          const remoteState = await loadRemoteState(user.id);
+          if (remoteState) applyLoadedState(remoteState);
+        } else {
+          const storedState = loadState();
+          if (storedState) applyLoadedState(storedState);
         }
       } catch (err) {
         console.error("Error restaurando estado:", err);
       }
     };
     restore();
-  }, [ready, user, awsActive]);
+  }, [ready, user, supabaseActive]);
+
+  useEffect(() => {
+    if (!ready || !user) return;
+    if (!profileSetup) setShowProfileModal(true);
+  }, [ready, user]);
 
   useEffect(() => {
     if (!ready) return;
@@ -973,22 +781,23 @@ export default function App() {
       premiumExpiresAt
     };
 
-    try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-    } catch (err) {
-      console.error("Error guardando en localStorage:", err);
+    if (user && supabaseActive) {
+      setIsSyncing(true);
+      saveRemoteState(user.id, stateToSave)
+        .catch((err) => {
+          console.error("Error guardando en la nube:", err);
+          // Fallback a localStorage si falla Supabase
+          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+        })
+        .finally(() => setIsSyncing(false));
+    } else {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      } catch (err) {
+        console.error("Error guardando en localStorage:", err);
+      }
     }
-
-    // Remote state sync con DynamoDB será implementado en Lambda
-    // if (user && awsActive) {
-    //   setIsSyncing(true);
-    //   saveRemoteState(user.id, stateToSave)
-    //     .catch((err) => {
-    //       console.error("Error guardando en la nube:", err);
-    //     })
-    //     .finally(() => setIsSyncing(false));
-    // }
-  }, [ready, user, awsActive, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose]);
+  }, [ready, user, supabaseActive, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose]);
 
   const addMovement = (event) => {
     event.preventDefault();
@@ -1161,7 +970,7 @@ export default function App() {
     });
   };
   const exportMovementsToExcel = () => {
-    const headers = ["Tipo", "Clasificación", "Descripción", "Categoría", "Banco", "Monto"]; 
+    const headers = ["Tipo", "Clasificación", "Descripción", "Categoría", "Banco", "Monto"];
     const rows = movements.map((movement) => [
       movement.type === "income" ? "Ingreso" : "Gasto",
       movement.classification || "",
@@ -1244,7 +1053,7 @@ export default function App() {
     );
   }
 
-  if (!user && awsActive) {
+  if (!user && supabaseActive) {
     return (
       <div className="auth-shell">
         <div className="auth-card">
@@ -1291,7 +1100,7 @@ export default function App() {
           )}
           {!resetPassword && (
             <>
-              <button className="auth-switch" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}> 
+              <button className="auth-switch" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>
                 {authMode === "login" ? "Quiero crear una cuenta" : "Ya tengo cuenta"}
               </button>
               {authMode === "login" && (
@@ -1367,12 +1176,12 @@ export default function App() {
               <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ✨"}</button>
               {profileSetup && (
                 <button type="button" onClick={async () => {
-                  if (!window.confirm("¿Estás segura de que quieres eliminar tu cuenta? Esta acción no se puede deshacer y perderás todos tus datos.")) return;
-                  if (!window.confirm("Última confirmación: se eliminarán todos tus datos permanentemente.")) return;
+                  if (!window.confirm("\u00bfEstás segura de que quieres eliminar tu cuenta? Esta acción no se puede deshacer y perderás todos tus datos.")) return;
+                  if (!window.confirm("\u00daltima confirmación: se eliminarán todos tus datos permanentemente.")) return;
                   try {
-                    if (user && awsActive) {
-                      // Eliminar usuario en AWS (pendiente implementar en Lambda)
-                      await awsAuth.signOut();
+                    if (user && supabaseActive) {
+                      await supabase.from("user_states").delete().eq("user_id", user.id);
+                      await supabase.auth.signOut();
                     }
                     window.localStorage.removeItem(STORAGE_KEY);
                     setUser(null);
@@ -1470,14 +1279,6 @@ export default function App() {
           ))}
         </nav>
 
-        <div className="studio-launch-wrap">
-          <button type="button" className="menu-item studio-button" onClick={openStudio}>
-            <span>🎬</span>
-            Mi Studio
-          </button>
-          <div className="studio-shortcut">Ctrl+K / Cmd+K</div>
-        </div>
-
         <div className="currency-box">
           <label>Moneda base</label>
           <select value={currency} onChange={(event) => setCurrency(event.target.value)}>
@@ -1504,19 +1305,19 @@ export default function App() {
           </div>
           <div className="profile-area">
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
-            {!awsActive && !isSyncing && <div className="status-chip">Modo local</div>}
+            {!supabaseActive && !isSyncing && <div className="status-chip">Modo local</div>}
             <button className="profile-edit-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
               <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
               <span className="profile-edit-name">{profileSetup?.name || "Mi perfil"}</span>
               <span className="profile-edit-icon">⚙️</span>
             </button>
-            {awsActive && user && (
+            {supabaseActive && user && (
               <button className="signout-button" onClick={signOut}>Salir</button>
             )}
           </div>
         </header>
 
-        {!awsActive && (
+        {!supabaseActive && (
           <div className="local-banner">
             <strong>Modo sin conexión</strong> — tus datos se guardan en este navegador. Si cambias de dispositivo o navegador, no verás tus datos.
           </div>
@@ -1553,7 +1354,7 @@ export default function App() {
           <div className={`pomodoro-widget ${pomodoroActive ? "pomodoro-open" : ""}`}>
             <button className="pomodoro-toggle" onClick={() => { setPomodoroActive((v) => !v); requestNotificationPermission(); }} title="Temporizador de enfoque">
               {pomodoroRunning ? "⏸" : "⏱"}
-              {pomodoroRunning && <span className="pomodoro-pulse" />} 
+              {pomodoroRunning && <span className="pomodoro-pulse" />}
             </button>
             {pomodoroActive && (
               <div className="pomodoro-panel">
@@ -1585,195 +1386,6 @@ export default function App() {
 
         {effectivePlan === "free" && (
           <button className="upgrade-fab" onClick={() => setActiveView("pricing")}>✨ Upgrade</button>
-        )}
-
-        {studioOpen && (
-          <div className="studio-overlay" ref={studioOverlayRef} role="dialog" aria-modal="true" aria-labelledby="studio-title" onClick={(e) => { if (e.target === e.currentTarget) closeStudio(); }}>
-            <div className="studio-modal" ref={studioModalRef}>
-              <div className="studio-header">
-                <div>
-                  <div className="studio-kicker">Mi Studio</div>
-                  <h2 id="studio-title">Tu mensaje, ideas y guiones premium</h2>
-                  <p>Usa esta herramienta como un espacio creativo para escribir, generar y guardar mensajes que conecten con tus clientas.</p>
-                </div>
-                <button type="button" className="studio-close" onClick={closeStudio} aria-label="Cerrar Mi Studio">×</button>
-              </div>
-
-              <div className="studio-tabs">
-                {[
-                  { id: "mensaje", label: "Mi Mensaje" },
-                  { id: "contenidos", label: "Mis Contenidos" },
-                  { id: "guiones", label: "Mis Guiones" }
-                ].map((tab) => (
-                  <button key={tab.id} className={studioTab === tab.id ? "studio-tab active" : "studio-tab"} onClick={() => setStudioTab(tab.id)}>{tab.label}</button>
-                ))}
-              </div>
-
-              <div className="studio-body">
-                {studioTab === "mensaje" && (
-                  <div className="studio-grid">
-                    <div className="studio-panel studio-panel-left">
-                      <label>Oferta / servicio</label>
-                      <input value={studioOffer} onChange={(e) => { setStudioOffer(e.target.value); setStudioDirty(true); }} placeholder="Escribe tu propuesta" />
-                      <label>Audiencia</label>
-                      <input value={studioAudience} onChange={(e) => { setStudioAudience(e.target.value); setStudioDirty(true); }} placeholder="Ej. mamás emprendedoras" />
-                      <label>Objetivo del mensaje</label>
-                      <input value={studioMessageGoal} onChange={(e) => { setStudioMessageGoal(e.target.value); setStudioDirty(true); }} placeholder="Ej. convertir leads en clientes" />
-                      <label>Tono</label>
-                      <select value={studioTone} onChange={(e) => { setStudioTone(e.target.value); setStudioDirty(true); }}>
-                        <option value="cálido y cercano">Cálido y cercano</option>
-                        <option value="urgente pero amable">Urgente pero amable</option>
-                        <option value="profesional">Profesional</option>
-                        <option value="motivacional">Motivacional</option>
-                      </select>
-                      <label>Breve descripción</label>
-                      <textarea value={studioMessagePrompt} onChange={(e) => { setStudioMessagePrompt(e.target.value); setStudioDirty(true); }} rows={4} placeholder="Describe lo que quieres comunicar..."></textarea>
-                      <div className="studio-help">
-                        <p>Consejo: escribe tu mensaje con claridad y enfócate en el beneficio principal para tu cliente ideal.</p>
-                      </div>
-                      <div className="studio-actions">
-                        <button className="primary-button" type="button" onClick={generateStudioMessage}>Generar mensaje</button>
-                        <button type="button" className="secondary-button" onClick={saveStudioTemplate}>Guardar plantilla</button>
-                      </div>
-                      {studioMessages.length > 0 && (
-                        <div className="studio-templates">
-                          <h3>Plantillas guardadas</h3>
-                          {studioMessages.map((template, index) => (
-                            <button key={index} type="button" onClick={() => {
-                              setStudioMessageDraft(template.text);
-                              setStudioOffer(template.offer);
-                              setStudioAudience(template.audience);
-                              setStudioTone(template.tone);
-                              setStudioMessageGoal(template.goal || studioMessageGoal);
-                              setStudioDirty(false);
-                            }}>
-                              <div>{template.title || `Plantilla ${index + 1}`}</div>
-                              {template.subtitle && <small>{template.subtitle}</small>}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                    <div className="studio-panel studio-panel-right">
-                      <div className="studio-toolbar">
-                        <span>{studioMessageDraft.split(/\s+/).filter(Boolean).length} palabras</span>
-                        <span>{studioMessageDraft.length} caracteres</span>
-                      </div>
-                      <div className="studio-preview-card">
-                        <div className="studio-preview-item"><strong>Audiencia</strong><span>{studioAudience}</span></div>
-                        <div className="studio-preview-item"><strong>Objetivo</strong><span>{studioMessageGoal}</span></div>
-                        <div className="studio-preview-item"><strong>Tono</strong><span>{studioTone}</span></div>
-                      </div>
-                      <textarea value={studioMessageDraft} onChange={(e) => { setStudioMessageDraft(e.target.value); setStudioDirty(true); }} rows={18} placeholder="Escribe o ajusta tu mensaje aquí..."></textarea>
-                      <div className="studio-actions studio-actions-right">
-                        <button type="button" className="primary-button" onClick={copyStudioMessage}>Copiar mensaje</button>
-                        <button type="button" className="secondary-button" onClick={() => setStudioMessageDraft("")}>Limpiar</button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {studioTab === "contenidos" && (
-                  <div className="studio-grid single-column">
-                    <div className="studio-panel">
-                      <label>Tema o producto</label>
-                      <input value={studioContentTopic} onChange={(e) => { setStudioContentTopic(e.target.value); setStudioDirty(true); }} placeholder="Describe tu tema" />
-                      <label>Tipo de contenido</label>
-                      <select value={studioContentType} onChange={(e) => { setStudioContentType(e.target.value); setStudioDirty(true); }}>
-                        <option value="post">Publicación en redes</option>
-                        <option value="reel">Reel / video corto</option>
-                        <option value="email">Email</option>
-                        <option value="historia">Historia</option>
-                      </select>
-                      <div className="studio-metrics-grid">
-                        <div className="studio-metric-card">
-                          <span className="metric-label">Ideas</span>
-                          <strong>{studioContentIdeas.length}</strong>
-                        </div>
-                        <div className="studio-metric-card">
-                          <span className="metric-label">Formato</span>
-                          <strong>{studioContentType === "post" ? "Publicación" : studioContentType === "reel" ? "Reel" : studioContentType === "email" ? "Email" : "Historia"}</strong>
-                        </div>
-                        <div className="studio-metric-card">
-                          <span className="metric-label">Publicaciones</span>
-                          <strong>{studioContentSchedule.length}</strong>
-                        </div>
-                      </div>
-                      <div className="studio-actions">
-                        <button type="button" className="primary-button" onClick={generateContentIdeas}>Generar 20 ideas</button>
-                        <button type="button" className="secondary-button" onClick={copyStudioIdeas}>Copiar todo</button>
-                      </div>
-                      {studioContentIdeas.length > 0 && (
-                        <>
-                          <div className="studio-ideas">
-                          <h3>Ideas generadas</h3>
-                          <ul>
-                            {studioContentIdeas.map((idea, index) => (<li key={index}>{idea}</li>))}
-                          </ul>
-                        </div>
-                        {studioContentSchedule.length > 0 && (
-                          <div className="studio-calendar-panel">
-                            <div className="studio-calendar-header">
-                              <div>
-                                <h3>Calendario editorial</h3>
-                                <p>Programación para los próximos {studioContentSchedule.length} días.</p>
-                              </div>
-                              {studioGeneratedAt && <span className="calendar-generated">Actualizado {new Date(studioGeneratedAt).toLocaleString("es-CO", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>}
-                            </div>
-                            <div className="studio-calendar-grid">
-                              {studioContentSchedule.map((item, index) => (
-                                <div className="studio-calendar-card" key={index}>
-                                  <div className="calendar-date">{item.day}, {item.date}</div>
-                                  <div className="calendar-type">{item.contentType}</div>
-                                  <div className="calendar-title">{item.title}</div>
-                                  <div className={`calendar-status ${item.status === "Listo" ? "status-ready" : "status-planned"}`}>{item.status}</div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {studioTab === "guiones" && (
-                  <div className="studio-grid single-column">
-                    <div className="studio-panel">
-                      <label>Idea o mensaje principal</label>
-                      <textarea value={studioScriptInput} onChange={(e) => { setStudioScriptInput(e.target.value); setStudioDirty(true); }} rows={3} placeholder="¿Qué quieres comunicar?" />
-                      <div className="studio-actions">
-                        <button type="button" className="primary-button" onClick={generateStudioScript}>Generar guion</button>
-                        <button type="button" className="secondary-button" onClick={copyStudioScript}>Copiar guion</button>
-                      </div>
-                      {studioScriptOutput && (
-                        <div className="studio-script-output">
-                          <h3>Guion sugerido</h3>
-                          <pre>{studioScriptOutput}</pre>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {studioSavedBanner && <div className="studio-toast">Guardado correctamente</div>}
-
-              {studioShowConfirmClose && (
-                <div className="studio-confirm-overlay" role="alertdialog" aria-modal="true">
-                  <div className="studio-confirm-box">
-                    <h3>¿Deseas cerrar sin guardar?</h3>
-                    <p>Tus cambios en Mi Studio se conservarán en borrador automáticamente, pero puedes descartarlos si prefieres.</p>
-                    <div className="studio-actions">
-                      <button type="button" className="secondary-button" onClick={discardStudioChanges}>Descartar y cerrar</button>
-                      <button type="button" className="primary-button" onClick={confirmCloseStudio}>Cerrar</button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
         )}
 
         <footer className="app-footer">
@@ -1918,7 +1530,7 @@ export default function App() {
               </div>
               <div className="dash-summary-stat">
                 <span>Por publicar</span>
-              <strong style={{color:"var(--orange)"}}>{unpublishedContent}</strong>
+                <strong style={{color:"var(--orange)"}}>{unpublishedContent}</strong>
               </div>
               <ProgressLabel label="Pipeline" value={contentItems.length ? Math.round((publishedContent/contentItems.length)*100) : 0} tone="orange" />
               {nextContent && (
@@ -2011,7 +1623,7 @@ export default function App() {
       </>
     );
   }
-  
+
   function renderBusiness() {
     const healthScore = totals.profit >= 0 && monthlyProgress >= 75 ? "green"
       : totals.profit >= 0 || monthlyProgress >= 50 ? "orange" : "red";
@@ -2166,7 +1778,7 @@ export default function App() {
     );
   }
   function renderClients() {
-    const stages = ["Lead frio", "Lead tibio", "Lead caliente", "Venta ganada"]; 
+    const stages = ["Lead frio", "Lead tibio", "Lead caliente", "Venta ganada"];
     const alertDays = { "Lead frio": [7, 14], "Lead tibio": [3, 7], "Lead caliente": [1, 3], "Venta ganada": [14, 30] };
     const today = Date.now();
     const daysSince = (ts) => ts ? Math.floor((today - ts) / 86400000) : 999;
@@ -2512,7 +2124,7 @@ export default function App() {
                 <option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Spotify</option><option>Website</option>
               </select>
             </div>
-            {['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'].map((week) => {
+            {["Semana 1", "Semana 2", "Semana 3", "Semana 4"].map((week) => {
               const items = contentItems.filter((i) => i.week === week && (contentFilter === "" || i.network === contentFilter));
               if (items.length === 0) return null;
               return (
@@ -2661,7 +2273,7 @@ export default function App() {
                 </div>
               </div>
               {homeTasks.length === 0 && <p className="helper-copy">Agrega tu primera tarea del hogar.</p>}
-              {['Urgente', 'Normal', 'Puede esperar'].map((priority) => {
+              {["Urgente", "Normal", "Puede esperar"].map((priority) => {
                 const tasks = homeTasks.filter((t) => (t.priority || "Normal") === priority);
                 if (tasks.length === 0) return null;
                 return (
@@ -2815,7 +2427,7 @@ export default function App() {
             </label>
             <label className="purpose-field"><span>Días de presencia consciente esta semana</span></label>
             <div className="week-checks">
-              {['L','M','X','J','V','S','D'].map((day) => (
+              {["L","M","X","J","V","S","D"].map((day) => (
                 <button type="button" className={purpose.familyDays?.[day] ? "checked" : ""} key={day}
                   onClick={() => setPurpose((c) => ({ ...c, familyDays: { ...c.familyDays, [day]: !c.familyDays?.[day] } }))}>{day}</button>
               ))}
@@ -2983,6 +2595,680 @@ export default function App() {
       </form>
     );
   }
+
+  function BanksCard() {
+    return (
+      <div className="card banks-card">
+        <h3>Mis bancos</h3>
+        <form className="bank-form" onSubmit={addBank}>
+          <input placeholder="Agregar banco o billetera" value={newBank} onChange={(event) => setNewBank(event.target.value)} />
+          <button className="primary-button" type="submit">Agregar</button>
+        </form>
+        <div className="bank-list">
+          {banks.map((bank) => (
+            <span key={bank} className="bank-chip">
+              {bank}
+              <button type="button" className="bank-remove" onClick={() => removeBank(bank)}>×</button>
+            </span>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+
+
+  function ReinvestmentCard() {
+    return (
+      <div className="card reinvestment-card">
+        <h3>Calculadora de reinversión</h3>
+        <div className="reinvestment-amount">
+          <span>Reserva sugerida</span>
+          <strong>{money.format(reinvestmentAmount)}</strong>
+          <small>{reinvestmentPercent}% de {money.format(totals.income)} en ventas</small>
+        </div>
+        <label className="range-field">
+          <span>Porcentaje a reinvertir</span>
+          <b>{reinvestmentPercent}%</b>
+          <input type="range" min="0" max="50" value={reinvestmentPercent} onChange={(event) => updateBusinessSetting("reinvestmentPercent", event.target.value)} />
+        </label>
+        <input className="percent-input" type="number" min="0" max="100" value={reinvestmentPercent} onChange={(event) => updateBusinessSetting("reinvestmentPercent", event.target.value)} />
+        <p className="helper-copy">Usa esta reserva primero en marketing medible: anuncios, contenido que vende, email list o herramientas que traen clientas. No la mezcles con gustos personales del día.</p>
+      </div>
+    );
+  }
+
+  function DashboardSummaryCard() {
+    return (
+      <div className="card summary-card">
+        <h3>Resumen desde tus pestañas</h3>
+        <div className="summary-row"><span>Clientas</span><strong>{followUpClients.length}</strong><small>requieren seguimiento</small></div>
+        <div className="summary-row"><span>Contenido</span><strong>{contentItems.length - publishedContent}</strong><small>piezas por mover</small></div>
+        <div className="summary-row"><span>Hogar</span><strong>{pendingHomeTasks.length}</strong><small>pendientes visibles</small></div>
+        <div className="summary-row"><span>Mejor ingreso</span><strong>{topIncomeSource?.category || "Sin datos"}</strong><small>{topIncomeSource?.description || "Registra ventas"}</small></div>
+        <div className="summary-row"><span>Ánimo</span><strong>{purpose.mood}</strong><small>La semana pasada te sentiste así. Esta semana puede ser más liviana.</small></div>
+        <div className="summary-row"><span>Ventas cerradas</span><strong>{money.format(wonSalesTotal)}</strong><small>Registradas en clientas ganadas</small></div>
+        <div className="summary-row"><span>Presupuesto hogar</span><strong>{money.format(homeAvailable)}</strong><small>Disponible después de gastos y deudas</small></div>
+      </div>
+    );
+  }
+
+  function MovementList({ compact = false } = {}) {
+    return (
+      <div className={`card movement-card ${compact ? "compact" : ""}`}>
+        <h3>Últimos movimientos</h3>
+        {movements.slice(0, 10).map((movement) => (
+          <div className="movement-row" key={movement.id}>
+            <span className={movement.type}>{movement.type === "income" ? "+" : "-"}</span>
+            <div>
+              <strong>{movement.description}</strong>
+              <small>{movement.classification} • {movement.category} • {movement.bank || "Sin banco"}</small>
+            </div>
+            <b>{money.format(movement.amount)}</b>
+            <button className="row-delete" type="button" onClick={() => confirmDelete("¿Eliminar este movimiento?", () => setMovements((current) => current.filter((item) => item.id !== movement.id)))}>×</button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  function CalendarCard() {
+    return <div className="card calendar-card"><h3>Calendario de la semana</h3><small className="helper-copy">Semana actual</small>{weekDays.map((day) => <div className="calendar-row" key={day}><span>{day}</span><p>—</p></div>)}</div>;
+  }
+
+  function renderWeeklyReport() {
+    // Calcular rango de fechas de la semana
+    const getWeekRange = (offset) => {
+      const today = new Date();
+      const currentDay = today.getDay();
+      const mondayOffset = currentDay === 0 ? -6 : 1 - currentDay;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() + mondayOffset + (offset * 7));
+      monday.setHours(0, 0, 0, 0);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      return { start: monday.getTime(), end: sunday.getTime(), monday, sunday };
+    };
+
+    const currentWeek = getWeekRange(reportWeekOffset);
+    const previousWeek = getWeekRange(reportWeekOffset - 1);
+
+    const formatDateRange = (start, end) => {
+      const months = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+      const startD = new Date(start);
+      const endD = new Date(end);
+      return `${startD.getDate()} ${months[startD.getMonth()]} - ${endD.getDate()} ${months[endD.getMonth()]}`;
+    };
+
+    // Filtrar datos por semana actual
+    const isInWeek = (timestamp, week) => timestamp >= week.start && timestamp <= week.end;
+
+    const currentMovements = movements.filter((m) => m.createdAt && isInWeek(m.createdAt, currentWeek));
+    const previousMovements = movements.filter((m) => m.createdAt && isInWeek(m.createdAt, previousWeek));
+
+    const currentClients = clients.filter((c) => c.createdAt && isInWeek(c.createdAt, currentWeek));
+    const previousClients = clients.filter((c) => c.createdAt && isInWeek(c.createdAt, previousWeek));
+
+    const currentIncome = currentMovements.filter((m) => m.type === "income").reduce((sum, m) => sum + m.amount, 0);
+    const previousIncome = previousMovements.filter((m) => m.type === "income").reduce((sum, m) => sum + m.amount, 0);
+    const incomeChange = previousIncome > 0 ? Math.round(((currentIncome - previousIncome) / previousIncome) * 100) : 0;
+
+    const currentWon = currentClients.filter((c) => c.status === "Venta ganada").length;
+    const previousWon = previousClients.filter((c) => c.status === "Venta ganada").length;
+    const wonChange = previousWon > 0 ? Math.round(((currentWon - previousWon) / previousWon) * 100) : 0;
+
+    const currentContactsThisWeek = Object.values(contactLog).filter((e) => {
+      const contactDate = new Date(e.date).getTime();
+      return contactDate >= currentWeek.start && contactDate <= currentWeek.end;
+    }).length;
+
+    const previousContactsCount = Object.values(contactLog).filter((e) => {
+      const contactDate = new Date(e.date).getTime();
+      return contactDate >= previousWeek.start && contactDate <= previousWeek.end;
+    }).length;
+
+    const contactsChange = previousContactsCount > 0 ? Math.round(((currentContactsThisWeek - previousContactsCount) / previousContactsCount) * 100) : 0;
+
+    // Datos generales (no filtrados por semana)
+    const totalLeads = clients.length;
+    const totalWon = clients.filter((c) => c.status === "Venta ganada").length;
+    const conversionRate = totalLeads > 0 ? Math.round((totalWon / totalLeads) * 100) : 0;
+    const hotLeads = clients.filter((c) => c.status === "Lead caliente").length;
+    const homeProgress = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
+    const selfCareScore = [purpose.water, purpose.walk, purpose.silence, purpose.devotional].filter(Boolean).length;
+    const incomePerHour = purpose.hoursWorked > 0 ? Math.round(totals.income / purpose.hoursWorked) : 0;
+    const salesGoalProgress = salesGoal > 0 ? Math.min(Math.round((wonSalesTotal / salesGoal) * 100), 100) : 0;
+
+    // Insights automáticos
+    const insights = [];
+
+    // Mejor día de ingresos
+    const incomeByDay = {};
+    currentMovements.filter((m) => m.type === "income").forEach((m) => {
+      const day = new Date(m.createdAt).toLocaleDateString('es', { weekday: 'long' });
+      incomeByDay[day] = (incomeByDay[day] || 0) + m.amount;
+    });
+    const bestDay = Object.entries(incomeByDay).sort((a, b) => b[1] - a[1])[0];
+    if (bestDay) {
+      insights.push(`Tu mejor día fue ${bestDay[0]} con ${money.format(bestDay[1])} en ingresos.`);
+    }
+
+    // Mejor fuente de leads
+    const weekSourceCounts = currentClients.reduce((acc, c) => {
+      const src = c.source || "Sin fuente";
+      acc[src] = (acc[src] || 0) + 1;
+      return acc;
+    }, {});
+    const topSource = Object.entries(weekSourceCounts).sort((a, b) => b[1] - a[1])[0];
+    if (topSource && topSource[1] > 0) {
+      const percentage = Math.round((topSource[1] / currentClients.length) * 100);
+      insights.push(`${topSource[0]} trajo ${percentage}% de tus leads esta semana.`);
+    }
+
+    // Tendencia de contactos
+    if (currentContactsThisWeek >= 5) {
+      insights.push(`Excelente ritmo de contactos: ${currentContactsThisWeek} esta semana.`);
+    } else if (currentContactsThisWeek < 3) {
+      insights.push(`Solo ${currentContactsThisWeek} contactos esta semana. Meta: 5+ para mantener el pipeline activo.`);
+    }
+
+    // Alertas urgentes
+    const urgentAlerts = [];
+    if (currentIncome < weeklyGoal * 0.5 && reportWeekOffset === 0) {
+      urgentAlerts.push({ type: "danger", message: `Ingresos por debajo del 50% de la meta semanal (${money.format(currentIncome)} de ${money.format(weeklyGoal)})` });
+    }
+    if (currentContactsThisWeek < 3 && reportWeekOffset === 0) {
+      urgentAlerts.push({ type: "warning", message: `Solo ${currentContactsThisWeek} contactos esta semana. Necesitas acelerar el seguimiento.` });
+    }
+    if (hotLeads >= 3 && reportWeekOffset === 0) {
+      urgentAlerts.push({ type: "success", message: `Tienes ${hotLeads} leads calientes esperando. ¡Es momento de cerrar ventas!` });
+    }
+
+    const whatsappMsg = (client) => {
+      const msgs = {
+        "Lead frio": `Hola ${client.name}! 👋 Quería retomar el contacto contigo. ¿Sigues interesada en ${client.service}? Con gusto te cuento más.`,
+        "Lead tibio": `Hola ${client.name}! 😊 Estaba pensando en ti. ¿Cómo vas? Me encantaría contarte sobre ${client.service} y cómo puede ayudarte.`,
+        "Lead caliente": `Hola ${client.name}! 🔥 Quería hacer seguimiento a nuestra conversación sobre ${client.service}. ¿Tienes 5 minutos para hablar hoy?`,
+        "Venta ganada": `Hola ${client.name}! 💛 ¿Cómo vas con ${client.service}? Quería saber cómo te ha ido y si tienes alguna pregunta.`
+      };
+      return encodeURIComponent(msgs[client.status] || `Hola ${client.name}, quería hacer seguimiento sobre ${client.service}.`);
+    };
+
+    const urgentFollowUps = clients
+      .filter((c) => c.status !== "Venta ganada")
+      .sort((a, b) => {
+        const score = { "Lead caliente": 3, "Lead tibio": 2, "Lead frio": 1 };
+        return (score[b.status] || 0) - (score[a.status] || 0);
+      })
+      .slice(0, 5);
+
+    const sourceCounts = clients.reduce((acc, c) => {
+      const src = c.source || "Sin fuente";
+      acc[src] = (acc[src] || 0) + 1;
+      return acc;
+    }, {});
+
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Reporte semanal</h2>
+          <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}}>
+            <button type="button" onClick={() => setReportWeekOffset(reportWeekOffset - 1)}
+              style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Anterior</button>
+            <span style={{fontSize:"14px",fontWeight:700,color:"var(--purple)"}}>{formatDateRange(currentWeek.start, currentWeek.end)}</span>
+            <button type="button" onClick={() => setReportWeekOffset(reportWeekOffset + 1)} disabled={reportWeekOffset >= 0}
+              style={{border:"1px solid var(--line)",background:reportWeekOffset >= 0 ? "#f5f5f5" : "#fff",borderRadius:"8px",padding:"6px 12px",cursor:reportWeekOffset >= 0 ? "not-allowed" : "pointer",fontSize:"13px",fontWeight:700,opacity:reportWeekOffset >= 0 ? 0.5 : 1}}>Siguiente →</button>
+            {reportWeekOffset !== 0 && (
+              <button type="button" onClick={() => setReportWeekOffset(0)}
+                style={{border:"1px solid var(--purple)",background:"var(--purple-soft)",color:"var(--purple)",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>Semana actual</button>
+            )}
+          </div>
+        </div>
+
+        {/* Alertas urgentes */}
+        {urgentAlerts.length > 0 && (
+          <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
+            {urgentAlerts.map((alert, i) => (
+              <div key={i} className={`alert-banner alert-${alert.type === "danger" ? "red" : alert.type === "warning" ? "orange" : "green"}`}
+                style={{fontSize:"15px",fontWeight:700,padding:"16px 20px"}}>
+                {alert.type === "danger" && "🚨 "}{alert.type === "warning" && "⚠️ "}{alert.type === "success" && "🎯 "}
+                {alert.message}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Resumen ejecutivo de 30 segundos */}
+        <div className="card" style={{background:"linear-gradient(135deg, rgba(212,104,122,0.08), rgba(201,169,110,0.08))",border:"2px solid var(--purple)",marginBottom:"20px",padding:"24px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px"}}>
+            <span style={{fontSize:"32px"}}>⚡</span>
+            <h3 style={{margin:0,fontSize:"22px",color:"var(--purple)"}}>Resumen ejecutivo — 30 segundos</h3>
+          </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:"20px",marginBottom:"16px"}}>
+            <div>
+              <p style={{margin:"0 0 4px",fontSize:"13px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Ingresos esta semana</p>
+              <div style={{display:"flex",alignItems:"baseline",gap:"8px"}}>
+                <strong style={{fontSize:"32px",color:"var(--green)",lineHeight:1}}>{money.format(currentIncome)}</strong>
+                {incomeChange !== 0 && (
+                  <span style={{fontSize:"16px",fontWeight:700,color:incomeChange > 0 ? "var(--green)" : "var(--pink)"}}>
+                    {incomeChange > 0 ? "↑" : "↓"} {Math.abs(incomeChange)}%
+                  </span>
+                )}
+              </div>
+            </div>
+            <div>
+              <p style={{margin:"0 0 4px",fontSize:"13px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Ventas cerradas</p>
+              <div style={{display:"flex",alignItems:"baseline",gap:"8px"}}>
+                <strong style={{fontSize:"32px",color:"var(--purple)",lineHeight:1}}>{currentWon}</strong>
+                {wonChange !== 0 && (
+                  <span style={{fontSize:"16px",fontWeight:700,color:wonChange > 0 ? "var(--green)" : "var(--pink)"}}>
+                    {wonChange > 0 ? "↑" : "↓"} {Math.abs(wonChange)}%
+                  </span>
+                )}
+              </div>
+            </div>
+            <div>
+              <p style={{margin:"0 0 4px",fontSize:"13px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Contactos realizados</p>
+              <div style={{display:"flex",alignItems:"baseline",gap:"8px"}}>
+                <strong style={{fontSize:"32px",color:"var(--orange)",lineHeight:1}}>{currentContactsThisWeek}</strong>
+                {contactsChange !== 0 && (
+                  <span style={{fontSize:"16px",fontWeight:700,color:contactsChange > 0 ? "var(--green)" : "var(--pink)"}}>
+                    {contactsChange > 0 ? "↑" : "↓"} {Math.abs(contactsChange)}%
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+          {insights.length > 0 && (
+            <div style={{borderTop:"1px solid var(--line)",paddingTop:"16px"}}>
+              <p style={{margin:"0 0 10px",fontSize:"13px",fontWeight:800,textTransform:"uppercase",color:"var(--purple)"}}>💡 Insights clave</p>
+              {insights.map((insight, i) => (
+                <p key={i} style={{margin:"6px 0",fontSize:"14px",lineHeight:1.6,color:"var(--ink)"}}>• {insight}</p>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Meta de ventas del mes */}
+        <div className="card" style={{marginBottom:"14px",display:"grid",gap:"12px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"12px"}}>
+            <div>
+              <h3 style={{margin:0}}>💰 Meta de ventas del mes</h3>
+              <p className="helper-copy" style={{marginTop:"4px"}}>{money.format(wonSalesTotal)} cerrados de {money.format(salesGoal || monthlyGoal)} meta</p>
+            </div>
+            <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+              <span style={{fontSize:"13px",color:"var(--muted)"}}>Meta:</span>
+              <input type="number" min="0" value={salesGoal || ""} placeholder={money.format(monthlyGoal)}
+                onChange={(e) => setSalesGoal(Number(e.target.value))}
+                style={{width:"120px",minHeight:"36px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 10px",font:"inherit"}} />
+            </div>
+          </div>
+          <Progress value={salesGoalProgress} tone="green" />
+          <div style={{display:"flex",justifyContent:"space-between",fontSize:"13px",color:"var(--muted)"}}>
+            <span>{salesGoalProgress}% completado</span>
+            <span>Faltan {money.format(Math.max(0, (salesGoal || monthlyGoal) - wonSalesTotal))}</span>
+          </div>
+        </div>
+
+        <div className="purpose-sections">
+          {/* Resumen ventas */}
+          <div className="card purpose-block">
+            <h3>📊 Ventas esta semana</h3>
+            <div className="purpose-stat"><span>Ingresos registrados</span><strong>{money.format(totals.income)}</strong></div>
+            <div className="purpose-stat"><span>Utilidad</span><strong style={{color: totals.profit >= 0 ? "var(--green)" : "var(--pink)"}}>{money.format(totals.profit)}</strong></div>
+            {(() => {
+              const totalFees = incomeSources.reduce((sum, src) => {
+                const actual = movements.filter((m) => m.type === "income" && m.classification === src.name).reduce((s, m) => s + m.amount, 0);
+                return sum + calcFee(actual, src.platform);
+              }, 0);
+              if (totalFees === 0) return null;
+              return (
+                <>
+                  <div className="purpose-stat"><span>Fees de plataformas</span><strong style={{color:"var(--pink)"}}>-{money.format(totalFees)}</strong></div>
+                  <div className="purpose-stat"><span>Ingreso neto real</span><strong style={{color:"var(--green)"}}>{money.format(totals.income - totalFees)}</strong></div>
+                </>
+              );
+            })()}
+            <div className="purpose-stat"><span>Ventas cerradas</span><strong>{totalWon} clientas</strong></div>
+            <div className="purpose-stat"><span>Tasa de conversión</span><strong>{conversionRate}%</strong></div>
+            <div className="purpose-stat"><span>Leads calientes ahora</span><strong>{hotLeads}</strong></div>
+            <div className="purpose-stat"><span>Contactos realizados</span><strong style={{color:"var(--green)"}}>{contactsThisWeek} esta semana</strong></div>
+            <ProgressLabel label="Meta contactos (5)" value={Math.min(Math.round((contactsThisWeek/5)*100),100)} tone="green" />
+            {incomePerHour > 0 && <div className="purpose-stat"><span>Ingreso por hora</span><strong>{money.format(incomePerHour)}</strong></div>}
+          </div>
+
+          {/* Recordatorios WhatsApp */}
+          <div className="card purpose-block">
+            <h3>💬 Recordatorios de seguimiento</h3>
+            <p className="helper-copy">Toca el botón para abrir WhatsApp con el mensaje listo.</p>
+            {urgentFollowUps.length === 0 && <p className="helper-copy">No hay leads activos por seguir.</p>}
+            {urgentFollowUps.map((client) => (
+              <div key={client.id} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--line)"}}>
+                <div>
+                  <strong style={{fontSize:"14px"}}>{client.name}</strong>
+                  <small style={{display:"block",color:"var(--muted)"}}>{client.status} • {client.nextAction || "Hacer seguimiento"}</small>
+                </div>
+                <a href={`https://wa.me/?text=${whatsappMsg(client)}`} target="_blank" rel="noreferrer"
+                  style={{display:"inline-flex",alignItems:"center",gap:"6px",padding:"8px 12px",borderRadius:"8px",background:"#25d366",color:"#fff",fontSize:"12px",fontWeight:700,textDecoration:"none",whiteSpace:"nowrap"}}>
+                  📲 WhatsApp
+                </a>
+              </div>
+            ))}
+          </div>
+
+          {/* Hogar */}
+          <div className="card purpose-block">
+            <h3>🏠 Hogar esta semana</h3>
+            <div className="purpose-stat"><span>Tareas completadas</span><strong>{completedHomeTasks}/{homeTasks.length}</strong></div>
+            <ProgressLabel label="Progreso hogar" value={homeProgress} tone="orange" />
+            <div className="purpose-stat"><span>Disponible familiar</span><strong>{money.format(homeAvailable)}</strong></div>
+            <div className="purpose-stat"><span>Días de presencia</span><strong>{Object.values(purpose.familyDays || {}).filter(Boolean).length} días</strong></div>
+          </div>
+
+          {/* Energía */}
+          <div className="card purpose-block">
+            <h3>⚡ Energía y bienestar</h3>
+            <div className="purpose-stat"><span>Ánimo de la semana</span><strong>{purpose.mood}</strong></div>
+            <div className="purpose-stat"><span>Nivel de energía</span><strong>{purpose.energy}</strong></div>
+            <ProgressLabel label="Autocuidado" value={Math.round((selfCareScore / 4) * 100)} tone="green" />
+            <div className="purpose-stat"><span>Horas trabajadas</span><strong>{purpose.hoursWorked || 0}h</strong></div>
+            <div className="purpose-stat"><span>Momentos de conexión</span><strong>{purpose.connectionMoments || 0}</strong></div>
+          </div>
+
+          {/* Fuentes de origen */}
+          <div className="card purpose-block purpose-block-wide">
+            <h3>📍 ¿De dónde vienen tus clientas?</h3>
+            <p className="helper-copy">Invierte tu tiempo donde más resultado produce.</p>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"10px",marginTop:"8px"}}>
+              {Object.entries(sourceCounts).sort((a,b) => b[1]-a[1]).map(([src, count]) => (
+                <div key={src} style={{border:"1px solid var(--line)",borderRadius:"12px",padding:"14px",textAlign:"center",background:"rgba(255,255,255,0.8)"}}>
+                  <strong style={{fontSize:"28px",color:"#6f2f4b",display:"block"}}>{count}</strong>
+                  <small style={{color:"var(--muted)"}}>{src}</small>
+                  <div style={{marginTop:"6px"}}><Progress value={Math.round((count/totalLeads)*100)} tone="purple" /></div>
+                  <small style={{color:"var(--muted)"}}>{Math.round((count/totalLeads)*100)}%</small>
+                </div>
+              ))}
+              {Object.keys(sourceCounts).length === 0 && <p className="helper-copy">Agrega clientas con fuente de origen para ver este análisis.</p>}
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderPricing() {
+    const plans = [
+      { id: "free", name: "Gratis", price: "$0", period: "", color: "var(--muted)",
+        features: [`${PLAN_LIMITS.free.movements} movimientos/mes`,`${PLAN_LIMITS.free.clients} clientes`,`${PLAN_LIMITS.free.content} contenidos/mes`,`${PLAN_LIMITS.free.homeTasks} tareas hogar/mes`,"Sincronización en la nube","Todas las funciones básicas"] },
+      { id: "emprendedora", name: "Emprendedora", price: PLAN_PRICES.emprendedora.usd, period: "/mes USD",
+        priceCop: PLAN_PRICES.emprendedora.cop+" COP/mes", priceYear: PLAN_PRICES.emprendedora.usdYear+" USD/año (2 meses gratis)",
+        color: "var(--pink)",
+        features: [`${PLAN_LIMITS.emprendedora.movements} movimientos/mes`,`${PLAN_LIMITS.emprendedora.clients} clientes`,`${PLAN_LIMITS.emprendedora.content} contenidos/mes`,`${PLAN_LIMITS.emprendedora.homeTasks} tareas hogar/mes`,"Exportar Excel y PDF","Historial 6 meses","Soporte email 48h"] },
+      { id: "ceo", name: "CEO", price: PLAN_PRICES.ceo.usd, period: "/mes USD",
+        priceCop: PLAN_PRICES.ceo.cop+" COP/mes", priceYear: PLAN_PRICES.ceo.usdYear+" USD/año (2 meses gratis)",
+        badge: "RECOMENDADO", color: "var(--purple)",
+        features: ["Todo ilimitado","Exportar Excel y PDF","Historial ilimitado","Calculadora de precio de servicios ✨","Proyección de ingresos ✨","Temporizador Pomodoro flotante ✨","Acceso anticipado a nuevas funciones","Soporte prioritario 24h"] }
+    ];
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title"><h2>Planes y Precios</h2><p>Elige el plan que mejor se adapte a tu negocio</p></div>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"20px",maxWidth:"1000px",margin:"0 auto"}}>
+          {plans.map((plan) => {
+            const isCurrent = effectivePlan===plan.id||(plan.id==="ceo"&&effectivePlan==="premium");
+            return (
+              <div key={plan.id} className="card" style={{border:`2px solid ${isCurrent||plan.id==="ceo"?plan.color:"var(--line)"}`,background:plan.id==="ceo"?"linear-gradient(135deg,rgba(212,104,122,0.05),rgba(201,169,110,0.05))":"#fff",position:"relative"}}>
+                {isCurrent&&<div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:plan.color,color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:800}}>PLAN ACTUAL</div>}
+                {plan.badge&&!isCurrent&&<div style={{position:"absolute",top:"12px",right:"12px",background:"var(--green)",color:"#fff",padding:"3px 10px",borderRadius:"20px",fontSize:"11px",fontWeight:800}}>{plan.badge}</div>}
+                <div style={{padding:"24px"}}>
+                  <h3 style={{margin:"0 0 4px",fontSize:"22px",color:plan.color}}>{plan.name}</h3>
+                  <div style={{fontSize:"34px",fontWeight:800,color:plan.color,lineHeight:1,marginBottom:"2px"}}>{plan.price}<span style={{fontSize:"14px",fontWeight:400,color:"var(--muted)"}}>{plan.period}</span></div>
+                  {plan.priceCop&&<p style={{margin:"0 0 2px",fontSize:"13px",color:"var(--muted)"}}>{plan.priceCop}</p>}
+                  {plan.priceYear&&<p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>{plan.priceYear}</p>}
+                  {!plan.priceCop&&<p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Para empezar a organizarte</p>}
+                  <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
+                    {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>✓</span><span>{f}</span></div>))}
+                  </div>
+                  {isCurrent?(
+                    <div style={{padding:"10px",background:"rgba(0,0,0,0.05)",borderRadius:"8px",textAlign:"center",color:plan.color,fontWeight:700,fontSize:"14px"}}>Plan actual</div>
+                  ):plan.id==="free"?(
+                    <button className="primary-button" onClick={()=>setUserPlan("free")} style={{width:"100%",background:"var(--muted)"}}>Cambiar a gratis</button>
+                  ):(
+                    <button className="primary-button" style={{width:"100%",background:plan.color,fontSize:"15px",opacity:0.7,cursor:"not-allowed"}} disabled>Próximamente</button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="card" style={{maxWidth:"1000px",margin:"28px auto 0",padding:"24px"}}>
+          <h3 style={{margin:"0 0 16px"}}>Tu uso actual — Plan {effectivePlan==="free"?"Gratis":effectivePlan==="emprendedora"?"Emprendedora":"CEO"}</h3>
+          <div style={{display:"grid",gap:"14px"}}>
+            {[{label:"Movimientos",used:movements.length,limit:currentLimits.movements},{label:"Clientes",used:clients.length,limit:currentLimits.clients},{label:"Contenidos",used:contentItems.length,limit:currentLimits.content},{label:"Tareas hogar",used:homeTasks.length,limit:currentLimits.homeTasks}].map(({label,used,limit})=>(
+              <div key={label}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:"6px",fontSize:"14px"}}><span>{label}</span><span><strong>{used}</strong> / {limit===Infinity?"∞":limit}</span></div>
+                <Progress value={limit===Infinity?0:Math.min(Math.round((used/limit)*100),100)} tone={limit!==Infinity&&used>=limit?"pink":"green"} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card" style={{maxWidth:"1000px",margin:"20px auto 0",padding:"24px",border:"2px dashed var(--line)"}}>
+          <h3 style={{margin:"0 0 8px"}}>🎟️ ¿Tienes un código de acceso beta?</h3>
+          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu código de acceso CEO gratis por 90 días.</p>
+          {!showBetaInput?(
+            <button className="primary-button" style={{padding:"10px 24px"}} onClick={()=>setShowBetaInput(true)}>Tengo un código</button>
+          ):(
+            <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
+              <input placeholder="Ingresa tu código de acceso" value={betaCode} onChange={(e)=>setBetaCode(e.target.value)} style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
+              <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
+              {betaCodeError&&<p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
+            </form>
+          )}
+          {isBetaUser&&(effectivePlan==="ceo"||effectivePlan==="premium")&&(
+            <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
+              ✅ Código activo — Plan CEO gratis por {betaDaysLeft} días más
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  // ---- FIN renderPricing ----
+  function _renderPricingOLD_PLACEHOLDER() {
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Planes y Precios</h2>
+          <p>Elige el plan que mejor se adapte a tu negocio</p>
+        </div>
+
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(320px, 1fr))",gap:"24px",maxWidth:"900px",margin:"0 auto"}}>
+          {/* Plan Gratis */}
+          <div className="card" style={{border: userPlan === "free" ? "2px solid var(--purple)" : "1px solid var(--line)",position:"relative"}}>
+            {userPlan === "free" && (
+              <div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:"var(--purple)",color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:800}}>PLAN ACTUAL</div>
+            )}
+            <div style={{padding:"24px"}}>
+              <h3 style={{margin:"0 0 8px",fontSize:"24px"}}>Plan Gratis</h3>
+              <div style={{fontSize:"36px",fontWeight:800,color:"var(--purple)",lineHeight:1,marginBottom:"8px"}}>$0</div>
+              <p style={{fontSize:"14px",color:"var(--muted)",marginBottom:"24px"}}>Perfecto para empezar</p>
+              
+              <div style={{display:"grid",gap:"12px",marginBottom:"24px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>{PLAN_LIMITS.free.movements} movimientos financieros/mes</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>{PLAN_LIMITS.free.clients} clientes</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>{PLAN_LIMITS.free.content} contenidos/mes</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>{PLAN_LIMITS.free.homeTasks} tareas del hogar/mes</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>Sincronización en la nube</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>✓</span>
+                  <span>Todas las funcionalidades básicas</span>
+                </div>
+              </div>
+              
+              {userPlan === "free" ? (
+                <div style={{padding:"12px",background:"var(--purple-soft)",borderRadius:"8px",textAlign:"center",color:"var(--purple)",fontWeight:700}}>Plan actual</div>
+              ) : (
+                <button className="primary-button" onClick={() => setUserPlan("free")} style={{width:"100%"}}>Cambiar a gratis</button>
+              )}
+            </div>
+          </div>
+
+          {/* Plan Premium */}
+          <div className="card" style={{border: userPlan === "premium" ? "2px solid var(--purple)" : "2px solid var(--purple)",background:"linear-gradient(135deg, rgba(212,104,122,0.05), rgba(201,169,110,0.05))",position:"relative"}}>
+            {userPlan === "premium" && (
+              <div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:"var(--purple)",color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:800}}>PLAN ACTUAL</div>
+            )}
+            <div style={{position:"absolute",top:"16px",right:"16px",background:"var(--green)",color:"#fff",padding:"4px 12px",borderRadius:"20px",fontSize:"11px",fontWeight:800}}>RECOMENDADO</div>
+            <div style={{padding:"24px"}}>
+              <h3 style={{margin:"0 0 8px",fontSize:"24px",color:"var(--purple)"}}>Plan Premium</h3>
+              <div style={{fontSize:"36px",fontWeight:800,color:"var(--purple)",lineHeight:1,marginBottom:"4px"}}>$29.900</div>
+              <p style={{fontSize:"14px",color:"var(--muted)",marginBottom:"24px"}}>COP/mes • $7.99 USD/mes</p>
+              
+              <div style={{display:"grid",gap:"12px",marginBottom:"24px"}}>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span><strong>Movimientos ilimitados</strong></span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span><strong>Clientes ilimitados</strong></span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span><strong>Contenido ilimitado</strong></span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span><strong>Tareas ilimitadas</strong></span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span>Sincronización en la nube</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span>Soporte prioritario</span>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>✓</span>
+                  <span>Acceso anticipado a nuevas funciones</span>
+                </div>
+              </div>
+              
+              {userPlan === "premium" ? (
+                <div style={{padding:"12px",background:"var(--purple)",color:"#fff",borderRadius:"8px",textAlign:"center",fontWeight:700}}>Plan actual</div>
+              ) : (
+                <button className="primary-button" onClick={() => setUserPlan("premium")} style={{width:"100%",background:"var(--purple)",fontSize:"16px"}}>Actualizar a Premium</button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Indicadores de uso */}
+        <div className="card" style={{maxWidth:"900px",margin:"32px auto 0",padding:"24px"}}>
+          <h3 style={{margin:"0 0 20px"}}>Tu uso actual</h3>
+          <div style={{display:"grid",gap:"16px"}}>
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
+                <span>Movimientos financieros</span>
+                <span><strong>{movements.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.movements : "∞"}</span>
+              </div>
+              <Progress value={userPlan === "free" ? Math.min(Math.round((movements.length / PLAN_LIMITS.free.movements) * 100), 100) : 0} tone={movements.length >= PLAN_LIMITS.free.movements ? "pink" : "green"} />
+            </div>
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
+                <span>Clientes</span>
+                <span><strong>{clients.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.clients : "∞"}</span>
+              </div>
+              <Progress value={userPlan === "free" ? Math.min(Math.round((clients.length / PLAN_LIMITS.free.clients) * 100), 100) : 0} tone={clients.length >= PLAN_LIMITS.free.clients ? "pink" : "green"} />
+            </div>
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
+                <span>Contenidos</span>
+                <span><strong>{contentItems.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.content : "∞"}</span>
+              </div>
+              <Progress value={userPlan === "free" ? Math.min(Math.round((contentItems.length / PLAN_LIMITS.free.content) * 100), 100) : 0} tone={contentItems.length >= PLAN_LIMITS.free.content ? "pink" : "green"} />
+            </div>
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
+                <span>Tareas del hogar</span>
+                <span><strong>{homeTasks.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.homeTasks : "∞"}</span>
+              </div>
+              <Progress value={userPlan === "free" ? Math.min(Math.round((homeTasks.length / PLAN_LIMITS.free.homeTasks) * 100), 100) : 0} tone={homeTasks.length >= PLAN_LIMITS.free.homeTasks ? "pink" : "green"} />
+            </div>
+          </div>
+        </div>
+
+        {/* FAQ */}
+        <div className="card" style={{maxWidth:"900px",margin:"24px auto 0",padding:"24px"}}>
+          <h3 style={{margin:"0 0 20px"}}>Preguntas frecuentes</h3>
+          <div style={{display:"grid",gap:"16px"}}>
+            <div>
+              <strong style={{display:"block",marginBottom:"6px"}}>¿Puedo cambiar de plan en cualquier momento?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Sí, puedes actualizar o cambiar tu plan cuando quieras desde esta página.</p>
+            </div>
+            <div>
+              <strong style={{display:"block",marginBottom:"6px"}}>¿Qué pasa si alcanzo el límite del plan gratis?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Te mostraremos una notificación invitándote a actualizar a Premium para continuar agregando más datos.</p>
+            </div>
+            <div>
+              <strong style={{display:"block",marginBottom:"6px"}}>¿Los datos se mantienen al cambiar de plan?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Sí, todos tus datos se mantienen intactos al cambiar entre planes.</p>
+            </div>
+            <div>
+              <strong style={{display:"block",marginBottom:"6px"}}>¿Cómo realizo el pago?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Próximamente integraremos Mercado Pago (Colombia) y PayPal (internacional) como pasarelas de pago seguras.</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Código beta */}
+        <div className="card" style={{maxWidth:"900px",margin:"24px auto 0",padding:"24px",border:"2px dashed var(--line)"}}>
+          <h3 style={{margin:"0 0 8px"}}>¿Tienes un código de acceso beta?</h3>
+          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu código de acceso Premium gratis por 90 días.</p>
+          {!showBetaInput ? (
+            <button className="primary-button" style={{padding:"10px 24px"}} onClick={() => setShowBetaInput(true)}>Tengo un código</button>
+          ) : (
+            <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
+              <input
+                placeholder="Ingresa tu código (ej: MAMACEO2026)"
+                value={betaCode}
+                onChange={(e) => setBetaCode(e.target.value)}
+                style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit",fontSize:"15px"}}
+                autoFocus
+              />
+              <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
+              {betaCodeError && <p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
+            </form>
+          )}
+          {isBetaUser && effectivePlan === "premium" && (
+            <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
+              ✅ Código activo — Premium gratis por {betaDaysLeft} días más
+            </div>
+          )}
+        </div>
+      </section>
+    );
+  }
+
 }
 
 function SystemsDonut({ tasks }) {
@@ -3077,297 +3363,70 @@ function LineChart({ movements }) {
   );
 }
 
-  function MovementList({ compact } = {}) {
-    const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "" });
-    const [contentFilter, setContentFilter] = useState("");
-    const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "", phone: "" });
-    const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer", goal: "Vender" });
-    const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
-    const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
 
-    return (
-      <div className="card movement-list-card">
-        <h3>Últimos movimientos</h3>
-        {movements.length === 0 && <p className="helper-copy">Agrega tu primer movimiento.</p>}
-        {movements.slice(0, compact ? 5 : 10).map((m) => (
-          <div className="movement-row" key={m.id}>
-            <div className="movement-info">
-              <strong>{m.description}</strong>
-              <small>{m.category} • {m.bank}</small>
-            </div>
-            <b className={m.type === "income" ? "income-amount" : "expense-amount"}>
-              {m.type === "income" ? "+" : "-"}{money.format(m.amount)}
-            </b>
-            <button type="button" className="row-delete" onClick={() => confirmDelete("¿Eliminar?", () => setMovements((c) => c.filter((mv) => mv.id !== m.id)))}>×</button>
-          </div>
-        ))}
-      </div>
-    );
-  }
 
-  function CalendarCard() {
-    return (
-      <div className="card calendar-card">
-        <h3>Planificador semanal</h3>
-        <p className="helper-copy">Bloquea tiempo para lo importante.</p>
-        {weekDays.map((day) => (
-          <div className="week-day-row" key={day}>
-            <strong>{day}</strong>
-            <input
-              placeholder="Bloque principal del día"
-              value={weekBlocks[day] || ""}
-              onChange={(e) => setWeekBlocks((c) => ({ ...c, [day]: e.target.value }))}
-            />
-          </div>
-        ))}
-      </div>
-    );
-  }
 
-  function ReinvestmentCard() {
-    return (
-      <div className="card reinvestment-card">
-        <h3>Reinversión inteligente</h3>
-        <p className="helper-copy">Separa un % de tus ventas para crecer.</p>
-        <label>
-          <span>% de reinversión</span>
-          <input
-            type="number"
-            min="0"
-            max="100"
-            value={reinvestmentPercent}
-            onChange={(e) => updateBusinessSetting("reinvestmentPercent", e.target.value)}
-          />
-        </label>
-        <div className="reinvestment-amount">
-          <span>Monto a reinvertir</span>
-          <strong>{money.format(reinvestmentAmount)}</strong>
-        </div>
-        <p className="helper-copy">Usa esto para marketing, herramientas o capacitación.</p>
-      </div>
-    );
-  }
 
-  function BanksCard() {
-    return (
-      <div className="card banks-card">
-        <h3>Cuentas y plataformas</h3>
-        <p className="helper-copy">Gestiona tus bancos y métodos de pago.</p>
-        {banks.map((bank) => (
-          <div className="bank-row" key={bank}>
-            <span>{bank}</span>
-            <button type="button" onClick={() => removeBank(bank)}>×</button>
-          </div>
-        ))}
-        <form onSubmit={addBank} style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
-          <input
-            placeholder="Nueva cuenta"
-            value={newBank}
-            onChange={(e) => setNewBank(e.target.value)}
-            style={{ flex: 1 }}
-          />
-          <button className="primary-button" type="submit">+</button>
-        </form>
-      </div>
-    );
-  }
 
-  function renderWeeklyReport() {
-    const weekIncome = totals.income;
-    const weekExpenses = totals.expenses;
-    const weekProfit = totals.profit;
-    const weekProgress = Math.min(Math.round((weekIncome / weeklyGoal) * 100), 100);
-    const topMovement = [...movements].filter((m) => m.type === "income").sort((a, b) => b.amount - a.amount)[0];
-    const biggestExpense = [...movements].filter((m) => m.type === "expense").sort((a, b) => b.amount - a.amount)[0];
 
-    return (
-      <section className="panel workspace-panel">
-        <div className="section-title">
-          <h2>Reporte semanal</h2>
-          <p>Resumen completo de tu semana</p>
-        </div>
 
-        <div className="report-grid">
-          <div className="card">
-            <h3>💰 Finanzas</h3>
-            <div className="report-stat">
-              <span>Ingresos</span>
-              <strong style={{ color: "var(--green)" }}>{money.format(weekIncome)}</strong>
-            </div>
-            <div className="report-stat">
-              <span>Gastos</span>
-              <strong style={{ color: "var(--pink)" }}>{money.format(weekExpenses)}</strong>
-            </div>
-            <div className="report-stat">
-              <span>Utilidad</span>
-              <strong style={{ color: weekProfit >= 0 ? "var(--green)" : "var(--pink)" }}>{money.format(weekProfit)}</strong>
-            </div>
-            <ProgressLabel label="Meta semanal" value={weekProgress} tone="purple" />
-            {topMovement && <p className="helper-copy">Mayor ingreso: {topMovement.description} ({money.format(topMovement.amount)})</p>}
-            {biggestExpense && <p className="helper-copy">Mayor gasto: {biggestExpense.description} ({money.format(biggestExpense.amount)})</p>}
-          </div>
 
-          <div className="card">
-            <h3>👩💼 Clientes</h3>
-            <div className="report-stat">
-              <span>Contactos realizados</span>
-              <strong>{contactsThisWeek}</strong>
-            </div>
-            <div className="report-stat">
-              <span>Ventas cerradas</span>
-              <strong>{money.format(wonSalesTotal)}</strong>
-            </div>
-            <div className="report-stat">
-              <span>Leads activos</span>
-              <strong>{followUpClients.length}</strong>
-            </div>
-          </div>
-
-          <div className="card">
-            <h3>📱 Contenido</h3>
-            <div className="report-stat">
-              <span>Piezas publicadas</span>
-              <strong>{publishedContent}</strong>
-            </div>
-            <div className="report-stat">
-              <span>Pendientes</span>
-              <strong>{contentItems.filter((i) => i.status !== "Publicado").length}</strong>
-            </div>
-          </div>
-
-          <div className="card">
-            <h3>🏠 Hogar</h3>
-            <div className="report-stat">
-              <span>Tareas completadas</span>
-              <strong>{completedHomeTasks}/{homeTasks.length}</strong>
-            </div>
-            <ProgressLabel label="Progreso" value={homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0} tone="green" />
-          </div>
-
-          <div className="card">
-            <h3>✨ Propósito</h3>
-            <div className="report-stat">
-              <span>Días de presencia</span>
-              <strong>{Object.values(purpose.familyDays || {}).filter(Boolean).length}/7</strong>
-            </div>
-            <div className="report-stat">
-              <span>Momentos de conexión</span>
-              <strong>{purpose.connectionMoments || 0}</strong>
-            </div>
-            <div className="report-stat">
-              <span>Clientes impactados</span>
-              <strong>{purpose.clientsImpacted || 0}</strong>
-            </div>
-          </div>
-        </div>
-      </section>
-    );
-  }
-
-  function renderPricing() {
-    return (
-      <section className="panel workspace-panel">
-        <div className="section-title">
-          <h2>Planes y precios</h2>
-          <p>Elige el plan que mejor se adapte a tu negocio</p>
-        </div>
-
-        {!isBetaUser && (
-          <div className="card" style={{ marginBottom: "20px", background: "linear-gradient(135deg, rgba(212,104,122,0.1), rgba(201,169,110,0.1))", border: "2px solid var(--purple)" }}>
-            <h3>🎁 Código beta exclusivo</h3>
-            <p>Si eres parte del grupo beta de UMP Academy, activa tu acceso Premium gratis por 90 días.</p>
-            {!showBetaInput ? (
-              <button className="primary-button" onClick={() => setShowBetaInput(true)}>Tengo un código beta</button>
-            ) : (
-              <form onSubmit={activateBetaCode} style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
-                <input
-                  placeholder="Ingresa tu código"
-                  value={betaCode}
-                  onChange={(e) => setBetaCode(e.target.value)}
-                  style={{ flex: 1 }}
-                />
-                <button className="primary-button" type="submit">Activar</button>
-              </form>
-            )}
-            {betaCodeError && <p style={{ color: "var(--pink)", marginTop: "8px", fontSize: "13px" }}>{betaCodeError}</p>}
-          </div>
-        )}
-
-        <div className="pricing-grid">
-          <div className="pricing-card">
-            <h3>Plan Gratis</h3>
-            <div className="pricing-amount">$0</div>
-            <p>Para empezar</p>
-            <ul className="pricing-features">
-              <li>✓ Hasta {PLAN_LIMITS.free.movements} movimientos</li>
-              <li>✓ Hasta {PLAN_LIMITS.free.clients} clientes</li>
-              <li>✓ Hasta {PLAN_LIMITS.free.content} contenidos</li>
-              <li>✓ Hasta {PLAN_LIMITS.free.homeTasks} tareas del hogar</li>
-              <li>✓ Guardado local</li>
-            </ul>
-            {effectivePlan === "free" && <div className="pricing-badge">Plan actual</div>}
-          </div>
-
-          <div className="pricing-card pricing-card-featured">
-            <div className="pricing-badge-top">Más popular</div>
-            <h3>Plan Emprendedora</h3>
-            <div className="pricing-amount">{PLAN_PRICES.emprendedora.cop}<span>/mes</span></div>
-            <p>Para crecer</p>
-            <ul className="pricing-features">
-              <li>✓ Hasta {PLAN_LIMITS.emprendedora.movements} movimientos</li>
-              <li>✓ Hasta {PLAN_LIMITS.emprendedora.clients} clientes</li>
-              <li>✓ Hasta {PLAN_LIMITS.emprendedora.content} contenidos</li>
-              <li>✓ Hasta {PLAN_LIMITS.emprendedora.homeTasks} tareas del hogar</li>
-              <li>✓ Sincronización en la nube</li>
-              <li>✓ Soporte prioritario</li>
-            </ul>
-            {effectivePlan === "emprendedora" && <div className="pricing-badge">Plan actual</div>}
-            {effectivePlan !== "emprendedora" && <button className="primary-button">Próximamente</button>}
-          </div>
-
-          <div className="pricing-card">
-            <h3>Plan CEO</h3>
-            <div className="pricing-amount">{PLAN_PRICES.ceo.cop}<span>/mes</span></div>
-            <p>Sin límites</p>
-            <ul className="pricing-features">
-              <li>✓ Movimientos ilimitados</li>
-              <li>✓ Clientes ilimitados</li>
-              <li>✓ Contenido ilimitado</li>
-              <li>✓ Tareas ilimitadas</li>
-              <li>✓ Sincronización en la nube</li>
-              <li>✓ Temporizador Pomodoro</li>
-              <li>✓ Soporte VIP</li>
-            </ul>
-            {effectivePlan === "ceo" && <div className="pricing-badge">Plan actual</div>}
-            {effectivePlan !== "ceo" && <button className="primary-button">Próximamente</button>}
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   function renderTerminos() {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Términos y condiciones</h2>
-          <p>Última actualización: Enero 2026</p>
+          <h2>Términos y Condiciones</h2>
+          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Volver</button>
         </div>
-        <div className="card legal-content">
-          <h3>1. Aceptación de términos</h3>
-          <p>Al usar Mamá CEO App, aceptas estos términos y condiciones.</p>
+        <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 5 de junio de 2026</p>
           
-          <h3>2. Uso del servicio</h3>
-          <p>Mamá CEO App es una herramienta de gestión para emprendedoras. Te comprometes a usar la app de manera responsable.</p>
-          
-          <h3>3. Privacidad</h3>
-          <p>Tus datos son privados y no se comparten con terceros. Ver nuestra <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('privacidad'); }}>Política de Privacidad</a>.</p>
-          
-          <h3>4. Modificaciones</h3>
-          <p>Nos reservamos el derecho de modificar estos términos en cualquier momento.</p>
-          
-          <h3>5. Contacto</h3>
-          <p>Para consultas: hola@umpacademy.co</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Aceptación de los Términos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Al acceder y utilizar Mamá CEO App, aceptas estar sujeto a estos Términos y Condiciones. Si no estás de acuerdo con alguna parte de estos términos, no deberías usar la aplicación.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. Descripción del Servicio</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App es una plataforma de gestión integral diseñada para mamás emprendedoras que permite organizar y administrar su negocio, hogar y propósito en un solo lugar. El servicio incluye herramientas para gestión financiera, seguimiento de clientes, planificación de contenido, organización del hogar y seguimiento de objetivos personales.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. Registro y Cuenta de Usuario</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para utilizar Mamá CEO App, debes crear una cuenta proporcionando información precisa y completa. Eres responsable de mantener la confidencialidad de tu contraseña y de todas las actividades que ocurran bajo tu cuenta. Debes notificarnos inmediatamente sobre cualquier uso no autorizado de tu cuenta.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Uso Aceptable</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Te comprometes a utilizar Mamá CEO App únicamente para fines legales y de acuerdo con estos Términos. No debes:</p>
+          <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
+            <li>Usar la aplicación de manera que viole leyes locales, nacionales o internacionales</li>
+            <li>Intentar acceder sin autorización a otras cuentas, sistemas o redes</li>
+            <li>Interferir o interrumpir el servicio o los servidores conectados al servicio</li>
+            <li>Transmitir virus, malware o cualquier código malicioso</li>
+            <li>Usar la aplicación para propósitos comerciales no autorizados</li>
+          </ul>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Propiedad Intelectual</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todo el contenido, características y funcionalidad de Mamá CEO App, incluyendo pero no limitado a texto, gráficos, logos, iconos, imágenes y software, son propiedad exclusiva de UMP S.A.S y están protegidos por las leyes de propiedad intelectual de Colombia y tratados internacionales.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Privacidad y Protección de Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu privacidad es importante para nosotros. El uso de tu información personal está regido por nuestra Política de Privacidad, que forma parte integral de estos Términos. Al usar Mamá CEO App, aceptas la recolección y uso de tu información de acuerdo con nuestra Política de Privacidad y la Ley 1581 de 2012 de Protección de Datos Personales de Colombia.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. Suscripciones y Pagos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App puede ofrecer diferentes planes de suscripción. Los precios, características y términos de cada plan se especificarán claramente antes de la compra. Las suscripciones se renovarán automáticamente a menos que se cancelen antes de la fecha de renovación. Todos los pagos son procesados de forma segura a través de proveedores de pago certificados.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. Cancelación y Reembolsos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Puedes cancelar tu suscripción en cualquier momento desde la configuración de tu cuenta. La cancelación será efectiva al final del período de facturación actual. No se ofrecen reembolsos por períodos de suscripción parcialmente utilizados, excepto cuando lo requiera la ley aplicable.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Limitación de Responsabilidad</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App se proporciona "tal cual" y "según disponibilidad". No garantizamos que el servicio será ininterrumpido, seguro o libre de errores. En ningún caso UMP S.A.S será responsable por daños indirectos, incidentales, especiales, consecuentes o punitivos, incluyendo pérdida de beneficios, datos, uso o cualquier otra pérdida intangible.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Modificaciones del Servicio y Términos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Nos reservamos el derecho de modificar o discontinuar, temporal o permanentemente, el servicio (o cualquier parte del mismo) con o sin previo aviso. También podemos actualizar estos Términos periódicamente. Te notificaremos sobre cambios significativos publicando los nuevos Términos en la aplicación. Tu uso continuado del servicio después de dichos cambios constituye tu aceptación de los nuevos Términos.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Ley Aplicable y Jurisdicción</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Estos Términos se regirán e interpretarán de acuerdo con las leyes de la República de Colombia. Cualquier disputa relacionada con estos Términos estará sujeta a la jurisdicción exclusiva del Centro de Arbitraje y Conciliación de la Cámara de Comercio de Bogotá.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre estos Términos y Condiciones, puedes contactarnos a través de:</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S</strong></p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Sitio web: www.umpacademy.co</p>
         </div>
       </section>
     );
@@ -3377,27 +3436,87 @@ function LineChart({ movements }) {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Política de privacidad</h2>
-          <p>Última actualización: Enero 2026</p>
+          <h2>Política de Privacidad</h2>
+          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Volver</button>
         </div>
-        <div className="card legal-content">
-          <h3>1. Información que recopilamos</h3>
-          <p>Recopilamos la información que ingresas en la app: movimientos financieros, clientes, contenido y tareas.</p>
+        <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 5 de junio de 2026</p>
           
-          <h3>2. Cómo usamos tu información</h3>
-          <p>Tu información se usa únicamente para brindarte el servicio de la app. No vendemos ni compartimos tus datos.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Introducción</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>En UMP S.A.S, operadores de Mamá CEO App, nos comprometemos a proteger tu privacidad y tus datos personales. Esta Política de Privacidad explica cómo recopilamos, usamos, compartimos y protegemos tu información personal de acuerdo con la Ley 1581 de 2012 de Protección de Datos Personales de Colombia y el Reglamento General de Protección de Datos (GDPR) cuando aplique.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. Información que Recopilamos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Recopilamos la siguiente información cuando usas Mamá CEO App:</p>
+          <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
+            <li><strong>Información de cuenta:</strong> Nombre, correo electrónico, contraseña (encriptada)</li>
+            <li><strong>Información de perfil:</strong> Nombre del negocio, tipo de negocio, etapa empresarial, metas financieras</li>
+            <li><strong>Datos de uso:</strong> Información sobre cómo usas la aplicación, incluyendo movimientos financieros, clientes, contenido, tareas del hogar y objetivos personales que tú ingresas voluntariamente</li>
+            <li><strong>Información técnica:</strong> Dirección IP, tipo de navegador, sistema operativo, identificadores de dispositivo</li>
+            <li><strong>Cookies y tecnologías similares:</strong> Usamos cookies para mejorar tu experiencia y mantener tu sesión activa</li>
+          </ul>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. Cómo Usamos tu Información</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Utilizamos tu información personal para:</p>
+          <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
+            <li>Proporcionar, mantener y mejorar Mamá CEO App</li>
+            <li>Crear y gestionar tu cuenta de usuario</li>
+            <li>Procesar transacciones y gestionar suscripciones</li>
+            <li>Enviarte notificaciones importantes sobre el servicio</li>
+            <li>Responder a tus consultas y proporcionar soporte al cliente</li>
+            <li>Personalizar tu experiencia en la aplicación</li>
+            <li>Analizar el uso de la aplicación para mejorar nuestros servicios</li>
+            <li>Cumplir con obligaciones legales y regulatorias</li>
+            <li>Enviarte comunicaciones de marketing (solo con tu consentimiento explícito)</li>
+          </ul>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Base Legal para el Procesamiento</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Procesamos tu información personal bajo las siguientes bases legales: (a) Tu consentimiento explícito al crear una cuenta y usar la aplicación; (b) Ejecución del contrato de servicios contigo; (c) Cumplimiento de obligaciones legales; (d) Nuestros intereses legítimos en mejorar y proteger nuestros servicios.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Compartir tu Información</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>No vendemos tu información personal. Podemos compartir tu información con:</p>
+          <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
+            <li><strong>Proveedores de servicios tecnológicos:</strong> Plataformas de almacenamiento de datos, autenticación y hosting que utilizamos para operar la aplicación</li>
+            <li><strong>Cumplimiento legal:</strong> Cuando sea requerido por ley o para proteger nuestros derechos legales</li>
+            <li><strong>Transferencia de negocio:</strong> En caso de fusión, adquisición o venta de activos</li>
+          </ul>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todos nuestros proveedores de servicios están obligados contractualmente a proteger tu información y solo pueden usarla para los propósitos específicos que les autorizamos.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Seguridad de los Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Implementamos medidas de seguridad técnicas y organizativas apropiadas para proteger tu información personal contra acceso no autorizado, alteración, divulgación o destrucción. Esto incluye encriptación de datos en tránsito y en reposo, controles de acceso estrictos, y auditorías de seguridad regulares. Sin embargo, ningún método de transmisión por Internet o almacenamiento electrónico es 100% seguro.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. Retención de Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Conservamos tu información personal mientras tu cuenta esté activa o según sea necesario para proporcionarte servicios. Si solicitas la eliminación de tu cuenta, eliminaremos o anonimizaremos tu información personal dentro de 30 días, excepto cuando debamos retenerla para cumplir con obligaciones legales, resolver disputas o hacer cumplir nuestros acuerdos.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. Tus Derechos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>De acuerdo con la Ley 1581 de 2012 y el GDPR, tienes los siguientes derechos:</p>
+          <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
+            <li><strong>Acceso:</strong> Solicitar una copia de tu información personal</li>
+            <li><strong>Rectificación:</strong> Corregir información inexacta o incompleta</li>
+            <li><strong>Eliminación:</strong> Solicitar la eliminación de tu información personal</li>
+            <li><strong>Portabilidad:</strong> Recibir tu información en un formato estructurado y de uso común</li>
+            <li><strong>Oposición:</strong> Oponerte al procesamiento de tu información personal</li>
+            <li><strong>Limitación:</strong> Solicitar la limitación del procesamiento de tu información</li>
+            <li><strong>Revocación del consentimiento:</strong> Retirar tu consentimiento en cualquier momento</li>
+          </ul>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para ejercer estos derechos, contáctanos en hola@umpacademy.co. Responderemos a tu solicitud dentro de 15 días hábiles.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Transferencias Internacionales de Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu información puede ser transferida y almacenada en servidores ubicados fuera de Colombia. Cuando transferimos datos internacionalmente, nos aseguramos de que existan garantías adecuadas para proteger tu información de acuerdo con esta Política de Privacidad y las leyes aplicables.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Menores de Edad</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App no está dirigida a menores de 18 años. No recopilamos intencionalmente información personal de menores. Si descubrimos que hemos recopilado información de un menor sin el consentimiento parental verificable, eliminaremos esa información inmediatamente.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Cambios a esta Política</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Podemos actualizar esta Política de Privacidad periódicamente. Te notificaremos sobre cambios significativos publicando la nueva Política en la aplicación y actualizará la fecha de "Última actualización" en la parte superior. Te recomendamos revisar esta Política regularmente.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre esta Política de Privacidad o deseas ejercer tus derechos, puedes contactarnos:</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S</strong></p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Responsable de Protección de Datos</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Sitio web: www.umpacademy.co</p>
           
-          <h3>3. Almacenamiento</h3>
-          <p>En modo local, tus datos se guardan en tu navegador. Con cuenta AWS, se sincronizan de forma segura en la nube.</p>
-          
-          <h3>4. Seguridad</h3>
-          <p>Implementamos medidas de seguridad para proteger tu información.</p>
-          
-          <h3>5. Tus derechos</h3>
-          <p>Puedes eliminar tu cuenta y todos tus datos en cualquier momento desde tu perfil.</p>
-          
-          <h3>6. Contacto</h3>
-          <p>Para consultas sobre privacidad: hola@umpacademy.co</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px",marginTop:"24px",padding:"16px",background:"var(--purple-soft)",borderRadius:"12px",border:"1px solid var(--purple)"}}>Para cualquier consulta sobre esta Política de Privacidad, contáctanos en hola@umpacademy.co.</p>
         </div>
       </section>
     );
