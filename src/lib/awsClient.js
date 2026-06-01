@@ -7,12 +7,11 @@ import {
 
 Amplify.configure({
   Auth: {
-    region: 'us-east-1',
-    userPoolId: 'us-east-1_ZvJgj7iG1',
-    userPoolWebClientId: '5hjqj36u9oeud7cs8onj93d36j',
-    mandatorySignIn: false,
-    authenticationFlowType: 'USER_PASSWORD_AUTH',
-    loginMechanisms: ['EMAIL']
+    Cognito: {
+      userPoolId: 'us-east-1_ZvJgj7iG1',
+      userPoolWebClientId: '5hjqj36u9oeud7cs8onj93d36j',
+      region: 'us-east-1'
+    }
   }
 });
 
