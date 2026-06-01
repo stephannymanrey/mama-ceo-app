@@ -1,5 +1,7 @@
-import React, { useEffect, useMemo, useState } from "react";
-import { awsAuth, isAwsConfigured } from "./lib/awsClient";
+Ôªøimport React, { useEffect, useMemo, useState } from "react";
+import { awsAuth, getAwsAuthToken, isAwsConfigured } from "./lib/awsClient";
+const supabase = { auth: awsAuth, from: () => ({ select: async () => ({ data: null, error: null }), upsert: async () => ({ error: null }), delete: () => ({ eq: async () => ({ error: null }) }) }) };
+const isSupabaseConfigured = isAwsConfigured;
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -18,9 +20,9 @@ const PLAN_PRICES = {
 
 const POMODORO_MESSAGES = [
   "Respira. Lo que hiciste en este bloque importa.",
-  "TÛmate el descanso ó tu cerebro lo necesita para rendir.",
+  "T√≥mate el descanso ‚Äî tu cerebro lo necesita para rendir.",
   "Una pausa consciente es parte del trabajo.",
-  "Hidr·tate. Mueve el cuerpo. Vuelve con m·s claridad.",
+  "Hidr√°tate. Mueve el cuerpo. Vuelve con m√°s claridad.",
   "Cada bloque completado es una victoria real."
 ];
 
@@ -69,42 +71,42 @@ const initialSystemTasks = [
   { id: 2, title: "Vender y hacer seguimiento", category: "negocio", mode: "manual", canDelegate: true },
   { id: 3, title: "Crear y publicar contenido", category: "negocio", mode: "manual", canDelegate: true },
   { id: 4, title: "Cobrar y facturar", category: "negocio", mode: "manual", canDelegate: true },
-  { id: 5, title: "DiseÒar piezas gr·ficas", category: "negocio", mode: "manual", canDelegate: true },
+  { id: 5, title: "Dise√±ar piezas gr√°ficas", category: "negocio", mode: "manual", canDelegate: true },
   { id: 6, title: "Responder mensajes y comentarios", category: "negocio", mode: "manual", canDelegate: true },
   { id: 7, title: "Mercado y compras del hogar", category: "hogar", mode: "manual", canDelegate: true },
   { id: 8, title: "Limpieza y orden del hogar", category: "hogar", mode: "manual", canDelegate: true },
-  { id: 9, title: "Rutina de maÒana con los niÒos", category: "maternidad", mode: "manual", canDelegate: false },
-  { id: 10, title: "Tiempo de conexiÛn y juego", category: "maternidad", mode: "manual", canDelegate: false }
+  { id: 9, title: "Rutina de ma√±ana con los ni√±os", category: "maternidad", mode: "manual", canDelegate: false },
+  { id: 10, title: "Tiempo de conexi√≥n y juego", category: "maternidad", mode: "manual", canDelegate: false }
 ];
 
 const systemSuggestions = {
   "Prospectar clientes nuevos": { auto: "Crea un embudo con ManyChat o una landing page que capture leads sola.", delegate: "Contrata una asistente virtual para hacer outreach en DMs." },
   "Vender y hacer seguimiento": { auto: "Usa un CRM simple como HubSpot gratuito para automatizar recordatorios.", delegate: "Una asistente de ventas puede hacer el seguimiento inicial." },
   "Crear y publicar contenido": { auto: "Programa con Meta Business Suite o Buffer. Graba en lote una vez a la semana.", delegate: "Una editora de contenido puede tomar el material en bruto y publicarlo." },
-  "Cobrar y facturar": { auto: "Usa Stripe, PayU o Wompi ó el cobro llega solo sin que escribas a nadie.", delegate: "Una asistente administrativa puede gestionar facturas y cobros." },
-  "DiseÒar piezas gr·ficas": { auto: "Crea plantillas en Canva que solo cambias de texto cada semana.", delegate: "Una diseÒadora freelance puede hacer el paquete mensual por horas." },
-  "Responder mensajes y comentarios": { auto: "Configura respuestas r·pidas en WhatsApp Business e Instagram.", delegate: "Una community manager puede manejar la bandeja de entrada." },
+  "Cobrar y facturar": { auto: "Usa Stripe, PayU o Wompi ‚Äî el cobro llega solo sin que escribas a nadie.", delegate: "Una asistente administrativa puede gestionar facturas y cobros." },
+  "Dise√±ar piezas gr√°ficas": { auto: "Crea plantillas en Canva que solo cambias de texto cada semana.", delegate: "Una dise√±adora freelance puede hacer el paquete mensual por horas." },
+  "Responder mensajes y comentarios": { auto: "Configura respuestas r√°pidas en WhatsApp Business e Instagram.", delegate: "Una community manager puede manejar la bandeja de entrada." },
   "Mercado y compras del hogar": { auto: "Crea una lista fija en Rappi o el supermercado online de tu ciudad.", delegate: "Puedes delegar las compras a un familiar o servicio de domicilios." },
   "Limpieza y orden del hogar": { auto: "Establece una rutina de 15 min diarios para mantener el orden.", delegate: "Un servicio de limpieza semanal libera horas valiosas." },
-  "Rutina de maÒana con los niÒos": { protect: "Este tiempo no se delega ó se simplifica. Crea una rutina visual que los niÒos puedan seguir solos con tu guÌa." },
-  "Tiempo de conexiÛn y juego": { protect: "Este es tu tiempo de presencia real. BloquÈalo en tu agenda como una cita inamovible." }
+  "Rutina de ma√±ana con los ni√±os": { protect: "Este tiempo no se delega ‚Äî se simplifica. Crea una rutina visual que los ni√±os puedan seguir solos con tu gu√≠a." },
+  "Tiempo de conexi√≥n y juego": { protect: "Este es tu tiempo de presencia real. Bloqu√©alo en tu agenda como una cita inamovible." }
 };
 
 const initialHomeMaternalTasks = [
-  { id: 1, title: "Rutina de maÒana con los niÒos", category: "Maternidad", done: false },
-  { id: 2, title: "Tiempo de juego y conexiÛn", category: "Maternidad", done: false },
+  { id: 1, title: "Rutina de ma√±ana con los ni√±os", category: "Maternidad", done: false },
+  { id: 2, title: "Tiempo de juego y conexi√≥n", category: "Maternidad", done: false },
   { id: 3, title: "Tareas del colegio", category: "Maternidad", done: false }
 ];
 
 const initialHomeWellnessTasks = [
   { id: 1, title: "Ejercicio o caminata", category: "Bienestar", done: false },
-  { id: 2, title: "Tiempo para mÌ", category: "Bienestar", done: false }
+  { id: 2, title: "Tiempo para m√≠", category: "Bienestar", done: false }
 ];
 
 const initialIncomeSources = [
   { id: 1, name: "Servicios 1:1", monthlyGoal: 3000, color: "purple", platform: "Transferencia bancaria" },
   { id: 2, name: "Cursos / Productos digitales", monthlyGoal: 2000, color: "pink", platform: "Hotmart" },
-  { id: 3, name: "MembresÌas / Recurrente", monthlyGoal: 1500, color: "green", platform: "Mercado Pago" }
+  { id: 3, name: "Membres√≠as / Recurrente", monthlyGoal: 1500, color: "green", platform: "Mercado Pago" }
 ];
 
 const initialBusinessSettings = {
@@ -161,33 +163,33 @@ const affirmations = [
 
 const promesas = [
   "Dios tiene planes de bien para ti, no de mal. Tu futuro tiene esperanza.",
-  "Cuando pides sabidurÌa con fe, Èl la da generosamente y sin reproche.",
-  "Todo lo puedes cuando Èl te fortalece. No en tus fuerzas, sino en las suyas.",
-  "Dios cuida de ti. No tienes que cargar sola con la ansiedad de maÒana.",
-  "Cuando est·s cansada y cargada, hay descanso real esperando por ti.",
-  "Dios completa lo que empieza en ti. Tu negocio y tu familia est·n en sus manos.",
-  "No te ha dado espÌritu de temor, sino de poder, amor y dominio propio.",
-  "Busca primero lo que importa de verdad, y lo dem·s se aÒade.",
-  "ConfÌa en Èl con todo tu corazÛn y Èl enderezar· tus caminos.",
-  "Eres m·s que vencedora. No solo sobrevives, triunfas.",
+  "Cuando pides sabidur√≠a con fe, √©l la da generosamente y sin reproche.",
+  "Todo lo puedes cuando √©l te fortalece. No en tus fuerzas, sino en las suyas.",
+  "Dios cuida de ti. No tienes que cargar sola con la ansiedad de ma√±ana.",
+  "Cuando est√°s cansada y cargada, hay descanso real esperando por ti.",
+  "Dios completa lo que empieza en ti. Tu negocio y tu familia est√°n en sus manos.",
+  "No te ha dado esp√≠ritu de temor, sino de poder, amor y dominio propio.",
+  "Busca primero lo que importa de verdad, y lo dem√°s se a√±ade.",
+  "Conf√≠a en √©l con todo tu coraz√≥n y √©l enderezar√° tus caminos.",
+  "Eres m√°s que vencedora. No solo sobrevives, triunfas.",
   "Dios conoce cada detalle de tu vida y tiene cuidado de ti.",
-  "La mujer que teme a Dios es digna de alabanza. T˙ eres esa mujer.",
-  "Con Èl, lo que parece imposible se vuelve posible.",
-  "Tu trabajo no es en vano cuando lo haces con propÛsito y fe.",
+  "La mujer que teme a Dios es digna de alabanza. T√∫ eres esa mujer.",
+  "Con √©l, lo que parece imposible se vuelve posible.",
+  "Tu trabajo no es en vano cuando lo haces con prop√≥sito y fe.",
   "Dios te da la fuerza que necesitas exactamente cuando la necesitas."
 ];
 
 const menu = [
-  { id: "dashboard", label: "Dashboard", icon: "??" },
-  { id: "business", label: "Negocio", icon: "??" },
-  { id: "clients", label: "Clientes", icon: "?????" },
-  { id: "content", label: "Contenido", icon: "??" },
-  { id: "home", label: "Hogar", icon: "??" },
-  { id: "ceo", label: "PropÛsito & Impacto", icon: "?" },
-  { id: "report", label: "Reporte semanal", icon: "??" }
+  { id: "dashboard", label: "Dashboard", icon: "üè†" },
+  { id: "business", label: "Negocio", icon: "üíº" },
+  { id: "clients", label: "Clientes", icon: "üë©‚Äçüíº" },
+  { id: "content", label: "Contenido", icon: "üì±" },
+  { id: "home", label: "Hogar", icon: "üå∏" },
+  { id: "ceo", label: "Prop√≥sito & Impacto", icon: "‚ú®" },
+  { id: "report", label: "Reporte semanal", icon: "üìä" }
 ];
 
-const diasSemana = ["Dom","Lun","Mar","MiÈ","Jue","Vie","S·b"];
+const diasSemana = ["Dom","Lun","Mar","Mi√©","Jue","Vie","S√°b"];
 function getWeekDays() {
   const today = new Date();
   const monday = new Date(today);
@@ -201,6 +203,80 @@ function getWeekDays() {
 const weekDays = getWeekDays();
 
 const currencyLocales = { USD: "en-US", COP: "es-CO", MXN: "es-MX", EUR: "de-DE" };
+const monthShortNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+function toInputDate(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getTodayInputValue() {
+  return toInputDate(new Date());
+}
+
+function parseDateValue(value) {
+  if (!value) return null;
+  if (typeof value === "number") {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split("-").map(Number);
+    return new Date(year, month - 1, day);
+  }
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function inputDateFromValue(value) {
+  const date = parseDateValue(value);
+  return date ? toInputDate(date) : getTodayInputValue();
+}
+
+function timestampFromInputDate(value) {
+  const date = parseDateValue(value);
+  if (!date) return Date.now();
+  date.setHours(12, 0, 0, 0);
+  return date.getTime();
+}
+
+function formatShortDate(value) {
+  const date = parseDateValue(value);
+  if (!date) return "Sin fecha";
+  return `${date.getDate()} ${monthShortNames[date.getMonth()]}`;
+}
+
+function getCurrentWeekRange(baseDate = new Date()) {
+  const start = new Date(baseDate);
+  start.setHours(0, 0, 0, 0);
+  const day = start.getDay();
+  start.setDate(start.getDate() - (day === 0 ? 6 : day - 1));
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  end.setHours(23, 59, 59, 999);
+  return { start, end, startTime: start.getTime(), endTime: end.getTime() };
+}
+
+function isDateThisWeek(value, range = getCurrentWeekRange()) {
+  const date = parseDateValue(value);
+  if (!date) return false;
+  const time = date.getTime();
+  return time >= range.startTime && time <= range.endTime;
+}
+
+function getMonthWeekInfo(baseDate = new Date()) {
+  const day = baseDate.getDate();
+  const total = 4;
+  const current = Math.min(total, Math.max(1, Math.ceil(day / 7)));
+  return {
+    current,
+    total,
+    month: monthShortNames[baseDate.getMonth()],
+    progress: Math.min(100, Math.round((current / total) * 100))
+  };
+}
 
 function loadState() {
   try {
@@ -211,26 +287,168 @@ function loadState() {
   }
 }
 
-async function loadRemoteState(userId) {
-  if (!userId) return null;
-  const { data, error } = await supabase
-    .from("user_states")
-    .select("data")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) {
-    console.error("Error cargando estado remoto:", error);
-    return null;
-  }
-  return data?.data ?? null;
+const initialProfileForm = {
+  name: "",
+  businessName: "",
+  businessType: "Servicios 1:1",
+  stage: "Creciendo",
+  monthlyGoalSetup: "",
+  mainChallenge: "Conseguir clientes"
+};
+
+const initialPurposeState = {
+  mood: "inspirada",
+  energy: "medio",
+  mentalLoad: "",
+  microVictory: "",
+  victoryDone: false,
+  water: false,
+  walk: false,
+  silence: false,
+  devotional: false,
+  familyDays: { L: false, M: false, X: false, J: false, V: false, S: false, D: false },
+  connectionMoments: 0,
+  hoursWorked: 0,
+  recurringIncomePercent: 0,
+  systemsPercent: 0,
+  clientsImpacted: 0,
+  weekTestimony: "",
+  passionLevel: 3,
+  visionClarity: ""
+};
+
+function cloneList(items) {
+  return items.map((item) => ({ ...item }));
 }
 
-async function saveRemoteState(userId, data) {
-  if (!userId) return;
-  const { error } = await supabase
-    .from("user_states")
-    .upsert({ user_id: userId, data }, { onConflict: "user_id" });
-  if (error) console.error("Error guardando estado remoto:", error);
+function createInitialPurpose(overrides = {}) {
+  return {
+    ...initialPurposeState,
+    ...overrides,
+    familyDays: {
+      ...initialPurposeState.familyDays,
+      ...(overrides.familyDays || {})
+    }
+  };
+}
+
+function normalizeAnnualBudget(rows = initialAnnualBudget) {
+  return rows.map((row) => {
+    const income = Number(row.income || 0);
+    return {
+      month: row.month,
+      income,
+      fixedExpenses: row.fixedExpenses ?? Math.round(income * 0.45),
+      variableExpenses: row.variableExpenses ?? Math.round(income * 0.35),
+      platformFees: row.platformFees ?? 0
+    };
+  });
+}
+
+function normalizeMovements(items = []) {
+  return items.map((item) => {
+    const fallback = item.createdAt || item.id;
+    const date = item.date || (fallback && fallback > 1000000000000 ? inputDateFromValue(fallback) : getTodayInputValue());
+    return {
+      ...item,
+      date,
+      createdAt: item.createdAt || timestampFromInputDate(date)
+    };
+  });
+}
+
+function normalizeClients(items = []) {
+  return items.map((item) => {
+    const lastContactDate = item.lastContactDate || inputDateFromValue(item.lastContact || item.updatedAt || item.createdAt || Date.now());
+    const lastContact = item.lastContact || timestampFromInputDate(lastContactDate);
+    return {
+      ...item,
+      lastContact,
+      lastContactDate,
+      createdAt: item.createdAt || lastContact,
+      updatedAt: item.updatedAt || lastContact
+    };
+  });
+}
+
+function normalizeHomeBudget(items = []) {
+  return items.map((item) => {
+    const dueDate = item.dueDate || inputDateFromValue(item.createdAt || Date.now());
+    return {
+      ...item,
+      dueDate,
+      createdAt: item.createdAt || timestampFromInputDate(dueDate)
+    };
+  });
+}
+
+function createBlankUserState(currency = "USD") {
+  return {
+    activeView: "dashboard",
+    currency,
+    movements: [],
+    tasks: [],
+    clients: [],
+    contentItems: [],
+    goals: [],
+    homeTasks: [],
+    systemTasks: cloneList(initialSystemTasks),
+    maternalTasks: cloneList(initialHomeMaternalTasks),
+    wellnessTasks: cloneList(initialHomeWellnessTasks),
+    incomeSources: cloneList(initialIncomeSources),
+    salesGoal: 0,
+    contactLog: {},
+    weekBlocks: {},
+    businessSettings: { ...initialBusinessSettings },
+    banks: [...initialBanks],
+    annualBudget: normalizeAnnualBudget(initialAnnualBudget),
+    homeBudget: normalizeHomeBudget(cloneList(initialHomeBudget)),
+    purpose: createInitialPurpose(),
+    profileSetup: null,
+    groceryList: [],
+    userPlan: "free",
+    premiumExpiresAt: null
+  };
+}
+
+const API_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-user-data";
+
+async function getRemoteAuthHeaders(includeJson = false) {
+  const token = await getAwsAuthToken();
+  if (!token) {
+    throw new Error("No hay token seguro de AWS. Inicia sesi√≥n nuevamente.");
+  }
+  return {
+    ...(includeJson ? { "Content-Type": "application/json" } : {}),
+    Authorization: `Bearer ${token}`
+  };
+}
+
+async function loadRemoteState() {
+  const headers = await getRemoteAuthHeaders();
+  const res = await fetch(API_URL, { headers });
+  if (!res.ok) throw new Error(`AWS respondi√≥ ${res.status}`);
+  const json = await res.json();
+  return json.data ?? null;
+}
+
+async function saveRemoteState(data) {
+  const headers = await getRemoteAuthHeaders(true);
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ data })
+  });
+  if (!res.ok) throw new Error(`AWS respondi√≥ ${res.status}`);
+}
+
+async function deleteRemoteState() {
+  const headers = await getRemoteAuthHeaders();
+  const res = await fetch(API_URL, {
+    method: "DELETE",
+    headers
+  });
+  if (!res.ok) throw new Error(`AWS respondi√≥ ${res.status}`);
 }
 
 export default function App() {
@@ -238,9 +456,9 @@ export default function App() {
   const [activeView, setActiveView] = useState(stored?.activeView || "dashboard");
   const [currency, setCurrency] = useState(stored?.currency || "USD");
   const isNewUser = !stored;
-  const [movements, setMovements] = useState(isNewUser ? [] : (stored?.movements || initialMovements));
+  const [movements, setMovements] = useState(isNewUser ? [] : normalizeMovements(stored?.movements || initialMovements));
   const [tasks, setTasks] = useState(isNewUser ? [] : (stored?.tasks || initialTasks));
-  const [clients, setClients] = useState(isNewUser ? [] : (stored?.clients || initialClients));
+  const [clients, setClients] = useState(isNewUser ? [] : normalizeClients(stored?.clients || initialClients));
   const [contentItems, setContentItems] = useState(isNewUser ? [] : (stored?.contentItems || initialContent));
   const [goals, setGoals] = useState(isNewUser ? [] : (stored?.goals || initialGoals));
   const [homeTasks, setHomeTasks] = useState(isNewUser ? [] : (stored?.homeTasks || initialHomeTasks));
@@ -255,50 +473,14 @@ export default function App() {
   const [wellnessForm, setWellnessForm] = useState("");
   const [banks, setBanks] = useState(stored?.banks || initialBanks);
   const [newBank, setNewBank] = useState("");
-  const [annualBudget, setAnnualBudget] = useState((stored?.annualBudget || initialAnnualBudget).map((row) => {
-    const income = Number(row.income || 0);
-    return {
-      month: row.month,
-      income: income,
-      fixedExpenses: row.fixedExpenses ?? Math.round(income * 0.45),
-      variableExpenses: row.variableExpenses ?? Math.round(income * 0.35),
-      platformFees: row.platformFees ?? 0
-    };
-  }));
-  const [homeBudget, setHomeBudget] = useState(stored?.homeBudget || initialHomeBudget);
-  const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "" });
-  const [purpose, setPurpose] = useState({
-    mood: "inspirada",
-    energy: "medio",
-    mentalLoad: "",
-    microVictory: "",
-    victoryDone: false,
-    water: false,
-    walk: false,
-    silence: false,
-    devotional: false,
-    familyDays: { L: false, M: false, X: false, J: false, V: false, S: false, D: false },
-    connectionMoments: 0,
-    hoursWorked: 0,
-    recurringIncomePercent: 0,
-    systemsPercent: 0,
-    clientsImpacted: 0,
-    weekTestimony: "",
-    passionLevel: 3,
-    visionClarity: "",
-    ...(stored?.purpose || {})
-  });
+  const [annualBudget, setAnnualBudget] = useState(normalizeAnnualBudget(stored?.annualBudget || initialAnnualBudget));
+  const [homeBudget, setHomeBudget] = useState(normalizeHomeBudget(stored?.homeBudget || initialHomeBudget));
+  const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue() });
+  const [purpose, setPurpose] = useState(createInitialPurpose(stored?.purpose || {}));
   const [profileSetup, setProfileSetup] = useState(stored?.profileSetup || null);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    name: "",
-    businessName: "",
-    businessType: "Servicios 1:1",
-    stage: "Creciendo",
-    monthlyGoalSetup: "",
-    mainChallenge: "Conseguir clientes"
-  });
+  const [profileForm, setProfileForm] = useState({ ...initialProfileForm });
   const [user, setUser] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
@@ -306,19 +488,31 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [authPasswordConfirm, setAuthPasswordConfirm] = useState("");
   const [authNewPassword, setAuthNewPassword] = useState("");
+  const [showAuthPassword, setShowAuthPassword] = useState(false);
+  const [showAuthPasswordConfirm, setShowAuthPasswordConfirm] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [resetPassword, setResetPassword] = useState(false);
+  const [confirmMode, setConfirmMode] = useState(false);
+  const [confirmCode, setConfirmCode] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetCode, setResetCode] = useState("");
+  const [resetNewPassword, setResetNewPassword] = useState("");
+  const [resetStep, setResetStep] = useState(1);
   const [ready, setReady] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [awsActive, setAwsActive] = useState(isAwsConfigured);
+  const [syncError, setSyncError] = useState("");
+  const [isRestoringRemote, setIsRestoringRemote] = useState(false);
+  const [cloudReadyUserId, setCloudReadyUserId] = useState(null);
+  const supabaseActive = isSupabaseConfigured;
   const [businessSettings, setBusinessSettings] = useState({
     ...initialBusinessSettings,
     ...(stored?.businessSettings || {})
   });
 
-  const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "" });
-  const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "" });
+  const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "", date: getTodayInputValue() });
+  const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue() });
   const [contentFilter, setContentFilter] = useState("");
   const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
@@ -361,11 +555,11 @@ export default function App() {
               setPomodoroBlocks((b) => b + 1);
               setPomodoroMode("break");
               setPomodoroMinutes(pomodoroBreakDuration);
-              if (Notification.permission === "granted") new Notification("? Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)] });
+              if (Notification.permission === "granted") new Notification("‚è∞ Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)] });
             } else {
               setPomodoroMode("work");
               setPomodoroMinutes(pomodoroWorkDuration);
-              if (Notification.permission === "granted") new Notification("? A trabajar", { body: "°Nuevo bloque de enfoque!" });
+              if (Notification.permission === "granted") new Notification("‚ñ∂ A trabajar", { body: "¬°Nuevo bloque de enfoque!" });
             }
             return 0;
           });
@@ -410,11 +604,11 @@ export default function App() {
     e.preventDefault();
     setBetaCodeError("");
     if (betaCode.trim().toUpperCase() !== BETA_CODE) {
-      setBetaCodeError("CÛdigo incorrecto. Verifica el correo de bienvenida de UMP Academy.");
+      setBetaCodeError("C√≥digo incorrecto. Verifica el correo de bienvenida de UMP Academy.");
       return;
     }
     if (Date.now() > BETA_CODE_EXPIRY) {
-      setBetaCodeError("Este cÛdigo ya expirÛ.");
+      setBetaCodeError("Este c√≥digo ya expir√≥.");
       return;
     }
     const expiresAt = Date.now() + 90 * 86400000;
@@ -446,6 +640,9 @@ export default function App() {
   const monthlyProgress = Math.min(Math.round((totals.income / monthlyGoal) * 100), 100);
   const weeklyProgress = Math.min(Math.round((totals.income / weeklyGoal) * 100), 100);
   const dailyProgress = Math.min(Math.round((totals.income / dailyGoal) * 100), 100);
+  const monthWeekInfo = useMemo(() => getMonthWeekInfo(), []);
+  const currentWeekRange = useMemo(() => getCurrentWeekRange(), []);
+  const sortedMovements = useMemo(() => [...movements].sort((a, b) => timestampFromInputDate(b.date || b.createdAt) - timestampFromInputDate(a.date || a.createdAt)), [movements]);
   const completedTasks = tasks.filter((task) => task.done).length;
   const completedHomeTasks = homeTasks.filter((task) => task.done).length;
   const activeClients = clients.filter((client) => ["Lead tibio", "Lead caliente", "Venta ganada"].includes(client.status)).length;
@@ -467,12 +664,12 @@ export default function App() {
   const annualProjectedIncomeSources = [{
     classification: "Ventas",
     amount: annualTotals.income,
-    example: "ProyecciÛn anual desde ventas"
+    example: "Proyecci√≥n anual desde ventas"
   }];
   const annualProjectedExpenseDestinations = [
-    { classification: "Gastos fijos", amount: annualFixedTotal, note: "Costos recurrentes y nÛmina" },
-    { classification: "Gastos variables", amount: annualVariableTotal, note: "Publicidad, herramientas y producciÛn" },
-    { classification: "ReinversiÛn", amount: Math.round(annualTotals.income * 0.20), note: "Marketing, crecimiento y mejora" }
+    { classification: "Gastos fijos", amount: annualFixedTotal, note: "Costos recurrentes y n√≥mina" },
+    { classification: "Gastos variables", amount: annualVariableTotal, note: "Publicidad, herramientas y producci√≥n" },
+    { classification: "Reinversi√≥n", amount: Math.round(annualTotals.income * 0.20), note: "Marketing, crecimiento y mejora" }
   ];
   const homeBudgetTotals = homeBudget.reduce((sum, row) => {
     if (row.type === "Ingreso") return { ...sum, income: sum.income + row.amount };
@@ -484,6 +681,9 @@ export default function App() {
   }, { income: 0, fixed: 0, variable: 0, smallLeaks: 0, debt: 0, savings: 0 });
   const homeSpent = homeBudgetTotals.fixed + homeBudgetTotals.variable + homeBudgetTotals.smallLeaks + homeBudgetTotals.debt;
   const homeAvailable = homeBudgetTotals.income - homeSpent - homeBudgetTotals.savings;
+  const homePaymentsThisWeek = homeBudget
+    .filter((item) => !["Ingreso", "Ahorro"].includes(item.type) && isDateThisWeek(item.dueDate || item.createdAt, currentWeekRange))
+    .sort((a, b) => timestampFromInputDate(a.dueDate) - timestampFromInputDate(b.dueDate));
   const biggestHomeLeak = [
     ["gastos fijos", homeBudgetTotals.fixed],
     ["gastos variables", homeBudgetTotals.variable],
@@ -495,7 +695,7 @@ export default function App() {
   const excellenceActions = [
     topClient ? `Contactar a ${topClient.name}: ${topClient.nextAction || "hacer seguimiento"}.` : "Registrar tu clienta de mayor potencial.",
     nextContent ? `Mover contenido clave: ${nextContent.title}.` : "Crear una pieza de contenido enfocada en venta.",
-    totals.profit >= 0 ? `Separar ${money.format(reinvestmentAmount)} para reinversiÛn antes de gastar.` : "Reducir un gasto no esencial esta semana.",
+    totals.profit >= 0 ? `Separar ${money.format(reinvestmentAmount)} para reinversi√≥n antes de gastar.` : "Reducir un gasto no esencial esta semana.",
     pendingHomeTasks[0] ? `Resolver o delegar: ${pendingHomeTasks[0].title}.` : "Proteger un bloque de descanso real."
   ];
 
@@ -508,25 +708,29 @@ export default function App() {
   const budgetMonthlyIncome = annualTotals.income / 12;
   const confirmDelete = (msg, onConfirm) => { if (window.confirm(msg)) onConfirm(); };
   const signOut = async () => {
-    await awsAuth.signOut();
+    await supabase.auth.signOut();
+    setCloudReadyUserId(null);
+    window.localStorage.removeItem(STORAGE_KEY);
     setUser(null);
   };
 
   const translateError = (message) => {
     const translations = {
-      "Invalid login credentials": "Credenciales de inicio de sesiÛn inv·lidas",
-      "User already registered": "El usuario ya est· registrado",
-      "Password should be at least 6 characters": "La contraseÒa debe tener al menos 6 caracteres",
-      "Unable to validate email address: invalid format": "Formato de correo electrÛnico inv·lido",
-      "Email not confirmed": "Correo electrÛnico no confirmado",
-      "Signup is disabled": "El registro est· deshabilitado",
-      "Too many requests": "Demasiadas solicitudes, intenta m·s tarde",
-      "Invalid email": "Correo electrÛnico inv·lido",
-      "Email rate limit exceeded": "LÌmite de envÌo de correos excedido, espera unos minutos e intenta de nuevo",
-      "Magic link rate limit exceeded": "LÌmite de envÌo de enlaces excedido, espera unos minutos e intenta de nuevo"
+      "Password did not conform with policy: Password not long enough": "La contrase√±a debe tener al menos 8 caracteres.",
+      "Password did not conform with policy: Password must have uppercase characters": "La contrase√±a debe tener al menos una letra may√∫scula.",
+      "Password did not conform with policy: Password must have numeric characters": "La contrase√±a debe incluir al menos un n√∫mero.",
+      "User already registered": "El usuario ya est√° registrado",
+      "Password should be at least 6 characters": "La contrase√±a debe tener al menos 8 caracteres",
+      "Unable to validate email address: invalid format": "Formato de correo electr√≥nico inv√°lido",
+      "Email not confirmed": "Correo electr√≥nico no confirmado",
+      "Signup is disabled": "El registro est√° deshabilitado",
+      "Too many requests": "Demasiadas solicitudes, intenta m√°s tarde",
+      "Invalid email": "Correo electr√≥nico inv√°lido",
+      "Email rate limit exceeded": "L√≠mite de env√≠o de correos excedido, espera unos minutos e intenta de nuevo",
+      "Magic link rate limit exceeded": "L√≠mite de env√≠o de enlaces excedido, espera unos minutos e intenta de nuevo"
     };
     if (message?.toLowerCase().includes("rate limit exceeded")) {
-      return "LÌmite de envÌo de correos excedido, espera unos minutos e intenta de nuevo";
+      return "L√≠mite de env√≠o de correos excedido, espera unos minutos e intenta de nuevo";
     }
     return translations[message] || message;
   };
@@ -538,17 +742,17 @@ export default function App() {
     // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(authEmail)) {
-      setAuthError("Por favor ingresa un correo electrÛnico v·lido.");
+      setAuthError("Por favor ingresa un correo electr√≥nico v√°lido.");
       return;
     }
     
     if (authMode === "signup") {
       if (authPassword !== authPasswordConfirm) {
-        setAuthError("Las contraseÒas no coinciden.");
+        setAuthError("Las contrase√±as no coinciden.");
         return;
       }
-      if (authPassword.length < 6) {
-        setAuthError("La contraseÒa debe tener al menos 6 caracteres.");
+      if (authPassword.length < 8) {
+        setAuthError("La contrase√±a debe tener al menos 8 caracteres.");
         return;
       }
     }
@@ -556,48 +760,69 @@ export default function App() {
     setAuthLoading(true);
     try {
       if (authMode === "login") {
-        const { error } = await awsAuth.signInWithPassword({ email: authEmail, password: authPassword });
+        const { data, error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
         if (error) setAuthError(translateError(error.message));
+        else if (data?.user) setUser(data.user);
       } else {
-        const { error } = await awsAuth.signUp({
+        const { error } = await supabase.auth.signUp({
           email: authEmail,
           password: authPassword,
           options: { data: { full_name: authName.trim() } }
         });
         if (error) setAuthError(translateError(error.message));
-        else setAuthError("? Revisa tu correo para confirmar tu cuenta.");
+        else { setConfirmMode(true); setAuthError(""); }
       }
     } catch (err) {
-      setAuthError("Error de conexiÛn. Por favor verifica tu internet e intenta de nuevo.");
-      console.error("Error de autenticaciÛn:", err);
+      setAuthError("Error de conexi√≥n. Por favor verifica tu internet e intenta de nuevo.");
+      console.error("Error de autenticaci√≥n:", err);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleConfirmCode = async (e) => {
+    e.preventDefault();
+    setAuthError("");
+    setAuthLoading(true);
+    try {
+      const { error } = await awsAuth.confirmSignUp({ email: authEmail, code: confirmCode });
+      if (error) { setAuthError(translateError(error.message)); }
+      else {
+        const { data } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+        if (data?.user) setUser(data.user);
+        setConfirmMode(false);
+      }
+    } catch (err) {
+      setAuthError("Error al confirmar. Intenta de nuevo.");
     } finally {
       setAuthLoading(false);
     }
   };
 
   const handleForgotPassword = async () => {
-    if (!authEmail) {
-      setAuthError("Ingresa tu correo electrÛnico primero.");
-      return;
-    }
+    if (!authEmail) { setAuthError("Ingresa tu correo electr√≥nico primero."); return; }
     setAuthError("");
     setAuthLoading(true);
-    const { error } = await awsAuth.resetPassword(authEmail);
+    const { error } = await supabase.auth.resetPasswordForEmail(authEmail);
     setAuthLoading(false);
     if (error) setAuthError(translateError(error.message));
-    else setAuthError("Revisa tu correo para restablecer tu contraseÒa.");
+    else { setResetEmail(authEmail); setResetStep(2); setResetPassword(true); }
   };
 
   const handleResetPassword = async (event) => {
     event.preventDefault();
     setAuthError("");
     setAuthLoading(true);
-    const { error } = await awsAuth.updatePassword({ password: authNewPassword });
-    setAuthLoading(false);
-    if (error) setAuthError(translateError(error.message));
-    else {
+    try {
+      const { confirmResetPassword } = await import('aws-amplify/auth');
+      await confirmResetPassword({ username: resetEmail, confirmationCode: resetCode, newPassword: resetNewPassword });
       setResetPassword(false);
-      setAuthError("ContraseÒa actualizada. Ya puedes iniciar sesiÛn.");
+      setResetStep(1);
+      setAuthError("‚úÖ Contrase√±a actualizada. Ya puedes iniciar sesi√≥n.");
+    } catch (err) {
+      setAuthError(translateError(err.message));
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -610,38 +835,38 @@ export default function App() {
     const notes = [];
 
     if (annualTotals.income === 0) {
-      notes.push("A˙n no hay ingresos proyectados para el aÒo. Completa la tabla de presupuesto para obtener una lectura m·s precisa.");
+      notes.push("A√∫n no hay ingresos proyectados para el a√±o. Completa la tabla de presupuesto para obtener una lectura m√°s precisa.");
     } else {
       if (totals.profit < 0) {
-        notes.push("Est·s operando en rojo: tus gastos actuales superan tus ingresos. Revisa primero gastos variables y pagos recurrentes.");
+        notes.push("Est√°s operando en rojo: tus gastos actuales superan tus ingresos. Revisa primero gastos variables y pagos recurrentes.");
       } else {
-        notes.push("Tu negocio est· generando utilidad. MantÈn ese margen y evita que gastos variables se salgan de control.");
+        notes.push("Tu negocio est√° generando utilidad. Mant√©n ese margen y evita que gastos variables se salgan de control.");
       }
 
       if (monthlyIncomeRatio < 0.75) {
         notes.push(`Tus ingresos actuales son ${Math.round(monthlyIncomeRatio * 100)}% de la meta mensual proyectada. Activa ventas, cobros y ofertas de alto valor.`);
       } else if (monthlyIncomeRatio >= 1.1) {
-        notes.push("Vas por encima de la meta mensual proyectada. Felicidades: es momento de consolidar caja y reservar para reinversiÛn.");
+        notes.push("Vas por encima de la meta mensual proyectada. Felicidades: es momento de consolidar caja y reservar para reinversi√≥n.");
       } else {
-        notes.push("Est·s cerca de la proyecciÛn mensual. MantÈn el ritmo de ventas y cuida la ejecuciÛn de cada gasto.");
+        notes.push("Est√°s cerca de la proyecci√≥n mensual. Mant√©n el ritmo de ventas y cuida la ejecuci√≥n de cada gasto.");
       }
 
       if (totals.expenses > annualTotals.income * 0.8) {
-        notes.push("Tus gastos actuales ya representan m·s del 80% de tu proyecciÛn anual de ingresos. Cuidado con las fugas de dinero.");
+        notes.push("Tus gastos actuales ya representan m√°s del 80% de tu proyecci√≥n anual de ingresos. Cuidado con las fugas de dinero.");
       }
 
       if (actualVariableShare >= 0.45) {
-        notes.push("Los gastos variables son altos: revisa pauta, herramientas y costos de producciÛn para no quemar caja.");
+        notes.push("Los gastos variables son altos: revisa pauta, herramientas y costos de producci√≥n para no quemar caja.");
       }
 
       if (actualFixedShare >= 0.6 && totals.profit < 0) {
-        notes.push("La estructura fija es pesada y te est· dejando poco margen. Busca reducir o renegociar compromisos fijos.");
+        notes.push("La estructura fija es pesada y te est√° dejando poco margen. Busca reducir o renegociar compromisos fijos.");
       }
 
       if (totals.profit >= 0 && monthlyIncomeRatio >= 1) {
-        notes.push(`Excelente: ya est·s cumpliendo la proyecciÛn mensual y mantienes utilidad. Reserva al menos ${money.format(projectedReinvestmentMonthly)} al mes para reinversiÛn.`);
+        notes.push(`Excelente: ya est√°s cumpliendo la proyecci√≥n mensual y mantienes utilidad. Reserva al menos ${money.format(projectedReinvestmentMonthly)} al mes para reinversi√≥n.`);
       } else {
-        notes.push(`Para sostener el crecimiento, separa al menos ${money.format(projectedReinvestmentMonthly)} mensuales para reinversiÛn.`);
+        notes.push(`Para sostener el crecimiento, separa al menos ${money.format(projectedReinvestmentMonthly)} mensuales para reinversi√≥n.`);
       }
     }
 
@@ -655,38 +880,38 @@ export default function App() {
   useEffect(() => {
     let subscription;
     const initAuth = async () => {
-      if (!awsActive) {
+      if (!supabaseActive) {
         setReady(true);
         return;
       }
 
       const timeout = setTimeout(() => {
-        console.warn("Supabase auth tardÛ demasiado. Usando modo local temporalmente.");
-        setawsActive(false);
+        console.warn("AWS Auth tard√≥ m√°s de lo esperado.");
+        setAuthError("La conexi√≥n segura tard√≥ m√°s de lo esperado. Revisa tu internet e intenta de nuevo.");
         setReady(true);
-      }, 4000);
+      }, 8000);
 
       try {
-        const { data, error } = await awsAuth.getSession();
+        const { data, error } = await supabase.auth.getSession();
         clearTimeout(timeout);
         if (error) {
           console.error("Error al inicializar auth:", error);
-          setawsActive(false);
+          setAuthError("No pudimos conectar con el inicio de sesi√≥n seguro. Intenta de nuevo en unos minutos.");
         } else {
           setUser(data?.session?.user ?? null);
         }
       } catch (initError) {
         clearTimeout(timeout);
         console.error("Error inesperado al inicializar auth:", initError);
-        setawsActive(false);
+        setAuthError("No pudimos conectar con el inicio de sesi√≥n seguro. Intenta de nuevo en unos minutos.");
       } finally {
         setReady(true);
       }
     };
 
     initAuth();
-    if (awsActive) {
-      const { data: listenerData } = awsAuth.onAuthStateChange((event, session) => {
+    if (supabaseActive) {
+      const { data: listenerData } = supabase.auth.onAuthStateChange((event, session) => {
         setUser(session?.user ?? null);
         if (event === 'PASSWORD_RECOVERY') {
           setResetPassword(true);
@@ -696,13 +921,13 @@ export default function App() {
       subscription = listenerData?.subscription;
     }
     return () => subscription?.unsubscribe?.();
-  }, [awsActive]);
+  }, [supabaseActive]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.__MAMACEO_DEBUG = {
         ready,
-        awsActive,
+        supabaseActive,
         user,
         authMode,
         authLoading,
@@ -710,47 +935,75 @@ export default function App() {
         resetPassword
       };
     }
-  }, [ready, awsActive, user, authMode, authLoading, authError, resetPassword]);
+  }, [ready, supabaseActive, user, authMode, authLoading, authError, resetPassword]);
 
   const applyLoadedState = (loaded) => {
-    if (!loaded) return;
-    setActiveView(loaded.activeView || "dashboard");
-    setCurrency(loaded.currency || "USD");
-    setMovements(loaded.movements || initialMovements);
-    setTasks(loaded.tasks || initialTasks);
-    setClients(loaded.clients || initialClients);
-    setContentItems(loaded.contentItems || initialContent);
-    setGoals(loaded.goals || initialGoals);
-    setHomeTasks(loaded.homeTasks || initialHomeTasks);
-    setBusinessSettings(loaded.businessSettings || initialBusinessSettings);
-    setBanks(loaded.banks || initialBanks);
-    setAnnualBudget(loaded.annualBudget || initialAnnualBudget);
-    setHomeBudget(loaded.homeBudget || initialHomeBudget);
-    setPurpose(loaded.purpose || purpose);
+    const state = loaded || createBlankUserState(currency);
+    setActiveView(state.activeView || "dashboard");
+    setCurrency(state.currency || "USD");
+    setMovements(normalizeMovements(state.movements || []));
+    setTasks(state.tasks || []);
+    setClients(normalizeClients(state.clients || []));
+    setContentItems(state.contentItems || []);
+    setGoals(state.goals || []);
+    setHomeTasks(state.homeTasks || []);
+    setSystemTasks(state.systemTasks || cloneList(initialSystemTasks));
+    setMaternalTasks(state.maternalTasks || cloneList(initialHomeMaternalTasks));
+    setWellnessTasks(state.wellnessTasks || cloneList(initialHomeWellnessTasks));
+    setIncomeSources(state.incomeSources || cloneList(initialIncomeSources));
+    setSalesGoal(state.salesGoal || 0);
+    setContactLog(state.contactLog || {});
+    setWeekBlocks(state.weekBlocks || {});
+    setBusinessSettings(state.businessSettings || { ...initialBusinessSettings });
+    setBanks(state.banks || [...initialBanks]);
+    setAnnualBudget(normalizeAnnualBudget(state.annualBudget || initialAnnualBudget));
+    setHomeBudget(normalizeHomeBudget(state.homeBudget || cloneList(initialHomeBudget)));
+    setPurpose(createInitialPurpose(state.purpose || {}));
+    setProfileSetup(state.profileSetup || null);
+    setProfileForm(state.profileSetup ? { ...initialProfileForm, ...state.profileSetup } : { ...initialProfileForm });
+    setGroceryList(state.groceryList || []);
+    setUserPlan(state.userPlan || "free");
+    setPremiumExpiresAt(state.premiumExpiresAt || null);
   };
 
   useEffect(() => {
     if (!ready) return;
+    let cancelled = false;
     const restore = async () => {
       try {
-        if (user && awsActive) {
-          const remoteState = await loadRemoteState(user.id);
-          if (remoteState) applyLoadedState(remoteState);
+        if (user && supabaseActive) {
+          setIsRestoringRemote(true);
+          setCloudReadyUserId(null);
+          applyLoadedState(createBlankUserState());
+          const remoteState = await loadRemoteState();
+          if (cancelled) return;
+          applyLoadedState(remoteState || createBlankUserState());
+          setCloudReadyUserId(user.id);
+          setSyncError("");
         } else {
           const storedState = loadState();
-          if (storedState) applyLoadedState(storedState);
+          if (!cancelled && storedState) applyLoadedState(storedState);
         }
       } catch (err) {
         console.error("Error restaurando estado:", err);
+        if (!cancelled) {
+          setSyncError("No se pudo cargar tu informaci√≥n desde AWS. No uses la beta con datos reales hasta actualizar Lambda/API Gateway.");
+        }
+      } finally {
+        if (!cancelled) setIsRestoringRemote(false);
       }
     };
     restore();
-  }, [ready, user, awsActive]);
+    return () => {
+      cancelled = true;
+    };
+  }, [ready, user, supabaseActive]);
 
   useEffect(() => {
-    if (!ready || !user) return;
+    if (!ready || !user || isRestoringRemote) return;
     if (!profileSetup) setShowProfileModal(true);
-  }, [ready, user]);
+    else setShowProfileModal(false);
+  }, [ready, user, isRestoringRemote, profileSetup]);
 
   useEffect(() => {
     if (!ready) return;
@@ -781,36 +1034,38 @@ export default function App() {
       premiumExpiresAt
     };
 
-    if (user && awsActive) {
+    if (user && supabaseActive) {
+      if (isRestoringRemote || cloudReadyUserId !== user.id) return;
       setIsSyncing(true);
-      saveRemoteState(user.id, stateToSave)
+      saveRemoteState(stateToSave)
+        .then(() => setSyncError(""))
         .catch((err) => {
           console.error("Error guardando en la nube:", err);
-          // Fallback a localStorage si falla Supabase
-          window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+          setSyncError("No se pudo guardar en la nube de forma segura. Evita cargar datos reales hasta terminar el ajuste de AWS.");
         })
         .finally(() => setIsSyncing(false));
-    } else {
+    } else if (!supabaseActive) {
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
       } catch (err) {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose]);
+  }, [ready, user, supabaseActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, profileSetup, systemTasks, maternalTasks, wellnessTasks, weekBlocks]);
 
   const addMovement = (event) => {
     event.preventDefault();
     const amount = Number(form.amount);
     if (!form.description.trim() || !form.category.trim() || !amount) return;
     
-    // Validar lÌmite del plan
+    // Validar l√≠mite del plan
     if (movements.length >= currentLimits.movements) {
-      setUpgradeReason(`Has alcanzado el lÌmite de ${currentLimits.movements} movimientos de tu plan.`);
+      setUpgradeReason(`Has alcanzado el l√≠mite de ${currentLimits.movements} movimientos de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
     
+    const movementDate = form.date || getTodayInputValue();
     setMovements((current) => [{
       id: Date.now(),
       type: form.type,
@@ -818,7 +1073,9 @@ export default function App() {
       description: form.description.trim(),
       category: form.category.trim(),
       amount,
-      bank: form.bank || banks[0] || ""
+      bank: form.bank || banks[0] || "",
+      date: movementDate,
+      createdAt: timestampFromInputDate(movementDate)
     }, ...current]);
     setForm({
       type: form.type,
@@ -826,7 +1083,8 @@ export default function App() {
       description: "",
       category: "",
       amount: "",
-      bank: form.bank || banks[0] || ""
+      bank: form.bank || banks[0] || "",
+      date: getTodayInputValue()
     });
   };
 
@@ -835,13 +1093,15 @@ export default function App() {
     const amount = Number(clientForm.amount);
     if (!clientForm.name.trim() || !clientForm.service.trim() || !amount) return;
     
-    // Validar lÌmite del plan
+    // Validar l√≠mite del plan
     if (clients.length >= currentLimits.clients) {
-      setUpgradeReason(`Has alcanzado el lÌmite de ${currentLimits.clients} clientes de tu plan.`);
+      setUpgradeReason(`Has alcanzado el l√≠mite de ${currentLimits.clients} clientes de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
     
+    const contactDate = clientForm.lastContactDate || getTodayInputValue();
+    const contactTimestamp = timestampFromInputDate(contactDate);
     const now = Date.now();
     setClients((current) => [{ 
       id: now, 
@@ -850,21 +1110,23 @@ export default function App() {
       status: clientForm.status, 
       amount, 
       nextAction: clientForm.nextAction.trim() || "Hacer seguimiento", 
-      lastContact: now, 
+      lastContact: contactTimestamp,
+      lastContactDate: contactDate,
       source: clientForm.source === "Otra" ? clientForm.customSource.trim() || "Otra" : clientForm.source, 
       phone: clientForm.phone.trim(), 
-      createdAt: now 
+      createdAt: now,
+      updatedAt: now
     }, ...current]);
-    setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "", phone: "" });
+    setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue() });
   };
 
   const addContent = (event) => {
     event.preventDefault();
     if (!contentForm.title.trim()) return;
     
-    // Validar lÌmite del plan
+    // Validar l√≠mite del plan
     if (contentItems.length >= currentLimits.content) {
-      setUpgradeReason(`Has alcanzado el lÌmite de ${currentLimits.content} contenidos de tu plan.`);
+      setUpgradeReason(`Has alcanzado el l√≠mite de ${currentLimits.content} contenidos de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
@@ -894,9 +1156,9 @@ export default function App() {
     event.preventDefault();
     if (!homeForm.title.trim()) return;
     
-    // Validar lÌmite del plan
+    // Validar l√≠mite del plan
     if (homeTasks.length >= currentLimits.homeTasks) {
-      setUpgradeReason(`Has alcanzado el lÌmite de ${currentLimits.homeTasks} tareas del hogar de tu plan.`);
+      setUpgradeReason(`Has alcanzado el l√≠mite de ${currentLimits.homeTasks} tareas del hogar de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
@@ -911,6 +1173,13 @@ export default function App() {
     type,
     classification: type === "income" ? "Servicios" : "Gasto fijo"
   }));
+  const updateMovementDate = (movementId, date) => {
+    setMovements((current) => current.map((movement) => movement.id === movementId ? {
+      ...movement,
+      date,
+      createdAt: timestampFromInputDate(date)
+    } : movement));
+  };
   const updateClientForm = (field, value) => setClientForm((current) => ({ ...current, [field]: value }));
   const updateContentForm = (field, value) => setContentForm((current) => ({ ...current, [field]: value }));
   const updateGoalForm = (field, value) => setGoalForm((current) => ({ ...current, [field]: value }));
@@ -938,7 +1207,7 @@ export default function App() {
       if (row.month !== month) return row;
       const nextValue = Math.max(0, Number(value) || 0);
       if (field === "income") {
-        // Solo recalcular gastos si est·n en 0 o vacÌos (no sobrescribir valores personalizados)
+        // Solo recalcular gastos si est√°n en 0 o vac√≠os (no sobrescribir valores personalizados)
         const shouldRecalculateFixed = !row.fixedExpenses || row.fixedExpenses === 0;
         const shouldRecalculateVariable = !row.variableExpenses || row.variableExpenses === 0;
         return {
@@ -970,8 +1239,9 @@ export default function App() {
     });
   };
   const exportMovementsToExcel = () => {
-    const headers = ["Tipo", "ClasificaciÛn", "DescripciÛn", "CategorÌa", "Banco", "Monto"];
-    const rows = movements.map((movement) => [
+    const headers = ["Fecha", "Tipo", "Clasificaci√≥n", "Descripci√≥n", "Categor√≠a", "Banco", "Monto"];
+    const rows = sortedMovements.map((movement) => [
+      inputDateFromValue(movement.date || movement.createdAt),
       movement.type === "income" ? "Ingreso" : "Gasto",
       movement.classification || "",
       movement.description,
@@ -995,24 +1265,36 @@ export default function App() {
     event.preventDefault();
     const amount = Number(homeBudgetForm.amount);
     if (!homeBudgetForm.description.trim() || !amount) return;
-    setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount }, ...current]);
-    setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "" });
+    const dueDate = homeBudgetForm.dueDate || getTodayInputValue();
+    setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount, dueDate, createdAt: timestampFromInputDate(dueDate) }, ...current]);
+    setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue() });
+  };
+  const updateHomeBudgetDate = (itemId, dueDate) => {
+    setHomeBudget((current) => current.map((item) => item.id === itemId ? { ...item, dueDate, createdAt: timestampFromInputDate(dueDate) } : item));
   };
   const moveClientStatus = (clientId, status) => {
-    setClients((current) => current.map((client) => client.id === clientId ? { ...client, status } : client));
+    setClients((current) => current.map((client) => client.id === clientId ? { ...client, status, updatedAt: Date.now() } : client));
   };
   const logContact = (clientId, clientName) => {
-    const today = new Date().toISOString().split("T")[0];
+    const today = getTodayInputValue();
     setContactLog((prev) => ({ ...prev, [Date.now()]: { clientId, clientName, date: today } }));
-    setClients((c) => c.map((cl) => cl.id === clientId ? { ...cl, lastContact: Date.now() } : cl));
+    setClients((c) => c.map((cl) => cl.id === clientId ? { ...cl, lastContact: timestampFromInputDate(today), lastContactDate: today, updatedAt: Date.now() } : cl));
   };
   const weekStart = (() => { const d = new Date(); d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1)); d.setHours(0,0,0,0); return d.getTime(); })();
-  const contactsThisWeek = Object.values(contactLog).filter((e) => new Date(e.date).getTime() >= weekStart).length;
+  const contactsThisWeek = Object.values(contactLog).filter((e) => timestampFromInputDate(e.date) >= weekStart).length;
   const updateContentStatus = (contentId, status) => {
     setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, status } : item));
   };
   const updateClientNotes = (clientId, notes) => {
-    setClients((current) => current.map((client) => client.id === clientId ? { ...client, notes } : client));
+    setClients((current) => current.map((client) => client.id === clientId ? { ...client, notes, updatedAt: Date.now() } : client));
+  };
+  const updateClientLastContact = (clientId, date) => {
+    setClients((current) => current.map((client) => client.id === clientId ? {
+      ...client,
+      lastContactDate: date,
+      lastContact: timestampFromInputDate(date),
+      updatedAt: Date.now()
+    } : client));
   };
   const toggleFamilyDay = (day) => {
     setPurpose((current) => ({
@@ -1041,55 +1323,87 @@ export default function App() {
 
   const activeLabel = menu.find((item) => item.id === activeView)?.label || "Dashboard";
 
-  if (!ready) {
+  if (!ready || isRestoringRemote) {
     return (
       <div className="auth-shell">
         <div className="auth-card" style={{textAlign:"center"}}>
-          <div style={{fontSize:"32px",marginBottom:"12px"}}>?</div>
+          <div style={{fontSize:"32px",marginBottom:"12px"}}>‚ú®</div>
           <h2>Cargando tu espacio...</h2>
-          <p>Un momento, preparando todo para ti.</p>
+          <p>Un momento, preparando solo la informaci√≥n de esta cuenta.</p>
         </div>
       </div>
     );
   }
 
-  if (!user && awsActive) {
+  if (!user && supabaseActive) {
     return (
       <div className="auth-shell">
         <div className="auth-card">
-          <h2>{resetPassword ? "Restablecer contraseÒa" : authMode === "login" ? "Iniciar sesiÛn" : "Crear cuenta"}</h2>
-          <p>{resetPassword ? "Ingresa tu nueva contraseÒa." : "Ingresa con tu correo para acceder a tu tablero Mam· CEO."}</p>
-          {resetPassword ? (
-            <form className="auth-form" onSubmit={handleResetPassword}>
-              <label>
-                Nueva contraseÒa
-                <input type="password" value={authNewPassword} onChange={(event) => setAuthNewPassword(event.target.value)} required minLength={6} />
-              </label>
-              {authError && <p className="auth-error">{authError}</p>}
-              <button type="submit" className="auth-button" disabled={authLoading}>
-                Actualizar contraseÒa
-              </button>
-            </form>
+          <div className="auth-brand">
+            <div className="auth-brand-seal">MC</div>
+            <div className="auth-brand-script">Mam√°</div>
+            <div className="auth-brand-ceo">CEO</div>
+            <div className="auth-brand-app">APP</div>
+          </div>
+          {confirmMode ? (
+            <>
+              <h2>Confirma tu correo üì¨</h2>
+              <p>Te enviamos un c√≥digo de 6 d√≠gitos a <strong>{authEmail}</strong>. Ingr√©salo aqu√≠ para activar tu cuenta.</p>
+              <form className="auth-form" onSubmit={handleConfirmCode}>
+                <label>
+                  C√≥digo de verificaci√≥n
+                  <input type="text" placeholder="123456" value={confirmCode} onChange={(e) => setConfirmCode(e.target.value)} required maxLength={6} style={{letterSpacing:"8px",fontSize:"22px",textAlign:"center"}} autoFocus />
+                </label>
+                {authError && <p className="auth-error">{authError}</p>}
+                <button type="submit" className="auth-button" disabled={authLoading}>Verificar y entrar</button>
+              </form>
+              <button className="auth-switch" onClick={() => { setConfirmMode(false); setConfirmCode(""); setAuthError(""); }}>‚Üê Volver</button>
+            </>
+          ) : resetPassword ? (
+            <>
+              <h2>Restablecer contrase√±a</h2>
+              <p>Ingresa el c√≥digo que lleg√≥ a <strong>{resetEmail}</strong> y tu nueva contrase√±a.</p>
+              <form className="auth-form" onSubmit={handleResetPassword}>
+                <label>
+                  C√≥digo de verificaci√≥n
+                  <input type="text" placeholder="123456" value={resetCode} onChange={(e) => setResetCode(e.target.value)} required maxLength={6} style={{letterSpacing:"8px",fontSize:"22px",textAlign:"center"}} />
+                </label>
+                <label>
+                  Nueva contrase√±a
+                  <input type="password" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required minLength={8} />
+                </label>
+                {authError && <p className="auth-error">{authError}</p>}
+                <button type="submit" className="auth-button" disabled={authLoading}>Actualizar contrase√±a</button>
+              </form>
+              <button className="auth-switch" onClick={() => { setResetPassword(false); setAuthError(""); }}>‚Üê Volver</button>
+            </>
           ) : (
+            <>
             <form className="auth-form" onSubmit={handleAuthSubmit}>
               <label>
-                Correo electrÛnico
+                Correo electr√≥nico
                 <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} required />
               </label>
               {authMode === "signup" && (
                 <label>
                   Tu nombre
-                  <input type="text" placeholder="øCÛmo te llamamos?" value={authName} onChange={(event) => setAuthName(event.target.value)} required />
+                  <input type="text" placeholder="¬øC√≥mo te llamamos?" value={authName} onChange={(event) => setAuthName(event.target.value)} required />
                 </label>
               )}
               <label>
-                ContraseÒa
-                <input type="password" value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={6} />
+                Contrase√±a
+                <div style={{position:"relative"}}>
+                  <input type={showAuthPassword?"text":"password"} value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={8} style={{paddingRight:"44px",width:"100%"}} />
+                  <button type="button" onClick={()=>setShowAuthPassword(v=>!v)} style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",border:"none",background:"none",cursor:"pointer",fontSize:"18px",color:"var(--muted)",padding:0,lineHeight:1}}>{showAuthPassword?"üôà":"üëÅ"}</button>
+                </div>
               </label>
               {authMode === "signup" && (
                 <label>
-                  Repite la contraseÒa
-                  <input type="password" value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={6} />
+                  Repite la contrase√±a
+                  <div style={{position:"relative"}}>
+                    <input type={showAuthPasswordConfirm?"text":"password"} value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={8} style={{paddingRight:"44px",width:"100%"}} />
+                    <button type="button" onClick={()=>setShowAuthPasswordConfirm(v=>!v)} style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",border:"none",background:"none",cursor:"pointer",fontSize:"18px",color:"var(--muted)",padding:0,lineHeight:1}}>{showAuthPasswordConfirm?"üôà":"üëÅ"}</button>
+                  </div>
                 </label>
               )}
               {authError && <p className="auth-error">{authError}</p>}
@@ -1097,20 +1411,19 @@ export default function App() {
                 {authMode === "login" ? "Entrar" : "Registrarme"}
               </button>
             </form>
-          )}
-          {!resetPassword && (
-            <>
-              <button className="auth-switch" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>
-                {authMode === "login" ? "Quiero crear una cuenta" : "Ya tengo cuenta"}
+            <button className="auth-switch" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>
+              {authMode === "login" ? "Quiero crear una cuenta" : "Ya tengo cuenta"}
+            </button>
+            {authMode === "login" && (
+              <button type="button" className="auth-forgot" onClick={handleForgotPassword} disabled={authLoading}>
+                Olvid√© mi contrase√±a
               </button>
-              {authMode === "login" && (
-                <button type="button" className="auth-forgot" onClick={handleForgotPassword} disabled={authLoading}>
-                  OlvidÈ mi contraseÒa
-                </button>
-              )}
-
+            )}
             </>
           )}
+          <footer className="auth-footer">
+            Hecho por Una mam√° con prop√≥sito¬Æ | 2026 UMP S.A.S Todos los derechos reservados
+          </footer>
         </div>
       </div>
     );
@@ -1123,17 +1436,17 @@ export default function App() {
           <div className="profile-modal">
             <div className="profile-modal-header">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                <h2>{profileSetup ? "Editar mi perfil ??" : "Antes de comenzar... ??"}</h2>
+                <h2>{profileSetup ? "Editar mi perfil ‚úèÔ∏è" : "Antes de comenzar... üå∏"}</h2>
                 {profileSetup && (
                   <button type="button" onClick={() => setShowProfileModal(false)}
-                    style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>◊</button>
+                    style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>√ó</button>
                 )}
               </div>
-              <p>{profileSetup ? "Actualiza tu informaciÛn cuando quieras." : "Configuremos tu perfil para que la app trabaje para ti desde el primer dÌa."}</p>
+              <p>{profileSetup ? "Actualiza tu informaci√≥n cuando quieras." : "Configuremos tu perfil para que la app trabaje para ti desde el primer d√≠a."}</p>
             </div>
             <form className="profile-modal-form" onSubmit={saveProfile}>
               <label>
-                øCÛmo te llamamos?
+                ¬øC√≥mo te llamamos?
                 <input placeholder="Tu nombre" value={profileForm.name} onChange={(e) => setProfileForm((c) => ({ ...c, name: e.target.value }))} required />
               </label>
               <label>
@@ -1144,15 +1457,15 @@ export default function App() {
                 Tipo de negocio
                 <select value={profileForm.businessType} onChange={(e) => setProfileForm((c) => ({ ...c, businessType: e.target.value }))}>
                   <option>Servicios 1:1</option>
-                  <option>Coaching o mentorÌa</option>
+                  <option>Coaching o mentor√≠a</option>
                   <option>Productos digitales</option>
                   <option>E-commerce</option>
-                  <option>MembresÌas / Recurrente</option>
+                  <option>Membres√≠as / Recurrente</option>
                   <option>Otro</option>
                 </select>
               </label>
               <label>
-                øEn quÈ etapa est· tu negocio?
+                ¬øEn qu√© etapa est√° tu negocio?
                 <select value={profileForm.stage} onChange={(e) => setProfileForm((c) => ({ ...c, stage: e.target.value }))}>
                   <option>Comenzando</option>
                   <option>Creciendo</option>
@@ -1168,27 +1481,27 @@ export default function App() {
                 <select value={profileForm.mainChallenge} onChange={(e) => setProfileForm((c) => ({ ...c, mainChallenge: e.target.value }))}>
                   <option>Conseguir clientes</option>
                   <option>Organizar mis finanzas</option>
-                  <option>Tener m·s tiempo</option>
+                  <option>Tener m√°s tiempo</option>
                   <option>Escalar mi negocio</option>
                   <option>Equilibrar negocio y hogar</option>
                 </select>
               </label>
-              <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ?"}</button>
+              <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ‚ú®"}</button>
               {profileSetup && (
                 <button type="button" onClick={async () => {
-                  if (!window.confirm("\u00bfEst·s segura de que quieres eliminar tu cuenta? Esta acciÛn no se puede deshacer y perder·s todos tus datos.")) return;
-                  if (!window.confirm("\u00daltima confirmaciÛn: se eliminar·n todos tus datos permanentemente.")) return;
+                  if (!window.confirm("\u00bfEst√°s segura de que quieres eliminar tu cuenta? Esta acci√≥n no se puede deshacer y perder√°s todos tus datos.")) return;
+                  if (!window.confirm("\u00daltima confirmaci√≥n: se eliminar√°n todos tus datos permanentemente.")) return;
                   try {
-                    if (user && awsActive) {
-                      await await awsAuth.signOut();
-                      await awsAuth.signOut();
+                    if (user && supabaseActive) {
+                      await deleteRemoteState();
+                      await supabase.auth.signOut();
                     }
                     window.localStorage.removeItem(STORAGE_KEY);
                     setUser(null);
                     setShowProfileModal(false);
                   } catch (err) {
                     console.error("Error eliminando cuenta:", err);
-                    alert("Hubo un error al eliminar la cuenta. Cont·ctanos en hola@umpacademy.co");
+                    alert("No pudimos eliminar los datos en AWS de forma segura. No se cerr√≥ la cuenta; intenta m√°s tarde o cont√°ctanos en hola@umpacademy.co");
                   }
                 }}
                 style={{marginTop:"8px",width:"100%",padding:"12px",border:"1px solid #e05a4e",background:"#fff5f4",color:"#e05a4e",borderRadius:"8px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>
@@ -1202,10 +1515,10 @@ export default function App() {
 
       {profileSaved && (
         <div className="profile-toast">
-          <span>??</span>
+          <span>üå∏</span>
           <div>
-            <strong>°Todo listo, {profileSetup?.name || "Mam· CEO"}!</strong>
-            <p>Tu perfil est· guardado. La app ya trabaja para ti.</p>
+            <strong>¬°Todo listo, {profileSetup?.name || "Mam√° CEO"}!</strong>
+            <p>Tu perfil est√° guardado. La app ya trabaja para ti.</p>
           </div>
         </div>
       )}
@@ -1215,9 +1528,9 @@ export default function App() {
           <div className="profile-modal" style={{maxWidth:"500px"}}>
             <div className="profile-modal-header">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                <h2>? Desbloquea todo tu potencial</h2>
+                <h2>‚ú® Desbloquea todo tu potencial</h2>
                 <button type="button" onClick={() => setShowUpgradeModal(false)}
-                  style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>◊</button>
+                  style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>√ó</button>
               </div>
               <p style={{marginTop:"8px",fontSize:"15px",color:"var(--purple)"}}>{upgradeReason}</p>
             </div>
@@ -1226,27 +1539,27 @@ export default function App() {
                 <h3 style={{margin:"0 0 16px",fontSize:"20px",color:"var(--purple)"}}>Plan Premium</h3>
                 <div style={{display:"grid",gap:"12px",marginBottom:"16px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
+                    <span style={{fontSize:"20px"}}>‚úì</span>
                     <span>Movimientos financieros ilimitados</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
+                    <span style={{fontSize:"20px"}}>‚úì</span>
                     <span>Clientes ilimitados</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
+                    <span style={{fontSize:"20px"}}>‚úì</span>
                     <span>Contenido ilimitado</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
+                    <span style={{fontSize:"20px"}}>‚úì</span>
                     <span>Tareas del hogar ilimitadas</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
-                    <span>SincronizaciÛn en la nube</span>
+                    <span style={{fontSize:"20px"}}>‚úì</span>
+                    <span>Sincronizaci√≥n en la nube</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
+                    <span style={{fontSize:"20px"}}>‚úì</span>
                     <span>Soporte prioritario</span>
                   </div>
                 </div>
@@ -1265,14 +1578,19 @@ export default function App() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark"></div>
-          <div className="brand-script">Mam·</div>
+          <div className="brand-script">Mam√°</div>
           <div className="brand-ceo">CEO</div>
           <div className="brand-app">APP</div>
         </div>
 
-        <nav className="main-menu" aria-label="Navegacion principal">
+        {/* Bot√≥n hamburguesa solo en m√≥vil */}
+        <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(v => !v)} aria-label="Men√∫">
+          {mobileMenuOpen ? "‚úï" : "‚ò∞"}
+        </button>
+
+        <nav className={`main-menu ${mobileMenuOpen ? "mobile-open" : ""}`} aria-label="Navegacion principal">
           {menu.map((item) => (
-            <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id} onClick={() => setActiveView(item.id)}>
+            <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id} onClick={() => { setActiveView(item.id); setMobileMenuOpen(false); }}>
               <span>{item.icon}</span>
               {item.label}
             </button>
@@ -1290,8 +1608,8 @@ export default function App() {
         </div>
 
         <div className="quote-card">
-          <p className="brand-tagline">Negocio, hogar y visiÛn en un solo lugar</p>
-          <span>ì</span>
+          <p className="brand-tagline">Negocio, hogar y visi√≥n en un solo lugar</p>
+          <span>‚Äú</span>
           <p>{promesas[new Date().getDate() % promesas.length]}</p>
         </div>
       </aside>
@@ -1300,26 +1618,31 @@ export default function App() {
         <header className="topbar">
           <div>
             <p className="view-label">{activeLabel}</p>
-            <h1>°Hola, {profileSetup?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mam· CEO"}!</h1>
-            <p>Enfocada ï Organizada ï Imparable</p>
+            <h1>¬°Hola, {profileSetup?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mam√° CEO"}!</h1>
+            <p>Enfocada ‚Ä¢ Organizada ‚Ä¢ Imparable</p>
           </div>
           <div className="profile-area">
-            {isSyncing && <div className="status-chip syncing">GuardandoÖ</div>}
-            {!awsActive && !isSyncing && <div className="status-chip">Modo local</div>}
+            {isSyncing && <div className="status-chip syncing">Guardando‚Ä¶</div>}
+            {!supabaseActive && !isSyncing && <div className="status-chip">Modo local</div>}
             <button className="profile-edit-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
               <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
               <span className="profile-edit-name">{profileSetup?.name || "Mi perfil"}</span>
-              <span className="profile-edit-icon">??</span>
+              <span className="profile-edit-icon">‚öôÔ∏è</span>
             </button>
-            {awsActive && user && (
+            {supabaseActive && user && (
               <button className="signout-button" onClick={signOut}>Salir</button>
             )}
           </div>
         </header>
 
-        {!awsActive && (
+        {!supabaseActive && (
           <div className="local-banner">
-            <strong>Modo sin conexiÛn</strong> ó tus datos se guardan en este navegador. Si cambias de dispositivo o navegador, no ver·s tus datos.
+            <strong>Modo sin conexi√≥n</strong> ‚Äî tus datos se guardan en este navegador. Si cambias de dispositivo o navegador, no ver√°s tus datos.
+          </div>
+        )}
+        {syncError && (
+          <div className="local-banner">
+            <strong>Sincronizaci√≥n segura pendiente</strong> ‚Äî {syncError}
           </div>
         )}
 
@@ -1327,13 +1650,13 @@ export default function App() {
         {isBetaUser && effectivePlan === "premium" && betaDaysLeft !== null && (
           <div className="beta-banner">
             {betaDaysLeft > 30 ? (
-              <><span>??</span><div><strong>Bienvenida al grupo beta de Mam· CEO</strong><p>Tienes <b>{betaDaysLeft} dÌas</b> de acceso Premium gratis. °⁄salos para construir el h·bito de organizar tu negocio y hogar!</p></div></>
+              <><span>üå∏</span><div><strong>Bienvenida al grupo beta de Mam√° CEO</strong><p>Tienes <b>{betaDaysLeft} d√≠as</b> de acceso Premium gratis. ¬°√ösalos para construir el h√°bito de organizar tu negocio y hogar!</p></div></>
             ) : betaDaysLeft > 7 ? (
-              <><span>?</span><div><strong>Ya llevas un buen camino, {profileSetup?.name || "Mam· CEO"}</strong><p>Te quedan <b>{betaDaysLeft} dÌas</b> de Premium gratis. Todo lo que organizaste aquÌ ya es tuyo ó sigue construyendo.</p></div></>
+              <><span>‚ú®</span><div><strong>Ya llevas un buen camino, {profileSetup?.name || "Mam√° CEO"}</strong><p>Te quedan <b>{betaDaysLeft} d√≠as</b> de Premium gratis. Todo lo que organizaste aqu√≠ ya es tuyo ‚Äî sigue construyendo.</p></div></>
             ) : betaDaysLeft > 0 ? (
-              <><span>??</span><div><strong>⁄ltimos {betaDaysLeft} dÌas de tu acceso beta</strong><p>Has avanzado mucho. Activa Premium cuando estÈs lista, sin presiÛn.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Ver planes ?</button></div></>
+              <><span>üíõ</span><div><strong>√öltimos {betaDaysLeft} d√≠as de tu acceso beta</strong><p>Has avanzado mucho. Activa Premium cuando est√©s lista, sin presi√≥n.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Ver planes ‚Üí</button></div></>
             ) : (
-              <><span>??</span><div><strong>Tu perÌodo beta terminÛ</strong><p>Tus datos est·n seguros. Activa Premium para seguir con acceso ilimitado.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Activar Premium ?</button></div></>
+              <><span>üéØ</span><div><strong>Tu per√≠odo beta termin√≥</strong><p>Tus datos est√°n seguros. Activa Premium para seguir con acceso ilimitado.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Activar Premium ‚Üí</button></div></>
             )}
           </div>
         )}
@@ -1353,19 +1676,19 @@ export default function App() {
         {effectivePlan === "ceo" && (
           <div className={`pomodoro-widget ${pomodoroActive ? "pomodoro-open" : ""}`}>
             <button className="pomodoro-toggle" onClick={() => { setPomodoroActive((v) => !v); requestNotificationPermission(); }} title="Temporizador de enfoque">
-              {pomodoroRunning ? "?" : "?"}
+              {pomodoroRunning ? "‚è∏" : "‚è±"}
               {pomodoroRunning && <span className="pomodoro-pulse" />}
             </button>
             {pomodoroActive && (
               <div className="pomodoro-panel">
                 <div className="pomodoro-header">
-                  <span className="pomodoro-mode-label">{pomodoroMode === "work" ? "?? Enfoque" : "? Descanso"}</span>
+                  <span className="pomodoro-mode-label">{pomodoroMode === "work" ? "üéØ Enfoque" : "‚òï Descanso"}</span>
                   <span className="pomodoro-blocks">{pomodoroBlocks} bloques hoy</span>
                 </div>
                 <div className="pomodoro-clock">{String(pomodoroMinutes).padStart(2,"0")}:{String(pomodoroSeconds).padStart(2,"0")}</div>
                 <div className="pomodoro-controls">
-                  <button onClick={() => setPomodoroRunning((r) => !r)}>{pomodoroRunning ? "? Pausar" : "? Iniciar"}</button>
-                  <button onClick={pomodoroReset}>?</button>
+                  <button onClick={() => setPomodoroRunning((r) => !r)}>{pomodoroRunning ? "‚è∏ Pausar" : "‚ñ∂ Iniciar"}</button>
+                  <button onClick={pomodoroReset}>‚Ü∫</button>
                 </div>
                 <div className="pomodoro-settings">
                   <label>Trabajo
@@ -1385,15 +1708,15 @@ export default function App() {
         )}
 
         {effectivePlan === "free" && (
-          <button className="upgrade-fab" onClick={() => setActiveView("pricing")}>? Upgrade</button>
+          <button className="upgrade-fab" onClick={() => setActiveView("pricing")}>‚ú® Upgrade</button>
         )}
 
         <footer className="app-footer">
-          <span>© 2026 UMP S.A.S ï Todos los derechos reservados</span>
-          <span>Hecho por Una mam· con propÛsitoÆ</span>
+          <span>¬© 2026 UMP S.A.S ‚Ä¢ Todos los derechos reservados</span>
+          <span>Hecho por Una mam√° con prop√≥sito¬Æ</span>
           <span>
-            <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('terminos'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>TÈrminos</a>
-            {" ï "}
+            <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('terminos'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>T√©rminos</a>
+            {" ‚Ä¢ "}
             <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('privacidad'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>Privacidad</a>
           </span>
         </footer>
@@ -1404,7 +1727,7 @@ export default function App() {
   function renderDashboard() {
     const hotLeads = clients.filter((c) => c.status === "Lead caliente").length;
     const familyDaysCount = Object.values(purpose.familyDays || {}).filter(Boolean).length;
-    const presenceMsg = familyDaysCount >= 5 ? "Semana excelente de presencia ??" : familyDaysCount >= 3 ? "Buen ritmo, sigue presente" : "Puedes mejorar tu presencia esta semana";
+    const presenceMsg = familyDaysCount >= 5 ? "Semana excelente de presencia üíõ" : familyDaysCount >= 3 ? "Buen ritmo, sigue presente" : "Puedes mejorar tu presencia esta semana";
     const unpublishedContent = contentItems.filter((i) => i.status !== "Publicado").length;
     const hotClient = clients.filter((c) => c.status === "Lead caliente")[0];
 
@@ -1413,11 +1736,11 @@ export default function App() {
         {/* Banner de enfoque */}
         <section className="focus-banner">
           <div className="focus-copy">
-            <span className="target-icon">?</span>
+            <span className="target-icon">‚óé</span>
             <div>
               <p className="eyebrow">Tu enfoque de la semana</p>
-              <h2>{monthlyProgress >= 80 ? "Cierra ventas pendientes y protege tu energÌa." : "Haz seguimiento a clientas y prioriza acciones que generan caja."}</h2>
-              <span className="pill">Elige la acciÛn pequeÒa que m·s resultado produce</span>
+              <h2>{monthlyProgress >= 80 ? "Cierra ventas pendientes y protege tu energ√≠a." : "Haz seguimiento a clientas y prioriza acciones que generan caja."}</h2>
+              <span className="pill">Elige la acci√≥n peque√±a que m√°s resultado produce</span>
             </div>
           </div>
           <div className="goal-box">
@@ -1426,9 +1749,10 @@ export default function App() {
             <Progress value={monthlyProgress} tone="purple" />
             <small>{monthlyProgress}% completado</small>
           </div>
-          <div className="week-ring" style={{"--value": 75}}>
+          <div className="week-ring" style={{"--value": monthWeekInfo.progress}}>
             <span>Semana</span>
-            <strong>3 de 4</strong>
+            <strong>{monthWeekInfo.current} de {monthWeekInfo.total}</strong>
+            <small>{monthWeekInfo.month}</small>
           </div>
         </section>
 
@@ -1436,7 +1760,7 @@ export default function App() {
         <section className="excellence-panel">
           <div className="excellence-copy">
             <p className="eyebrow">Tus acciones clave de hoy</p>
-            <h2>Una sola acciÛn bien elegida mueve m·s que diez hechas desde el agotamiento.</h2>
+            <h2>Una sola acci√≥n bien elegida mueve m√°s que diez hechas desde el agotamiento.</h2>
           </div>
           <div className="excellence-actions">
             {excellenceActions.map((action, index) => (
@@ -1458,14 +1782,14 @@ export default function App() {
             <MetricCard title="Ingresos" value={money.format(totals.income)} change="Dinero generado" tone="green" />
             <MetricCard title="Gastos" value={money.format(totals.expenses)} change="Dinero invertido" tone="pink" />
             <MetricCard title="Utilidad" value={money.format(totals.profit)} change="Resultado actual" tone="purple" />
-            <MetricCard title="ReinversiÛn" value={money.format(reinvestmentAmount)} change={`${reinvestmentPercent}% de tus ventas`} tone="orange" />
+            <MetricCard title="Reinversi√≥n" value={money.format(reinvestmentAmount)} change={`${reinvestmentPercent}% de tus ventas`} tone="orange" />
           </div>
 
-          {/* Fila principal: gr·fica + acciones */}
+          {/* Fila principal: gr√°fica + acciones */}
           <div className="dash-main-row">
             <div className="card chart-card-wide">
               <h3>Ingresos vs gastos</h3>
-              <LineChart movements={movements} />
+              <LineChart movements={sortedMovements} />
             </div>
             <div className="card task-card">
               <h3>Acciones clave ({completedTasks}/{tasks.length})</h3>
@@ -1492,16 +1816,16 @@ export default function App() {
             </div>
           </div>
 
-          {/* Res˙menes de otras pestaÒas */}
+          {/* Res√∫menes de otras pesta√±as */}
           <div className="section-title" style={{marginTop:"20px"}}>
             <h2>Tu semana de un vistazo</h2>
-            <p>Resumen de todas las ·reas</p>
+            <p>Resumen de todas las √°reas</p>
           </div>
           <div className="dash-summary-grid">
 
             {/* Clientes */}
             <div className="card dash-summary-card">
-              <div className="dash-summary-icon">?????</div>
+              <div className="dash-summary-icon">üßë‚Äçüíº</div>
               <h3>Clientes</h3>
               <div className="dash-summary-stat">
                 <span>Leads calientes</span>
@@ -1516,13 +1840,13 @@ export default function App() {
                 <strong>{contactsThisWeek}</strong>
               </div>
               {hotClient && (
-                <p className="helper-copy" style={{marginTop:"6px"}}>Prioridad: <b>{hotClient.name}</b> ó {hotClient.nextAction || "hacer seguimiento"}</p>
+                <p className="helper-copy" style={{marginTop:"6px"}}>Prioridad: <b>{hotClient.name}</b> ‚Äî {hotClient.nextAction || "hacer seguimiento"}</p>
               )}
             </div>
 
             {/* Contenido */}
             <div className="card dash-summary-card">
-              <div className="dash-summary-icon">??</div>
+              <div className="dash-summary-icon">üì±</div>
               <h3>Contenido</h3>
               <div className="dash-summary-stat">
                 <span>Publicadas</span>
@@ -1540,7 +1864,7 @@ export default function App() {
 
             {/* Hogar y presencia */}
             <div className="card dash-summary-card">
-              <div className="dash-summary-icon">??</div>
+              <div className="dash-summary-icon">üè†</div>
               <h3>Hogar y presencia</h3>
               <div className="dash-summary-stat">
                 <span>Tareas del hogar</span>
@@ -1548,26 +1872,30 @@ export default function App() {
               </div>
               <ProgressLabel label="Hogar" value={homeTasks.length ? Math.round((completedHomeTasks/homeTasks.length)*100) : 0} tone="green" />
               <div className="dash-summary-stat" style={{marginTop:"8px"}}>
-                <span>DÌas presente esta semana</span>
-                <strong style={{color: familyDaysCount >= 4 ? "var(--green)" : "var(--orange)"}}>{familyDaysCount} dÌas</strong>
+                <span>D√≠as presente esta semana</span>
+                <strong style={{color: familyDaysCount >= 4 ? "var(--green)" : "var(--orange)"}}>{familyDaysCount} d√≠as</strong>
               </div>
               <div className="dash-summary-stat">
-                <span>Momentos de conexiÛn</span>
+                <span>Momentos de conexi√≥n</span>
                 <strong>{purpose.connectionMoments || 0}</strong>
+              </div>
+              <div className="dash-summary-stat">
+                <span>Pagos esta semana</span>
+                <strong>{homePaymentsThisWeek.length}</strong>
               </div>
               <p className="helper-copy" style={{marginTop:"6px"}}>{presenceMsg}</p>
             </div>
 
-            {/* EnergÌa */}
+            {/* Energ√≠a */}
             <div className="card dash-summary-card">
-              <div className="dash-summary-icon">?</div>
-              <h3>EnergÌa y bienestar</h3>
+              <div className="dash-summary-icon">‚ö°</div>
+              <h3>Energ√≠a y bienestar</h3>
               <div className="dash-summary-stat">
-                <span>¡nimo</span>
+                <span>√Ånimo</span>
                 <strong style={{textTransform:"capitalize"}}>{purpose.mood}</strong>
               </div>
               <div className="dash-summary-stat">
-                <span>Nivel de energÌa</span>
+                <span>Nivel de energ√≠a</span>
                 <strong style={{textTransform:"capitalize"}}>{purpose.energy}</strong>
               </div>
               <ProgressLabel label="Autocuidado" value={Math.round(([purpose.water,purpose.walk,purpose.silence,purpose.devotional].filter(Boolean).length/4)*100)} tone="green" />
@@ -1579,7 +1907,7 @@ export default function App() {
 
           </div>
 
-          {/* ⁄ltimos movimientos + planificador */}
+          {/* √öltimos movimientos + planificador */}
           {(() => {
             const today = new Date();
             const dayNames = ["Domingo","Lunes","Martes","Miercoles","Jueves","Viernes","Sabado"];
@@ -1644,11 +1972,13 @@ export default function App() {
     const fixedExpensesTotal = movements.filter((m) => m.type === "expense" && m.classification === "Gasto fijo").reduce((sum, m) => sum + m.amount, 0);
     const cashFlow = totals.income - fixedExpensesTotal;
     const cashFlowScore = cashFlow > 0 ? "green" : "red";
+    const latestMovement = sortedMovements[0];
+    const businessMovementsThisWeek = sortedMovements.filter((movement) => isDateThisWeek(movement.date || movement.createdAt, currentWeekRange));
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Negocio</h2>
-          <p>{profileSetup?.businessName || "Tu negocio"} ‚Ä¢ {profileSetup?.stage || ""}</p>
+          <p>{profileSetup?.businessName || "Tu negocio"} √¢‚Ç¨¬¢ {profileSetup?.stage || ""}</p>
         </div>
 
         <div className="business-top-grid">
@@ -1707,7 +2037,7 @@ export default function App() {
                     </select>
                     {feeInfo && feeInfo.pct > 0 && (
                       <div style={{display:"flex",gap:"12px",fontSize:"12px",flexWrap:"wrap"}}>
-                        <span style={{color:"var(--pink)",fontWeight:700}}>Fee est.: {feeInfo.label} ò -{money.format(src.feeEstimated)}</span>
+                        <span style={{color:"var(--pink)",fontWeight:700}}>Fee est.: {feeInfo.label} ‚âà -{money.format(src.feeEstimated)}</span>
                         <span style={{color:"var(--green)",fontWeight:700}}>Neto est.: {money.format(src.netEstimated)}</span>
                       </div>
                     )}
@@ -1743,6 +2073,10 @@ export default function App() {
           <div className="card insight-card">
             <h3>Lectura CEO</h3>
             <p className="helper-copy">Analisis inteligente de tu situacion actual.</p>
+            <div className="ceo-reading-meta">
+              <span>{businessMovementsThisWeek.length} movimientos registrados esta semana</span>
+              <strong>{latestMovement ? `Ultimo: ${formatShortDate(latestMovement.date || latestMovement.createdAt)}` : "Sin movimientos aun"}</strong>
+            </div>
             {insights.map((insight) => <p key={insight} style={{borderLeft:"3px solid var(--pink)",paddingLeft:"12px",margin:"8px 0"}}>{insight}</p>)}
           </div>
         </div>
@@ -1871,7 +2205,7 @@ export default function App() {
             <div className="action-day-left">
               <span className="action-day-label">Accion del dia</span>
               <strong>{priorityClient.name}</strong>
-              <span>{priorityClient.status} ‚Ä¢ {money.format(priorityClient.amount)} ‚Ä¢ hace {daysSince(priorityClient.lastContact)} dias sin contacto</span>
+              <span>{priorityClient.status} √¢‚Ç¨¬¢ {money.format(priorityClient.amount)} √¢‚Ç¨¬¢ hace {daysSince(priorityClient.lastContact)} dias sin contacto</span>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"8px"}}>
                 <button type="button" className="contact-today-btn" style={{width:"auto",padding:"0 14px"}} onClick={() => logContact(priorityClient.id, priorityClient.name)}>Contacte hoy</button>
                 <a href={waLink(priorityClient)} target="_blank" rel="noreferrer"
@@ -1896,12 +2230,12 @@ export default function App() {
           <div className="client-alerts">
             {urgentClients.length > 0 && (
               <div className="alert-banner alert-orange">
-                <strong>{urgentClients.length} lead{urgentClients.length > 1 ? "s" : ""} sin contacto:</strong> {urgentClients.map((c) => c.name).join(", ")} ‚Äî actuas hoy o se enfriaran.
+                <strong>{urgentClients.length} lead{urgentClients.length > 1 ? "s" : ""} sin contacto:</strong> {urgentClients.map((c) => c.name).join(", ")} √¢‚Ç¨‚Äù actuas hoy o se enfriaran.
               </div>
             )}
             {urgentSubscriptions.length > 0 && (
               <div className="alert-banner alert-red">
-                <strong>{urgentSubscriptions.length} clienta{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong> {urgentSubscriptions.map((c) => c.name).join(", ")} ‚Äî riesgo de perder la relacion.
+                <strong>{urgentSubscriptions.length} clienta{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong> {urgentSubscriptions.map((c) => c.name).join(", ")} √¢‚Ç¨‚Äù riesgo de perder la relacion.
               </div>
             )}
           </div>
@@ -1919,6 +2253,10 @@ export default function App() {
             <select value={clientForm.status} onChange={(e) => updateClientForm("status", e.target.value)}>
               {stages.map((s) => <option key={s}>{s}</option>)}
             </select>
+            <label className="inline-date-field">
+              <span>√öltimo contacto</span>
+              <input type="date" value={clientForm.lastContactDate} onChange={(e) => updateClientForm("lastContactDate", e.target.value)} />
+            </label>
             <input placeholder="Proxima accion" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} />
             <input placeholder="Monto potencial" type="number" min="0" value={clientForm.amount} onChange={(e) => updateClientForm("amount", e.target.value)} required />
             <select value={clientForm.source} onChange={(e) => updateClientForm("source", e.target.value)}>
@@ -1952,12 +2290,14 @@ export default function App() {
                           <strong>{client.name}</strong>
                           <span className={`alert-dot alert-dot-${alert}`}></span>
                         </div>
-                        <small>{client.service} ‚Ä¢ {money.format(client.amount)}</small>
+                        <small>{client.service} √¢‚Ç¨¬¢ {money.format(client.amount)}</small>
                         {client.source && <small style={{color:"var(--purple)",fontWeight:700}}>{client.source}</small>}
                         <p>{client.nextAction || "Hacer seguimiento"}</p>
                         <small className="last-contact">
-                          {client.lastContact ? `Hace ${days} dia${days !== 1 ? "s" : ""}` : "Sin contacto"}
+                          {client.lastContact ? `√öltimo contacto: ${formatShortDate(client.lastContactDate || client.lastContact)} ¬∑ hace ${days} dia${days !== 1 ? "s" : ""}` : "Sin contacto"}
                         </small>
+                        <input className="client-date-input" type="date" value={inputDateFromValue(client.lastContactDate || client.lastContact)} onChange={(e) => updateClientLastContact(client.id, e.target.value)} aria-label={`√öltimo contacto de ${client.name}`} />
+                        <small className="last-contact">Actualizado: {formatShortDate(client.updatedAt || client.lastContact)}</small>
                         <div style={{display:"flex",gap:"6px",marginTop:"6px"}}>
                           <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>Contacte hoy</button>
                           <a href={waLink(client)} target="_blank" rel="noreferrer"
@@ -1996,12 +2336,14 @@ export default function App() {
                 <div className="paid-client-header">
                   <div>
                     <strong>{client.name}</strong>
-                    <small>{client.service} ‚Ä¢ {money.format(client.amount)}</small>
+                    <small>{client.service} √¢‚Ç¨¬¢ {money.format(client.amount)}</small>
                   </div>
                   <span className={`alert-dot alert-dot-${getAlert(client)}`}></span>
                 </div>
                 {client.source && <small style={{color:"var(--purple)",fontWeight:700}}>{client.source}</small>}
-                <small className="last-contact">{client.lastContact ? `Ultimo contacto: hace ${daysSince(client.lastContact)} dias` : "Sin contacto registrado"}</small>
+                <small className="last-contact">{client.lastContact ? `√öltimo contacto: ${formatShortDate(client.lastContactDate || client.lastContact)} ¬∑ hace ${daysSince(client.lastContact)} dias` : "Sin contacto registrado"}</small>
+                <input className="client-date-input" type="date" value={inputDateFromValue(client.lastContactDate || client.lastContact)} onChange={(e) => updateClientLastContact(client.id, e.target.value)} aria-label={`√öltimo contacto de ${client.name}`} />
+                <small className="last-contact">Actualizado: {formatShortDate(client.updatedAt || client.lastContact)}</small>
                 <div style={{display:"flex",gap:"6px"}}>
                   <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>Contacte hoy</button>
                   <a href={waLink(client)} target="_blank" rel="noreferrer"
@@ -2186,6 +2528,11 @@ export default function App() {
             <small>{mentalLoad} pendientes</small>
           </div>
           <div className="client-kpi">
+            <span>Pagos por hacer esta semana</span>
+            <strong style={{color: homePaymentsThisWeek.length ? "var(--orange)" : "var(--green)"}}>{homePaymentsThisWeek.length}</strong>
+            <small>{homePaymentsThisWeek.length ? `(${homePaymentsThisWeek.slice(0, 2).map((p) => p.description).join(" y ")}${homePaymentsThisWeek.length > 2 ? "..." : ""})` : "sin pagos pendientes"}</small>
+          </div>
+          <div className="client-kpi">
             <span>Disponible familiar</span>
             <strong style={{fontSize:"14px"}}>{money.format(homeAvailable)}</strong>
             <small>despues de gastos</small>
@@ -2314,6 +2661,7 @@ export default function App() {
                 <select value={homeBudgetForm.type} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, type: e.target.value }))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
                 <input placeholder="Descripcion" value={homeBudgetForm.description} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, description: e.target.value }))} />
                 <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, amount: e.target.value }))} />
+                <input type="date" value={homeBudgetForm.dueDate} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, dueDate: e.target.value }))} />
                 <button className="primary-button" type="submit">Agregar</button>
               </form>
               <div className="home-money-insights">
@@ -2326,7 +2674,19 @@ export default function App() {
                 <span style={{width:`${Math.min(100, homeBudgetTotals.income ? (homeSpent/homeBudgetTotals.income)*100 : 0)}%`}}></span>
                 <small>Gastado vs ingresos del hogar</small>
               </div>
-              <div className="budget-list">{homeBudget.map((item) => <DataRow key={item.id} title={item.description} meta={item.type} value={money.format(item.amount)} onDelete={() => setHomeBudget((c) => c.filter((r) => r.id !== item.id))} />)}</div>
+              <div className="budget-list">
+                {homeBudget.map((item) => (
+                  <div className="home-budget-row" key={item.id}>
+                    <div>
+                      <strong>{item.description}</strong>
+                      <small>{item.type} ¬∑ pago: {formatShortDate(item.dueDate || item.createdAt)}</small>
+                    </div>
+                    <input type="date" value={inputDateFromValue(item.dueDate || item.createdAt)} onChange={(e) => updateHomeBudgetDate(item.id, e.target.value)} aria-label={`Fecha de pago de ${item.description}`} />
+                    <b>{money.format(item.amount)}</b>
+                    <button className="row-delete" type="button" onClick={() => setHomeBudget((c) => c.filter((r) => r.id !== item.id))}>√ó</button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -2339,33 +2699,33 @@ export default function App() {
     const incomePerHour = purpose.hoursWorked > 0 ? Math.round(totals.income / purpose.hoursWorked) : 0;
     const peaceScore = ["inspirada", "feliz"].includes(purpose.mood) ? 100 : ["cansada"].includes(purpose.mood) ? 50 : 20;
     const mentalAdvice = purpose.mood === "controladora"
-      ? "Cambia control por presencia. Elige una cosa que sÌ depende de ti y suelta una que no."
+      ? "Cambia control por presencia. Elige una cosa que s√≠ depende de ti y suelta una que no."
       : purpose.mood === "abrumada"
-        ? "Reduce la lista a una sola acciÛn visible. No tienes que hacerlo todo hoy."
+        ? "Reduce la lista a una sola acci√≥n visible. No tienes que hacerlo todo hoy."
         : purpose.mood === "cansada"
-          ? "ProtÈgete. El descanso tambiÈn es productividad."
-          : "Usa tu energÌa sin sobreexigirte. Deja espacio para gracia y descanso.";
+          ? "Prot√©gete. El descanso tambi√©n es productividad."
+          : "Usa tu energ√≠a sin sobreexigirte. Deja espacio para gracia y descanso.";
     const impactScore = Math.round(((familyDaysCount/7)*0.3 + (selfCareScore/4)*0.2 + (purpose.connectionMoments/3)*0.2 + (purpose.clientsImpacted/5)*0.15 + (purpose.systemsPercent/100)*0.15) * 100);
     
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>PropÛsito &amp; Impacto</h2>
-          <p>Mide lo que realmente importa ó presencia, energÌa, sistemas e impacto</p>
+          <h2>Prop√≥sito &amp; Impacto</h2>
+          <p>Mide lo que realmente importa ‚Äî presencia, energ√≠a, sistemas e impacto</p>
         </div>
 
-        {/* Banner de afirmaciÛn destacado */}
+        {/* Banner de afirmaci√≥n destacado */}
         <div className="card" style={{background:"linear-gradient(135deg, #f8f4f1 0%, #fef9f6 100%)",border:"2px solid #e8d5c4",padding:"24px",marginBottom:"20px"}}>
           <div style={{display:"flex",alignItems:"center",gap:"16px",marginBottom:"12px"}}>
-            <span style={{fontSize:"32px"}}>?</span>
+            <span style={{fontSize:"32px"}}>‚ú®</span>
             <div style={{flex:1}}>
-              <p style={{fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--purple)",margin:0}}>Tu afirmaciÛn de hoy</p>
+              <p style={{fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--purple)",margin:0}}>Tu afirmaci√≥n de hoy</p>
               <h3 style={{fontSize:"18px",lineHeight:1.4,margin:"6px 0 0",color:"#6f2f4b"}}>{todayAffirmation}</h3>
             </div>
           </div>
           <div style={{display:"flex",gap:"20px",alignItems:"center",marginTop:"16px",paddingTop:"16px",borderTop:"1px solid #e8d5c4"}}>
             <div style={{flex:1}}>
-              <p style={{fontSize:"12px",color:"var(--muted)",margin:"0 0 4px"}}>Õndice de impacto esta semana</p>
+              <p style={{fontSize:"12px",color:"var(--muted)",margin:"0 0 4px"}}>√çndice de impacto esta semana</p>
               <Progress value={impactScore} tone="purple" />
             </div>
             <strong style={{fontSize:"28px",color:"var(--purple)"}}>{impactScore}%</strong>
@@ -2375,37 +2735,37 @@ export default function App() {
         {/* KPIs visuales mejorados */}
         <div className="purpose-kpi-grid">
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">?????</span>
+            <span className="purpose-kpi-icon">üë©‚Äçüë¶</span>
             <strong>{purpose.connectionMoments}</strong>
-            <small>momentos de conexiÛn hoy</small>
-            <span className={purpose.connectionMoments >= 2 ? "kpi-badge good" : "kpi-badge alert"}>meta: 2ñ3</span>
+            <small>momentos de conexi√≥n hoy</small>
+            <span className={purpose.connectionMoments >= 2 ? "kpi-badge good" : "kpi-badge alert"}>meta: 2‚Äì3</span>
           </div>
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">??</span>
+            <span className="purpose-kpi-icon">üí∏</span>
             <strong>{money.format(incomePerHour)}</strong>
             <small>ingreso por hora trabajada</small>
             <span className="kpi-badge neutral">KPI estrella</span>
           </div>
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">?</span>
+            <span className="purpose-kpi-icon">‚ö°</span>
             <strong>{purpose.energy === "alto" ? "Alta" : purpose.energy === "medio" ? "Media" : "Baja"}</strong>
-            <small>energÌa del dÌa</small>
+            <small>energ√≠a del d√≠a</small>
             <span className={peaceScore >= 80 ? "kpi-badge good" : peaceScore >= 50 ? "kpi-badge neutral" : "kpi-badge alert"}>{purpose.mood}</span>
           </div>
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">??</span>
+            <span className="purpose-kpi-icon">üë•</span>
             <strong>{purpose.clientsImpacted}</strong>
             <small>clientes impactados esta semana</small>
             <span className="kpi-badge neutral">impacto real</span>
           </div>
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">??</span>
+            <span className="purpose-kpi-icon">üìÖ</span>
             <strong>{familyDaysCount}</strong>
-            <small>dÌas de presencia consciente</small>
+            <small>d√≠as de presencia consciente</small>
             <span className={familyDaysCount >= 4 ? "kpi-badge good" : "kpi-badge alert"}>{familyDaysCount >= 4 ? "excelente" : "puedes mejorar"}</span>
           </div>
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">??</span>
+            <span className="purpose-kpi-icon">üîÑ</span>
             <strong>{purpose.systemsPercent}%</strong>
             <small>tareas sistematizadas</small>
             <span className={purpose.systemsPercent >= 60 ? "kpi-badge good" : "kpi-badge neutral"}>meta: 60%+</span>
@@ -2415,29 +2775,29 @@ export default function App() {
         <div className="purpose-sections">
 
           <div className="card purpose-block">
-            <h3>????? Presencia real</h3>
-            <p className="helper-copy">Puedes pasar todo el dÌa en casa y no estar. Mide lo que importa.</p>
+            <h3>üë©‚Äçüë¶ Presencia real</h3>
+            <p className="helper-copy">Puedes pasar todo el d√≠a en casa y no estar. Mide lo que importa.</p>
             <label className="purpose-field">
-              <span>Momentos de conexiÛn hoy (sin celular, sin multitarea)</span>
+              <span>Momentos de conexi√≥n hoy (sin celular, sin multitarea)</span>
               <div className="counter-row">
                 <button type="button" onClick={() => updatePurpose("connectionMoments", Math.max(0, (purpose.connectionMoments || 0) - 1))}>-</button>
                 <strong>{purpose.connectionMoments || 0}</strong>
                 <button type="button" onClick={() => updatePurpose("connectionMoments", (purpose.connectionMoments || 0) + 1)}>+</button>
               </div>
             </label>
-            <label className="purpose-field"><span>DÌas de presencia consciente esta semana</span></label>
+            <label className="purpose-field"><span>D√≠as de presencia consciente esta semana</span></label>
             <div className="week-checks">
               {["L","M","X","J","V","S","D"].map((day) => (
                 <button type="button" className={purpose.familyDays?.[day] ? "checked" : ""} key={day}
                   onClick={() => setPurpose((c) => ({ ...c, familyDays: { ...c.familyDays, [day]: !c.familyDays?.[day] } }))}>{day}</button>
               ))}
             </div>
-            <textarea className="purpose-textarea" placeholder="øCÛmo crees que se sintiÛ tu hijo/a esta semana? (reflexiÛn libre)" value={purpose.mentalLoad} onChange={(e) => updatePurpose("mentalLoad", e.target.value)} />
+            <textarea className="purpose-textarea" placeholder="¬øC√≥mo crees que se sinti√≥ tu hijo/a esta semana? (reflexi√≥n libre)" value={purpose.mentalLoad} onChange={(e) => updatePurpose("mentalLoad", e.target.value)} />
           </div>
 
           <div className="card purpose-block">
-            <h3>?? Negocio inteligente</h3>
-            <p className="helper-copy">M·s horas no es m·s Èxito. Mide lo que escala.</p>
+            <h3>üí∞ Negocio inteligente</h3>
+            <p className="helper-copy">M√°s horas no es m√°s √©xito. Mide lo que escala.</p>
             <label className="purpose-field">
               <span>Horas trabajadas esta semana</span>
               <input type="number" min="0" max="80" value={purpose.hoursWorked || 0} onChange={(e) => updatePurpose("hoursWorked", Number(e.target.value))} />
@@ -2447,22 +2807,22 @@ export default function App() {
               <strong>{incomePerHour > 0 ? money.format(incomePerHour) : "Registra horas"}</strong>
             </div>
             <label className="purpose-field">
-              <span>% de ingresos recurrentes (membresÌas, productos escalables)</span>
+              <span>% de ingresos recurrentes (membres√≠as, productos escalables)</span>
               <input type="range" min="0" max="100" value={purpose.recurringIncomePercent || 0} onChange={(e) => updatePurpose("recurringIncomePercent", Number(e.target.value))} />
               <small>{purpose.recurringIncomePercent || 0}% recurrente</small>
             </label>
           </div>
 
           <div className="card purpose-block">
-            <h3>? EnergÌa y salud emocional</h3>
-            <p className="helper-copy">Si t˙ te quiebras, todo se cae. Tu energÌa es un recurso.</p>
-            <label className="purpose-field"><span>Nivel de energÌa hoy</span></label>
+            <h3>‚ö° Energ√≠a y salud emocional</h3>
+            <p className="helper-copy">Si t√∫ te quiebras, todo se cae. Tu energ√≠a es un recurso.</p>
+            <label className="purpose-field"><span>Nivel de energ√≠a hoy</span></label>
             <div className="mood-grid">
               {["alto","medio","bajo"].map((e) => (
                 <button type="button" key={e} className={purpose.energy === e ? "selected" : ""} onClick={() => updatePurpose("energy", e)}>{e}</button>
               ))}
             </div>
-            <label className="purpose-field"><span>¡nimo general</span></label>
+            <label className="purpose-field"><span>√Ånimo general</span></label>
             <div className="mood-grid">
               {["abrumada","inspirada","feliz","controladora","cansada"].map((mood) => (
                 <button type="button" key={mood} className={purpose.mood === mood ? "selected" : ""} onClick={() => updatePurpose("mood", mood)}>{mood}</button>
@@ -2470,7 +2830,7 @@ export default function App() {
             </div>
             <p className="helper-copy" style={{marginTop:"10px"}}>{mentalAdvice}</p>
             <div className="selfcare-checks">
-              {[["water","BebÌ agua"],["walk","CaminÈ 10 min"],["silence","Tuve silencio"],["devotional","Devocional / oraciÛn"]].map(([key, label]) => (
+              {[["water","Beb√≠ agua"],["walk","Camin√© 10 min"],["silence","Tuve silencio"],["devotional","Devocional / oraci√≥n"]].map(([key, label]) => (
                 <label key={key} className="task-row">
                   <input type="checkbox" checked={!!purpose[key]} onChange={(e) => updatePurpose(key, e.target.checked)} />
                   <span>{label}</span>
@@ -2481,14 +2841,14 @@ export default function App() {
           </div>
 
           <div className="card purpose-block">
-            <h3>??? AutoevaluaciÛn de sistemas</h3>
-            <p className="helper-copy">No necesitas hacer m·s, necesitas soltar m·s. Eval˙a una tarea a la vez.</p>
+            <h3>üèóÔ∏è Autoevaluaci√≥n de sistemas</h3>
+            <p className="helper-copy">No necesitas hacer m√°s, necesitas soltar m√°s. Eval√∫a una tarea a la vez.</p>
             <SystemsDonut tasks={systemTasks} />
             <div className="carousel-wrap">
               <div className="carousel-header">
-                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.max(0, s - 1))} disabled={systemSlide === 0}>?</button>
+                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.max(0, s - 1))} disabled={systemSlide === 0}>‚Üê</button>
                 <span className="carousel-counter">{systemSlide + 1} de {systemTasks.length}</span>
-                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.min(systemTasks.length - 1, s + 1))} disabled={systemSlide === systemTasks.length - 1}>?</button>
+                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.min(systemTasks.length - 1, s + 1))} disabled={systemSlide === systemTasks.length - 1}>‚Üí</button>
               </div>
               {(() => {
                 const task = systemTasks[systemSlide];
@@ -2500,23 +2860,23 @@ export default function App() {
                     <div className="system-modes">
                       {task.canDelegate ? (
                         <>
-                          <button type="button" className={task.mode === "manual" ? "mode-btn active-manual" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "manual" } : t))}>?? Lo hago yo</button>
-                          <button type="button" className={task.mode === "delegado" ? "mode-btn active-delegado" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "delegado" } : t))}>?? Lo delego</button>
-                          <button type="button" className={task.mode === "automatizado" ? "mode-btn active-auto" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "automatizado" } : t))}>?? Automatizado</button>
+                          <button type="button" className={task.mode === "manual" ? "mode-btn active-manual" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "manual" } : t))}>üî¥ Lo hago yo</button>
+                          <button type="button" className={task.mode === "delegado" ? "mode-btn active-delegado" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "delegado" } : t))}>üü° Lo delego</button>
+                          <button type="button" className={task.mode === "automatizado" ? "mode-btn active-auto" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "automatizado" } : t))}>üü¢ Automatizado</button>
                         </>
                       ) : (
-                        <span className="mode-btn mode-protect">?? Presencia materna ó no se delega</span>
+                        <span className="mode-btn mode-protect">üíõ Presencia materna ‚Äî no se delega</span>
                       )}
                     </div>
                     {task.mode === "manual" && suggestion && (
                       <div className="system-suggestion">
                         {suggestion.protect ? (
-                          <p>?? {suggestion.protect}</p>
+                          <p>üìå {suggestion.protect}</p>
                         ) : (
                           <>
-                            {suggestion.auto && <p>? <strong>Automatizar:</strong> {suggestion.auto}</p>}
-                            {suggestion.delegate && <p>?? <strong>Delegar:</strong> {suggestion.delegate}</p>}
-                            <a href="https://www.umpacademy.co/membresia" target="_blank" rel="noreferrer" className="ump-link">?? Aprende cÛmo en UMP Academy ?</a>
+                            {suggestion.auto && <p>‚ö° <strong>Automatizar:</strong> {suggestion.auto}</p>}
+                            {suggestion.delegate && <p>ü§ù <strong>Delegar:</strong> {suggestion.delegate}</p>}
+                            <a href="https://www.umpacademy.co/membresia" target="_blank" rel="noreferrer" className="ump-link">üéì Aprende c√≥mo en UMP Academy ‚Üí</a>
                           </>
                         )}
                       </div>
@@ -2532,8 +2892,8 @@ export default function App() {
           </div>
 
           <div className="card purpose-block purpose-block-wide">
-            <h3>?? PropÛsito e impacto</h3>
-            <p className="helper-copy">5 clientes transformados &gt; 5.000 vistas vacÌas.</p>
+            <h3>üìõ Prop√≥sito e impacto</h3>
+            <p className="helper-copy">5 clientes transformados &gt; 5.000 vistas vac√≠as.</p>
             <div className="purpose-impact-grid">
               <label className="purpose-field">
                 <span>Clientes impactados esta semana</span>
@@ -2544,20 +2904,20 @@ export default function App() {
                 </div>
               </label>
               <label className="purpose-field">
-                <span>Nivel de pasiÛn al crear / trabajar (1ñ5)</span>
+                <span>Nivel de pasi√≥n al crear / trabajar (1‚Äì5)</span>
                 <div className="passion-stars">
                   {[1,2,3,4,5].map((n) => (
-                    <button type="button" key={n} className={n <= (purpose.passionLevel || 3) ? "star active" : "star"} onClick={() => updatePurpose("passionLevel", n)}>?</button>
+                    <button type="button" key={n} className={n <= (purpose.passionLevel || 3) ? "star active" : "star"} onClick={() => updatePurpose("passionLevel", n)}>‚òÖ</button>
                   ))}
                 </div>
               </label>
               <label className="purpose-field">
-                <span>Testimonio o transformaciÛn de esta semana</span>
-                <textarea className="purpose-textarea" placeholder="øQuÈ cambiÛ en un cliente gracias a tu trabajo?" value={purpose.weekTestimony || ""} onChange={(e) => updatePurpose("weekTestimony", e.target.value)} />
+                <span>Testimonio o transformaci√≥n de esta semana</span>
+                <textarea className="purpose-textarea" placeholder="¬øQu√© cambi√≥ en un cliente gracias a tu trabajo?" value={purpose.weekTestimony || ""} onChange={(e) => updatePurpose("weekTestimony", e.target.value)} />
               </label>
               <label className="purpose-field">
-                <span>Claridad de visiÛn ó øsabes hacia dÛnde vas?</span>
-                <textarea className="purpose-textarea" placeholder="Mi visiÛn esta semana es..." value={purpose.visionClarity || ""} onChange={(e) => updatePurpose("visionClarity", e.target.value)} />
+                <span>Claridad de visi√≥n ‚Äî ¬øsabes hacia d√≥nde vas?</span>
+                <textarea className="purpose-textarea" placeholder="Mi visi√≥n esta semana es..." value={purpose.visionClarity || ""} onChange={(e) => updatePurpose("visionClarity", e.target.value)} />
               </label>
             </div>
           </div>
@@ -2585,11 +2945,12 @@ export default function App() {
             <>
               <option>Gasto fijo</option>
               <option>Gasto variable</option>
-              <option>InversiÛn de negocio</option>
+              <option>Inversi√≥n de negocio</option>
             </>
           )}
         </select>
         <select value={form.bank} onChange={(event) => updateForm("bank", event.target.value)}>{banks.map((bank) => <option key={bank}>{bank}</option>)}</select>
+        <input type="date" value={form.date} onChange={(event) => updateForm("date", event.target.value)} />
         <input placeholder="Monto" type="number" min="0" value={form.amount} onChange={(event) => updateForm("amount", event.target.value)} />
         <button className="primary-button" type="submit">Guardar movimiento</button>
       </form>
@@ -2608,7 +2969,7 @@ export default function App() {
           {banks.map((bank) => (
             <span key={bank} className="bank-chip">
               {bank}
-              <button type="button" className="bank-remove" onClick={() => removeBank(bank)}>◊</button>
+              <button type="button" className="bank-remove" onClick={() => removeBank(bank)}>√ó</button>
             </span>
           ))}
         </div>
@@ -2621,7 +2982,7 @@ export default function App() {
   function ReinvestmentCard() {
     return (
       <div className="card reinvestment-card">
-        <h3>Calculadora de reinversiÛn</h3>
+        <h3>Calculadora de reinversi√≥n</h3>
         <div className="reinvestment-amount">
           <span>Reserva sugerida</span>
           <strong>{money.format(reinvestmentAmount)}</strong>
@@ -2633,7 +2994,7 @@ export default function App() {
           <input type="range" min="0" max="50" value={reinvestmentPercent} onChange={(event) => updateBusinessSetting("reinvestmentPercent", event.target.value)} />
         </label>
         <input className="percent-input" type="number" min="0" max="100" value={reinvestmentPercent} onChange={(event) => updateBusinessSetting("reinvestmentPercent", event.target.value)} />
-        <p className="helper-copy">Usa esta reserva primero en marketing medible: anuncios, contenido que vende, email list o herramientas que traen clientas. No la mezcles con gustos personales del dÌa.</p>
+        <p className="helper-copy">Usa esta reserva primero en marketing medible: anuncios, contenido que vende, email list o herramientas que traen clientas. No la mezcles con gustos personales del d√≠a.</p>
       </div>
     );
   }
@@ -2641,14 +3002,14 @@ export default function App() {
   function DashboardSummaryCard() {
     return (
       <div className="card summary-card">
-        <h3>Resumen desde tus pestaÒas</h3>
+        <h3>Resumen desde tus pesta√±as</h3>
         <div className="summary-row"><span>Clientas</span><strong>{followUpClients.length}</strong><small>requieren seguimiento</small></div>
         <div className="summary-row"><span>Contenido</span><strong>{contentItems.length - publishedContent}</strong><small>piezas por mover</small></div>
         <div className="summary-row"><span>Hogar</span><strong>{pendingHomeTasks.length}</strong><small>pendientes visibles</small></div>
         <div className="summary-row"><span>Mejor ingreso</span><strong>{topIncomeSource?.category || "Sin datos"}</strong><small>{topIncomeSource?.description || "Registra ventas"}</small></div>
-        <div className="summary-row"><span>¡nimo</span><strong>{purpose.mood}</strong><small>La semana pasada te sentiste asÌ. Esta semana puede ser m·s liviana.</small></div>
+        <div className="summary-row"><span>√Ånimo</span><strong>{purpose.mood}</strong><small>La semana pasada te sentiste as√≠. Esta semana puede ser m√°s liviana.</small></div>
         <div className="summary-row"><span>Ventas cerradas</span><strong>{money.format(wonSalesTotal)}</strong><small>Registradas en clientas ganadas</small></div>
-        <div className="summary-row"><span>Presupuesto hogar</span><strong>{money.format(homeAvailable)}</strong><small>Disponible despuÈs de gastos y deudas</small></div>
+        <div className="summary-row"><span>Presupuesto hogar</span><strong>{money.format(homeAvailable)}</strong><small>Disponible despu√©s de gastos y deudas</small></div>
       </div>
     );
   }
@@ -2656,16 +3017,18 @@ export default function App() {
   function MovementList({ compact = false } = {}) {
     return (
       <div className={`card movement-card ${compact ? "compact" : ""}`}>
-        <h3>⁄ltimos movimientos</h3>
-        {movements.slice(0, 10).map((movement) => (
+        <h3>√öltimos movimientos</h3>
+        {sortedMovements.slice(0, 10).map((movement) => (
           <div className="movement-row" key={movement.id}>
             <span className={movement.type}>{movement.type === "income" ? "+" : "-"}</span>
             <div>
               <strong>{movement.description}</strong>
-              <small>{movement.classification} ï {movement.category} ï {movement.bank || "Sin banco"}</small>
+              <small>{movement.classification} ‚Ä¢ {movement.category} ‚Ä¢ {movement.bank || "Sin banco"}</small>
+              <small>Fecha: {formatShortDate(movement.date || movement.createdAt)}</small>
             </div>
+            <input className="movement-date-input" type="date" value={inputDateFromValue(movement.date || movement.createdAt)} onChange={(event) => updateMovementDate(movement.id, event.target.value)} aria-label={`Fecha de ${movement.description}`} />
             <b>{money.format(movement.amount)}</b>
-            <button className="row-delete" type="button" onClick={() => confirmDelete("øEliminar este movimiento?", () => setMovements((current) => current.filter((item) => item.id !== movement.id)))}>◊</button>
+            <button className="row-delete" type="button" onClick={() => confirmDelete("¬øEliminar este movimiento?", () => setMovements((current) => current.filter((item) => item.id !== movement.id)))}>√ó</button>
           </div>
         ))}
       </div>
@@ -2673,7 +3036,7 @@ export default function App() {
   }
 
   function CalendarCard() {
-    return <div className="card calendar-card"><h3>Calendario de la semana</h3><small className="helper-copy">Semana actual</small>{weekDays.map((day) => <div className="calendar-row" key={day}><span>{day}</span><p>ó</p></div>)}</div>;
+    return <div className="card calendar-card"><h3>Calendario de la semana</h3><small className="helper-copy">Semana actual</small>{weekDays.map((day) => <div className="calendar-row" key={day}><span>{day}</span><p>‚Äî</p></div>)}</div>;
   }
 
   function renderWeeklyReport() {
@@ -2704,27 +3067,28 @@ export default function App() {
     // Filtrar datos por semana actual
     const isInWeek = (timestamp, week) => timestamp >= week.start && timestamp <= week.end;
 
-    const currentMovements = movements.filter((m) => m.createdAt && isInWeek(m.createdAt, currentWeek));
-    const previousMovements = movements.filter((m) => m.createdAt && isInWeek(m.createdAt, previousWeek));
+    const currentMovements = sortedMovements.filter((m) => isInWeek(timestampFromInputDate(m.date || m.createdAt), currentWeek));
+    const previousMovements = sortedMovements.filter((m) => isInWeek(timestampFromInputDate(m.date || m.createdAt), previousWeek));
 
     const currentClients = clients.filter((c) => c.createdAt && isInWeek(c.createdAt, currentWeek));
-    const previousClients = clients.filter((c) => c.createdAt && isInWeek(c.createdAt, previousWeek));
 
     const currentIncome = currentMovements.filter((m) => m.type === "income").reduce((sum, m) => sum + m.amount, 0);
     const previousIncome = previousMovements.filter((m) => m.type === "income").reduce((sum, m) => sum + m.amount, 0);
     const incomeChange = previousIncome > 0 ? Math.round(((currentIncome - previousIncome) / previousIncome) * 100) : 0;
+    const currentExpenses = currentMovements.filter((m) => m.type === "expense").reduce((sum, m) => sum + m.amount, 0);
+    const currentProfit = currentIncome - currentExpenses;
 
-    const currentWon = currentClients.filter((c) => c.status === "Venta ganada").length;
-    const previousWon = previousClients.filter((c) => c.status === "Venta ganada").length;
+    const currentWon = clients.filter((c) => c.status === "Venta ganada" && isInWeek(timestampFromInputDate(c.updatedAt || c.lastContact || c.createdAt), currentWeek)).length;
+    const previousWon = clients.filter((c) => c.status === "Venta ganada" && isInWeek(timestampFromInputDate(c.updatedAt || c.lastContact || c.createdAt), previousWeek)).length;
     const wonChange = previousWon > 0 ? Math.round(((currentWon - previousWon) / previousWon) * 100) : 0;
 
     const currentContactsThisWeek = Object.values(contactLog).filter((e) => {
-      const contactDate = new Date(e.date).getTime();
+      const contactDate = timestampFromInputDate(e.date);
       return contactDate >= currentWeek.start && contactDate <= currentWeek.end;
     }).length;
 
     const previousContactsCount = Object.values(contactLog).filter((e) => {
-      const contactDate = new Date(e.date).getTime();
+      const contactDate = timestampFromInputDate(e.date);
       return contactDate >= previousWeek.start && contactDate <= previousWeek.end;
     }).length;
 
@@ -2740,18 +3104,19 @@ export default function App() {
     const incomePerHour = purpose.hoursWorked > 0 ? Math.round(totals.income / purpose.hoursWorked) : 0;
     const salesGoalProgress = salesGoal > 0 ? Math.min(Math.round((wonSalesTotal / salesGoal) * 100), 100) : 0;
 
-    // Insights autom·ticos
+    // Insights autom√°ticos
     const insights = [];
 
-    // Mejor dÌa de ingresos
+    // Mejor d√≠a de ingresos
     const incomeByDay = {};
     currentMovements.filter((m) => m.type === "income").forEach((m) => {
-      const day = new Date(m.createdAt).toLocaleDateString('es', { weekday: 'long' });
+      const movementDay = parseDateValue(m.date || m.createdAt) || new Date();
+      const day = movementDay.toLocaleDateString('es', { weekday: 'long' });
       incomeByDay[day] = (incomeByDay[day] || 0) + m.amount;
     });
     const bestDay = Object.entries(incomeByDay).sort((a, b) => b[1] - a[1])[0];
     if (bestDay) {
-      insights.push(`Tu mejor dÌa fue ${bestDay[0]} con ${money.format(bestDay[1])} en ingresos.`);
+      insights.push(`Tu mejor d√≠a fue ${bestDay[0]} con ${money.format(bestDay[1])} en ingresos.`);
     }
 
     // Mejor fuente de leads
@@ -2782,17 +3147,17 @@ export default function App() {
       urgentAlerts.push({ type: "warning", message: `Solo ${currentContactsThisWeek} contactos esta semana. Necesitas acelerar el seguimiento.` });
     }
     if (hotLeads >= 3 && reportWeekOffset === 0) {
-      urgentAlerts.push({ type: "success", message: `Tienes ${hotLeads} leads calientes esperando. °Es momento de cerrar ventas!` });
+      urgentAlerts.push({ type: "success", message: `Tienes ${hotLeads} leads calientes esperando. ¬°Es momento de cerrar ventas!` });
     }
 
     const whatsappMsg = (client) => {
       const msgs = {
-        "Lead frio": `Hola ${client.name}! ?? QuerÌa retomar el contacto contigo. øSigues interesada en ${client.service}? Con gusto te cuento m·s.`,
-        "Lead tibio": `Hola ${client.name}! ?? Estaba pensando en ti. øCÛmo vas? Me encantarÌa contarte sobre ${client.service} y cÛmo puede ayudarte.`,
-        "Lead caliente": `Hola ${client.name}! ?? QuerÌa hacer seguimiento a nuestra conversaciÛn sobre ${client.service}. øTienes 5 minutos para hablar hoy?`,
-        "Venta ganada": `Hola ${client.name}! ?? øCÛmo vas con ${client.service}? QuerÌa saber cÛmo te ha ido y si tienes alguna pregunta.`
+        "Lead frio": `Hola ${client.name}! üëã Quer√≠a retomar el contacto contigo. ¬øSigues interesada en ${client.service}? Con gusto te cuento m√°s.`,
+        "Lead tibio": `Hola ${client.name}! üòä Estaba pensando en ti. ¬øC√≥mo vas? Me encantar√≠a contarte sobre ${client.service} y c√≥mo puede ayudarte.`,
+        "Lead caliente": `Hola ${client.name}! üî• Quer√≠a hacer seguimiento a nuestra conversaci√≥n sobre ${client.service}. ¬øTienes 5 minutos para hablar hoy?`,
+        "Venta ganada": `Hola ${client.name}! üíõ ¬øC√≥mo vas con ${client.service}? Quer√≠a saber c√≥mo te ha ido y si tienes alguna pregunta.`
       };
-      return encodeURIComponent(msgs[client.status] || `Hola ${client.name}, querÌa hacer seguimiento sobre ${client.service}.`);
+      return encodeURIComponent(msgs[client.status] || `Hola ${client.name}, quer√≠a hacer seguimiento sobre ${client.service}.`);
     };
 
     const urgentFollowUps = clients
@@ -2815,10 +3180,10 @@ export default function App() {
           <h2>Reporte semanal</h2>
           <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}}>
             <button type="button" onClick={() => setReportWeekOffset(reportWeekOffset - 1)}
-              style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>? Anterior</button>
+              style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>‚Üê Anterior</button>
             <span style={{fontSize:"14px",fontWeight:700,color:"var(--purple)"}}>{formatDateRange(currentWeek.start, currentWeek.end)}</span>
             <button type="button" onClick={() => setReportWeekOffset(reportWeekOffset + 1)} disabled={reportWeekOffset >= 0}
-              style={{border:"1px solid var(--line)",background:reportWeekOffset >= 0 ? "#f5f5f5" : "#fff",borderRadius:"8px",padding:"6px 12px",cursor:reportWeekOffset >= 0 ? "not-allowed" : "pointer",fontSize:"13px",fontWeight:700,opacity:reportWeekOffset >= 0 ? 0.5 : 1}}>Siguiente ?</button>
+              style={{border:"1px solid var(--line)",background:reportWeekOffset >= 0 ? "#f5f5f5" : "#fff",borderRadius:"8px",padding:"6px 12px",cursor:reportWeekOffset >= 0 ? "not-allowed" : "pointer",fontSize:"13px",fontWeight:700,opacity:reportWeekOffset >= 0 ? 0.5 : 1}}>Siguiente ‚Üí</button>
             {reportWeekOffset !== 0 && (
               <button type="button" onClick={() => setReportWeekOffset(0)}
                 style={{border:"1px solid var(--purple)",background:"var(--purple-soft)",color:"var(--purple)",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>Semana actual</button>
@@ -2832,7 +3197,7 @@ export default function App() {
             {urgentAlerts.map((alert, i) => (
               <div key={i} className={`alert-banner alert-${alert.type === "danger" ? "red" : alert.type === "warning" ? "orange" : "green"}`}
                 style={{fontSize:"15px",fontWeight:700,padding:"16px 20px"}}>
-                {alert.type === "danger" && "?? "}{alert.type === "warning" && "?? "}{alert.type === "success" && "?? "}
+                {alert.type === "danger" && "üö® "}{alert.type === "warning" && "‚ö†Ô∏è "}{alert.type === "success" && "üéØ "}
                 {alert.message}
               </div>
             ))}
@@ -2842,8 +3207,8 @@ export default function App() {
         {/* Resumen ejecutivo de 30 segundos */}
         <div className="card" style={{background:"linear-gradient(135deg, rgba(212,104,122,0.08), rgba(201,169,110,0.08))",border:"2px solid var(--purple)",marginBottom:"20px",padding:"24px"}}>
           <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px"}}>
-            <span style={{fontSize:"32px"}}>?</span>
-            <h3 style={{margin:0,fontSize:"22px",color:"var(--purple)"}}>Resumen ejecutivo ó 30 segundos</h3>
+            <span style={{fontSize:"32px"}}>‚ö°</span>
+            <h3 style={{margin:0,fontSize:"22px",color:"var(--purple)"}}>Resumen ejecutivo ‚Äî 30 segundos</h3>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:"20px",marginBottom:"16px"}}>
             <div>
@@ -2852,7 +3217,7 @@ export default function App() {
                 <strong style={{fontSize:"32px",color:"var(--green)",lineHeight:1}}>{money.format(currentIncome)}</strong>
                 {incomeChange !== 0 && (
                   <span style={{fontSize:"16px",fontWeight:700,color:incomeChange > 0 ? "var(--green)" : "var(--pink)"}}>
-                    {incomeChange > 0 ? "?" : "?"} {Math.abs(incomeChange)}%
+                    {incomeChange > 0 ? "‚Üë" : "‚Üì"} {Math.abs(incomeChange)}%
                   </span>
                 )}
               </div>
@@ -2863,7 +3228,7 @@ export default function App() {
                 <strong style={{fontSize:"32px",color:"var(--purple)",lineHeight:1}}>{currentWon}</strong>
                 {wonChange !== 0 && (
                   <span style={{fontSize:"16px",fontWeight:700,color:wonChange > 0 ? "var(--green)" : "var(--pink)"}}>
-                    {wonChange > 0 ? "?" : "?"} {Math.abs(wonChange)}%
+                    {wonChange > 0 ? "‚Üë" : "‚Üì"} {Math.abs(wonChange)}%
                   </span>
                 )}
               </div>
@@ -2874,7 +3239,7 @@ export default function App() {
                 <strong style={{fontSize:"32px",color:"var(--orange)",lineHeight:1}}>{currentContactsThisWeek}</strong>
                 {contactsChange !== 0 && (
                   <span style={{fontSize:"16px",fontWeight:700,color:contactsChange > 0 ? "var(--green)" : "var(--pink)"}}>
-                    {contactsChange > 0 ? "?" : "?"} {Math.abs(contactsChange)}%
+                    {contactsChange > 0 ? "‚Üë" : "‚Üì"} {Math.abs(contactsChange)}%
                   </span>
                 )}
               </div>
@@ -2882,9 +3247,9 @@ export default function App() {
           </div>
           {insights.length > 0 && (
             <div style={{borderTop:"1px solid var(--line)",paddingTop:"16px"}}>
-              <p style={{margin:"0 0 10px",fontSize:"13px",fontWeight:800,textTransform:"uppercase",color:"var(--purple)"}}>?? Insights clave</p>
+              <p style={{margin:"0 0 10px",fontSize:"13px",fontWeight:800,textTransform:"uppercase",color:"var(--purple)"}}>üí° Insights clave</p>
               {insights.map((insight, i) => (
-                <p key={i} style={{margin:"6px 0",fontSize:"14px",lineHeight:1.6,color:"var(--ink)"}}>ï {insight}</p>
+                <p key={i} style={{margin:"6px 0",fontSize:"14px",lineHeight:1.6,color:"var(--ink)"}}>‚Ä¢ {insight}</p>
               ))}
             </div>
           )}
@@ -2894,7 +3259,7 @@ export default function App() {
         <div className="card" style={{marginBottom:"14px",display:"grid",gap:"12px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"12px"}}>
             <div>
-              <h3 style={{margin:0}}>?? Meta de ventas del mes</h3>
+              <h3 style={{margin:0}}>üí∞ Meta de ventas del mes</h3>
               <p className="helper-copy" style={{marginTop:"4px"}}>{money.format(wonSalesTotal)} cerrados de {money.format(salesGoal || monthlyGoal)} meta</p>
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
@@ -2914,44 +3279,53 @@ export default function App() {
         <div className="purpose-sections">
           {/* Resumen ventas */}
           <div className="card purpose-block">
-            <h3>?? Ventas esta semana</h3>
-            <div className="purpose-stat"><span>Ingresos registrados</span><strong>{money.format(totals.income)}</strong></div>
-            <div className="purpose-stat"><span>Utilidad</span><strong style={{color: totals.profit >= 0 ? "var(--green)" : "var(--pink)"}}>{money.format(totals.profit)}</strong></div>
+            <h3>üìä Ventas esta semana</h3>
+            <div className="purpose-stat"><span>Ingresos registrados</span><strong>{money.format(currentIncome)}</strong></div>
+            <div className="purpose-stat"><span>Utilidad</span><strong style={{color: currentProfit >= 0 ? "var(--green)" : "var(--pink)"}}>{money.format(currentProfit)}</strong></div>
             {(() => {
               const totalFees = incomeSources.reduce((sum, src) => {
-                const actual = movements.filter((m) => m.type === "income" && m.classification === src.name).reduce((s, m) => s + m.amount, 0);
+                const actual = currentMovements.filter((m) => m.type === "income" && m.classification === src.name).reduce((s, m) => s + m.amount, 0);
                 return sum + calcFee(actual, src.platform);
               }, 0);
               if (totalFees === 0) return null;
               return (
                 <>
                   <div className="purpose-stat"><span>Fees de plataformas</span><strong style={{color:"var(--pink)"}}>-{money.format(totalFees)}</strong></div>
-                  <div className="purpose-stat"><span>Ingreso neto real</span><strong style={{color:"var(--green)"}}>{money.format(totals.income - totalFees)}</strong></div>
+                  <div className="purpose-stat"><span>Ingreso neto real</span><strong style={{color:"var(--green)"}}>{money.format(currentIncome - totalFees)}</strong></div>
                 </>
               );
             })()}
             <div className="purpose-stat"><span>Ventas cerradas</span><strong>{totalWon} clientas</strong></div>
-            <div className="purpose-stat"><span>Tasa de conversiÛn</span><strong>{conversionRate}%</strong></div>
+            <div className="purpose-stat"><span>Tasa de conversi√≥n</span><strong>{conversionRate}%</strong></div>
             <div className="purpose-stat"><span>Leads calientes ahora</span><strong>{hotLeads}</strong></div>
             <div className="purpose-stat"><span>Contactos realizados</span><strong style={{color:"var(--green)"}}>{contactsThisWeek} esta semana</strong></div>
             <ProgressLabel label="Meta contactos (5)" value={Math.min(Math.round((contactsThisWeek/5)*100),100)} tone="green" />
             {incomePerHour > 0 && <div className="purpose-stat"><span>Ingreso por hora</span><strong>{money.format(incomePerHour)}</strong></div>}
+            <div className="weekly-movement-list">
+              <small>Movimientos de la semana</small>
+              {currentMovements.slice(0, 4).map((movement) => (
+                <span key={movement.id}>
+                  {formatShortDate(movement.date || movement.createdAt)} ¬∑ {movement.description} ¬∑ {movement.type === "income" ? "+" : "-"}{money.format(movement.amount)}
+                </span>
+              ))}
+              {currentMovements.length === 0 && <span>Sin movimientos registrados en esta semana.</span>}
+            </div>
           </div>
 
           {/* Recordatorios WhatsApp */}
           <div className="card purpose-block">
-            <h3>?? Recordatorios de seguimiento</h3>
-            <p className="helper-copy">Toca el botÛn para abrir WhatsApp con el mensaje listo.</p>
+            <h3>üí¨ Recordatorios de seguimiento</h3>
+            <p className="helper-copy">Toca el bot√≥n para abrir WhatsApp con el mensaje listo.</p>
             {urgentFollowUps.length === 0 && <p className="helper-copy">No hay leads activos por seguir.</p>}
             {urgentFollowUps.map((client) => (
               <div key={client.id} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--line)"}}>
                 <div>
                   <strong style={{fontSize:"14px"}}>{client.name}</strong>
-                  <small style={{display:"block",color:"var(--muted)"}}>{client.status} ï {client.nextAction || "Hacer seguimiento"}</small>
+                  <small style={{display:"block",color:"var(--muted)"}}>{client.status} ‚Ä¢ {client.nextAction || "Hacer seguimiento"}</small>
                 </div>
                 <a href={`https://wa.me/?text=${whatsappMsg(client)}`} target="_blank" rel="noreferrer"
                   style={{display:"inline-flex",alignItems:"center",gap:"6px",padding:"8px 12px",borderRadius:"8px",background:"#25d366",color:"#fff",fontSize:"12px",fontWeight:700,textDecoration:"none",whiteSpace:"nowrap"}}>
-                  ?? WhatsApp
+                  üì≤ WhatsApp
                 </a>
               </div>
             ))}
@@ -2959,27 +3333,27 @@ export default function App() {
 
           {/* Hogar */}
           <div className="card purpose-block">
-            <h3>?? Hogar esta semana</h3>
+            <h3>üè† Hogar esta semana</h3>
             <div className="purpose-stat"><span>Tareas completadas</span><strong>{completedHomeTasks}/{homeTasks.length}</strong></div>
             <ProgressLabel label="Progreso hogar" value={homeProgress} tone="orange" />
             <div className="purpose-stat"><span>Disponible familiar</span><strong>{money.format(homeAvailable)}</strong></div>
-            <div className="purpose-stat"><span>DÌas de presencia</span><strong>{Object.values(purpose.familyDays || {}).filter(Boolean).length} dÌas</strong></div>
+            <div className="purpose-stat"><span>D√≠as de presencia</span><strong>{Object.values(purpose.familyDays || {}).filter(Boolean).length} d√≠as</strong></div>
           </div>
 
-          {/* EnergÌa */}
+          {/* Energ√≠a */}
           <div className="card purpose-block">
-            <h3>? EnergÌa y bienestar</h3>
-            <div className="purpose-stat"><span>¡nimo de la semana</span><strong>{purpose.mood}</strong></div>
-            <div className="purpose-stat"><span>Nivel de energÌa</span><strong>{purpose.energy}</strong></div>
+            <h3>‚ö° Energ√≠a y bienestar</h3>
+            <div className="purpose-stat"><span>√Ånimo de la semana</span><strong>{purpose.mood}</strong></div>
+            <div className="purpose-stat"><span>Nivel de energ√≠a</span><strong>{purpose.energy}</strong></div>
             <ProgressLabel label="Autocuidado" value={Math.round((selfCareScore / 4) * 100)} tone="green" />
             <div className="purpose-stat"><span>Horas trabajadas</span><strong>{purpose.hoursWorked || 0}h</strong></div>
-            <div className="purpose-stat"><span>Momentos de conexiÛn</span><strong>{purpose.connectionMoments || 0}</strong></div>
+            <div className="purpose-stat"><span>Momentos de conexi√≥n</span><strong>{purpose.connectionMoments || 0}</strong></div>
           </div>
 
           {/* Fuentes de origen */}
           <div className="card purpose-block purpose-block-wide">
-            <h3>?? øDe dÛnde vienen tus clientas?</h3>
-            <p className="helper-copy">Invierte tu tiempo donde m·s resultado produce.</p>
+            <h3>üìç ¬øDe d√≥nde vienen tus clientas?</h3>
+            <p className="helper-copy">Invierte tu tiempo donde m√°s resultado produce.</p>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"10px",marginTop:"8px"}}>
               {Object.entries(sourceCounts).sort((a,b) => b[1]-a[1]).map(([src, count]) => (
                 <div key={src} style={{border:"1px solid var(--line)",borderRadius:"12px",padding:"14px",textAlign:"center",background:"rgba(255,255,255,0.8)"}}>
@@ -2989,7 +3363,7 @@ export default function App() {
                   <small style={{color:"var(--muted)"}}>{Math.round((count/totalLeads)*100)}%</small>
                 </div>
               ))}
-              {Object.keys(sourceCounts).length === 0 && <p className="helper-copy">Agrega clientas con fuente de origen para ver este an·lisis.</p>}
+              {Object.keys(sourceCounts).length === 0 && <p className="helper-copy">Agrega clientas con fuente de origen para ver este an√°lisis.</p>}
             </div>
           </div>
         </div>
@@ -3000,15 +3374,15 @@ export default function App() {
   function renderPricing() {
     const plans = [
       { id: "free", name: "Gratis", price: "$0", period: "", color: "var(--muted)",
-        features: [`${PLAN_LIMITS.free.movements} movimientos/mes`,`${PLAN_LIMITS.free.clients} clientes`,`${PLAN_LIMITS.free.content} contenidos/mes`,`${PLAN_LIMITS.free.homeTasks} tareas hogar/mes`,"SincronizaciÛn en la nube","Todas las funciones b·sicas"] },
+        features: [`${PLAN_LIMITS.free.movements} movimientos/mes`,`${PLAN_LIMITS.free.clients} clientes`,`${PLAN_LIMITS.free.content} contenidos/mes`,`${PLAN_LIMITS.free.homeTasks} tareas hogar/mes`,"Sincronizaci√≥n en la nube","Todas las funciones b√°sicas"] },
       { id: "emprendedora", name: "Emprendedora", price: PLAN_PRICES.emprendedora.usd, period: "/mes USD",
-        priceCop: PLAN_PRICES.emprendedora.cop+" COP/mes", priceYear: PLAN_PRICES.emprendedora.usdYear+" USD/aÒo (2 meses gratis)",
+        priceCop: PLAN_PRICES.emprendedora.cop+" COP/mes", priceYear: PLAN_PRICES.emprendedora.usdYear+" USD/a√±o (2 meses gratis)",
         color: "var(--pink)",
         features: [`${PLAN_LIMITS.emprendedora.movements} movimientos/mes`,`${PLAN_LIMITS.emprendedora.clients} clientes`,`${PLAN_LIMITS.emprendedora.content} contenidos/mes`,`${PLAN_LIMITS.emprendedora.homeTasks} tareas hogar/mes`,"Exportar Excel y PDF","Historial 6 meses","Soporte email 48h"] },
       { id: "ceo", name: "CEO", price: PLAN_PRICES.ceo.usd, period: "/mes USD",
-        priceCop: PLAN_PRICES.ceo.cop+" COP/mes", priceYear: PLAN_PRICES.ceo.usdYear+" USD/aÒo (2 meses gratis)",
+        priceCop: PLAN_PRICES.ceo.cop+" COP/mes", priceYear: PLAN_PRICES.ceo.usdYear+" USD/a√±o (2 meses gratis)",
         badge: "RECOMENDADO", color: "var(--purple)",
-        features: ["Todo ilimitado","Exportar Excel y PDF","Historial ilimitado","Calculadora de precio de servicios ?","ProyecciÛn de ingresos ?","Temporizador Pomodoro flotante ?","Acceso anticipado a nuevas funciones","Soporte prioritario 24h"] }
+        features: ["Todo ilimitado","Exportar Excel y PDF","Historial ilimitado","Calculadora de precio de servicios ‚ú®","Proyecci√≥n de ingresos ‚ú®","Temporizador Pomodoro flotante ‚ú®","Acceso anticipado a nuevas funciones","Soporte prioritario 24h"] }
     ];
     return (
       <section className="panel workspace-panel">
@@ -3027,14 +3401,14 @@ export default function App() {
                   {plan.priceYear&&<p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>{plan.priceYear}</p>}
                   {!plan.priceCop&&<p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Para empezar a organizarte</p>}
                   <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
-                    {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>?</span><span>{f}</span></div>))}
+                    {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>‚úì</span><span>{f}</span></div>))}
                   </div>
                   {isCurrent?(
                     <div style={{padding:"10px",background:"rgba(0,0,0,0.05)",borderRadius:"8px",textAlign:"center",color:plan.color,fontWeight:700,fontSize:"14px"}}>Plan actual</div>
                   ):plan.id==="free"?(
                     <button className="primary-button" onClick={()=>setUserPlan("free")} style={{width:"100%",background:"var(--muted)"}}>Cambiar a gratis</button>
                   ):(
-                    <button className="primary-button" style={{width:"100%",background:plan.color,fontSize:"15px",opacity:0.7,cursor:"not-allowed"}} disabled>PrÛximamente</button>
+                    <button className="primary-button" style={{width:"100%",background:plan.color,fontSize:"15px",opacity:0.7,cursor:"not-allowed"}} disabled>Pr√≥ximamente</button>
                   )}
                 </div>
               </div>
@@ -3043,11 +3417,11 @@ export default function App() {
         </div>
 
         <div className="card" style={{maxWidth:"1000px",margin:"28px auto 0",padding:"24px"}}>
-          <h3 style={{margin:"0 0 16px"}}>Tu uso actual ó Plan {effectivePlan==="free"?"Gratis":effectivePlan==="emprendedora"?"Emprendedora":"CEO"}</h3>
+          <h3 style={{margin:"0 0 16px"}}>Tu uso actual ‚Äî Plan {effectivePlan==="free"?"Gratis":effectivePlan==="emprendedora"?"Emprendedora":"CEO"}</h3>
           <div style={{display:"grid",gap:"14px"}}>
             {[{label:"Movimientos",used:movements.length,limit:currentLimits.movements},{label:"Clientes",used:clients.length,limit:currentLimits.clients},{label:"Contenidos",used:contentItems.length,limit:currentLimits.content},{label:"Tareas hogar",used:homeTasks.length,limit:currentLimits.homeTasks}].map(({label,used,limit})=>(
               <div key={label}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:"6px",fontSize:"14px"}}><span>{label}</span><span><strong>{used}</strong> / {limit===Infinity?"8":limit}</span></div>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:"6px",fontSize:"14px"}}><span>{label}</span><span><strong>{used}</strong> / {limit===Infinity?"‚àû":limit}</span></div>
                 <Progress value={limit===Infinity?0:Math.min(Math.round((used/limit)*100),100)} tone={limit!==Infinity&&used>=limit?"pink":"green"} />
               </div>
             ))}
@@ -3055,20 +3429,20 @@ export default function App() {
         </div>
 
         <div className="card" style={{maxWidth:"1000px",margin:"20px auto 0",padding:"24px",border:"2px dashed var(--line)"}}>
-          <h3 style={{margin:"0 0 8px"}}>??? øTienes un cÛdigo de acceso beta?</h3>
-          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu cÛdigo de acceso CEO gratis por 90 dÌas.</p>
+          <h3 style={{margin:"0 0 8px"}}>üéüÔ∏è ¬øTienes un c√≥digo de acceso beta?</h3>
+          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu c√≥digo de acceso CEO gratis por 90 d√≠as.</p>
           {!showBetaInput?(
-            <button className="primary-button" style={{padding:"10px 24px"}} onClick={()=>setShowBetaInput(true)}>Tengo un cÛdigo</button>
+            <button className="primary-button" style={{padding:"10px 24px"}} onClick={()=>setShowBetaInput(true)}>Tengo un c√≥digo</button>
           ):(
             <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
-              <input placeholder="Ingresa tu cÛdigo de acceso" value={betaCode} onChange={(e)=>setBetaCode(e.target.value)} style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
+              <input placeholder="Ingresa tu c√≥digo de acceso" value={betaCode} onChange={(e)=>setBetaCode(e.target.value)} style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
               <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
               {betaCodeError&&<p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
           )}
           {isBetaUser&&(effectivePlan==="ceo"||effectivePlan==="premium")&&(
             <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
-              ? CÛdigo activo ó Plan CEO gratis por {betaDaysLeft} dÌas m·s
+              ‚úÖ C√≥digo activo ‚Äî Plan CEO gratis por {betaDaysLeft} d√≠as m√°s
             </div>
           )}
         </div>
@@ -3098,28 +3472,28 @@ export default function App() {
               
               <div style={{display:"grid",gap:"12px",marginBottom:"24px"}}>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
                   <span>{PLAN_LIMITS.free.movements} movimientos financieros/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
                   <span>{PLAN_LIMITS.free.clients} clientes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
                   <span>{PLAN_LIMITS.free.content} contenidos/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
                   <span>{PLAN_LIMITS.free.homeTasks} tareas del hogar/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
-                  <span>SincronizaciÛn en la nube</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
+                  <span>Sincronizaci√≥n en la nube</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
-                  <span>Todas las funcionalidades b·sicas</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
+                  <span>Todas las funcionalidades b√°sicas</span>
                 </div>
               </div>
               
@@ -3140,35 +3514,35 @@ export default function App() {
             <div style={{padding:"24px"}}>
               <h3 style={{margin:"0 0 8px",fontSize:"24px",color:"var(--purple)"}}>Plan Premium</h3>
               <div style={{fontSize:"36px",fontWeight:800,color:"var(--purple)",lineHeight:1,marginBottom:"4px"}}>$29.900</div>
-              <p style={{fontSize:"14px",color:"var(--muted)",marginBottom:"24px"}}>COP/mes ï $7.99 USD/mes</p>
+              <p style={{fontSize:"14px",color:"var(--muted)",marginBottom:"24px"}}>COP/mes ‚Ä¢ $7.99 USD/mes</p>
               
               <div style={{display:"grid",gap:"12px",marginBottom:"24px"}}>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
                   <span><strong>Movimientos ilimitados</strong></span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
                   <span><strong>Clientes ilimitados</strong></span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
                   <span><strong>Contenido ilimitado</strong></span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
                   <span><strong>Tareas ilimitadas</strong></span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
-                  <span>SincronizaciÛn en la nube</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
+                  <span>Sincronizaci√≥n en la nube</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
                   <span>Soporte prioritario</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
                   <span>Acceso anticipado a nuevas funciones</span>
                 </div>
               </div>
@@ -3189,28 +3563,28 @@ export default function App() {
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Movimientos financieros</span>
-                <span><strong>{movements.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.movements : "8"}</span>
+                <span><strong>{movements.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.movements : "‚àû"}</span>
               </div>
               <Progress value={userPlan === "free" ? Math.min(Math.round((movements.length / PLAN_LIMITS.free.movements) * 100), 100) : 0} tone={movements.length >= PLAN_LIMITS.free.movements ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Clientes</span>
-                <span><strong>{clients.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.clients : "8"}</span>
+                <span><strong>{clients.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.clients : "‚àû"}</span>
               </div>
               <Progress value={userPlan === "free" ? Math.min(Math.round((clients.length / PLAN_LIMITS.free.clients) * 100), 100) : 0} tone={clients.length >= PLAN_LIMITS.free.clients ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Contenidos</span>
-                <span><strong>{contentItems.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.content : "8"}</span>
+                <span><strong>{contentItems.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.content : "‚àû"}</span>
               </div>
               <Progress value={userPlan === "free" ? Math.min(Math.round((contentItems.length / PLAN_LIMITS.free.content) * 100), 100) : 0} tone={contentItems.length >= PLAN_LIMITS.free.content ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Tareas del hogar</span>
-                <span><strong>{homeTasks.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.homeTasks : "8"}</span>
+                <span><strong>{homeTasks.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.homeTasks : "‚àû"}</span>
               </div>
               <Progress value={userPlan === "free" ? Math.min(Math.round((homeTasks.length / PLAN_LIMITS.free.homeTasks) * 100), 100) : 0} tone={homeTasks.length >= PLAN_LIMITS.free.homeTasks ? "pink" : "green"} />
             </div>
@@ -3222,34 +3596,34 @@ export default function App() {
           <h3 style={{margin:"0 0 20px"}}>Preguntas frecuentes</h3>
           <div style={{display:"grid",gap:"16px"}}>
             <div>
-              <strong style={{display:"block",marginBottom:"6px"}}>øPuedo cambiar de plan en cualquier momento?</strong>
-              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>SÌ, puedes actualizar o cambiar tu plan cuando quieras desde esta p·gina.</p>
+              <strong style={{display:"block",marginBottom:"6px"}}>¬øPuedo cambiar de plan en cualquier momento?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>S√≠, puedes actualizar o cambiar tu plan cuando quieras desde esta p√°gina.</p>
             </div>
             <div>
-              <strong style={{display:"block",marginBottom:"6px"}}>øQuÈ pasa si alcanzo el lÌmite del plan gratis?</strong>
-              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Te mostraremos una notificaciÛn invit·ndote a actualizar a Premium para continuar agregando m·s datos.</p>
+              <strong style={{display:"block",marginBottom:"6px"}}>¬øQu√© pasa si alcanzo el l√≠mite del plan gratis?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Te mostraremos una notificaci√≥n invit√°ndote a actualizar a Premium para continuar agregando m√°s datos.</p>
             </div>
             <div>
-              <strong style={{display:"block",marginBottom:"6px"}}>øLos datos se mantienen al cambiar de plan?</strong>
-              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>SÌ, todos tus datos se mantienen intactos al cambiar entre planes.</p>
+              <strong style={{display:"block",marginBottom:"6px"}}>¬øLos datos se mantienen al cambiar de plan?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>S√≠, todos tus datos se mantienen intactos al cambiar entre planes.</p>
             </div>
             <div>
-              <strong style={{display:"block",marginBottom:"6px"}}>øCÛmo realizo el pago?</strong>
-              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>PrÛximamente integraremos Mercado Pago (Colombia) y PayPal (internacional) como pasarelas de pago seguras.</p>
+              <strong style={{display:"block",marginBottom:"6px"}}>¬øC√≥mo realizo el pago?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Pr√≥ximamente integraremos Mercado Pago (Colombia) y PayPal (internacional) como pasarelas de pago seguras.</p>
             </div>
           </div>
         </div>
 
-        {/* CÛdigo beta */}
+        {/* C√≥digo beta */}
         <div className="card" style={{maxWidth:"900px",margin:"24px auto 0",padding:"24px",border:"2px dashed var(--line)"}}>
-          <h3 style={{margin:"0 0 8px"}}>øTienes un cÛdigo de acceso beta?</h3>
-          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu cÛdigo de acceso Premium gratis por 90 dÌas.</p>
+          <h3 style={{margin:"0 0 8px"}}>¬øTienes un c√≥digo de acceso beta?</h3>
+          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu c√≥digo de acceso Premium gratis por 90 d√≠as.</p>
           {!showBetaInput ? (
-            <button className="primary-button" style={{padding:"10px 24px"}} onClick={() => setShowBetaInput(true)}>Tengo un cÛdigo</button>
+            <button className="primary-button" style={{padding:"10px 24px"}} onClick={() => setShowBetaInput(true)}>Tengo un c√≥digo</button>
           ) : (
             <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
               <input
-                placeholder="Ingresa tu cÛdigo (ej: MAMACEO2026)"
+                placeholder="Ingresa tu c√≥digo (ej: MAMACEO2026)"
                 value={betaCode}
                 onChange={(e) => setBetaCode(e.target.value)}
                 style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit",fontSize:"15px"}}
@@ -3261,7 +3635,7 @@ export default function App() {
           )}
           {isBetaUser && effectivePlan === "premium" && (
             <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
-              ? CÛdigo activo ó Premium gratis por {betaDaysLeft} dÌas m·s
+              ‚úÖ C√≥digo activo ‚Äî Premium gratis por {betaDaysLeft} d√≠as m√°s
             </div>
           )}
         </div>
@@ -3314,7 +3688,7 @@ function SystemsDonut({ tasks }) {
 }
 
 function MetricCard({ title, value, change, tone }) {
-  return <article className={`metric-card ${tone}`}><span className="metric-icon">?</span><p>{title}</p><strong>{value}</strong><small>{change}</small></article>;
+  return <article className={`metric-card ${tone}`}><span className="metric-icon">‚óè</span><p>{title}</p><strong>{value}</strong><small>{change}</small></article>;
 }
 
 function DataRow({ title, meta, value, onDelete }) {
@@ -3336,7 +3710,7 @@ function MiniGoal({ label, amount, value }) {
 function LineChart({ movements }) {
   const last7 = movements.slice(0, 7).reverse();
   if (last7.length === 0) {
-    return <div className="line-chart-empty">Agrega movimientos para ver la gr·fica</div>;
+    return <div className="line-chart-empty">Agrega movimientos para ver la gr√°fica</div>;
   }
   const incomes = last7.map((m) => m.type === "income" ? m.amount : 0);
   const expenses = last7.map((m) => m.type === "expense" ? m.amount : 0);
@@ -3376,54 +3750,54 @@ function LineChart({ movements }) {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>TÈrminos y Condiciones</h2>
-          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>? Volver</button>
+          <h2>T√©rminos y Condiciones</h2>
+          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>‚Üê Volver</button>
         </div>
         <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
-          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>⁄ltima actualizaciÛn: 5 de junio de 2026</p>
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>√öltima actualizaci√≥n: 5 de junio de 2026</p>
           
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. AceptaciÛn de los TÈrminos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Al acceder y utilizar Mam· CEO App, aceptas estar sujeto a estos TÈrminos y Condiciones. Si no est·s de acuerdo con alguna parte de estos tÈrminos, no deberÌas usar la aplicaciÛn.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Aceptaci√≥n de los T√©rminos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Al acceder y utilizar Mam√° CEO App, aceptas estar sujeto a estos T√©rminos y Condiciones. Si no est√°s de acuerdo con alguna parte de estos t√©rminos, no deber√≠as usar la aplicaci√≥n.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. DescripciÛn del Servicio</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam· CEO App es una plataforma de gestiÛn integral diseÒada para mam·s emprendedoras que permite organizar y administrar su negocio, hogar y propÛsito en un solo lugar. El servicio incluye herramientas para gestiÛn financiera, seguimiento de clientes, planificaciÛn de contenido, organizaciÛn del hogar y seguimiento de objetivos personales.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. Descripci√≥n del Servicio</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam√° CEO App es una plataforma de gesti√≥n integral dise√±ada para mam√°s emprendedoras que permite organizar y administrar su negocio, hogar y prop√≥sito en un solo lugar. El servicio incluye herramientas para gesti√≥n financiera, seguimiento de clientes, planificaci√≥n de contenido, organizaci√≥n del hogar y seguimiento de objetivos personales.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. Registro y Cuenta de Usuario</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para utilizar Mam· CEO App, debes crear una cuenta proporcionando informaciÛn precisa y completa. Eres responsable de mantener la confidencialidad de tu contraseÒa y de todas las actividades que ocurran bajo tu cuenta. Debes notificarnos inmediatamente sobre cualquier uso no autorizado de tu cuenta.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para utilizar Mam√° CEO App, debes crear una cuenta proporcionando informaci√≥n precisa y completa. Eres responsable de mantener la confidencialidad de tu contrase√±a y de todas las actividades que ocurran bajo tu cuenta. Debes notificarnos inmediatamente sobre cualquier uso no autorizado de tu cuenta.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Uso Aceptable</h3>
-          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Te comprometes a utilizar Mam· CEO App ˙nicamente para fines legales y de acuerdo con estos TÈrminos. No debes:</p>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Te comprometes a utilizar Mam√° CEO App √∫nicamente para fines legales y de acuerdo con estos T√©rminos. No debes:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li>Usar la aplicaciÛn de manera que viole leyes locales, nacionales o internacionales</li>
-            <li>Intentar acceder sin autorizaciÛn a otras cuentas, sistemas o redes</li>
+            <li>Usar la aplicaci√≥n de manera que viole leyes locales, nacionales o internacionales</li>
+            <li>Intentar acceder sin autorizaci√≥n a otras cuentas, sistemas o redes</li>
             <li>Interferir o interrumpir el servicio o los servidores conectados al servicio</li>
-            <li>Transmitir virus, malware o cualquier cÛdigo malicioso</li>
-            <li>Usar la aplicaciÛn para propÛsitos comerciales no autorizados</li>
+            <li>Transmitir virus, malware o cualquier c√≥digo malicioso</li>
+            <li>Usar la aplicaci√≥n para prop√≥sitos comerciales no autorizados</li>
           </ul>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Propiedad Intelectual</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todo el contenido, caracterÌsticas y funcionalidad de Mam· CEO App, incluyendo pero no limitado a texto, gr·ficos, logos, iconos, im·genes y software, son propiedad exclusiva de UMP S.A.S y est·n protegidos por las leyes de propiedad intelectual de Colombia y tratados internacionales.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todo el contenido, caracter√≠sticas y funcionalidad de Mam√° CEO App, incluyendo pero no limitado a texto, gr√°ficos, logos, iconos, im√°genes y software, son propiedad exclusiva de UMP S.A.S y est√°n protegidos por las leyes de propiedad intelectual de Colombia y tratados internacionales.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Privacidad y ProtecciÛn de Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu privacidad es importante para nosotros. El uso de tu informaciÛn personal est· regido por nuestra PolÌtica de Privacidad, que forma parte integral de estos TÈrminos. Al usar Mam· CEO App, aceptas la recolecciÛn y uso de tu informaciÛn de acuerdo con nuestra PolÌtica de Privacidad y la Ley 1581 de 2012 de ProtecciÛn de Datos Personales de Colombia.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Privacidad y Protecci√≥n de Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu privacidad es importante para nosotros. El uso de tu informaci√≥n personal est√° regido por nuestra Pol√≠tica de Privacidad, que forma parte integral de estos T√©rminos. Al usar Mam√° CEO App, aceptas la recolecci√≥n y uso de tu informaci√≥n de acuerdo con nuestra Pol√≠tica de Privacidad y la Ley 1581 de 2012 de Protecci√≥n de Datos Personales de Colombia.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. Suscripciones y Pagos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam· CEO App puede ofrecer diferentes planes de suscripciÛn. Los precios, caracterÌsticas y tÈrminos de cada plan se especificar·n claramente antes de la compra. Las suscripciones se renovar·n autom·ticamente a menos que se cancelen antes de la fecha de renovaciÛn. Todos los pagos son procesados de forma segura a travÈs de proveedores de pago certificados.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam√° CEO App puede ofrecer diferentes planes de suscripci√≥n. Los precios, caracter√≠sticas y t√©rminos de cada plan se especificar√°n claramente antes de la compra. Las suscripciones se renovar√°n autom√°ticamente a menos que se cancelen antes de la fecha de renovaci√≥n. Todos los pagos son procesados de forma segura a trav√©s de proveedores de pago certificados.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. CancelaciÛn y Reembolsos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Puedes cancelar tu suscripciÛn en cualquier momento desde la configuraciÛn de tu cuenta. La cancelaciÛn ser· efectiva al final del perÌodo de facturaciÛn actual. No se ofrecen reembolsos por perÌodos de suscripciÛn parcialmente utilizados, excepto cuando lo requiera la ley aplicable.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. Cancelaci√≥n y Reembolsos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Puedes cancelar tu suscripci√≥n en cualquier momento desde la configuraci√≥n de tu cuenta. La cancelaci√≥n ser√° efectiva al final del per√≠odo de facturaci√≥n actual. No se ofrecen reembolsos por per√≠odos de suscripci√≥n parcialmente utilizados, excepto cuando lo requiera la ley aplicable.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. LimitaciÛn de Responsabilidad</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam· CEO App se proporciona "tal cual" y "seg˙n disponibilidad". No garantizamos que el servicio ser· ininterrumpido, seguro o libre de errores. En ning˙n caso UMP S.A.S ser· responsable por daÒos indirectos, incidentales, especiales, consecuentes o punitivos, incluyendo pÈrdida de beneficios, datos, uso o cualquier otra pÈrdida intangible.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Limitaci√≥n de Responsabilidad</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam√° CEO App se proporciona "tal cual" y "seg√∫n disponibilidad". No garantizamos que el servicio ser√° ininterrumpido, seguro o libre de errores. En ning√∫n caso UMP S.A.S ser√° responsable por da√±os indirectos, incidentales, especiales, consecuentes o punitivos, incluyendo p√©rdida de beneficios, datos, uso o cualquier otra p√©rdida intangible.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Modificaciones del Servicio y TÈrminos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Nos reservamos el derecho de modificar o discontinuar, temporal o permanentemente, el servicio (o cualquier parte del mismo) con o sin previo aviso. TambiÈn podemos actualizar estos TÈrminos periÛdicamente. Te notificaremos sobre cambios significativos publicando los nuevos TÈrminos en la aplicaciÛn. Tu uso continuado del servicio despuÈs de dichos cambios constituye tu aceptaciÛn de los nuevos TÈrminos.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Modificaciones del Servicio y T√©rminos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Nos reservamos el derecho de modificar o discontinuar, temporal o permanentemente, el servicio (o cualquier parte del mismo) con o sin previo aviso. Tambi√©n podemos actualizar estos T√©rminos peri√≥dicamente. Te notificaremos sobre cambios significativos publicando los nuevos T√©rminos en la aplicaci√≥n. Tu uso continuado del servicio despu√©s de dichos cambios constituye tu aceptaci√≥n de los nuevos T√©rminos.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Ley Aplicable y JurisdicciÛn</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Estos TÈrminos se regir·n e interpretar·n de acuerdo con las leyes de la Rep˙blica de Colombia. Cualquier disputa relacionada con estos TÈrminos estar· sujeta a la jurisdicciÛn exclusiva del Centro de Arbitraje y ConciliaciÛn de la C·mara de Comercio de Bogot·.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Ley Aplicable y Jurisdicci√≥n</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Estos T√©rminos se regir√°n e interpretar√°n de acuerdo con las leyes de la Rep√∫blica de Colombia. Cualquier disputa relacionada con estos T√©rminos estar√° sujeta a la jurisdicci√≥n exclusiva del Centro de Arbitraje y Conciliaci√≥n de la C√°mara de Comercio de Bogot√°.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre estos TÈrminos y Condiciones, puedes contactarnos a travÈs de:</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre estos T√©rminos y Condiciones, puedes contactarnos a trav√©s de:</p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S</strong></p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Sitio web: www.umpacademy.co</p>
@@ -3436,87 +3810,87 @@ function LineChart({ movements }) {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>PolÌtica de Privacidad</h2>
-          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>? Volver</button>
+          <h2>Pol√≠tica de Privacidad</h2>
+          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>‚Üê Volver</button>
         </div>
         <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
-          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>⁄ltima actualizaciÛn: 5 de junio de 2026</p>
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>√öltima actualizaci√≥n: 5 de junio de 2026</p>
           
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. IntroducciÛn</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>En UMP S.A.S, operadores de Mam· CEO App, nos comprometemos a proteger tu privacidad y tus datos personales. Esta PolÌtica de Privacidad explica cÛmo recopilamos, usamos, compartimos y protegemos tu informaciÛn personal de acuerdo con la Ley 1581 de 2012 de ProtecciÛn de Datos Personales de Colombia y el Reglamento General de ProtecciÛn de Datos (GDPR) cuando aplique.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Introducci√≥n</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>En UMP S.A.S, operadores de Mam√° CEO App, nos comprometemos a proteger tu privacidad y tus datos personales. Esta Pol√≠tica de Privacidad explica c√≥mo recopilamos, usamos, compartimos y protegemos tu informaci√≥n personal de acuerdo con la Ley 1581 de 2012 de Protecci√≥n de Datos Personales de Colombia y el Reglamento General de Protecci√≥n de Datos (GDPR) cuando aplique.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. InformaciÛn que Recopilamos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Recopilamos la siguiente informaciÛn cuando usas Mam· CEO App:</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. Informaci√≥n que Recopilamos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Recopilamos la siguiente informaci√≥n cuando usas Mam√° CEO App:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li><strong>InformaciÛn de cuenta:</strong> Nombre, correo electrÛnico, contraseÒa (encriptada)</li>
-            <li><strong>InformaciÛn de perfil:</strong> Nombre del negocio, tipo de negocio, etapa empresarial, metas financieras</li>
-            <li><strong>Datos de uso:</strong> InformaciÛn sobre cÛmo usas la aplicaciÛn, incluyendo movimientos financieros, clientes, contenido, tareas del hogar y objetivos personales que t˙ ingresas voluntariamente</li>
-            <li><strong>InformaciÛn tÈcnica:</strong> DirecciÛn IP, tipo de navegador, sistema operativo, identificadores de dispositivo</li>
-            <li><strong>Cookies y tecnologÌas similares:</strong> Usamos cookies para mejorar tu experiencia y mantener tu sesiÛn activa</li>
+            <li><strong>Informaci√≥n de cuenta:</strong> Nombre, correo electr√≥nico, contrase√±a (encriptada)</li>
+            <li><strong>Informaci√≥n de perfil:</strong> Nombre del negocio, tipo de negocio, etapa empresarial, metas financieras</li>
+            <li><strong>Datos de uso:</strong> Informaci√≥n sobre c√≥mo usas la aplicaci√≥n, incluyendo movimientos financieros, clientes, contenido, tareas del hogar y objetivos personales que t√∫ ingresas voluntariamente</li>
+            <li><strong>Informaci√≥n t√©cnica:</strong> Direcci√≥n IP, tipo de navegador, sistema operativo, identificadores de dispositivo</li>
+            <li><strong>Cookies y tecnolog√≠as similares:</strong> Usamos cookies para mejorar tu experiencia y mantener tu sesi√≥n activa</li>
           </ul>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. CÛmo Usamos tu InformaciÛn</h3>
-          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Utilizamos tu informaciÛn personal para:</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. C√≥mo Usamos tu Informaci√≥n</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Utilizamos tu informaci√≥n personal para:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li>Proporcionar, mantener y mejorar Mam· CEO App</li>
+            <li>Proporcionar, mantener y mejorar Mam√° CEO App</li>
             <li>Crear y gestionar tu cuenta de usuario</li>
             <li>Procesar transacciones y gestionar suscripciones</li>
             <li>Enviarte notificaciones importantes sobre el servicio</li>
             <li>Responder a tus consultas y proporcionar soporte al cliente</li>
-            <li>Personalizar tu experiencia en la aplicaciÛn</li>
-            <li>Analizar el uso de la aplicaciÛn para mejorar nuestros servicios</li>
+            <li>Personalizar tu experiencia en la aplicaci√≥n</li>
+            <li>Analizar el uso de la aplicaci√≥n para mejorar nuestros servicios</li>
             <li>Cumplir con obligaciones legales y regulatorias</li>
-            <li>Enviarte comunicaciones de marketing (solo con tu consentimiento explÌcito)</li>
+            <li>Enviarte comunicaciones de marketing (solo con tu consentimiento expl√≠cito)</li>
           </ul>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Base Legal para el Procesamiento</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Procesamos tu informaciÛn personal bajo las siguientes bases legales: (a) Tu consentimiento explÌcito al crear una cuenta y usar la aplicaciÛn; (b) EjecuciÛn del contrato de servicios contigo; (c) Cumplimiento de obligaciones legales; (d) Nuestros intereses legÌtimos en mejorar y proteger nuestros servicios.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Procesamos tu informaci√≥n personal bajo las siguientes bases legales: (a) Tu consentimiento expl√≠cito al crear una cuenta y usar la aplicaci√≥n; (b) Ejecuci√≥n del contrato de servicios contigo; (c) Cumplimiento de obligaciones legales; (d) Nuestros intereses leg√≠timos en mejorar y proteger nuestros servicios.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Compartir tu InformaciÛn</h3>
-          <p style={{lineHeight:1.7,marginBottom:"8px"}}>No vendemos tu informaciÛn personal. Podemos compartir tu informaciÛn con:</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Compartir tu Informaci√≥n</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>No vendemos tu informaci√≥n personal. Podemos compartir tu informaci√≥n con:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li><strong>Proveedores de servicios tecnolÛgicos:</strong> Plataformas de almacenamiento de datos, autenticaciÛn y hosting que utilizamos para operar la aplicaciÛn</li>
+            <li><strong>Proveedores de servicios tecnol√≥gicos:</strong> Plataformas de almacenamiento de datos, autenticaci√≥n y hosting que utilizamos para operar la aplicaci√≥n</li>
             <li><strong>Cumplimiento legal:</strong> Cuando sea requerido por ley o para proteger nuestros derechos legales</li>
-            <li><strong>Transferencia de negocio:</strong> En caso de fusiÛn, adquisiciÛn o venta de activos</li>
+            <li><strong>Transferencia de negocio:</strong> En caso de fusi√≥n, adquisici√≥n o venta de activos</li>
           </ul>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todos nuestros proveedores de servicios est·n obligados contractualmente a proteger tu informaciÛn y solo pueden usarla para los propÛsitos especÌficos que les autorizamos.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todos nuestros proveedores de servicios est√°n obligados contractualmente a proteger tu informaci√≥n y solo pueden usarla para los prop√≥sitos espec√≠ficos que les autorizamos.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Seguridad de los Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Implementamos medidas de seguridad tÈcnicas y organizativas apropiadas para proteger tu informaciÛn personal contra acceso no autorizado, alteraciÛn, divulgaciÛn o destrucciÛn. Esto incluye encriptaciÛn de datos en tr·nsito y en reposo, controles de acceso estrictos, y auditorÌas de seguridad regulares. Sin embargo, ning˙n mÈtodo de transmisiÛn por Internet o almacenamiento electrÛnico es 100% seguro.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Implementamos medidas de seguridad t√©cnicas y organizativas apropiadas para proteger tu informaci√≥n personal contra acceso no autorizado, alteraci√≥n, divulgaci√≥n o destrucci√≥n. Esto incluye encriptaci√≥n de datos en tr√°nsito y en reposo, controles de acceso estrictos, y auditor√≠as de seguridad regulares. Sin embargo, ning√∫n m√©todo de transmisi√≥n por Internet o almacenamiento electr√≥nico es 100% seguro.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. RetenciÛn de Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Conservamos tu informaciÛn personal mientras tu cuenta estÈ activa o seg˙n sea necesario para proporcionarte servicios. Si solicitas la eliminaciÛn de tu cuenta, eliminaremos o anonimizaremos tu informaciÛn personal dentro de 30 dÌas, excepto cuando debamos retenerla para cumplir con obligaciones legales, resolver disputas o hacer cumplir nuestros acuerdos.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. Retenci√≥n de Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Conservamos tu informaci√≥n personal mientras tu cuenta est√© activa o seg√∫n sea necesario para proporcionarte servicios. Si solicitas la eliminaci√≥n de tu cuenta, eliminaremos o anonimizaremos tu informaci√≥n personal dentro de 30 d√≠as, excepto cuando debamos retenerla para cumplir con obligaciones legales, resolver disputas o hacer cumplir nuestros acuerdos.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. Tus Derechos</h3>
           <p style={{lineHeight:1.7,marginBottom:"8px"}}>De acuerdo con la Ley 1581 de 2012 y el GDPR, tienes los siguientes derechos:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li><strong>Acceso:</strong> Solicitar una copia de tu informaciÛn personal</li>
-            <li><strong>RectificaciÛn:</strong> Corregir informaciÛn inexacta o incompleta</li>
-            <li><strong>EliminaciÛn:</strong> Solicitar la eliminaciÛn de tu informaciÛn personal</li>
-            <li><strong>Portabilidad:</strong> Recibir tu informaciÛn en un formato estructurado y de uso com˙n</li>
-            <li><strong>OposiciÛn:</strong> Oponerte al procesamiento de tu informaciÛn personal</li>
-            <li><strong>LimitaciÛn:</strong> Solicitar la limitaciÛn del procesamiento de tu informaciÛn</li>
-            <li><strong>RevocaciÛn del consentimiento:</strong> Retirar tu consentimiento en cualquier momento</li>
+            <li><strong>Acceso:</strong> Solicitar una copia de tu informaci√≥n personal</li>
+            <li><strong>Rectificaci√≥n:</strong> Corregir informaci√≥n inexacta o incompleta</li>
+            <li><strong>Eliminaci√≥n:</strong> Solicitar la eliminaci√≥n de tu informaci√≥n personal</li>
+            <li><strong>Portabilidad:</strong> Recibir tu informaci√≥n en un formato estructurado y de uso com√∫n</li>
+            <li><strong>Oposici√≥n:</strong> Oponerte al procesamiento de tu informaci√≥n personal</li>
+            <li><strong>Limitaci√≥n:</strong> Solicitar la limitaci√≥n del procesamiento de tu informaci√≥n</li>
+            <li><strong>Revocaci√≥n del consentimiento:</strong> Retirar tu consentimiento en cualquier momento</li>
           </ul>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para ejercer estos derechos, cont·ctanos en hola@umpacademy.co. Responderemos a tu solicitud dentro de 15 dÌas h·biles.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para ejercer estos derechos, cont√°ctanos en hola@umpacademy.co. Responderemos a tu solicitud dentro de 15 d√≠as h√°biles.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Transferencias Internacionales de Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu informaciÛn puede ser transferida y almacenada en servidores ubicados fuera de Colombia. Cuando transferimos datos internacionalmente, nos aseguramos de que existan garantÌas adecuadas para proteger tu informaciÛn de acuerdo con esta PolÌtica de Privacidad y las leyes aplicables.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu informaci√≥n puede ser transferida y almacenada en servidores ubicados fuera de Colombia. Cuando transferimos datos internacionalmente, nos aseguramos de que existan garant√≠as adecuadas para proteger tu informaci√≥n de acuerdo con esta Pol√≠tica de Privacidad y las leyes aplicables.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Menores de Edad</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam· CEO App no est· dirigida a menores de 18 aÒos. No recopilamos intencionalmente informaciÛn personal de menores. Si descubrimos que hemos recopilado informaciÛn de un menor sin el consentimiento parental verificable, eliminaremos esa informaciÛn inmediatamente.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam√° CEO App no est√° dirigida a menores de 18 a√±os. No recopilamos intencionalmente informaci√≥n personal de menores. Si descubrimos que hemos recopilado informaci√≥n de un menor sin el consentimiento parental verificable, eliminaremos esa informaci√≥n inmediatamente.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Cambios a esta PolÌtica</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Podemos actualizar esta PolÌtica de Privacidad periÛdicamente. Te notificaremos sobre cambios significativos publicando la nueva PolÌtica en la aplicaciÛn y actualizar· la fecha de "⁄ltima actualizaciÛn" en la parte superior. Te recomendamos revisar esta PolÌtica regularmente.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Cambios a esta Pol√≠tica</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Podemos actualizar esta Pol√≠tica de Privacidad peri√≥dicamente. Te notificaremos sobre cambios significativos publicando la nueva Pol√≠tica en la aplicaci√≥n y actualizar√° la fecha de "√öltima actualizaci√≥n" en la parte superior. Te recomendamos revisar esta Pol√≠tica regularmente.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre esta PolÌtica de Privacidad o deseas ejercer tus derechos, puedes contactarnos:</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre esta Pol√≠tica de Privacidad o deseas ejercer tus derechos, puedes contactarnos:</p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S</strong></p>
-          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Responsable de ProtecciÛn de Datos</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Responsable de Protecci√≥n de Datos</p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Sitio web: www.umpacademy.co</p>
           
-          <p style={{lineHeight:1.7,marginBottom:"16px",marginTop:"24px",padding:"16px",background:"var(--purple-soft)",borderRadius:"12px",border:"1px solid var(--purple)"}}>Para cualquier consulta sobre esta PolÌtica de Privacidad, cont·ctanos en hola@umpacademy.co.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px",marginTop:"24px",padding:"16px",background:"var(--purple-soft)",borderRadius:"12px",border:"1px solid var(--purple)"}}>Para cualquier consulta sobre esta Pol√≠tica de Privacidad, cont√°ctanos en hola@umpacademy.co.</p>
         </div>
       </section>
     );
