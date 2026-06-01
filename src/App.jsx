@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { supabase, isSupabaseConfigured } from "./lib/supabaseClient";
+import { awsAuth, isAwsConfigured } from "./lib/awsClient";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -215,27 +215,16 @@ function loadState() {
   }
 }
 
-async function loadRemoteState(userId) {
-  if (!userId) return null;
-  const { data, error } = await supabase
-    .from("user_states")
-    .select("data")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) {
-    console.error("Error cargando estado remoto:", error);
-    return null;
-  }
-  return data?.data ?? null;
-}
+// async function loadRemoteState(userId) {
+//   if (!userId) return null;
+//   // Remote state load será implementado en Lambda / DynamoDB
+//   return null;
+// }
 
-async function saveRemoteState(userId, data) {
-  if (!userId) return;
-  const { error } = await supabase
-    .from("user_states")
-    .upsert({ user_id: userId, data }, { onConflict: "user_id" });
-  if (error) console.error("Error guardando estado remoto:", error);
-}
+// async function saveRemoteState(userId, data) {
+//   if (!userId) return;
+//   // Remote state sync será implementado en Lambda / DynamoDB
+// }
 
 export default function App() {
   const stored = loadState();
@@ -350,7 +339,7 @@ export default function App() {
   const [resetPassword, setResetPassword] = useState(false);
   const [ready, setReady] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [supabaseActive, setSupabaseActive] = useState(isSupabaseConfigured);
+  const [awsActive, setAwsActive] = useState(isAwsConfigured);
   const [businessSettings, setBusinessSettings] = useState({
     ...initialBusinessSettings,
     ...(stored?.businessSettings || {})
@@ -705,7 +694,7 @@ export default function App() {
   const budgetMonthlyIncome = annualTotals.income / 12;
   const confirmDelete = (msg, onConfirm) => { if (window.confirm(msg)) onConfirm(); };
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await awsAuth.signOut();
     setUser(null);
   };
 
@@ -753,10 +742,10 @@ export default function App() {
     setAuthLoading(true);
     try {
       if (authMode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+        const { error } = await awsAuth.signInWithPassword({ email: authEmail, password: authPassword });
         if (error) setAuthError(translateError(error.message));
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { error } = await awsAuth.signUp({
           email: authEmail,
           password: authPassword,
           options: { data: { full_name: authName.trim() } }
@@ -779,7 +768,7 @@ export default function App() {
     }
     setAuthError("");
     setAuthLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(authEmail);
+    const { error } = await awsAuth.resetPassword({ email: authEmail });
     setAuthLoading(false);
     if (error) setAuthError(translateError(error.message));
     else setAuthError("Revisa tu correo para restablecer tu contraseña.");
@@ -789,7 +778,7 @@ export default function App() {
     event.preventDefault();
     setAuthError("");
     setAuthLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: authNewPassword });
+    const { error } = await awsAuth.updatePassword({ oldPassword: authPassword, newPassword: authNewPassword });
     setAuthLoading(false);
     if (error) setAuthError(translateError(error.message));
     else {
@@ -852,38 +841,38 @@ export default function App() {
   useEffect(() => {
     let subscription;
     const initAuth = async () => {
-      if (!supabaseActive) {
+      if (!awsActive) {
         setReady(true);
         return;
       }
 
       const timeout = setTimeout(() => {
-        console.warn("Supabase auth tardó demasiado. Usando modo local temporalmente.");
-        setSupabaseActive(false);
+        console.warn("AWS Cognito auth tardó demasiado. Usando modo local temporalmente.");
+        setAwsActive(false);
         setReady(true);
       }, 4000);
 
       try {
-        const { data, error } = await supabase.auth.getSession();
+        const { data, error } = await awsAuth.getSession();
         clearTimeout(timeout);
         if (error) {
           console.error("Error al inicializar auth:", error);
-          setSupabaseActive(false);
+          setAwsActive(false);
         } else {
           setUser(data?.session?.user ?? null);
         }
       } catch (initError) {
         clearTimeout(timeout);
         console.error("Error inesperado al inicializar auth:", initError);
-        setSupabaseActive(false);
+        setAwsActive(false);
       } finally {
         setReady(true);
       }
     };
 
     initAuth();
-    if (supabaseActive) {
-      const { data: listenerData } = supabase.auth.onAuthStateChange((event, session) => {
+    if (awsActive) {
+      const { data: listenerData } = awsAuth.onAuthStateChange((event, session) => {
         setUser(session?.user ?? null);
         if (event === 'PASSWORD_RECOVERY') {
           setResetPassword(true);
@@ -893,13 +882,13 @@ export default function App() {
       subscription = listenerData?.subscription;
     }
     return () => subscription?.unsubscribe?.();
-  }, [supabaseActive]);
+  }, [awsActive]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.__MAMACEO_DEBUG = {
         ready,
-        supabaseActive,
+        awsActive,
         user,
         authMode,
         authLoading,
@@ -907,7 +896,7 @@ export default function App() {
         resetPassword
       };
     }
-  }, [ready, supabaseActive, user, authMode, authLoading, authError, resetPassword]);
+  }, [ready, awsActive, user, authMode, authLoading, authError, resetPassword]);
 
   const applyLoadedState = (loaded) => {
     if (!loaded) return;
@@ -931,11 +920,15 @@ export default function App() {
     const restore = async () => {
       try {
         const storedState = loadState();
-        if (user && supabaseActive) {
-          const remoteState = await loadRemoteState(user.id);
-          if (remoteState) {
-            applyLoadedState(remoteState);
-          } else if (storedState) {
+        if (user && awsActive) {
+          // Remote state load será implementado en Lambda
+          // const remoteState = await loadRemoteState(user.id);
+          // if (remoteState) {
+          //   applyLoadedState(remoteState);
+          // } else if (storedState) {
+          //   applyLoadedState(storedState);
+          // }
+          if (storedState) {
             applyLoadedState(storedState);
           }
         } else if (storedState) {
@@ -946,7 +939,7 @@ export default function App() {
       }
     };
     restore();
-  }, [ready, user, supabaseActive]);
+  }, [ready, user, awsActive]);
 
   useEffect(() => {
     if (!ready) return;
@@ -983,15 +976,16 @@ export default function App() {
       console.error("Error guardando en localStorage:", err);
     }
 
-    if (user && supabaseActive) {
-      setIsSyncing(true);
-      saveRemoteState(user.id, stateToSave)
-        .catch((err) => {
-          console.error("Error guardando en la nube:", err);
-        })
-        .finally(() => setIsSyncing(false));
-    }
-  }, [ready, user, supabaseActive, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose]);
+    // Remote state sync con DynamoDB será implementado en Lambda
+    // if (user && awsActive) {
+    //   setIsSyncing(true);
+    //   saveRemoteState(user.id, stateToSave)
+    //     .catch((err) => {
+    //       console.error("Error guardando en la nube:", err);
+    //     })
+    //     .finally(() => setIsSyncing(false));
+    // }
+  }, [ready, user, awsActive, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose]);
 
   const addMovement = (event) => {
     event.preventDefault();
@@ -1247,7 +1241,7 @@ export default function App() {
     );
   }
 
-  if (!user && supabaseActive) {
+  if (!user && awsActive) {
     return (
       <div className="auth-shell">
         <div className="auth-card">
@@ -1373,9 +1367,9 @@ export default function App() {
                   if (!window.confirm("¿Estás segura de que quieres eliminar tu cuenta? Esta acción no se puede deshacer y perderás todos tus datos.")) return;
                   if (!window.confirm("Última confirmación: se eliminarán todos tus datos permanentemente.")) return;
                   try {
-                    if (user && supabaseActive) {
-                      await supabase.from("user_states").delete().eq("user_id", user.id);
-                      await supabase.auth.signOut();
+                    if (user && awsActive) {
+                      // Eliminar usuario en AWS (pendiente implementar en Lambda)
+                      await awsAuth.signOut();
                     }
                     window.localStorage.removeItem(STORAGE_KEY);
                     setUser(null);
@@ -1507,19 +1501,19 @@ export default function App() {
           </div>
           <div className="profile-area">
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
-            {!supabaseActive && !isSyncing && <div className="status-chip">Modo local</div>}
+            {!awsActive && !isSyncing && <div className="status-chip">Modo local</div>}
             <button className="profile-edit-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
               <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
               <span className="profile-edit-name">{profileSetup?.name || "Mi perfil"}</span>
               <span className="profile-edit-icon">⚙️</span>
             </button>
-            {supabaseActive && user && (
+            {awsActive && user && (
               <button className="signout-button" onClick={signOut}>Salir</button>
             )}
           </div>
         </header>
 
-        {!supabaseActive && (
+        {!awsActive && (
           <div className="local-banner">
             <strong>Modo sin conexión</strong> — tus datos se guardan en este navegador. Si cambias de dispositivo o navegador, no verás tus datos.
           </div>
