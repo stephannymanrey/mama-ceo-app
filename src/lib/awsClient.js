@@ -7,11 +7,12 @@ import {
 
 Amplify.configure({
   Auth: {
-    Cognito: {
-      userPoolId: 'us-east-1_ZvJgj7iG1',
-      userPoolClientId: 'depffm',
-      loginWith: { email: true }
-    }
+    // AWS Cognito configuration
+    region: 'us-east-1',
+    userPoolId: 'us-east-1_ZvJgj7iG1',
+    // Web client ID (App client id) — actualizado con el valor proporcionado
+    userPoolWebClientId: '5hjqj36u9oeud7cs8onj93d36j',
+    authenticationFlowType: 'USER_PASSWORD_AUTH'
   }
 });
 
