@@ -17,7 +17,7 @@ Amplify.configure({
   }
 });
 
-export const isAwsConfigured = true;
+export const isAwsConfigured = false;
 
 export async function getAwsAuthToken() {
   try {
