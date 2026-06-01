@@ -303,6 +303,10 @@ export default function App() {
     monthlyGoalSetup: "",
     mainChallenge: "Conseguir clientes"
   });
+  const [userPlan, setUserPlan] = useState(stored?.userPlan || "free");
+  const [premiumExpiresAt, setPremiumExpiresAt] = useState(stored?.premiumExpiresAt || null);
+  const [betaCode, setBetaCode] = useState("");
+  const [betaCodeError, setBetaCodeError] = useState("");
   const [studioOpen, setStudioOpen] = useState(false);
   const [savedActiveViewBeforeStudio, setSavedActiveViewBeforeStudio] = useState(null);
   const [studioTab, setStudioTab] = useState(() => typeof window !== "undefined" ? window.localStorage.getItem(STUDIO_TAB_KEY) || "mensaje" : "mensaje");
