@@ -5,15 +5,19 @@ import {
   updatePassword, confirmResetPassword
 } from 'aws-amplify/auth';
 
-Amplify.configure({
-  Auth: {
-    Cognito: {
-      userPoolId: 'us-east-1_ZvJgj7iG1',
-      userPoolWebClientId: '5hjqj36u9oeud7cs8onj93d36j',
-      region: 'us-east-1'
+try {
+  Amplify.configure({
+    Auth: {
+      Cognito: {
+        userPoolId: 'us-east-1_ZvJgj7iG1',
+        userPoolWebClientId: '5hjqj36u9oeud7cs8onj93d36j',
+        region: 'us-east-1'
+      }
     }
-  }
-});
+  });
+} catch (err) {
+  console.warn('Amplify configuration error (non-fatal):', err.message);
+}
 
 export const isAwsConfigured = true;
 
