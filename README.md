@@ -11,30 +11,10 @@ Currently, two official plugins are available:
 
 The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
 
-## Supabase setup
+## AWS Auth
 
-To enable authenticated cloud storage and sync, create a Supabase project and add the following values to a `.env` file in the project root:
-
-```env
-VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-public-api-key
-```
-
-The project needs a table named `user_states` with these columns:
-
-- `user_id` (text, primary key)
-- `data` (jsonb)
-
-You can create this table in Supabase SQL editor with:
-
-```sql
-create table if not exists user_states (
-  user_id text primary key,
-  data jsonb not null
-);
-```
-
-When Supabase is not configured, the app runs in local mode using `localStorage`.
+Authentication is configured with AWS Amplify/Cognito in `src/lib/awsClient.js`.
+User app data is currently persisted in `localStorage` under the signed-in AWS user id.
 
 ## Despliegue en AWS
 

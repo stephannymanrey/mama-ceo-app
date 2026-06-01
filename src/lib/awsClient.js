@@ -39,7 +39,8 @@ export const awsAuth = {
   },
 
   onAuthStateChange: (callback) => {
-    // Amplify no tiene listener directo como Supabase, retornamos stub
+    void callback;
+    // Amplify Auth v6 does not expose the same app-level listener shape used here.
     return { data: { subscription: { unsubscribe: () => {} } } };
   },
 

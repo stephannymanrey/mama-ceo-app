@@ -1,7 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import { awsAuth, getAwsAuthToken, isAwsConfigured } from "./lib/awsClient";
-const supabase = { auth: awsAuth, from: () => ({ select: async () => ({ data: null, error: null }), upsert: async () => ({ error: null }), delete: () => ({ eq: async () => ({ error: null }) }) }) };
-const isSupabaseConfigured = isAwsConfigured;
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -505,7 +503,7 @@ export default function App() {
   const [syncError, setSyncError] = useState("");
   const [isRestoringRemote, setIsRestoringRemote] = useState(false);
   const [cloudReadyUserId, setCloudReadyUserId] = useState(null);
-  const supabaseActive = isSupabaseConfigured;
+  const awsActive = isAwsConfigured;
   const [businessSettings, setBusinessSettings] = useState({
     ...initialBusinessSettings,
     ...(stored?.businessSettings || {})
@@ -708,7 +706,7 @@ export default function App() {
   const budgetMonthlyIncome = annualTotals.income / 12;
   const confirmDelete = (msg, onConfirm) => { if (window.confirm(msg)) onConfirm(); };
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await awsAuth.signOut();
     setCloudReadyUserId(null);
     window.localStorage.removeItem(STORAGE_KEY);
     setUser(null);
@@ -760,11 +758,11 @@ export default function App() {
     setAuthLoading(true);
     try {
       if (authMode === "login") {
-        const { data, error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+        const { data, error } = await awsAuth.signInWithPassword({ email: authEmail, password: authPassword });
         if (error) setAuthError(translateError(error.message));
         else if (data?.user) setUser(data.user);
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { error } = await awsAuth.signUp({
           email: authEmail,
           password: authPassword,
           options: { data: { full_name: authName.trim() } }
@@ -788,7 +786,7 @@ export default function App() {
       const { error } = await awsAuth.confirmSignUp({ email: authEmail, code: confirmCode });
       if (error) { setAuthError(translateError(error.message)); }
       else {
-        const { data } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+        const { data } = await awsAuth.signInWithPassword({ email: authEmail, password: authPassword });
         if (data?.user) setUser(data.user);
         setConfirmMode(false);
       }
@@ -803,7 +801,7 @@ export default function App() {
     if (!authEmail) { setAuthError("Ingresa tu correo electr�nico primero."); return; }
     setAuthError("");
     setAuthLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(authEmail);
+    const { error } = await awsAuth.resetPasswordForEmail(authEmail);
     setAuthLoading(false);
     if (error) setAuthError(translateError(error.message));
     else { setResetEmail(authEmail); setResetStep(2); setResetPassword(true); }
@@ -880,7 +878,7 @@ export default function App() {
   useEffect(() => {
     let subscription;
     const initAuth = async () => {
-      if (!supabaseActive) {
+      if (!awsActive) {
         setReady(true);
         return;
       }
@@ -892,7 +890,7 @@ export default function App() {
       }, 8000);
 
       try {
-        const { data, error } = await supabase.auth.getSession();
+        const { data, error } = await awsAuth.getSession();
         clearTimeout(timeout);
         if (error) {
           console.error("Error al inicializar auth:", error);
@@ -910,8 +908,8 @@ export default function App() {
     };
 
     initAuth();
-    if (supabaseActive) {
-      const { data: listenerData } = supabase.auth.onAuthStateChange((event, session) => {
+    if (awsActive) {
+      const { data: listenerData } = awsAuth.onAuthStateChange((event, session) => {
         setUser(session?.user ?? null);
         if (event === 'PASSWORD_RECOVERY') {
           setResetPassword(true);
@@ -921,13 +919,13 @@ export default function App() {
       subscription = listenerData?.subscription;
     }
     return () => subscription?.unsubscribe?.();
-  }, [supabaseActive]);
+  }, [awsActive]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.__MAMACEO_DEBUG = {
         ready,
-        supabaseActive,
+        awsActive,
         user,
         authMode,
         authLoading,
@@ -935,7 +933,7 @@ export default function App() {
         resetPassword
       };
     }
-  }, [ready, supabaseActive, user, authMode, authLoading, authError, resetPassword]);
+  }, [ready, awsActive, user, authMode, authLoading, authError, resetPassword]);
 
   const applyLoadedState = (loaded) => {
     const state = loaded || createBlankUserState(currency);
@@ -971,7 +969,7 @@ export default function App() {
     let cancelled = false;
     const restore = async () => {
       try {
-        if (user && supabaseActive) {
+        if (user && awsActive) {
           setIsRestoringRemote(true);
           setCloudReadyUserId(null);
           applyLoadedState(createBlankUserState());
@@ -997,7 +995,7 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, [ready, user, supabaseActive]);
+  }, [ready, user, awsActive]);
 
   useEffect(() => {
     if (!ready || !user || isRestoringRemote) return;
@@ -1034,7 +1032,7 @@ export default function App() {
       premiumExpiresAt
     };
 
-    if (user && supabaseActive) {
+    if (user && awsActive) {
       if (isRestoringRemote || cloudReadyUserId !== user.id) return;
       setIsSyncing(true);
       saveRemoteState(stateToSave)
@@ -1044,14 +1042,14 @@ export default function App() {
           setSyncError("No se pudo guardar en la nube de forma segura. Evita cargar datos reales hasta terminar el ajuste de AWS.");
         })
         .finally(() => setIsSyncing(false));
-    } else if (!supabaseActive) {
+    } else if (!awsActive) {
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
       } catch (err) {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, supabaseActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, profileSetup, systemTasks, maternalTasks, wellnessTasks, weekBlocks]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, profileSetup, systemTasks, maternalTasks, wellnessTasks, weekBlocks]);
 
   const addMovement = (event) => {
     event.preventDefault();
@@ -1334,7 +1332,7 @@ export default function App() {
     );
   }
 
-  if (!user && supabaseActive) {
+  if (!user && awsActive) {
     return (
       <div className="auth-shell">
         <div className="auth-card">
@@ -1486,9 +1484,9 @@ export default function App() {
                   if (!window.confirm("\u00bfEst�s segura de que quieres eliminar tu cuenta? Esta acci�n no se puede deshacer y perder�s todos tus datos.")) return;
                   if (!window.confirm("\u00daltima confirmaci�n: se eliminar�n todos tus datos permanentemente.")) return;
                   try {
-                    if (user && supabaseActive) {
+                    if (user && awsActive) {
                       await deleteRemoteState();
-                      await supabase.auth.signOut();
+                      await awsAuth.signOut();
                     }
                     window.localStorage.removeItem(STORAGE_KEY);
                     setUser(null);
@@ -1617,19 +1615,19 @@ export default function App() {
           </div>
           <div className="profile-area">
             {isSyncing && <div className="status-chip syncing">Guardando�</div>}
-            {!supabaseActive && !isSyncing && <div className="status-chip">Modo local</div>}
+            {!awsActive && !isSyncing && <div className="status-chip">Modo local</div>}
             <button className="profile-edit-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
               <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
               <span className="profile-edit-name">{profileSetup?.name || "Mi perfil"}</span>
               <span className="profile-edit-icon">??</span>
             </button>
-            {supabaseActive && user && (
+            {awsActive && user && (
               <button className="signout-button" onClick={signOut}>Salir</button>
             )}
           </div>
         </header>
 
-        {!supabaseActive && (
+        {!awsActive && (
           <div className="local-banner">
             <strong>Modo sin conexi�n</strong> � tus datos se guardan en este navegador. Si cambias de dispositivo o navegador, no ver�s tus datos.
           </div>
@@ -3889,6 +3887,7 @@ function LineChart({ movements }) {
       </section>
     );
   }
+
 
 
 
