@@ -1,5 +1,5 @@
-Ôªøimport React, { useEffect, useMemo, useState } from "react";
-import { supabase, isSupabaseConfigured } from "./lib/supabaseClient";
+import React, { useEffect, useMemo, useState } from "react";
+import { awsAuth, isAwsConfigured } from "./lib/awsClient";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -18,9 +18,9 @@ const PLAN_PRICES = {
 
 const POMODORO_MESSAGES = [
   "Respira. Lo que hiciste en este bloque importa.",
-  "T√≥mate el descanso ‚Äî tu cerebro lo necesita para rendir.",
+  "TÛmate el descanso ó tu cerebro lo necesita para rendir.",
   "Una pausa consciente es parte del trabajo.",
-  "Hidr√°tate. Mueve el cuerpo. Vuelve con m√°s claridad.",
+  "Hidr·tate. Mueve el cuerpo. Vuelve con m·s claridad.",
   "Cada bloque completado es una victoria real."
 ];
 
@@ -69,42 +69,42 @@ const initialSystemTasks = [
   { id: 2, title: "Vender y hacer seguimiento", category: "negocio", mode: "manual", canDelegate: true },
   { id: 3, title: "Crear y publicar contenido", category: "negocio", mode: "manual", canDelegate: true },
   { id: 4, title: "Cobrar y facturar", category: "negocio", mode: "manual", canDelegate: true },
-  { id: 5, title: "Dise√±ar piezas gr√°ficas", category: "negocio", mode: "manual", canDelegate: true },
+  { id: 5, title: "DiseÒar piezas gr·ficas", category: "negocio", mode: "manual", canDelegate: true },
   { id: 6, title: "Responder mensajes y comentarios", category: "negocio", mode: "manual", canDelegate: true },
   { id: 7, title: "Mercado y compras del hogar", category: "hogar", mode: "manual", canDelegate: true },
   { id: 8, title: "Limpieza y orden del hogar", category: "hogar", mode: "manual", canDelegate: true },
-  { id: 9, title: "Rutina de ma√±ana con los ni√±os", category: "maternidad", mode: "manual", canDelegate: false },
-  { id: 10, title: "Tiempo de conexi√≥n y juego", category: "maternidad", mode: "manual", canDelegate: false }
+  { id: 9, title: "Rutina de maÒana con los niÒos", category: "maternidad", mode: "manual", canDelegate: false },
+  { id: 10, title: "Tiempo de conexiÛn y juego", category: "maternidad", mode: "manual", canDelegate: false }
 ];
 
 const systemSuggestions = {
   "Prospectar clientes nuevos": { auto: "Crea un embudo con ManyChat o una landing page que capture leads sola.", delegate: "Contrata una asistente virtual para hacer outreach en DMs." },
   "Vender y hacer seguimiento": { auto: "Usa un CRM simple como HubSpot gratuito para automatizar recordatorios.", delegate: "Una asistente de ventas puede hacer el seguimiento inicial." },
   "Crear y publicar contenido": { auto: "Programa con Meta Business Suite o Buffer. Graba en lote una vez a la semana.", delegate: "Una editora de contenido puede tomar el material en bruto y publicarlo." },
-  "Cobrar y facturar": { auto: "Usa Stripe, PayU o Wompi ‚Äî el cobro llega solo sin que escribas a nadie.", delegate: "Una asistente administrativa puede gestionar facturas y cobros." },
-  "Dise√±ar piezas gr√°ficas": { auto: "Crea plantillas en Canva que solo cambias de texto cada semana.", delegate: "Una dise√±adora freelance puede hacer el paquete mensual por horas." },
-  "Responder mensajes y comentarios": { auto: "Configura respuestas r√°pidas en WhatsApp Business e Instagram.", delegate: "Una community manager puede manejar la bandeja de entrada." },
+  "Cobrar y facturar": { auto: "Usa Stripe, PayU o Wompi ó el cobro llega solo sin que escribas a nadie.", delegate: "Una asistente administrativa puede gestionar facturas y cobros." },
+  "DiseÒar piezas gr·ficas": { auto: "Crea plantillas en Canva que solo cambias de texto cada semana.", delegate: "Una diseÒadora freelance puede hacer el paquete mensual por horas." },
+  "Responder mensajes y comentarios": { auto: "Configura respuestas r·pidas en WhatsApp Business e Instagram.", delegate: "Una community manager puede manejar la bandeja de entrada." },
   "Mercado y compras del hogar": { auto: "Crea una lista fija en Rappi o el supermercado online de tu ciudad.", delegate: "Puedes delegar las compras a un familiar o servicio de domicilios." },
   "Limpieza y orden del hogar": { auto: "Establece una rutina de 15 min diarios para mantener el orden.", delegate: "Un servicio de limpieza semanal libera horas valiosas." },
-  "Rutina de ma√±ana con los ni√±os": { protect: "Este tiempo no se delega ‚Äî se simplifica. Crea una rutina visual que los ni√±os puedan seguir solos con tu gu√≠a." },
-  "Tiempo de conexi√≥n y juego": { protect: "Este es tu tiempo de presencia real. Bloqu√©alo en tu agenda como una cita inamovible." }
+  "Rutina de maÒana con los niÒos": { protect: "Este tiempo no se delega ó se simplifica. Crea una rutina visual que los niÒos puedan seguir solos con tu guÌa." },
+  "Tiempo de conexiÛn y juego": { protect: "Este es tu tiempo de presencia real. BloquÈalo en tu agenda como una cita inamovible." }
 };
 
 const initialHomeMaternalTasks = [
-  { id: 1, title: "Rutina de ma√±ana con los ni√±os", category: "Maternidad", done: false },
-  { id: 2, title: "Tiempo de juego y conexi√≥n", category: "Maternidad", done: false },
+  { id: 1, title: "Rutina de maÒana con los niÒos", category: "Maternidad", done: false },
+  { id: 2, title: "Tiempo de juego y conexiÛn", category: "Maternidad", done: false },
   { id: 3, title: "Tareas del colegio", category: "Maternidad", done: false }
 ];
 
 const initialHomeWellnessTasks = [
   { id: 1, title: "Ejercicio o caminata", category: "Bienestar", done: false },
-  { id: 2, title: "Tiempo para m√≠", category: "Bienestar", done: false }
+  { id: 2, title: "Tiempo para mÌ", category: "Bienestar", done: false }
 ];
 
 const initialIncomeSources = [
   { id: 1, name: "Servicios 1:1", monthlyGoal: 3000, color: "purple", platform: "Transferencia bancaria" },
   { id: 2, name: "Cursos / Productos digitales", monthlyGoal: 2000, color: "pink", platform: "Hotmart" },
-  { id: 3, name: "Membres√≠as / Recurrente", monthlyGoal: 1500, color: "green", platform: "Mercado Pago" }
+  { id: 3, name: "MembresÌas / Recurrente", monthlyGoal: 1500, color: "green", platform: "Mercado Pago" }
 ];
 
 const initialBusinessSettings = {
@@ -161,33 +161,33 @@ const affirmations = [
 
 const promesas = [
   "Dios tiene planes de bien para ti, no de mal. Tu futuro tiene esperanza.",
-  "Cuando pides sabidur√≠a con fe, √©l la da generosamente y sin reproche.",
-  "Todo lo puedes cuando √©l te fortalece. No en tus fuerzas, sino en las suyas.",
-  "Dios cuida de ti. No tienes que cargar sola con la ansiedad de ma√±ana.",
-  "Cuando est√°s cansada y cargada, hay descanso real esperando por ti.",
-  "Dios completa lo que empieza en ti. Tu negocio y tu familia est√°n en sus manos.",
-  "No te ha dado esp√≠ritu de temor, sino de poder, amor y dominio propio.",
-  "Busca primero lo que importa de verdad, y lo dem√°s se a√±ade.",
-  "Conf√≠a en √©l con todo tu coraz√≥n y √©l enderezar√° tus caminos.",
-  "Eres m√°s que vencedora. No solo sobrevives, triunfas.",
+  "Cuando pides sabidurÌa con fe, Èl la da generosamente y sin reproche.",
+  "Todo lo puedes cuando Èl te fortalece. No en tus fuerzas, sino en las suyas.",
+  "Dios cuida de ti. No tienes que cargar sola con la ansiedad de maÒana.",
+  "Cuando est·s cansada y cargada, hay descanso real esperando por ti.",
+  "Dios completa lo que empieza en ti. Tu negocio y tu familia est·n en sus manos.",
+  "No te ha dado espÌritu de temor, sino de poder, amor y dominio propio.",
+  "Busca primero lo que importa de verdad, y lo dem·s se aÒade.",
+  "ConfÌa en Èl con todo tu corazÛn y Èl enderezar· tus caminos.",
+  "Eres m·s que vencedora. No solo sobrevives, triunfas.",
   "Dios conoce cada detalle de tu vida y tiene cuidado de ti.",
-  "La mujer que teme a Dios es digna de alabanza. T√∫ eres esa mujer.",
-  "Con √©l, lo que parece imposible se vuelve posible.",
-  "Tu trabajo no es en vano cuando lo haces con prop√≥sito y fe.",
+  "La mujer que teme a Dios es digna de alabanza. T˙ eres esa mujer.",
+  "Con Èl, lo que parece imposible se vuelve posible.",
+  "Tu trabajo no es en vano cuando lo haces con propÛsito y fe.",
   "Dios te da la fuerza que necesitas exactamente cuando la necesitas."
 ];
 
 const menu = [
-  { id: "dashboard", label: "Dashboard", icon: "üè†" },
-  { id: "business", label: "Negocio", icon: "üíº" },
-  { id: "clients", label: "Clientes", icon: "üë©‚Äçüíº" },
-  { id: "content", label: "Contenido", icon: "üì±" },
-  { id: "home", label: "Hogar", icon: "üå∏" },
-  { id: "ceo", label: "Prop√≥sito & Impacto", icon: "‚ú®" },
-  { id: "report", label: "Reporte semanal", icon: "üìä" }
+  { id: "dashboard", label: "Dashboard", icon: "??" },
+  { id: "business", label: "Negocio", icon: "??" },
+  { id: "clients", label: "Clientes", icon: "?????" },
+  { id: "content", label: "Contenido", icon: "??" },
+  { id: "home", label: "Hogar", icon: "??" },
+  { id: "ceo", label: "PropÛsito & Impacto", icon: "?" },
+  { id: "report", label: "Reporte semanal", icon: "??" }
 ];
 
-const diasSemana = ["Dom","Lun","Mar","Mi√©","Jue","Vie","S√°b"];
+const diasSemana = ["Dom","Lun","Mar","MiÈ","Jue","Vie","S·b"];
 function getWeekDays() {
   const today = new Date();
   const monday = new Date(today);
@@ -311,7 +311,7 @@ export default function App() {
   const [resetPassword, setResetPassword] = useState(false);
   const [ready, setReady] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [supabaseActive, setSupabaseActive] = useState(isSupabaseConfigured);
+  const [awsActive, setAwsActive] = useState(isAwsConfigured);
   const [businessSettings, setBusinessSettings] = useState({
     ...initialBusinessSettings,
     ...(stored?.businessSettings || {})
@@ -361,11 +361,11 @@ export default function App() {
               setPomodoroBlocks((b) => b + 1);
               setPomodoroMode("break");
               setPomodoroMinutes(pomodoroBreakDuration);
-              if (Notification.permission === "granted") new Notification("‚è∞ Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)] });
+              if (Notification.permission === "granted") new Notification("? Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)] });
             } else {
               setPomodoroMode("work");
               setPomodoroMinutes(pomodoroWorkDuration);
-              if (Notification.permission === "granted") new Notification("‚ñ∂ A trabajar", { body: "¬°Nuevo bloque de enfoque!" });
+              if (Notification.permission === "granted") new Notification("? A trabajar", { body: "°Nuevo bloque de enfoque!" });
             }
             return 0;
           });
@@ -410,11 +410,11 @@ export default function App() {
     e.preventDefault();
     setBetaCodeError("");
     if (betaCode.trim().toUpperCase() !== BETA_CODE) {
-      setBetaCodeError("C√≥digo incorrecto. Verifica el correo de bienvenida de UMP Academy.");
+      setBetaCodeError("CÛdigo incorrecto. Verifica el correo de bienvenida de UMP Academy.");
       return;
     }
     if (Date.now() > BETA_CODE_EXPIRY) {
-      setBetaCodeError("Este c√≥digo ya expir√≥.");
+      setBetaCodeError("Este cÛdigo ya expirÛ.");
       return;
     }
     const expiresAt = Date.now() + 90 * 86400000;
@@ -467,12 +467,12 @@ export default function App() {
   const annualProjectedIncomeSources = [{
     classification: "Ventas",
     amount: annualTotals.income,
-    example: "Proyecci√≥n anual desde ventas"
+    example: "ProyecciÛn anual desde ventas"
   }];
   const annualProjectedExpenseDestinations = [
-    { classification: "Gastos fijos", amount: annualFixedTotal, note: "Costos recurrentes y n√≥mina" },
-    { classification: "Gastos variables", amount: annualVariableTotal, note: "Publicidad, herramientas y producci√≥n" },
-    { classification: "Reinversi√≥n", amount: Math.round(annualTotals.income * 0.20), note: "Marketing, crecimiento y mejora" }
+    { classification: "Gastos fijos", amount: annualFixedTotal, note: "Costos recurrentes y nÛmina" },
+    { classification: "Gastos variables", amount: annualVariableTotal, note: "Publicidad, herramientas y producciÛn" },
+    { classification: "ReinversiÛn", amount: Math.round(annualTotals.income * 0.20), note: "Marketing, crecimiento y mejora" }
   ];
   const homeBudgetTotals = homeBudget.reduce((sum, row) => {
     if (row.type === "Ingreso") return { ...sum, income: sum.income + row.amount };
@@ -495,7 +495,7 @@ export default function App() {
   const excellenceActions = [
     topClient ? `Contactar a ${topClient.name}: ${topClient.nextAction || "hacer seguimiento"}.` : "Registrar tu clienta de mayor potencial.",
     nextContent ? `Mover contenido clave: ${nextContent.title}.` : "Crear una pieza de contenido enfocada en venta.",
-    totals.profit >= 0 ? `Separar ${money.format(reinvestmentAmount)} para reinversi√≥n antes de gastar.` : "Reducir un gasto no esencial esta semana.",
+    totals.profit >= 0 ? `Separar ${money.format(reinvestmentAmount)} para reinversiÛn antes de gastar.` : "Reducir un gasto no esencial esta semana.",
     pendingHomeTasks[0] ? `Resolver o delegar: ${pendingHomeTasks[0].title}.` : "Proteger un bloque de descanso real."
   ];
 
@@ -508,25 +508,25 @@ export default function App() {
   const budgetMonthlyIncome = annualTotals.income / 12;
   const confirmDelete = (msg, onConfirm) => { if (window.confirm(msg)) onConfirm(); };
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await awsAuth.signOut();
     setUser(null);
   };
 
   const translateError = (message) => {
     const translations = {
-      "Invalid login credentials": "Credenciales de inicio de sesi√≥n inv√°lidas",
-      "User already registered": "El usuario ya est√° registrado",
-      "Password should be at least 6 characters": "La contrase√±a debe tener al menos 6 caracteres",
-      "Unable to validate email address: invalid format": "Formato de correo electr√≥nico inv√°lido",
-      "Email not confirmed": "Correo electr√≥nico no confirmado",
-      "Signup is disabled": "El registro est√° deshabilitado",
-      "Too many requests": "Demasiadas solicitudes, intenta m√°s tarde",
-      "Invalid email": "Correo electr√≥nico inv√°lido",
-      "Email rate limit exceeded": "L√≠mite de env√≠o de correos excedido, espera unos minutos e intenta de nuevo",
-      "Magic link rate limit exceeded": "L√≠mite de env√≠o de enlaces excedido, espera unos minutos e intenta de nuevo"
+      "Invalid login credentials": "Credenciales de inicio de sesiÛn inv·lidas",
+      "User already registered": "El usuario ya est· registrado",
+      "Password should be at least 6 characters": "La contraseÒa debe tener al menos 6 caracteres",
+      "Unable to validate email address: invalid format": "Formato de correo electrÛnico inv·lido",
+      "Email not confirmed": "Correo electrÛnico no confirmado",
+      "Signup is disabled": "El registro est· deshabilitado",
+      "Too many requests": "Demasiadas solicitudes, intenta m·s tarde",
+      "Invalid email": "Correo electrÛnico inv·lido",
+      "Email rate limit exceeded": "LÌmite de envÌo de correos excedido, espera unos minutos e intenta de nuevo",
+      "Magic link rate limit exceeded": "LÌmite de envÌo de enlaces excedido, espera unos minutos e intenta de nuevo"
     };
     if (message?.toLowerCase().includes("rate limit exceeded")) {
-      return "L√≠mite de env√≠o de correos excedido, espera unos minutos e intenta de nuevo";
+      return "LÌmite de envÌo de correos excedido, espera unos minutos e intenta de nuevo";
     }
     return translations[message] || message;
   };
@@ -538,17 +538,17 @@ export default function App() {
     // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(authEmail)) {
-      setAuthError("Por favor ingresa un correo electr√≥nico v√°lido.");
+      setAuthError("Por favor ingresa un correo electrÛnico v·lido.");
       return;
     }
     
     if (authMode === "signup") {
       if (authPassword !== authPasswordConfirm) {
-        setAuthError("Las contrase√±as no coinciden.");
+        setAuthError("Las contraseÒas no coinciden.");
         return;
       }
       if (authPassword.length < 6) {
-        setAuthError("La contrase√±a debe tener al menos 6 caracteres.");
+        setAuthError("La contraseÒa debe tener al menos 6 caracteres.");
         return;
       }
     }
@@ -556,20 +556,20 @@ export default function App() {
     setAuthLoading(true);
     try {
       if (authMode === "login") {
-        const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
+        const { error } = await awsAuth.signInWithPassword({ email: authEmail, password: authPassword });
         if (error) setAuthError(translateError(error.message));
       } else {
-        const { error } = await supabase.auth.signUp({
+        const { error } = await awsAuth.signUp({
           email: authEmail,
           password: authPassword,
           options: { data: { full_name: authName.trim() } }
         });
         if (error) setAuthError(translateError(error.message));
-        else setAuthError("‚úÖ Revisa tu correo para confirmar tu cuenta.");
+        else setAuthError("? Revisa tu correo para confirmar tu cuenta.");
       }
     } catch (err) {
-      setAuthError("Error de conexi√≥n. Por favor verifica tu internet e intenta de nuevo.");
-      console.error("Error de autenticaci√≥n:", err);
+      setAuthError("Error de conexiÛn. Por favor verifica tu internet e intenta de nuevo.");
+      console.error("Error de autenticaciÛn:", err);
     } finally {
       setAuthLoading(false);
     }
@@ -577,27 +577,27 @@ export default function App() {
 
   const handleForgotPassword = async () => {
     if (!authEmail) {
-      setAuthError("Ingresa tu correo electr√≥nico primero.");
+      setAuthError("Ingresa tu correo electrÛnico primero.");
       return;
     }
     setAuthError("");
     setAuthLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(authEmail);
+    const { error } = await awsAuth.resetPassword(authEmail);
     setAuthLoading(false);
     if (error) setAuthError(translateError(error.message));
-    else setAuthError("Revisa tu correo para restablecer tu contrase√±a.");
+    else setAuthError("Revisa tu correo para restablecer tu contraseÒa.");
   };
 
   const handleResetPassword = async (event) => {
     event.preventDefault();
     setAuthError("");
     setAuthLoading(true);
-    const { error } = await supabase.auth.updateUser({ password: authNewPassword });
+    const { error } = await awsAuth.updatePassword({ password: authNewPassword });
     setAuthLoading(false);
     if (error) setAuthError(translateError(error.message));
     else {
       setResetPassword(false);
-      setAuthError("Contrase√±a actualizada. Ya puedes iniciar sesi√≥n.");
+      setAuthError("ContraseÒa actualizada. Ya puedes iniciar sesiÛn.");
     }
   };
 
@@ -610,38 +610,38 @@ export default function App() {
     const notes = [];
 
     if (annualTotals.income === 0) {
-      notes.push("A√∫n no hay ingresos proyectados para el a√±o. Completa la tabla de presupuesto para obtener una lectura m√°s precisa.");
+      notes.push("A˙n no hay ingresos proyectados para el aÒo. Completa la tabla de presupuesto para obtener una lectura m·s precisa.");
     } else {
       if (totals.profit < 0) {
-        notes.push("Est√°s operando en rojo: tus gastos actuales superan tus ingresos. Revisa primero gastos variables y pagos recurrentes.");
+        notes.push("Est·s operando en rojo: tus gastos actuales superan tus ingresos. Revisa primero gastos variables y pagos recurrentes.");
       } else {
-        notes.push("Tu negocio est√° generando utilidad. Mant√©n ese margen y evita que gastos variables se salgan de control.");
+        notes.push("Tu negocio est· generando utilidad. MantÈn ese margen y evita que gastos variables se salgan de control.");
       }
 
       if (monthlyIncomeRatio < 0.75) {
         notes.push(`Tus ingresos actuales son ${Math.round(monthlyIncomeRatio * 100)}% de la meta mensual proyectada. Activa ventas, cobros y ofertas de alto valor.`);
       } else if (monthlyIncomeRatio >= 1.1) {
-        notes.push("Vas por encima de la meta mensual proyectada. Felicidades: es momento de consolidar caja y reservar para reinversi√≥n.");
+        notes.push("Vas por encima de la meta mensual proyectada. Felicidades: es momento de consolidar caja y reservar para reinversiÛn.");
       } else {
-        notes.push("Est√°s cerca de la proyecci√≥n mensual. Mant√©n el ritmo de ventas y cuida la ejecuci√≥n de cada gasto.");
+        notes.push("Est·s cerca de la proyecciÛn mensual. MantÈn el ritmo de ventas y cuida la ejecuciÛn de cada gasto.");
       }
 
       if (totals.expenses > annualTotals.income * 0.8) {
-        notes.push("Tus gastos actuales ya representan m√°s del 80% de tu proyecci√≥n anual de ingresos. Cuidado con las fugas de dinero.");
+        notes.push("Tus gastos actuales ya representan m·s del 80% de tu proyecciÛn anual de ingresos. Cuidado con las fugas de dinero.");
       }
 
       if (actualVariableShare >= 0.45) {
-        notes.push("Los gastos variables son altos: revisa pauta, herramientas y costos de producci√≥n para no quemar caja.");
+        notes.push("Los gastos variables son altos: revisa pauta, herramientas y costos de producciÛn para no quemar caja.");
       }
 
       if (actualFixedShare >= 0.6 && totals.profit < 0) {
-        notes.push("La estructura fija es pesada y te est√° dejando poco margen. Busca reducir o renegociar compromisos fijos.");
+        notes.push("La estructura fija es pesada y te est· dejando poco margen. Busca reducir o renegociar compromisos fijos.");
       }
 
       if (totals.profit >= 0 && monthlyIncomeRatio >= 1) {
-        notes.push(`Excelente: ya est√°s cumpliendo la proyecci√≥n mensual y mantienes utilidad. Reserva al menos ${money.format(projectedReinvestmentMonthly)} al mes para reinversi√≥n.`);
+        notes.push(`Excelente: ya est·s cumpliendo la proyecciÛn mensual y mantienes utilidad. Reserva al menos ${money.format(projectedReinvestmentMonthly)} al mes para reinversiÛn.`);
       } else {
-        notes.push(`Para sostener el crecimiento, separa al menos ${money.format(projectedReinvestmentMonthly)} mensuales para reinversi√≥n.`);
+        notes.push(`Para sostener el crecimiento, separa al menos ${money.format(projectedReinvestmentMonthly)} mensuales para reinversiÛn.`);
       }
     }
 
@@ -655,38 +655,38 @@ export default function App() {
   useEffect(() => {
     let subscription;
     const initAuth = async () => {
-      if (!supabaseActive) {
+      if (!awsActive) {
         setReady(true);
         return;
       }
 
       const timeout = setTimeout(() => {
-        console.warn("Supabase auth tard√≥ demasiado. Usando modo local temporalmente.");
-        setSupabaseActive(false);
+        console.warn("Supabase auth tardÛ demasiado. Usando modo local temporalmente.");
+        setawsActive(false);
         setReady(true);
       }, 4000);
 
       try {
-        const { data, error } = await supabase.auth.getSession();
+        const { data, error } = await awsAuth.getSession();
         clearTimeout(timeout);
         if (error) {
           console.error("Error al inicializar auth:", error);
-          setSupabaseActive(false);
+          setawsActive(false);
         } else {
           setUser(data?.session?.user ?? null);
         }
       } catch (initError) {
         clearTimeout(timeout);
         console.error("Error inesperado al inicializar auth:", initError);
-        setSupabaseActive(false);
+        setawsActive(false);
       } finally {
         setReady(true);
       }
     };
 
     initAuth();
-    if (supabaseActive) {
-      const { data: listenerData } = supabase.auth.onAuthStateChange((event, session) => {
+    if (awsActive) {
+      const { data: listenerData } = awsAuth.onAuthStateChange((event, session) => {
         setUser(session?.user ?? null);
         if (event === 'PASSWORD_RECOVERY') {
           setResetPassword(true);
@@ -696,13 +696,13 @@ export default function App() {
       subscription = listenerData?.subscription;
     }
     return () => subscription?.unsubscribe?.();
-  }, [supabaseActive]);
+  }, [awsActive]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
       window.__MAMACEO_DEBUG = {
         ready,
-        supabaseActive,
+        awsActive,
         user,
         authMode,
         authLoading,
@@ -710,7 +710,7 @@ export default function App() {
         resetPassword
       };
     }
-  }, [ready, supabaseActive, user, authMode, authLoading, authError, resetPassword]);
+  }, [ready, awsActive, user, authMode, authLoading, authError, resetPassword]);
 
   const applyLoadedState = (loaded) => {
     if (!loaded) return;
@@ -733,7 +733,7 @@ export default function App() {
     if (!ready) return;
     const restore = async () => {
       try {
-        if (user && supabaseActive) {
+        if (user && awsActive) {
           const remoteState = await loadRemoteState(user.id);
           if (remoteState) applyLoadedState(remoteState);
         } else {
@@ -745,7 +745,7 @@ export default function App() {
       }
     };
     restore();
-  }, [ready, user, supabaseActive]);
+  }, [ready, user, awsActive]);
 
   useEffect(() => {
     if (!ready || !user) return;
@@ -781,7 +781,7 @@ export default function App() {
       premiumExpiresAt
     };
 
-    if (user && supabaseActive) {
+    if (user && awsActive) {
       setIsSyncing(true);
       saveRemoteState(user.id, stateToSave)
         .catch((err) => {
@@ -797,16 +797,16 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, supabaseActive, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose]);
+  }, [ready, user, awsActive, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose]);
 
   const addMovement = (event) => {
     event.preventDefault();
     const amount = Number(form.amount);
     if (!form.description.trim() || !form.category.trim() || !amount) return;
     
-    // Validar l√≠mite del plan
+    // Validar lÌmite del plan
     if (movements.length >= currentLimits.movements) {
-      setUpgradeReason(`Has alcanzado el l√≠mite de ${currentLimits.movements} movimientos de tu plan.`);
+      setUpgradeReason(`Has alcanzado el lÌmite de ${currentLimits.movements} movimientos de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
@@ -835,9 +835,9 @@ export default function App() {
     const amount = Number(clientForm.amount);
     if (!clientForm.name.trim() || !clientForm.service.trim() || !amount) return;
     
-    // Validar l√≠mite del plan
+    // Validar lÌmite del plan
     if (clients.length >= currentLimits.clients) {
-      setUpgradeReason(`Has alcanzado el l√≠mite de ${currentLimits.clients} clientes de tu plan.`);
+      setUpgradeReason(`Has alcanzado el lÌmite de ${currentLimits.clients} clientes de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
@@ -862,9 +862,9 @@ export default function App() {
     event.preventDefault();
     if (!contentForm.title.trim()) return;
     
-    // Validar l√≠mite del plan
+    // Validar lÌmite del plan
     if (contentItems.length >= currentLimits.content) {
-      setUpgradeReason(`Has alcanzado el l√≠mite de ${currentLimits.content} contenidos de tu plan.`);
+      setUpgradeReason(`Has alcanzado el lÌmite de ${currentLimits.content} contenidos de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
@@ -894,9 +894,9 @@ export default function App() {
     event.preventDefault();
     if (!homeForm.title.trim()) return;
     
-    // Validar l√≠mite del plan
+    // Validar lÌmite del plan
     if (homeTasks.length >= currentLimits.homeTasks) {
-      setUpgradeReason(`Has alcanzado el l√≠mite de ${currentLimits.homeTasks} tareas del hogar de tu plan.`);
+      setUpgradeReason(`Has alcanzado el lÌmite de ${currentLimits.homeTasks} tareas del hogar de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
@@ -938,7 +938,7 @@ export default function App() {
       if (row.month !== month) return row;
       const nextValue = Math.max(0, Number(value) || 0);
       if (field === "income") {
-        // Solo recalcular gastos si est√°n en 0 o vac√≠os (no sobrescribir valores personalizados)
+        // Solo recalcular gastos si est·n en 0 o vacÌos (no sobrescribir valores personalizados)
         const shouldRecalculateFixed = !row.fixedExpenses || row.fixedExpenses === 0;
         const shouldRecalculateVariable = !row.variableExpenses || row.variableExpenses === 0;
         return {
@@ -970,7 +970,7 @@ export default function App() {
     });
   };
   const exportMovementsToExcel = () => {
-    const headers = ["Tipo", "Clasificaci√≥n", "Descripci√≥n", "Categor√≠a", "Banco", "Monto"];
+    const headers = ["Tipo", "ClasificaciÛn", "DescripciÛn", "CategorÌa", "Banco", "Monto"];
     const rows = movements.map((movement) => [
       movement.type === "income" ? "Ingreso" : "Gasto",
       movement.classification || "",
@@ -1045,7 +1045,7 @@ export default function App() {
     return (
       <div className="auth-shell">
         <div className="auth-card" style={{textAlign:"center"}}>
-          <div style={{fontSize:"32px",marginBottom:"12px"}}>‚ú®</div>
+          <div style={{fontSize:"32px",marginBottom:"12px"}}>?</div>
           <h2>Cargando tu espacio...</h2>
           <p>Un momento, preparando todo para ti.</p>
         </div>
@@ -1053,42 +1053,42 @@ export default function App() {
     );
   }
 
-  if (!user && supabaseActive) {
+  if (!user && awsActive) {
     return (
       <div className="auth-shell">
         <div className="auth-card">
-          <h2>{resetPassword ? "Restablecer contrase√±a" : authMode === "login" ? "Iniciar sesi√≥n" : "Crear cuenta"}</h2>
-          <p>{resetPassword ? "Ingresa tu nueva contrase√±a." : "Ingresa con tu correo para acceder a tu tablero Mam√° CEO."}</p>
+          <h2>{resetPassword ? "Restablecer contraseÒa" : authMode === "login" ? "Iniciar sesiÛn" : "Crear cuenta"}</h2>
+          <p>{resetPassword ? "Ingresa tu nueva contraseÒa." : "Ingresa con tu correo para acceder a tu tablero Mam· CEO."}</p>
           {resetPassword ? (
             <form className="auth-form" onSubmit={handleResetPassword}>
               <label>
-                Nueva contrase√±a
+                Nueva contraseÒa
                 <input type="password" value={authNewPassword} onChange={(event) => setAuthNewPassword(event.target.value)} required minLength={6} />
               </label>
               {authError && <p className="auth-error">{authError}</p>}
               <button type="submit" className="auth-button" disabled={authLoading}>
-                Actualizar contrase√±a
+                Actualizar contraseÒa
               </button>
             </form>
           ) : (
             <form className="auth-form" onSubmit={handleAuthSubmit}>
               <label>
-                Correo electr√≥nico
+                Correo electrÛnico
                 <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} required />
               </label>
               {authMode === "signup" && (
                 <label>
                   Tu nombre
-                  <input type="text" placeholder="¬øC√≥mo te llamamos?" value={authName} onChange={(event) => setAuthName(event.target.value)} required />
+                  <input type="text" placeholder="øCÛmo te llamamos?" value={authName} onChange={(event) => setAuthName(event.target.value)} required />
                 </label>
               )}
               <label>
-                Contrase√±a
+                ContraseÒa
                 <input type="password" value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={6} />
               </label>
               {authMode === "signup" && (
                 <label>
-                  Repite la contrase√±a
+                  Repite la contraseÒa
                   <input type="password" value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={6} />
                 </label>
               )}
@@ -1105,7 +1105,7 @@ export default function App() {
               </button>
               {authMode === "login" && (
                 <button type="button" className="auth-forgot" onClick={handleForgotPassword} disabled={authLoading}>
-                  Olvid√© mi contrase√±a
+                  OlvidÈ mi contraseÒa
                 </button>
               )}
 
@@ -1123,17 +1123,17 @@ export default function App() {
           <div className="profile-modal">
             <div className="profile-modal-header">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                <h2>{profileSetup ? "Editar mi perfil ‚úèÔ∏è" : "Antes de comenzar... üå∏"}</h2>
+                <h2>{profileSetup ? "Editar mi perfil ??" : "Antes de comenzar... ??"}</h2>
                 {profileSetup && (
                   <button type="button" onClick={() => setShowProfileModal(false)}
-                    style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>√ó</button>
+                    style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>◊</button>
                 )}
               </div>
-              <p>{profileSetup ? "Actualiza tu informaci√≥n cuando quieras." : "Configuremos tu perfil para que la app trabaje para ti desde el primer d√≠a."}</p>
+              <p>{profileSetup ? "Actualiza tu informaciÛn cuando quieras." : "Configuremos tu perfil para que la app trabaje para ti desde el primer dÌa."}</p>
             </div>
             <form className="profile-modal-form" onSubmit={saveProfile}>
               <label>
-                ¬øC√≥mo te llamamos?
+                øCÛmo te llamamos?
                 <input placeholder="Tu nombre" value={profileForm.name} onChange={(e) => setProfileForm((c) => ({ ...c, name: e.target.value }))} required />
               </label>
               <label>
@@ -1144,15 +1144,15 @@ export default function App() {
                 Tipo de negocio
                 <select value={profileForm.businessType} onChange={(e) => setProfileForm((c) => ({ ...c, businessType: e.target.value }))}>
                   <option>Servicios 1:1</option>
-                  <option>Coaching o mentor√≠a</option>
+                  <option>Coaching o mentorÌa</option>
                   <option>Productos digitales</option>
                   <option>E-commerce</option>
-                  <option>Membres√≠as / Recurrente</option>
+                  <option>MembresÌas / Recurrente</option>
                   <option>Otro</option>
                 </select>
               </label>
               <label>
-                ¬øEn qu√© etapa est√° tu negocio?
+                øEn quÈ etapa est· tu negocio?
                 <select value={profileForm.stage} onChange={(e) => setProfileForm((c) => ({ ...c, stage: e.target.value }))}>
                   <option>Comenzando</option>
                   <option>Creciendo</option>
@@ -1168,27 +1168,27 @@ export default function App() {
                 <select value={profileForm.mainChallenge} onChange={(e) => setProfileForm((c) => ({ ...c, mainChallenge: e.target.value }))}>
                   <option>Conseguir clientes</option>
                   <option>Organizar mis finanzas</option>
-                  <option>Tener m√°s tiempo</option>
+                  <option>Tener m·s tiempo</option>
                   <option>Escalar mi negocio</option>
                   <option>Equilibrar negocio y hogar</option>
                 </select>
               </label>
-              <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ‚ú®"}</button>
+              <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ?"}</button>
               {profileSetup && (
                 <button type="button" onClick={async () => {
-                  if (!window.confirm("\u00bfEst√°s segura de que quieres eliminar tu cuenta? Esta acci√≥n no se puede deshacer y perder√°s todos tus datos.")) return;
-                  if (!window.confirm("\u00daltima confirmaci√≥n: se eliminar√°n todos tus datos permanentemente.")) return;
+                  if (!window.confirm("\u00bfEst·s segura de que quieres eliminar tu cuenta? Esta acciÛn no se puede deshacer y perder·s todos tus datos.")) return;
+                  if (!window.confirm("\u00daltima confirmaciÛn: se eliminar·n todos tus datos permanentemente.")) return;
                   try {
-                    if (user && supabaseActive) {
-                      await supabase.from("user_states").delete().eq("user_id", user.id);
-                      await supabase.auth.signOut();
+                    if (user && awsActive) {
+                      await await awsAuth.signOut();
+                      await awsAuth.signOut();
                     }
                     window.localStorage.removeItem(STORAGE_KEY);
                     setUser(null);
                     setShowProfileModal(false);
                   } catch (err) {
                     console.error("Error eliminando cuenta:", err);
-                    alert("Hubo un error al eliminar la cuenta. Cont√°ctanos en hola@umpacademy.co");
+                    alert("Hubo un error al eliminar la cuenta. Cont·ctanos en hola@umpacademy.co");
                   }
                 }}
                 style={{marginTop:"8px",width:"100%",padding:"12px",border:"1px solid #e05a4e",background:"#fff5f4",color:"#e05a4e",borderRadius:"8px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>
@@ -1202,10 +1202,10 @@ export default function App() {
 
       {profileSaved && (
         <div className="profile-toast">
-          <span>üå∏</span>
+          <span>??</span>
           <div>
-            <strong>¬°Todo listo, {profileSetup?.name || "Mam√° CEO"}!</strong>
-            <p>Tu perfil est√° guardado. La app ya trabaja para ti.</p>
+            <strong>°Todo listo, {profileSetup?.name || "Mam· CEO"}!</strong>
+            <p>Tu perfil est· guardado. La app ya trabaja para ti.</p>
           </div>
         </div>
       )}
@@ -1215,9 +1215,9 @@ export default function App() {
           <div className="profile-modal" style={{maxWidth:"500px"}}>
             <div className="profile-modal-header">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                <h2>‚ú® Desbloquea todo tu potencial</h2>
+                <h2>? Desbloquea todo tu potencial</h2>
                 <button type="button" onClick={() => setShowUpgradeModal(false)}
-                  style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>√ó</button>
+                  style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>◊</button>
               </div>
               <p style={{marginTop:"8px",fontSize:"15px",color:"var(--purple)"}}>{upgradeReason}</p>
             </div>
@@ -1226,27 +1226,27 @@ export default function App() {
                 <h3 style={{margin:"0 0 16px",fontSize:"20px",color:"var(--purple)"}}>Plan Premium</h3>
                 <div style={{display:"grid",gap:"12px",marginBottom:"16px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>‚úì</span>
+                    <span style={{fontSize:"20px"}}>?</span>
                     <span>Movimientos financieros ilimitados</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>‚úì</span>
+                    <span style={{fontSize:"20px"}}>?</span>
                     <span>Clientes ilimitados</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>‚úì</span>
+                    <span style={{fontSize:"20px"}}>?</span>
                     <span>Contenido ilimitado</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>‚úì</span>
+                    <span style={{fontSize:"20px"}}>?</span>
                     <span>Tareas del hogar ilimitadas</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>‚úì</span>
-                    <span>Sincronizaci√≥n en la nube</span>
+                    <span style={{fontSize:"20px"}}>?</span>
+                    <span>SincronizaciÛn en la nube</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>‚úì</span>
+                    <span style={{fontSize:"20px"}}>?</span>
                     <span>Soporte prioritario</span>
                   </div>
                 </div>
@@ -1265,7 +1265,7 @@ export default function App() {
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark"></div>
-          <div className="brand-script">Mam√°</div>
+          <div className="brand-script">Mam·</div>
           <div className="brand-ceo">CEO</div>
           <div className="brand-app">APP</div>
         </div>
@@ -1290,8 +1290,8 @@ export default function App() {
         </div>
 
         <div className="quote-card">
-          <p className="brand-tagline">Negocio, hogar y visi√≥n en un solo lugar</p>
-          <span>‚Äú</span>
+          <p className="brand-tagline">Negocio, hogar y visiÛn en un solo lugar</p>
+          <span>ì</span>
           <p>{promesas[new Date().getDate() % promesas.length]}</p>
         </div>
       </aside>
@@ -1300,26 +1300,26 @@ export default function App() {
         <header className="topbar">
           <div>
             <p className="view-label">{activeLabel}</p>
-            <h1>¬°Hola, {profileSetup?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mam√° CEO"}!</h1>
-            <p>Enfocada ‚Ä¢ Organizada ‚Ä¢ Imparable</p>
+            <h1>°Hola, {profileSetup?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mam· CEO"}!</h1>
+            <p>Enfocada ï Organizada ï Imparable</p>
           </div>
           <div className="profile-area">
-            {isSyncing && <div className="status-chip syncing">Guardando‚Ä¶</div>}
-            {!supabaseActive && !isSyncing && <div className="status-chip">Modo local</div>}
+            {isSyncing && <div className="status-chip syncing">GuardandoÖ</div>}
+            {!awsActive && !isSyncing && <div className="status-chip">Modo local</div>}
             <button className="profile-edit-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
               <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
               <span className="profile-edit-name">{profileSetup?.name || "Mi perfil"}</span>
-              <span className="profile-edit-icon">‚öôÔ∏è</span>
+              <span className="profile-edit-icon">??</span>
             </button>
-            {supabaseActive && user && (
+            {awsActive && user && (
               <button className="signout-button" onClick={signOut}>Salir</button>
             )}
           </div>
         </header>
 
-        {!supabaseActive && (
+        {!awsActive && (
           <div className="local-banner">
-            <strong>Modo sin conexi√≥n</strong> ‚Äî tus datos se guardan en este navegador. Si cambias de dispositivo o navegador, no ver√°s tus datos.
+            <strong>Modo sin conexiÛn</strong> ó tus datos se guardan en este navegador. Si cambias de dispositivo o navegador, no ver·s tus datos.
           </div>
         )}
 
@@ -1327,13 +1327,13 @@ export default function App() {
         {isBetaUser && effectivePlan === "premium" && betaDaysLeft !== null && (
           <div className="beta-banner">
             {betaDaysLeft > 30 ? (
-              <><span>üå∏</span><div><strong>Bienvenida al grupo beta de Mam√° CEO</strong><p>Tienes <b>{betaDaysLeft} d√≠as</b> de acceso Premium gratis. ¬°√ösalos para construir el h√°bito de organizar tu negocio y hogar!</p></div></>
+              <><span>??</span><div><strong>Bienvenida al grupo beta de Mam· CEO</strong><p>Tienes <b>{betaDaysLeft} dÌas</b> de acceso Premium gratis. °⁄salos para construir el h·bito de organizar tu negocio y hogar!</p></div></>
             ) : betaDaysLeft > 7 ? (
-              <><span>‚ú®</span><div><strong>Ya llevas un buen camino, {profileSetup?.name || "Mam√° CEO"}</strong><p>Te quedan <b>{betaDaysLeft} d√≠as</b> de Premium gratis. Todo lo que organizaste aqu√≠ ya es tuyo ‚Äî sigue construyendo.</p></div></>
+              <><span>?</span><div><strong>Ya llevas un buen camino, {profileSetup?.name || "Mam· CEO"}</strong><p>Te quedan <b>{betaDaysLeft} dÌas</b> de Premium gratis. Todo lo que organizaste aquÌ ya es tuyo ó sigue construyendo.</p></div></>
             ) : betaDaysLeft > 0 ? (
-              <><span>üíõ</span><div><strong>√öltimos {betaDaysLeft} d√≠as de tu acceso beta</strong><p>Has avanzado mucho. Activa Premium cuando est√©s lista, sin presi√≥n.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Ver planes ‚Üí</button></div></>
+              <><span>??</span><div><strong>⁄ltimos {betaDaysLeft} dÌas de tu acceso beta</strong><p>Has avanzado mucho. Activa Premium cuando estÈs lista, sin presiÛn.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Ver planes ?</button></div></>
             ) : (
-              <><span>üéØ</span><div><strong>Tu per√≠odo beta termin√≥</strong><p>Tus datos est√°n seguros. Activa Premium para seguir con acceso ilimitado.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Activar Premium ‚Üí</button></div></>
+              <><span>??</span><div><strong>Tu perÌodo beta terminÛ</strong><p>Tus datos est·n seguros. Activa Premium para seguir con acceso ilimitado.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Activar Premium ?</button></div></>
             )}
           </div>
         )}
@@ -1353,19 +1353,19 @@ export default function App() {
         {effectivePlan === "ceo" && (
           <div className={`pomodoro-widget ${pomodoroActive ? "pomodoro-open" : ""}`}>
             <button className="pomodoro-toggle" onClick={() => { setPomodoroActive((v) => !v); requestNotificationPermission(); }} title="Temporizador de enfoque">
-              {pomodoroRunning ? "‚è∏" : "‚è±"}
+              {pomodoroRunning ? "?" : "?"}
               {pomodoroRunning && <span className="pomodoro-pulse" />}
             </button>
             {pomodoroActive && (
               <div className="pomodoro-panel">
                 <div className="pomodoro-header">
-                  <span className="pomodoro-mode-label">{pomodoroMode === "work" ? "üéØ Enfoque" : "‚òï Descanso"}</span>
+                  <span className="pomodoro-mode-label">{pomodoroMode === "work" ? "?? Enfoque" : "? Descanso"}</span>
                   <span className="pomodoro-blocks">{pomodoroBlocks} bloques hoy</span>
                 </div>
                 <div className="pomodoro-clock">{String(pomodoroMinutes).padStart(2,"0")}:{String(pomodoroSeconds).padStart(2,"0")}</div>
                 <div className="pomodoro-controls">
-                  <button onClick={() => setPomodoroRunning((r) => !r)}>{pomodoroRunning ? "‚è∏ Pausar" : "‚ñ∂ Iniciar"}</button>
-                  <button onClick={pomodoroReset}>‚Ü∫</button>
+                  <button onClick={() => setPomodoroRunning((r) => !r)}>{pomodoroRunning ? "? Pausar" : "? Iniciar"}</button>
+                  <button onClick={pomodoroReset}>?</button>
                 </div>
                 <div className="pomodoro-settings">
                   <label>Trabajo
@@ -1385,15 +1385,15 @@ export default function App() {
         )}
 
         {effectivePlan === "free" && (
-          <button className="upgrade-fab" onClick={() => setActiveView("pricing")}>‚ú® Upgrade</button>
+          <button className="upgrade-fab" onClick={() => setActiveView("pricing")}>? Upgrade</button>
         )}
 
         <footer className="app-footer">
-          <span>¬© 2026 UMP S.A.S ‚Ä¢ Todos los derechos reservados</span>
-          <span>Hecho por Una mam√° con prop√≥sito¬Æ</span>
+          <span>© 2026 UMP S.A.S ï Todos los derechos reservados</span>
+          <span>Hecho por Una mam· con propÛsitoÆ</span>
           <span>
-            <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('terminos'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>T√©rminos</a>
-            {" ‚Ä¢ "}
+            <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('terminos'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>TÈrminos</a>
+            {" ï "}
             <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('privacidad'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>Privacidad</a>
           </span>
         </footer>
@@ -1404,7 +1404,7 @@ export default function App() {
   function renderDashboard() {
     const hotLeads = clients.filter((c) => c.status === "Lead caliente").length;
     const familyDaysCount = Object.values(purpose.familyDays || {}).filter(Boolean).length;
-    const presenceMsg = familyDaysCount >= 5 ? "Semana excelente de presencia üíõ" : familyDaysCount >= 3 ? "Buen ritmo, sigue presente" : "Puedes mejorar tu presencia esta semana";
+    const presenceMsg = familyDaysCount >= 5 ? "Semana excelente de presencia ??" : familyDaysCount >= 3 ? "Buen ritmo, sigue presente" : "Puedes mejorar tu presencia esta semana";
     const unpublishedContent = contentItems.filter((i) => i.status !== "Publicado").length;
     const hotClient = clients.filter((c) => c.status === "Lead caliente")[0];
 
@@ -1413,11 +1413,11 @@ export default function App() {
         {/* Banner de enfoque */}
         <section className="focus-banner">
           <div className="focus-copy">
-            <span className="target-icon">‚óé</span>
+            <span className="target-icon">?</span>
             <div>
               <p className="eyebrow">Tu enfoque de la semana</p>
-              <h2>{monthlyProgress >= 80 ? "Cierra ventas pendientes y protege tu energ√≠a." : "Haz seguimiento a clientas y prioriza acciones que generan caja."}</h2>
-              <span className="pill">Elige la acci√≥n peque√±a que m√°s resultado produce</span>
+              <h2>{monthlyProgress >= 80 ? "Cierra ventas pendientes y protege tu energÌa." : "Haz seguimiento a clientas y prioriza acciones que generan caja."}</h2>
+              <span className="pill">Elige la acciÛn pequeÒa que m·s resultado produce</span>
             </div>
           </div>
           <div className="goal-box">
@@ -1436,7 +1436,7 @@ export default function App() {
         <section className="excellence-panel">
           <div className="excellence-copy">
             <p className="eyebrow">Tus acciones clave de hoy</p>
-            <h2>Una sola acci√≥n bien elegida mueve m√°s que diez hechas desde el agotamiento.</h2>
+            <h2>Una sola acciÛn bien elegida mueve m·s que diez hechas desde el agotamiento.</h2>
           </div>
           <div className="excellence-actions">
             {excellenceActions.map((action, index) => (
@@ -1458,10 +1458,10 @@ export default function App() {
             <MetricCard title="Ingresos" value={money.format(totals.income)} change="Dinero generado" tone="green" />
             <MetricCard title="Gastos" value={money.format(totals.expenses)} change="Dinero invertido" tone="pink" />
             <MetricCard title="Utilidad" value={money.format(totals.profit)} change="Resultado actual" tone="purple" />
-            <MetricCard title="Reinversi√≥n" value={money.format(reinvestmentAmount)} change={`${reinvestmentPercent}% de tus ventas`} tone="orange" />
+            <MetricCard title="ReinversiÛn" value={money.format(reinvestmentAmount)} change={`${reinvestmentPercent}% de tus ventas`} tone="orange" />
           </div>
 
-          {/* Fila principal: gr√°fica + acciones */}
+          {/* Fila principal: gr·fica + acciones */}
           <div className="dash-main-row">
             <div className="card chart-card-wide">
               <h3>Ingresos vs gastos</h3>
@@ -1492,16 +1492,16 @@ export default function App() {
             </div>
           </div>
 
-          {/* Res√∫menes de otras pesta√±as */}
+          {/* Res˙menes de otras pestaÒas */}
           <div className="section-title" style={{marginTop:"20px"}}>
             <h2>Tu semana de un vistazo</h2>
-            <p>Resumen de todas las √°reas</p>
+            <p>Resumen de todas las ·reas</p>
           </div>
           <div className="dash-summary-grid">
 
             {/* Clientes */}
             <div className="card dash-summary-card">
-              <div className="dash-summary-icon">üßë‚Äçüíº</div>
+              <div className="dash-summary-icon">?????</div>
               <h3>Clientes</h3>
               <div className="dash-summary-stat">
                 <span>Leads calientes</span>
@@ -1516,13 +1516,13 @@ export default function App() {
                 <strong>{contactsThisWeek}</strong>
               </div>
               {hotClient && (
-                <p className="helper-copy" style={{marginTop:"6px"}}>Prioridad: <b>{hotClient.name}</b> ‚Äî {hotClient.nextAction || "hacer seguimiento"}</p>
+                <p className="helper-copy" style={{marginTop:"6px"}}>Prioridad: <b>{hotClient.name}</b> ó {hotClient.nextAction || "hacer seguimiento"}</p>
               )}
             </div>
 
             {/* Contenido */}
             <div className="card dash-summary-card">
-              <div className="dash-summary-icon">üì±</div>
+              <div className="dash-summary-icon">??</div>
               <h3>Contenido</h3>
               <div className="dash-summary-stat">
                 <span>Publicadas</span>
@@ -1540,7 +1540,7 @@ export default function App() {
 
             {/* Hogar y presencia */}
             <div className="card dash-summary-card">
-              <div className="dash-summary-icon">üè†</div>
+              <div className="dash-summary-icon">??</div>
               <h3>Hogar y presencia</h3>
               <div className="dash-summary-stat">
                 <span>Tareas del hogar</span>
@@ -1548,26 +1548,26 @@ export default function App() {
               </div>
               <ProgressLabel label="Hogar" value={homeTasks.length ? Math.round((completedHomeTasks/homeTasks.length)*100) : 0} tone="green" />
               <div className="dash-summary-stat" style={{marginTop:"8px"}}>
-                <span>D√≠as presente esta semana</span>
-                <strong style={{color: familyDaysCount >= 4 ? "var(--green)" : "var(--orange)"}}>{familyDaysCount} d√≠as</strong>
+                <span>DÌas presente esta semana</span>
+                <strong style={{color: familyDaysCount >= 4 ? "var(--green)" : "var(--orange)"}}>{familyDaysCount} dÌas</strong>
               </div>
               <div className="dash-summary-stat">
-                <span>Momentos de conexi√≥n</span>
+                <span>Momentos de conexiÛn</span>
                 <strong>{purpose.connectionMoments || 0}</strong>
               </div>
               <p className="helper-copy" style={{marginTop:"6px"}}>{presenceMsg}</p>
             </div>
 
-            {/* Energ√≠a */}
+            {/* EnergÌa */}
             <div className="card dash-summary-card">
-              <div className="dash-summary-icon">‚ö°</div>
-              <h3>Energ√≠a y bienestar</h3>
+              <div className="dash-summary-icon">?</div>
+              <h3>EnergÌa y bienestar</h3>
               <div className="dash-summary-stat">
-                <span>√Ånimo</span>
+                <span>¡nimo</span>
                 <strong style={{textTransform:"capitalize"}}>{purpose.mood}</strong>
               </div>
               <div className="dash-summary-stat">
-                <span>Nivel de energ√≠a</span>
+                <span>Nivel de energÌa</span>
                 <strong style={{textTransform:"capitalize"}}>{purpose.energy}</strong>
               </div>
               <ProgressLabel label="Autocuidado" value={Math.round(([purpose.water,purpose.walk,purpose.silence,purpose.devotional].filter(Boolean).length/4)*100)} tone="green" />
@@ -1579,7 +1579,7 @@ export default function App() {
 
           </div>
 
-          {/* √öltimos movimientos + planificador */}
+          {/* ⁄ltimos movimientos + planificador */}
           {(() => {
             const today = new Date();
             const dayNames = ["Domingo","Lunes","Martes","Miercoles","Jueves","Viernes","Sabado"];
@@ -1648,7 +1648,7 @@ export default function App() {
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Negocio</h2>
-          <p>{profileSetup?.businessName || "Tu negocio"} √¢‚Ç¨¬¢ {profileSetup?.stage || ""}</p>
+          <p>{profileSetup?.businessName || "Tu negocio"} ‚Ä¢ {profileSetup?.stage || ""}</p>
         </div>
 
         <div className="business-top-grid">
@@ -1707,7 +1707,7 @@ export default function App() {
                     </select>
                     {feeInfo && feeInfo.pct > 0 && (
                       <div style={{display:"flex",gap:"12px",fontSize:"12px",flexWrap:"wrap"}}>
-                        <span style={{color:"var(--pink)",fontWeight:700}}>Fee est.: {feeInfo.label} ‚âà -{money.format(src.feeEstimated)}</span>
+                        <span style={{color:"var(--pink)",fontWeight:700}}>Fee est.: {feeInfo.label} ò -{money.format(src.feeEstimated)}</span>
                         <span style={{color:"var(--green)",fontWeight:700}}>Neto est.: {money.format(src.netEstimated)}</span>
                       </div>
                     )}
@@ -1871,7 +1871,7 @@ export default function App() {
             <div className="action-day-left">
               <span className="action-day-label">Accion del dia</span>
               <strong>{priorityClient.name}</strong>
-              <span>{priorityClient.status} √¢‚Ç¨¬¢ {money.format(priorityClient.amount)} √¢‚Ç¨¬¢ hace {daysSince(priorityClient.lastContact)} dias sin contacto</span>
+              <span>{priorityClient.status} ‚Ä¢ {money.format(priorityClient.amount)} ‚Ä¢ hace {daysSince(priorityClient.lastContact)} dias sin contacto</span>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"8px"}}>
                 <button type="button" className="contact-today-btn" style={{width:"auto",padding:"0 14px"}} onClick={() => logContact(priorityClient.id, priorityClient.name)}>Contacte hoy</button>
                 <a href={waLink(priorityClient)} target="_blank" rel="noreferrer"
@@ -1896,12 +1896,12 @@ export default function App() {
           <div className="client-alerts">
             {urgentClients.length > 0 && (
               <div className="alert-banner alert-orange">
-                <strong>{urgentClients.length} lead{urgentClients.length > 1 ? "s" : ""} sin contacto:</strong> {urgentClients.map((c) => c.name).join(", ")} √¢‚Ç¨‚Äù actuas hoy o se enfriaran.
+                <strong>{urgentClients.length} lead{urgentClients.length > 1 ? "s" : ""} sin contacto:</strong> {urgentClients.map((c) => c.name).join(", ")} ‚Äî actuas hoy o se enfriaran.
               </div>
             )}
             {urgentSubscriptions.length > 0 && (
               <div className="alert-banner alert-red">
-                <strong>{urgentSubscriptions.length} clienta{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong> {urgentSubscriptions.map((c) => c.name).join(", ")} √¢‚Ç¨‚Äù riesgo de perder la relacion.
+                <strong>{urgentSubscriptions.length} clienta{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong> {urgentSubscriptions.map((c) => c.name).join(", ")} ‚Äî riesgo de perder la relacion.
               </div>
             )}
           </div>
@@ -1952,7 +1952,7 @@ export default function App() {
                           <strong>{client.name}</strong>
                           <span className={`alert-dot alert-dot-${alert}`}></span>
                         </div>
-                        <small>{client.service} √¢‚Ç¨¬¢ {money.format(client.amount)}</small>
+                        <small>{client.service} ‚Ä¢ {money.format(client.amount)}</small>
                         {client.source && <small style={{color:"var(--purple)",fontWeight:700}}>{client.source}</small>}
                         <p>{client.nextAction || "Hacer seguimiento"}</p>
                         <small className="last-contact">
@@ -1996,7 +1996,7 @@ export default function App() {
                 <div className="paid-client-header">
                   <div>
                     <strong>{client.name}</strong>
-                    <small>{client.service} √¢‚Ç¨¬¢ {money.format(client.amount)}</small>
+                    <small>{client.service} ‚Ä¢ {money.format(client.amount)}</small>
                   </div>
                   <span className={`alert-dot alert-dot-${getAlert(client)}`}></span>
                 </div>
@@ -2339,33 +2339,33 @@ export default function App() {
     const incomePerHour = purpose.hoursWorked > 0 ? Math.round(totals.income / purpose.hoursWorked) : 0;
     const peaceScore = ["inspirada", "feliz"].includes(purpose.mood) ? 100 : ["cansada"].includes(purpose.mood) ? 50 : 20;
     const mentalAdvice = purpose.mood === "controladora"
-      ? "Cambia control por presencia. Elige una cosa que s√≠ depende de ti y suelta una que no."
+      ? "Cambia control por presencia. Elige una cosa que sÌ depende de ti y suelta una que no."
       : purpose.mood === "abrumada"
-        ? "Reduce la lista a una sola acci√≥n visible. No tienes que hacerlo todo hoy."
+        ? "Reduce la lista a una sola acciÛn visible. No tienes que hacerlo todo hoy."
         : purpose.mood === "cansada"
-          ? "Prot√©gete. El descanso tambi√©n es productividad."
-          : "Usa tu energ√≠a sin sobreexigirte. Deja espacio para gracia y descanso.";
+          ? "ProtÈgete. El descanso tambiÈn es productividad."
+          : "Usa tu energÌa sin sobreexigirte. Deja espacio para gracia y descanso.";
     const impactScore = Math.round(((familyDaysCount/7)*0.3 + (selfCareScore/4)*0.2 + (purpose.connectionMoments/3)*0.2 + (purpose.clientsImpacted/5)*0.15 + (purpose.systemsPercent/100)*0.15) * 100);
     
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Prop√≥sito &amp; Impacto</h2>
-          <p>Mide lo que realmente importa ‚Äî presencia, energ√≠a, sistemas e impacto</p>
+          <h2>PropÛsito &amp; Impacto</h2>
+          <p>Mide lo que realmente importa ó presencia, energÌa, sistemas e impacto</p>
         </div>
 
-        {/* Banner de afirmaci√≥n destacado */}
+        {/* Banner de afirmaciÛn destacado */}
         <div className="card" style={{background:"linear-gradient(135deg, #f8f4f1 0%, #fef9f6 100%)",border:"2px solid #e8d5c4",padding:"24px",marginBottom:"20px"}}>
           <div style={{display:"flex",alignItems:"center",gap:"16px",marginBottom:"12px"}}>
-            <span style={{fontSize:"32px"}}>‚ú®</span>
+            <span style={{fontSize:"32px"}}>?</span>
             <div style={{flex:1}}>
-              <p style={{fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--purple)",margin:0}}>Tu afirmaci√≥n de hoy</p>
+              <p style={{fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--purple)",margin:0}}>Tu afirmaciÛn de hoy</p>
               <h3 style={{fontSize:"18px",lineHeight:1.4,margin:"6px 0 0",color:"#6f2f4b"}}>{todayAffirmation}</h3>
             </div>
           </div>
           <div style={{display:"flex",gap:"20px",alignItems:"center",marginTop:"16px",paddingTop:"16px",borderTop:"1px solid #e8d5c4"}}>
             <div style={{flex:1}}>
-              <p style={{fontSize:"12px",color:"var(--muted)",margin:"0 0 4px"}}>√çndice de impacto esta semana</p>
+              <p style={{fontSize:"12px",color:"var(--muted)",margin:"0 0 4px"}}>Õndice de impacto esta semana</p>
               <Progress value={impactScore} tone="purple" />
             </div>
             <strong style={{fontSize:"28px",color:"var(--purple)"}}>{impactScore}%</strong>
@@ -2375,37 +2375,37 @@ export default function App() {
         {/* KPIs visuales mejorados */}
         <div className="purpose-kpi-grid">
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">üë©‚Äçüë¶</span>
+            <span className="purpose-kpi-icon">?????</span>
             <strong>{purpose.connectionMoments}</strong>
-            <small>momentos de conexi√≥n hoy</small>
-            <span className={purpose.connectionMoments >= 2 ? "kpi-badge good" : "kpi-badge alert"}>meta: 2‚Äì3</span>
+            <small>momentos de conexiÛn hoy</small>
+            <span className={purpose.connectionMoments >= 2 ? "kpi-badge good" : "kpi-badge alert"}>meta: 2ñ3</span>
           </div>
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">üí∏</span>
+            <span className="purpose-kpi-icon">??</span>
             <strong>{money.format(incomePerHour)}</strong>
             <small>ingreso por hora trabajada</small>
             <span className="kpi-badge neutral">KPI estrella</span>
           </div>
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">‚ö°</span>
+            <span className="purpose-kpi-icon">?</span>
             <strong>{purpose.energy === "alto" ? "Alta" : purpose.energy === "medio" ? "Media" : "Baja"}</strong>
-            <small>energ√≠a del d√≠a</small>
+            <small>energÌa del dÌa</small>
             <span className={peaceScore >= 80 ? "kpi-badge good" : peaceScore >= 50 ? "kpi-badge neutral" : "kpi-badge alert"}>{purpose.mood}</span>
           </div>
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">üë•</span>
+            <span className="purpose-kpi-icon">??</span>
             <strong>{purpose.clientsImpacted}</strong>
             <small>clientes impactados esta semana</small>
             <span className="kpi-badge neutral">impacto real</span>
           </div>
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">üìÖ</span>
+            <span className="purpose-kpi-icon">??</span>
             <strong>{familyDaysCount}</strong>
-            <small>d√≠as de presencia consciente</small>
+            <small>dÌas de presencia consciente</small>
             <span className={familyDaysCount >= 4 ? "kpi-badge good" : "kpi-badge alert"}>{familyDaysCount >= 4 ? "excelente" : "puedes mejorar"}</span>
           </div>
           <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">üîÑ</span>
+            <span className="purpose-kpi-icon">??</span>
             <strong>{purpose.systemsPercent}%</strong>
             <small>tareas sistematizadas</small>
             <span className={purpose.systemsPercent >= 60 ? "kpi-badge good" : "kpi-badge neutral"}>meta: 60%+</span>
@@ -2415,29 +2415,29 @@ export default function App() {
         <div className="purpose-sections">
 
           <div className="card purpose-block">
-            <h3>üë©‚Äçüë¶ Presencia real</h3>
-            <p className="helper-copy">Puedes pasar todo el d√≠a en casa y no estar. Mide lo que importa.</p>
+            <h3>????? Presencia real</h3>
+            <p className="helper-copy">Puedes pasar todo el dÌa en casa y no estar. Mide lo que importa.</p>
             <label className="purpose-field">
-              <span>Momentos de conexi√≥n hoy (sin celular, sin multitarea)</span>
+              <span>Momentos de conexiÛn hoy (sin celular, sin multitarea)</span>
               <div className="counter-row">
                 <button type="button" onClick={() => updatePurpose("connectionMoments", Math.max(0, (purpose.connectionMoments || 0) - 1))}>-</button>
                 <strong>{purpose.connectionMoments || 0}</strong>
                 <button type="button" onClick={() => updatePurpose("connectionMoments", (purpose.connectionMoments || 0) + 1)}>+</button>
               </div>
             </label>
-            <label className="purpose-field"><span>D√≠as de presencia consciente esta semana</span></label>
+            <label className="purpose-field"><span>DÌas de presencia consciente esta semana</span></label>
             <div className="week-checks">
               {["L","M","X","J","V","S","D"].map((day) => (
                 <button type="button" className={purpose.familyDays?.[day] ? "checked" : ""} key={day}
                   onClick={() => setPurpose((c) => ({ ...c, familyDays: { ...c.familyDays, [day]: !c.familyDays?.[day] } }))}>{day}</button>
               ))}
             </div>
-            <textarea className="purpose-textarea" placeholder="¬øC√≥mo crees que se sinti√≥ tu hijo/a esta semana? (reflexi√≥n libre)" value={purpose.mentalLoad} onChange={(e) => updatePurpose("mentalLoad", e.target.value)} />
+            <textarea className="purpose-textarea" placeholder="øCÛmo crees que se sintiÛ tu hijo/a esta semana? (reflexiÛn libre)" value={purpose.mentalLoad} onChange={(e) => updatePurpose("mentalLoad", e.target.value)} />
           </div>
 
           <div className="card purpose-block">
-            <h3>üí∞ Negocio inteligente</h3>
-            <p className="helper-copy">M√°s horas no es m√°s √©xito. Mide lo que escala.</p>
+            <h3>?? Negocio inteligente</h3>
+            <p className="helper-copy">M·s horas no es m·s Èxito. Mide lo que escala.</p>
             <label className="purpose-field">
               <span>Horas trabajadas esta semana</span>
               <input type="number" min="0" max="80" value={purpose.hoursWorked || 0} onChange={(e) => updatePurpose("hoursWorked", Number(e.target.value))} />
@@ -2447,22 +2447,22 @@ export default function App() {
               <strong>{incomePerHour > 0 ? money.format(incomePerHour) : "Registra horas"}</strong>
             </div>
             <label className="purpose-field">
-              <span>% de ingresos recurrentes (membres√≠as, productos escalables)</span>
+              <span>% de ingresos recurrentes (membresÌas, productos escalables)</span>
               <input type="range" min="0" max="100" value={purpose.recurringIncomePercent || 0} onChange={(e) => updatePurpose("recurringIncomePercent", Number(e.target.value))} />
               <small>{purpose.recurringIncomePercent || 0}% recurrente</small>
             </label>
           </div>
 
           <div className="card purpose-block">
-            <h3>‚ö° Energ√≠a y salud emocional</h3>
-            <p className="helper-copy">Si t√∫ te quiebras, todo se cae. Tu energ√≠a es un recurso.</p>
-            <label className="purpose-field"><span>Nivel de energ√≠a hoy</span></label>
+            <h3>? EnergÌa y salud emocional</h3>
+            <p className="helper-copy">Si t˙ te quiebras, todo se cae. Tu energÌa es un recurso.</p>
+            <label className="purpose-field"><span>Nivel de energÌa hoy</span></label>
             <div className="mood-grid">
               {["alto","medio","bajo"].map((e) => (
                 <button type="button" key={e} className={purpose.energy === e ? "selected" : ""} onClick={() => updatePurpose("energy", e)}>{e}</button>
               ))}
             </div>
-            <label className="purpose-field"><span>√Ånimo general</span></label>
+            <label className="purpose-field"><span>¡nimo general</span></label>
             <div className="mood-grid">
               {["abrumada","inspirada","feliz","controladora","cansada"].map((mood) => (
                 <button type="button" key={mood} className={purpose.mood === mood ? "selected" : ""} onClick={() => updatePurpose("mood", mood)}>{mood}</button>
@@ -2470,7 +2470,7 @@ export default function App() {
             </div>
             <p className="helper-copy" style={{marginTop:"10px"}}>{mentalAdvice}</p>
             <div className="selfcare-checks">
-              {[["water","Beb√≠ agua"],["walk","Camin√© 10 min"],["silence","Tuve silencio"],["devotional","Devocional / oraci√≥n"]].map(([key, label]) => (
+              {[["water","BebÌ agua"],["walk","CaminÈ 10 min"],["silence","Tuve silencio"],["devotional","Devocional / oraciÛn"]].map(([key, label]) => (
                 <label key={key} className="task-row">
                   <input type="checkbox" checked={!!purpose[key]} onChange={(e) => updatePurpose(key, e.target.checked)} />
                   <span>{label}</span>
@@ -2481,14 +2481,14 @@ export default function App() {
           </div>
 
           <div className="card purpose-block">
-            <h3>üèóÔ∏è Autoevaluaci√≥n de sistemas</h3>
-            <p className="helper-copy">No necesitas hacer m√°s, necesitas soltar m√°s. Eval√∫a una tarea a la vez.</p>
+            <h3>??? AutoevaluaciÛn de sistemas</h3>
+            <p className="helper-copy">No necesitas hacer m·s, necesitas soltar m·s. Eval˙a una tarea a la vez.</p>
             <SystemsDonut tasks={systemTasks} />
             <div className="carousel-wrap">
               <div className="carousel-header">
-                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.max(0, s - 1))} disabled={systemSlide === 0}>‚Üê</button>
+                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.max(0, s - 1))} disabled={systemSlide === 0}>?</button>
                 <span className="carousel-counter">{systemSlide + 1} de {systemTasks.length}</span>
-                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.min(systemTasks.length - 1, s + 1))} disabled={systemSlide === systemTasks.length - 1}>‚Üí</button>
+                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.min(systemTasks.length - 1, s + 1))} disabled={systemSlide === systemTasks.length - 1}>?</button>
               </div>
               {(() => {
                 const task = systemTasks[systemSlide];
@@ -2500,23 +2500,23 @@ export default function App() {
                     <div className="system-modes">
                       {task.canDelegate ? (
                         <>
-                          <button type="button" className={task.mode === "manual" ? "mode-btn active-manual" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "manual" } : t))}>üî¥ Lo hago yo</button>
-                          <button type="button" className={task.mode === "delegado" ? "mode-btn active-delegado" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "delegado" } : t))}>üü° Lo delego</button>
-                          <button type="button" className={task.mode === "automatizado" ? "mode-btn active-auto" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "automatizado" } : t))}>üü¢ Automatizado</button>
+                          <button type="button" className={task.mode === "manual" ? "mode-btn active-manual" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "manual" } : t))}>?? Lo hago yo</button>
+                          <button type="button" className={task.mode === "delegado" ? "mode-btn active-delegado" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "delegado" } : t))}>?? Lo delego</button>
+                          <button type="button" className={task.mode === "automatizado" ? "mode-btn active-auto" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "automatizado" } : t))}>?? Automatizado</button>
                         </>
                       ) : (
-                        <span className="mode-btn mode-protect">üíõ Presencia materna ‚Äî no se delega</span>
+                        <span className="mode-btn mode-protect">?? Presencia materna ó no se delega</span>
                       )}
                     </div>
                     {task.mode === "manual" && suggestion && (
                       <div className="system-suggestion">
                         {suggestion.protect ? (
-                          <p>üìå {suggestion.protect}</p>
+                          <p>?? {suggestion.protect}</p>
                         ) : (
                           <>
-                            {suggestion.auto && <p>‚ö° <strong>Automatizar:</strong> {suggestion.auto}</p>}
-                            {suggestion.delegate && <p>ü§ù <strong>Delegar:</strong> {suggestion.delegate}</p>}
-                            <a href="https://www.umpacademy.co/membresia" target="_blank" rel="noreferrer" className="ump-link">üéì Aprende c√≥mo en UMP Academy ‚Üí</a>
+                            {suggestion.auto && <p>? <strong>Automatizar:</strong> {suggestion.auto}</p>}
+                            {suggestion.delegate && <p>?? <strong>Delegar:</strong> {suggestion.delegate}</p>}
+                            <a href="https://www.umpacademy.co/membresia" target="_blank" rel="noreferrer" className="ump-link">?? Aprende cÛmo en UMP Academy ?</a>
                           </>
                         )}
                       </div>
@@ -2532,8 +2532,8 @@ export default function App() {
           </div>
 
           <div className="card purpose-block purpose-block-wide">
-            <h3>üìõ Prop√≥sito e impacto</h3>
-            <p className="helper-copy">5 clientes transformados &gt; 5.000 vistas vac√≠as.</p>
+            <h3>?? PropÛsito e impacto</h3>
+            <p className="helper-copy">5 clientes transformados &gt; 5.000 vistas vacÌas.</p>
             <div className="purpose-impact-grid">
               <label className="purpose-field">
                 <span>Clientes impactados esta semana</span>
@@ -2544,20 +2544,20 @@ export default function App() {
                 </div>
               </label>
               <label className="purpose-field">
-                <span>Nivel de pasi√≥n al crear / trabajar (1‚Äì5)</span>
+                <span>Nivel de pasiÛn al crear / trabajar (1ñ5)</span>
                 <div className="passion-stars">
                   {[1,2,3,4,5].map((n) => (
-                    <button type="button" key={n} className={n <= (purpose.passionLevel || 3) ? "star active" : "star"} onClick={() => updatePurpose("passionLevel", n)}>‚òÖ</button>
+                    <button type="button" key={n} className={n <= (purpose.passionLevel || 3) ? "star active" : "star"} onClick={() => updatePurpose("passionLevel", n)}>?</button>
                   ))}
                 </div>
               </label>
               <label className="purpose-field">
-                <span>Testimonio o transformaci√≥n de esta semana</span>
-                <textarea className="purpose-textarea" placeholder="¬øQu√© cambi√≥ en un cliente gracias a tu trabajo?" value={purpose.weekTestimony || ""} onChange={(e) => updatePurpose("weekTestimony", e.target.value)} />
+                <span>Testimonio o transformaciÛn de esta semana</span>
+                <textarea className="purpose-textarea" placeholder="øQuÈ cambiÛ en un cliente gracias a tu trabajo?" value={purpose.weekTestimony || ""} onChange={(e) => updatePurpose("weekTestimony", e.target.value)} />
               </label>
               <label className="purpose-field">
-                <span>Claridad de visi√≥n ‚Äî ¬øsabes hacia d√≥nde vas?</span>
-                <textarea className="purpose-textarea" placeholder="Mi visi√≥n esta semana es..." value={purpose.visionClarity || ""} onChange={(e) => updatePurpose("visionClarity", e.target.value)} />
+                <span>Claridad de visiÛn ó øsabes hacia dÛnde vas?</span>
+                <textarea className="purpose-textarea" placeholder="Mi visiÛn esta semana es..." value={purpose.visionClarity || ""} onChange={(e) => updatePurpose("visionClarity", e.target.value)} />
               </label>
             </div>
           </div>
@@ -2585,7 +2585,7 @@ export default function App() {
             <>
               <option>Gasto fijo</option>
               <option>Gasto variable</option>
-              <option>Inversi√≥n de negocio</option>
+              <option>InversiÛn de negocio</option>
             </>
           )}
         </select>
@@ -2608,7 +2608,7 @@ export default function App() {
           {banks.map((bank) => (
             <span key={bank} className="bank-chip">
               {bank}
-              <button type="button" className="bank-remove" onClick={() => removeBank(bank)}>√ó</button>
+              <button type="button" className="bank-remove" onClick={() => removeBank(bank)}>◊</button>
             </span>
           ))}
         </div>
@@ -2621,7 +2621,7 @@ export default function App() {
   function ReinvestmentCard() {
     return (
       <div className="card reinvestment-card">
-        <h3>Calculadora de reinversi√≥n</h3>
+        <h3>Calculadora de reinversiÛn</h3>
         <div className="reinvestment-amount">
           <span>Reserva sugerida</span>
           <strong>{money.format(reinvestmentAmount)}</strong>
@@ -2633,7 +2633,7 @@ export default function App() {
           <input type="range" min="0" max="50" value={reinvestmentPercent} onChange={(event) => updateBusinessSetting("reinvestmentPercent", event.target.value)} />
         </label>
         <input className="percent-input" type="number" min="0" max="100" value={reinvestmentPercent} onChange={(event) => updateBusinessSetting("reinvestmentPercent", event.target.value)} />
-        <p className="helper-copy">Usa esta reserva primero en marketing medible: anuncios, contenido que vende, email list o herramientas que traen clientas. No la mezcles con gustos personales del d√≠a.</p>
+        <p className="helper-copy">Usa esta reserva primero en marketing medible: anuncios, contenido que vende, email list o herramientas que traen clientas. No la mezcles con gustos personales del dÌa.</p>
       </div>
     );
   }
@@ -2641,14 +2641,14 @@ export default function App() {
   function DashboardSummaryCard() {
     return (
       <div className="card summary-card">
-        <h3>Resumen desde tus pesta√±as</h3>
+        <h3>Resumen desde tus pestaÒas</h3>
         <div className="summary-row"><span>Clientas</span><strong>{followUpClients.length}</strong><small>requieren seguimiento</small></div>
         <div className="summary-row"><span>Contenido</span><strong>{contentItems.length - publishedContent}</strong><small>piezas por mover</small></div>
         <div className="summary-row"><span>Hogar</span><strong>{pendingHomeTasks.length}</strong><small>pendientes visibles</small></div>
         <div className="summary-row"><span>Mejor ingreso</span><strong>{topIncomeSource?.category || "Sin datos"}</strong><small>{topIncomeSource?.description || "Registra ventas"}</small></div>
-        <div className="summary-row"><span>√Ånimo</span><strong>{purpose.mood}</strong><small>La semana pasada te sentiste as√≠. Esta semana puede ser m√°s liviana.</small></div>
+        <div className="summary-row"><span>¡nimo</span><strong>{purpose.mood}</strong><small>La semana pasada te sentiste asÌ. Esta semana puede ser m·s liviana.</small></div>
         <div className="summary-row"><span>Ventas cerradas</span><strong>{money.format(wonSalesTotal)}</strong><small>Registradas en clientas ganadas</small></div>
-        <div className="summary-row"><span>Presupuesto hogar</span><strong>{money.format(homeAvailable)}</strong><small>Disponible despu√©s de gastos y deudas</small></div>
+        <div className="summary-row"><span>Presupuesto hogar</span><strong>{money.format(homeAvailable)}</strong><small>Disponible despuÈs de gastos y deudas</small></div>
       </div>
     );
   }
@@ -2656,16 +2656,16 @@ export default function App() {
   function MovementList({ compact = false } = {}) {
     return (
       <div className={`card movement-card ${compact ? "compact" : ""}`}>
-        <h3>√öltimos movimientos</h3>
+        <h3>⁄ltimos movimientos</h3>
         {movements.slice(0, 10).map((movement) => (
           <div className="movement-row" key={movement.id}>
             <span className={movement.type}>{movement.type === "income" ? "+" : "-"}</span>
             <div>
               <strong>{movement.description}</strong>
-              <small>{movement.classification} ‚Ä¢ {movement.category} ‚Ä¢ {movement.bank || "Sin banco"}</small>
+              <small>{movement.classification} ï {movement.category} ï {movement.bank || "Sin banco"}</small>
             </div>
             <b>{money.format(movement.amount)}</b>
-            <button className="row-delete" type="button" onClick={() => confirmDelete("¬øEliminar este movimiento?", () => setMovements((current) => current.filter((item) => item.id !== movement.id)))}>√ó</button>
+            <button className="row-delete" type="button" onClick={() => confirmDelete("øEliminar este movimiento?", () => setMovements((current) => current.filter((item) => item.id !== movement.id)))}>◊</button>
           </div>
         ))}
       </div>
@@ -2673,7 +2673,7 @@ export default function App() {
   }
 
   function CalendarCard() {
-    return <div className="card calendar-card"><h3>Calendario de la semana</h3><small className="helper-copy">Semana actual</small>{weekDays.map((day) => <div className="calendar-row" key={day}><span>{day}</span><p>‚Äî</p></div>)}</div>;
+    return <div className="card calendar-card"><h3>Calendario de la semana</h3><small className="helper-copy">Semana actual</small>{weekDays.map((day) => <div className="calendar-row" key={day}><span>{day}</span><p>ó</p></div>)}</div>;
   }
 
   function renderWeeklyReport() {
@@ -2740,10 +2740,10 @@ export default function App() {
     const incomePerHour = purpose.hoursWorked > 0 ? Math.round(totals.income / purpose.hoursWorked) : 0;
     const salesGoalProgress = salesGoal > 0 ? Math.min(Math.round((wonSalesTotal / salesGoal) * 100), 100) : 0;
 
-    // Insights autom√°ticos
+    // Insights autom·ticos
     const insights = [];
 
-    // Mejor d√≠a de ingresos
+    // Mejor dÌa de ingresos
     const incomeByDay = {};
     currentMovements.filter((m) => m.type === "income").forEach((m) => {
       const day = new Date(m.createdAt).toLocaleDateString('es', { weekday: 'long' });
@@ -2751,7 +2751,7 @@ export default function App() {
     });
     const bestDay = Object.entries(incomeByDay).sort((a, b) => b[1] - a[1])[0];
     if (bestDay) {
-      insights.push(`Tu mejor d√≠a fue ${bestDay[0]} con ${money.format(bestDay[1])} en ingresos.`);
+      insights.push(`Tu mejor dÌa fue ${bestDay[0]} con ${money.format(bestDay[1])} en ingresos.`);
     }
 
     // Mejor fuente de leads
@@ -2782,17 +2782,17 @@ export default function App() {
       urgentAlerts.push({ type: "warning", message: `Solo ${currentContactsThisWeek} contactos esta semana. Necesitas acelerar el seguimiento.` });
     }
     if (hotLeads >= 3 && reportWeekOffset === 0) {
-      urgentAlerts.push({ type: "success", message: `Tienes ${hotLeads} leads calientes esperando. ¬°Es momento de cerrar ventas!` });
+      urgentAlerts.push({ type: "success", message: `Tienes ${hotLeads} leads calientes esperando. °Es momento de cerrar ventas!` });
     }
 
     const whatsappMsg = (client) => {
       const msgs = {
-        "Lead frio": `Hola ${client.name}! üëã Quer√≠a retomar el contacto contigo. ¬øSigues interesada en ${client.service}? Con gusto te cuento m√°s.`,
-        "Lead tibio": `Hola ${client.name}! üòä Estaba pensando en ti. ¬øC√≥mo vas? Me encantar√≠a contarte sobre ${client.service} y c√≥mo puede ayudarte.`,
-        "Lead caliente": `Hola ${client.name}! üî• Quer√≠a hacer seguimiento a nuestra conversaci√≥n sobre ${client.service}. ¬øTienes 5 minutos para hablar hoy?`,
-        "Venta ganada": `Hola ${client.name}! üíõ ¬øC√≥mo vas con ${client.service}? Quer√≠a saber c√≥mo te ha ido y si tienes alguna pregunta.`
+        "Lead frio": `Hola ${client.name}! ?? QuerÌa retomar el contacto contigo. øSigues interesada en ${client.service}? Con gusto te cuento m·s.`,
+        "Lead tibio": `Hola ${client.name}! ?? Estaba pensando en ti. øCÛmo vas? Me encantarÌa contarte sobre ${client.service} y cÛmo puede ayudarte.`,
+        "Lead caliente": `Hola ${client.name}! ?? QuerÌa hacer seguimiento a nuestra conversaciÛn sobre ${client.service}. øTienes 5 minutos para hablar hoy?`,
+        "Venta ganada": `Hola ${client.name}! ?? øCÛmo vas con ${client.service}? QuerÌa saber cÛmo te ha ido y si tienes alguna pregunta.`
       };
-      return encodeURIComponent(msgs[client.status] || `Hola ${client.name}, quer√≠a hacer seguimiento sobre ${client.service}.`);
+      return encodeURIComponent(msgs[client.status] || `Hola ${client.name}, querÌa hacer seguimiento sobre ${client.service}.`);
     };
 
     const urgentFollowUps = clients
@@ -2815,10 +2815,10 @@ export default function App() {
           <h2>Reporte semanal</h2>
           <div style={{display:"flex",alignItems:"center",gap:"12px",flexWrap:"wrap"}}>
             <button type="button" onClick={() => setReportWeekOffset(reportWeekOffset - 1)}
-              style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>‚Üê Anterior</button>
+              style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>? Anterior</button>
             <span style={{fontSize:"14px",fontWeight:700,color:"var(--purple)"}}>{formatDateRange(currentWeek.start, currentWeek.end)}</span>
             <button type="button" onClick={() => setReportWeekOffset(reportWeekOffset + 1)} disabled={reportWeekOffset >= 0}
-              style={{border:"1px solid var(--line)",background:reportWeekOffset >= 0 ? "#f5f5f5" : "#fff",borderRadius:"8px",padding:"6px 12px",cursor:reportWeekOffset >= 0 ? "not-allowed" : "pointer",fontSize:"13px",fontWeight:700,opacity:reportWeekOffset >= 0 ? 0.5 : 1}}>Siguiente ‚Üí</button>
+              style={{border:"1px solid var(--line)",background:reportWeekOffset >= 0 ? "#f5f5f5" : "#fff",borderRadius:"8px",padding:"6px 12px",cursor:reportWeekOffset >= 0 ? "not-allowed" : "pointer",fontSize:"13px",fontWeight:700,opacity:reportWeekOffset >= 0 ? 0.5 : 1}}>Siguiente ?</button>
             {reportWeekOffset !== 0 && (
               <button type="button" onClick={() => setReportWeekOffset(0)}
                 style={{border:"1px solid var(--purple)",background:"var(--purple-soft)",color:"var(--purple)",borderRadius:"8px",padding:"6px 12px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>Semana actual</button>
@@ -2832,7 +2832,7 @@ export default function App() {
             {urgentAlerts.map((alert, i) => (
               <div key={i} className={`alert-banner alert-${alert.type === "danger" ? "red" : alert.type === "warning" ? "orange" : "green"}`}
                 style={{fontSize:"15px",fontWeight:700,padding:"16px 20px"}}>
-                {alert.type === "danger" && "üö® "}{alert.type === "warning" && "‚ö†Ô∏è "}{alert.type === "success" && "üéØ "}
+                {alert.type === "danger" && "?? "}{alert.type === "warning" && "?? "}{alert.type === "success" && "?? "}
                 {alert.message}
               </div>
             ))}
@@ -2842,8 +2842,8 @@ export default function App() {
         {/* Resumen ejecutivo de 30 segundos */}
         <div className="card" style={{background:"linear-gradient(135deg, rgba(212,104,122,0.08), rgba(201,169,110,0.08))",border:"2px solid var(--purple)",marginBottom:"20px",padding:"24px"}}>
           <div style={{display:"flex",alignItems:"center",gap:"12px",marginBottom:"16px"}}>
-            <span style={{fontSize:"32px"}}>‚ö°</span>
-            <h3 style={{margin:0,fontSize:"22px",color:"var(--purple)"}}>Resumen ejecutivo ‚Äî 30 segundos</h3>
+            <span style={{fontSize:"32px"}}>?</span>
+            <h3 style={{margin:0,fontSize:"22px",color:"var(--purple)"}}>Resumen ejecutivo ó 30 segundos</h3>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit, minmax(200px, 1fr))",gap:"20px",marginBottom:"16px"}}>
             <div>
@@ -2852,7 +2852,7 @@ export default function App() {
                 <strong style={{fontSize:"32px",color:"var(--green)",lineHeight:1}}>{money.format(currentIncome)}</strong>
                 {incomeChange !== 0 && (
                   <span style={{fontSize:"16px",fontWeight:700,color:incomeChange > 0 ? "var(--green)" : "var(--pink)"}}>
-                    {incomeChange > 0 ? "‚Üë" : "‚Üì"} {Math.abs(incomeChange)}%
+                    {incomeChange > 0 ? "?" : "?"} {Math.abs(incomeChange)}%
                   </span>
                 )}
               </div>
@@ -2863,7 +2863,7 @@ export default function App() {
                 <strong style={{fontSize:"32px",color:"var(--purple)",lineHeight:1}}>{currentWon}</strong>
                 {wonChange !== 0 && (
                   <span style={{fontSize:"16px",fontWeight:700,color:wonChange > 0 ? "var(--green)" : "var(--pink)"}}>
-                    {wonChange > 0 ? "‚Üë" : "‚Üì"} {Math.abs(wonChange)}%
+                    {wonChange > 0 ? "?" : "?"} {Math.abs(wonChange)}%
                   </span>
                 )}
               </div>
@@ -2874,7 +2874,7 @@ export default function App() {
                 <strong style={{fontSize:"32px",color:"var(--orange)",lineHeight:1}}>{currentContactsThisWeek}</strong>
                 {contactsChange !== 0 && (
                   <span style={{fontSize:"16px",fontWeight:700,color:contactsChange > 0 ? "var(--green)" : "var(--pink)"}}>
-                    {contactsChange > 0 ? "‚Üë" : "‚Üì"} {Math.abs(contactsChange)}%
+                    {contactsChange > 0 ? "?" : "?"} {Math.abs(contactsChange)}%
                   </span>
                 )}
               </div>
@@ -2882,9 +2882,9 @@ export default function App() {
           </div>
           {insights.length > 0 && (
             <div style={{borderTop:"1px solid var(--line)",paddingTop:"16px"}}>
-              <p style={{margin:"0 0 10px",fontSize:"13px",fontWeight:800,textTransform:"uppercase",color:"var(--purple)"}}>üí° Insights clave</p>
+              <p style={{margin:"0 0 10px",fontSize:"13px",fontWeight:800,textTransform:"uppercase",color:"var(--purple)"}}>?? Insights clave</p>
               {insights.map((insight, i) => (
-                <p key={i} style={{margin:"6px 0",fontSize:"14px",lineHeight:1.6,color:"var(--ink)"}}>‚Ä¢ {insight}</p>
+                <p key={i} style={{margin:"6px 0",fontSize:"14px",lineHeight:1.6,color:"var(--ink)"}}>ï {insight}</p>
               ))}
             </div>
           )}
@@ -2894,7 +2894,7 @@ export default function App() {
         <div className="card" style={{marginBottom:"14px",display:"grid",gap:"12px"}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"12px"}}>
             <div>
-              <h3 style={{margin:0}}>üí∞ Meta de ventas del mes</h3>
+              <h3 style={{margin:0}}>?? Meta de ventas del mes</h3>
               <p className="helper-copy" style={{marginTop:"4px"}}>{money.format(wonSalesTotal)} cerrados de {money.format(salesGoal || monthlyGoal)} meta</p>
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
@@ -2914,7 +2914,7 @@ export default function App() {
         <div className="purpose-sections">
           {/* Resumen ventas */}
           <div className="card purpose-block">
-            <h3>üìä Ventas esta semana</h3>
+            <h3>?? Ventas esta semana</h3>
             <div className="purpose-stat"><span>Ingresos registrados</span><strong>{money.format(totals.income)}</strong></div>
             <div className="purpose-stat"><span>Utilidad</span><strong style={{color: totals.profit >= 0 ? "var(--green)" : "var(--pink)"}}>{money.format(totals.profit)}</strong></div>
             {(() => {
@@ -2931,7 +2931,7 @@ export default function App() {
               );
             })()}
             <div className="purpose-stat"><span>Ventas cerradas</span><strong>{totalWon} clientas</strong></div>
-            <div className="purpose-stat"><span>Tasa de conversi√≥n</span><strong>{conversionRate}%</strong></div>
+            <div className="purpose-stat"><span>Tasa de conversiÛn</span><strong>{conversionRate}%</strong></div>
             <div className="purpose-stat"><span>Leads calientes ahora</span><strong>{hotLeads}</strong></div>
             <div className="purpose-stat"><span>Contactos realizados</span><strong style={{color:"var(--green)"}}>{contactsThisWeek} esta semana</strong></div>
             <ProgressLabel label="Meta contactos (5)" value={Math.min(Math.round((contactsThisWeek/5)*100),100)} tone="green" />
@@ -2940,18 +2940,18 @@ export default function App() {
 
           {/* Recordatorios WhatsApp */}
           <div className="card purpose-block">
-            <h3>üí¨ Recordatorios de seguimiento</h3>
-            <p className="helper-copy">Toca el bot√≥n para abrir WhatsApp con el mensaje listo.</p>
+            <h3>?? Recordatorios de seguimiento</h3>
+            <p className="helper-copy">Toca el botÛn para abrir WhatsApp con el mensaje listo.</p>
             {urgentFollowUps.length === 0 && <p className="helper-copy">No hay leads activos por seguir.</p>}
             {urgentFollowUps.map((client) => (
               <div key={client.id} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--line)"}}>
                 <div>
                   <strong style={{fontSize:"14px"}}>{client.name}</strong>
-                  <small style={{display:"block",color:"var(--muted)"}}>{client.status} ‚Ä¢ {client.nextAction || "Hacer seguimiento"}</small>
+                  <small style={{display:"block",color:"var(--muted)"}}>{client.status} ï {client.nextAction || "Hacer seguimiento"}</small>
                 </div>
                 <a href={`https://wa.me/?text=${whatsappMsg(client)}`} target="_blank" rel="noreferrer"
                   style={{display:"inline-flex",alignItems:"center",gap:"6px",padding:"8px 12px",borderRadius:"8px",background:"#25d366",color:"#fff",fontSize:"12px",fontWeight:700,textDecoration:"none",whiteSpace:"nowrap"}}>
-                  üì≤ WhatsApp
+                  ?? WhatsApp
                 </a>
               </div>
             ))}
@@ -2959,27 +2959,27 @@ export default function App() {
 
           {/* Hogar */}
           <div className="card purpose-block">
-            <h3>üè† Hogar esta semana</h3>
+            <h3>?? Hogar esta semana</h3>
             <div className="purpose-stat"><span>Tareas completadas</span><strong>{completedHomeTasks}/{homeTasks.length}</strong></div>
             <ProgressLabel label="Progreso hogar" value={homeProgress} tone="orange" />
             <div className="purpose-stat"><span>Disponible familiar</span><strong>{money.format(homeAvailable)}</strong></div>
-            <div className="purpose-stat"><span>D√≠as de presencia</span><strong>{Object.values(purpose.familyDays || {}).filter(Boolean).length} d√≠as</strong></div>
+            <div className="purpose-stat"><span>DÌas de presencia</span><strong>{Object.values(purpose.familyDays || {}).filter(Boolean).length} dÌas</strong></div>
           </div>
 
-          {/* Energ√≠a */}
+          {/* EnergÌa */}
           <div className="card purpose-block">
-            <h3>‚ö° Energ√≠a y bienestar</h3>
-            <div className="purpose-stat"><span>√Ånimo de la semana</span><strong>{purpose.mood}</strong></div>
-            <div className="purpose-stat"><span>Nivel de energ√≠a</span><strong>{purpose.energy}</strong></div>
+            <h3>? EnergÌa y bienestar</h3>
+            <div className="purpose-stat"><span>¡nimo de la semana</span><strong>{purpose.mood}</strong></div>
+            <div className="purpose-stat"><span>Nivel de energÌa</span><strong>{purpose.energy}</strong></div>
             <ProgressLabel label="Autocuidado" value={Math.round((selfCareScore / 4) * 100)} tone="green" />
             <div className="purpose-stat"><span>Horas trabajadas</span><strong>{purpose.hoursWorked || 0}h</strong></div>
-            <div className="purpose-stat"><span>Momentos de conexi√≥n</span><strong>{purpose.connectionMoments || 0}</strong></div>
+            <div className="purpose-stat"><span>Momentos de conexiÛn</span><strong>{purpose.connectionMoments || 0}</strong></div>
           </div>
 
           {/* Fuentes de origen */}
           <div className="card purpose-block purpose-block-wide">
-            <h3>üìç ¬øDe d√≥nde vienen tus clientas?</h3>
-            <p className="helper-copy">Invierte tu tiempo donde m√°s resultado produce.</p>
+            <h3>?? øDe dÛnde vienen tus clientas?</h3>
+            <p className="helper-copy">Invierte tu tiempo donde m·s resultado produce.</p>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"10px",marginTop:"8px"}}>
               {Object.entries(sourceCounts).sort((a,b) => b[1]-a[1]).map(([src, count]) => (
                 <div key={src} style={{border:"1px solid var(--line)",borderRadius:"12px",padding:"14px",textAlign:"center",background:"rgba(255,255,255,0.8)"}}>
@@ -2989,7 +2989,7 @@ export default function App() {
                   <small style={{color:"var(--muted)"}}>{Math.round((count/totalLeads)*100)}%</small>
                 </div>
               ))}
-              {Object.keys(sourceCounts).length === 0 && <p className="helper-copy">Agrega clientas con fuente de origen para ver este an√°lisis.</p>}
+              {Object.keys(sourceCounts).length === 0 && <p className="helper-copy">Agrega clientas con fuente de origen para ver este an·lisis.</p>}
             </div>
           </div>
         </div>
@@ -3000,15 +3000,15 @@ export default function App() {
   function renderPricing() {
     const plans = [
       { id: "free", name: "Gratis", price: "$0", period: "", color: "var(--muted)",
-        features: [`${PLAN_LIMITS.free.movements} movimientos/mes`,`${PLAN_LIMITS.free.clients} clientes`,`${PLAN_LIMITS.free.content} contenidos/mes`,`${PLAN_LIMITS.free.homeTasks} tareas hogar/mes`,"Sincronizaci√≥n en la nube","Todas las funciones b√°sicas"] },
+        features: [`${PLAN_LIMITS.free.movements} movimientos/mes`,`${PLAN_LIMITS.free.clients} clientes`,`${PLAN_LIMITS.free.content} contenidos/mes`,`${PLAN_LIMITS.free.homeTasks} tareas hogar/mes`,"SincronizaciÛn en la nube","Todas las funciones b·sicas"] },
       { id: "emprendedora", name: "Emprendedora", price: PLAN_PRICES.emprendedora.usd, period: "/mes USD",
-        priceCop: PLAN_PRICES.emprendedora.cop+" COP/mes", priceYear: PLAN_PRICES.emprendedora.usdYear+" USD/a√±o (2 meses gratis)",
+        priceCop: PLAN_PRICES.emprendedora.cop+" COP/mes", priceYear: PLAN_PRICES.emprendedora.usdYear+" USD/aÒo (2 meses gratis)",
         color: "var(--pink)",
         features: [`${PLAN_LIMITS.emprendedora.movements} movimientos/mes`,`${PLAN_LIMITS.emprendedora.clients} clientes`,`${PLAN_LIMITS.emprendedora.content} contenidos/mes`,`${PLAN_LIMITS.emprendedora.homeTasks} tareas hogar/mes`,"Exportar Excel y PDF","Historial 6 meses","Soporte email 48h"] },
       { id: "ceo", name: "CEO", price: PLAN_PRICES.ceo.usd, period: "/mes USD",
-        priceCop: PLAN_PRICES.ceo.cop+" COP/mes", priceYear: PLAN_PRICES.ceo.usdYear+" USD/a√±o (2 meses gratis)",
+        priceCop: PLAN_PRICES.ceo.cop+" COP/mes", priceYear: PLAN_PRICES.ceo.usdYear+" USD/aÒo (2 meses gratis)",
         badge: "RECOMENDADO", color: "var(--purple)",
-        features: ["Todo ilimitado","Exportar Excel y PDF","Historial ilimitado","Calculadora de precio de servicios ‚ú®","Proyecci√≥n de ingresos ‚ú®","Temporizador Pomodoro flotante ‚ú®","Acceso anticipado a nuevas funciones","Soporte prioritario 24h"] }
+        features: ["Todo ilimitado","Exportar Excel y PDF","Historial ilimitado","Calculadora de precio de servicios ?","ProyecciÛn de ingresos ?","Temporizador Pomodoro flotante ?","Acceso anticipado a nuevas funciones","Soporte prioritario 24h"] }
     ];
     return (
       <section className="panel workspace-panel">
@@ -3027,14 +3027,14 @@ export default function App() {
                   {plan.priceYear&&<p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>{plan.priceYear}</p>}
                   {!plan.priceCop&&<p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Para empezar a organizarte</p>}
                   <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
-                    {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>‚úì</span><span>{f}</span></div>))}
+                    {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>?</span><span>{f}</span></div>))}
                   </div>
                   {isCurrent?(
                     <div style={{padding:"10px",background:"rgba(0,0,0,0.05)",borderRadius:"8px",textAlign:"center",color:plan.color,fontWeight:700,fontSize:"14px"}}>Plan actual</div>
                   ):plan.id==="free"?(
                     <button className="primary-button" onClick={()=>setUserPlan("free")} style={{width:"100%",background:"var(--muted)"}}>Cambiar a gratis</button>
                   ):(
-                    <button className="primary-button" style={{width:"100%",background:plan.color,fontSize:"15px",opacity:0.7,cursor:"not-allowed"}} disabled>Pr√≥ximamente</button>
+                    <button className="primary-button" style={{width:"100%",background:plan.color,fontSize:"15px",opacity:0.7,cursor:"not-allowed"}} disabled>PrÛximamente</button>
                   )}
                 </div>
               </div>
@@ -3043,11 +3043,11 @@ export default function App() {
         </div>
 
         <div className="card" style={{maxWidth:"1000px",margin:"28px auto 0",padding:"24px"}}>
-          <h3 style={{margin:"0 0 16px"}}>Tu uso actual ‚Äî Plan {effectivePlan==="free"?"Gratis":effectivePlan==="emprendedora"?"Emprendedora":"CEO"}</h3>
+          <h3 style={{margin:"0 0 16px"}}>Tu uso actual ó Plan {effectivePlan==="free"?"Gratis":effectivePlan==="emprendedora"?"Emprendedora":"CEO"}</h3>
           <div style={{display:"grid",gap:"14px"}}>
             {[{label:"Movimientos",used:movements.length,limit:currentLimits.movements},{label:"Clientes",used:clients.length,limit:currentLimits.clients},{label:"Contenidos",used:contentItems.length,limit:currentLimits.content},{label:"Tareas hogar",used:homeTasks.length,limit:currentLimits.homeTasks}].map(({label,used,limit})=>(
               <div key={label}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:"6px",fontSize:"14px"}}><span>{label}</span><span><strong>{used}</strong> / {limit===Infinity?"‚àû":limit}</span></div>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:"6px",fontSize:"14px"}}><span>{label}</span><span><strong>{used}</strong> / {limit===Infinity?"8":limit}</span></div>
                 <Progress value={limit===Infinity?0:Math.min(Math.round((used/limit)*100),100)} tone={limit!==Infinity&&used>=limit?"pink":"green"} />
               </div>
             ))}
@@ -3055,20 +3055,20 @@ export default function App() {
         </div>
 
         <div className="card" style={{maxWidth:"1000px",margin:"20px auto 0",padding:"24px",border:"2px dashed var(--line)"}}>
-          <h3 style={{margin:"0 0 8px"}}>üéüÔ∏è ¬øTienes un c√≥digo de acceso beta?</h3>
-          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu c√≥digo de acceso CEO gratis por 90 d√≠as.</p>
+          <h3 style={{margin:"0 0 8px"}}>??? øTienes un cÛdigo de acceso beta?</h3>
+          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu cÛdigo de acceso CEO gratis por 90 dÌas.</p>
           {!showBetaInput?(
-            <button className="primary-button" style={{padding:"10px 24px"}} onClick={()=>setShowBetaInput(true)}>Tengo un c√≥digo</button>
+            <button className="primary-button" style={{padding:"10px 24px"}} onClick={()=>setShowBetaInput(true)}>Tengo un cÛdigo</button>
           ):(
             <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
-              <input placeholder="Ingresa tu c√≥digo de acceso" value={betaCode} onChange={(e)=>setBetaCode(e.target.value)} style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
+              <input placeholder="Ingresa tu cÛdigo de acceso" value={betaCode} onChange={(e)=>setBetaCode(e.target.value)} style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
               <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
               {betaCodeError&&<p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
           )}
           {isBetaUser&&(effectivePlan==="ceo"||effectivePlan==="premium")&&(
             <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
-              ‚úÖ C√≥digo activo ‚Äî Plan CEO gratis por {betaDaysLeft} d√≠as m√°s
+              ? CÛdigo activo ó Plan CEO gratis por {betaDaysLeft} dÌas m·s
             </div>
           )}
         </div>
@@ -3098,28 +3098,28 @@ export default function App() {
               
               <div style={{display:"grid",gap:"12px",marginBottom:"24px"}}>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
                   <span>{PLAN_LIMITS.free.movements} movimientos financieros/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
                   <span>{PLAN_LIMITS.free.clients} clientes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
                   <span>{PLAN_LIMITS.free.content} contenidos/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
                   <span>{PLAN_LIMITS.free.homeTasks} tareas del hogar/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
-                  <span>Sincronizaci√≥n en la nube</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
+                  <span>SincronizaciÛn en la nube</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--green)",fontSize:"18px"}}>‚úì</span>
-                  <span>Todas las funcionalidades b√°sicas</span>
+                  <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
+                  <span>Todas las funcionalidades b·sicas</span>
                 </div>
               </div>
               
@@ -3140,35 +3140,35 @@ export default function App() {
             <div style={{padding:"24px"}}>
               <h3 style={{margin:"0 0 8px",fontSize:"24px",color:"var(--purple)"}}>Plan Premium</h3>
               <div style={{fontSize:"36px",fontWeight:800,color:"var(--purple)",lineHeight:1,marginBottom:"4px"}}>$29.900</div>
-              <p style={{fontSize:"14px",color:"var(--muted)",marginBottom:"24px"}}>COP/mes ‚Ä¢ $7.99 USD/mes</p>
+              <p style={{fontSize:"14px",color:"var(--muted)",marginBottom:"24px"}}>COP/mes ï $7.99 USD/mes</p>
               
               <div style={{display:"grid",gap:"12px",marginBottom:"24px"}}>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
                   <span><strong>Movimientos ilimitados</strong></span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
                   <span><strong>Clientes ilimitados</strong></span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
                   <span><strong>Contenido ilimitado</strong></span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
                   <span><strong>Tareas ilimitadas</strong></span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
-                  <span>Sincronizaci√≥n en la nube</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
+                  <span>SincronizaciÛn en la nube</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
                   <span>Soporte prioritario</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                  <span style={{color:"var(--purple)",fontSize:"18px"}}>‚úì</span>
+                  <span style={{color:"var(--purple)",fontSize:"18px"}}>?</span>
                   <span>Acceso anticipado a nuevas funciones</span>
                 </div>
               </div>
@@ -3189,28 +3189,28 @@ export default function App() {
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Movimientos financieros</span>
-                <span><strong>{movements.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.movements : "‚àû"}</span>
+                <span><strong>{movements.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.movements : "8"}</span>
               </div>
               <Progress value={userPlan === "free" ? Math.min(Math.round((movements.length / PLAN_LIMITS.free.movements) * 100), 100) : 0} tone={movements.length >= PLAN_LIMITS.free.movements ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Clientes</span>
-                <span><strong>{clients.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.clients : "‚àû"}</span>
+                <span><strong>{clients.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.clients : "8"}</span>
               </div>
               <Progress value={userPlan === "free" ? Math.min(Math.round((clients.length / PLAN_LIMITS.free.clients) * 100), 100) : 0} tone={clients.length >= PLAN_LIMITS.free.clients ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Contenidos</span>
-                <span><strong>{contentItems.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.content : "‚àû"}</span>
+                <span><strong>{contentItems.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.content : "8"}</span>
               </div>
               <Progress value={userPlan === "free" ? Math.min(Math.round((contentItems.length / PLAN_LIMITS.free.content) * 100), 100) : 0} tone={contentItems.length >= PLAN_LIMITS.free.content ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Tareas del hogar</span>
-                <span><strong>{homeTasks.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.homeTasks : "‚àû"}</span>
+                <span><strong>{homeTasks.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.homeTasks : "8"}</span>
               </div>
               <Progress value={userPlan === "free" ? Math.min(Math.round((homeTasks.length / PLAN_LIMITS.free.homeTasks) * 100), 100) : 0} tone={homeTasks.length >= PLAN_LIMITS.free.homeTasks ? "pink" : "green"} />
             </div>
@@ -3222,34 +3222,34 @@ export default function App() {
           <h3 style={{margin:"0 0 20px"}}>Preguntas frecuentes</h3>
           <div style={{display:"grid",gap:"16px"}}>
             <div>
-              <strong style={{display:"block",marginBottom:"6px"}}>¬øPuedo cambiar de plan en cualquier momento?</strong>
-              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>S√≠, puedes actualizar o cambiar tu plan cuando quieras desde esta p√°gina.</p>
+              <strong style={{display:"block",marginBottom:"6px"}}>øPuedo cambiar de plan en cualquier momento?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>SÌ, puedes actualizar o cambiar tu plan cuando quieras desde esta p·gina.</p>
             </div>
             <div>
-              <strong style={{display:"block",marginBottom:"6px"}}>¬øQu√© pasa si alcanzo el l√≠mite del plan gratis?</strong>
-              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Te mostraremos una notificaci√≥n invit√°ndote a actualizar a Premium para continuar agregando m√°s datos.</p>
+              <strong style={{display:"block",marginBottom:"6px"}}>øQuÈ pasa si alcanzo el lÌmite del plan gratis?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Te mostraremos una notificaciÛn invit·ndote a actualizar a Premium para continuar agregando m·s datos.</p>
             </div>
             <div>
-              <strong style={{display:"block",marginBottom:"6px"}}>¬øLos datos se mantienen al cambiar de plan?</strong>
-              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>S√≠, todos tus datos se mantienen intactos al cambiar entre planes.</p>
+              <strong style={{display:"block",marginBottom:"6px"}}>øLos datos se mantienen al cambiar de plan?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>SÌ, todos tus datos se mantienen intactos al cambiar entre planes.</p>
             </div>
             <div>
-              <strong style={{display:"block",marginBottom:"6px"}}>¬øC√≥mo realizo el pago?</strong>
-              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>Pr√≥ximamente integraremos Mercado Pago (Colombia) y PayPal (internacional) como pasarelas de pago seguras.</p>
+              <strong style={{display:"block",marginBottom:"6px"}}>øCÛmo realizo el pago?</strong>
+              <p style={{margin:0,color:"var(--muted)",lineHeight:1.6}}>PrÛximamente integraremos Mercado Pago (Colombia) y PayPal (internacional) como pasarelas de pago seguras.</p>
             </div>
           </div>
         </div>
 
-        {/* C√≥digo beta */}
+        {/* CÛdigo beta */}
         <div className="card" style={{maxWidth:"900px",margin:"24px auto 0",padding:"24px",border:"2px dashed var(--line)"}}>
-          <h3 style={{margin:"0 0 8px"}}>¬øTienes un c√≥digo de acceso beta?</h3>
-          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu c√≥digo de acceso Premium gratis por 90 d√≠as.</p>
+          <h3 style={{margin:"0 0 8px"}}>øTienes un cÛdigo de acceso beta?</h3>
+          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu cÛdigo de acceso Premium gratis por 90 dÌas.</p>
           {!showBetaInput ? (
-            <button className="primary-button" style={{padding:"10px 24px"}} onClick={() => setShowBetaInput(true)}>Tengo un c√≥digo</button>
+            <button className="primary-button" style={{padding:"10px 24px"}} onClick={() => setShowBetaInput(true)}>Tengo un cÛdigo</button>
           ) : (
             <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
               <input
-                placeholder="Ingresa tu c√≥digo (ej: MAMACEO2026)"
+                placeholder="Ingresa tu cÛdigo (ej: MAMACEO2026)"
                 value={betaCode}
                 onChange={(e) => setBetaCode(e.target.value)}
                 style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit",fontSize:"15px"}}
@@ -3261,7 +3261,7 @@ export default function App() {
           )}
           {isBetaUser && effectivePlan === "premium" && (
             <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
-              ‚úÖ C√≥digo activo ‚Äî Premium gratis por {betaDaysLeft} d√≠as m√°s
+              ? CÛdigo activo ó Premium gratis por {betaDaysLeft} dÌas m·s
             </div>
           )}
         </div>
@@ -3314,7 +3314,7 @@ function SystemsDonut({ tasks }) {
 }
 
 function MetricCard({ title, value, change, tone }) {
-  return <article className={`metric-card ${tone}`}><span className="metric-icon">‚óè</span><p>{title}</p><strong>{value}</strong><small>{change}</small></article>;
+  return <article className={`metric-card ${tone}`}><span className="metric-icon">?</span><p>{title}</p><strong>{value}</strong><small>{change}</small></article>;
 }
 
 function DataRow({ title, meta, value, onDelete }) {
@@ -3336,7 +3336,7 @@ function MiniGoal({ label, amount, value }) {
 function LineChart({ movements }) {
   const last7 = movements.slice(0, 7).reverse();
   if (last7.length === 0) {
-    return <div className="line-chart-empty">Agrega movimientos para ver la gr√°fica</div>;
+    return <div className="line-chart-empty">Agrega movimientos para ver la gr·fica</div>;
   }
   const incomes = last7.map((m) => m.type === "income" ? m.amount : 0);
   const expenses = last7.map((m) => m.type === "expense" ? m.amount : 0);
@@ -3376,54 +3376,54 @@ function LineChart({ movements }) {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>T√©rminos y Condiciones</h2>
-          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>‚Üê Volver</button>
+          <h2>TÈrminos y Condiciones</h2>
+          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>? Volver</button>
         </div>
         <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
-          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>√öltima actualizaci√≥n: 5 de junio de 2026</p>
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>⁄ltima actualizaciÛn: 5 de junio de 2026</p>
           
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Aceptaci√≥n de los T√©rminos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Al acceder y utilizar Mam√° CEO App, aceptas estar sujeto a estos T√©rminos y Condiciones. Si no est√°s de acuerdo con alguna parte de estos t√©rminos, no deber√≠as usar la aplicaci√≥n.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. AceptaciÛn de los TÈrminos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Al acceder y utilizar Mam· CEO App, aceptas estar sujeto a estos TÈrminos y Condiciones. Si no est·s de acuerdo con alguna parte de estos tÈrminos, no deberÌas usar la aplicaciÛn.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. Descripci√≥n del Servicio</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam√° CEO App es una plataforma de gesti√≥n integral dise√±ada para mam√°s emprendedoras que permite organizar y administrar su negocio, hogar y prop√≥sito en un solo lugar. El servicio incluye herramientas para gesti√≥n financiera, seguimiento de clientes, planificaci√≥n de contenido, organizaci√≥n del hogar y seguimiento de objetivos personales.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. DescripciÛn del Servicio</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam· CEO App es una plataforma de gestiÛn integral diseÒada para mam·s emprendedoras que permite organizar y administrar su negocio, hogar y propÛsito en un solo lugar. El servicio incluye herramientas para gestiÛn financiera, seguimiento de clientes, planificaciÛn de contenido, organizaciÛn del hogar y seguimiento de objetivos personales.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. Registro y Cuenta de Usuario</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para utilizar Mam√° CEO App, debes crear una cuenta proporcionando informaci√≥n precisa y completa. Eres responsable de mantener la confidencialidad de tu contrase√±a y de todas las actividades que ocurran bajo tu cuenta. Debes notificarnos inmediatamente sobre cualquier uso no autorizado de tu cuenta.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para utilizar Mam· CEO App, debes crear una cuenta proporcionando informaciÛn precisa y completa. Eres responsable de mantener la confidencialidad de tu contraseÒa y de todas las actividades que ocurran bajo tu cuenta. Debes notificarnos inmediatamente sobre cualquier uso no autorizado de tu cuenta.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Uso Aceptable</h3>
-          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Te comprometes a utilizar Mam√° CEO App √∫nicamente para fines legales y de acuerdo con estos T√©rminos. No debes:</p>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Te comprometes a utilizar Mam· CEO App ˙nicamente para fines legales y de acuerdo con estos TÈrminos. No debes:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li>Usar la aplicaci√≥n de manera que viole leyes locales, nacionales o internacionales</li>
-            <li>Intentar acceder sin autorizaci√≥n a otras cuentas, sistemas o redes</li>
+            <li>Usar la aplicaciÛn de manera que viole leyes locales, nacionales o internacionales</li>
+            <li>Intentar acceder sin autorizaciÛn a otras cuentas, sistemas o redes</li>
             <li>Interferir o interrumpir el servicio o los servidores conectados al servicio</li>
-            <li>Transmitir virus, malware o cualquier c√≥digo malicioso</li>
-            <li>Usar la aplicaci√≥n para prop√≥sitos comerciales no autorizados</li>
+            <li>Transmitir virus, malware o cualquier cÛdigo malicioso</li>
+            <li>Usar la aplicaciÛn para propÛsitos comerciales no autorizados</li>
           </ul>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Propiedad Intelectual</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todo el contenido, caracter√≠sticas y funcionalidad de Mam√° CEO App, incluyendo pero no limitado a texto, gr√°ficos, logos, iconos, im√°genes y software, son propiedad exclusiva de UMP S.A.S y est√°n protegidos por las leyes de propiedad intelectual de Colombia y tratados internacionales.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todo el contenido, caracterÌsticas y funcionalidad de Mam· CEO App, incluyendo pero no limitado a texto, gr·ficos, logos, iconos, im·genes y software, son propiedad exclusiva de UMP S.A.S y est·n protegidos por las leyes de propiedad intelectual de Colombia y tratados internacionales.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Privacidad y Protecci√≥n de Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu privacidad es importante para nosotros. El uso de tu informaci√≥n personal est√° regido por nuestra Pol√≠tica de Privacidad, que forma parte integral de estos T√©rminos. Al usar Mam√° CEO App, aceptas la recolecci√≥n y uso de tu informaci√≥n de acuerdo con nuestra Pol√≠tica de Privacidad y la Ley 1581 de 2012 de Protecci√≥n de Datos Personales de Colombia.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Privacidad y ProtecciÛn de Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu privacidad es importante para nosotros. El uso de tu informaciÛn personal est· regido por nuestra PolÌtica de Privacidad, que forma parte integral de estos TÈrminos. Al usar Mam· CEO App, aceptas la recolecciÛn y uso de tu informaciÛn de acuerdo con nuestra PolÌtica de Privacidad y la Ley 1581 de 2012 de ProtecciÛn de Datos Personales de Colombia.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. Suscripciones y Pagos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam√° CEO App puede ofrecer diferentes planes de suscripci√≥n. Los precios, caracter√≠sticas y t√©rminos de cada plan se especificar√°n claramente antes de la compra. Las suscripciones se renovar√°n autom√°ticamente a menos que se cancelen antes de la fecha de renovaci√≥n. Todos los pagos son procesados de forma segura a trav√©s de proveedores de pago certificados.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam· CEO App puede ofrecer diferentes planes de suscripciÛn. Los precios, caracterÌsticas y tÈrminos de cada plan se especificar·n claramente antes de la compra. Las suscripciones se renovar·n autom·ticamente a menos que se cancelen antes de la fecha de renovaciÛn. Todos los pagos son procesados de forma segura a travÈs de proveedores de pago certificados.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. Cancelaci√≥n y Reembolsos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Puedes cancelar tu suscripci√≥n en cualquier momento desde la configuraci√≥n de tu cuenta. La cancelaci√≥n ser√° efectiva al final del per√≠odo de facturaci√≥n actual. No se ofrecen reembolsos por per√≠odos de suscripci√≥n parcialmente utilizados, excepto cuando lo requiera la ley aplicable.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. CancelaciÛn y Reembolsos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Puedes cancelar tu suscripciÛn en cualquier momento desde la configuraciÛn de tu cuenta. La cancelaciÛn ser· efectiva al final del perÌodo de facturaciÛn actual. No se ofrecen reembolsos por perÌodos de suscripciÛn parcialmente utilizados, excepto cuando lo requiera la ley aplicable.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Limitaci√≥n de Responsabilidad</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam√° CEO App se proporciona "tal cual" y "seg√∫n disponibilidad". No garantizamos que el servicio ser√° ininterrumpido, seguro o libre de errores. En ning√∫n caso UMP S.A.S ser√° responsable por da√±os indirectos, incidentales, especiales, consecuentes o punitivos, incluyendo p√©rdida de beneficios, datos, uso o cualquier otra p√©rdida intangible.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. LimitaciÛn de Responsabilidad</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam· CEO App se proporciona "tal cual" y "seg˙n disponibilidad". No garantizamos que el servicio ser· ininterrumpido, seguro o libre de errores. En ning˙n caso UMP S.A.S ser· responsable por daÒos indirectos, incidentales, especiales, consecuentes o punitivos, incluyendo pÈrdida de beneficios, datos, uso o cualquier otra pÈrdida intangible.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Modificaciones del Servicio y T√©rminos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Nos reservamos el derecho de modificar o discontinuar, temporal o permanentemente, el servicio (o cualquier parte del mismo) con o sin previo aviso. Tambi√©n podemos actualizar estos T√©rminos peri√≥dicamente. Te notificaremos sobre cambios significativos publicando los nuevos T√©rminos en la aplicaci√≥n. Tu uso continuado del servicio despu√©s de dichos cambios constituye tu aceptaci√≥n de los nuevos T√©rminos.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Modificaciones del Servicio y TÈrminos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Nos reservamos el derecho de modificar o discontinuar, temporal o permanentemente, el servicio (o cualquier parte del mismo) con o sin previo aviso. TambiÈn podemos actualizar estos TÈrminos periÛdicamente. Te notificaremos sobre cambios significativos publicando los nuevos TÈrminos en la aplicaciÛn. Tu uso continuado del servicio despuÈs de dichos cambios constituye tu aceptaciÛn de los nuevos TÈrminos.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Ley Aplicable y Jurisdicci√≥n</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Estos T√©rminos se regir√°n e interpretar√°n de acuerdo con las leyes de la Rep√∫blica de Colombia. Cualquier disputa relacionada con estos T√©rminos estar√° sujeta a la jurisdicci√≥n exclusiva del Centro de Arbitraje y Conciliaci√≥n de la C√°mara de Comercio de Bogot√°.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Ley Aplicable y JurisdicciÛn</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Estos TÈrminos se regir·n e interpretar·n de acuerdo con las leyes de la Rep˙blica de Colombia. Cualquier disputa relacionada con estos TÈrminos estar· sujeta a la jurisdicciÛn exclusiva del Centro de Arbitraje y ConciliaciÛn de la C·mara de Comercio de Bogot·.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre estos T√©rminos y Condiciones, puedes contactarnos a trav√©s de:</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre estos TÈrminos y Condiciones, puedes contactarnos a travÈs de:</p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S</strong></p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Sitio web: www.umpacademy.co</p>
@@ -3436,87 +3436,87 @@ function LineChart({ movements }) {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Pol√≠tica de Privacidad</h2>
-          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>‚Üê Volver</button>
+          <h2>PolÌtica de Privacidad</h2>
+          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>? Volver</button>
         </div>
         <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
-          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>√öltima actualizaci√≥n: 5 de junio de 2026</p>
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>⁄ltima actualizaciÛn: 5 de junio de 2026</p>
           
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Introducci√≥n</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>En UMP S.A.S, operadores de Mam√° CEO App, nos comprometemos a proteger tu privacidad y tus datos personales. Esta Pol√≠tica de Privacidad explica c√≥mo recopilamos, usamos, compartimos y protegemos tu informaci√≥n personal de acuerdo con la Ley 1581 de 2012 de Protecci√≥n de Datos Personales de Colombia y el Reglamento General de Protecci√≥n de Datos (GDPR) cuando aplique.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. IntroducciÛn</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>En UMP S.A.S, operadores de Mam· CEO App, nos comprometemos a proteger tu privacidad y tus datos personales. Esta PolÌtica de Privacidad explica cÛmo recopilamos, usamos, compartimos y protegemos tu informaciÛn personal de acuerdo con la Ley 1581 de 2012 de ProtecciÛn de Datos Personales de Colombia y el Reglamento General de ProtecciÛn de Datos (GDPR) cuando aplique.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. Informaci√≥n que Recopilamos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Recopilamos la siguiente informaci√≥n cuando usas Mam√° CEO App:</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. InformaciÛn que Recopilamos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Recopilamos la siguiente informaciÛn cuando usas Mam· CEO App:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li><strong>Informaci√≥n de cuenta:</strong> Nombre, correo electr√≥nico, contrase√±a (encriptada)</li>
-            <li><strong>Informaci√≥n de perfil:</strong> Nombre del negocio, tipo de negocio, etapa empresarial, metas financieras</li>
-            <li><strong>Datos de uso:</strong> Informaci√≥n sobre c√≥mo usas la aplicaci√≥n, incluyendo movimientos financieros, clientes, contenido, tareas del hogar y objetivos personales que t√∫ ingresas voluntariamente</li>
-            <li><strong>Informaci√≥n t√©cnica:</strong> Direcci√≥n IP, tipo de navegador, sistema operativo, identificadores de dispositivo</li>
-            <li><strong>Cookies y tecnolog√≠as similares:</strong> Usamos cookies para mejorar tu experiencia y mantener tu sesi√≥n activa</li>
+            <li><strong>InformaciÛn de cuenta:</strong> Nombre, correo electrÛnico, contraseÒa (encriptada)</li>
+            <li><strong>InformaciÛn de perfil:</strong> Nombre del negocio, tipo de negocio, etapa empresarial, metas financieras</li>
+            <li><strong>Datos de uso:</strong> InformaciÛn sobre cÛmo usas la aplicaciÛn, incluyendo movimientos financieros, clientes, contenido, tareas del hogar y objetivos personales que t˙ ingresas voluntariamente</li>
+            <li><strong>InformaciÛn tÈcnica:</strong> DirecciÛn IP, tipo de navegador, sistema operativo, identificadores de dispositivo</li>
+            <li><strong>Cookies y tecnologÌas similares:</strong> Usamos cookies para mejorar tu experiencia y mantener tu sesiÛn activa</li>
           </ul>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. C√≥mo Usamos tu Informaci√≥n</h3>
-          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Utilizamos tu informaci√≥n personal para:</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. CÛmo Usamos tu InformaciÛn</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Utilizamos tu informaciÛn personal para:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li>Proporcionar, mantener y mejorar Mam√° CEO App</li>
+            <li>Proporcionar, mantener y mejorar Mam· CEO App</li>
             <li>Crear y gestionar tu cuenta de usuario</li>
             <li>Procesar transacciones y gestionar suscripciones</li>
             <li>Enviarte notificaciones importantes sobre el servicio</li>
             <li>Responder a tus consultas y proporcionar soporte al cliente</li>
-            <li>Personalizar tu experiencia en la aplicaci√≥n</li>
-            <li>Analizar el uso de la aplicaci√≥n para mejorar nuestros servicios</li>
+            <li>Personalizar tu experiencia en la aplicaciÛn</li>
+            <li>Analizar el uso de la aplicaciÛn para mejorar nuestros servicios</li>
             <li>Cumplir con obligaciones legales y regulatorias</li>
-            <li>Enviarte comunicaciones de marketing (solo con tu consentimiento expl√≠cito)</li>
+            <li>Enviarte comunicaciones de marketing (solo con tu consentimiento explÌcito)</li>
           </ul>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Base Legal para el Procesamiento</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Procesamos tu informaci√≥n personal bajo las siguientes bases legales: (a) Tu consentimiento expl√≠cito al crear una cuenta y usar la aplicaci√≥n; (b) Ejecuci√≥n del contrato de servicios contigo; (c) Cumplimiento de obligaciones legales; (d) Nuestros intereses leg√≠timos en mejorar y proteger nuestros servicios.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Procesamos tu informaciÛn personal bajo las siguientes bases legales: (a) Tu consentimiento explÌcito al crear una cuenta y usar la aplicaciÛn; (b) EjecuciÛn del contrato de servicios contigo; (c) Cumplimiento de obligaciones legales; (d) Nuestros intereses legÌtimos en mejorar y proteger nuestros servicios.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Compartir tu Informaci√≥n</h3>
-          <p style={{lineHeight:1.7,marginBottom:"8px"}}>No vendemos tu informaci√≥n personal. Podemos compartir tu informaci√≥n con:</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Compartir tu InformaciÛn</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>No vendemos tu informaciÛn personal. Podemos compartir tu informaciÛn con:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li><strong>Proveedores de servicios tecnol√≥gicos:</strong> Plataformas de almacenamiento de datos, autenticaci√≥n y hosting que utilizamos para operar la aplicaci√≥n</li>
+            <li><strong>Proveedores de servicios tecnolÛgicos:</strong> Plataformas de almacenamiento de datos, autenticaciÛn y hosting que utilizamos para operar la aplicaciÛn</li>
             <li><strong>Cumplimiento legal:</strong> Cuando sea requerido por ley o para proteger nuestros derechos legales</li>
-            <li><strong>Transferencia de negocio:</strong> En caso de fusi√≥n, adquisici√≥n o venta de activos</li>
+            <li><strong>Transferencia de negocio:</strong> En caso de fusiÛn, adquisiciÛn o venta de activos</li>
           </ul>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todos nuestros proveedores de servicios est√°n obligados contractualmente a proteger tu informaci√≥n y solo pueden usarla para los prop√≥sitos espec√≠ficos que les autorizamos.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todos nuestros proveedores de servicios est·n obligados contractualmente a proteger tu informaciÛn y solo pueden usarla para los propÛsitos especÌficos que les autorizamos.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Seguridad de los Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Implementamos medidas de seguridad t√©cnicas y organizativas apropiadas para proteger tu informaci√≥n personal contra acceso no autorizado, alteraci√≥n, divulgaci√≥n o destrucci√≥n. Esto incluye encriptaci√≥n de datos en tr√°nsito y en reposo, controles de acceso estrictos, y auditor√≠as de seguridad regulares. Sin embargo, ning√∫n m√©todo de transmisi√≥n por Internet o almacenamiento electr√≥nico es 100% seguro.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Implementamos medidas de seguridad tÈcnicas y organizativas apropiadas para proteger tu informaciÛn personal contra acceso no autorizado, alteraciÛn, divulgaciÛn o destrucciÛn. Esto incluye encriptaciÛn de datos en tr·nsito y en reposo, controles de acceso estrictos, y auditorÌas de seguridad regulares. Sin embargo, ning˙n mÈtodo de transmisiÛn por Internet o almacenamiento electrÛnico es 100% seguro.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. Retenci√≥n de Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Conservamos tu informaci√≥n personal mientras tu cuenta est√© activa o seg√∫n sea necesario para proporcionarte servicios. Si solicitas la eliminaci√≥n de tu cuenta, eliminaremos o anonimizaremos tu informaci√≥n personal dentro de 30 d√≠as, excepto cuando debamos retenerla para cumplir con obligaciones legales, resolver disputas o hacer cumplir nuestros acuerdos.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. RetenciÛn de Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Conservamos tu informaciÛn personal mientras tu cuenta estÈ activa o seg˙n sea necesario para proporcionarte servicios. Si solicitas la eliminaciÛn de tu cuenta, eliminaremos o anonimizaremos tu informaciÛn personal dentro de 30 dÌas, excepto cuando debamos retenerla para cumplir con obligaciones legales, resolver disputas o hacer cumplir nuestros acuerdos.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. Tus Derechos</h3>
           <p style={{lineHeight:1.7,marginBottom:"8px"}}>De acuerdo con la Ley 1581 de 2012 y el GDPR, tienes los siguientes derechos:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li><strong>Acceso:</strong> Solicitar una copia de tu informaci√≥n personal</li>
-            <li><strong>Rectificaci√≥n:</strong> Corregir informaci√≥n inexacta o incompleta</li>
-            <li><strong>Eliminaci√≥n:</strong> Solicitar la eliminaci√≥n de tu informaci√≥n personal</li>
-            <li><strong>Portabilidad:</strong> Recibir tu informaci√≥n en un formato estructurado y de uso com√∫n</li>
-            <li><strong>Oposici√≥n:</strong> Oponerte al procesamiento de tu informaci√≥n personal</li>
-            <li><strong>Limitaci√≥n:</strong> Solicitar la limitaci√≥n del procesamiento de tu informaci√≥n</li>
-            <li><strong>Revocaci√≥n del consentimiento:</strong> Retirar tu consentimiento en cualquier momento</li>
+            <li><strong>Acceso:</strong> Solicitar una copia de tu informaciÛn personal</li>
+            <li><strong>RectificaciÛn:</strong> Corregir informaciÛn inexacta o incompleta</li>
+            <li><strong>EliminaciÛn:</strong> Solicitar la eliminaciÛn de tu informaciÛn personal</li>
+            <li><strong>Portabilidad:</strong> Recibir tu informaciÛn en un formato estructurado y de uso com˙n</li>
+            <li><strong>OposiciÛn:</strong> Oponerte al procesamiento de tu informaciÛn personal</li>
+            <li><strong>LimitaciÛn:</strong> Solicitar la limitaciÛn del procesamiento de tu informaciÛn</li>
+            <li><strong>RevocaciÛn del consentimiento:</strong> Retirar tu consentimiento en cualquier momento</li>
           </ul>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para ejercer estos derechos, cont√°ctanos en hola@umpacademy.co. Responderemos a tu solicitud dentro de 15 d√≠as h√°biles.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para ejercer estos derechos, cont·ctanos en hola@umpacademy.co. Responderemos a tu solicitud dentro de 15 dÌas h·biles.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Transferencias Internacionales de Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu informaci√≥n puede ser transferida y almacenada en servidores ubicados fuera de Colombia. Cuando transferimos datos internacionalmente, nos aseguramos de que existan garant√≠as adecuadas para proteger tu informaci√≥n de acuerdo con esta Pol√≠tica de Privacidad y las leyes aplicables.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu informaciÛn puede ser transferida y almacenada en servidores ubicados fuera de Colombia. Cuando transferimos datos internacionalmente, nos aseguramos de que existan garantÌas adecuadas para proteger tu informaciÛn de acuerdo con esta PolÌtica de Privacidad y las leyes aplicables.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Menores de Edad</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam√° CEO App no est√° dirigida a menores de 18 a√±os. No recopilamos intencionalmente informaci√≥n personal de menores. Si descubrimos que hemos recopilado informaci√≥n de un menor sin el consentimiento parental verificable, eliminaremos esa informaci√≥n inmediatamente.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mam· CEO App no est· dirigida a menores de 18 aÒos. No recopilamos intencionalmente informaciÛn personal de menores. Si descubrimos que hemos recopilado informaciÛn de un menor sin el consentimiento parental verificable, eliminaremos esa informaciÛn inmediatamente.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Cambios a esta Pol√≠tica</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Podemos actualizar esta Pol√≠tica de Privacidad peri√≥dicamente. Te notificaremos sobre cambios significativos publicando la nueva Pol√≠tica en la aplicaci√≥n y actualizar√° la fecha de "√öltima actualizaci√≥n" en la parte superior. Te recomendamos revisar esta Pol√≠tica regularmente.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Cambios a esta PolÌtica</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Podemos actualizar esta PolÌtica de Privacidad periÛdicamente. Te notificaremos sobre cambios significativos publicando la nueva PolÌtica en la aplicaciÛn y actualizar· la fecha de "⁄ltima actualizaciÛn" en la parte superior. Te recomendamos revisar esta PolÌtica regularmente.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre esta Pol√≠tica de Privacidad o deseas ejercer tus derechos, puedes contactarnos:</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre esta PolÌtica de Privacidad o deseas ejercer tus derechos, puedes contactarnos:</p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S</strong></p>
-          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Responsable de Protecci√≥n de Datos</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Responsable de ProtecciÛn de Datos</p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Sitio web: www.umpacademy.co</p>
           
-          <p style={{lineHeight:1.7,marginBottom:"16px",marginTop:"24px",padding:"16px",background:"var(--purple-soft)",borderRadius:"12px",border:"1px solid var(--purple)"}}>Para cualquier consulta sobre esta Pol√≠tica de Privacidad, cont√°ctanos en hola@umpacademy.co.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px",marginTop:"24px",padding:"16px",background:"var(--purple-soft)",borderRadius:"12px",border:"1px solid var(--purple)"}}>Para cualquier consulta sobre esta PolÌtica de Privacidad, cont·ctanos en hola@umpacademy.co.</p>
         </div>
       </section>
     );
