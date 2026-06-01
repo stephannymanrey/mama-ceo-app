@@ -306,6 +306,7 @@ export default function App() {
   const [userPlan, setUserPlan] = useState(stored?.userPlan || "free");
   const [premiumExpiresAt, setPremiumExpiresAt] = useState(stored?.premiumExpiresAt || null);
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
+  const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
   const [betaCode, setBetaCode] = useState("");
   const [betaCodeError, setBetaCodeError] = useState("");
   const [studioOpen, setStudioOpen] = useState(false);
