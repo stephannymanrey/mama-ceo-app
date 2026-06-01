@@ -850,7 +850,7 @@ export default function App() {
         console.warn("AWS Cognito auth tardó demasiado. Usando modo local temporalmente.");
         setAwsActive(false);
         setReady(true);
-      }, 4000);
+      }, 8000); // Aumentado a 8 segundos
 
       try {
         const { data, error } = await awsAuth.getSession();
@@ -3073,3 +3073,329 @@ function LineChart({ movements }) {
     </svg>
   );
 }
+
+  function MovementList({ compact } = {}) {
+    const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "" });
+    const [contentFilter, setContentFilter] = useState("");
+    const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "", phone: "" });
+    const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer", goal: "Vender" });
+    const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
+    const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
+
+    return (
+      <div className="card movement-list-card">
+        <h3>Últimos movimientos</h3>
+        {movements.length === 0 && <p className="helper-copy">Agrega tu primer movimiento.</p>}
+        {movements.slice(0, compact ? 5 : 10).map((m) => (
+          <div className="movement-row" key={m.id}>
+            <div className="movement-info">
+              <strong>{m.description}</strong>
+              <small>{m.category} • {m.bank}</small>
+            </div>
+            <b className={m.type === "income" ? "income-amount" : "expense-amount"}>
+              {m.type === "income" ? "+" : "-"}{money.format(m.amount)}
+            </b>
+            <button type="button" className="row-delete" onClick={() => confirmDelete("¿Eliminar?", () => setMovements((c) => c.filter((mv) => mv.id !== m.id)))}>×</button>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  function CalendarCard() {
+    return (
+      <div className="card calendar-card">
+        <h3>Planificador semanal</h3>
+        <p className="helper-copy">Bloquea tiempo para lo importante.</p>
+        {weekDays.map((day) => (
+          <div className="week-day-row" key={day}>
+            <strong>{day}</strong>
+            <input
+              placeholder="Bloque principal del día"
+              value={weekBlocks[day] || ""}
+              onChange={(e) => setWeekBlocks((c) => ({ ...c, [day]: e.target.value }))}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  function ReinvestmentCard() {
+    return (
+      <div className="card reinvestment-card">
+        <h3>Reinversión inteligente</h3>
+        <p className="helper-copy">Separa un % de tus ventas para crecer.</p>
+        <label>
+          <span>% de reinversión</span>
+          <input
+            type="number"
+            min="0"
+            max="100"
+            value={reinvestmentPercent}
+            onChange={(e) => updateBusinessSetting("reinvestmentPercent", e.target.value)}
+          />
+        </label>
+        <div className="reinvestment-amount">
+          <span>Monto a reinvertir</span>
+          <strong>{money.format(reinvestmentAmount)}</strong>
+        </div>
+        <p className="helper-copy">Usa esto para marketing, herramientas o capacitación.</p>
+      </div>
+    );
+  }
+
+  function BanksCard() {
+    return (
+      <div className="card banks-card">
+        <h3>Cuentas y plataformas</h3>
+        <p className="helper-copy">Gestiona tus bancos y métodos de pago.</p>
+        {banks.map((bank) => (
+          <div className="bank-row" key={bank}>
+            <span>{bank}</span>
+            <button type="button" onClick={() => removeBank(bank)}>×</button>
+          </div>
+        ))}
+        <form onSubmit={addBank} style={{ display: "flex", gap: "8px", marginTop: "8px" }}>
+          <input
+            placeholder="Nueva cuenta"
+            value={newBank}
+            onChange={(e) => setNewBank(e.target.value)}
+            style={{ flex: 1 }}
+          />
+          <button className="primary-button" type="submit">+</button>
+        </form>
+      </div>
+    );
+  }
+
+  function renderWeeklyReport() {
+    const weekIncome = totals.income;
+    const weekExpenses = totals.expenses;
+    const weekProfit = totals.profit;
+    const weekProgress = Math.min(Math.round((weekIncome / weeklyGoal) * 100), 100);
+    const topMovement = [...movements].filter((m) => m.type === "income").sort((a, b) => b.amount - a.amount)[0];
+    const biggestExpense = [...movements].filter((m) => m.type === "expense").sort((a, b) => b.amount - a.amount)[0];
+
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Reporte semanal</h2>
+          <p>Resumen completo de tu semana</p>
+        </div>
+
+        <div className="report-grid">
+          <div className="card">
+            <h3>💰 Finanzas</h3>
+            <div className="report-stat">
+              <span>Ingresos</span>
+              <strong style={{ color: "var(--green)" }}>{money.format(weekIncome)}</strong>
+            </div>
+            <div className="report-stat">
+              <span>Gastos</span>
+              <strong style={{ color: "var(--pink)" }}>{money.format(weekExpenses)}</strong>
+            </div>
+            <div className="report-stat">
+              <span>Utilidad</span>
+              <strong style={{ color: weekProfit >= 0 ? "var(--green)" : "var(--pink)" }}>{money.format(weekProfit)}</strong>
+            </div>
+            <ProgressLabel label="Meta semanal" value={weekProgress} tone="purple" />
+            {topMovement && <p className="helper-copy">Mayor ingreso: {topMovement.description} ({money.format(topMovement.amount)})</p>}
+            {biggestExpense && <p className="helper-copy">Mayor gasto: {biggestExpense.description} ({money.format(biggestExpense.amount)})</p>}
+          </div>
+
+          <div className="card">
+            <h3>👩💼 Clientes</h3>
+            <div className="report-stat">
+              <span>Contactos realizados</span>
+              <strong>{contactsThisWeek}</strong>
+            </div>
+            <div className="report-stat">
+              <span>Ventas cerradas</span>
+              <strong>{money.format(wonSalesTotal)}</strong>
+            </div>
+            <div className="report-stat">
+              <span>Leads activos</span>
+              <strong>{followUpClients.length}</strong>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>📱 Contenido</h3>
+            <div className="report-stat">
+              <span>Piezas publicadas</span>
+              <strong>{publishedContent}</strong>
+            </div>
+            <div className="report-stat">
+              <span>Pendientes</span>
+              <strong>{contentItems.filter((i) => i.status !== "Publicado").length}</strong>
+            </div>
+          </div>
+
+          <div className="card">
+            <h3>🏠 Hogar</h3>
+            <div className="report-stat">
+              <span>Tareas completadas</span>
+              <strong>{completedHomeTasks}/{homeTasks.length}</strong>
+            </div>
+            <ProgressLabel label="Progreso" value={homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0} tone="green" />
+          </div>
+
+          <div className="card">
+            <h3>✨ Propósito</h3>
+            <div className="report-stat">
+              <span>Días de presencia</span>
+              <strong>{Object.values(purpose.familyDays || {}).filter(Boolean).length}/7</strong>
+            </div>
+            <div className="report-stat">
+              <span>Momentos de conexión</span>
+              <strong>{purpose.connectionMoments || 0}</strong>
+            </div>
+            <div className="report-stat">
+              <span>Clientes impactados</span>
+              <strong>{purpose.clientsImpacted || 0}</strong>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderPricing() {
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Planes y precios</h2>
+          <p>Elige el plan que mejor se adapte a tu negocio</p>
+        </div>
+
+        {!isBetaUser && (
+          <div className="card" style={{ marginBottom: "20px", background: "linear-gradient(135deg, rgba(212,104,122,0.1), rgba(201,169,110,0.1))", border: "2px solid var(--purple)" }}>
+            <h3>🎁 Código beta exclusivo</h3>
+            <p>Si eres parte del grupo beta de UMP Academy, activa tu acceso Premium gratis por 90 días.</p>
+            {!showBetaInput ? (
+              <button className="primary-button" onClick={() => setShowBetaInput(true)}>Tengo un código beta</button>
+            ) : (
+              <form onSubmit={activateBetaCode} style={{ display: "flex", gap: "8px", marginTop: "12px" }}>
+                <input
+                  placeholder="Ingresa tu código"
+                  value={betaCode}
+                  onChange={(e) => setBetaCode(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button className="primary-button" type="submit">Activar</button>
+              </form>
+            )}
+            {betaCodeError && <p style={{ color: "var(--pink)", marginTop: "8px", fontSize: "13px" }}>{betaCodeError}</p>}
+          </div>
+        )}
+
+        <div className="pricing-grid">
+          <div className="pricing-card">
+            <h3>Plan Gratis</h3>
+            <div className="pricing-amount">$0</div>
+            <p>Para empezar</p>
+            <ul className="pricing-features">
+              <li>✓ Hasta {PLAN_LIMITS.free.movements} movimientos</li>
+              <li>✓ Hasta {PLAN_LIMITS.free.clients} clientes</li>
+              <li>✓ Hasta {PLAN_LIMITS.free.content} contenidos</li>
+              <li>✓ Hasta {PLAN_LIMITS.free.homeTasks} tareas del hogar</li>
+              <li>✓ Guardado local</li>
+            </ul>
+            {effectivePlan === "free" && <div className="pricing-badge">Plan actual</div>}
+          </div>
+
+          <div className="pricing-card pricing-card-featured">
+            <div className="pricing-badge-top">Más popular</div>
+            <h3>Plan Emprendedora</h3>
+            <div className="pricing-amount">{PLAN_PRICES.emprendedora.cop}<span>/mes</span></div>
+            <p>Para crecer</p>
+            <ul className="pricing-features">
+              <li>✓ Hasta {PLAN_LIMITS.emprendedora.movements} movimientos</li>
+              <li>✓ Hasta {PLAN_LIMITS.emprendedora.clients} clientes</li>
+              <li>✓ Hasta {PLAN_LIMITS.emprendedora.content} contenidos</li>
+              <li>✓ Hasta {PLAN_LIMITS.emprendedora.homeTasks} tareas del hogar</li>
+              <li>✓ Sincronización en la nube</li>
+              <li>✓ Soporte prioritario</li>
+            </ul>
+            {effectivePlan === "emprendedora" && <div className="pricing-badge">Plan actual</div>}
+            {effectivePlan !== "emprendedora" && <button className="primary-button">Próximamente</button>}
+          </div>
+
+          <div className="pricing-card">
+            <h3>Plan CEO</h3>
+            <div className="pricing-amount">{PLAN_PRICES.ceo.cop}<span>/mes</span></div>
+            <p>Sin límites</p>
+            <ul className="pricing-features">
+              <li>✓ Movimientos ilimitados</li>
+              <li>✓ Clientes ilimitados</li>
+              <li>✓ Contenido ilimitado</li>
+              <li>✓ Tareas ilimitadas</li>
+              <li>✓ Sincronización en la nube</li>
+              <li>✓ Temporizador Pomodoro</li>
+              <li>✓ Soporte VIP</li>
+            </ul>
+            {effectivePlan === "ceo" && <div className="pricing-badge">Plan actual</div>}
+            {effectivePlan !== "ceo" && <button className="primary-button">Próximamente</button>}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  function renderTerminos() {
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Términos y condiciones</h2>
+          <p>Última actualización: Enero 2026</p>
+        </div>
+        <div className="card legal-content">
+          <h3>1. Aceptación de términos</h3>
+          <p>Al usar Mamá CEO App, aceptas estos términos y condiciones.</p>
+          
+          <h3>2. Uso del servicio</h3>
+          <p>Mamá CEO App es una herramienta de gestión para emprendedoras. Te comprometes a usar la app de manera responsable.</p>
+          
+          <h3>3. Privacidad</h3>
+          <p>Tus datos son privados y no se comparten con terceros. Ver nuestra <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('privacidad'); }}>Política de Privacidad</a>.</p>
+          
+          <h3>4. Modificaciones</h3>
+          <p>Nos reservamos el derecho de modificar estos términos en cualquier momento.</p>
+          
+          <h3>5. Contacto</h3>
+          <p>Para consultas: hola@umpacademy.co</p>
+        </div>
+      </section>
+    );
+  }
+
+  function renderPrivacidad() {
+    return (
+      <section className="panel workspace-panel">
+        <div className="section-title">
+          <h2>Política de privacidad</h2>
+          <p>Última actualización: Enero 2026</p>
+        </div>
+        <div className="card legal-content">
+          <h3>1. Información que recopilamos</h3>
+          <p>Recopilamos la información que ingresas en la app: movimientos financieros, clientes, contenido y tareas.</p>
+          
+          <h3>2. Cómo usamos tu información</h3>
+          <p>Tu información se usa únicamente para brindarte el servicio de la app. No vendemos ni compartimos tus datos.</p>
+          
+          <h3>3. Almacenamiento</h3>
+          <p>En modo local, tus datos se guardan en tu navegador. Con cuenta AWS, se sincronizan de forma segura en la nube.</p>
+          
+          <h3>4. Seguridad</h3>
+          <p>Implementamos medidas de seguridad para proteger tu información.</p>
+          
+          <h3>5. Tus derechos</h3>
+          <p>Puedes eliminar tu cuenta y todos tus datos en cualquier momento desde tu perfil.</p>
+          
+          <h3>6. Contacto</h3>
+          <p>Para consultas sobre privacidad: hola@umpacademy.co</p>
+        </div>
+      </section>
+    );
+  }
