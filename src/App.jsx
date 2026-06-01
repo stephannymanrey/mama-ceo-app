@@ -741,6 +741,9 @@ export default function App() {
     
     setAuthLoading(true);
     try {
+      // Cerrar cualquier sesión previa antes de intentar login
+      await awsAuth.signOut().catch(() => {});
+      
       if (authMode === "login") {
         const { error } = await awsAuth.signInWithPassword({ email: authEmail, password: authPassword });
         if (error) setAuthError(translateError(error.message));
