@@ -1918,7 +1918,7 @@ export default function App() {
               </div>
               <div className="dash-summary-stat">
                 <span>Por publicar</span>
-                <strong style={{color:"var(--orange)"}}>{unpublished}</strong>
+              <strong style={{color:"var(--orange)"}}>{unpublishedContent}</strong>
               </div>
               <ProgressLabel label="Pipeline" value={contentItems.length ? Math.round((publishedContent/contentItems.length)*100) : 0} tone="orange" />
               {nextContent && (
