@@ -5,6 +5,8 @@ import {
   updatePassword, confirmResetPassword
 } from 'aws-amplify/auth';
 
+let amplifyConfigured = false;
+
 try {
   Amplify.configure({
     Auth: {
@@ -15,11 +17,12 @@ try {
       }
     }
   });
+  amplifyConfigured = true;
 } catch (err) {
-  console.warn('Amplify configuration error (non-fatal):', err.message);
+  console.warn('Amplify configuration warning:', err.message);
 }
 
-export const isAwsConfigured = true;
+export const isAwsConfigured = amplifyConfigured;
 
 export async function getAwsAuthToken() {
   try {
@@ -47,12 +50,15 @@ export const awsAuth = {
   },
 
   signInWithPassword: async ({ email, password }) => {
+    if (!amplifyConfigured) {
+      return { data: null, error: { message: 'Autenticación no disponible en este momento. Por favor, intenta más tarde.' } };
+    }
     try {
       await signIn({ username: email, password });
       const user = await getCurrentUser();
       return { data: { user: { id: user.userId, email, user_metadata: { full_name: user.username } } }, error: null };
     } catch (err) {
-      return { data: null, error: { message: err.message } };
+      return { data: null, error: { message: err.message || 'Error al iniciar sesión' } };
     }
   },
 

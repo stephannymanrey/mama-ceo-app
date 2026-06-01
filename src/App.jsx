@@ -1355,85 +1355,77 @@ export default function App() {
     return (
       <div className="auth-shell">
         <div className="auth-card">
-          <div style={{textAlign:"center",marginBottom:"32px"}}><h1 style={{fontSize:"32px",fontWeight:800,color:"var(--purple)",margin:0,letterSpacing:"-0.5px"}}>Mam� CEO</h1><p style={{fontSize:"13px",color:"var(--muted)",margin:"4px 0 0",fontWeight:600}}>Negocio, hogar y visi�n en un solo lugar</p></div>
+          <div style={{textAlign:"center",marginBottom:"40px"}}>
+            <h1 style={{fontSize:"48px",fontWeight:800,color:"var(--purple)",margin:"0 0 8px 0",letterSpacing:"-0.5px"}}>Mamá CEO</h1>
+            <p style={{fontSize:"16px",color:"var(--muted)",margin:"0",fontWeight:500}}>Tu negocio, hogar y propósito en un solo lugar</p>
+          </div>
+          
           {confirmMode ? (
-            <>
-              <h2>Confirma tu correo ??</h2>
-              <p>Te enviamos un c�digo de 6 d�gitos a <strong>{authEmail}</strong>. Ingr�salo aqu� para activar tu cuenta.</p>
-              <form className="auth-form" onSubmit={handleConfirmCode}>
-                <label>
-                  C�digo de verificaci�n
-                  <input type="text" placeholder="123456" value={confirmCode} onChange={(e) => setConfirmCode(e.target.value)} required maxLength={6} style={{letterSpacing:"8px",fontSize:"22px",textAlign:"center"}} autoFocus />
-                </label>
-                {authError && <p className="auth-error">{authError}</p>}
-                <button type="submit" className="auth-button" disabled={authLoading}>Verificar y entrar</button>
-              </form>
-              <button className="auth-switch" onClick={() => { setConfirmMode(false); setConfirmCode(""); setAuthError(""); }}>? Volver</button>
-            </>
-          ) : resetPassword ? (
-            <>
-              <h2>Restablecer contrase�a</h2>
-              <p>Ingresa el c�digo que lleg� a <strong>{resetEmail}</strong> y tu nueva contrase�a.</p>
-              <form className="auth-form" onSubmit={handleResetPassword}>
-                <label>
-                  C�digo de verificaci�n
-                  <input type="text" placeholder="123456" value={resetCode} onChange={(e) => setResetCode(e.target.value)} required maxLength={6} style={{letterSpacing:"8px",fontSize:"22px",textAlign:"center"}} />
-                </label>
-                <label>
-                  Nueva contrase�a
-                  <input type="password" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required minLength={8} />
-                </label>
-                {authError && <p className="auth-error">{authError}</p>}
-                <button type="submit" className="auth-button" disabled={authLoading}>Actualizar contrase�a</button>
-              </form>
-              <button className="auth-switch" onClick={() => { setResetPassword(false); setAuthError(""); }}>? Volver</button>
-            </>
-          ) : (
-            <>
-            <form className="auth-form" onSubmit={handleAuthSubmit}>
+            <form className="auth-form" onSubmit={handleConfirmCode}>
+              <h3>Confirmación requerida</h3>
+              <p>Ingresa el código de 6 dígitos que enviamos a {authEmail}</p>
               <label>
-                Correo electr�nico
-                <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} required />
+                Código de verificación
+                <input type="text" placeholder="000000" value={confirmCode} onChange={(e) => setConfirmCode(e.target.value.replace(/[^0-9]/g, ''))} required maxLength={6} style={{letterSpacing:"4px",fontSize:"20px",textAlign:"center"}} autoFocus />
               </label>
+              {authError && <p className="auth-error">{authError}</p>}
+              <button type="submit" className="auth-button" disabled={authLoading}>Verificar</button>
+              <button type="button" className="auth-switch" onClick={() => { setConfirmMode(false); setConfirmCode(""); setAuthError(""); }}>← Volver</button>
+            </form>
+          ) : resetPassword ? (
+            <form className="auth-form" onSubmit={handleResetPassword}>
+              <h3>Restablecer contraseña</h3>
+              <p>Ingresa el código y tu nueva contraseña</p>
+              <label>
+                Código de verificación
+                <input type="text" placeholder="000000" value={resetCode} onChange={(e) => setResetCode(e.target.value.replace(/[^0-9]/g, ''))} required maxLength={6} style={{letterSpacing:"4px",fontSize:"20px",textAlign:"center"}} />
+              </label>
+              <label>
+                Nueva contraseña
+                <input type="password" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required minLength={8} />
+              </label>
+              {authError && <p className="auth-error">{authError}</p>}
+              <button type="submit" className="auth-button" disabled={authLoading}>Actualizar</button>
+              <button type="button" className="auth-switch" onClick={() => { setResetPassword(false); setAuthError(""); }}>← Volver</button>
+            </form>
+          ) : (
+            <form className="auth-form" onSubmit={handleAuthSubmit}>
               {authMode === "signup" && (
                 <label>
                   Tu nombre
-                  <input type="text" placeholder="�C�mo te llamamos?" value={authName} onChange={(event) => setAuthName(event.target.value)} required />
+                  <input type="text" placeholder="¿Cómo te llamamos?" value={authName} onChange={(event) => setAuthName(event.target.value)} required />
                 </label>
               )}
               <label>
-                Contrase�a
-                <div style={{position:"relative"}}>
-                  <input type={showAuthPassword?"text":"password"} value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={8} style={{paddingRight:"44px",width:"100%"}} />
-                  <button type="button" onClick={()=>setShowAuthPassword(v=>!v)} style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",border:"none",background:"none",cursor:"pointer",fontSize:"18px",color:"var(--muted)",padding:0,lineHeight:1}}>{showAuthPassword?"??":"??"}</button>
-                </div>
+                Correo electrónico
+                <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} placeholder="tu@email.com" required />
+              </label>
+              <label>
+                Contraseña
+                <input type={showAuthPassword?"text":"password"} value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={8} />
               </label>
               {authMode === "signup" && (
                 <label>
-                  Repite la contrase�a
-                  <div style={{position:"relative"}}>
-                    <input type={showAuthPasswordConfirm?"text":"password"} value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={8} style={{paddingRight:"44px",width:"100%"}} />
-                    <button type="button" onClick={()=>setShowAuthPasswordConfirm(v=>!v)} style={{position:"absolute",right:"12px",top:"50%",transform:"translateY(-50%)",border:"none",background:"none",cursor:"pointer",fontSize:"18px",color:"var(--muted)",padding:0,lineHeight:1}}>{showAuthPasswordConfirm?"??":"??"}</button>
-                  </div>
+                  Confirmar contraseña
+                  <input type="password" value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={8} />
                 </label>
               )}
               {authError && <p className="auth-error">{authError}</p>}
               <button type="submit" className="auth-button" disabled={authLoading}>
-                {authMode === "login" ? "Entrar" : "Registrarme"}
+                {authLoading ? "Procesando..." : (authMode === "login" ? "Entrar" : "Registrarme")}
               </button>
+              <button type="button" className="auth-switch" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>
+                {authMode === "login" ? "Crear una cuenta nueva" : "Ya tengo cuenta"}
+              </button>
+              {authMode === "login" && (
+                <button type="button" className="auth-forgot" onClick={handleForgotPassword} disabled={authLoading}>
+                  ¿Olvidé mi contraseña?
+                </button>
+              )}
             </form>
-            <button className="auth-switch" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")}>
-              {authMode === "login" ? "Quiero crear una cuenta" : "Ya tengo cuenta"}
-            </button>
-            {authMode === "login" && (
-              <button type="button" className="auth-forgot" onClick={handleForgotPassword} disabled={authLoading}>
-                Olvid� mi contrase�a
-              </button>
-            )}
-            </>
           )}
           <footer className="auth-footer">
-            Hecho por Una mam� con prop�sito� | 2026 UMP S.A.S Todos los derechos reservados
+            Una mamá con propósito | 2026 UMP S.A.S
           </footer>
         </div>
       </div>
