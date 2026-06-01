@@ -355,6 +355,13 @@ export default function App() {
     ...initialBusinessSettings,
     ...(stored?.businessSettings || {})
   });
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState("");
+  const [clientSearch, setClientSearch] = useState("");
+  const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
+  const [groceryForm, setGroceryForm] = useState("");
+  const [weekBlocks, setWeekBlocks] = useState(stored?.weekBlocks || {});
+  const [showBetaInput, setShowBetaInput] = useState(false);
 
   // Temporizador Pomodoro
   const [pomodoroActive, setPomodoroActive] = useState(false);
