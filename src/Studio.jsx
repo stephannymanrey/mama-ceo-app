@@ -21,7 +21,7 @@ const TABS = [
 // ── MENSAJE ────────────────────────────────────────────────────
 function MensajeTab({ saved, onSave }) {
   const [mode, setMode] = useState("descubrir");
-  const [desc, setDesc] = useState({ dones: "", experiencia: "", proposito: "" });
+  const [desc, setDesc] = useState({ consejo: "", resultado: "", queja: "", audiencia: "", servicio: "No lo sé aún" });
   const [mision, setMision] = useState(null);
   const [mp, setMp] = useState({ cliente: "", problema: "", tiempo: "", producto: "" });
   const [mpResult, setMpResult] = useState(null);
@@ -37,38 +37,37 @@ function MensajeTab({ saved, onSave }) {
 
   // ── DESCUBRIMIENTO ────────────────────────────────────────────
   const generarMision = () => {
-    const { dones, experiencia, proposito } = desc;
-    if (!dones.trim() || !proposito.trim()) return;
+    const { consejo, resultado, queja, audiencia, servicio } = desc;
+    if (!consejo.trim() || !queja.trim()) return;
 
-    const texto = (dones + " " + experiencia + " " + proposito).toLowerCase();
+    // Zona de genialidad
+    const zonaGenialidad = resultado.trim()
+      ? `Eres naturalmente buena en ${consejo.trim()}. Ya lo has demostrado: ${resultado.trim()}.`
+      : `Eres naturalmente buena en ${consejo.trim()} — ese es tu punto de partida.`;
 
-    let clienteSugerido = "mamás emprendedoras";
-    if (texto.includes("jóven") || texto.includes("joven")) clienteSugerido = "jóvenes emprendedoras";
-    else if (texto.includes("mujer") && !texto.includes("mamá") && !texto.includes("mama")) clienteSugerido = "mujeres emprendedoras";
-    else if (texto.includes("mamá") || texto.includes("mama")) clienteSugerido = "mamás emprendedoras";
-    else if (texto.includes("emprended")) clienteSugerido = "emprendedoras digitales";
+    // Clienta probable
+    const clientaProb = audiencia.trim() || "mamás emprendedoras que están comenzando";
 
-    const problemaSugerido = proposito.trim().length > 80
-      ? proposito.trim().slice(0, proposito.trim().lastIndexOf(" ", 80))
-      : proposito.trim();
+    // Producto sugerido
+    const PRODUCTOS = {
+      "Mentoría / coaching 1:1": "mi mentoría personalizada",
+      "Programa o curso":        "mi programa paso a paso",
+      "Taller o masterclass":    "mi taller práctico",
+      "Comunidad":               "mi comunidad de apoyo",
+      "Consultoría":             "mis consultorías",
+      "Venta de productos":      "mis productos",
+    };
+    const productoSug = PRODUCTOS[servicio] || "mi acompañamiento";
 
-    let productoSugerido = "mi método de trabajo";
-    if (texto.includes("coach") || texto.includes("mentoría") || texto.includes("mentoria")) productoSugerido = "mi mentoría personalizada";
-    else if (texto.includes("curso") || texto.includes("program")) productoSugerido = "mi programa paso a paso";
-    else if (texto.includes("consul")) productoSugerido = "mis consultorías";
-    else if (texto.includes("taller")) productoSugerido = "mi taller práctico";
-    else if (texto.includes("comunidad")) productoSugerido = "mi comunidad de apoyo";
-
-    const doneLista = dones.split(",").map(d => d.trim()).filter(Boolean);
-    const doneTexto = doneLista.length > 1
-      ? doneLista.slice(0, -1).join(", ") + " y " + doneLista[doneLista.length - 1]
-      : dones.trim();
-
-    const misionTexto = `Tienes el don de ${doneTexto}.${experiencia.trim() ? ` Tu camino de ${experiencia.trim()} te ha dado herramientas que pocas tienen.` : ""} Todo eso confluye en un propósito claro: ${proposito.trim()}.\n\nEres exactamente lo que ${clienteSugerido} necesitan — alguien que lo vivió, lo superó y ahora puede guiarlas.`;
+    const mpmBorrador = `Ayudo a ${clientaProb} que quieren ${queja.trim()} con ${productoSug}`;
 
     setMision({
-      texto: misionTexto,
-      sugerencias: { cliente: clienteSugerido, problema: problemaSugerido, tiempo: "", producto: productoSugerido },
+      zonaGenialidad,
+      clientaProb,
+      problemaTexto: queja.trim(),
+      productoSug,
+      mpmBorrador,
+      sugerencias: { cliente: clientaProb, problema: queja.trim(), tiempo: "", producto: productoSug },
     });
   };
 
@@ -132,45 +131,80 @@ function MensajeTab({ saved, onSave }) {
       {mode === "descubrir" && (
         <div className="studio-two-col">
           <div className="studio-form-card">
-            <h3>Descubre tu propósito y mensaje</h3>
-            <p className="studio-helper">No necesitas saber de marketing todavía. Cuéntanos quién eres y juntas encontramos tu mensaje.</p>
-            <label>¿Cuáles son tus dones y talentos?</label>
-            <textarea
-              placeholder="Ej: escuchar sin juzgar, enseñar paso a paso, organizar sistemas, motivar a las personas, simplificar lo complicado..."
-              value={desc.dones} onChange={e => setDesc(p => ({...p, dones: e.target.value}))} rows={3}
+            <h3>Encuentra tu mensaje desde cero</h3>
+            <p className="studio-helper">Responde desde lo que sabes hoy — no hay respuestas incorrectas. Esto es solo tu punto de partida.</p>
+
+            <label>¿Con qué te piden consejo o ayuda más frecuentemente?</label>
+            <input
+              placeholder="Ej: organizar el tiempo, vender por WhatsApp, manejar el estrés, criar con calma..."
+              value={desc.consejo} onChange={e => setDesc(p => ({...p, consejo: e.target.value}))}
             />
-            <label>¿Cuál es tu experiencia laboral o de vida?</label>
-            <textarea
-              placeholder="Ej: fui maestra 8 años, empecé un negocio en casa siendo mamá de 3 hijos, estudié administración pero aprendí más en la práctica..."
-              value={desc.experiencia} onChange={e => setDesc(p => ({...p, experiencia: e.target.value}))} rows={3}
+
+            <label>¿Qué resultado concreto has logrado — para alguien o para ti misma?</label>
+            <input
+              placeholder="Ej: ayudé a una amiga a conseguir sus primeras clientas, reorganicé mi negocio y bajé mi estrés..."
+              value={desc.resultado} onChange={e => setDesc(p => ({...p, resultado: e.target.value}))}
             />
-            <label>¿Cuál es el propósito que sientes en tu corazón?</label>
-            <textarea
-              placeholder="Ej: quiero que las mamás sepan que pueden tener un negocio exitoso sin sacrificar a sus hijos ni su paz..."
-              value={desc.proposito} onChange={e => setDesc(p => ({...p, proposito: e.target.value}))} rows={3}
+
+            <label>¿Cuál es la queja o dolor que más escuchas en las mujeres que te rodean?</label>
+            <input
+              placeholder="Ej: no tengo tiempo para nada, no sé cómo cobrar lo que valgo, siento que hago todo sola..."
+              value={desc.queja} onChange={e => setDesc(p => ({...p, queja: e.target.value}))}
             />
-            <button className="studio-btn-primary" onClick={generarMision} disabled={!desc.dones.trim() || !desc.proposito.trim()}>
-              Descubrir mi misión ✦
+
+            <label>¿A qué tipo de mujer te imaginas ayudando?</label>
+            <input
+              placeholder="Ej: mamás que quieren emprender, mujeres que venden desde casa, emprendedoras que están empezando..."
+              value={desc.audiencia} onChange={e => setDesc(p => ({...p, audiencia: e.target.value}))}
+            />
+
+            <label>¿Tienes idea del servicio que quieres ofrecer?</label>
+            <select value={desc.servicio} onChange={e => setDesc(p => ({...p, servicio: e.target.value}))}>
+              {["No lo sé aún", "Mentoría / coaching 1:1", "Programa o curso", "Taller o masterclass", "Comunidad", "Consultoría", "Venta de productos"].map(s => <option key={s}>{s}</option>)}
+            </select>
+
+            <button className="studio-btn-primary" onClick={generarMision} disabled={!desc.consejo.trim() || !desc.queja.trim()}>
+              Ver mi mapa de negocio ✦
             </button>
           </div>
+
           <div className="studio-result-card">
             {!mision ? (
               <div className="studio-empty-state">
-                <span>🌟</span>
-                <p>Cuéntanos quién eres y encontraremos juntas el corazón de tu mensaje de marketing.</p>
+                <span>🗺️</span>
+                <p>Responde las preguntas y verás el mapa de tu negocio en borrador — honesto, editable y tuyo.</p>
               </div>
             ) : (
               <>
-                <div className="studio-mision-box">
-                  <div className="studio-mision-label">✦ Tu Misión</div>
-                  <p className="studio-result-text">{mision.texto}</p>
-                  <button className="studio-copy-btn" onClick={() => copiar(mision.texto, "mision")}>
-                    {copiado === "mision" ? "¡Copiado!" : "Copiar misión"}
-                  </button>
+                <div className="studio-mapa-nota">
+                  ✦ Este es tu punto de partida. No necesita ser perfecto — solo necesitas empezar.
                 </div>
+
+                <div className="studio-mapa-cards">
+                  <div className="studio-mapa-card">
+                    <div className="studio-mapa-card-header"><span>💎</span><strong>Tu zona de genialidad</strong></div>
+                    <p>{mision.zonaGenialidad}</p>
+                  </div>
+                  <div className="studio-mapa-card">
+                    <div className="studio-mapa-card-header"><span>👩‍💼</span><strong>Tu clienta probable</strong></div>
+                    <p>{mision.clientaProb}</p>
+                  </div>
+                  <div className="studio-mapa-card">
+                    <div className="studio-mapa-card-header"><span>🎯</span><strong>El problema que resuelves</strong></div>
+                    <p>{mision.problemaTexto}</p>
+                  </div>
+                  <div className="studio-mapa-card">
+                    <div className="studio-mapa-card-header"><span>✦</span><strong>Tu primer MPM borrador</strong></div>
+                    <p className="studio-mapa-mpm">{mision.mpmBorrador}</p>
+                    <button className="studio-copy-btn small" onClick={() => copiar(mision.mpmBorrador, "mpm-borrador")}>
+                      {copiado === "mpm-borrador" ? "¡Copiado!" : "Copiar borrador"}
+                    </button>
+                  </div>
+                </div>
+
                 <div className="studio-sugerencias-box">
-                  <div className="studio-sugerencias-label">Con base en tu misión, preparamos tu MPM</div>
-                  <p className="studio-helper" style={{margin: "0 0 8px"}}>Revisa y ajusta si necesitas — luego generamos tus 12 variaciones.</p>
+                  <div className="studio-sugerencias-label">Ajusta y luego genera tus 12 variaciones</div>
+                  <p className="studio-helper" style={{margin: "0 0 8px"}}>Edita lo que no te convenza — esto es tuyo para moldearlo.</p>
                   <label>Ayudo a...</label>
                   <input value={mision.sugerencias.cliente} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, cliente: e.target.value}}))} />
                   <label>...que quieren...</label>
@@ -180,6 +214,7 @@ function MensajeTab({ saved, onSave }) {
                   <label>...con...</label>
                   <input value={mision.sugerencias.producto} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, producto: e.target.value}}))} />
                 </div>
+
                 <button className="studio-btn-primary" onClick={usarEnMPM}>
                   Crear mi MPM con esto →
                 </button>

@@ -122,19 +122,48 @@
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
 }
 
-/* ── DESCUBRIMIENTO ───────────────────────────────────────────── */
-.studio-mision-box {
+/* ── DESCUBRIMIENTO / MAPA ────────────────────────────────────── */
+.studio-mapa-nota {
+  background: rgba(196,82,106,0.07);
+  border-radius: 10px;
+  padding: 11px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #C4526A;
+  line-height: 1.4;
+}
+.studio-mapa-cards {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
-.studio-mision-label {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  color: #C4526A;
+.studio-mapa-card {
+  background: #FFF9F6;
+  border: 1px solid rgba(196,82,106,0.1);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
+.studio-mapa-card-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.studio-mapa-card-header span { font-size: 15px; }
+.studio-mapa-card-header strong { font-size: 12px; font-weight: 700; color: #2D1B1B; }
+.studio-mapa-card p { font-size: 13px; color: #9A7878; margin: 0; line-height: 1.5; }
+.studio-mapa-mpm {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2D1B1B !important;
+  background: #fff;
+  border-left: 3px solid #C4526A;
+  padding: 8px 12px;
+  border-radius: 0 8px 8px 0;
+}
+
 .studio-sugerencias-box {
   background: rgba(196,82,106,0.04);
   border: 1.5px dashed rgba(196,82,106,0.25);
