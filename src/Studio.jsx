@@ -433,7 +433,7 @@ function MensajeTab({ saved, onSave }) {
 }
 
 // ── IDEAS ──────────────────────────────────────────────────────
-function IdeasTab({ saved, onSave, onDelete }) {
+function IdeasTab({ saved, onSave, onDelete, onCrearGuion }) {
   const [keyword, setKeyword] = useState("");
   const [ideas, setIdeas] = useState(null);
   const [thinking, setThinking] = useState(false);
@@ -628,6 +628,7 @@ function IdeasTab({ saved, onSave, onDelete }) {
                         plataforma: cat.sub, color: cat.color, keyword: ideas.keyword,
                         fecha: new Date().toLocaleDateString("es"),
                       })}>Guardar</button>
+                      <button className="ideas-card-guion" onClick={() => onCrearGuion?.(idea.texto)}>Guión 🎬</button>
                     </div>
                   </div>
                 ))}
@@ -869,9 +870,13 @@ function HooksTab({ saved, onSave }) {
 }
 
 // ── GUIÓN ──────────────────────────────────────────────────────
-function GuionTab({ saved, onSave }) {
+function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
   const [subTab, setSubTab] = useState("guion");
-  const [g, setG] = useState({ tipo: "Reel", tema: "", objetivo: "Vender", duracion: "30s" });
+  const [g, setG] = useState({ tipo: "Reel", tema: seed || "", objetivo: "Vender", duracion: "30s" });
+
+  useEffect(() => {
+    if (seed) onSeedConsumed?.();
+  }, []);
   const [guion, setGuion] = useState(null);
   const [c, setC] = useState({ red: "Instagram", tono: "Cercano", tema: "", cta: "", hashtags: true });
   const [caption, setCaption] = useState(null);
@@ -1125,11 +1130,17 @@ function EmailTab({ saved, onSave }) {
 export default function Studio({ onBack }) {
   const [activeTab, setActiveTab] = useState("mensaje");
   const [data, setData] = useState(() => loadStudio());
+  const [guionSeed, setGuionSeed] = useState("");
 
   useEffect(() => { saveStudio(data); }, [data]);
 
   const handleSave = (tipo, item) => setData(prev => ({ ...prev, [tipo]: [...(prev[tipo] || []), item] }));
   const handleDelete = (tipo, id) => setData(prev => ({ ...prev, [tipo]: (prev[tipo] || []).filter(i => i.id !== id) }));
+  const handleCrearGuion = (texto) => {
+    setGuionSeed(texto);
+    setActiveTab("guion");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+  };
   const tabProps = { saved: data, onSave: handleSave, onDelete: handleDelete };
 
   return (
@@ -1148,10 +1159,10 @@ export default function Studio({ onBack }) {
       </header>
       <main className="studio-main">
         {activeTab === "mensaje"  && <MensajeTab    {...tabProps} />}
-        {activeTab === "ideas"    && <IdeasTab      {...tabProps} />}
+        {activeTab === "ideas"    && <IdeasTab      {...tabProps} onCrearGuion={handleCrearGuion} />}
         {activeTab === "lead"     && <LeadMagnetTab {...tabProps} />}
         {activeTab === "hooks"    && <HooksTab      {...tabProps} />}
-        {activeTab === "guion"    && <GuionTab      {...tabProps} />}
+        {activeTab === "guion"    && <GuionTab      {...tabProps} seed={guionSeed} onSeedConsumed={() => setGuionSeed("")} />}
         {activeTab === "email"    && <EmailTab      {...tabProps} />}
       </main>
     </div>
