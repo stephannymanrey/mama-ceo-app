@@ -1,8 +1,6 @@
 /**
- * Lambda: mamaceo-user-data  (index.mjs — ES module)
- * Almacena y recupera el estado de la app por usuario (DynamoDB).
- * Requiere: Cognito User Pool Authorizer en API Gateway.
- * Table: mamaceo-user-data  |  PK: userId (String)
+ * Lambda: mamaceo-user-data  (index.mjs — ES module, HTTP API v2)
+ * Table: user_states  |  PK: user_id (String)
  */
 import { DynamoDBClient, GetItemCommand, PutItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
@@ -10,7 +8,6 @@ import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 const dynamo = new DynamoDBClient({ region: "us-east-1" });
 const TABLE = process.env.TABLE_NAME || "user_states";
 
-// ── CORS ─────────────────────────────────────────────────────────────────────
 const ALLOWED_ORIGINS = [
   "https://www.mamaceoapp.co",
   "https://mamaceoapp.co",
@@ -37,8 +34,15 @@ function respond(statusCode, body, event) {
   };
 }
 
+function getMethod(event) {
+  // HTTP API v2 usa requestContext.http.method; REST API v1 usa httpMethod
+  return event?.requestContext?.http?.method || event?.httpMethod || "GET";
+}
+
 function getUserId(event) {
+  // HTTP API v2 JWT authorizer
   return (
+    event?.requestContext?.authorizer?.jwt?.claims?.sub ||
     event?.requestContext?.authorizer?.claims?.sub ||
     event?.requestContext?.authorizer?.sub ||
     null
@@ -46,8 +50,9 @@ function getUserId(event) {
 }
 
 export const handler = async (event) => {
-  // Preflight CORS
-  if (event.httpMethod === "OPTIONS") {
+  const method = getMethod(event);
+
+  if (method === "OPTIONS") {
     return respond(200, "", event);
   }
 
@@ -57,7 +62,7 @@ export const handler = async (event) => {
   }
 
   try {
-    if (event.httpMethod === "GET") {
+    if (method === "GET") {
       const result = await dynamo.send(
         new GetItemCommand({ TableName: TABLE, Key: marshall({ user_id: userId }) })
       );
@@ -68,7 +73,7 @@ export const handler = async (event) => {
       return respond(200, { data: item.data ?? null }, event);
     }
 
-    if (event.httpMethod === "POST") {
+    if (method === "POST") {
       const body = JSON.parse(event.body || "{}");
       await dynamo.send(
         new PutItemCommand({
@@ -83,7 +88,7 @@ export const handler = async (event) => {
       return respond(200, { ok: true }, event);
     }
 
-    if (event.httpMethod === "DELETE") {
+    if (method === "DELETE") {
       await dynamo.send(
         new DeleteItemCommand({ TableName: TABLE, Key: marshall({ user_id: userId }) })
       );
