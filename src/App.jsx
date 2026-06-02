@@ -1345,7 +1345,9 @@ export default function App() {
     return (
       <div className="auth-shell">
         <div className="splash-inner">
-          <Logo width={200} />
+          <div className="splash-logo-breathe">
+            <Logo width={200} className="splash-logo-enter" />
+          </div>
           <div className="splash-spinner" />
           <p className="splash-hint">
             {isRestoringRemote ? "Sincronizando tu información segura..." : "Preparando tu espacio..."}
