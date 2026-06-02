@@ -55,7 +55,7 @@ export const awsAuth = {
     try {
       await signIn({ username: email, password });
       const user = await getCurrentUser();
-      return { data: { user: { id: user.userId, email, user_metadata: { full_name: user.username } } }, error: null };
+      return { data: { user: { id: user.userId, email, user_metadata: { full_name: user.signInDetails?.loginId || email } } }, error: null };
     } catch (err) {
       return { data: null, error: { message: err.message || 'Error al iniciar sesión' } };
     }
