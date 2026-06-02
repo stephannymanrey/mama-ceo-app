@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import { awsAuth, getAwsAuthToken, isAwsConfigured, confirmAwsResetPassword } from "./lib/awsClient";
 import Logo from "./Logo";
+import Studio from "./Studio";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -182,6 +183,7 @@ const menu = [
   { id: "dashboard", label: "Inicio", icon: "🏠" },
   { id: "business", label: "Mi Negocio", icon: "💼" },
   { id: "clients", label: "Mis Clientas", icon: "👩‍💼" },
+  { id: "studio",  label: "Studio ✦",     icon: "🎬" },
   { id: "content", label: "Mi Contenido", icon: "📱" },
   { id: "home", label: "Mi Hogar", icon: "🌸" },
   { id: "ceo", label: "Mi Propósito", icon: "🎯" },
@@ -1355,6 +1357,10 @@ export default function App() {
         </div>
       </div>
     );
+  }
+
+  if (activeView === "studio") {
+    return <Studio onBack={() => setActiveView("dashboard")} />;
   }
 
   if (!user && awsActive) {
