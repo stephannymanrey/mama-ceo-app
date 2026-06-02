@@ -1,5 +1,6 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import { awsAuth, getAwsAuthToken, isAwsConfigured, confirmAwsResetPassword } from "./lib/awsClient";
+import Logo from "./Logo";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -1344,11 +1345,7 @@ export default function App() {
     return (
       <div className="auth-shell">
         <div className="splash-inner">
-          <div className="splash-brand">
-            <span className="splash-logo-main">Mamá</span>
-            <span className="splash-logo-sub">CEO</span>
-            <span className="splash-logo-app">APP</span>
-          </div>
+          <Logo width={200} />
           <div className="splash-spinner" />
           <p className="splash-hint">
             {isRestoringRemote ? "Sincronizando tu información segura..." : "Preparando tu espacio..."}
@@ -1363,7 +1360,9 @@ export default function App() {
       <div className="auth-shell">
         <div className="auth-card">
           <div style={{textAlign:"center",marginBottom:"40px"}}>
-            <h1 style={{fontSize:"48px",fontWeight:800,color:"var(--purple)",margin:"0 0 8px 0",letterSpacing:"-0.5px"}}>Mamá CEO</h1>
+            <div style={{display:"flex",justifyContent:"center",marginBottom:"12px"}}>
+              <Logo width={220} />
+            </div>
             <p style={{fontSize:"16px",color:"var(--muted)",margin:"0",fontWeight:500}}>Tu negocio, hogar y propósito en un solo lugar</p>
           </div>
           
@@ -1587,10 +1586,7 @@ export default function App() {
 
       <aside className="sidebar">
         <div className="brand">
-          <div className="brand-mark"></div>
-          <div className="brand-script">Mamá</div>
-          <div className="brand-ceo">CEO</div>
-          <div className="brand-app">APP</div>
+          <Logo width={130} />
         </div>
 
         {/* Botón hamburguesa solo en móvil */}
