@@ -178,13 +178,13 @@ const promesas = [
 ];
 
 const menu = [
-  { id: "dashboard", label: "Inicio", icon: "??" },
-  { id: "business", label: "Mi Negocio", icon: "??" },
-  { id: "clients", label: "Mis Clientas", icon: "?????" },
-  { id: "content", label: "Mi Contenido", icon: "??" },
-  { id: "home", label: "Mi Hogar", icon: "??" },
+  { id: "dashboard", label: "Inicio", icon: "🏠" },
+  { id: "business", label: "Mi Negocio", icon: "💼" },
+  { id: "clients", label: "Mis Clientas", icon: "👩‍💼" },
+  { id: "content", label: "Mi Contenido", icon: "📱" },
+  { id: "home", label: "Mi Hogar", icon: "🌸" },
   { id: "ceo", label: "Mi Propósito", icon: "?" },
-  { id: "report", label: "Reporte Semanal", icon: "??" }
+  { id: "report", label: "Reporte Semanal", icon: "📊" }
 ];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
