@@ -129,23 +129,52 @@ function MensajeTab({ saved, onSave }) {
   };
 
   // ── MENSAJE PERFECTO ──────────────────────────────────────────
+  const buildMPMResult = ({ cliente, problema, tiempo, producto }) => ({
+    completo:      `Ayudo a ${cliente} que quieren ${problema} en ${tiempo} con ${producto}`,
+    bio_ig:        `Ayudo a ${cliente} a ${problema} ✨\n📍 ${producto} | Resultados en ${tiempo}`,
+    bio_linkedin:  `Especialista en ${problema} para ${cliente}. A través de ${producto}, acompaño a mis clientas a transformar su negocio en ${tiempo}.`,
+    dm:            `Hola! 👋 Trabajo con ${cliente} y mi especialidad es ayudarles a ${problema}. Lo logramos en ${tiempo} con ${producto}. ¿Te gustaría saber cómo podría funcionar para ti?`,
+    historia:      `¿Eres ${cliente}? 👇\nSi quieres ${problema} en ${tiempo}, tengo algo para ti.\nEs ${producto} y ya está ayudando a muchas como tú.\n¡Respóndeme aquí! 💌`,
+    story_corta:   `${cliente} → ${problema} en ${tiempo} ✨`,
+    presencial:    `Hola, trabajo con ${cliente} ayudándoles a ${problema}, y lo logramos en ${tiempo} a través de ${producto}. ¿Es algo que estás buscando?`,
+    video_intro:   `Si eres ${cliente} y quieres ${problema}… este video es para ti.`,
+    pagina_ventas: `¿Lista para ${problema}?\nAyudo a ${cliente} a lograrlo en ${tiempo} con ${producto}.`,
+    email_intro:   `Hola [nombre],\n\nMe contacto porque trabajo con ${cliente} — específicamente ayudándoles a ${problema}.\n\nA través de ${producto}, hemos logrado esos resultados en tan solo ${tiempo}.\n\n¿Tienes 15 minutos para conversar?\n\n[Tu nombre]`,
+    whatsapp_bio:  `${producto} para ${cliente} 📲 | ${problema} en ${tiempo}`,
+    evento:        `Me llamo [tu nombre] y acompaño a ${cliente} a ${problema} en ${tiempo}, a través de ${producto}. Si eso te resuena, con gusto te cuento más.`,
+  });
+
   const generarMensaje = () => {
     const { cliente, problema, tiempo, producto } = mp;
     if (!cliente || !problema || !tiempo || !producto) return;
-    setMpResult({
-      completo:      `Ayudo a ${cliente} que quieren ${problema} en ${tiempo} con ${producto}`,
-      bio_ig:        `Ayudo a ${cliente} a ${problema} ✨\n📍 ${producto} | Resultados en ${tiempo}`,
-      bio_linkedin:  `Especialista en ${problema} para ${cliente}. A través de ${producto}, acompaño a mis clientas a transformar su negocio en ${tiempo}.`,
-      dm:            `Hola! 👋 Trabajo con ${cliente} y mi especialidad es ayudarles a ${problema}. Lo logramos en ${tiempo} con ${producto}. ¿Te gustaría saber cómo podría funcionar para ti?`,
-      historia:      `¿Eres ${cliente}? 👇\nSi quieres ${problema} en ${tiempo}, tengo algo para ti.\nEs ${producto} y ya está ayudando a muchas como tú.\n¡Respóndeme aquí! 💌`,
-      story_corta:   `${cliente} → ${problema} en ${tiempo} ✨`,
-      presencial:    `Hola, trabajo con ${cliente} ayudándoles a ${problema}, y lo logramos en ${tiempo} a través de ${producto}. ¿Es algo que estás buscando?`,
-      video_intro:   `Si eres ${cliente} y quieres ${problema}… este video es para ti.`,
-      pagina_ventas: `¿Lista para ${problema}?\nAyudo a ${cliente} a lograrlo en ${tiempo} con ${producto}.`,
-      email_intro:   `Hola [nombre],\n\nMe contacto porque trabajo con ${cliente} — específicamente ayudándoles a ${problema}.\n\nA través de ${producto}, hemos logrado esos resultados en tan solo ${tiempo}.\n\n¿Tienes 15 minutos para conversar?\n\n[Tu nombre]`,
-      whatsapp_bio:  `${producto} para ${cliente} 📲 | ${problema} en ${tiempo}`,
-      evento:        `Me llamo [tu nombre] y acompaño a ${cliente} a ${problema} en ${tiempo}, a través de ${producto}. Si eso te resuena, con gusto te cuento más.`,
-    });
+    setMpResult(buildMPMResult(mp));
+  };
+
+  const usarMensajeGuardado = (m) => {
+    if (!m.campos) return;
+    setMp({ ...m.campos });
+    setMpResult(buildMPMResult(m.campos));
+    setMode("mensaje");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+  };
+
+  const elevatorDesdeBanco = (m) => {
+    const campos = m.campos || {};
+    const nuevoEp = {
+      nombre: "",
+      queHaces: campos.producto ? `Ofrezco ${campos.producto} para ${campos.cliente}` : "",
+      quienAyudas: campos.cliente || "",
+      transformacion: campos.problema || "",
+      diferente: "",
+    };
+    setEp(nuevoEp);
+    if (nuevoEp.quienAyudas && nuevoEp.transformacion) {
+      setEpResult(
+        `${nuevoEp.queHaces ? nuevoEp.queHaces + ". " : ""}Trabajo específicamente con ${nuevoEp.quienAyudas}, ayudándoles a ${nuevoEp.transformacion}. Lo que me diferencia es que combino estrategia y acompañamiento cercano para que logres resultados reales. Si eso resuena contigo, me encantaría que conversáramos.`
+      );
+    }
+    setMode("elevator");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
   const VARIACIONES = [
@@ -375,11 +404,25 @@ function MensajeTab({ saved, onSave }) {
           <h4>Banco de mensajes guardados ({saved.mensajes.length})</h4>
           {saved.mensajes.slice().reverse().map(m => (
             <div className="studio-bank-item" key={m.id}>
-              <span className="studio-bank-tipo">{m.tipo}</span>
-              <p>{m.texto}</p>
-              <div className="studio-bank-meta">
+              <div className="studio-bank-item-top">
+                <span className="studio-bank-tipo">{m.tipo}</span>
                 <small>{m.fecha}</small>
-                <button onClick={() => copiar(m.texto, `bank-${m.id}`)}>{copiado === `bank-${m.id}` ? "¡Copiado!" : "Copiar"}</button>
+              </div>
+              <p>{m.texto}</p>
+              <div className="studio-bank-actions">
+                <button className="studio-bank-action-copy" onClick={() => copiar(m.texto, `bank-${m.id}`)}>
+                  {copiado === `bank-${m.id}` ? "¡Copiado!" : "Copiar"}
+                </button>
+                {m.campos && (
+                  <>
+                    <button className="studio-bank-action-mpm" onClick={() => usarMensajeGuardado(m)}>
+                      Recrear mis 12 variaciones ✦
+                    </button>
+                    <button className="studio-bank-action-ep" onClick={() => elevatorDesdeBanco(m)}>
+                      Generar Elevator Pitch →
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}

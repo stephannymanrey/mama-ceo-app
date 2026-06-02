@@ -493,6 +493,55 @@
 .studio-bank-meta small { font-size: 11px; color: #9A7878; }
 .studio-bank-meta button { background: none; border: none; color: #C4526A; font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit; }
 
+.studio-bank-item-top { display: flex; justify-content: space-between; align-items: center; }
+.studio-bank-item-top small { font-size: 11px; color: #9A7878; }
+
+.studio-bank-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.studio-bank-action-copy {
+  background: none;
+  border: 1px solid rgba(196,82,106,0.2);
+  border-radius: 7px;
+  color: #9A7878;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s, border-color 0.15s;
+}
+.studio-bank-action-copy:hover { color: #C4526A; border-color: #C4526A; }
+.studio-bank-action-mpm {
+  background: rgba(196,82,106,0.07);
+  border: none;
+  border-radius: 7px;
+  color: #C4526A;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.studio-bank-action-mpm:hover { background: rgba(196,82,106,0.14); }
+.studio-bank-action-ep {
+  background: linear-gradient(135deg, rgba(232,117,90,0.12) 0%, rgba(196,82,106,0.12) 100%);
+  border: none;
+  border-radius: 7px;
+  color: #C4526A;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.studio-bank-action-ep:hover { background: rgba(196,82,106,0.18); }
+
 /* ── IDEAS ──────────────────────────────────────────────────── */
 .studio-ideas-list { display: flex; flex-direction: column; gap: 9px; overflow-y: auto; max-height: 500px; }
 .studio-ideas-list h3 { font-size: 14px; font-weight: 700; color: #2D1B1B; margin: 0 0 6px; }
