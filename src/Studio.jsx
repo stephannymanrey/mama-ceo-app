@@ -20,19 +20,48 @@ const TABS = [
 
 // ── MENSAJE ────────────────────────────────────────────────────
 function MensajeTab({ saved, onSave }) {
-  const [mode, setMode] = useState("descubrir");
+  const [view, setView] = useState("inicio"); // inicio | wizard | descubrir | results
+  const [step, setStep] = useState(0);
+  const [dir, setDir] = useState("fwd");
   const [desc, setDesc] = useState({ consejo: "", resultado: "", queja: "", audiencia: "", servicio: "No lo sé aún" });
   const [mision, setMision] = useState(null);
   const [mp, setMp] = useState({ cliente: "", problema: "", tiempo: "", producto: "" });
   const [mpResult, setMpResult] = useState(null);
-  const [ep, setEp] = useState({ nombre: "", queHaces: "", quienAyudas: "", transformacion: "", diferente: "" });
-  const [epResult, setEpResult] = useState(null);
+  const [epText, setEpText] = useState("");
   const [copiado, setCopiado] = useState("");
 
   const copiar = (text, key) => {
     navigator.clipboard.writeText(text);
     setCopiado(key);
     setTimeout(() => setCopiado(""), 2000);
+  };
+
+  const PASOS = [
+    { field: "cliente",  emoji: "👩‍💼", pregunta: "¿A quién ayudas?",                hint: "Piensa en la persona a quien más le cambiarías la vida.",                    placeholder: "mamás emprendedoras con hijos pequeños",  ejemplo: "Ej: mujeres que venden desde casa, coaches que empiezan, mamás online" },
+    { field: "problema", emoji: "🎯",  pregunta: "¿Qué resultado logran contigo?", hint: "No el problema — el resultado positivo que quieren conseguir.",                placeholder: "vender más sin descuidar su familia",     ejemplo: "Ej: organizar su negocio, conseguir sus primeras clientas, escalar online" },
+    { field: "tiempo",   emoji: "⏱️", pregunta: "¿En cuánto tiempo lo logran?",   hint: "Un tiempo específico genera más confianza que uno vago.",                      placeholder: "8 semanas",                               ejemplo: "Ej: 30 días, 3 meses, 6 semanas, 90 días" },
+    { field: "producto", emoji: "✨",  pregunta: "¿Con qué lo logran?",            hint: "Tu servicio, programa, método o herramienta de acompañamiento.",               placeholder: "mi programa CEO en Casa",                 ejemplo: "Ej: mi mentoría, mi curso online, mis consultorías 1:1" },
+  ];
+
+  const goNext = () => {
+    const val = mp[PASOS[step].field];
+    if (!val?.trim()) return;
+    if (step < 3) { setDir("fwd"); setStep(s => s + 1); }
+    else {
+      const result = buildMPMResult(mp);
+      const pitch = `Ofrezco ${mp.producto} para ${mp.cliente}. Trabajo específicamente con ${mp.cliente}, ayudándoles a ${mp.problema}. Lo logramos en ${mp.tiempo} con acompañamiento cercano y estratégico. Si eso resuena contigo, me encantaría que conversáramos.`;
+      setMpResult(result); setEpText(pitch); setView("results");
+    }
+  };
+
+  const goBack = () => {
+    if (step > 0) { setDir("bwd"); setStep(s => s - 1); }
+    else setView("inicio");
+  };
+
+  const resetWizard = () => {
+    setMp({ cliente: "", problema: "", tiempo: "", producto: "" });
+    setStep(0); setDir("fwd"); setMpResult(null); setEpText(""); setView("wizard");
   };
 
   // ── DESCUBRIMIENTO ────────────────────────────────────────────
@@ -109,23 +138,7 @@ function MensajeTab({ saved, onSave }) {
   const usarEnMPM = () => {
     if (!mision) return;
     setMp({ ...mision.sugerencias });
-    setMpResult(null);
-    setMode("mensaje");
-  };
-
-  const crearElevatorDesdeMPM = () => {
-    const nuevoEp = {
-      nombre: "",
-      queHaces: `Ofrezco ${mp.producto} para ${mp.cliente}`,
-      quienAyudas: mp.cliente,
-      transformacion: mp.problema,
-      diferente: "",
-    };
-    setEp(nuevoEp);
-    setEpResult(
-      `${nuevoEp.queHaces}. Trabajo específicamente con ${nuevoEp.quienAyudas}, ayudándoles a ${nuevoEp.transformacion}. Lo que me diferencia es que combino estrategia y acompañamiento cercano para que logres resultados reales. Si eso resuena contigo, me encantaría que conversáramos.`
-    );
-    setMode("elevator");
+    setStep(0); setDir("fwd"); setView("wizard");
   };
 
   // ── MENSAJE PERFECTO ──────────────────────────────────────────
@@ -144,36 +157,27 @@ function MensajeTab({ saved, onSave }) {
     evento:        `Me llamo [tu nombre] y acompaño a ${cliente} a ${problema} en ${tiempo}, a través de ${producto}. Si eso te resuena, con gusto te cuento más.`,
   });
 
-  const generarMensaje = () => {
-    const { cliente, problema, tiempo, producto } = mp;
-    if (!cliente || !problema || !tiempo || !producto) return;
-    setMpResult(buildMPMResult(mp));
-  };
 
   const usarMensajeGuardado = (m) => {
     if (!m.campos) return;
-    setMp({ ...m.campos });
-    setMpResult(buildMPMResult(m.campos));
-    setMode("mensaje");
+    const campos = m.campos;
+    setMp({ ...campos });
+    setMpResult(buildMPMResult(campos));
+    setEpText(`Ofrezco ${campos.producto} para ${campos.cliente}. Trabajo específicamente con ${campos.cliente}, ayudándoles a ${campos.problema}. Lo logramos en ${campos.tiempo} con acompañamiento cercano y estratégico. Si eso resuena contigo, me encantaría que conversáramos.`);
+    setView("results");
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
   const elevatorDesdeBanco = (m) => {
     const campos = m.campos || {};
-    const nuevoEp = {
-      nombre: "",
-      queHaces: campos.producto ? `Ofrezco ${campos.producto} para ${campos.cliente}` : "",
-      quienAyudas: campos.cliente || "",
-      transformacion: campos.problema || "",
-      diferente: "",
-    };
-    setEp(nuevoEp);
-    if (nuevoEp.quienAyudas && nuevoEp.transformacion) {
-      setEpResult(
-        `${nuevoEp.queHaces ? nuevoEp.queHaces + ". " : ""}Trabajo específicamente con ${nuevoEp.quienAyudas}, ayudándoles a ${nuevoEp.transformacion}. Lo que me diferencia es que combino estrategia y acompañamiento cercano para que logres resultados reales. Si eso resuena contigo, me encantaría que conversáramos.`
-      );
+    if (campos.cliente && campos.problema) {
+      setMp({ ...campos });
+      setMpResult(buildMPMResult(campos));
+      setEpText(`Ofrezco ${campos.producto || "mi servicio"} para ${campos.cliente}. Trabajo específicamente con ${campos.cliente}, ayudándoles a ${campos.problema}. Lo logramos en ${campos.tiempo || "poco tiempo"} con acompañamiento cercano y estratégico. Si eso resuena contigo, me encantaría que conversáramos.`);
+    } else {
+      setEpText(m.texto || "");
     }
-    setMode("elevator");
+    setView("results");
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
@@ -191,214 +195,172 @@ function MensajeTab({ saved, onSave }) {
     { key: "evento",       label: "🎤 Presentación en evento" },
   ];
 
-  // ── ELEVATOR PITCH ────────────────────────────────────────────
-  const generarElevator = () => {
-    const { nombre, queHaces, quienAyudas, transformacion, diferente } = ep;
-    if (!quienAyudas || !transformacion) return;
-    setEpResult(`${nombre ? `Hola, soy ${nombre}. ` : ""}${queHaces ? `${queHaces}. ` : ""}Trabajo específicamente con ${quienAyudas}, ayudándoles a ${transformacion}. Lo que me diferencia es que ${diferente || "combino estrategia y acompañamiento cercano para que logres resultados reales"}. Si eso resuena contigo, me encantaría que conversáramos.`);
-  };
 
   return (
     <div className="studio-tab-content">
-      <div className="studio-mode-toggle">
-        <button className={mode === "descubrir" ? "active" : ""} onClick={() => setMode("descubrir")}>🔍 Descubre tu mensaje</button>
-        <button className={mode === "mensaje"   ? "active" : ""} onClick={() => setMode("mensaje")}>✦ Mensaje Perfecto</button>
-        <button className={mode === "elevator"  ? "active" : ""} onClick={() => setMode("elevator")}>🎤 Elevator Pitch</button>
-      </div>
 
-      {/* ── DESCUBRIMIENTO ─────────────────────────────── */}
-      {mode === "descubrir" && (
-        <div className="studio-two-col">
-          <div className="studio-form-card">
-            <h3>Encuentra tu mensaje desde cero</h3>
-            <p className="studio-helper">Responde desde lo que sabes hoy — no hay respuestas incorrectas. Esto es solo tu punto de partida.</p>
-
-            <label>¿Con qué te piden consejo o ayuda más frecuentemente?</label>
-            <input
-              placeholder="Ej: organizar el tiempo, vender por WhatsApp, manejar el estrés, criar con calma..."
-              value={desc.consejo} onChange={e => setDesc(p => ({...p, consejo: e.target.value}))}
-            />
-
-            <label>¿Qué resultado concreto has logrado — para alguien o para ti misma?</label>
-            <input
-              placeholder="Ej: ayudé a una amiga a conseguir sus primeras clientas, reorganicé mi negocio y bajé mi estrés..."
-              value={desc.resultado} onChange={e => setDesc(p => ({...p, resultado: e.target.value}))}
-            />
-
-            <label>¿Cuál es la queja o dolor que más escuchas en las mujeres que te rodean?</label>
-            <input
-              placeholder="Ej: no tengo tiempo para nada, no sé cómo cobrar lo que valgo, siento que hago todo sola..."
-              value={desc.queja} onChange={e => setDesc(p => ({...p, queja: e.target.value}))}
-            />
-
-            <label>¿A qué tipo de mujer te imaginas ayudando?</label>
-            <input
-              placeholder="Ej: mamás que quieren emprender, mujeres que venden desde casa, emprendedoras que están empezando..."
-              value={desc.audiencia} onChange={e => setDesc(p => ({...p, audiencia: e.target.value}))}
-            />
-
-            <label>¿Tienes idea del servicio que quieres ofrecer?</label>
-            <select value={desc.servicio} onChange={e => setDesc(p => ({...p, servicio: e.target.value}))}>
-              {["No lo sé aún", "Mentoría / coaching 1:1", "Programa o curso", "Taller o masterclass", "Comunidad", "Consultoría", "Venta de productos"].map(s => <option key={s}>{s}</option>)}
-            </select>
-
-            <button className="studio-btn-primary" onClick={generarMision} disabled={!desc.consejo.trim() || !desc.queja.trim()}>
-              Ver mi mapa de negocio ✦
+      {/* ── INICIO ─────────────────────────────────── */}
+      {view === "inicio" && (
+        <div className="mpm-inicio">
+          <div className="mpm-inicio-badge">✦</div>
+          <h2 className="mpm-inicio-title">Tu Mensaje Perfecto de Marketing</h2>
+          <p className="mpm-inicio-sub">El mensaje que hace que tu clienta ideal diga "¡Eso es exactamente lo que necesito!"</p>
+          <div className="mpm-inicio-opciones">
+            <button className="mpm-opcion" onClick={() => setView("descubrir")}>
+              <span className="mpm-opcion-ico">🗺️</span>
+              <div><strong>Descubrir mi mensaje</strong><small>No tengo claro aún a quién ayudo o qué ofrezco</small></div>
+            </button>
+            <button className="mpm-opcion mpm-opcion--primary" onClick={() => setView("wizard")}>
+              <span className="mpm-opcion-ico">✦</span>
+              <div><strong>Crear mi MPM</strong><small>Ya sé a quién ayudo y qué ofrezco</small></div>
             </button>
           </div>
+        </div>
+      )}
 
+      {/* ── WIZARD ──────────────────────────────────── */}
+      {view === "wizard" && (
+        <div className="mpm-wizard-card">
+          <div className="mpm-wizard-nav">
+            <button className="mpm-wizard-back-btn" onClick={goBack}>← {step === 0 ? "Inicio" : "Anterior"}</button>
+            <div className="mpm-dots">
+              {PASOS.map((_, i) => <div key={i} className={`mpm-dot ${i === step ? "active" : i < step ? "done" : ""}`} />)}
+            </div>
+            <span className="mpm-step-count">{step + 1} / 4</span>
+          </div>
+
+          <div key={step} className={`mpm-step-content anim-${dir}`}>
+            <div className="mpm-step-emoji">{PASOS[step].emoji}</div>
+            <h2 className="mpm-step-pregunta">{PASOS[step].pregunta}</h2>
+            <p className="mpm-step-hint">{PASOS[step].hint}</p>
+            <input
+              className="mpm-step-input"
+              placeholder={PASOS[step].placeholder}
+              value={mp[PASOS[step].field]}
+              onChange={e => setMp(p => ({ ...p, [PASOS[step].field]: e.target.value }))}
+              onKeyDown={e => e.key === "Enter" && mp[PASOS[step].field]?.trim() && goNext()}
+              autoFocus
+            />
+            <p className="mpm-step-ejemplo">{PASOS[step].ejemplo}</p>
+          </div>
+
+          <button className="mpm-step-btn" onClick={goNext} disabled={!mp[PASOS[step].field]?.trim()}>
+            {step < 3 ? "Siguiente →" : "¡Generar mi mensaje! ✦"}
+          </button>
+        </div>
+      )}
+
+      {/* ── DESCUBRIMIENTO ──────────────────────────── */}
+      {view === "descubrir" && (
+        <div className="studio-two-col">
+          <div className="studio-form-card">
+            <button className="mpm-wizard-back-btn" style={{width:"fit-content",marginBottom:"4px"}} onClick={() => setView("inicio")}>← Inicio</button>
+            <h3>Encuentra tu mensaje desde cero</h3>
+            <p className="studio-helper">Responde desde lo que sabes hoy — no hay respuestas incorrectas.</p>
+            <label>¿Con qué te piden consejo o ayuda más frecuentemente?</label>
+            <input placeholder="organizar el tiempo, vender por WhatsApp, manejar el estrés..." value={desc.consejo} onChange={e => setDesc(p => ({...p, consejo: e.target.value}))} />
+            <label>¿Qué resultado concreto has logrado — para alguien o para ti misma?</label>
+            <input placeholder="ayudé a una amiga a conseguir sus primeras clientas..." value={desc.resultado} onChange={e => setDesc(p => ({...p, resultado: e.target.value}))} />
+            <label>¿Cuál es la queja o dolor que más escuchas?</label>
+            <input placeholder="no tengo tiempo, no sé cómo cobrar lo que valgo..." value={desc.queja} onChange={e => setDesc(p => ({...p, queja: e.target.value}))} />
+            <label>¿A qué tipo de mujer te imaginas ayudando?</label>
+            <input placeholder="mamás que quieren emprender, mujeres que venden desde casa..." value={desc.audiencia} onChange={e => setDesc(p => ({...p, audiencia: e.target.value}))} />
+            <label>¿Tienes idea del servicio que quieres ofrecer?</label>
+            <select value={desc.servicio} onChange={e => setDesc(p => ({...p, servicio: e.target.value}))}>
+              {["No lo sé aún","Mentoría / coaching 1:1","Programa o curso","Taller o masterclass","Comunidad","Consultoría","Venta de productos"].map(s => <option key={s}>{s}</option>)}
+            </select>
+            <button className="studio-btn-primary" onClick={generarMision} disabled={!desc.consejo.trim() || !desc.queja.trim()}>Ver mi mapa de negocio ✦</button>
+          </div>
           <div className="studio-result-card">
             {!mision ? (
-              <div className="studio-empty-state">
-                <span>🗺️</span>
-                <p>Responde las preguntas y verás el mapa de tu negocio en borrador — honesto, editable y tuyo.</p>
-              </div>
+              <div className="studio-empty-state"><span>🗺️</span><p>Responde las preguntas y verás el mapa de tu negocio en borrador — honesto, editable y tuyo.</p></div>
             ) : (
               <>
-                <div className="studio-mapa-nota">
-                  ✦ Este es tu punto de partida. No necesita ser perfecto — solo necesitas empezar.
-                </div>
-
+                <div className="studio-mapa-nota">✦ Este es tu punto de partida. No necesita ser perfecto — solo necesitas empezar.</div>
                 <div className="studio-mapa-cards">
-                  <div className="studio-mapa-card">
-                    <div className="studio-mapa-card-header"><span>💎</span><strong>Tu zona de genialidad</strong></div>
-                    <p>{mision.zonaGenialidad}</p>
-                  </div>
-                  <div className="studio-mapa-card">
-                    <div className="studio-mapa-card-header"><span>👩‍💼</span><strong>Tu clienta probable</strong></div>
-                    <p>{mision.clientaProb}</p>
-                  </div>
-                  <div className="studio-mapa-card">
-                    <div className="studio-mapa-card-header"><span>🎯</span><strong>El problema que resuelves</strong></div>
-                    <p>{mision.problemaTexto}</p>
-                  </div>
+                  <div className="studio-mapa-card"><div className="studio-mapa-card-header"><span>💎</span><strong>Tu zona de genialidad</strong></div><p>{mision.zonaGenialidad}</p></div>
+                  <div className="studio-mapa-card"><div className="studio-mapa-card-header"><span>👩‍💼</span><strong>Tu clienta probable</strong></div><p>{mision.clientaProb}</p></div>
+                  <div className="studio-mapa-card"><div className="studio-mapa-card-header"><span>🎯</span><strong>El problema que resuelves</strong></div><p>{mision.problemaTexto}</p></div>
                   <div className="studio-mapa-card studio-mapa-card--highlight">
                     <div className="studio-mapa-card-header"><span>✦</span><strong>Tu primer MPM borrador</strong></div>
                     <p className="studio-mapa-mpm">{mision.mpmBorrador}</p>
-                    <button className="studio-copy-btn small" onClick={() => copiar(mision.mpmBorrador, "mpm-borrador")}>
-                      {copiado === "mpm-borrador" ? "¡Copiado!" : "Copiar borrador"}
-                    </button>
+                    <button className="studio-copy-btn small" onClick={() => copiar(mision.mpmBorrador, "mpm-borrador")}>{copiado === "mpm-borrador" ? "¡Copiado!" : "Copiar borrador"}</button>
                   </div>
                 </div>
-
                 <div className="studio-sugerencias-box">
                   <div className="studio-sugerencias-label">Ajusta y luego genera tus 12 variaciones</div>
-                  <p className="studio-helper" style={{margin: "0 0 8px"}}>Edita lo que no te convenza — esto es tuyo para moldearlo.</p>
+                  <p className="studio-helper" style={{margin:"0 0 8px"}}>Edita lo que no te convenza.</p>
                   <label>Ayudo a...</label>
                   <input value={mision.sugerencias.cliente} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, cliente: e.target.value}}))} />
                   <label>...que quieren...</label>
                   <input value={mision.sugerencias.problema} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, problema: e.target.value}}))} />
                   <label>...en...</label>
-                  <input placeholder="Ej: 8 semanas, 3 meses, 30 días..." value={mision.sugerencias.tiempo} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, tiempo: e.target.value}}))} />
+                  <input placeholder="Ej: 8 semanas, 3 meses..." value={mision.sugerencias.tiempo} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, tiempo: e.target.value}}))} />
                   <label>...con...</label>
                   <input value={mision.sugerencias.producto} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, producto: e.target.value}}))} />
                 </div>
-
-                <button className="studio-btn-primary" onClick={usarEnMPM}>
-                  Crear mi MPM con esto →
-                </button>
+                <button className="studio-btn-primary" onClick={usarEnMPM}>Crear mi MPM con esto →</button>
               </>
             )}
           </div>
         </div>
       )}
 
-      {/* ── MENSAJE PERFECTO ────────────────────────────── */}
-      {mode === "mensaje" && (
-        <div className="studio-two-col">
-          <div className="studio-form-card">
-            <h3>Construye tu mensaje</h3>
-            <p className="studio-helper">Completa los 4 campos y genera 12 variaciones listas para usar en cualquier plataforma.</p>
-            <label>Ayudo a...</label>
-            <input placeholder="mamás emprendedoras con hijos pequeños" value={mp.cliente} onChange={e => setMp(p => ({...p, cliente: e.target.value}))} />
-            <label>...que quieren...</label>
-            <input placeholder="vender más sin descuidar su familia" value={mp.problema} onChange={e => setMp(p => ({...p, problema: e.target.value}))} />
-            <label>...en...</label>
-            <input placeholder="8 semanas" value={mp.tiempo} onChange={e => setMp(p => ({...p, tiempo: e.target.value}))} />
-            <label>...con...</label>
-            <input placeholder="mi programa CEO en Casa" value={mp.producto} onChange={e => setMp(p => ({...p, producto: e.target.value}))} />
-            <div className="studio-btn-row">
-              <button className="studio-btn-secondary" onClick={() => setMode("descubrir")}>← Descubrimiento</button>
-              <button className="studio-btn-primary" onClick={generarMensaje}>Generar ✦</button>
+      {/* ── RESULTADOS ──────────────────────────────── */}
+      {view === "results" && (
+        <div className="mpm-results-wrap">
+          <div className="mpm-results-topbar">
+            <div>
+              <h3 className="mpm-results-title">Tu Mensaje Perfecto ✦</h3>
+              {mp.cliente && <p className="studio-helper" style={{margin:0}}>Para: <strong>{mp.cliente}</strong> · {mp.problema}</p>}
+            </div>
+            <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+              <button className="mpm-edit-btn" onClick={() => { setView("wizard"); setStep(0); }}>✏️ Editar datos</button>
+              <button className="mpm-edit-btn" onClick={() => setView("inicio")}>← Inicio</button>
             </div>
           </div>
-          <div className="studio-result-card">
-            {!mpResult ? (
-              <div className="studio-empty-state">
-                <span>✦</span>
-                <p>Tu mensaje aparecerá aquí con 12 variaciones listas para copiar en cualquier plataforma.</p>
-              </div>
-            ) : (
-              <>
-                <div className="studio-result-main">
-                  <label>Mensaje completo</label>
-                  <p className="studio-result-text">{mpResult.completo}</p>
-                  <button className="studio-copy-btn" onClick={() => copiar(mpResult.completo, "completo")}>{copiado === "completo" ? "¡Copiado!" : "Copiar"}</button>
-                </div>
-                <div className="studio-variations">
-                  <h4>11 variaciones — un mensaje para cada contexto</h4>
-                  {VARIACIONES.map(({ key, label }) => (
-                    <div className="studio-variation-item" key={key}>
-                      <span className="studio-variation-label">{label}</span>
-                      <p>{mpResult[key]}</p>
-                      <button className="studio-copy-btn small" onClick={() => copiar(mpResult[key], key)}>{copiado === key ? "¡Copiado!" : "Copiar"}</button>
+
+          <div className="mpm-results-cols">
+            <div className="mpm-results-left">
+              {mpResult && (
+                <>
+                  <div className="studio-result-main">
+                    <label>Mensaje completo</label>
+                    <p className="studio-result-text">{mpResult.completo}</p>
+                    <div className="studio-btn-row">
+                      <button className="studio-copy-btn" onClick={() => copiar(mpResult.completo, "completo")}>{copiado === "completo" ? "¡Copiado!" : "Copiar"}</button>
+                      <button className="studio-btn-save" onClick={() => onSave("mensajes", { id: Date.now(), tipo: "Mensaje Perfecto", texto: mpResult.completo, campos: {...mp}, fecha: new Date().toLocaleDateString("es") })}>Guardar</button>
                     </div>
-                  ))}
-                </div>
-                <div className="studio-btn-row">
-                  <button className="studio-btn-save" onClick={() => onSave("mensajes", { id: Date.now(), tipo: "Mensaje Perfecto", texto: mpResult.completo, campos: {...mp}, fecha: new Date().toLocaleDateString("es") })}>
-                    Guardar en mi banco
-                  </button>
-                  <button className="studio-btn-secondary" onClick={crearElevatorDesdeMPM}>
-                    Crear mi Elevator Pitch →
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
+                  </div>
+                  <div className="studio-variations">
+                    <h4>11 variaciones — un mensaje para cada contexto</h4>
+                    {VARIACIONES.map(({ key, label }) => (
+                      <div className="studio-variation-item" key={key}>
+                        <span className="studio-variation-label">{label}</span>
+                        <p>{mpResult[key]}</p>
+                        <button className="studio-copy-btn small" onClick={() => copiar(mpResult[key], key)}>{copiado === key ? "¡Copiado!" : "Copiar"}</button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
 
-      {/* ── ELEVATOR PITCH ──────────────────────────────── */}
-      {mode === "elevator" && (
-        <div className="studio-two-col">
-          <div className="studio-form-card">
-            <h3>Elevator Pitch — Tu presentación de autoridad</h3>
-            <p className="studio-helper">Para cuando te presentas ante inversionistas, proveedores, aliados estratégicos o personas de autoridad. Máximo 2 minutos, claro y profesional.</p>
-            <label>Tu nombre (opcional)</label>
-            <input placeholder="Ej: Stephanny" value={ep.nombre} onChange={e => setEp(p => ({...p, nombre: e.target.value}))} />
-            <label>¿Qué haces en una frase?</label>
-            <input placeholder="Soy coach de negocios para mamás" value={ep.queHaces} onChange={e => setEp(p => ({...p, queHaces: e.target.value}))} />
-            <label>¿A quién ayudas específicamente?</label>
-            <input placeholder="mamás emprendedoras que trabajan desde casa" value={ep.quienAyudas} onChange={e => setEp(p => ({...p, quienAyudas: e.target.value}))} />
-            <label>¿Cuál es la transformación que logras?</label>
-            <input placeholder="construir un negocio rentable sin sacrificar tiempo con sus hijos" value={ep.transformacion} onChange={e => setEp(p => ({...p, transformacion: e.target.value}))} />
-            <label>¿Qué te hace diferente?</label>
-            <input placeholder="mezclo estrategia de negocio con organización del hogar" value={ep.diferente} onChange={e => setEp(p => ({...p, diferente: e.target.value}))} />
-            <button className="studio-btn-primary" onClick={generarElevator}>Generar pitch ✦</button>
-          </div>
-          <div className="studio-result-card">
-            {!epResult ? (
-              <div className="studio-empty-state">
-                <span>🎤</span>
-                <p>Tu pitch de 30 segundos aparecerá aquí, listo para memorizarlo o adaptarlo.</p>
+            <div className="mpm-results-right">
+              <h4 style={{margin:"0 0 6px",fontSize:"14px",fontWeight:700,color:"#2D1B1B"}}>🎤 Elevator Pitch</h4>
+              <p className="studio-helper">Para inversionistas, proveedores o personas de autoridad. Máximo 2 minutos.</p>
+              <textarea className="mpm-ep-textarea" value={epText} onChange={e => setEpText(e.target.value)} rows={9} />
+              <div className="studio-btn-row" style={{marginTop:"8px"}}>
+                <button className="studio-copy-btn" onClick={() => copiar(epText, "ep")}>{copiado === "ep" ? "¡Copiado!" : "Copiar pitch"}</button>
+                <button className="studio-btn-save" onClick={() => onSave("mensajes", { id: Date.now(), tipo: "Elevator Pitch", texto: epText, fecha: new Date().toLocaleDateString("es") })}>Guardar pitch</button>
               </div>
-            ) : (
-              <>
-                <div className="studio-result-main">
-                  <label>Tu Elevator Pitch</label>
-                  <p className="studio-result-text">{epResult}</p>
-                  <button className="studio-copy-btn" onClick={() => copiar(epResult, "ep")}>{copiado === "ep" ? "¡Copiado!" : "Copiar"}</button>
-                </div>
-                <button className="studio-btn-save" onClick={() => onSave("mensajes", { id: Date.now(), tipo: "Elevator Pitch", texto: epResult, fecha: new Date().toLocaleDateString("es") })}>
-                  Guardar en mi banco
-                </button>
-              </>
-            )}
+              <button className="mpm-new-btn" onClick={resetWizard}>✦ Crear otro mensaje</button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* ── BANCO ───────────────────────────────────── */}
       {saved?.mensajes?.length > 0 && (
         <div className="studio-bank">
           <h4>Banco de mensajes guardados ({saved.mensajes.length})</h4>
@@ -410,17 +372,11 @@ function MensajeTab({ saved, onSave }) {
               </div>
               <p>{m.texto}</p>
               <div className="studio-bank-actions">
-                <button className="studio-bank-action-copy" onClick={() => copiar(m.texto, `bank-${m.id}`)}>
-                  {copiado === `bank-${m.id}` ? "¡Copiado!" : "Copiar"}
-                </button>
+                <button className="studio-bank-action-copy" onClick={() => copiar(m.texto, `bank-${m.id}`)}>{copiado === `bank-${m.id}` ? "¡Copiado!" : "Copiar"}</button>
                 {m.campos && (
                   <>
-                    <button className="studio-bank-action-mpm" onClick={() => usarMensajeGuardado(m)}>
-                      Recrear mis 12 variaciones ✦
-                    </button>
-                    <button className="studio-bank-action-ep" onClick={() => elevatorDesdeBanco(m)}>
-                      Generar Elevator Pitch →
-                    </button>
+                    <button className="studio-bank-action-mpm" onClick={() => usarMensajeGuardado(m)}>Recrear mis 12 variaciones ✦</button>
+                    <button className="studio-bank-action-ep" onClick={() => elevatorDesdeBanco(m)}>Generar Elevator Pitch →</button>
                   </>
                 )}
               </div>
@@ -1131,10 +1087,13 @@ export default function Studio({ onBack }) {
   const [activeTab, setActiveTab] = useState("mensaje");
   const [data, setData] = useState(() => loadStudio());
   const [guionSeed, setGuionSeed] = useState("");
+  const [toast, setToast] = useState(null);
 
   useEffect(() => { saveStudio(data); }, [data]);
 
-  const handleSave = (tipo, item) => setData(prev => ({ ...prev, [tipo]: [...(prev[tipo] || []), item] }));
+  const TOAST_LABELS = { mensajes: "Mensaje guardado ✦", ideas: "Idea guardada 💡", leads: "Lead magnet guardado 🎁", hooks: "Hook guardado 🪝", guiones: "Guión guardado 🎬", captions: "Caption guardado", campanias: "Campaña guardada 📧" };
+  const showToast = (tipo) => { setToast(TOAST_LABELS[tipo] || "Guardado ✦"); setTimeout(() => setToast(null), 2500); };
+  const handleSave = (tipo, item) => { setData(prev => ({ ...prev, [tipo]: [...(prev[tipo] || []), item] })); showToast(tipo); };
   const handleDelete = (tipo, id) => setData(prev => ({ ...prev, [tipo]: (prev[tipo] || []).filter(i => i.id !== id) }));
   const handleCrearGuion = (texto) => {
     setGuionSeed(texto);
@@ -1145,6 +1104,7 @@ export default function Studio({ onBack }) {
 
   return (
     <div className="studio-shell">
+      {toast && <div className="studio-toast">{toast}</div>}
       <header className="studio-header">
         <button className="studio-back-btn" onClick={onBack}>← Volver</button>
         <span className="studio-title-text">Studio de Contenido</span>
