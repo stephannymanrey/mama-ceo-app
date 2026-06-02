@@ -1593,7 +1593,7 @@ export default function App() {
 
         {/* Botón hamburguesa solo en móvil */}
         <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(v => !v)} aria-label="Menú">
-          {mobileMenuOpen ? "?" : "?"}
+          {mobileMenuOpen ? "✕" : "☰"}
         </button>
 
         <nav className={`main-menu ${mobileMenuOpen ? "mobile-open" : ""}`} aria-label="Navegacion principal">
