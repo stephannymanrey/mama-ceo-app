@@ -301,9 +301,14 @@ function MensajeTab({ saved, onSave }) {
                     </div>
                   ))}
                 </div>
-                <button className="studio-btn-save" onClick={() => onSave("mensajes", { id: Date.now(), tipo: "Mensaje Perfecto", texto: mpResult.completo, campos: {...mp}, fecha: new Date().toLocaleDateString("es") })}>
-                  Guardar en mi banco
-                </button>
+                <div className="studio-btn-row">
+                  <button className="studio-btn-save" onClick={() => onSave("mensajes", { id: Date.now(), tipo: "Mensaje Perfecto", texto: mpResult.completo, campos: {...mp}, fecha: new Date().toLocaleDateString("es") })}>
+                    Guardar en mi banco
+                  </button>
+                  <button className="studio-btn-secondary" onClick={() => setMode("elevator")}>
+                    Crear mi Elevator Pitch →
+                  </button>
+                </div>
               </>
             )}
           </div>
@@ -314,8 +319,8 @@ function MensajeTab({ saved, onSave }) {
       {mode === "elevator" && (
         <div className="studio-two-col">
           <div className="studio-form-card">
-            <h3>Tu Elevator Pitch</h3>
-            <p className="studio-helper">30 segundos para presentarte y conectar donde sea.</p>
+            <h3>Elevator Pitch — Tu presentación de autoridad</h3>
+            <p className="studio-helper">Para cuando te presentas ante inversionistas, proveedores, aliados estratégicos o personas de autoridad. Máximo 2 minutos, claro y profesional.</p>
             <label>Tu nombre (opcional)</label>
             <input placeholder="Ej: Stephanny" value={ep.nombre} onChange={e => setEp(p => ({...p, nombre: e.target.value}))} />
             <label>¿Qué haces en una frase?</label>
