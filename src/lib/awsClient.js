@@ -12,8 +12,7 @@ try {
     Auth: {
       Cognito: {
         userPoolId: 'us-east-1_ZvJgj7iG1',
-        userPoolClientId: '5hjqj36u9oeud7cs8onj93d36j',
-        region: 'us-east-1'
+        userPoolClientId: '5hjqj36u9oeud7cs8onj93d36j'
       }
     }
   });
