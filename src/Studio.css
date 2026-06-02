@@ -94,7 +94,7 @@
   gap: 28px;
 }
 
-/* ── MODE TOGGLE (Mensaje / Elevator, Guión / Caption) ─────── */
+/* ── MODE TOGGLE (Descubrimiento / Mensaje / Elevator, Guión / Caption) */
 .studio-mode-toggle {
   display: flex;
   gap: 3px;
@@ -102,22 +102,77 @@
   border-radius: 10px;
   padding: 3px;
   width: fit-content;
+  flex-wrap: wrap;
 }
 .studio-mode-toggle button {
   border: none;
   background: none;
-  padding: 8px 18px;
+  padding: 8px 16px;
   border-radius: 8px;
   font-size: 13px;
   font-weight: 600;
   color: #9A7878;
   cursor: pointer;
   transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
 }
 .studio-mode-toggle button.active {
   background: #fff;
   color: #C4526A;
   box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+
+/* ── DESCUBRIMIENTO ───────────────────────────────────────────── */
+.studio-mision-box {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.studio-mision-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: #C4526A;
+}
+.studio-sugerencias-box {
+  background: rgba(196,82,106,0.04);
+  border: 1.5px dashed rgba(196,82,106,0.25);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.studio-sugerencias-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #2D1B1B;
+  margin-bottom: 2px;
+}
+.studio-sugerencias-box label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #9A7878;
+  margin-bottom: -2px;
+}
+.studio-sugerencias-box input {
+  width: 100%;
+  padding: 8px 11px;
+  border: 1.5px solid rgba(196,82,106,0.15);
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #fff;
+  color: #2D1B1B;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.studio-sugerencias-box input:focus {
+  outline: none;
+  border-color: #C4526A;
 }
 
 /* ── TWO COLUMN GRID ────────────────────────────────────────── */
