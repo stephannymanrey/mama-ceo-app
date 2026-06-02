@@ -154,6 +154,7 @@
 .studio-mapa-card-header span { font-size: 15px; }
 .studio-mapa-card-header strong { font-size: 12px; font-weight: 700; color: #2D1B1B; }
 .studio-mapa-card p { font-size: 13px; color: #9A7878; margin: 0; line-height: 1.5; }
+.studio-mapa-card--highlight { border-color: rgba(196,82,106,0.25); background: #fff; }
 .studio-mapa-mpm {
   font-size: 13px;
   font-weight: 600;

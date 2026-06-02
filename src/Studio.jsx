@@ -36,17 +36,52 @@ function MensajeTab({ saved, onSave }) {
   };
 
   // ── DESCUBRIMIENTO ────────────────────────────────────────────
+  const limpiarConsejo = (texto) => {
+    return texto.trim()
+      .replace(/^me piden (consejo|ayuda|apoyo)( sobre| en| con| acerca de)?/i, "")
+      .replace(/^(siempre |la gente |todos |mis amigas |mis conocidas )?me (preguntan|buscan|consultan)( sobre| por| en)?/i, "")
+      .trim()
+      .replace(/^(sobre|en|con|acerca de|para)\s+/i, "")
+      .trim();
+  };
+
+  const limpiarAudiencia = (texto) => {
+    return texto.trim().replace(/^(a\s+)/i, "").trim();
+  };
+
+  const transformarDeseo = (queja) => {
+    let q = queja.trim();
+    // "que no saben X" → "aprender X"
+    if (/^que no saben?/i.test(q)) return q.replace(/^que no saben?\s*/i, "aprender a ");
+    // "no saben X" → "aprender a X"
+    if (/^no saben?\s/i.test(q)) return q.replace(/^no saben?\s*/i, "aprender a ");
+    // "no tengo X" → "tener X"
+    if (/^no tengo\s/i.test(q)) return q.replace(/^no tengo\s*/i, "tener ");
+    // "no puedo X" → "poder X"
+    if (/^no puedo\s/i.test(q)) return q.replace(/^no puedo\s*/i, "poder ");
+    // "no sé X" → "aprender X"
+    if (/^no sé\s/i.test(q)) return q.replace(/^no sé\s*/i, "aprender a ");
+    // "me falta X" → "conseguir X"
+    if (/^me falta\s/i.test(q)) return q.replace(/^me falta\s*/i, "conseguir ");
+    // "que no tienen X" → "tener X"
+    if (/^que no tienen?\s/i.test(q)) return q.replace(/^que no tienen?\s*/i, "tener ");
+    // "siento que X" → remove filler
+    if (/^siento que\s/i.test(q)) return q.replace(/^siento que\s*/i, "");
+    return q;
+  };
+
   const generarMision = () => {
     const { consejo, resultado, queja, audiencia, servicio } = desc;
     if (!consejo.trim() || !queja.trim()) return;
 
+    const habilidad = limpiarConsejo(consejo);
+    const clientaProb = limpiarAudiencia(audiencia) || "mamás emprendedoras que están comenzando";
+    const deseo = transformarDeseo(queja);
+
     // Zona de genialidad
     const zonaGenialidad = resultado.trim()
-      ? `Eres naturalmente buena en ${consejo.trim()}. Ya lo has demostrado: ${resultado.trim()}.`
-      : `Eres naturalmente buena en ${consejo.trim()} — ese es tu punto de partida.`;
-
-    // Clienta probable
-    const clientaProb = audiencia.trim() || "mamás emprendedoras que están comenzando";
+      ? `Tu fuerte es ${habilidad}. Ya lo has demostrado: ${resultado.trim()}.`
+      : `Tu fuerte natural es ${habilidad} — ese es tu punto de partida.`;
 
     // Producto sugerido
     const PRODUCTOS = {
@@ -59,15 +94,15 @@ function MensajeTab({ saved, onSave }) {
     };
     const productoSug = PRODUCTOS[servicio] || "mi acompañamiento";
 
-    const mpmBorrador = `Ayudo a ${clientaProb} que quieren ${queja.trim()} con ${productoSug}`;
+    const mpmBorrador = `Ayudo a ${clientaProb} a ${deseo} con ${productoSug}`;
 
     setMision({
       zonaGenialidad,
       clientaProb,
-      problemaTexto: queja.trim(),
+      problemaTexto: deseo,
       productoSug,
       mpmBorrador,
-      sugerencias: { cliente: clientaProb, problema: queja.trim(), tiempo: "", producto: productoSug },
+      sugerencias: { cliente: clientaProb, problema: deseo, tiempo: "", producto: productoSug },
     });
   };
 
@@ -193,7 +228,7 @@ function MensajeTab({ saved, onSave }) {
                     <div className="studio-mapa-card-header"><span>🎯</span><strong>El problema que resuelves</strong></div>
                     <p>{mision.problemaTexto}</p>
                   </div>
-                  <div className="studio-mapa-card">
+                  <div className="studio-mapa-card studio-mapa-card--highlight">
                     <div className="studio-mapa-card-header"><span>✦</span><strong>Tu primer MPM borrador</strong></div>
                     <p className="studio-mapa-mpm">{mision.mpmBorrador}</p>
                     <button className="studio-copy-btn small" onClick={() => copiar(mision.mpmBorrador, "mpm-borrador")}>
