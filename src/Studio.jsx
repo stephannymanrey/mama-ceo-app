@@ -201,18 +201,30 @@ function MensajeTab({ saved, onSave }) {
 
       {/* ── INICIO ─────────────────────────────────── */}
       {view === "inicio" && (
-        <div className="mpm-inicio">
-          <div className="mpm-inicio-badge">✦</div>
-          <h2 className="mpm-inicio-title">Tu Mensaje Perfecto de Marketing</h2>
-          <p className="mpm-inicio-sub">El mensaje que hace que tu clienta ideal diga "¡Eso es exactamente lo que necesito!"</p>
-          <div className="mpm-inicio-opciones">
-            <button className="mpm-opcion" onClick={() => setView("descubrir")}>
-              <span className="mpm-opcion-ico">🗺️</span>
-              <div><strong>Descubrir mi mensaje</strong><small>No tengo claro aún a quién ayudo o qué ofrezco</small></div>
+        <div className="mpm-landing">
+          <div className="mpm-landing-header">
+            <div className="mpm-landing-badge">✦</div>
+            <h2 className="mpm-landing-title">Tu Mensaje Perfecto de Marketing</h2>
+            <p className="mpm-landing-sub">El mensaje que hace que tu clienta ideal diga "¡Eso es exactamente lo que necesito!"</p>
+          </div>
+          <div className="mpm-cards-row">
+            <button className="mpm-card" onClick={() => setView("descubrir")}>
+              <div className="mpm-card-top">
+                <span className="mpm-card-emoji">🗺️</span>
+                <span className="mpm-card-tag">Exploración</span>
+              </div>
+              <strong className="mpm-card-name">Descubrir mi mensaje</strong>
+              <p className="mpm-card-desc">No sé aún a quién ayudo ni qué ofrezco — quiero encontrar mi punto de partida</p>
+              <span className="mpm-card-link">Comenzar →</span>
             </button>
-            <button className="mpm-opcion mpm-opcion--primary" onClick={() => setView("wizard")}>
-              <span className="mpm-opcion-ico">✦</span>
-              <div><strong>Crear mi MPM</strong><small>Ya sé a quién ayudo y qué ofrezco</small></div>
+            <button className="mpm-card mpm-card--highlight" onClick={() => setView("wizard")}>
+              <div className="mpm-card-top">
+                <span className="mpm-card-badge-ico">✦</span>
+                <span className="mpm-card-tag mpm-card-tag--primary">4 pasos</span>
+              </div>
+              <strong className="mpm-card-name">Crear mi MPM</strong>
+              <p className="mpm-card-desc">Ya sé a quién ayudo y quiero construir mi mensaje con 12 variaciones listas</p>
+              <span className="mpm-card-link mpm-card-link--primary">Empezar →</span>
             </button>
           </div>
         </div>

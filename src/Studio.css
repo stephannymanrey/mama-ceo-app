@@ -603,46 +603,92 @@
 .studio-email-prop strong, .studio-email-cta strong { color: #2D1B1B; }
 
 /* ── MPM WIZARD ──────────────────────────────────────────────── */
-.mpm-inicio {
-  background: #fff;
-  border-radius: 20px;
-  padding: 48px 32px;
+.mpm-landing {
   display: flex;
   flex-direction: column;
   align-items: center;
-  text-align: center;
-  gap: 16px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-  border: 1px solid rgba(196,82,106,0.08);
-  max-width: 580px;
+  gap: 28px;
+  max-width: 700px;
   margin: 0 auto;
+  width: 100%;
 }
-.mpm-inicio-badge {
-  width: 52px; height: 52px;
+.mpm-landing-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.mpm-landing-badge {
+  width: 50px; height: 50px;
   background: linear-gradient(135deg, #E8755A, #C4526A);
-  color: #fff;
-  border-radius: 16px;
+  color: #fff; border-radius: 14px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 22px; font-weight: 800;
+  font-size: 20px; font-weight: 800;
 }
-.mpm-inicio-title { font-size: 20px; font-weight: 800; color: #2D1B1B; margin: 0; }
-.mpm-inicio-sub { font-size: 13px; color: #9A7878; max-width: 360px; line-height: 1.6; margin: 0; }
-.mpm-inicio-opciones { display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 8px; }
-.mpm-opcion {
-  display: flex; align-items: center; gap: 14px;
-  background: #FFF9F6;
-  border: 1.5px solid rgba(196,82,106,0.15);
-  border-radius: 14px; padding: 16px 18px;
-  cursor: pointer; text-align: left;
-  transition: border-color 0.15s, background 0.15s, transform 0.1s;
-  font-family: inherit; width: 100%;
+.mpm-landing-title { font-size: 20px; font-weight: 800; color: #2D1B1B; margin: 0; }
+.mpm-landing-sub { font-size: 13px; color: #9A7878; max-width: 400px; line-height: 1.6; margin: 0; }
+
+.mpm-cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
 }
-.mpm-opcion:hover { border-color: #C4526A; background: #fff; transform: translateY(-1px); }
-.mpm-opcion--primary { border-color: #C4526A; background: rgba(196,82,106,0.04); }
-.mpm-opcion--primary:hover { background: rgba(196,82,106,0.08); }
-.mpm-opcion-ico { font-size: 24px; flex-shrink: 0; }
-.mpm-opcion strong { display: block; font-size: 14px; font-weight: 700; color: #2D1B1B; }
-.mpm-opcion small { font-size: 12px; color: #9A7878; }
+@media (max-width: 540px) { .mpm-cards-row { grid-template-columns: 1fr; } }
+
+.mpm-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fff;
+  border: 1.5px solid rgba(196,82,106,0.14);
+  border-radius: 20px;
+  padding: 26px 22px;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+  box-shadow: 0 3px 14px rgba(0,0,0,0.05);
+  min-height: 210px;
+}
+.mpm-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(196,82,106,0.12);
+  border-color: rgba(196,82,106,0.35);
+}
+.mpm-card--highlight {
+  background: linear-gradient(150deg, #FFF2F4 0%, #FFF8F5 100%);
+  border-color: rgba(196,82,106,0.28);
+}
+.mpm-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 4px;
+}
+.mpm-card-emoji { font-size: 34px; line-height: 1; }
+.mpm-card-badge-ico {
+  width: 44px; height: 44px;
+  background: linear-gradient(135deg, #E8755A, #C4526A);
+  color: #fff; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800; flex-shrink: 0;
+}
+.mpm-card-tag {
+  font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+  color: #9A7878; background: rgba(139,101,101,0.1);
+  padding: 4px 8px; border-radius: 6px; white-space: nowrap;
+}
+.mpm-card-tag--primary { color: #C4526A; background: rgba(196,82,106,0.1); }
+.mpm-card-name { font-size: 15px; font-weight: 700; color: #2D1B1B; display: block; }
+.mpm-card-desc { font-size: 12px; color: #9A7878; line-height: 1.55; margin: 0; flex: 1; }
+.mpm-card-link {
+  font-size: 12px; font-weight: 700; color: #9A7878;
+  margin-top: 6px; transition: color 0.15s;
+}
+.mpm-card-link--primary { color: #C4526A; }
+.mpm-card:hover .mpm-card-link { color: #C4526A; }
 
 .mpm-wizard-card {
   background: #fff;
