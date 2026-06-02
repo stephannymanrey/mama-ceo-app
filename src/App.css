@@ -101,42 +101,52 @@ button {
 
 .main-menu {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   flex: 1;
 }
 
 .menu-item {
   width: 100%;
-  min-height: 44px;
+  min-height: 46px;
   border: 0;
+  border-left: 3px solid transparent;
   border-radius: 12px;
-  background: rgba(255, 255, 255, 0.82);
+  background: transparent;
   color: var(--ink);
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 0 14px;
+  gap: 11px;
+  padding: 0 12px 0 11px;
   text-align: left;
-  font-size: 14px;
-  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
 }
 
 .menu-item:hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: 0 10px 20px rgba(121, 63, 119, 0.08);
+  background: rgba(196, 82, 106, 0.07);
+  border-left-color: rgba(196, 82, 106, 0.35);
+  color: #C4526A;
 }
 
 .menu-item span {
-  width: 22px;
-  color: var(--purple);
-  font-size: 18px;
+  width: 24px;
+  font-size: 17px;
+  line-height: 1;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .menu-item.active {
   color: #fff;
-  background: linear-gradient(135deg, #C4526A, #a8394f);
-  box-shadow: 0 12px 24px rgba(196, 82, 106, 0.22);
+  background: linear-gradient(135deg, #C4526A 0%, #a8394f 100%);
+  border-left-color: transparent;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(196, 82, 106, 0.28);
+  font-weight: 700;
 }
 
 .menu-item.active span {
@@ -211,21 +221,35 @@ button {
 
 .topbar h1 {
   margin: 0;
-  font-size: clamp(22px, 2.5vw, 32px);
-  line-height: 1.1;
-  letter-spacing: 0;
+  font-size: clamp(20px, 2.2vw, 28px);
+  line-height: 1.15;
+  letter-spacing: -0.3px;
+  font-weight: 800;
+  color: var(--ink);
 }
 
 .topbar p,
 .section-title p {
-  margin: 8px 0 0;
+  margin: 5px 0 0;
   color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.2px;
+}
+
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 0 0 4px;
 }
 
 .profile-area {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-shrink: 0;
 }
 
 .icon-button,
@@ -3592,8 +3616,9 @@ button {
 .pomodoro-settings select { min-height:34px; border:1px solid var(--line); border-radius:8px; background:#FAF7F5; padding:0 8px; font:inherit; font-size:12px; color:var(--ink); }
 
 /* ── Botón upgrade flotante animado ── */
-.upgrade-fab { position:fixed; bottom:32px; right:32px; z-index:1400; border:none; background:linear-gradient(135deg,#C9A96E,#C4526A); color:#fff; font-size:13px; font-weight:800; padding:12px 20px; border-radius:999px; cursor:pointer; box-shadow:0 8px 24px rgba(196,82,106,0.3); animation:upgrade-glow 2.5s ease-in-out infinite; letter-spacing:0.3px; }
-@keyframes upgrade-glow { 0%,100%{box-shadow:0 8px 24px rgba(196,82,106,0.3)} 50%{box-shadow:0 8px 32px rgba(196,82,106,0.6),0 0 0 6px rgba(196,82,106,0.1)} }
+.upgrade-fab { position:fixed; bottom:28px; right:28px; z-index:1400; border:1px solid rgba(196,82,106,0.25); background:rgba(255,255,255,0.95); backdrop-filter:blur(12px); color:#C4526A; font-size:12px; font-weight:700; padding:10px 18px; border-radius:999px; cursor:pointer; box-shadow:0 4px 16px rgba(196,82,106,0.12); transition:box-shadow 200ms ease, transform 200ms ease; letter-spacing:0.2px; }
+.upgrade-fab:hover { box-shadow:0 8px 24px rgba(196,82,106,0.22); transform:translateY(-2px); }
+@keyframes upgrade-glow { 0%,100%{box-shadow:0 4px 16px rgba(196,82,106,0.12)} 50%{box-shadow:0 6px 22px rgba(196,82,106,0.2)} }
 
 @media (max-width:720px) {
   .pomodoro-widget, .upgrade-fab { bottom:16px; right:16px; }
