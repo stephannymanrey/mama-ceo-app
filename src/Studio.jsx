@@ -113,6 +113,21 @@ function MensajeTab({ saved, onSave }) {
     setMode("mensaje");
   };
 
+  const crearElevatorDesdeMPM = () => {
+    const nuevoEp = {
+      nombre: "",
+      queHaces: `Ofrezco ${mp.producto} para ${mp.cliente}`,
+      quienAyudas: mp.cliente,
+      transformacion: mp.problema,
+      diferente: "",
+    };
+    setEp(nuevoEp);
+    setEpResult(
+      `${nuevoEp.queHaces}. Trabajo específicamente con ${nuevoEp.quienAyudas}, ayudándoles a ${nuevoEp.transformacion}. Lo que me diferencia es que combino estrategia y acompañamiento cercano para que logres resultados reales. Si eso resuena contigo, me encantaría que conversáramos.`
+    );
+    setMode("elevator");
+  };
+
   // ── MENSAJE PERFECTO ──────────────────────────────────────────
   const generarMensaje = () => {
     const { cliente, problema, tiempo, producto } = mp;
@@ -305,7 +320,7 @@ function MensajeTab({ saved, onSave }) {
                   <button className="studio-btn-save" onClick={() => onSave("mensajes", { id: Date.now(), tipo: "Mensaje Perfecto", texto: mpResult.completo, campos: {...mp}, fecha: new Date().toLocaleDateString("es") })}>
                     Guardar en mi banco
                   </button>
-                  <button className="studio-btn-secondary" onClick={() => setMode("elevator")}>
+                  <button className="studio-btn-secondary" onClick={crearElevatorDesdeMPM}>
                     Crear mi Elevator Pitch →
                   </button>
                 </div>
