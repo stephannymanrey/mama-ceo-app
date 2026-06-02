@@ -18,9 +18,9 @@ const PLAN_PRICES = {
 
 const POMODORO_MESSAGES = [
   "Respira. Lo que hiciste en este bloque importa.",
-  "T�mate el descanso � tu cerebro lo necesita para rendir.",
+  "Tómate el descanso o tu cerebro lo necesita para rendir.",
   "Una pausa consciente es parte del trabajo.",
-  "Hidr�tate. Mueve el cuerpo. Vuelve con m�s claridad.",
+  "Hidrátate. Mueve el cuerpo. Vuelve con más claridad.",
   "Cada bloque completado es una victoria real."
 ];
 
@@ -69,42 +69,42 @@ const initialSystemTasks = [
   { id: 2, title: "Vender y hacer seguimiento", category: "negocio", mode: "manual", canDelegate: true },
   { id: 3, title: "Crear y publicar contenido", category: "negocio", mode: "manual", canDelegate: true },
   { id: 4, title: "Cobrar y facturar", category: "negocio", mode: "manual", canDelegate: true },
-  { id: 5, title: "Dise�ar piezas gr�ficas", category: "negocio", mode: "manual", canDelegate: true },
+  { id: 5, title: "Diseñar piezas gráficas", category: "negocio", mode: "manual", canDelegate: true },
   { id: 6, title: "Responder mensajes y comentarios", category: "negocio", mode: "manual", canDelegate: true },
   { id: 7, title: "Mercado y compras del hogar", category: "hogar", mode: "manual", canDelegate: true },
   { id: 8, title: "Limpieza y orden del hogar", category: "hogar", mode: "manual", canDelegate: true },
-  { id: 9, title: "Rutina de ma�ana con los ni�os", category: "maternidad", mode: "manual", canDelegate: false },
-  { id: 10, title: "Tiempo de conexi�n y juego", category: "maternidad", mode: "manual", canDelegate: false }
+  { id: 9, title: "Rutina de mañana con los niños", category: "maternidad", mode: "manual", canDelegate: false },
+  { id: 10, title: "Tiempo de conexión y juego", category: "maternidad", mode: "manual", canDelegate: false }
 ];
 
 const systemSuggestions = {
   "Prospectar clientes nuevos": { auto: "Crea un embudo con ManyChat o una landing page que capture leads sola.", delegate: "Contrata una asistente virtual para hacer outreach en DMs." },
   "Vender y hacer seguimiento": { auto: "Usa un CRM simple como HubSpot gratuito para automatizar recordatorios.", delegate: "Una asistente de ventas puede hacer el seguimiento inicial." },
   "Crear y publicar contenido": { auto: "Programa con Meta Business Suite o Buffer. Graba en lote una vez a la semana.", delegate: "Una editora de contenido puede tomar el material en bruto y publicarlo." },
-  "Cobrar y facturar": { auto: "Usa Stripe, PayU o Wompi � el cobro llega solo sin que escribas a nadie.", delegate: "Una asistente administrativa puede gestionar facturas y cobros." },
-  "Dise�ar piezas gr�ficas": { auto: "Crea plantillas en Canva que solo cambias de texto cada semana.", delegate: "Una dise�adora freelance puede hacer el paquete mensual por horas." },
-  "Responder mensajes y comentarios": { auto: "Configura respuestas r�pidas en WhatsApp Business e Instagram.", delegate: "Una community manager puede manejar la bandeja de entrada." },
+  "Cobrar y facturar": { auto: "Usa Stripe, PayU o Wompi o el cobro llega solo sin que escribas a nadie.", delegate: "Una asistente administrativa puede gestionar facturas y cobros." },
+  "Diseñar piezas gráficas": { auto: "Crea plantillas en Canva que solo cambias de texto cada semana.", delegate: "Una diseñadora freelance puede hacer el paquete mensual por horas." },
+  "Responder mensajes y comentarios": { auto: "Configura respuestas rápidas en WhatsApp Business e Instagram.", delegate: "Una community manager puede manejar la bandeja de entrada." },
   "Mercado y compras del hogar": { auto: "Crea una lista fija en Rappi o el supermercado online de tu ciudad.", delegate: "Puedes delegar las compras a un familiar o servicio de domicilios." },
   "Limpieza y orden del hogar": { auto: "Establece una rutina de 15 min diarios para mantener el orden.", delegate: "Un servicio de limpieza semanal libera horas valiosas." },
-  "Rutina de ma�ana con los ni�os": { protect: "Este tiempo no se delega � se simplifica. Crea una rutina visual que los ni�os puedan seguir solos con tu gu�a." },
-  "Tiempo de conexi�n y juego": { protect: "Este es tu tiempo de presencia real. Bloqu�alo en tu agenda como una cita inamovible." }
+  "Rutina de mañana con los niños": { protect: "Este tiempo no se delega o se simplifica. Crea una rutina visual que los niños puedan seguir solos con tu guía." },
+  "Tiempo de conexión y juego": { protect: "Este es tu tiempo de presencia real. Bloquéalo en tu agenda como una cita inamovible." }
 };
 
 const initialHomeMaternalTasks = [
-  { id: 1, title: "Rutina de ma�ana con los ni�os", category: "Maternidad", done: false },
-  { id: 2, title: "Tiempo de juego y conexi�n", category: "Maternidad", done: false },
+  { id: 1, title: "Rutina de mañana con los niños", category: "Maternidad", done: false },
+  { id: 2, title: "Tiempo de juego y conexión", category: "Maternidad", done: false },
   { id: 3, title: "Tareas del colegio", category: "Maternidad", done: false }
 ];
 
 const initialHomeWellnessTasks = [
   { id: 1, title: "Ejercicio o caminata", category: "Bienestar", done: false },
-  { id: 2, title: "Tiempo para m�", category: "Bienestar", done: false }
+  { id: 2, title: "Tiempo para mí", category: "Bienestar", done: false }
 ];
 
 const initialIncomeSources = [
   { id: 1, name: "Servicios 1:1", monthlyGoal: 3000, color: "purple", platform: "Transferencia bancaria" },
   { id: 2, name: "Cursos / Productos digitales", monthlyGoal: 2000, color: "pink", platform: "Hotmart" },
-  { id: 3, name: "Membres�as / Recurrente", monthlyGoal: 1500, color: "green", platform: "Mercado Pago" }
+  { id: 3, name: "Membresías / Recurrente", monthlyGoal: 1500, color: "green", platform: "Mercado Pago" }
 ];
 
 const initialBusinessSettings = {
@@ -153,27 +153,27 @@ const initialHomeBudget = [
 
 const affirmations = [
   "No tengo que hacerlo todo para ser una mujer excelente.",
-  "Mi calma tambien es estrategia.",
-  "Dios me da sabiduria para elegir lo importante.",
-  "Puedo liderar mi negocio sin abandonar mi hogar ni abandonarme a mi.",
-  "Una accion correcta vale mas que diez hechas desde ansiedad."
+  "Mi calma también es estrategia.",
+  "Dios me da sabiduría para elegir lo importante.",
+  "Puedo liderar mi negocio sin abandonar mi hogar ni abandonarme a mí.",
+  "Una acción correcta vale más que diez hechas desde ansiedad."
 ];
 
 const promesas = [
   "Dios tiene planes de bien para ti, no de mal. Tu futuro tiene esperanza.",
-  "Cuando pides sabidur�a con fe, �l la da generosamente y sin reproche.",
-  "Todo lo puedes cuando �l te fortalece. No en tus fuerzas, sino en las suyas.",
-  "Dios cuida de ti. No tienes que cargar sola con la ansiedad de ma�ana.",
-  "Cuando est�s cansada y cargada, hay descanso real esperando por ti.",
-  "Dios completa lo que empieza en ti. Tu negocio y tu familia est�n en sus manos.",
-  "No te ha dado esp�ritu de temor, sino de poder, amor y dominio propio.",
-  "Busca primero lo que importa de verdad, y lo dem�s se a�ade.",
-  "Conf�a en �l con todo tu coraz�n y �l enderezar� tus caminos.",
-  "Eres m�s que vencedora. No solo sobrevives, triunfas.",
+  "Cuando pides sabiduría con fe, él la da generosamente y sin reproche.",
+  "Todo lo puedes cuando él te fortalece. No en tus fuerzas, sino en las suyas.",
+  "Dios cuida de ti. No tienes que cargar sola con la ansiedad de mañana.",
+  "Cuando estés cansada y cargada, hay descanso real esperando por ti.",
+  "Dios completa lo que empieza en ti. Tu negocio y tu familia están en sus manos.",
+  "No te ha dado espíritu de temor, sino de poder, amor y dominio propio.",
+  "Busca primero lo que importa de verdad, y lo demás se añade.",
+  "Confía en él con todo tu corazón y él enderezará tus caminos.",
+  "Eres más que vencedora. No solo sobrevives, triunfas.",
   "Dios conoce cada detalle de tu vida y tiene cuidado de ti.",
-  "La mujer que teme a Dios es digna de alabanza. T� eres esa mujer.",
-  "Con �l, lo que parece imposible se vuelve posible.",
-  "Tu trabajo no es en vano cuando lo haces con prop�sito y fe.",
+  "La mujer que teme a Dios es digna de alabanza. Tú eres esa mujer.",
+  "Con él, lo que parece imposible se vuelve posible.",
+  "Tu trabajo no es en vano cuando lo haces con propósito y fe.",
   "Dios te da la fuerza que necesitas exactamente cuando la necesitas."
 ];
 
@@ -183,11 +183,11 @@ const menu = [
   { id: "clients", label: "Mis Clientas", icon: "?????" },
   { id: "content", label: "Mi Contenido", icon: "??" },
   { id: "home", label: "Mi Hogar", icon: "??" },
-  { id: "ceo", label: "Mi Prop�sito", icon: "?" },
+  { id: "ceo", label: "Mi Propósito", icon: "?" },
   { id: "report", label: "Reporte Semanal", icon: "??" }
 ];
 
-const diasSemana = ["Dom","Lun","Mar","Mi�","Jue","Vie","S�b"];
+const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 function getWeekDays() {
   const today = new Date();
   const monday = new Date(today);
@@ -414,7 +414,7 @@ const API_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/
 async function getRemoteAuthHeaders(includeJson = false) {
   const token = await getAwsAuthToken();
   if (!token) {
-    throw new Error("No hay token seguro de AWS. Inicia sesi�n nuevamente.");
+    throw new Error("No hay token seguro de AWS. Inicia sesión nuevamente.");
   }
   return {
     ...(includeJson ? { "Content-Type": "application/json" } : {}),
@@ -743,7 +743,7 @@ export default function App() {
     // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(authEmail)) {
-      setAuthError("Por favor ingresa un correo electr�nico v�lido.");
+      setAuthError("Por favor ingresa un correo electrónico válido.");
       return;
     }
     
@@ -774,7 +774,7 @@ export default function App() {
         else { setConfirmMode(true); setAuthError(""); }
       }
     } catch (err) {
-      setAuthError("Error de conexi�n. Por favor verifica tu internet e intenta de nuevo.");
+      setAuthError("Error de conexión. Por favor verifica tu internet e intenta de nuevo.");
       console.error("Error de autenticaci�n:", err);
     } finally {
       setAuthLoading(false);
@@ -801,7 +801,7 @@ export default function App() {
   };
 
   const handleForgotPassword = async () => {
-    if (!authEmail) { setAuthError("Ingresa tu correo electr�nico primero."); return; }
+    if (!authEmail) { setAuthError("Ingresa tu correo electrónico primero."); return; }
     setAuthError("");
     setAuthLoading(true);
     const { error } = await awsAuth.resetPasswordForEmail(authEmail);
@@ -821,7 +821,7 @@ export default function App() {
       } else {
         setResetPassword(false);
         setResetStep(1);
-        setAuthError("? Contrase�a actualizada. Ya puedes iniciar sesi�n.");
+        setAuthError("? Contraseña actualizada. Ya puedes iniciar sesión.");
       }
     } catch (err) {
       setAuthError(translateError(err.message));
