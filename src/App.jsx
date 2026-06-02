@@ -425,6 +425,7 @@ async function getRemoteAuthHeaders(includeJson = false) {
 async function loadRemoteState() {
   const headers = await getRemoteAuthHeaders();
   const res = await fetch(API_URL, { mode: "cors", headers });
+  if (res.status === 404) return null;
   if (!res.ok) throw new Error(`AWS respondió ${res.status}`);
   const json = await res.json();
   return json.data ?? null;
@@ -1342,10 +1343,16 @@ export default function App() {
   if (!ready || isRestoringRemote) {
     return (
       <div className="auth-shell">
-        <div className="auth-card" style={{textAlign:"center"}}>
-          <div style={{fontSize:"32px",marginBottom:"12px"}}>?</div>
-          <h2>Entrando a tu espacio...</h2>
-          <p>Un momento, preparando solo la información de esta cuenta.</p>
+        <div className="splash-inner">
+          <div className="splash-brand">
+            <span className="splash-logo-main">Mamá</span>
+            <span className="splash-logo-sub">CEO</span>
+            <span className="splash-logo-app">APP</span>
+          </div>
+          <div className="splash-spinner" />
+          <p className="splash-hint">
+            {isRestoringRemote ? "Sincronizando tu información segura..." : "Preparando tu espacio..."}
+          </p>
         </div>
       </div>
     );
