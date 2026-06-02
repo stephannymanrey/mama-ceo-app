@@ -993,7 +993,7 @@ export default function App() {
         console.error("Error restaurando estado:", err);
         if (!cancelled) {
           setRemoteStorageEnabled(false);
-          setSyncError("No se pudo cargar tu información desde AWS. Usando almacenamiento local por ahora.");
+          setSyncError(err?.message || "No se pudo cargar tu información desde AWS. Usando almacenamiento local por ahora.");
           const storedState = loadState();
           if (storedState) applyLoadedState(storedState);
           else applyLoadedState(createBlankUserState());
