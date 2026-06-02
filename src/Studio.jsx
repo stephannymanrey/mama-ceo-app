@@ -434,64 +434,231 @@ function MensajeTab({ saved, onSave }) {
 
 // ── IDEAS ──────────────────────────────────────────────────────
 function IdeasTab({ saved, onSave, onDelete }) {
-  const [form, setForm] = useState({ titulo: "", tipo: "Hook", plataforma: "Instagram", notas: "" });
-  const ideas = saved?.ideas || [];
-  const TIPOS = ["Hook", "Educativo", "Venta", "Storytelling", "Tendencia", "Entretenimiento"];
-  const PLATAFORMAS = ["Instagram", "TikTok", "YouTube", "WhatsApp", "Facebook", "Podcast"];
-  const TIPO_COLORS = { "Hook": "#C4526A", "Educativo": "#4A90D9", "Venta": "#27AE60", "Storytelling": "#8B6565", "Tendencia": "#E8755A", "Entretenimiento": "#9B59B6" };
+  const [keyword, setKeyword] = useState("");
+  const [ideas, setIdeas] = useState(null);
+  const [thinking, setThinking] = useState(false);
+  const [copiado, setCopiado] = useState("");
 
-  const agregar = () => {
-    if (!form.titulo.trim()) return;
-    onSave("ideas", { id: Date.now(), ...form, titulo: form.titulo.trim(), fecha: new Date().toLocaleDateString("es") });
-    setForm({ titulo: "", tipo: "Hook", plataforma: "Instagram", notas: "" });
+  const copiar = (text, key) => {
+    navigator.clipboard.writeText(text);
+    setCopiado(key);
+    setTimeout(() => setCopiado(""), 2000);
   };
+
+  const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+
+  const CATS = {
+    vertical: {
+      label: "📱 Video Vertical", sub: "Reels · TikTok",
+      color: "#C4526A", bg: "#FFF0F3",
+      templates: [
+        k => `3 errores que arruinan tu ${k} (y cómo evitarlos)`,
+        k => `Lo que nadie te dice sobre ${k} 👀`,
+        k => `Cómo mejorar tu ${k} en solo 24 horas`,
+        k => `POV: el día que entendí cómo funciona ${k}`,
+        k => `El truco de ${k} que cambió todo para mí`,
+        k => `¿Por qué tu ${k} no está funcionando? Esto es lo que falta`,
+        k => `Antes vs después de trabajar tu ${k}`,
+        k => `Mini tutorial: ${k} desde cero en 60 segundos`,
+        k => `Las 3 preguntas más frecuentes sobre ${k} — respondidas`,
+        k => `La forma más fácil de empezar con ${k} sin experiencia previa`,
+        k => `Esto me pasó con ${k} y no lo esperaba 😳`,
+        k => `${k}: mito vs realidad 🔥`,
+        k => `5 señales de que necesitas mejorar tu ${k} ya`,
+        k => `Cómo hago yo mi ${k} (proceso completo en 60s)`,
+        k => `Si estás comenzando con ${k}, ve este video primero`,
+      ],
+    },
+    horizontal: {
+      label: "🎬 Video Horizontal", sub: "YouTube · Podcast",
+      color: "#4A90D9", bg: "#EEF5FF",
+      templates: [
+        k => `Cómo dominar ${k}: guía completa para mamás emprendedoras`,
+        k => `Mi historia con ${k}: lo que aprendí en el camino`,
+        k => `Todo lo que necesitas saber sobre ${k} — preguntas y respuestas`,
+        k => `Por qué ${k} es la clave que le falta a tu negocio`,
+        k => `De cero a experta en ${k}: episodio completo`,
+        k => `Entrevista: cómo una mamá transformó su negocio con ${k}`,
+        k => `${k} paso a paso: el proceso completo que uso con mis clientas`,
+        k => `Los mitos de ${k} que te están frenando — y cómo superarlos`,
+        k => `Qué nadie te enseñó sobre ${k}`,
+        k => `El episodio de ${k} que ojalá hubiera visto cuando empecé`,
+        k => `Cómo ${k} me ayudó a escalar mi negocio sin quemarme`,
+        k => `La estrategia de ${k} que funcionó para mis clientas este mes`,
+        k => `${k} y bienestar: cómo equilibrar todo sin colapsar`,
+      ],
+    },
+    carrusel: {
+      label: "🎠 Carrusel", sub: "Instagram · Facebook",
+      color: "#27AE60", bg: "#EEFAF3",
+      templates: [
+        k => `5 claves para dominar ${k} desde hoy`,
+        k => `Antes vs después de trabajar tu ${k}`,
+        k => `El proceso de ${k} que uso con mis clientas (paso a paso)`,
+        k => `Errores vs soluciones: guía de ${k}`,
+        k => `Las preguntas más frecuentes sobre ${k} — respondidas`,
+        k => `Guarda este carrusel: todo sobre ${k} en un solo post`,
+        k => `${k}: la guía visual que siempre quisiste`,
+        k => `Lo que aprendí sobre ${k} en el último año`,
+        k => `Checklist: ¿estás haciendo bien tu ${k}?`,
+        k => `Comparte si ${k} también te ha costado trabajo 👇`,
+        k => `3 formas de mejorar tu ${k} esta semana`,
+        k => `El ABC de ${k} para emprendedoras`,
+      ],
+    },
+    story: {
+      label: "💬 Historia / Story", sub: "IG Stories · FB Stories",
+      color: "#E8755A", bg: "#FFF5F0",
+      templates: [
+        k => `¿Cuál es tu mayor reto con ${k}? [encuesta]`,
+        k => `El secreto de ${k} que me tomó meses aprender`,
+        k => `¿Ya probaste esto para mejorar tu ${k}? [encuesta sí/no]`,
+        k => `Una cosa que haría diferente si empezara de cero con ${k}`,
+        k => `Mi reflexión de hoy sobre ${k} — sigue viendo`,
+        k => `¿Qué tanto sabes de ${k}? Ponlo a prueba [quiz]`,
+        k => `Lo que me preguntan todo el tiempo sobre ${k}`,
+        k => `${k} cambió mi negocio — te cuento cómo`,
+        k => `Hoy hablamos de ${k} en el live. ¿Te unes?`,
+        k => `Tip exprés de ${k} que puedes aplicar hoy 🔥`,
+        k => `Cuéntame: ¿${k} te ha traído algún reto? [caja de preguntas]`,
+      ],
+    },
+  };
+
+  const generar = (kw) => {
+    const k = (typeof kw === "string" ? kw : keyword).trim();
+    if (!k) return;
+    setThinking(true);
+    setIdeas(null);
+    setTimeout(() => {
+      const gen = {};
+      Object.entries(CATS).forEach(([key, cat]) => {
+        gen[key] = shuffle([...cat.templates]).slice(0, 5).map((f, i) => ({
+          id: `${key}-${Date.now()}-${i}`,
+          texto: f(k),
+        }));
+      });
+      setIdeas({ keyword: k, ...gen });
+      setThinking(false);
+    }, 1400);
+  };
+
+  const masIdeas = (catKey) => {
+    if (!ideas) return;
+    const cat = CATS[catKey];
+    const nuevas = shuffle([...cat.templates]).slice(0, 3).map((f, i) => ({
+      id: `${catKey}-mas-${Date.now()}-${i}`,
+      texto: f(ideas.keyword),
+    }));
+    setIdeas(prev => ({ ...prev, [catKey]: [...prev[catKey], ...nuevas] }));
+  };
+
+  const bancoIdeas = saved?.ideas || [];
+  const EJEMPLOS = ["ventas en WhatsApp", "organizar el tiempo", "reels", "bienestar", "maternidad", "redes sociales"];
 
   return (
     <div className="studio-tab-content">
-      <div className="studio-two-col">
-        <div className="studio-form-card">
-          <h3>Nueva idea</h3>
-          <p className="studio-helper">Captura la idea antes de que se vaya. Los detalles vienen después.</p>
-          <label>La idea</label>
-          <input placeholder="Ej: Por qué las mamás necesitan un sistema, no más disciplina" value={form.titulo} onChange={e => setForm(p => ({...p, titulo: e.target.value}))}
-            onKeyDown={e => e.key === "Enter" && agregar()} />
-          <label>Tipo</label>
-          <select value={form.tipo} onChange={e => setForm(p => ({...p, tipo: e.target.value}))}>
-            {TIPOS.map(t => <option key={t}>{t}</option>)}
-          </select>
-          <label>Plataforma</label>
-          <select value={form.plataforma} onChange={e => setForm(p => ({...p, plataforma: e.target.value}))}>
-            {PLATAFORMAS.map(p => <option key={p}>{p}</option>)}
-          </select>
-          <label>Notas (opcional)</label>
-          <textarea placeholder="Ángulo, referencia, qué quieres comunicar..." value={form.notas} onChange={e => setForm(p => ({...p, notas: e.target.value}))} rows={3} />
-          <button className="studio-btn-primary" onClick={agregar}>Guardar idea 💡</button>
-        </div>
-        <div className="studio-result-card">
-          {ideas.length === 0 ? (
-            <div className="studio-empty-state">
-              <span>💡</span>
-              <p>Aquí viven tus ideas. Agrégalas rápido y desarróllalas cuando tengas tiempo.</p>
-            </div>
-          ) : (
-            <div className="studio-ideas-list">
-              <h3>Banco de ideas ({ideas.length})</h3>
-              {ideas.slice().reverse().map(idea => (
-                <div className="studio-idea-item" key={idea.id}>
-                  <div className="studio-idea-header">
-                    <span className="studio-tipo-badge" style={{background: TIPO_COLORS[idea.tipo] || "#8B6565"}}>{idea.tipo}</span>
-                    <span className="studio-plat-badge">{idea.plataforma}</span>
-                    <small>{idea.fecha}</small>
-                    <button className="studio-delete-btn" onClick={() => onDelete("ideas", idea.id)}>✕</button>
-                  </div>
-                  <p className="studio-idea-titulo">{idea.titulo}</p>
-                  {idea.notas && <p className="studio-idea-notas">{idea.notas}</p>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+      <div className="ideas-search-bar">
+        <span className="ideas-search-icon">💡</span>
+        <input
+          className="ideas-search-input"
+          placeholder="Escribe un tema: ventas, reels, bienestar, organización..."
+          value={keyword}
+          onChange={e => setKeyword(e.target.value)}
+          onKeyDown={e => e.key === "Enter" && generar()}
+        />
+        <button className="ideas-search-btn" onClick={() => generar()} disabled={!keyword.trim() || thinking}>
+          Generar ideas ✦
+        </button>
       </div>
+
+      {!ideas && !thinking && (
+        <div className="ideas-empty">
+          <div className="ideas-brain-glow">🧠</div>
+          <h3>¿Sobre qué quieres crear contenido?</h3>
+          <p>Escribe un tema y te genero ideas organizadas por formato — verticales, horizontales, carruseles y stories.</p>
+          <div className="ideas-chips">
+            {EJEMPLOS.map(ej => (
+              <button key={ej} className="ideas-chip" onClick={() => { setKeyword(ej); generar(ej); }}>{ej}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {thinking && (
+        <div className="ideas-thinking">
+          <div className="ideas-orbit-container">
+            <div className="ideas-brain-orbit">🧠</div>
+            {["💡","🎬","📱","🎠","💬","✨"].map((s, i) => (
+              <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`}>{s}</div>
+            ))}
+          </div>
+          <p className="ideas-thinking-text">Generando ideas para ti<span className="ideas-dots-anim">...</span></p>
+        </div>
+      )}
+
+      {ideas && !thinking && (
+        <>
+          <div className="ideas-result-header">
+            <div>
+              <span className="ideas-kw-label">Ideas para </span>
+              <strong className="ideas-kw-value">"{ideas.keyword}"</strong>
+            </div>
+            <button className="ideas-regen-btn" onClick={() => generar(ideas.keyword)}>🔄 Nuevas ideas</button>
+          </div>
+          {Object.entries(CATS).map(([catKey, cat]) => (
+            <div className="ideas-cat-section" key={catKey} style={{ "--cat-color": cat.color, "--cat-bg": cat.bg }}>
+              <div className="ideas-cat-header">
+                <div className="ideas-cat-title">
+                  <span className="ideas-cat-label">{cat.label}</span>
+                  <span className="ideas-cat-sub">{cat.sub}</span>
+                </div>
+                <button className="ideas-mas-btn" onClick={() => masIdeas(catKey)}>+ Más ideas</button>
+              </div>
+              <div className="ideas-cards-grid">
+                {ideas[catKey].map((idea, i) => (
+                  <div className="ideas-card" key={idea.id} style={{ animationDelay: `${i * 70}ms` }}>
+                    <p className="ideas-card-text">{idea.texto}</p>
+                    <div className="ideas-card-actions">
+                      <button className="ideas-card-copy" onClick={() => copiar(idea.texto, idea.id)}>
+                        {copiado === idea.id ? "✓ Copiado" : "Copiar"}
+                      </button>
+                      <button className="ideas-card-save" onClick={() => onSave("ideas", {
+                        id: Date.now(), titulo: idea.texto, tipo: cat.label,
+                        plataforma: cat.sub, color: cat.color, keyword: ideas.keyword,
+                        fecha: new Date().toLocaleDateString("es"),
+                      })}>Guardar</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {bancoIdeas.length > 0 && (
+        <div className="studio-bank">
+          <h4>Ideas guardadas ({bancoIdeas.length})</h4>
+          {bancoIdeas.slice().reverse().map(idea => (
+            <div className="studio-bank-item" key={idea.id}>
+              <div className="studio-bank-item-top">
+                <span className="studio-tipo-badge" style={{ background: idea.color || "#8B6565" }}>{idea.tipo}</span>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <small>{idea.fecha}</small>
+                  <button className="studio-delete-btn" onClick={() => onDelete("ideas", idea.id)}>✕</button>
+                </div>
+              </div>
+              <p className="studio-idea-titulo">{idea.titulo}</p>
+              <div className="studio-bank-actions">
+                <button className="studio-bank-action-copy" onClick={() => copiar(idea.titulo, `bank-${idea.id}`)}>
+                  {copiado === `bank-${idea.id}` ? "¡Copiado!" : "Copiar"}
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
