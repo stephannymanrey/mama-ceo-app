@@ -16,6 +16,7 @@ const TABS = [
   { id: "hooks",    icon: "🪝", label: "Hooks"       },
   { id: "guion",    icon: "🎬", label: "Guión"       },
   { id: "email",    icon: "📧", label: "Email"       },
+  { id: "whatsapp", icon: "💬", label: "WhatsApp"    },
 ];
 
 // ── MENSAJE ────────────────────────────────────────────────────
@@ -2977,6 +2978,278 @@ function EmailTab({ saved, onSave, onDelete }) {
   );
 }
 
+// ── WHATSAPP LANZAMIENTO ───────────────────────────────────────
+function WhatsAppTab({ saved, onSave, onDelete }) {
+  const FORMATOS = ["Clase gratuita","Zoom cerrado","En vivo por Instagram","Solo por WhatsApp","Webinar","Otra modalidad"];
+  const INIT = { producto:"", descripcion:"", precio:"", fecha:"", hora:"", formato:"Clase gratuita", promesa:"", escasez:"" };
+  const [form,     setForm]     = useState(INIT);
+  const [plan,     setPlan]     = useState(null);
+  const [thinking, setThinking] = useState(false);
+  const [copiado,  setCopiado]  = useState("");
+
+  const copiar = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2200); };
+  const sf = (k, v) => setForm(p => ({...p, [k]: v}));
+
+  const buildPlan = () => {
+    const { producto, precio, fecha, hora, formato, promesa, escasez } = form;
+    const p  = producto || "mi producto";
+    const f  = fecha    || "[fecha]";
+    const h  = hora     || "[hora]";
+    const pr = promesa  || "lograr lo que deseas";
+    const esc = escasez;
+    const fmt = formato;
+
+    const fase1 = [
+      { dia:"3 – 4 días antes", label:"🌱 Intriga — crea la expectativa",
+        texto:`Llevo semanas trabajando en algo — y ya casi está listo.\n\nSolo quiero que guardes esta fecha en tu agenda: ${f} a las ${h}.\n\nAlgo importante pasa ese día. Tú querrás estar aquí cuando pase. 👀\n\nTe cuento más pronto.`
+      },
+      { dia:"2 días antes", label:"🔥 Calentamiento — más contexto",
+        texto:`Sé que te dejé con suspenso 😅 y está bien.\n\nPorque lo que viene lo merece.\n\nEl ${f} a las ${h} abro las puertas de ${p} — y quiero que seas de las primeras en conocer todos los detalles.\n\nEsto es para ti si quieres ${pr}.\n\n¿Estás lista? 🔥\n\nNos vemos el ${f}.`
+      },
+      { dia:"1 día antes", label:"🗓️ Recordatorio — confirma asistencia",
+        texto:`Mañana es el día. 🗓️\n\nMañana ${f} a las ${h} arranca ${fmt} — y voy a estar aquí contándote todo sobre ${p}.\n\nSi quieres ${pr}, mañana es tu momento.\n\nGuarda la hora. No te vayas a ningún lado. Nos vemos aquí. 🙌`
+      },
+      { dia:"Noche anterior", label:"🌙 Último recordatorio — corto y directo",
+        texto:`Mañana a las ${h}. 🌙\n\nSolo eso te quería decir esta noche.\n\nNos vemos aquí. 💌`
+      },
+    ];
+
+    const fase2 = [
+      { dia:"Mañana del lanzamiento", label:"🎉 ¡Llegó el día!",
+        texto:`🎉 ¡El día llegó!\n\nHoy a las ${h} arranca ${fmt} — y estoy muy emocionada de finalmente contarte todo sobre ${p}.\n\nHoy vas a entender exactamente cómo ${pr}.\n\n${esc ? `📌 ${esc}` : "Y si decides entrar hoy, hay algo especial esperándote. 🎁"}\n\nNos vemos a las ${h}. ¡Aquí estaré! 🔥`
+      },
+      { dia:"1 – 2 horas antes", label:"⏰ Cuenta regresiva",
+        texto:`¡Falta muy poco! ⏰\n\n${fmt} arranca en menos de 2 horas.\n\n¿Ya tienes tu espacio listo? Prepárate, acomódate y llega puntual — porque lo que compartiremos hoy puede cambiar cómo ves tu negocio.\n\nNos vemos a las ${h}. 🔥`
+      },
+      { dia:"A la hora exacta", label:"🔴 ¡Arrancamos!",
+        texto:`🔴 ¡Arrancamos!\n\n[Agrega aquí el link de ${fmt} o instrucciones de acceso]\n\n¡Nos vemos adentro! 🎉`
+      },
+      { dia:"Inmediatamente después", label:"🚀 Apertura de ventas",
+        texto:`Wow. 🥹\n\nLo que pasó hoy fue especial. Gracias a todas las que estuvieron presentes.\n\nY para las que no pudieron estar — no se preocupen. Lo más importante viene ahora.\n\n${p} está oficialmente abierto. 🎁\n\nEsto es lo que lograrás:\n✨ ${pr}\n\nInversión: ${precio || "[precio]"}\n${esc ? `📌 ${esc}\n` : ""}\nEl link está aquí 👇\n[Link de compra o inscripción]\n\n¿Tienes preguntas? Respóndeme aquí mismo. Estoy leyendo todo. 💌`
+      },
+      { dia:"2 – 4 horas después", label:"📊 Urgencia inicial",
+        texto:`Ya son varias las que se animaron a entrar a ${p} en las últimas horas. 🔥\n\nTiene todo el sentido — porque esto fue creado exactamente para quienes quieren ${pr}.\n\n¿Todavía tienes preguntas? Respóndeme aquí y te doy todos los detalles.\n\nEl precio especial de lanzamiento es solo por este tiempo. Después cambia.\n\n👉 [Link]`
+      },
+    ];
+
+    const fase3 = [
+      { dia:"Al día siguiente", label:"☀️ Prueba social + urgencia suave",
+        texto:`Buenos días ☀️\n\nAyer fue un día increíble. Gracias a todas las que estuvieron, las que preguntaron, las que se animaron.\n\nPara las que aún están pensando:\n\n${p} todavía está abierto — pero el precio de lanzamiento es solo hasta ${esc || "que se agoten los cupos"}.\n\n¿Qué necesitas saber para tomar la decisión? Respóndeme aquí. 💌`
+      },
+      { dia:"2 – 3 días antes del cierre", label:"⏳ Urgencia media",
+        texto:`Quedan pocos días. ⏰\n\nEl acceso a ${p} al precio de lanzamiento cierra pronto — y no lo repetiré enseguida.\n\nSi quieres ${pr}... hoy es mejor que mañana. Y mañana es mejor que "ya no está disponible".\n\n${esc ? `📌 ${esc}\n` : ""}👉 [Link de compra]\n\n¿Dudas de último momento? Escríbeme. Estoy aquí para responderte. 💌`
+      },
+      { dia:"Últimas 24 horas", label:"🚨 Último aviso",
+        texto:`🚨 Últimas horas.\n\nMañana cierra ${p}.\n\nNo voy a mandarte otro mensaje después de este. Solo quiero que sepas que el espacio todavía está ahí si lo quieres.\n\n${pr}\n\n👉 [Link]\n\nCon cariño,\n[Tu nombre]`
+      },
+      { dia:"Al momento del cierre", label:"🔐 Cierre oficial",
+        texto:`Y... cerrado. 🔐\n\n${p} ya no está disponible.\n\nGracias a todas las que confiaron y se animaron. Las veo adentro. 🥹\n\nPara las que no pudieron esta vez — escríbanme aquí y las agrego a la lista de espera para la próxima apertura.\n\nHasta pronto. 💌`
+      },
+    ];
+
+    return { fase1, fase2, fase3 };
+  };
+
+  const generarPlan = () => {
+    if (!form.producto.trim()) return;
+    setThinking(true); setPlan(null);
+    setTimeout(() => {
+      setPlan(buildPlan());
+      setThinking(false);
+      setTimeout(() => window.scrollTo({ top:0, behavior:"smooth" }), 50);
+    }, 1200);
+  };
+
+  const FASES = [
+    { key:"fase1", label:"📣 Pre-lanzamiento",        sub:"Crea expectativa antes del gran día",      color:"#E67E22", bg:"#FFF5EB" },
+    { key:"fase2", label:"🚀 El día del lanzamiento",  sub:"Conecta, motiva y abre las ventas",        color:"#C4526A", bg:"#FFF0F3" },
+    { key:"fase3", label:"🎯 Post-lanzamiento",        sub:"Genera urgencia y cierra con confianza",   color:"#27AE60", bg:"#EEFAF3" },
+  ];
+
+  const updateMensaje = (faseKey, idx, txt) => {
+    setPlan(prev => {
+      const msgs = [...prev[faseKey]];
+      msgs[idx] = { ...msgs[idx], texto: txt };
+      return { ...prev, [faseKey]: msgs };
+    });
+  };
+
+  return (
+    <div className="studio-tab-content">
+
+      {/* ── FORMULARIO ── */}
+      {!plan && !thinking && (
+        <div className="wp-form-wrap">
+          <div className="guion-form-intro">
+            <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>💬</div>
+            <h2>Plan de Lanzamiento WhatsApp</h2>
+            <p>Cuéntanos de qué trata tu lanzamiento y generaremos 13 mensajes listos para enviar: calentamiento, el gran día y el cierre.</p>
+          </div>
+
+          <div className={`desc-q-card${form.producto?" filled":""}`}>
+            <div className="desc-q-num">🎁</div>
+            <div className="desc-q-body">
+              <label className="desc-q-label">¿Cómo se llama tu producto o servicio?</label>
+              <input className="desc-q-input" autoFocus
+                placeholder="Ej: Mini-curso de ventas, Membresía Mamá CEO, Consultoría VIP..."
+                value={form.producto} onChange={e => sf("producto", e.target.value)} />
+            </div>
+          </div>
+
+          <div className={`desc-q-card${form.promesa?" filled":""}`}>
+            <div className="desc-q-num">✨</div>
+            <div className="desc-q-body">
+              <label className="desc-q-label">¿Qué resultado o transformación ofrece?</label>
+              <input className="desc-q-input"
+                placeholder="Ej: vender sin perseguir clientes, organizar su negocio en 4 semanas..."
+                value={form.promesa} onChange={e => sf("promesa", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="wp-fecha-hora-row">
+            <div className={`desc-q-card${form.fecha?" filled":""}`} style={{flex:1}}>
+              <div className="desc-q-num">📅</div>
+              <div className="desc-q-body">
+                <label className="desc-q-label">Fecha del lanzamiento</label>
+                <input className="desc-q-input" placeholder="Ej: 20 de junio" value={form.fecha} onChange={e => sf("fecha", e.target.value)} />
+              </div>
+            </div>
+            <div className={`desc-q-card${form.hora?" filled":""}`} style={{flex:1}}>
+              <div className="desc-q-num">🕐</div>
+              <div className="desc-q-body">
+                <label className="desc-q-label">Hora</label>
+                <input className="desc-q-input" placeholder="Ej: 8pm hora Colombia" value={form.hora} onChange={e => sf("hora", e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <div className="wp-formato-group">
+            <label className="lm-crear-label">¿Cómo lo vas a hacer?</label>
+            <div className="guion-obj-pills" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
+              {FORMATOS.map(f => (
+                <button key={f} className={`guion-obj-pill${form.formato===f?" active":""}`}
+                  onClick={() => sf("formato", f)}>{f}</button>
+              ))}
+            </div>
+          </div>
+
+          <div className="wp-precio-escasez-row">
+            <div className={`desc-q-card${form.precio?" filled":""}`} style={{flex:1}}>
+              <div className="desc-q-num">💰</div>
+              <div className="desc-q-body">
+                <label className="desc-q-label">Precio o inversión (opcional)</label>
+                <input className="desc-q-input" placeholder="Ej: $97 USD, $350.000 COP" value={form.precio} onChange={e => sf("precio", e.target.value)} />
+              </div>
+            </div>
+            <div className={`desc-q-card${form.escasez?" filled":""}`} style={{flex:1}}>
+              <div className="desc-q-num">⏳</div>
+              <div className="desc-q-body">
+                <label className="desc-q-label">Escasez o urgencia (opcional)</label>
+                <input className="desc-q-input" placeholder="Ej: Solo 30 cupos, precio especial 48h" value={form.escasez} onChange={e => sf("escasez", e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <button className="mpm-step-btn" onClick={generarPlan} disabled={!form.producto.trim() || !form.promesa.trim()}>
+            Generar plan de lanzamiento ✦
+          </button>
+        </div>
+      )}
+
+      {/* ── THINKING ── */}
+      {thinking && (
+        <div className="ideas-thinking">
+          <div className="ideas-orb-container">
+            <div className="ideas-orb ideas-orb-1" /><div className="ideas-orb ideas-orb-2" /><div className="ideas-orb ideas-orb-3" />
+          </div>
+          <p className="ideas-thinking-text">Creando tu plan de 13 mensajes<span className="ideas-dots-anim">...</span></p>
+        </div>
+      )}
+
+      {/* ── PLAN ── */}
+      {plan && !thinking && (
+        <div className="wp-plan-wrap">
+
+          {/* Topbar */}
+          <div className="wp-plan-topbar">
+            <button className="mpm-wizard-back-btn" onClick={() => setPlan(null)}>← Editar</button>
+            <button className="mpm-wizard-back-btn" onClick={() => { setPlan(null); setForm(INIT); }}>🔄 Nuevo</button>
+            <button className="mpm-edit-btn" style={{marginLeft:"auto"}} onClick={() => onSave("lanzamientos", { id: Date.now(), producto: form.producto, fecha: form.fecha, formato: form.formato, fecha_guardado: new Date().toLocaleDateString("es") })}>
+              Guardar 💬
+            </button>
+          </div>
+
+          {/* Header del plan */}
+          <div className="wp-plan-header">
+            <div className="wp-plan-titulo">{form.producto}</div>
+            <div className="wp-plan-meta-row">
+              {form.fecha && <span>📅 {form.fecha}</span>}
+              {form.hora  && <span>🕐 {form.hora}</span>}
+              <span>📍 {form.formato}</span>
+              {form.precio && <span>💰 {form.precio}</span>}
+            </div>
+            <div className="wp-plan-total">13 mensajes · 3 fases</div>
+          </div>
+
+          {/* Las 3 fases */}
+          {FASES.map(fase => (
+            <div key={fase.key} className="wp-fase" style={{"--wf-color": fase.color, "--wf-bg": fase.bg}}>
+              <div className="wp-fase-header">
+                <div>
+                  <div className="wp-fase-label">{fase.label}</div>
+                  <div className="wp-fase-sub">{fase.sub}</div>
+                </div>
+                <span className="wp-fase-count">{plan[fase.key].length} mensajes</span>
+              </div>
+
+              <div className="wp-mensajes">
+                {plan[fase.key].map((msg, i) => (
+                  <div key={i} className="wp-mensaje-card">
+                    <div className="wp-mensaje-head">
+                      <span className="wp-dia-badge">{msg.dia}</span>
+                      <span className="wp-msg-label">{msg.label}</span>
+                      <button className="wp-copy-btn" onClick={() => copiar(msg.texto, `${fase.key}-${i}`)}>
+                        {copiado === `${fase.key}-${i}` ? "✓ Copiado" : "Copiar"}
+                      </button>
+                    </div>
+                    <textarea
+                      className="wp-textarea"
+                      value={msg.texto}
+                      onChange={e => updateMensaje(fase.key, i, e.target.value)}
+                      rows={Math.max(5, msg.texto.split("\n").length + 1)}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {/* Banco guardado */}
+          {saved?.lanzamientos?.length > 0 && (
+            <div className="studio-bank">
+              <h4>Lanzamientos guardados ({saved.lanzamientos.length})</h4>
+              {saved.lanzamientos.slice().reverse().map(l => (
+                <div className="studio-bank-item" key={l.id}>
+                  <div className="studio-bank-item-top">
+                    <span className="studio-tipo-badge" style={{background:"#E67E22"}}>{l.formato}</span>
+                    <small>{l.fecha_guardado}</small>
+                  </div>
+                  <strong style={{fontSize:"13px"}}>{l.producto}</strong>
+                  {l.fecha && <span style={{fontSize:"11px",color:"#9A7878",marginLeft:"7px"}}>· {l.fecha}</span>}
+                  <div style={{marginTop:"6px"}}>
+                    <button className="studio-bank-action-copy" style={{color:"#C4526A"}} onClick={() => onDelete?.("lanzamientos", l.id)}>Eliminar</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+    </div>
+  );
+}
+
 // ── STUDIO PRINCIPAL ───────────────────────────────────────────
 export default function Studio({ onBack }) {
   const [activeTab, setActiveTab] = useState("mensaje");
@@ -3019,6 +3292,7 @@ export default function Studio({ onBack }) {
         {activeTab === "hooks"    && <HooksTab      {...tabProps} onCrearGuion={handleCrearGuion} />}
         {activeTab === "guion"    && <GuionTab      {...tabProps} seed={guionSeed} onSeedConsumed={() => setGuionSeed("")} />}
         {activeTab === "email"    && <EmailTab      {...tabProps} />}
+        {activeTab === "whatsapp" && <WhatsAppTab   {...tabProps} />}
       </main>
     </div>
   );
