@@ -3261,52 +3261,102 @@ const CR_ESTRUCTURAS = [
   { id: "Proceso",     icon: "🔢", sub: "Paso a paso",         color: "#2f9f70", bg: "#def3e8" },
 ];
 
-function buildCarruselSlides(estructura, t) {
+const CR_CONTEXTO_META = {
+  "Educativo":   { label: "¿Cuáles son tus tips o puntos clave? (uno por línea)", placeholder: "Bloquea 2 horas fijas para tu negocio cada día\nAgrupa tareas similares — no mezcles crear con responder\nDi no a lo que no mueve tu negocio hacia adelante\nDelega lo que no necesita tu cerebro\nRevisa tu semana cada domingo en 10 minutos" },
+  "Historia":    { label: "Cuéntanos en 3 líneas: ¿cómo era el antes? → ¿qué cambió? → ¿cómo es el ahora?", placeholder: "Antes me sentía desbordada — todo urgente, sin tiempo para nada\nDescubrí que necesitaba un sistema, no más disciplina\nHoy trabajo con claridad y termino el día sin culpa" },
+  "Comparación": { label: "Escribe 3 situaciones del ANTES (líneas 1-3) y 3 del AHORA (líneas 4-6)", placeholder: "Hacía de todo sin saber qué movía el negocio de verdad\nTrabajas reaccionando, apagando fuegos todo el día\nSentía que nunca era suficiente\nAhora tengo 3 prioridades claras cada semana\nTrabajo en bloques y termino lo que empiezo\nSé exactamente qué hacer cada mañana" },
+  "Proceso":     { label: "¿Cuáles son los pasos de tu proceso? (uno por línea — mínimo 3, máximo 6)", placeholder: "Define qué quieres lograr esta semana con claridad\nBloquea tiempo en tu agenda antes de que lleguen los imprevistos\nAgrupa tareas por tipo de energía — crea en bloque, responde en bloque\nDi no a lo que no esté en tu lista de prioridades\nRevisa cada semana qué funcionó y qué ajustar" },
+};
+
+function buildCarruselSlides(estructura, t, ctx = "") {
   const cleanT = t.trim() || "este tema";
-  if (estructura === "Educativo") return [
-    { id:0, tipo:"portada",   etiqueta:"",            principal:`Las 5 cosas sobre ${cleanT}\nque ojalá alguien me hubiera dicho antes`, apoyo:"Desliza para descubrirlas →" },
-    { id:1, tipo:"contenido", etiqueta:"Tip #1",      principal:`[Tu primer consejo clave sobre ${cleanT}]`, apoyo:"Ejemplo o frase de apoyo" },
-    { id:2, tipo:"contenido", etiqueta:"Tip #2",      principal:`[Tu segundo aprendizaje más valioso sobre ${cleanT}]`, apoyo:"" },
-    { id:3, tipo:"contenido", etiqueta:"Tip #3",      principal:"[El que más te costó aprender — el más poderoso]", apoyo:"" },
-    { id:4, tipo:"contenido", etiqueta:"Tip #4",      principal:"[El que más rápido genera resultados]", apoyo:"" },
-    { id:5, tipo:"contenido", etiqueta:"Tip #5",      principal:"[Tu favorito — el que cambió tu perspectiva]", apoyo:"" },
-    { id:6, tipo:"cta",       etiqueta:"",            principal:"¿Cuál de estos tips resonó más contigo?", apoyo:"Guarda este carrusel 📌\nComenta tu número favorito 👇" },
+  const lines = ctx.split("\n").map(l => l.trim()).filter(Boolean);
+
+  if (estructura === "Educativo") {
+    const tips = lines.length >= 3 ? lines : [
+      `El hábito más simple que más impacto tiene en ${cleanT}`,
+      `El error que el 90% comete y que frena todo el proceso`,
+      `Lo que funciona aunque no lo veas en redes — porque nadie lo muestra`,
+      `La verdad incómoda que te libera cuando la aceptas`,
+      `El cambio más pequeño que genera el resultado más grande`,
+    ];
+    return [
+      { id:0, tipo:"portada",   etiqueta:"", principal:`${tips.length} claves sobre ${cleanT}\nque ojalá alguien me hubiera dicho antes`, apoyo:"Desliza para descubrirlas →" },
+      ...tips.slice(0, 6).map((tip, i) => ({
+        id: i+1, tipo:"contenido", etiqueta:`${String(i+1).padStart(2,"0")}`,
+        principal: tip, apoyo: ""
+      })),
+      { id: tips.slice(0,6).length+1, tipo:"cta", etiqueta:"", principal:"¿Cuál de estas claves resonó más contigo?", apoyo:"Guarda este carrusel para cuando lo necesites 📌\nComenta el número de tu favorita 👇" },
+    ];
+  }
+
+  if (estructura === "Historia") {
+    const antes   = lines[0] || `Antes de entender ${cleanT}, sentía que algo no estaba funcionando`;
+    const quiebre = lines[1] || `Hasta que encontré una forma diferente de verlo todo`;
+    const ahora   = lines[2] || `Hoy tengo claridad, consistencia y resultados con ${cleanT}`;
+    return [
+      { id:0, tipo:"portada",   etiqueta:"",             principal:`Cómo ${cleanT}\ncambió todo para mí\n(y puede cambiarlo para ti)`, apoyo:"Una historia real →" },
+      { id:1, tipo:"antes",     etiqueta:"El antes",     principal: antes, apoyo:"Era agotador. Trabajaba mucho y avanzaba poco." },
+      { id:2, tipo:"problema",  etiqueta:"El dolor",     principal:"Lo que más me frustraba era...", apoyo:"Ver que otras lo lograban y preguntarme qué estaba haciendo mal." },
+      { id:3, tipo:"quiebre",   etiqueta:"El quiebre",   principal: quiebre, apoyo:"Fue un momento pequeño. Pero lo cambió todo." },
+      { id:4, tipo:"solucion",  etiqueta:"El cambio",    principal:"Lo que descubrí fue...", apoyo:"No era un secreto grande. Era algo que yo ya sabía pero no había aplicado de verdad." },
+      { id:5, tipo:"resultado", etiqueta:"El resultado", principal: ahora, apoyo:"No fue de un día para otro. Pero cuando empezó a fluir, no lo pude parar." },
+      { id:6, tipo:"cta",       etiqueta:"",             principal:"¿Te identificas con alguna de estas etapas?", apoyo:"Cuéntame en comentarios 💬\no escríbeme por DM — te leo 🤍" },
+    ];
+  }
+
+  if (estructura === "Comparación") {
+    const antesDefault = [
+      `Hacía ${cleanT} sin un sistema claro — todo era caótico`,
+      `Creía que necesitaba más tiempo, más energía o más recursos`,
+      `Me comparaba constantemente y sentía que siempre iba atrasada`,
+    ];
+    const despuesDefault = [
+      `Tengo un proceso claro que repito con consistencia`,
+      `Trabajo con lo que tengo — y genera resultados reales`,
+      `Me enfoco en mi propio camino — y eso lo cambió todo`,
+    ];
+    const antesItems   = lines.slice(0, 3).length >= 3 ? lines.slice(0, 3) : antesDefault;
+    const despuesItems = lines.slice(3, 6).length >= 3 ? lines.slice(3, 6) : despuesDefault;
+    return [
+      { id:0, tipo:"portada",  etiqueta:"",           principal:`${cleanT}:\nantes vs. ahora`, apoyo:"Lo que cambió cuando lo hice diferente →" },
+      { id:1, tipo:"antes",    etiqueta:"ANTES ✗",    principal: antesItems[0], apoyo:"Resultado: agotamiento, frustración, sin avance real" },
+      { id:2, tipo:"antes",    etiqueta:"ANTES ✗",    principal: antesItems[1], apoyo:"" },
+      { id:3, tipo:"antes",    etiqueta:"ANTES ✗",    principal: antesItems[2], apoyo:"" },
+      { id:4, tipo:"vs",       etiqueta:"EL CAMBIO",  principal:"Lo que lo transformó todo:", apoyo:"Un cambio en cómo lo veía lo cambió todo." },
+      { id:5, tipo:"despues",  etiqueta:"AHORA ✓",    principal: despuesItems[0], apoyo:"Resultado: claridad, consistencia, resultados reales" },
+      { id:6, tipo:"despues",  etiqueta:"AHORA ✓",    principal: despuesItems[1], apoyo:"" },
+      { id:7, tipo:"despues",  etiqueta:"AHORA ✓",    principal: despuesItems[2], apoyo:"" },
+      { id:8, tipo:"cta",      etiqueta:"",           principal:"¿En cuál lado estás tú hoy?", apoyo:"Comenta ANTES o AHORA 👇\nTe leo en cada comentario" },
+    ];
+  }
+
+  // Proceso
+  const pasosDefault = [
+    `Define con claridad qué quieres lograr con ${cleanT}`,
+    `Crea un sistema simple que puedas repetir cada semana`,
+    `Elimina lo que te frena sin que te des cuenta`,
+    `Ejecuta en bloques — protege tu tiempo como una cita sagrada`,
+    `Revisa, ajusta y vuelve a empezar — la consistencia gana`,
   ];
-  if (estructura === "Historia") return [
-    { id:0, tipo:"portada",   etiqueta:"",             principal:`Cómo ${cleanT}\ncambió mi vida\n(y puede cambiar la tuya)`, apoyo:"Una historia real →" },
-    { id:1, tipo:"antes",     etiqueta:"El antes",     principal:`Antes de descubrir ${cleanT}...`, apoyo:"[Describe cómo era tu situación — sé honesta y específica]" },
-    { id:2, tipo:"problema",  etiqueta:"El dolor",     principal:"Lo que más me frustraba era...", apoyo:"[El punto de mayor dolor — el que tu audiencia también siente]" },
-    { id:3, tipo:"quiebre",   etiqueta:"El quiebre",   principal:"Hasta que pasó algo que lo cambió todo", apoyo:`[El momento de descubrimiento sobre ${cleanT}]` },
-    { id:4, tipo:"solucion",  etiqueta:"El cambio",    principal:"Lo que descubrí fue...", apoyo:`[Tu aprendizaje o herramienta principal sobre ${cleanT}]` },
-    { id:5, tipo:"resultado", etiqueta:"El resultado", principal:"Hoy, gracias a eso...", apoyo:"[El resultado concreto que vives ahora — específico y real]" },
-    { id:6, tipo:"cta",       etiqueta:"",             principal:"¿Estás viviendo alguna de estas etapas?", apoyo:"Cuéntame en comentarios 💬\no escríbeme por DM — te leo 🤍" },
-  ];
-  if (estructura === "Comparación") return [
-    { id:0, tipo:"portada",  etiqueta:"",           principal:`${cleanT}:\nantes vs. ahora`, apoyo:"Lo que cambió cuando lo hice diferente →" },
-    { id:1, tipo:"antes",    etiqueta:"ANTES ✗",    principal:`[Lo que creías o hacías mal sobre ${cleanT}]`, apoyo:"Resultado: agotamiento y sin avance" },
-    { id:2, tipo:"antes",    etiqueta:"ANTES ✗",    principal:"[Segunda creencia o hábito que te limitaba]", apoyo:"" },
-    { id:3, tipo:"antes",    etiqueta:"ANTES ✗",    principal:"[Tercer error que cometías — sé específica]", apoyo:"" },
-    { id:4, tipo:"vs",       etiqueta:"EL CAMBIO",  principal:"Lo que lo transformó todo:", apoyo:`[Qué cambió tu perspectiva sobre ${cleanT}]` },
-    { id:5, tipo:"despues",  etiqueta:"AHORA ✓",    principal:"[Lo que haces ahora diferente — concreto]", apoyo:"Resultado: claridad y resultados reales" },
-    { id:6, tipo:"despues",  etiqueta:"AHORA ✓",    principal:"[Segunda práctica nueva que adoptaste]", apoyo:"" },
-    { id:7, tipo:"despues",  etiqueta:"AHORA ✓",    principal:"[Tercer cambio positivo en tu vida]", apoyo:"" },
-    { id:8, tipo:"cta",      etiqueta:"",           principal:"¿En cuál lado estás tú hoy?", apoyo:"Comenta ANTES o AHORA 👇\nTe leo en cada comentario" },
-  ];
+  const pasos = lines.length >= 3 ? lines.slice(0, 6) : pasosDefault;
   return [
-    { id:0, tipo:"portada",   etiqueta:"",             principal:`Mi proceso para ${cleanT}\nen 5 pasos que funcionan`, apoyo:"Desliza y aplícalos →" },
-    { id:1, tipo:"paso",      etiqueta:"Paso 01",      principal:"[El primer paso — sienta la base de todo]", apoyo:"[Por qué empezar aquí y qué error evita]" },
-    { id:2, tipo:"paso",      etiqueta:"Paso 02",      principal:"[El segundo paso]", apoyo:"[Qué logras al completarlo]" },
-    { id:3, tipo:"paso",      etiqueta:"Paso 03",      principal:"[El paso del medio — el más retador]", apoyo:"[Cómo superar el obstáculo típico]" },
-    { id:4, tipo:"paso",      etiqueta:"Paso 04",      principal:"[El cuarto paso]", apoyo:"" },
-    { id:5, tipo:"paso",      etiqueta:"Paso 05",      principal:"[El paso final — el que consolida todo]", apoyo:"[El resultado al llegar aquí]" },
-    { id:6, tipo:"resultado", etiqueta:"El resultado", principal:"Cuando sigues estos pasos...", apoyo:`[Describe el resultado concreto de aplicar este proceso de ${cleanT}]` },
-    { id:7, tipo:"cta",       etiqueta:"",             principal:"¿Quieres apoyo para aplicar esto?", apoyo:"Escríbeme por DM 💌\no comenta PROCESO y te cuento" },
+    { id:0, tipo:"portada",   etiqueta:"",             principal:`Mi proceso para ${cleanT}\nen ${pasos.length} pasos que funcionan`, apoyo:"Desliza y aplícalos →" },
+    ...pasos.map((paso, i) => ({
+      id: i+1, tipo:"paso", etiqueta:`Paso ${String(i+1).padStart(2,"0")}`,
+      principal: paso,
+      apoyo: i === 0 ? "Aquí es donde la mayoría se salta — y por eso no llega al final." :
+             i === Math.floor(pasos.length / 2) ? "Este es el paso más difícil. Y el más importante." : ""
+    })),
+    { id: pasos.length+1, tipo:"resultado", etiqueta:"El resultado", principal:`Cuando aplicas este proceso...`, apoyo:`Dejas de improvisar y empiezas a tener resultados consistentes con ${cleanT}.` },
+    { id: pasos.length+2, tipo:"cta",       etiqueta:"", principal:"¿En qué paso estás tú ahora?", apoyo:"Comenta el número 👇\nTe doy un tip específico para ese paso" },
   ];
 }
 
 function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
   const [tema,      setTema]      = useState(brandProfile.queOfreces || "");
   const [estructura,setEstructura]= useState("Educativo");
+  const [contexto,  setContexto]  = useState("");
   const [slides,    setSlides]    = useState(null);
   const [thinking,  setThinking]  = useState(false);
   const [copiado,   setCopiado]   = useState("");
@@ -3314,11 +3364,12 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
   const copiar = (txt, key) => { navigator.clipboard.writeText(txt); setCopiado(key); setTimeout(() => setCopiado(""), 2200); };
 
   const meta = CR_ESTRUCTURAS.find(e => e.id === estructura) || CR_ESTRUCTURAS[0];
+  const ctxMeta = CR_CONTEXTO_META[estructura];
 
   const generar = () => {
     if (!tema.trim()) return;
     setThinking(true);
-    setTimeout(() => { setSlides(buildCarruselSlides(estructura, tema)); setThinking(false); }, 950);
+    setTimeout(() => { setSlides(buildCarruselSlides(estructura, tema, contexto)); setThinking(false); }, 950);
   };
 
   const updateSlide = (id, field, val) =>
@@ -3351,11 +3402,11 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
       <div className="cr-form card">
         <div className="cr-form-header">
           <h3>Generador de Carrusel</h3>
-          <p>Crea el copy de tus slides listo para diseñar en Canva</p>
+          <p>Escribe tu contenido real y el sistema arma las slides por ti</p>
         </div>
         <div className="cr-field">
           <label className="cr-label">Tema del carrusel</label>
-          <input className="cr-input" placeholder="Ej: organización del hogar, finanzas personales, maternidad consciente..." value={tema} onChange={e => setTema(e.target.value)} />
+          <input className="cr-input" placeholder="Ej: organizar el tiempo cuando eres mamá y emprendes" value={tema} onChange={e => setTema(e.target.value)} />
         </div>
         <div className="cr-field">
           <label className="cr-label">Estructura</label>
@@ -3364,13 +3415,24 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
               <button key={e.id} type="button"
                 className={`cr-e-btn ${estructura === e.id ? "cr-e-btn--active" : ""}`}
                 style={estructura === e.id ? {"--ec": e.color, "--eb": e.bg} : {}}
-                onClick={() => setEstructura(e.id)}>
+                onClick={() => { setEstructura(e.id); setContexto(""); setSlides(null); }}>
                 <span className="cr-e-icon">{e.icon}</span>
                 <span className="cr-e-name">{e.id}</span>
                 <span className="cr-e-sub">{e.sub}</span>
               </button>
             ))}
           </div>
+        </div>
+        <div className="cr-field">
+          <label className="cr-label">{ctxMeta.label}</label>
+          <textarea
+            className="cr-input cr-textarea"
+            placeholder={ctxMeta.placeholder}
+            value={contexto}
+            onChange={e => setContexto(e.target.value)}
+            rows={5}
+          />
+          <span className="cr-ctx-hint">Si lo dejas vacío, usamos ejemplos genéricos que puedes editar después.</span>
         </div>
         <button className="primary-button" onClick={generar} disabled={thinking || !tema.trim()} style={{marginTop:"4px"}}>
           {thinking ? "Generando slides..." : "Generar slides 🎴"}

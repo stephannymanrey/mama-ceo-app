@@ -2749,3 +2749,17 @@
   .cr-estructura-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cr-result-bar { flex-direction: column; align-items: flex-start; }
 }
+
+/* Carrusel - contexto textarea y hint */
+.cr-textarea {
+  min-height: 110px;
+  padding: 10px 14px;
+  resize: vertical;
+  line-height: 1.7;
+}
+.cr-ctx-hint {
+  font-size: 11px;
+  color: var(--muted, #8A7F7A);
+  font-style: italic;
+  margin-top: 2px;
+}
