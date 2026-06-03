@@ -1519,11 +1519,16 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
   const [c,         setC]         = useState({ red: "Instagram", tono: "Cercano", tema: "", cta: "", hashtags: true });
   const [caption,   setCaption]   = useState(null);
   const [copiado,   setCopiado]   = useState("");
+  const [fraseIdx,  setFraseIdx]  = useState({});
 
   useEffect(() => { if (seed) { setForm(p => ({...p, tema: seed})); onSeedConsumed?.(); } }, []);
 
-  const copiar = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
-  const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+  const copiar      = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
+  const shuffle     = (arr) => [...arr].sort(() => Math.random() - 0.5);
+  const nextFrase   = (si, tot) => setFraseIdx(p => ({...p, [si]: ((p[si]||0) + 1) % tot}));
+  const prevFrase   = (si, tot) => setFraseIdx(p => ({...p, [si]: ((p[si]||0) - 1 + tot) % tot}));
+  const usarFrase   = (si, txt) => setEscritura(p => ({...p, [si]: p[si] ? p[si] + "\n\n" + txt : txt}));
+  const usarPalabra = (si, pal) => setEscritura(p => ({...p, [si]: p[si] ? p[si] + " " + pal : pal}));
 
   const buildEscenas = (tema, objetivo, tipo, aud) => {
     const isShort = !tipo.includes("YouTube");
@@ -1847,30 +1852,43 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
                           </div>
                         )}
 
-                        <div className="guion-frases-section">
-                          <div className="guion-frases-title">Frases que puedes usar o adaptar:</div>
-                          {esc.frases.map((frase, j) => (
-                            <div key={j} className="guion-frase-row">
-                              <span className="guion-frase-mark">✦</span>
-                              <p className="guion-frase-text">{frase}</p>
-                              <button className="guion-frase-copy" onClick={() => copiar(frase, `f-${i}-${j}`)}>
-                                {copiado === `f-${i}-${j}` ? "✓" : "Copiar"}
-                              </button>
+                        {/* Slider de frases */}
+                        <div className="guion-frase-slider-wrap">
+                          <div className="guion-frases-title">Elige la frase que más te suene:</div>
+                          <div className="guion-frase-slide-card" key={`s-${i}-${(fraseIdx[i]||0) % esc.frases.length}`}>
+                            <span className="guion-frase-mark">✦</span>
+                            <p className="guion-frase-text">{esc.frases[(fraseIdx[i]||0) % esc.frases.length]}</p>
+                          </div>
+                          <div className="guion-frase-slider-nav">
+                            <span className="guion-frase-counter">{(fraseIdx[i]||0) % esc.frases.length + 1} / {esc.frases.length}</span>
+                            <div className="guion-frase-nav-btns">
+                              <button className="guion-frase-nav-btn" onClick={() => prevFrase(i, esc.frases.length)}>←</button>
+                              <button className="guion-frase-nav-btn" onClick={() => nextFrase(i, esc.frases.length)}>→</button>
+                              <button className="guion-frase-nav-btn guion-frase-shuffle-btn" title="Ver otra frase aleatoria"
+                                onClick={() => setFraseIdx(p => ({...p, [i]: Math.floor(Math.random() * esc.frases.length)}))}>🔀</button>
                             </div>
-                          ))}
-                        </div>
-
-                        <div className="guion-palabras-section">
-                          <div className="guion-palabras-title">Palabras que tocan corazones:</div>
-                          <div className="guion-palabras-row">
-                            {esc.palabras.map((pw, j) => (
-                              <span key={j} className="guion-palabra-chip"
-                                style={{background: esc.bgLight, color: esc.color, borderColor: esc.color + "55"}}>
-                                {pw}
-                              </span>
-                            ))}
+                            <button className="guion-usar-frase-btn" style={{"--scene-color": esc.color}}
+                              onClick={() => usarFrase(i, esc.frases[(fraseIdx[i]||0) % esc.frases.length])}>
+                              Usar esta ✦
+                            </button>
                           </div>
                         </div>
+
+                        {/* Palabras interactivas — solo escenas 2, 3, 4 (no HOOK) */}
+                        {i > 0 && (
+                          <div className="guion-palabras-section">
+                            <div className="guion-palabras-title">Palabras que tocan — clic para agregar:</div>
+                            <div className="guion-palabras-row">
+                              {esc.palabras.map((pw, j) => (
+                                <button key={j} className="guion-palabra-chip"
+                                  style={{background: esc.bgLight, color: esc.color, borderColor: esc.color + "55"}}
+                                  onClick={() => usarPalabra(i, pw)}>
+                                  + {pw}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
                         <div className="guion-write-section">
                           <div className="guion-write-label">✍ Tu versión (edita a tu gusto):</div>
@@ -1888,35 +1906,20 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
                   ))}
                 </div>
 
-                {/* Caption auto-generado */}
-                {caption && (
-                  <div className="guion-caption-section">
-                    <div className="guion-caption-hdr">
-                      <span className="guion-caption-ico">📝</span>
-                      <div className="guion-caption-hdr-info">
-                        <div className="guion-caption-title">Caption para este video</div>
-                        <div className="guion-caption-sub">Generado automáticamente · edita a tu gusto</div>
-                      </div>
-                      <button className="lm-dl-btn" style={{marginLeft:"auto"}} onClick={() => { setSubTab("caption"); setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}),50); }}>
-                        Ver en Caption →
-                      </button>
-                    </div>
-                    <textarea
-                      className="guion-caption-ta"
-                      value={caption}
-                      onChange={e => setCaption(e.target.value)}
-                      rows={9}
-                    />
-                    <div className="guion-caption-actions">
-                      <button className="guion-frase-copy" style={{padding:"7px 16px",fontSize:"12px"}} onClick={() => copiar(caption, "cap-doc")}>
-                        {copiado === "cap-doc" ? "✓ Copiado" : "Copiar caption"}
-                      </button>
-                      <button className="guion-frase-copy" style={{padding:"7px 16px",fontSize:"12px",marginLeft:"6px"}} onClick={() => onSave("captions", { id: Date.now(), caption, red: "Instagram", tema: guion.tema, fecha: guion.fecha })}>
-                        Guardar caption
-                      </button>
-                    </div>
+                {/* Caption CTA */}
+                <div className="guion-caption-cta">
+                  <div className="guion-caption-cta-info">
+                    <div className="guion-caption-cta-title">¿Listo para publicar?</div>
+                    <div className="guion-caption-cta-sub">Tu caption se crea en un clic, alineado con este video</div>
                   </div>
-                )}
+                  <button className="guion-caption-cta-btn" onClick={() => {
+                    if (!caption) setCaption(buildCaptionFromGuion(guion.tema, guion.objetivo));
+                    setSubTab("caption");
+                    setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}), 50);
+                  }}>
+                    📝 Generar caption
+                  </button>
+                </div>
 
                 <div className="guion-doc-footer">
                   <p>Creado con Studio de Contenido · Mamá CEO App</p>

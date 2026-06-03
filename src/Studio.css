@@ -1264,10 +1264,9 @@
   box-shadow: 0 4px 28px rgba(0,0,0,0.08), 0 0 0 1px rgba(201,168,76,0.08); overflow: hidden;
 }
 
-/* Header blanco con bordes dorados */
+/* Header blanco con acento dorado */
 .guion-doc-header {
   background: #FFFFFF;
-  border-bottom: 3px solid #C9A84C;
   padding: 32px 36px 28px;
   display: flex; flex-direction: column; gap: 10px;
 }
@@ -2012,3 +2011,85 @@
   font-size: 13px; color: #2D1B1B; cursor: pointer; font-weight: 600;
 }
 .cap-checkbox-row input { accent-color: #C4526A; width: 15px; height: 15px; cursor: pointer; }
+
+/* ── GUIÓN — Slider de frases interactivo ───────────────── */
+@keyframes guion-frase-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.guion-frase-slider-wrap { display: flex; flex-direction: column; gap: 10px; }
+
+.guion-frase-slide-card {
+  display: flex; gap: 12px; align-items: flex-start;
+  background: #FEFCF7; border: 1px solid rgba(201,168,76,0.18);
+  border-radius: 12px; padding: 16px 18px; min-height: 64px;
+  animation: guion-frase-in 0.28s ease;
+}
+
+.guion-frase-slider-nav {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.guion-frase-counter {
+  font-size: 11px; font-weight: 700; color: #B09090; min-width: 34px;
+}
+.guion-frase-nav-btns { display: flex; gap: 4px; }
+.guion-frase-nav-btn {
+  background: none; border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 7px; width: 30px; height: 30px;
+  font-size: 13px; cursor: pointer; color: #B09090;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s; font-family: inherit;
+}
+.guion-frase-nav-btn:hover {
+  border-color: var(--scene-color, #C4526A);
+  color: var(--scene-color, #C4526A);
+  background: var(--scene-bg, #FFF0F3);
+}
+.guion-frase-shuffle-btn { font-size: 14px; }
+.guion-usar-frase-btn {
+  margin-left: auto; padding: 7px 18px;
+  background: var(--scene-color, #C4526A); color: #fff;
+  border: none; border-radius: 8px; font-size: 12px;
+  font-weight: 700; cursor: pointer; font-family: inherit;
+  transition: opacity 0.15s, transform 0.1s;
+  letter-spacing: 0.2px;
+}
+.guion-usar-frase-btn:hover { opacity: 0.88; transform: scale(1.02); }
+.guion-usar-frase-btn:active { transform: scale(0.97); }
+
+/* Chips de palabras interactivos */
+.guion-palabra-chip {
+  border-radius: 20px; padding: 5px 13px;
+  font-size: 11px; font-weight: 600; border: 1.5px solid;
+  cursor: pointer; transition: all 0.15s; font-family: inherit;
+}
+.guion-palabra-chip:hover {
+  opacity: 1 !important; transform: translateY(-2px);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+}
+.guion-palabra-chip:active { transform: scale(0.95); }
+
+/* Caption CTA al fondo del guión */
+.guion-caption-cta {
+  margin: 4px 36px 28px;
+  padding: 18px 22px;
+  background: #FEFCF7;
+  border: 1.5px solid rgba(201,168,76,0.25);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap;
+}
+@media (max-width: 560px) { .guion-caption-cta { margin: 4px 16px 20px; } }
+.guion-caption-cta-info { flex: 1; min-width: 160px; }
+.guion-caption-cta-title { font-size: 14px; font-weight: 800; color: #2D1B1B; margin-bottom: 3px; }
+.guion-caption-cta-sub { font-size: 12px; color: #8A6A5A; }
+.guion-caption-cta-btn {
+  padding: 10px 22px;
+  background: #2D1B1B; color: #fff;
+  border: none; border-radius: 10px;
+  font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: inherit;
+  transition: opacity 0.15s, transform 0.1s; white-space: nowrap;
+}
+.guion-caption-cta-btn:hover { opacity: 0.85; transform: scale(1.02); }
