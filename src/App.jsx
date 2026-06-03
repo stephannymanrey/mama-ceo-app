@@ -1466,6 +1466,34 @@ export default function App() {
     );
   }
 
+  const startPomodoroDrag = (e) => {
+    if (e.target.tagName === "BUTTON" || e.target.tagName === "SELECT" || e.target.tagName === "OPTION") return;
+    e.preventDefault();
+    const el = document.querySelector(".pomo-widget");
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const sx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const sy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    const onMove = (ev) => {
+      const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+      setPomodoroPos({
+        x: Math.max(0, Math.min(window.innerWidth - el.offsetWidth, cx - sx)),
+        y: Math.max(0, Math.min(window.innerHeight - el.offsetHeight, cy - sy))
+      });
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onUp);
+  };
+
   return (
     <div className="app-shell">
       {showProfileModal && (
