@@ -15,7 +15,8 @@ const TABS = [
   { id: "lead",     icon: "🎁", label: "Lead Magnet" },
   { id: "hooks",    icon: "🪝", label: "Hooks"       },
   { id: "guion",    icon: "🎬", label: "Guión"       },
-  { id: "carrusel", icon: "🎴", label: "Carrusel"    },
+  { id: "carrusel",   icon: "🎴", label: "Carrusel"    },
+  { id: "reproposito",icon: "♻️", label: "Repropósito" },
   { id: "email",    icon: "📧", label: "Email"       },
   { id: "whatsapp", icon: "💬", label: "WhatsApp"    },
 ];
@@ -2176,7 +2177,16 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                 <button className="mpm-wizard-back-btn" onClick={() => setGuion(null)}>← Editar</button>
                 <button className="mpm-wizard-back-btn" onClick={() => { setGuion(null); setWizard({step:1,objetivo:"Vender",logro:"",dolor:"",cambio:"",cta:"Guardar el video"}); }}>🔄 Nuevo</button>
                 <div className="guion-hoja-actions">
-                  <button className="mpm-edit-btn" onClick={() => onSave("guiones", { id: Date.now(), tema: guion.tema, tipo: guion.tipo, objetivo: guion.objetivo, fecha: guion.fecha })}>
+                  <button className="mpm-edit-btn" onClick={() => onSave("guiones", {
+                    id: Date.now(), tema: guion.tema, tipo: guion.tipo, objetivo: guion.objetivo, fecha: guion.fecha,
+                    logro:   wizard.logro   || "",
+                    dolor:   wizard.dolor   || "",
+                    cambio:  wizard.cambio  || "",
+                    hook:    escritura[0]   || guion.escenas?.[0]?.texto || "",
+                    interes: escritura[1]   || guion.escenas?.[1]?.texto || "",
+                    deseo:   escritura[2]   || guion.escenas?.[2]?.texto || "",
+                    ctaTxt:  escritura[3]   || guion.escenas?.[3]?.texto || "",
+                  })}>
                     Guardar 🎬
                   </button>
                   <button className="lm-dl-btn lm-dl-btn--word" onClick={downloadWordGuion}>⬇ Word</button>
@@ -3252,6 +3262,226 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
 }
 
 // ── STUDIO PRINCIPAL ───────────────────────────────────────────
+// ── REPROPÓSITO ────────────────────────────────────────────────────────────
+
+function RepropositoTab({ saved, brandProfile = {} }) {
+  const [selId,   setSelId]   = useState(null);
+  const [copiado, setCopiado] = useState("");
+
+  const copiar = (txt, key) => { navigator.clipboard.writeText(txt); setCopiado(key); setTimeout(() => setCopiado(""), 2200); };
+
+  const guiones = (saved?.guiones || []).slice().reverse();
+  const g = guiones.find(x => x.id === selId) || null;
+
+  const line1 = (txt) => (txt || "").split("\n")[0].trim();
+  const trunc = (txt, n = 120) => { const t = line1(txt); return t.length > n ? t.substring(0, n) + "..." : t; };
+
+  const genCarrusel = () => {
+    if (!g) return [];
+    return [
+      { num:"01", etq:"Portada",    txt: trunc(g.hook) || `Algo sobre ${g.tema} que necesitas escuchar hoy` },
+      { num:"02", etq:"El dolor",   txt: trunc(g.interes) || `Lo que muchas vivimos con ${g.tema} — y que pocas dicen` },
+      { num:"03", etq:"El cambio",  txt: trunc(g.deseo) || `Hasta que descubres que hay otra forma de verlo` },
+      { num:"04", etq:"Resultado",  txt: g.logro ? `Cuando ${g.logro.toLowerCase().replace(/\.$/, "")}` : `Y cuando eso cambia, todo cambia` },
+      { num:"05", etq:"CTA",        txt: trunc(g.ctaTxt) || `Guarda este carrusel — lo vas a querer tener cerca 📌` },
+    ];
+  };
+
+  const genEmail = () => {
+    if (!g) return { asunto: "", cuerpo: "" };
+    const t = g.tema || "";
+    const nombre = brandProfile?.nombreNegocio || "";
+    return {
+      asunto: `Algo sobre ${t} que no quiero que se te pase`,
+      cuerpo: [
+        `Hola 👋`,
+        ``,
+        g.hook || `Quiero contarte algo sobre ${t} que creo que te va a resonar.`,
+        ``,
+        g.interes ? g.interes + `\n` : "",
+        g.deseo   ? g.deseo   + `\n` : "",
+        g.logro   ? `Cuando ${g.logro.toLowerCase()}, todo empieza a fluir diferente.\n` : "",
+        g.ctaTxt  || `Responde este email si quieres saber más — te leo con gusto.`,
+        ``,
+        `Con cariño,`,
+        nombre || `[Tu nombre]`,
+      ].filter(l => l !== "").join("\n"),
+    };
+  };
+
+  const genWhatsApp = () => {
+    if (!g) return [];
+    const t = g.tema || "este tema";
+    const dolor = g.dolor ? g.dolor.toLowerCase().replace(/\.$/, "") : `algo no estaba funcionando como querías`;
+    const hook = g.hook ? `"${line1(g.hook)}"` : "";
+    return [
+      { label: "📣 Pre-publicación — antes de subir el reel",
+        txt: `Hola 💛\n\nHoy publico algo que creo que te va a llegar directo.\n\nEs sobre ${t}.\n\nSi alguna vez has sentido que ${dolor}, este video es para ti.\n\nLo subo en un momento — estate pendiente. 👀` },
+      { label: "🚀 El día que publicas",
+        txt: `¡Ya está en el aire! 🎬\n\nAcabo de publicar un reel sobre ${t}.\n\n${hook}\n\nVe a verlo y cuéntame en comentarios si te resonó algo.\n\n👉 [link de tu perfil]`.replace(/\n\n\n/g, "\n\n") },
+      { label: "🔁 Follow-up al día siguiente",
+        txt: `Ayer publiqué algo sobre ${t} y la respuesta fue hermosa 🤍\n\nSi todavía no lo viste, te lo dejo aquí → [link]\n\nY si ya lo viste: ¿en qué parte te viste reflejada?\n\nTe leo con gusto 💬` },
+    ];
+  };
+
+  const genStories = () => {
+    if (!g) return [];
+    const t = g.tema || "este tema";
+    return [
+      { num:"01", tipo:"Pregunta",       txt: g.hook    ? line1(g.hook)    : `¿Sientes que con ${t} algo todavía no está donde quieres?` },
+      { num:"02", tipo:"El dolor",       txt: g.interes ? line1(g.interes) : `Muchas vivimos esto con ${t} — y se siente muy solitario.` },
+      { num:"03", tipo:"La revelación",  txt: g.deseo   ? line1(g.deseo)   : `Hasta que descubres que no es falta de esfuerzo — es falta de sistema.` },
+      { num:"04", tipo:"El resultado",   txt: g.logro   ? `Cuando ${g.logro.toLowerCase()}` : `Y cuando todo empieza a fluir, tu vida cambia de verdad.` },
+      { num:"05", tipo:"CTA",            txt: g.ctaTxt  ? line1(g.ctaTxt)  : `Responde este story si quieres saber más — te cuento todo 💬` },
+    ];
+  };
+
+  const slides  = genCarrusel();
+  const email   = genEmail();
+  const waMsgs  = genWhatsApp();
+  const stories = genStories();
+
+  const FORMAT_COLORS = {
+    carrusel: { color:"#4A90D9", bg:"#EEF5FF" },
+    email:    { color:"#C9A96E", bg:"#faf3e7" },
+    wa:       { color:"#25D366", bg:"#f0faf5" },
+    stories:  { color:"#C4526A", bg:"#FFF0F3" },
+  };
+
+  return (
+    <div className="rp-wrap">
+      <div className="rp-intro card">
+        <h3 className="rp-intro-title">♻️ Repropósito de contenido</h3>
+        <p className="rp-intro-sub">Elige un guión guardado y conviértelo en 4 formatos distintos — semana de contenido completa con un clic.</p>
+      </div>
+
+      {/* Guiones guardados */}
+      {guiones.length === 0 ? (
+        <div className="rp-empty">Aún no tienes guiones guardados. Crea uno en el tab Guión y guárdalo para reproponer su contenido aquí.</div>
+      ) : (
+        <div className="rp-guiones-grid">
+          {guiones.map(gg => (
+            <button key={gg.id}
+              className={`rp-guion-card ${selId === gg.id ? "rp-guion-card--active" : ""}`}
+              onClick={() => setSelId(selId === gg.id ? null : gg.id)}>
+              <span className="rp-guion-obj">{gg.objetivo || "Guión"}</span>
+              <span className="rp-guion-tema">{gg.tema}</span>
+              <span className="rp-guion-fecha">{gg.fecha}</span>
+              {selId === gg.id && <span className="rp-guion-check">✓ Seleccionado</span>}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Formatos */}
+      {g && (
+        <>
+          <div className="rp-sel-banner">
+            <span>♻️ Reproponiéndolo como: <b>{g.tema}</b></span>
+            <button className="rp-desel" onClick={() => setSelId(null)}>× Cambiar</button>
+          </div>
+
+          <div className="rp-formats-grid">
+
+            {/* Carrusel */}
+            <div className="rp-fcard" style={{"--rpc": FORMAT_COLORS.carrusel.color, "--rpb": FORMAT_COLORS.carrusel.bg}}>
+              <div className="rp-fcard-header">
+                <span className="rp-fcard-icon">📱</span>
+                <span className="rp-fcard-title">Carrusel</span>
+                <button className="rp-copy-all" onClick={() => copiar(slides.map((s,i) => `SLIDE ${i+1} — ${s.etq}\n${s.txt}`).join("\n\n---\n\n"), "carrusel")}>
+                  {copiado === "carrusel" ? "✓ Copiado" : "Copiar todo"}
+                </button>
+              </div>
+              <div className="rp-slides-list">
+                {slides.map((s) => (
+                  <div key={s.num} className="rp-slide-row">
+                    <span className="rp-slide-num">{s.num}</span>
+                    <div className="rp-slide-content">
+                      <span className="rp-slide-etq">{s.etq}</span>
+                      <p className="rp-slide-txt">{s.txt}</p>
+                    </div>
+                    <button className="rp-copy-item" onClick={() => copiar(s.txt, `s${s.num}`)}>
+                      {copiado === `s${s.num}` ? "✓" : "📋"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Email */}
+            <div className="rp-fcard" style={{"--rpc": FORMAT_COLORS.email.color, "--rpb": FORMAT_COLORS.email.bg}}>
+              <div className="rp-fcard-header">
+                <span className="rp-fcard-icon">📧</span>
+                <span className="rp-fcard-title">Email</span>
+                <button className="rp-copy-all" onClick={() => copiar(`Asunto: ${email.asunto}\n\n${email.cuerpo}`, "email")}>
+                  {copiado === "email" ? "✓ Copiado" : "Copiar todo"}
+                </button>
+              </div>
+              <div className="rp-email-wrap">
+                <div className="rp-email-asunto">
+                  <span className="rp-email-asunto-label">Asunto</span>
+                  <span className="rp-email-asunto-txt">{email.asunto}</span>
+                </div>
+                <pre className="rp-email-body">{email.cuerpo}</pre>
+              </div>
+            </div>
+
+            {/* WhatsApp */}
+            <div className="rp-fcard" style={{"--rpc": FORMAT_COLORS.wa.color, "--rpb": FORMAT_COLORS.wa.bg}}>
+              <div className="rp-fcard-header">
+                <span className="rp-fcard-icon">💬</span>
+                <span className="rp-fcard-title">WhatsApp</span>
+                <button className="rp-copy-all" onClick={() => copiar(waMsgs.map(m => `${m.label}\n\n${m.txt}`).join("\n\n━━━━━━━━\n\n"), "wa")}>
+                  {copiado === "wa" ? "✓ Copiado" : "Copiar todo"}
+                </button>
+              </div>
+              <div className="rp-wa-list">
+                {waMsgs.map((m, i) => (
+                  <div key={i} className="rp-wa-msg">
+                    <div className="rp-wa-msg-header">
+                      <span className="rp-wa-label">{m.label}</span>
+                      <button className="rp-copy-item" onClick={() => copiar(m.txt, `wa${i}`)}>
+                        {copiado === `wa${i}` ? "✓" : "📋"}
+                      </button>
+                    </div>
+                    <pre className="rp-wa-txt">{m.txt}</pre>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Stories */}
+            <div className="rp-fcard" style={{"--rpc": FORMAT_COLORS.stories.color, "--rpb": FORMAT_COLORS.stories.bg}}>
+              <div className="rp-fcard-header">
+                <span className="rp-fcard-icon">📸</span>
+                <span className="rp-fcard-title">Stories</span>
+                <button className="rp-copy-all" onClick={() => copiar(stories.map(s => `Story ${s.num} — ${s.tipo}\n${s.txt}`).join("\n\n---\n\n"), "stories")}>
+                  {copiado === "stories" ? "✓ Copiado" : "Copiar todo"}
+                </button>
+              </div>
+              <div className="rp-stories-list">
+                {stories.map((s) => (
+                  <div key={s.num} className="rp-story-row">
+                    <span className="rp-story-num">{s.num}</span>
+                    <div className="rp-story-content">
+                      <span className="rp-story-tipo">{s.tipo}</span>
+                      <p className="rp-story-txt">{s.txt}</p>
+                    </div>
+                    <button className="rp-copy-item" onClick={() => copiar(s.txt, `st${s.num}`)}>
+                      {copiado === `st${s.num}` ? "✓" : "📋"}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ── CARRUSEL ───────────────────────────────────────────────────────────────
 
 const CR_ESTRUCTURAS = [
@@ -3689,8 +3919,9 @@ export default function Studio({ onBack, brandProfile = {}, onGoToBrandProfile }
         {activeTab === "lead"     && <LeadMagnetTab {...tabProps} />}
         {activeTab === "hooks"    && <HooksTab      {...tabProps} onCrearGuion={handleCrearGuion} />}
         {activeTab === "guion"    && <GuionTab      {...tabProps} seed={guionSeed} onSeedConsumed={() => setGuionSeed("")} />}
-        {activeTab === "carrusel" && <CarruselTab   {...tabProps} />}
-        {activeTab === "email"    && <EmailTab      {...tabProps} />}
+        {activeTab === "carrusel"    && <CarruselTab     {...tabProps} />}
+        {activeTab === "reproposito" && <RepropositoTab  {...tabProps} />}
+        {activeTab === "email"       && <EmailTab        {...tabProps} />}
         {activeTab === "whatsapp" && <WhatsAppTab   {...tabProps} />}
       </main>
     </div>
