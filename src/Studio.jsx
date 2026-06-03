@@ -1534,42 +1534,43 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
     const isShort = !tipo.includes("YouTube");
 
     const HOOKS = {
-      "Vender":   [
-        `¿Sabías que con ${tema} puedes transformar tu negocio sin tener que cambiar quién eres?`,
-        `Sobre ${tema} hay algo que nadie te dice — y me costó años entenderlo. Hoy te lo doy en un minuto.`,
-        `Hay una manera de aprovechar ${tema} que casi nadie conoce. Y cuando la aplicas, todo cambia.`,
+      "Vender": [
+        `¿Llevas tiempo intentando hacer crecer tu negocio con ${tema} y sientes que algo no está funcionando?`,
+        `Hay algo sobre ${tema} que nadie te dice — y me costó años entenderlo. Hoy te lo comparto en un minuto.`,
+        `Si tu negocio tiene que ver con ${tema}, esto que aprendí puede cambiar completamente tus resultados.`,
       ],
       "Conectar": [
-        `Tengo que contarte algo sobre ${tema} que lo cambió todo para mí.`,
-        `El día que entendí de verdad lo que ${tema} podía hacer por mí, sentí un alivio enorme. Quiero que tú también lo sientas.`,
-        `Nadie me contó esto sobre ${tema} cuando más lo necesitaba. Hoy quiero cambiarlo.`,
+        `Quiero contarte algo personal sobre ${tema} que cambió todo para mí.`,
+        `Hubo un momento en que ${tema} me parecía imposible. Hoy quiero contarte qué pasó.`,
+        `Nadie me habló con honestidad sobre ${tema} cuando más lo necesitaba. Hoy yo sí lo hago.`,
       ],
-      "Educar":   [
-        `Hoy te enseño sobre ${tema} lo que ojalá alguien me hubiera dicho cuando empecé.`,
-        `${tema}: lo más importante que necesitas saber — y cabe en menos de 60 segundos.`,
-        `Esto que aprendí sobre ${tema} marca la diferencia entre las que avanzan y las que se estancan.`,
+      "Educar": [
+        `Lo que nadie te explica bien sobre ${tema} — y que marca toda la diferencia.`,
+        `Si quieres entender ${tema} de verdad, este video es para ti. Te lo explico sin rodeos.`,
+        `Sobre ${tema}: lo más importante que necesitas saber, en menos de 60 segundos.`,
       ],
       "Inspirar": [
-        `Lograr lo que quería con ${tema} me parecía imposible. Hasta que cambié una sola cosa.`,
-        `Si alguien me hubiera dicho antes que con ${tema} podía llegar hasta aquí, lo habría intentado mucho antes.`,
-        `Quiero que sepas que tener éxito con ${tema} sí es posible para ti. Aunque ahora no puedas creerlo.`,
+        `Hubo un tiempo en que ${tema} me parecía inalcanzable. Hasta que cambié una sola cosa.`,
+        `Si sientes que ${tema} no es para ti, quiero que escuches esto.`,
+        `Quiero que sepas que sí es posible avanzar en ${tema} — aunque ahora no puedas creerlo.`,
       ],
     };
+
     const ACCION = {
-      "Vender":   [
-        `"Escríbeme '${tema.split(" ")[0].toUpperCase()}' en los comentarios y te cuento el siguiente paso."`,
+      "Vender": [
+        `"Escríbeme 'QUIERO' en los comentarios y te cuento el siguiente paso."`,
         `"Si esto te resonó, el link está en mi bio. Hay un espacio para ti."`,
-        `"Mándame un mensaje directo — hablemos de cómo puedo ayudarte con esto."`,
+        `"Mándame un mensaje directo — hablemos de cómo puedo ayudarte."`,
       ],
       "Conectar": [
-        `"Comenta con una sola palabra cómo te sentiste. Me encanta leerte."`,
+        `"Cuéntame en comentarios con una sola palabra cómo te sentiste."`,
         `"Guarda este video — lo vas a querer tener cuando lo necesites."`,
         `"¿A quién le hace falta escuchar esto hoy? Compártelo con ella."`,
       ],
-      "Educar":   [
+      "Educar": [
         `"Guarda este video — lo vas a querer consultar cuando lo apliques."`,
-        `"Sígueme para que no te pierdas lo que viene. Hay más sobre ${tema}."`,
-        `"Comparte esto con alguien que también está trabajando en ${tema}."`,
+        `"Sígueme para que no te pierdas lo que viene. Hay mucho más."`,
+        `"Comparte esto con alguien que también está trabajando en esto."`,
       ],
       "Inspirar": [
         `"Guarda este video para los días difíciles — como recordatorio de que sí puedes."`,
@@ -1585,7 +1586,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
         emocion: "CURIOSIDAD · IDENTIDAD",
         guia: `Los primeros 3 segundos deciden si te siguen viendo o hacen scroll. Una frase que las haga pensar "eso me pasa a mí" o "necesito escuchar esto".`,
         frases: HOOKS[objetivo] || HOOKS["Conectar"],
-        palabras: ["¿Sabías que...?", "Esto me costó entender", "Lo que nadie dice", "¿Te ha pasado?", "Hay una forma"],
+        palabras: ["¿Llevas tiempo...?", "Hay algo que nadie dice", "Me costó años entender", "¿Te ha pasado?", "Quiero contarte"],
         nota: null,
         placeholder: "Escribe tu gancho — una pregunta, afirmación o frase de identidad que detenga el scroll...",
       },
@@ -1595,13 +1596,13 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
         emocion: "EMPATÍA · DOLOR RECONOCIDO",
         guia: `No des la solución todavía. Solo hazlas sentir completamente VISTAS y ENTENDIDAS. Que digan "eso es exactamente lo que siento".`,
         frases: [
-          `"Sé lo que es poner toda tu energía en ${tema} y no ver los resultados que mereces. Y lo más duro no es el obstáculo — es sentir que, por más que lo intentas, no avanzas."`,
-          `"¿Te ha pasado que haces todo lo que dicen sobre ${tema} y aun así no ves los resultados que quieres? Exactamente así se siente. Es agotador."`,
-          `"La verdad sobre ${tema} es que nadie dice lo difícil que puede ser. En redes todo se ve fácil. Pero la realidad es otra — y tú lo sabes mejor que nadie."`,
+          `"Sé lo que es esforzarte en ${tema} sin ver los resultados que mereces. Das todo — y aun así sientes que no avanzas. Eso es agotador. Y no estás sola."`,
+          `"¿Has sentido que haces todo lo que te dicen sobre ${tema} y aun así algo no funciona? Exactamente así se siente. Y nadie habla de eso con honestidad."`,
+          `"La realidad de trabajar con ${tema} es que en redes todo se ve fácil — pero tú y yo sabemos que no lo es. Y ese peso que cargas sola es real."`,
         ],
-        palabras: ["Sé exactamente cómo se siente", "No estás sola", "¿Te ha pasado?", "Es agotador", "Y encima tienes que..."],
+        palabras: ["Sé exactamente cómo se siente", "No estás sola", "¿Has sentido que...?", "Es agotador", "Nadie habla de esto"],
         nota: `Miedo que activas: sentir que trabajan duro y no avanzan. Que las demás lo logran y ellas no.`,
-        placeholder: "Habla de su realidad, su dolor, lo que siente. Sin juzgar. Sin soluciones todavía — solo hazla sentir que la entiendes...",
+        placeholder: "Habla de su realidad y su dolor. Sin juzgar. Sin soluciones todavía — solo hazla sentir que la entiendes...",
       },
       {
         num: "03", nombre: "DESEO", subtitulo: "Pinta su transformación",
@@ -1609,12 +1610,12 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
         emocion: "TRANSFORMACIÓN · ESPERANZA",
         guia: `Aquí pintas el SUEÑO — no el producto todavía. La vida que tendrán cuando esto se resuelva. Sé visual, específica, emocional.`,
         frases: [
-          `"Imagina que todo lo relacionado con ${tema} deja de pesarte — que en lugar de resistirte, fluye y empieza a trabajar para ti."`,
-          `"¿Qué pasaría si pudieras avanzar con ${tema} con seguridad — sin dudar de ti, sin miedo al error, sin esa presión constante?"`,
-          `"Mereces que ${tema} sea tu fortaleza, no tu carga. Ese lugar existe. Y yo te muestro el camino."`,
+          `"Imagina levantarte sabiendo exactamente qué hacer con ${tema} — con claridad, con calma, sin esa presión constante. Ese lugar existe."`,
+          `"¿Qué pasaría si ${tema} dejara de ser tu carga y se convirtiera en tu fortaleza? Sin dudar de ti. Sin miedo al error. Avanzando con confianza."`,
+          `"Mereces que ${tema} trabaje para ti, no en tu contra. Y no tienes que sacrificar lo que más te importa para que eso pase."`,
         ],
-        palabras: ["Imagina que...", "¿Qué pasaría si...?", "Mereces...", "Sin tener que...", "Con seguridad", "Es posible"],
-        nota: `Deseo que activas: libertad, resultados visibles, ser valorada — sin sacrificar lo que más les importa.`,
+        palabras: ["Imagina que...", "¿Qué pasaría si...?", "Mereces...", "Con calma y confianza", "Sin sacrificar", "Es posible"],
+        nota: `Deseo que activas: libertad, claridad, resultados — sin perder su familia ni su paz.`,
         placeholder: "Describe la vida que puede tener cuando esto se resuelva. Usa 'imagina', 'mereces', '¿qué pasaría si...'...",
       },
       {
@@ -1633,27 +1634,27 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
   const buildEscrituraInicial = (tema, objetivo) => {
     const t = tema;
     const HOOK_T = {
-      "Vender":   `¿Sabías que con ${t} puedes transformar tu negocio sin tener que cambiar quién eres?\n\nHay una manera de aprovecharlo que casi nadie conoce — y cuando la aplicas, todo cambia.`,
-      "Conectar": `Tengo que contarte algo sobre ${t} que lo cambió todo para mí.\n\nSi tú también has sentido que necesitabas escuchar esto, quédate — este video es para ti.`,
-      "Educar":   `Hoy te enseño sobre ${t} lo que ojalá alguien me hubiera dicho cuando empecé.\n\nEn menos de 60 segundos tienes todo lo que necesitas saber.`,
-      "Inspirar": `Lograr lo que quería con ${t} me parecía imposible. Hasta que cambié una sola cosa.\n\nSi estás donde yo estaba, este video es para ti.`,
+      "Vender":   `¿Llevas tiempo intentando crecer con ${t} y sientes que algo no está funcionando?\n\nHay una forma de hacerlo diferente — una que fluye con quien eres. Y hoy te la comparto.`,
+      "Conectar": `Quiero contarte algo personal sobre ${t} que cambió todo para mí.\n\nSi tú también has sentido que necesitabas escuchar esto, quédate — este video es para ti.`,
+      "Educar":   `Lo que nadie te explica bien sobre ${t} — y que marca toda la diferencia.\n\nEn menos de 60 segundos tienes todo lo que necesitas saber.`,
+      "Inspirar": `Hubo un tiempo en que ${t} me parecía completamente inalcanzable. Hasta que cambié una sola cosa.\n\nSi estás donde yo estaba, este video es para ti.`,
     };
     const INTERES_T = {
-      "Vender":   `Sé lo que es poner toda tu energía en ${t} y no ver los resultados que mereces.\n\nEse cansancio de esforzarte, de hacer todo lo que dicen... y aun así sentir que no avanzas. Que las demás lo logran y tú no.\n\nEncima manejas la casa, los hijos, y sigues de pie. Es agotador. Y no estás sola en esto.`,
-      "Conectar": `¿Te ha pasado que haces todo lo que dicen sobre ${t} y aun así no ves los resultados que quieres?\n\nExactamente así se siente. Es ese agotamiento de intentarlo una y otra vez, sintiendo que algo falla — sin saber qué.\n\nNadie habla de lo difícil que puede ser. En redes todo se ve fácil. Pero tú y yo sabemos que la realidad es otra.`,
-      "Educar":   `El problema con ${t} no es que sea difícil en sí mismo.\n\nEs que nadie te lo enseña de forma clara. Te dicen qué hacer, pero no por qué ni cómo aplicarlo a tu realidad.\n\nY sin eso, es imposible que funcione. Hoy eso cambia.`,
-      "Inspirar": `Hay momentos en que todo lo relacionado con ${t} se siente como una montaña enorme. Como si todas las demás lo tuvieran claro y tú fueras la única que lucha.\n\nEse pensamiento de "¿para qué sigo intentándolo?" es mucho más común de lo que crees. Y yo estuve ahí. Muchas veces.`,
+      "Vender":   `Sé lo que es esforzarte con ${t} y no ver los resultados que mereces.\n\nDas todo — y aun así sientes que no avanzas. Que las demás lo logran y tú no.\n\nEncima manejas la casa, los hijos, y sigues de pie. Es agotador. Y no estás sola en esto.`,
+      "Conectar": `¿Has sentido que haces todo lo que te dicen sobre ${t} y aun así algo no funciona?\n\nExactamente así se siente. Ese agotamiento de intentarlo una y otra vez, sin saber qué está fallando.\n\nEn redes todo se ve fácil. Pero tú y yo sabemos que la realidad es otra — y ese peso que cargas sola es real.`,
+      "Educar":   `El problema con ${t} no es que sea difícil en sí mismo.\n\nEs que nadie te lo enseña de forma clara. Te dicen qué hacer, pero no cómo aplicarlo a tu realidad específica.\n\nY sin eso, es casi imposible que funcione. Hoy eso cambia.`,
+      "Inspirar": `Hay momentos en que avanzar en ${t} se siente como escalar una montaña sin mapa. Como si todas las demás tuvieran algo que a ti te falta.\n\nEse pensamiento de "¿para qué sigo intentándolo?" es mucho más común de lo que crees. Yo estuve ahí. Muchas veces.`,
     };
     const DESEO_T = {
-      "Vender":   `Imagina que tu negocio con ${t} deja de ser una carga y empieza a fluir naturalmente.\n\nQue creces con confianza — sin dudar de tu valor, sin miedo al rechazo, sin esa presión que te pesa.\n\nLos resultados llegan cuando confías en lo que ofreces. Eso es lo que mereces. Y es posible.`,
-      "Conectar": `Imagina que todo lo que tiene que ver con ${t} deja de pesarte.\n\nQue en lugar de resistirte, fluye y trabaja para ti. Que te sientes en paz con el proceso.\n\nEse lugar existe. No está tan lejos. Y yo te muestro el camino.`,
-      "Educar":   `Cuando entiendes ${t} de verdad — no solo la teoría, sino cómo aplicarlo a tu negocio — todo cambia.\n\nDeja de ser una lucha constante y se convierte en algo que dominas con seguridad.\n\nHoy te doy las herramientas para que eso pase.`,
-      "Inspirar": `¿Qué pasaría si todo lo relacionado con ${t} fuera tu fortaleza y no tu carga?\n\nQue en lugar de frenarte, te impulsara. Que en lugar de dudar, confiaras en tu camino.\n\nEso es posible para ti. Aunque ahora no puedas creerlo — lo digo porque yo misma lo viví.`,
+      "Vender":   `Imagina que tu negocio crece con ${t} sin que tengas que forzar nada.\n\nQue tienes claridad, confianza, y clientes que llegan porque lo que ofreces realmente conecta.\n\nEso es posible. No está lejos. Y no tienes que sacrificar tu familia ni tu paz para lograrlo.`,
+      "Conectar": `Imagina que ${t} deja de ser algo que te pesa y se convierte en algo que fluye.\n\nQue avanzas con calma, sin esa presión constante, sintiéndote en paz con el proceso.\n\nEse lugar existe. Yo te muestro el camino.`,
+      "Educar":   `Cuando entiendes ${t} de verdad — no solo la teoría, sino cómo aplicarlo a tu negocio real — todo cambia.\n\nDeja de ser una lucha y se convierte en algo que dominas con seguridad.\n\nHoy te doy exactamente eso.`,
+      "Inspirar": `¿Qué pasaría si ${t} fuera tu fortaleza y no tu carga?\n\nQue en lugar de frenarte, te impulsara. Que en lugar de dudar, confiaras en tu camino.\n\nEso es posible para ti. Lo digo porque yo misma lo viví — y no empecé con todo claro.`,
     };
     const ACCION_T = {
-      "Vender":   `Si esto te resonó, escríbeme "${t.split(" ")[0].toUpperCase()}" en los comentarios — te cuento el siguiente paso.\n\nHay un espacio para ti. El link está en mi bio.`,
-      "Conectar": `Cuéntame en comentarios: ¿te identificaste con algo de lo que dije?\n\nMe encanta leerte. Y si conoces a alguien que también necesita escuchar esto, compártelo con ella hoy.`,
-      "Educar":   `Guarda este video — lo vas a querer tener cuando lo apliques.\n\nSígueme para que no te pierdas lo que viene. Hay mucho más sobre ${t}.`,
+      "Vender":   `Si esto te resonó, escríbeme 'QUIERO' en los comentarios — te cuento el siguiente paso.\n\nHay un espacio para ti. El link está en mi bio.`,
+      "Conectar": `Cuéntame en comentarios: ¿te identificaste con algo de lo que dije?\n\nMe encanta leerte. Y si conoces a alguien que necesita escuchar esto hoy, compártelo con ella.`,
+      "Educar":   `Guarda este video — lo vas a querer tener cuando lo apliques.\n\nSígueme para que no te pierdas lo que viene. Hay mucho más.`,
       "Inspirar": `Guarda este video para los días difíciles — como recordatorio de que sí puedes.\n\nY cuéntame: ¿qué cambiarías hoy con esto en mente? Te leo en comentarios.`,
     };
     return {
