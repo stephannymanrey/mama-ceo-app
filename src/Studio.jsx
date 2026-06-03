@@ -829,6 +829,53 @@ function LeadMagnetTab({ saved, onSave, onDelete }) {
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
+  const downloadWord = (doc) => {
+    const { titulo, promesa, audiencia, estructura } = doc;
+    let body = "";
+    estructura.forEach(parte => {
+      body += `<h2 style="color:#C4526A;font-family:Arial,sans-serif;border-bottom:2px solid #f5d0d8;padding-bottom:6px;margin-top:32px;">${parte.label}</h2>`;
+      if (parte.tipo === "checklist-items") {
+        parte.items.forEach(item => {
+          body += `<p style="font-family:Arial,sans-serif;margin:8px 0;font-size:14px;">☐ &nbsp;${item}</p>`;
+        });
+      } else if (parte.tipo === "reto-dias") {
+        parte.dias.forEach((dia, i) => {
+          body += `<div style="border:1px solid #f0d0d8;border-radius:8px;padding:12px 16px;margin:10px 0;">`;
+          body += `<p style="font-family:Arial,sans-serif;margin:0 0 6px;font-weight:bold;color:#2D1B1B;">Día ${i+1}: ${dia}</p>`;
+          body += `<p style="font-family:Arial,sans-serif;margin:0;color:#9A7878;font-size:13px;">Acción de hoy: _______________________________________</p>`;
+          body += `</div>`;
+        });
+      } else if (parte.content) {
+        parte.content.split("\n").forEach(line => {
+          if (line.trim()) body += `<p style="font-family:Arial,sans-serif;line-height:1.75;margin:8px 0;font-size:14px;">${line}</p>`;
+          else body += `<br/>`;
+        });
+      }
+    });
+
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${titulo}</title></head><body style="margin:0;padding:0;font-family:Arial,sans-serif;">
+<div style="background:linear-gradient(135deg,#C4526A,#E8755A);padding:36px 40px;color:white;">
+  <p style="font-size:11px;color:rgba(255,255,255,0.65);margin:0 0 10px;letter-spacing:1px;text-transform:uppercase;">Mamá CEO · Studio de Contenido</p>
+  <h1 style="color:white;margin:0 0 12px;font-size:28px;line-height:1.2;">${titulo}</h1>
+  ${promesa ? `<p style="color:rgba(255,255,255,0.85);font-style:italic;margin:0 0 8px;font-size:15px;">"${promesa}"</p>` : ""}
+  ${audiencia ? `<p style="color:rgba(255,255,255,0.7);font-size:12px;margin:0;">Para: ${audiencia}</p>` : ""}
+</div>
+<div style="max-width:700px;margin:0 auto;padding:32px 40px;">${body}</div>
+<div style="border-top:1px solid #f0d0d8;padding:16px 40px;text-align:center;">
+  <p style="font-size:11px;color:#ccc;font-family:Arial,sans-serif;">Creado con Studio de Contenido · Mamá CEO App</p>
+</div></body></html>`;
+
+    const blob = new Blob([html], { type: "application/msword" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `${titulo.replace(/[^\w\sáéíóúñÁÉÍÓÚÑ]/g, "").trim()}.doc`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="studio-tab-content">
 
@@ -1087,13 +1134,30 @@ function LeadMagnetTab({ saved, onSave, onDelete }) {
             <button className="mpm-wizard-back-btn" onClick={() => setView("crear")}>← Editar</button>
             <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
               <button className="mpm-edit-btn" onClick={() => onSave("leads", { id: Date.now(), titulo: docData.titulo, tipo: docData.tipo, promesa: docData.promesa, audiencia: docData.audiencia, fecha: new Date().toLocaleDateString("es") })}>
-                Guardar en biblioteca 🎁
+                Guardar 🎁
               </button>
-              <button className="lm-print-btn" onClick={() => window.print()}>🖨️ Imprimir / Guardar PDF</button>
+              <button className="lm-dl-btn lm-dl-btn--word" onClick={() => downloadWord(docData)}>⬇ Word (.doc)</button>
+              <button className="lm-dl-btn lm-dl-btn--pdf" onClick={() => window.print()}>🖨️ PDF</button>
             </div>
           </div>
 
-          <p className="lm-print-tip">Al imprimir, elige <strong>"Guardar como PDF"</strong> para tener el documento en tu dispositivo.</p>
+          <div className="lm-export-strip">
+            <div className="lm-export-item">
+              <span className="lm-export-ico">📄</span>
+              <div>
+                <strong>Word (.doc)</strong>
+                <p>Descarga y edita en Microsoft Word — o sube a Google Drive y ábrelo con Google Docs para editarlo online.</p>
+              </div>
+            </div>
+            <div className="lm-export-sep" />
+            <div className="lm-export-item">
+              <span className="lm-export-ico">🖨️</span>
+              <div>
+                <strong>PDF (impresión)</strong>
+                <p>Al imprimir elige <strong>"Guardar como PDF"</strong> para obtener una versión lista para compartir.</p>
+              </div>
+            </div>
+          </div>
 
           <div className="lm-print-area">
             <div className="lm-doc-header">

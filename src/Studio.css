@@ -1395,19 +1395,41 @@
   display: flex; justify-content: space-between; align-items: center;
   flex-wrap: wrap; gap: 10px;
 }
-.lm-print-btn {
-  background: linear-gradient(135deg, #E8755A 0%, #C4526A 100%);
-  color: #fff; border: none; border-radius: 9px;
+.lm-dl-btn {
+  border: none; border-radius: 9px;
   padding: 9px 16px; font-size: 13px; font-weight: 700;
   cursor: pointer; font-family: inherit;
-  transition: opacity 0.15s;
+  transition: opacity 0.15s; white-space: nowrap;
 }
-.lm-print-btn:hover { opacity: 0.85; }
-.lm-print-tip {
-  font-size: 12px; color: #9A7878;
-  background: rgba(196,82,106,0.05); border-radius: 8px;
-  padding: 9px 13px; margin: 0;
+.lm-dl-btn--word {
+  background: #2B579A;
+  color: #fff;
 }
+.lm-dl-btn--pdf {
+  background: linear-gradient(135deg, #E8755A 0%, #C4526A 100%);
+  color: #fff;
+}
+.lm-dl-btn:hover { opacity: 0.85; }
+
+.lm-export-strip {
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid rgba(196,82,106,0.1);
+  padding: 14px 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+@media (max-width: 560px) { .lm-export-strip { flex-direction: column; } }
+.lm-export-item { display: flex; gap: 10px; align-items: flex-start; flex: 1; }
+.lm-export-ico { font-size: 20px; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+.lm-export-item strong { font-size: 12px; font-weight: 700; color: #2D1B1B; display: block; margin-bottom: 2px; }
+.lm-export-item p { font-size: 11px; color: #9A7878; margin: 0; line-height: 1.5; }
+.lm-export-sep {
+  width: 1px; background: rgba(196,82,106,0.1);
+  align-self: stretch; flex-shrink: 0;
+}
+@media (max-width: 560px) { .lm-export-sep { width: auto; height: 1px; } }
 
 /* ── Document / Print area ─ */
 .lm-print-area {
