@@ -2093,3 +2093,58 @@
   transition: opacity 0.15s, transform 0.1s; white-space: nowrap;
 }
 .guion-caption-cta-btn:hover { opacity: 0.85; transform: scale(1.02); }
+
+/* ── WIZARD DE GUIÓN (5 pasos) ───────────────────────────── */
+.wiz-progress {
+  display: flex; justify-content: center; gap: 10px;
+  margin-bottom: 24px;
+}
+.wiz-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: rgba(0,0,0,0.1); transition: all 0.2s;
+}
+.wiz-dot.active { background: #C4526A; transform: scale(1.3); }
+.wiz-dot.done   { background: #C4526A; opacity: 0.4; }
+
+.wiz-step-header { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+.wiz-step-num {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.8px; color: #C4526A;
+}
+.wiz-step-title { font-size: 17px; font-weight: 800; color: #2D1B1B; line-height: 1.3; }
+
+.wiz-help-card {
+  background: #FFF0F3; border: 1px solid rgba(196,82,106,0.15);
+  border-radius: 12px; padding: 14px 16px;
+  font-size: 13px; color: #6A4040; line-height: 1.65;
+  margin-bottom: 12px;
+}
+.wiz-eg-weak   { color: #B09090; font-style: italic; }
+.wiz-eg-strong { color: #2D1B1B; font-weight: 600; }
+
+.wiz-textarea {
+  width: 100%; border: 1.5px solid rgba(0,0,0,0.12);
+  border-radius: 12px; padding: 14px 16px;
+  font-size: 14px; font-family: inherit; color: #2D1B1B;
+  background: #FDFAF5; resize: vertical; line-height: 1.7;
+  box-sizing: border-box; transition: border-color 0.15s, background 0.15s;
+}
+.wiz-textarea:focus { outline: none; border-color: #C4526A; background: #fff; }
+.wiz-textarea::placeholder { color: #C0A0A0; }
+
+.wiz-cta-pills { display: flex; flex-direction: column; gap: 9px; }
+.wiz-cta-pill {
+  padding: 13px 16px; border: 1.5px solid rgba(0,0,0,0.1);
+  border-radius: 12px; background: #fff; cursor: pointer;
+  font-size: 14px; font-weight: 600; color: #2D1B1B;
+  text-align: left; font-family: inherit; transition: all 0.15s;
+}
+.wiz-cta-pill:hover { border-color: rgba(196,82,106,0.35); background: #FFF8F8; }
+.wiz-cta-pill.active {
+  border-color: #C4526A; background: rgba(196,82,106,0.06);
+  color: #C4526A; font-weight: 700;
+}
+
+.wiz-nav {
+  display: flex; gap: 10px; align-items: center; margin-top: 20px;
+}

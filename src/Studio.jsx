@@ -1513,7 +1513,7 @@ function HooksTab({ saved, onSave, onCrearGuion }) {
 // ── GUIÓN ──────────────────────────────────────────────────────
 function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
   const [subTab,    setSubTab]    = useState("guion");
-  const [form,      setForm]      = useState({ tema: seed || "", objetivo: "Vender", tipo: "Reel (60s)", audiencia: "" });
+  const [wizard,    setWizard]    = useState({ step: 1, objetivo: "Vender", logro: seed || "", dolor: "", cambio: "", cta: "Guardar el video" });
   const [guion,     setGuion]     = useState(null);
   const [escritura, setEscritura] = useState({});
   const [c,         setC]         = useState({ red: "Instagram", tono: "Cercano", tema: "", cta: "", hashtags: true });
@@ -1521,7 +1521,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
   const [copiado,   setCopiado]   = useState("");
   const [fraseIdx,  setFraseIdx]  = useState({});
 
-  useEffect(() => { if (seed) { setForm(p => ({...p, tema: seed})); onSeedConsumed?.(); } }, []);
+  useEffect(() => { if (seed) { setWizard(p => ({...p, logro: seed})); onSeedConsumed?.(); } }, []);
 
   const copiar      = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
   const shuffle     = (arr) => [...arr].sort(() => Math.random() - 0.5);
@@ -1530,54 +1530,25 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
   const usarFrase   = (si, txt) => setEscritura(p => ({...p, [si]: p[si] ? p[si] + "\n\n" + txt : txt}));
   const usarPalabra = (si, pal) => setEscritura(p => ({...p, [si]: p[si] ? p[si] + " " + pal : pal}));
 
-  const buildEscenas = (tema, objetivo, tipo, aud) => {
-    const isShort = !tipo.includes("YouTube");
+  const CTA_MAP = {
+    "Guardar el video":         `Guarda este video — lo vas a querer tener cuando lo necesites.`,
+    "Comentar cómo se sienten": `Cuéntame en comentarios: ¿te identificaste con algo de lo que dije? Te leo.`,
+    "Escribirme por DM":        `Si esto te resonó, escríbeme por DM — me encantaría conocer tu historia.`,
+    "Ir al link en mi bio":     `Si quieres el siguiente paso, el link está en mi bio. Hay un espacio para ti.`,
+    "Compartirlo con alguien":  `¿Conoces a alguien que necesita escuchar esto hoy? Compártelo con ella.`,
+  };
+  const HOOK_MAP = {
+    "Vender":   `¿Sientes que trabajas duro en tu negocio y algo todavía no está funcionando como quieres?`,
+    "Conectar": `Quiero contarte algo que me costó mucho tiempo entender — y que cambió todo para mí.`,
+    "Educar":   `Hay algo sobre este tema que ojalá alguien me hubiera dicho antes. Hoy te lo comparto.`,
+    "Inspirar": `Hubo un momento en que creí que esto no era para mí. Hasta que pasó algo que lo cambió todo.`,
+  };
 
-    const HOOKS = {
-      "Vender": [
-        `¿Llevas tiempo intentando hacer crecer tu negocio con ${tema} y sientes que algo no está funcionando?`,
-        `Hay algo sobre ${tema} que nadie te dice — y me costó años entenderlo. Hoy te lo comparto en un minuto.`,
-        `Si tu negocio tiene que ver con ${tema}, esto que aprendí puede cambiar completamente tus resultados.`,
-      ],
-      "Conectar": [
-        `Quiero contarte algo personal sobre ${tema} que cambió todo para mí.`,
-        `Hubo un momento en que ${tema} me parecía imposible. Hoy quiero contarte qué pasó.`,
-        `Nadie me habló con honestidad sobre ${tema} cuando más lo necesitaba. Hoy yo sí lo hago.`,
-      ],
-      "Educar": [
-        `Lo que nadie te explica bien sobre ${tema} — y que marca toda la diferencia.`,
-        `Si quieres entender ${tema} de verdad, este video es para ti. Te lo explico sin rodeos.`,
-        `Sobre ${tema}: lo más importante que necesitas saber, en menos de 60 segundos.`,
-      ],
-      "Inspirar": [
-        `Hubo un tiempo en que ${tema} me parecía inalcanzable. Hasta que cambié una sola cosa.`,
-        `Si sientes que ${tema} no es para ti, quiero que escuches esto.`,
-        `Quiero que sepas que sí es posible avanzar en ${tema} — aunque ahora no puedas creerlo.`,
-      ],
-    };
-
-    const ACCION = {
-      "Vender": [
-        `"Escríbeme 'QUIERO' en los comentarios y te cuento el siguiente paso."`,
-        `"Si esto te resonó, el link está en mi bio. Hay un espacio para ti."`,
-        `"Mándame un mensaje directo — hablemos de cómo puedo ayudarte."`,
-      ],
-      "Conectar": [
-        `"Cuéntame en comentarios con una sola palabra cómo te sentiste."`,
-        `"Guarda este video — lo vas a querer tener cuando lo necesites."`,
-        `"¿A quién le hace falta escuchar esto hoy? Compártelo con ella."`,
-      ],
-      "Educar": [
-        `"Guarda este video — lo vas a querer consultar cuando lo apliques."`,
-        `"Sígueme para que no te pierdas lo que viene. Hay mucho más."`,
-        `"Comparte esto con alguien que también está trabajando en esto."`,
-      ],
-      "Inspirar": [
-        `"Guarda este video para los días difíciles — como recordatorio de que sí puedes."`,
-        `"Cuéntame en comentarios: ¿qué cambiarías hoy con esto en mente?"`,
-        `"Sígueme — esto es solo el principio de lo que tengo para ti."`,
-      ],
-    };
+  const buildEscenas = (objetivo, logro, dolor, cambio, cta) => {
+    const hookFrase  = HOOK_MAP[objetivo]  || HOOK_MAP["Conectar"];
+    const ctaFrase   = CTA_MAP[cta]        || CTA_MAP["Guardar el video"];
+    const interesFrase = dolor + `\n\nY lo peor es que sentías que las demás lo lograban y tú no. Eso es agotador — y nadie habla de eso con honestidad.`;
+    const deseoFrase   = cambio + `\n\nY cuando eso pasó, todo empezó a fluir diferente. Eso mismo es posible para ti.`;
 
     return [
       {
@@ -1585,112 +1556,75 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
         tiempo: "0:00 – 0:03", color: "#9B59B6", bgLight: "#F5F0FF",
         emocion: "CURIOSIDAD · IDENTIDAD",
         guia: `Los primeros 3 segundos deciden si te siguen viendo o hacen scroll. Una frase que las haga pensar "eso me pasa a mí" o "necesito escuchar esto".`,
-        frases: HOOKS[objetivo] || HOOKS["Conectar"],
-        palabras: ["¿Llevas tiempo...?", "Hay algo que nadie dice", "Me costó años entender", "¿Te ha pasado?", "Quiero contarte"],
+        frases: [hookFrase],
+        palabras: [],
         nota: null,
-        placeholder: "Escribe tu gancho — una pregunta, afirmación o frase de identidad que detenga el scroll...",
+        placeholder: "Tu frase de apertura...",
       },
       {
         num: "02", nombre: "INTERÉS", subtitulo: "Hazla sentir vista",
-        tiempo: isShort ? "0:03 – 0:15" : "0:03 – 0:20", color: "#C4526A", bgLight: "#FFF0F3",
+        tiempo: "0:03 – 0:15", color: "#C4526A", bgLight: "#FFF0F3",
         emocion: "EMPATÍA · DOLOR RECONOCIDO",
-        guia: `No des la solución todavía. Solo hazlas sentir completamente VISTAS y ENTENDIDAS. Que digan "eso es exactamente lo que siento".`,
-        frases: [
-          `"Sé lo que es esforzarte en ${tema} sin ver los resultados que mereces. Das todo — y aun así sientes que no avanzas. Eso es agotador. Y no estás sola."`,
-          `"¿Has sentido que haces todo lo que te dicen sobre ${tema} y aun así algo no funciona? Exactamente así se siente. Y nadie habla de eso con honestidad."`,
-          `"La realidad de trabajar con ${tema} es que en redes todo se ve fácil — pero tú y yo sabemos que no lo es. Y ese peso que cargas sola es real."`,
-        ],
+        guia: `No des la solución todavía. Hazlas sentir completamente VISTAS y ENTENDIDAS.`,
+        frases: [interesFrase],
         palabras: ["Sé exactamente cómo se siente", "No estás sola", "¿Has sentido que...?", "Es agotador", "Nadie habla de esto"],
         nota: `Miedo que activas: sentir que trabajan duro y no avanzan. Que las demás lo logran y ellas no.`,
-        placeholder: "Habla de su realidad y su dolor. Sin juzgar. Sin soluciones todavía — solo hazla sentir que la entiendes...",
+        placeholder: "Habla de su dolor...",
       },
       {
         num: "03", nombre: "DESEO", subtitulo: "Pinta su transformación",
-        tiempo: isShort ? "0:15 – 0:45" : "0:20 – 0:50", color: "#27AE60", bgLight: "#EEFAF3",
+        tiempo: "0:15 – 0:45", color: "#27AE60", bgLight: "#EEFAF3",
         emocion: "TRANSFORMACIÓN · ESPERANZA",
-        guia: `Aquí pintas el SUEÑO — no el producto todavía. La vida que tendrán cuando esto se resuelva. Sé visual, específica, emocional.`,
-        frases: [
-          `"Imagina levantarte sabiendo exactamente qué hacer con ${tema} — con claridad, con calma, sin esa presión constante. Ese lugar existe."`,
-          `"¿Qué pasaría si ${tema} dejara de ser tu carga y se convirtiera en tu fortaleza? Sin dudar de ti. Sin miedo al error. Avanzando con confianza."`,
-          `"Mereces que ${tema} trabaje para ti, no en tu contra. Y no tienes que sacrificar lo que más te importa para que eso pase."`,
-        ],
+        guia: `Aquí pintas el SUEÑO. La vida que tendrán cuando esto se resuelva. Sé visual, específica, emocional.`,
+        frases: [deseoFrase],
         palabras: ["Imagina que...", "¿Qué pasaría si...?", "Mereces...", "Con calma y confianza", "Sin sacrificar", "Es posible"],
         nota: `Deseo que activas: libertad, claridad, resultados — sin perder su familia ni su paz.`,
-        placeholder: "Describe la vida que puede tener cuando esto se resuelva. Usa 'imagina', 'mereces', '¿qué pasaría si...'...",
+        placeholder: "Describe la transformación...",
       },
       {
         num: "04", nombre: "ACCIÓN", subtitulo: "Una sola instrucción clara",
-        tiempo: isShort ? "0:45 – 0:60" : "0:50 – 1:00", color: "#E8755A", bgLight: "#FFF5F0",
+        tiempo: "0:45 – 1:00", color: "#E8755A", bgLight: "#FFF5F0",
         emocion: "DECISIÓN · CONFIANZA",
-        guia: `Una sola acción, fácil de hacer en 10 segundos. Sin presionar — invitando. La confianza que construiste en el video ya hizo el trabajo.`,
-        frases: ACCION[objetivo] || ACCION["Conectar"],
-        palabras: ["Escríbeme", "Guarda este video", "Sígueme", "Comenta con", "Link en mi bio", "Hay un lugar para ti"],
+        guia: `Una sola acción, fácil de hacer en 10 segundos. Sin presionar — invitando.`,
+        frases: [ctaFrase],
+        palabras: [],
         nota: null,
-        placeholder: "El cierre — una sola acción. Simple, directa, sin presión. Ella ya está lista porque la preparaste bien...",
+        placeholder: "Tu llamada a la acción...",
       },
     ];
   };
 
-  const buildEscrituraInicial = (tema, objetivo) => {
-    const t = tema;
-    const HOOK_T = {
-      "Vender":   `¿Llevas tiempo intentando crecer con ${t} y sientes que algo no está funcionando?\n\nHay una forma de hacerlo diferente — una que fluye con quien eres. Y hoy te la comparto.`,
-      "Conectar": `Quiero contarte algo personal sobre ${t} que cambió todo para mí.\n\nSi tú también has sentido que necesitabas escuchar esto, quédate — este video es para ti.`,
-      "Educar":   `Lo que nadie te explica bien sobre ${t} — y que marca toda la diferencia.\n\nEn menos de 60 segundos tienes todo lo que necesitas saber.`,
-      "Inspirar": `Hubo un tiempo en que ${t} me parecía completamente inalcanzable. Hasta que cambié una sola cosa.\n\nSi estás donde yo estaba, este video es para ti.`,
-    };
-    const INTERES_T = {
-      "Vender":   `Sé lo que es esforzarte con ${t} y no ver los resultados que mereces.\n\nDas todo — y aun así sientes que no avanzas. Que las demás lo logran y tú no.\n\nEncima manejas la casa, los hijos, y sigues de pie. Es agotador. Y no estás sola en esto.`,
-      "Conectar": `¿Has sentido que haces todo lo que te dicen sobre ${t} y aun así algo no funciona?\n\nExactamente así se siente. Ese agotamiento de intentarlo una y otra vez, sin saber qué está fallando.\n\nEn redes todo se ve fácil. Pero tú y yo sabemos que la realidad es otra — y ese peso que cargas sola es real.`,
-      "Educar":   `El problema con ${t} no es que sea difícil en sí mismo.\n\nEs que nadie te lo enseña de forma clara. Te dicen qué hacer, pero no cómo aplicarlo a tu realidad específica.\n\nY sin eso, es casi imposible que funcione. Hoy eso cambia.`,
-      "Inspirar": `Hay momentos en que avanzar en ${t} se siente como escalar una montaña sin mapa. Como si todas las demás tuvieran algo que a ti te falta.\n\nEse pensamiento de "¿para qué sigo intentándolo?" es mucho más común de lo que crees. Yo estuve ahí. Muchas veces.`,
-    };
-    const DESEO_T = {
-      "Vender":   `Imagina que tu negocio crece con ${t} sin que tengas que forzar nada.\n\nQue tienes claridad, confianza, y clientes que llegan porque lo que ofreces realmente conecta.\n\nEso es posible. No está lejos. Y no tienes que sacrificar tu familia ni tu paz para lograrlo.`,
-      "Conectar": `Imagina que ${t} deja de ser algo que te pesa y se convierte en algo que fluye.\n\nQue avanzas con calma, sin esa presión constante, sintiéndote en paz con el proceso.\n\nEse lugar existe. Yo te muestro el camino.`,
-      "Educar":   `Cuando entiendes ${t} de verdad — no solo la teoría, sino cómo aplicarlo a tu negocio real — todo cambia.\n\nDeja de ser una lucha y se convierte en algo que dominas con seguridad.\n\nHoy te doy exactamente eso.`,
-      "Inspirar": `¿Qué pasaría si ${t} fuera tu fortaleza y no tu carga?\n\nQue en lugar de frenarte, te impulsara. Que en lugar de dudar, confiaras en tu camino.\n\nEso es posible para ti. Lo digo porque yo misma lo viví — y no empecé con todo claro.`,
-    };
-    const ACCION_T = {
-      "Vender":   `Si esto te resonó, escríbeme 'QUIERO' en los comentarios — te cuento el siguiente paso.\n\nHay un espacio para ti. El link está en mi bio.`,
-      "Conectar": `Cuéntame en comentarios: ¿te identificaste con algo de lo que dije?\n\nMe encanta leerte. Y si conoces a alguien que necesita escuchar esto hoy, compártelo con ella.`,
-      "Educar":   `Guarda este video — lo vas a querer tener cuando lo apliques.\n\nSígueme para que no te pierdas lo que viene. Hay mucho más.`,
-      "Inspirar": `Guarda este video para los días difíciles — como recordatorio de que sí puedes.\n\nY cuéntame: ¿qué cambiarías hoy con esto en mente? Te leo en comentarios.`,
-    };
+  const buildEscrituraInicial = (objetivo, logro, dolor, cambio, cta) => {
+    const ctaFrase     = CTA_MAP[cta] || CTA_MAP["Guardar el video"];
+    const interesFrase = dolor + `\n\nY lo peor es que sentías que las demás lo lograban y tú no. Eso es agotador — y nadie habla de eso con honestidad.`;
+    const deseoFrase   = cambio + `\n\nY cuando eso pasó, todo empezó a fluir diferente. Eso mismo es posible para ti.`;
     return {
-      0: HOOK_T[objetivo]    || HOOK_T["Conectar"],
-      1: INTERES_T[objetivo] || INTERES_T["Conectar"],
-      2: DESEO_T[objetivo]   || DESEO_T["Conectar"],
-      3: ACCION_T[objetivo]  || ACCION_T["Conectar"],
+      0: HOOK_MAP[objetivo] || HOOK_MAP["Conectar"],
+      1: interesFrase,
+      2: deseoFrase,
+      3: ctaFrase,
     };
   };
 
-  const buildCaptionFromGuion = (tema, objetivo) => {
-    const t = tema;
-    const CAPS = {
-      "Vender":
-`¿Sabías que con ${t} puedes cambiar por completo los resultados en tu negocio?\n\nTe lo cuento en este video — y te aseguro que no es lo que ya escuchaste antes.\n\nSi sientes que trabajas duro y aún no ves el crecimiento que mereces, este video es para ti. ✨\n\nHay una forma diferente de hacerlo. Una que fluye con quien eres. Sin presión, sin fórmulas raras.\n\n👉 Guarda este video y cuéntame: ¿cuál es tu mayor reto con ${t} ahora mismo?\n\n#mamáemprendedora #negociodesdehogar #emprendimiento #mamáceo #marketingdigital #ventasconcorazón`,
-      "Conectar":
-`Sobre ${t} hay cosas que pocas hablan con honestidad. Hoy yo sí lo hago.\n\nA veces el mayor obstáculo no es la estrategia — es lo que cargamos por dentro.\n\nEste video lo grabé para ti. Para que sepas que no estás sola. Que lo que sientes tiene sentido. Y que sí hay un camino. 💙\n\n¿A quién más le hace falta escuchar esto hoy? Etiquétala abajo. 👇\n\nGuarda este video para los días difíciles — como recordatorio de que sí puedes.\n\n#mamáemprendedora #mujeresemprendedoras #emprendimiento #mamáceo #comunidad`,
-      "Educar":
-`Todo lo que necesitas saber sobre ${t} — en menos de un minuto. 📖\n\nCuando yo empecé nadie me lo explicó así. Me hubiera ahorrado meses de prueba y error.\n\nHoy te lo doy aquí, gratis. Sin rodeos.\n\n¿Qué parte te fue más útil? Cuéntame en comentarios 👇\n\nGuarda este video antes de que lo necesites y no lo encuentres. ⬇️\n\n#mamáemprendedora #aprendizaje #emprendimiento #mamáceo #educacionemprendedora #tips`,
-      "Inspirar":
-`Lograr lo que quería con ${t} me parecía imposible. Hasta que cambié una sola cosa.\n\nNo fue magia. No fue suerte. Fue una decisión — y hoy quiero que la veas tú también.\n\nSi estás en ese punto donde dudas, donde te preguntas si podrás — este video es para ti. 💫\n\nNadie empieza con todo claro. Todas empezamos con miedo. Lo que separa a las que llegan es que no se detienen.\n\n¿Qué te está deteniendo a ti hoy? Te leo en comentarios. 💙\n\n#mamáemprendedora #inspiracion #emprendimiento #mamáceo #mujeresquelograncosas`,
-    };
-    return CAPS[objetivo] || CAPS["Conectar"];
+  const buildCaptionFromGuion = (objetivo, logro, dolor, cambio, cta) => {
+    const hook    = HOOK_MAP[objetivo] || HOOK_MAP["Conectar"];
+    const interes = dolor + `\n\nY lo peor es que sentías que las demás lo lograban y tú no. Eso es agotador — y nadie habla de eso con honestidad.`;
+    const deseo   = cambio + `\n\nY cuando eso pasó, todo empezó a fluir diferente. Eso mismo es posible para ti.`;
+    const accion  = CTA_MAP[cta] || CTA_MAP["Guardar el video"];
+    return `${hook}\n\n${interes}\n\n${deseo}\n\n👉 ${accion}\n\n#mamáemprendedora #negociodigital #emprendimiento #mamáceo`;
   };
 
   const generarGuion = () => {
-    if (!form.tema.trim()) return;
-    const aud = form.audiencia.trim() || "tu audiencia";
+    const { objetivo, logro, dolor, cambio, cta } = wizard;
     setGuion({
-      tema: form.tema, objetivo: form.objetivo, tipo: form.tipo, audiencia: aud,
-      escenas: buildEscenas(form.tema, form.objetivo, form.tipo, aud),
+      tema: logro.substring(0, 80) || objetivo,
+      objetivo, tipo: "Reel (60s)", audiencia: "",
+      escenas: buildEscenas(objetivo, logro, dolor, cambio, cta),
       fecha: new Date().toLocaleDateString("es"),
     });
-    setEscritura(buildEscrituraInicial(form.tema, form.objetivo));
-    setCaption(buildCaptionFromGuion(form.tema, form.objetivo));
-    setC(p => ({ ...p, tema: form.tema }));
+    setEscritura(buildEscrituraInicial(objetivo, logro, dolor, cambio, cta));
+    setCaption(buildCaptionFromGuion(objetivo, logro, dolor, cambio, cta));
+    setFraseIdx({});
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
@@ -1762,66 +1696,133 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
       {/* ── SUB-TAB GUIÓN ──────────────────────────── */}
       {subTab === "guion" && (
         <>
-          {/* FORM */}
+          {/* WIZARD */}
           {!guion && (
             <div className="guion-form-wrap">
-              <div className="guion-form-intro">
-                <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>🎬</div>
-                <h2>Crea tu guión</h2>
-                <p>Estructura con intención — frases que conectan, palabras que transforman y espacio para tu voz.</p>
+
+              {/* Progreso */}
+              <div className="wiz-progress">
+                {[1,2,3,4,5].map(n => (
+                  <div key={n} className={`wiz-dot${wizard.step === n ? " active" : wizard.step > n ? " done" : ""}`} />
+                ))}
               </div>
 
-              <div className={`desc-q-card${form.tema ? " filled" : ""}`}>
-                <div className="desc-q-num">🎬</div>
-                <div className="desc-q-body">
-                  <div className="desc-q-top">
-                    <label className="desc-q-label">¿De qué trata tu video?</label>
+              {/* Paso 1 — Objetivo */}
+              {wizard.step === 1 && (
+                <>
+                  <div className="guion-form-intro">
+                    <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>🎬</div>
+                    <h2>Crea tu guión</h2>
+                    <p>Responde 4 preguntas cortas y construiremos un guión desde tu historia real — sin frases genéricas.</p>
                   </div>
-                  <input className="desc-q-input" autoFocus
-                    placeholder="cómo vender sin presionar, organizar el tiempo, reels de negocio..."
-                    value={form.tema} onChange={e => setForm(p => ({...p, tema: e.target.value}))}
-                    onKeyDown={e => e.key === "Enter" && generarGuion()} />
-                  <span className="desc-q-hint">Entre más específico, más poderoso el guión</span>
-                </div>
-              </div>
-
-              <div className="guion-obj-grid">
-                <div className="guion-obj-group">
-                  <label className="lm-crear-label">¿Para qué es este video?</label>
-                  <div className="guion-obj-pills">
+                  <div className="wiz-step-header">
+                    <span className="wiz-step-num">Paso 1 de 5</span>
+                    <span className="wiz-step-title">¿Para qué es este video?</span>
+                  </div>
+                  <div className="guion-obj-pills" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
                     {[{k:"Vender",i:"💰"},{k:"Conectar",i:"💙"},{k:"Educar",i:"📖"},{k:"Inspirar",i:"⚡"}].map(o => (
-                      <button key={o.k} className={`guion-obj-pill${form.objetivo===o.k?" active":""}`}
-                        onClick={() => setForm(p => ({...p, objetivo: o.k}))}>{o.i} {o.k}</button>
+                      <button key={o.k} className={`guion-obj-pill${wizard.objetivo===o.k?" active":""}`}
+                        onClick={() => setWizard(p => ({...p, objetivo: o.k}))}>{o.i} {o.k}</button>
                     ))}
                   </div>
-                </div>
-                <div className="guion-obj-group">
-                  <label className="lm-crear-label">Tipo de video</label>
-                  <div className="guion-obj-pills">
-                    {[{k:"Reel (60s)",i:"📱"},{k:"TikTok (30-60s)",i:"🎵"},{k:"Historia 3 partes",i:"📖"},{k:"YouTube (3-5 min)",i:"🎬"}].map(t => (
-                      <button key={t.k} className={`guion-obj-pill${form.tipo===t.k?" active":""}`}
-                        onClick={() => setForm(p => ({...p, tipo: t.k}))}>{t.i} {t.k}</button>
+                </>
+              )}
+
+              {/* Paso 2 — Logro */}
+              {wizard.step === 2 && (
+                <>
+                  <div className="wiz-step-header">
+                    <span className="wiz-step-num">Paso 2 de 5</span>
+                    <span className="wiz-step-title">¿Cuál es tu mayor logro o aprendizaje con este tema?</span>
+                  </div>
+                  <div className="wiz-help-card">
+                    💡 Entre más específica seas, más poderoso el guión. No digas solo el tema — cuenta QUÉ lograste exactamente.<br/><br/>
+                    <span className="wiz-eg-weak">Ejemplo débil: "aprendí a vender"</span><br/>
+                    <span className="wiz-eg-strong">Ejemplo poderoso: "Aprendí que no necesitaba perseguir clientes — cuando empecé a contar mi historia real en stories, las clientas correctas llegaron solas."</span>
+                  </div>
+                  <textarea className="wiz-textarea" autoFocus rows={4}
+                    placeholder="Cuenta tu logro o aprendizaje con detalle..."
+                    value={wizard.logro}
+                    onChange={e => setWizard(p => ({...p, logro: e.target.value}))} />
+                </>
+              )}
+
+              {/* Paso 3 — Dolor */}
+              {wizard.step === 3 && (
+                <>
+                  <div className="wiz-step-header">
+                    <span className="wiz-step-num">Paso 3 de 5</span>
+                    <span className="wiz-step-title">¿Qué sentías ANTES de lograr eso?</span>
+                  </div>
+                  <div className="wiz-help-card">
+                    💡 Aquí conectas con tu audiencia — ellas están donde tú estabas. Sé honesta y específica con lo que sentías.<br/><br/>
+                    <span className="wiz-eg-weak">Ejemplo débil: "me sentía mal"</span><br/>
+                    <span className="wiz-eg-strong">Ejemplo poderoso: "Me sentía agotada haciendo todo lo que decían los gurús, sin ver resultados. Dudaba si realmente esto era para mí y sentía que todas las demás lo lograban menos yo."</span>
+                  </div>
+                  <textarea className="wiz-textarea" autoFocus rows={4}
+                    placeholder="Describe cómo te sentías antes..."
+                    value={wizard.dolor}
+                    onChange={e => setWizard(p => ({...p, dolor: e.target.value}))} />
+                </>
+              )}
+
+              {/* Paso 4 — Cambio */}
+              {wizard.step === 4 && (
+                <>
+                  <div className="wiz-step-header">
+                    <span className="wiz-step-num">Paso 4 de 5</span>
+                    <span className="wiz-step-title">¿Qué cambió o qué hiciste diferente?</span>
+                  </div>
+                  <div className="wiz-help-card">
+                    💡 No tiene que ser una estrategia — puede ser una decisión, un momento, una creencia que cambió.<br/><br/>
+                    <span className="wiz-eg-weak">Ejemplo débil: "cambié mi forma de trabajar"</span><br/>
+                    <span className="wiz-eg-strong">Ejemplo poderoso: "Dejé de intentar sonar como experta y empecé a hablar como yo misma. Ese día paré de copiar a otras y publiqué desde mi corazón — y fue el post con más respuesta que había tenido."</span>
+                  </div>
+                  <textarea className="wiz-textarea" autoFocus rows={4}
+                    placeholder="Describe qué cambió o qué hiciste diferente..."
+                    value={wizard.cambio}
+                    onChange={e => setWizard(p => ({...p, cambio: e.target.value}))} />
+                </>
+              )}
+
+              {/* Paso 5 — CTA */}
+              {wizard.step === 5 && (
+                <>
+                  <div className="wiz-step-header">
+                    <span className="wiz-step-num">Paso 5 de 5</span>
+                    <span className="wiz-step-title">¿Qué quieres que hagan al terminar el video?</span>
+                  </div>
+                  <div className="wiz-cta-pills">
+                    {["Guardar el video","Comentar cómo se sienten","Escribirme por DM","Ir al link en mi bio","Compartirlo con alguien"].map(op => (
+                      <button key={op} className={`wiz-cta-pill${wizard.cta===op?" active":""}`}
+                        onClick={() => setWizard(p => ({...p, cta: op}))}>{op}</button>
                     ))}
                   </div>
-                </div>
+                </>
+              )}
+
+              {/* Navegación */}
+              <div className="wiz-nav">
+                {wizard.step > 1 && (
+                  <button className="mpm-wizard-back-btn" onClick={() => setWizard(p => ({...p, step: p.step - 1}))}>← Atrás</button>
+                )}
+                {wizard.step < 5 ? (
+                  <button className="mpm-step-btn" style={{flex:1}}
+                    disabled={
+                      (wizard.step === 2 && !wizard.logro.trim()) ||
+                      (wizard.step === 3 && !wizard.dolor.trim()) ||
+                      (wizard.step === 4 && !wizard.cambio.trim())
+                    }
+                    onClick={() => setWizard(p => ({...p, step: p.step + 1}))}>
+                    Siguiente →
+                  </button>
+                ) : (
+                  <button className="mpm-step-btn" style={{flex:1}} onClick={generarGuion}>
+                    Generar guión ✦
+                  </button>
+                )}
               </div>
 
-              <div className={`desc-q-card${form.audiencia?" filled":""}`}>
-                <div className="desc-q-num">👩‍💼</div>
-                <div className="desc-q-body">
-                  <div className="desc-q-top">
-                    <label className="desc-q-label">¿Para quién es? (opcional)</label>
-                  </div>
-                  <input className="desc-q-input"
-                    placeholder="mamás emprendedoras que quieren vender más, coaches que empiezan..."
-                    value={form.audiencia} onChange={e => setForm(p => ({...p, audiencia: e.target.value}))} />
-                  <span className="desc-q-hint">Si lo dejas vacío, el guión habla a mamás emprendedoras en general</span>
-                </div>
-              </div>
-
-              <button className="mpm-step-btn" onClick={generarGuion} disabled={!form.tema.trim()}>
-                Generar guión ✦
-              </button>
             </div>
           )}
 
@@ -1830,6 +1831,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
             <div className="guion-hoja-wrap">
               <div className="guion-hoja-topbar">
                 <button className="mpm-wizard-back-btn" onClick={() => setGuion(null)}>← Editar</button>
+                <button className="mpm-wizard-back-btn" onClick={() => { setGuion(null); setWizard({step:1,objetivo:"Vender",logro:"",dolor:"",cambio:"",cta:"Guardar el video"}); }}>🔄 Nuevo</button>
                 <div className="guion-hoja-actions">
                   <button className="mpm-edit-btn" onClick={() => onSave("guiones", { id: Date.now(), tema: guion.tema, tipo: guion.tipo, objetivo: guion.objetivo, fecha: guion.fecha })}>
                     Guardar 🎬
@@ -1840,14 +1842,11 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
               </div>
 
               <div className="guion-print-area">
-                {/* Header cinematográfico */}
                 <div className="guion-doc-header">
                   <span className="guion-doc-brand">Mamá CEO · Studio de Contenido · GUIÓN</span>
                   <h1 className="guion-doc-title">{guion.tema}</h1>
                   <div className="guion-doc-meta-row">
-                    <span className="guion-doc-meta-badge">{guion.tipo}</span>
                     <span className="guion-doc-meta-badge">Objetivo: {guion.objetivo}</span>
-                    {guion.audiencia && <span className="guion-doc-meta-badge">Para: {guion.audiencia}</span>}
                     <span className="guion-doc-meta-badge">{guion.fecha}</span>
                   </div>
                 </div>
