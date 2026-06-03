@@ -1518,8 +1518,9 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
   const [escritura, setEscritura] = useState({});
   const [c,         setC]         = useState({ red: "Instagram", tono: "Cercano", tema: "", cta: "", hashtags: true });
   const [caption,   setCaption]   = useState(null);
-  const [copiado,   setCopiado]   = useState("");
-  const [fraseIdx,  setFraseIdx]  = useState({});
+  const [copiado,    setCopiado]    = useState("");
+  const [fraseIdx,   setFraseIdx]   = useState({});
+  const [verCompleto,setVerCompleto] = useState(false);
 
   useEffect(() => { if (seed) { setWizard(p => ({...p, logro: seed})); onSeedConsumed?.(); } }, []);
 
@@ -1701,6 +1702,77 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
     const a    = document.createElement("a");
     a.href = url; a.download = `Guion - ${guion.tema.replace(/[^\w\sáéíóúñÁÉÍÓÚÑ]/g,"").trim()}.doc`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  };
+
+  const downloadPDF = () => {
+    if (!guion) return;
+    const COLORS = { "01": "#9B59B6", "02": "#C4526A", "03": "#27AE60", "04": "#E8755A" };
+    const scenesHtml = guion.escenas.map((esc, i) => {
+      const txt = (escritura[i] || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>");
+      const col = COLORS[esc.num] || "#C4526A";
+      return `<div class="escena" style="border-left-color:${col}">
+        <div class="esc-hdr">
+          <span class="esc-num" style="color:${col}">${esc.num}</span>
+          <div class="esc-title-group">
+            <span class="esc-nombre">${esc.nombre}</span>
+            <span class="esc-sub">— ${esc.subtitulo}</span>
+          </div>
+          <span class="esc-tiempo">⏱ ${esc.tiempo}</span>
+        </div>
+        <div class="esc-texto">${txt}</div>
+      </div>`;
+    }).join("");
+
+    const tituloSafe = guion.tema.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"/>
+<title>Guión — ${tituloSafe}</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:Georgia,'Times New Roman',serif;color:#2D1B1B;background:#fff;line-height:1.6}
+  .page{max-width:680px;margin:0 auto;padding:52px 44px}
+  .cabecera{padding-bottom:22px;margin-bottom:40px;border-bottom:2px solid #C9A84C}
+  .marca{font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:#C9A84C;font-family:Arial;margin-bottom:10px}
+  .titulo{font-size:26px;font-weight:bold;line-height:1.3;margin-bottom:8px;color:#2D1B1B}
+  .meta{font-size:12px;color:#9A7878;font-family:Arial}
+  .escena{margin-bottom:40px;border-left:4px solid;padding-left:22px;page-break-inside:avoid}
+  .esc-hdr{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .esc-num{font-size:30px;font-weight:900;font-family:Georgia;line-height:1;opacity:.65;flex-shrink:0}
+  .esc-title-group{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;flex:1}
+  .esc-nombre{font-size:16px;font-weight:900;font-family:Arial;letter-spacing:.5px}
+  .esc-sub{font-size:13px;color:#9A7878;font-style:italic;font-family:Arial}
+  .esc-tiempo{font-size:11px;color:#9A7878;font-family:Arial;white-space:nowrap}
+  .esc-texto{font-size:14.5px;line-height:1.9;color:#2D1B1B;font-family:Georgia}
+  .pie{margin-top:52px;padding-top:14px;border-top:1px solid #E8C99A;text-align:center;font-size:11px;color:#C9A84C;font-family:Arial}
+  @media print{
+    body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+    @page{margin:2cm 2.5cm}
+    .escena{page-break-inside:avoid}
+  }
+</style>
+</head><body>
+<div class="page">
+  <div class="cabecera">
+    <div class="marca">Mamá CEO · Studio de Contenido · GUIÓN</div>
+    <div class="titulo">${tituloSafe}</div>
+    <div class="meta">Objetivo: ${guion.objetivo} &nbsp;·&nbsp; ${guion.fecha}</div>
+  </div>
+  ${scenesHtml}
+  <div class="pie">Creado con Studio de Contenido · Mamá CEO App</div>
+</div>
+<script>window.onload=function(){window.print()}<\/script>
+</body></html>`;
+
+    const win = window.open("", "_blank", "width=800,height=900");
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    } else {
+      const blob = new Blob([html], { type: "text/html" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href = url; a.download = `Guion - ${guion.tema.replace(/[^\w\sáéíóúñÁÉÍÓÚÑ]/g,"").trim()}.html`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    }
   };
 
   const generarCaption = () => {
@@ -1886,7 +1958,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
                     Guardar 🎬
                   </button>
                   <button className="lm-dl-btn lm-dl-btn--word" onClick={downloadWordGuion}>⬇ Word</button>
-                  <button className="lm-dl-btn lm-dl-btn--pdf" onClick={() => window.print()}>🖨️ PDF</button>
+                  <button className="lm-dl-btn lm-dl-btn--pdf" onClick={downloadPDF}>⬇ PDF</button>
                 </div>
               </div>
 
@@ -2000,6 +2072,39 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
                       </div>
                     </div>
                   ))}
+                </div>
+
+                {/* Guión completo */}
+                <div className="guion-completo-wrap">
+                  <button className="guion-completo-toggle" onClick={() => setVerCompleto(p => !p)}>
+                    <span>📄 Ver guión completo</span>
+                    <span className="guion-completo-arrow">{verCompleto ? "↑" : "↓"}</span>
+                  </button>
+
+                  {verCompleto && (
+                    <div className="guion-completo-body">
+                      {guion.escenas.map((esc, i) => (
+                        <div key={i} className="guion-completo-scene" style={{"--sc": esc.color}}>
+                          <div className="guion-completo-scene-hdr">
+                            <span className="guion-completo-num" style={{color: esc.color}}>{esc.num}</span>
+                            <span className="guion-completo-nombre">{esc.nombre}</span>
+                            <span className="guion-completo-sub">— {esc.subtitulo}</span>
+                            <span className="guion-completo-tiempo">⏱ {esc.tiempo}</span>
+                          </div>
+                          <p className="guion-completo-texto">{escritura[i] || esc.placeholder}</p>
+                        </div>
+                      ))}
+                      <div className="guion-completo-actions">
+                        <button className="lm-dl-btn" onClick={() => {
+                          const full = guion.escenas.map((esc, i) =>
+                            `[ ${esc.nombre} — ${esc.tiempo} ]\n${escritura[i] || ""}`
+                          ).join("\n\n");
+                          copiar(full, "guion-completo");
+                        }}>{copiado === "guion-completo" ? "✓ Copiado" : "Copiar todo el texto"}</button>
+                        <button className="lm-dl-btn lm-dl-btn--pdf" onClick={downloadPDF}>⬇ Descargar PDF</button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Caption CTA */}
