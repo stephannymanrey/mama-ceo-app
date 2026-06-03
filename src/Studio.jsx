@@ -15,6 +15,7 @@ const TABS = [
   { id: "lead",     icon: "🎁", label: "Lead Magnet" },
   { id: "hooks",    icon: "🪝", label: "Hooks"       },
   { id: "guion",    icon: "🎬", label: "Guión"       },
+  { id: "carrusel", icon: "🎴", label: "Carrusel"    },
   { id: "email",    icon: "📧", label: "Email"       },
   { id: "whatsapp", icon: "💬", label: "WhatsApp"    },
 ];
@@ -3251,6 +3252,234 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
 }
 
 // ── STUDIO PRINCIPAL ───────────────────────────────────────────
+// ── CARRUSEL ───────────────────────────────────────────────────────────────
+
+const CR_ESTRUCTURAS = [
+  { id: "Educativo",   icon: "📚", sub: "Tips y consejos",     color: "#4A90D9", bg: "#EEF5FF" },
+  { id: "Historia",    icon: "💫", sub: "Problema → Solución", color: "#C4526A", bg: "#FFF0F3" },
+  { id: "Comparación", icon: "⚖️",  sub: "Antes vs Después",    color: "#C9A96E", bg: "#faf3e7" },
+  { id: "Proceso",     icon: "🔢", sub: "Paso a paso",         color: "#2f9f70", bg: "#def3e8" },
+];
+
+function buildCarruselSlides(estructura, t) {
+  const cleanT = t.trim() || "este tema";
+  if (estructura === "Educativo") return [
+    { id:0, tipo:"portada",   etiqueta:"",            principal:`Las 5 cosas sobre ${cleanT}\nque ojalá alguien me hubiera dicho antes`, apoyo:"Desliza para descubrirlas →" },
+    { id:1, tipo:"contenido", etiqueta:"Tip #1",      principal:`[Tu primer consejo clave sobre ${cleanT}]`, apoyo:"Ejemplo o frase de apoyo" },
+    { id:2, tipo:"contenido", etiqueta:"Tip #2",      principal:`[Tu segundo aprendizaje más valioso sobre ${cleanT}]`, apoyo:"" },
+    { id:3, tipo:"contenido", etiqueta:"Tip #3",      principal:"[El que más te costó aprender — el más poderoso]", apoyo:"" },
+    { id:4, tipo:"contenido", etiqueta:"Tip #4",      principal:"[El que más rápido genera resultados]", apoyo:"" },
+    { id:5, tipo:"contenido", etiqueta:"Tip #5",      principal:"[Tu favorito — el que cambió tu perspectiva]", apoyo:"" },
+    { id:6, tipo:"cta",       etiqueta:"",            principal:"¿Cuál de estos tips resonó más contigo?", apoyo:"Guarda este carrusel 📌\nComenta tu número favorito 👇" },
+  ];
+  if (estructura === "Historia") return [
+    { id:0, tipo:"portada",   etiqueta:"",             principal:`Cómo ${cleanT}\ncambió mi vida\n(y puede cambiar la tuya)`, apoyo:"Una historia real →" },
+    { id:1, tipo:"antes",     etiqueta:"El antes",     principal:`Antes de descubrir ${cleanT}...`, apoyo:"[Describe cómo era tu situación — sé honesta y específica]" },
+    { id:2, tipo:"problema",  etiqueta:"El dolor",     principal:"Lo que más me frustraba era...", apoyo:"[El punto de mayor dolor — el que tu audiencia también siente]" },
+    { id:3, tipo:"quiebre",   etiqueta:"El quiebre",   principal:"Hasta que pasó algo que lo cambió todo", apoyo:`[El momento de descubrimiento sobre ${cleanT}]` },
+    { id:4, tipo:"solucion",  etiqueta:"El cambio",    principal:"Lo que descubrí fue...", apoyo:`[Tu aprendizaje o herramienta principal sobre ${cleanT}]` },
+    { id:5, tipo:"resultado", etiqueta:"El resultado", principal:"Hoy, gracias a eso...", apoyo:"[El resultado concreto que vives ahora — específico y real]" },
+    { id:6, tipo:"cta",       etiqueta:"",             principal:"¿Estás viviendo alguna de estas etapas?", apoyo:"Cuéntame en comentarios 💬\no escríbeme por DM — te leo 🤍" },
+  ];
+  if (estructura === "Comparación") return [
+    { id:0, tipo:"portada",  etiqueta:"",           principal:`${cleanT}:\nantes vs. ahora`, apoyo:"Lo que cambió cuando lo hice diferente →" },
+    { id:1, tipo:"antes",    etiqueta:"ANTES ✗",    principal:`[Lo que creías o hacías mal sobre ${cleanT}]`, apoyo:"Resultado: agotamiento y sin avance" },
+    { id:2, tipo:"antes",    etiqueta:"ANTES ✗",    principal:"[Segunda creencia o hábito que te limitaba]", apoyo:"" },
+    { id:3, tipo:"antes",    etiqueta:"ANTES ✗",    principal:"[Tercer error que cometías — sé específica]", apoyo:"" },
+    { id:4, tipo:"vs",       etiqueta:"EL CAMBIO",  principal:"Lo que lo transformó todo:", apoyo:`[Qué cambió tu perspectiva sobre ${cleanT}]` },
+    { id:5, tipo:"despues",  etiqueta:"AHORA ✓",    principal:"[Lo que haces ahora diferente — concreto]", apoyo:"Resultado: claridad y resultados reales" },
+    { id:6, tipo:"despues",  etiqueta:"AHORA ✓",    principal:"[Segunda práctica nueva que adoptaste]", apoyo:"" },
+    { id:7, tipo:"despues",  etiqueta:"AHORA ✓",    principal:"[Tercer cambio positivo en tu vida]", apoyo:"" },
+    { id:8, tipo:"cta",      etiqueta:"",           principal:"¿En cuál lado estás tú hoy?", apoyo:"Comenta ANTES o AHORA 👇\nTe leo en cada comentario" },
+  ];
+  return [
+    { id:0, tipo:"portada",   etiqueta:"",             principal:`Mi proceso para ${cleanT}\nen 5 pasos que funcionan`, apoyo:"Desliza y aplícalos →" },
+    { id:1, tipo:"paso",      etiqueta:"Paso 01",      principal:"[El primer paso — sienta la base de todo]", apoyo:"[Por qué empezar aquí y qué error evita]" },
+    { id:2, tipo:"paso",      etiqueta:"Paso 02",      principal:"[El segundo paso]", apoyo:"[Qué logras al completarlo]" },
+    { id:3, tipo:"paso",      etiqueta:"Paso 03",      principal:"[El paso del medio — el más retador]", apoyo:"[Cómo superar el obstáculo típico]" },
+    { id:4, tipo:"paso",      etiqueta:"Paso 04",      principal:"[El cuarto paso]", apoyo:"" },
+    { id:5, tipo:"paso",      etiqueta:"Paso 05",      principal:"[El paso final — el que consolida todo]", apoyo:"[El resultado al llegar aquí]" },
+    { id:6, tipo:"resultado", etiqueta:"El resultado", principal:"Cuando sigues estos pasos...", apoyo:`[Describe el resultado concreto de aplicar este proceso de ${cleanT}]` },
+    { id:7, tipo:"cta",       etiqueta:"",             principal:"¿Quieres apoyo para aplicar esto?", apoyo:"Escríbeme por DM 💌\no comenta PROCESO y te cuento" },
+  ];
+}
+
+function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
+  const [tema,      setTema]      = useState(brandProfile.queOfreces || "");
+  const [estructura,setEstructura]= useState("Educativo");
+  const [slides,    setSlides]    = useState(null);
+  const [thinking,  setThinking]  = useState(false);
+  const [copiado,   setCopiado]   = useState("");
+
+  const copiar = (txt, key) => { navigator.clipboard.writeText(txt); setCopiado(key); setTimeout(() => setCopiado(""), 2200); };
+
+  const meta = CR_ESTRUCTURAS.find(e => e.id === estructura) || CR_ESTRUCTURAS[0];
+
+  const generar = () => {
+    if (!tema.trim()) return;
+    setThinking(true);
+    setTimeout(() => { setSlides(buildCarruselSlides(estructura, tema)); setThinking(false); }, 950);
+  };
+
+  const updateSlide = (id, field, val) =>
+    setSlides(prev => prev.map(s => s.id === id ? { ...s, [field]: val } : s));
+
+  const copiarTodo = () => {
+    if (!slides) return;
+    const txt = slides.map((s, i) => {
+      const header = `SLIDE ${i + 1}${s.etiqueta ? ` — ${s.etiqueta}` : s.tipo === "portada" ? " — PORTADA" : s.tipo === "cta" ? " — CTA" : ""}`;
+      return [header, s.principal, s.apoyo ? `\n${s.apoyo}` : ""].filter(Boolean).join("\n");
+    }).join("\n\n---\n\n");
+    copiar(txt, "todo");
+  };
+
+  const slideStyle = (s) => {
+    if (s.tipo === "portada") return { bg:`linear-gradient(145deg,${meta.color}bb,${meta.color})`, txt:"#fff", etqClr:"rgba(255,255,255,0.75)", dark:true };
+    if (s.tipo === "cta")     return { bg:meta.bg, txt:"#2D1B1B", etqClr:meta.color, dark:false };
+    if (s.tipo === "antes")   return { bg:"#FFF5F6", txt:"#2D1B1B", etqClr:"#C4526A", dark:false };
+    if (s.tipo === "despues") return { bg:"#F0FAF5", txt:"#2D1B1B", etqClr:"#2f9f70", dark:false };
+    if (s.tipo === "vs")      return { bg:"#FFFDF7", txt:"#2D1B1B", etqClr:"#C9A96E", dark:false };
+    return { bg:"#fff", txt:"#2D1B1B", etqClr:meta.color, dark:false };
+  };
+
+  const savedCarruseles = saved?.carruseles || [];
+
+  return (
+    <div className="cr-wrap">
+
+      {/* Formulario */}
+      <div className="cr-form card">
+        <div className="cr-form-header">
+          <h3>Generador de Carrusel</h3>
+          <p>Crea el copy de tus slides listo para diseñar en Canva</p>
+        </div>
+        <div className="cr-field">
+          <label className="cr-label">Tema del carrusel</label>
+          <input className="cr-input" placeholder="Ej: organización del hogar, finanzas personales, maternidad consciente..." value={tema} onChange={e => setTema(e.target.value)} />
+        </div>
+        <div className="cr-field">
+          <label className="cr-label">Estructura</label>
+          <div className="cr-estructura-grid">
+            {CR_ESTRUCTURAS.map(e => (
+              <button key={e.id} type="button"
+                className={`cr-e-btn ${estructura === e.id ? "cr-e-btn--active" : ""}`}
+                style={estructura === e.id ? {"--ec": e.color, "--eb": e.bg} : {}}
+                onClick={() => setEstructura(e.id)}>
+                <span className="cr-e-icon">{e.icon}</span>
+                <span className="cr-e-name">{e.id}</span>
+                <span className="cr-e-sub">{e.sub}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <button className="primary-button" onClick={generar} disabled={thinking || !tema.trim()} style={{marginTop:"4px"}}>
+          {thinking ? "Generando slides..." : "Generar slides 🎴"}
+        </button>
+      </div>
+
+      {/* Thinking */}
+      {thinking && (
+        <div className="ideas-thinking" style={{marginTop:"16px"}}>
+          <div className="ideas-thinking-dots"><span/><span/><span/></div>
+          <p>Armando tu carrusel...</p>
+        </div>
+      )}
+
+      {/* Resultado */}
+      {slides && !thinking && (
+        <div className="cr-result">
+          <div className="cr-result-bar">
+            <div className="cr-result-info">
+              <span className="cr-result-count">{slides.length} slides</span>
+              <span className="cr-result-sep">·</span>
+              <span className="cr-result-tipo">{estructura}</span>
+            </div>
+            <div className="cr-result-actions">
+              <button className="cr-btn cr-btn--secondary" onClick={copiarTodo}>
+                {copiado === "todo" ? "✓ Copiado todo" : "📋 Copiar todo"}
+              </button>
+              <button className="cr-btn cr-btn--canva" onClick={() => window.open("https://www.canva.com/create/instagram-posts/", "_blank")}>
+                Diseñar en Canva ↗
+              </button>
+              <button className="cr-btn cr-btn--save" onClick={() => onSave("carruseles", { id:Date.now(), tema, estructura, slides, fecha:new Date().toLocaleDateString("es") })}>
+                Guardar 💾
+              </button>
+            </div>
+          </div>
+
+          <div className="cr-slides-grid">
+            {slides.map((s, i) => {
+              const ss = slideStyle(s);
+              return (
+                <div key={s.id} className="cr-card" style={{"--cr-bg": ss.bg, "--cr-border": meta.color}}>
+                  <div className="cr-card-top">
+                    {s.etiqueta
+                      ? <span className="cr-card-etq" style={{color: ss.etqClr}}>{s.etiqueta}</span>
+                      : <span/>
+                    }
+                    <span className="cr-card-num" style={{color: ss.dark ? "rgba(255,255,255,0.55)" : "var(--muted)"}}>
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                  </div>
+                  <div className="cr-card-body">
+                    <textarea
+                      className="cr-card-main"
+                      style={{color: ss.txt}}
+                      value={s.principal}
+                      onChange={e => updateSlide(s.id, "principal", e.target.value)}
+                      rows={4}
+                    />
+                    <textarea
+                      className="cr-card-apoyo"
+                      style={{color: ss.dark ? "rgba(255,255,255,0.72)" : "var(--muted)"}}
+                      value={s.apoyo}
+                      onChange={e => updateSlide(s.id, "apoyo", e.target.value)}
+                      placeholder="Texto de apoyo..."
+                      rows={2}
+                    />
+                  </div>
+                  <div className="cr-card-footer">
+                    <button className="cr-card-copy"
+                      style={{color: ss.dark ? "rgba(255,255,255,0.6)" : "var(--muted)"}}
+                      onClick={() => copiar([s.principal, s.apoyo].filter(Boolean).join("\n\n"), `s${s.id}`)}>
+                      {copiado === `s${s.id}` ? "✓ Copiado" : "📋 Copiar slide"}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="cr-canva-tip">
+            <span>💡</span>
+            <p>Abre Canva → busca una plantilla de carrusel de Instagram → pega el texto de cada slide. <b>Copia todo</b> para tenerlo a mano mientras diseñas.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Guardados */}
+      {savedCarruseles.length > 0 && (
+        <div className="cr-saved card">
+          <h4 className="cr-saved-title">Carruseles guardados</h4>
+          {savedCarruseles.map(c => (
+            <div key={c.id} className="cr-saved-row">
+              <div className="cr-saved-info">
+                <strong>{c.tema}</strong>
+                <span>{c.estructura} · {c.slides?.length} slides · {c.fecha}</span>
+              </div>
+              <div className="cr-saved-btns">
+                <button className="cr-saved-load" onClick={() => { setTema(c.tema); setEstructura(c.estructura); setSlides(c.slides); window.scrollTo({top:0,behavior:"smooth"}); }}>Cargar</button>
+                <button className="cr-saved-del" onClick={() => onDelete("carruseles", c.id)}>✕</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+    </div>
+  );
+}
+
 export default function Studio({ onBack, brandProfile = {}, onGoToBrandProfile }) {
   const [activeTab, setActiveTab] = useState("mensaje");
   const [data, setData] = useState(() => loadStudio());
@@ -3312,6 +3541,7 @@ export default function Studio({ onBack, brandProfile = {}, onGoToBrandProfile }
         {activeTab === "lead"     && <LeadMagnetTab {...tabProps} />}
         {activeTab === "hooks"    && <HooksTab      {...tabProps} onCrearGuion={handleCrearGuion} />}
         {activeTab === "guion"    && <GuionTab      {...tabProps} seed={guionSeed} onSeedConsumed={() => setGuionSeed("")} />}
+        {activeTab === "carrusel" && <CarruselTab   {...tabProps} />}
         {activeTab === "email"    && <EmailTab      {...tabProps} />}
         {activeTab === "whatsapp" && <WhatsAppTab   {...tabProps} />}
       </main>
