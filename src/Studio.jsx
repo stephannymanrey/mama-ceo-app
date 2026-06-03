@@ -1513,7 +1513,7 @@ function HooksTab({ saved, onSave, onCrearGuion }) {
 // ── GUIÓN ──────────────────────────────────────────────────────
 function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
   const [subTab,    setSubTab]    = useState("guion");
-  const [wizard,    setWizard]    = useState({ step: 1, objetivo: "Vender", logro: seed || "", dolor: "", cambio: "", cta: "Guardar el video" });
+  const [wizard,    setWizard]    = useState({ step: 1, objetivo: "Vender", logro: seed || "", dolor: "", cambio: "", cta: "Guardar el video", ctaPersonalizado: "" });
   const [guion,     setGuion]     = useState(null);
   const [escritura, setEscritura] = useState({});
   const [c,         setC]         = useState({ red: "Instagram", tono: "Cercano", tema: "", cta: "", hashtags: true });
@@ -1536,6 +1536,8 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
     "Escribirme por DM":        `Si esto te resonó, escríbeme por DM — me encantaría conocer tu historia.`,
     "Ir al link en mi bio":     `Si quieres el siguiente paso, el link está en mi bio. Hay un espacio para ti.`,
     "Compartirlo con alguien":  `¿Conoces a alguien que necesita escuchar esto hoy? Compártelo con ella.`,
+    "Ir a mi página web":       `Si quieres saber más, visita mi página — el link está en la descripción.`,
+    "Ir a otro link":           `El link con todos los detalles está en la descripción. No te lo pierdas.`,
   };
   const HOOK_MAP = {
     "Vender":   `¿Sientes que trabajas duro en tu negocio y algo todavía no está funcionando como quieres?`,
@@ -1544,11 +1546,31 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
     "Inspirar": `Hubo un momento en que creí que esto no era para mí. Hasta que pasó algo que lo cambió todo.`,
   };
 
-  const buildEscenas = (objetivo, logro, dolor, cambio, cta) => {
-    const hookFrase  = HOOK_MAP[objetivo]  || HOOK_MAP["Conectar"];
-    const ctaFrase   = CTA_MAP[cta]        || CTA_MAP["Guardar el video"];
+  const buildEscenas = (objetivo, logro, dolor, cambio, ctaTexto) => {
+    const hookFrase    = HOOK_MAP[objetivo] || HOOK_MAP["Conectar"];
     const interesFrase = dolor + `\n\nY lo peor es que sentías que las demás lo lograban y tú no. Eso es agotador — y nadie habla de eso con honestidad.`;
     const deseoFrase   = cambio + `\n\nY cuando eso pasó, todo empezó a fluir diferente. Eso mismo es posible para ti.`;
+
+    const HOOK_IDEAS = {
+      "Vender":   ["Antes de que hagas scroll — necesito 10 segundos de tu atención. Esto es para ti.", "¿Cuánto tiempo llevas trabajando duro sin ver los resultados que mereces? Hoy eso cambia.", "Hay algo que la mayoría no te dice sobre hacer crecer tu negocio — y hoy lo voy a cambiar."],
+      "Conectar": ["Llevo días queriendo contarte esto — y hoy por fin lo hago.", "Si alguna vez has sentido que estás sola en esto, quédate. Este video es para ti.", "Antes de grabar esto dudé mucho. Pero sé que alguien necesita escucharlo hoy."],
+      "Educar":   ["En menos de 60 segundos te doy lo que me costó meses aprender.", "Anota esto — lo vas a querer tener cuando lo apliques.", "Si solo puedes aprender una cosa hoy, que sea esto."],
+      "Inspirar": ["Sé que hay días en que sientes que no avanzas. Hoy quiero cambiar eso.", "Si estás a punto de rendirte — espera. Escucha esto primero.", "Esto que voy a decir lo necesitaba escuchar yo hace un tiempo. Ojalá lo escuches tú hoy."],
+    };
+    const interesIdeas = [
+      "Y lo más duro no era el obstáculo en sí — era sentir que, por más que lo intentabas, algo fallaba sin saber qué.",
+      "Y encima seguías dando todo en casa, con los hijos, con tu negocio — sonriendo hacia afuera mientras por dentro se acumulaba el cansancio.",
+      "¿Cuántas veces sentiste que las demás lo tenían claro y tú eras la única que luchaba? Eso se siente muy solo.",
+    ];
+    const deseoIdeas = [
+      "Y no fue de la noche a la mañana. Pero el primer resultado lo cambió todo — porque me demostré que era posible.",
+      "Imagina tu semana diferente: avanzando con claridad, sabiendo exactamente qué hacer y sintiéndote en paz con el proceso.",
+      "Eso que yo viví — esa transformación — es lo que es posible para ti. No cuando seas perfecta. Ahora, desde donde estás.",
+    ];
+    const accionIdeas = [
+      "Solo si de verdad sientes que esto es para ti — porque los mejores resultados llegan cuando estás lista.",
+      "Gracias por quedarte hasta el final. Eso me dice que algo de lo que dije llegó donde tenía que llegar.",
+    ];
 
     return [
       {
@@ -1557,6 +1579,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
         emocion: "CURIOSIDAD · IDENTIDAD",
         guia: `Los primeros 3 segundos deciden si te siguen viendo o hacen scroll. Una frase que las haga pensar "eso me pasa a mí" o "necesito escuchar esto".`,
         frases: [hookFrase],
+        ideas: HOOK_IDEAS[objetivo] || HOOK_IDEAS["Conectar"],
         palabras: [],
         nota: null,
         placeholder: "Tu frase de apertura...",
@@ -1565,8 +1588,9 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
         num: "02", nombre: "INTERÉS", subtitulo: "Hazla sentir vista",
         tiempo: "0:03 – 0:15", color: "#C4526A", bgLight: "#FFF0F3",
         emocion: "EMPATÍA · DOLOR RECONOCIDO",
-        guia: `No des la solución todavía. Hazlas sentir completamente VISTAS y ENTENDIDAS.`,
+        guia: `Acabas de contar tu dolor — ahora hazlas sentir que tú también viviste lo que ellas sienten. No des la solución todavía.`,
         frases: [interesFrase],
+        ideas: interesIdeas,
         palabras: ["Sé exactamente cómo se siente", "No estás sola", "¿Has sentido que...?", "Es agotador", "Nadie habla de esto"],
         nota: `Miedo que activas: sentir que trabajan duro y no avanzan. Que las demás lo logran y ellas no.`,
         placeholder: "Habla de su dolor...",
@@ -1575,8 +1599,9 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
         num: "03", nombre: "DESEO", subtitulo: "Pinta su transformación",
         tiempo: "0:15 – 0:45", color: "#27AE60", bgLight: "#EEFAF3",
         emocion: "TRANSFORMACIÓN · ESPERANZA",
-        guia: `Aquí pintas el SUEÑO. La vida que tendrán cuando esto se resuelva. Sé visual, específica, emocional.`,
+        guia: `Ya contaste qué cambió para ti — ahora conecta esa transformación con lo que es posible para ellas. Sé visual, específica, emocional.`,
         frases: [deseoFrase],
+        ideas: deseoIdeas,
         palabras: ["Imagina que...", "¿Qué pasaría si...?", "Mereces...", "Con calma y confianza", "Sin sacrificar", "Es posible"],
         nota: `Deseo que activas: libertad, claridad, resultados — sin perder su familia ni su paz.`,
         placeholder: "Describe la transformación...",
@@ -1586,7 +1611,8 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
         tiempo: "0:45 – 1:00", color: "#E8755A", bgLight: "#FFF5F0",
         emocion: "DECISIÓN · CONFIANZA",
         guia: `Una sola acción, fácil de hacer en 10 segundos. Sin presionar — invitando.`,
-        frases: [ctaFrase],
+        frases: [ctaTexto],
+        ideas: accionIdeas,
         palabras: [],
         nota: null,
         placeholder: "Tu llamada a la acción...",
@@ -1594,36 +1620,42 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
     ];
   };
 
-  const buildEscrituraInicial = (objetivo, logro, dolor, cambio, cta) => {
-    const ctaFrase     = CTA_MAP[cta] || CTA_MAP["Guardar el video"];
+  const buildEscrituraInicial = (objetivo, logro, dolor, cambio, ctaTexto) => {
     const interesFrase = dolor + `\n\nY lo peor es que sentías que las demás lo lograban y tú no. Eso es agotador — y nadie habla de eso con honestidad.`;
     const deseoFrase   = cambio + `\n\nY cuando eso pasó, todo empezó a fluir diferente. Eso mismo es posible para ti.`;
     return {
       0: HOOK_MAP[objetivo] || HOOK_MAP["Conectar"],
       1: interesFrase,
       2: deseoFrase,
-      3: ctaFrase,
+      3: ctaTexto,
     };
   };
 
-  const buildCaptionFromGuion = (objetivo, logro, dolor, cambio, cta) => {
+  const buildCaptionFromGuion = (objetivo, logro = "", dolor = "", cambio = "", ctaTexto = "") => {
     const hook    = HOOK_MAP[objetivo] || HOOK_MAP["Conectar"];
-    const interes = dolor + `\n\nY lo peor es que sentías que las demás lo lograban y tú no. Eso es agotador — y nadie habla de eso con honestidad.`;
-    const deseo   = cambio + `\n\nY cuando eso pasó, todo empezó a fluir diferente. Eso mismo es posible para ti.`;
-    const accion  = CTA_MAP[cta] || CTA_MAP["Guardar el video"];
+    const interes = dolor
+      ? dolor + `\n\nY lo peor es que sentías que las demás lo lograban y tú no. Eso es agotador — y nadie habla de eso con honestidad.`
+      : `A veces el mayor obstáculo no es la estrategia — es lo que cargamos por dentro. Y eso es real.`;
+    const deseo   = cambio
+      ? cambio + `\n\nY cuando eso pasó, todo empezó a fluir diferente. Eso mismo es posible para ti.`
+      : `Ese lugar donde todo fluye y avanzan con calma existe. Y con la guía correcta, es posible llegar ahí.`;
+    const accion  = ctaTexto || `Guarda este video — lo vas a querer tener cuando lo necesites.`;
     return `${hook}\n\n${interes}\n\n${deseo}\n\n👉 ${accion}\n\n#mamáemprendedora #negociodigital #emprendimiento #mamáceo`;
   };
 
   const generarGuion = () => {
-    const { objetivo, logro, dolor, cambio, cta } = wizard;
+    const { objetivo, logro, dolor, cambio, cta, ctaPersonalizado } = wizard;
+    const ctaTexto = cta === "Otro"
+      ? (ctaPersonalizado.trim() || "Guarda este video — lo vas a querer cuando lo necesites.")
+      : (CTA_MAP[cta] || CTA_MAP["Guardar el video"]);
     setGuion({
       tema: logro.substring(0, 80) || objetivo,
       objetivo, tipo: "Reel (60s)", audiencia: "",
-      escenas: buildEscenas(objetivo, logro, dolor, cambio, cta),
+      escenas: buildEscenas(objetivo, logro, dolor, cambio, ctaTexto),
       fecha: new Date().toLocaleDateString("es"),
     });
-    setEscritura(buildEscrituraInicial(objetivo, logro, dolor, cambio, cta));
-    setCaption(buildCaptionFromGuion(objetivo, logro, dolor, cambio, cta));
+    setEscritura(buildEscrituraInicial(objetivo, logro, dolor, cambio, ctaTexto));
+    setCaption(buildCaptionFromGuion(objetivo, logro, dolor, cambio, ctaTexto));
     setFraseIdx({});
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
@@ -1793,11 +1825,28 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
                     <span className="wiz-step-title">¿Qué quieres que hagan al terminar el video?</span>
                   </div>
                   <div className="wiz-cta-pills">
-                    {["Guardar el video","Comentar cómo se sienten","Escribirme por DM","Ir al link en mi bio","Compartirlo con alguien"].map(op => (
-                      <button key={op} className={`wiz-cta-pill${wizard.cta===op?" active":""}`}
-                        onClick={() => setWizard(p => ({...p, cta: op}))}>{op}</button>
+                    {[
+                      { k: "Guardar el video",        i: "🔖" },
+                      { k: "Comentar cómo se sienten", i: "💬" },
+                      { k: "Escribirme por DM",        i: "✉️" },
+                      { k: "Ir al link en mi bio",     i: "🔗" },
+                      { k: "Ir a mi página web",       i: "🌐" },
+                      { k: "Ir a otro link",           i: "↗️" },
+                      { k: "Compartirlo con alguien",  i: "🤝" },
+                      { k: "Otro",                     i: "✏️" },
+                    ].map(op => (
+                      <button key={op.k} className={`wiz-cta-pill${wizard.cta===op.k?" active":""}`}
+                        onClick={() => setWizard(p => ({...p, cta: op.k}))}>
+                        {op.i} {op.k}
+                      </button>
                     ))}
                   </div>
+                  {wizard.cta === "Otro" && (
+                    <textarea className="wiz-textarea" style={{marginTop:"12px"}} rows={2} autoFocus
+                      placeholder='Escribe tu CTA personalizado — ej. "Apúntate a mi lista de espera escribiéndome LISTA"'
+                      value={wizard.ctaPersonalizado}
+                      onChange={e => setWizard(p => ({...p, ctaPersonalizado: e.target.value}))} />
+                  )}
                 </>
               )}
 
@@ -1884,9 +1933,24 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
                           </div>
                         )}
 
+                        {/* Ideas contextuales */}
+                        {esc.ideas && esc.ideas.length > 0 && (
+                          <div className="guion-ideas-section">
+                            <div className="guion-ideas-label">💡 Ideas para agregar — clic para insertar:</div>
+                            <div className="guion-ideas-list">
+                              {esc.ideas.map((idea, j) => (
+                                <button key={j} className="guion-idea-chip"
+                                  onClick={() => usarFrase(i, idea)}>
+                                  + {idea}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
                         {/* Slider de frases */}
                         <div className="guion-frase-slider-wrap">
-                          <div className="guion-frases-title">Elige la frase que más te suene:</div>
+                          <div className="guion-frases-title">Tu texto base — edita a tu gusto:</div>
                           <div className="guion-frase-slide-card" key={`s-${i}-${(fraseIdx[i]||0) % esc.frases.length}`}>
                             <span className="guion-frase-mark">✦</span>
                             <p className="guion-frase-text">{esc.frases[(fraseIdx[i]||0) % esc.frases.length]}</p>
@@ -1945,7 +2009,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
                     <div className="guion-caption-cta-sub">Tu caption se crea en un clic, alineado con este video</div>
                   </div>
                   <button className="guion-caption-cta-btn" onClick={() => {
-                    if (!caption) setCaption(buildCaptionFromGuion(guion.tema, guion.objetivo));
+                    if (!caption) setCaption(buildCaptionFromGuion(guion.objetivo));
                     setSubTab("caption");
                     setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}), 50);
                   }}>
@@ -2006,7 +2070,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
               <div className="cap-guiones-grid">
                 {saved.guiones.slice().reverse().slice(0, 6).map(g => (
                   <button key={g.id} className="cap-guion-card" onClick={() => {
-                    setCaption(buildCaptionFromGuion(g.tema, g.objetivo));
+                    setCaption(buildCaptionFromGuion(g.objetivo));
                     setC(p => ({ ...p, tema: g.tema }));
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}>
@@ -2115,7 +2179,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
                   {g.objetivo && <span style={{fontSize:"11px",color:"#9A7878",marginLeft:"7px"}}>· {g.objetivo}</span>}
                 </div>
                 <div style={{display:"flex",gap:"6px",flexShrink:0}}>
-                  <button className="studio-bank-action-copy" onClick={() => { setCaption(buildCaptionFromGuion(g.tema, g.objetivo)); setSubTab("caption"); setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}),50); }}>
+                  <button className="studio-bank-action-copy" onClick={() => { setCaption(buildCaptionFromGuion(g.objetivo)); setSubTab("caption"); setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}),50); }}>
                     📝 Caption
                   </button>
                   <button className="studio-bank-action-copy" style={{color:"#C4526A"}} onClick={() => onDelete?.("guiones", g.id)}>
