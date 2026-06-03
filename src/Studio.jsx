@@ -535,8 +535,8 @@ const detectProductType = (text) => {
 };
 
 // ── IDEAS ──────────────────────────────────────────────────────
-function IdeasTab({ saved, onSave, onDelete, onCrearGuion }) {
-  const [keyword,        setKeyword]        = useState("");
+function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {} }) {
+  const [keyword,        setKeyword]        = useState(brandProfile.queOfreces || "");
   const [ideas,          setIdeas]          = useState(null);
   const [thinking,       setThinking]       = useState(false);
   const [copiado,        setCopiado]        = useState("");
@@ -878,9 +878,9 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion }) {
 }
 
 // ── LEAD MAGNET ────────────────────────────────────────────────
-function LeadMagnetTab({ saved, onSave, onDelete }) {
+function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
   const [view, setView]         = useState("inicio");
-  const [keyword, setKeyword]   = useState("");
+  const [keyword, setKeyword]   = useState(brandProfile.queOfreces || "");
   const [lmIdeas, setLmIdeas]   = useState(null);
   const [thinking, setThinking] = useState(false);
   const [form, setForm]         = useState({ titulo: "", promesa: "", audiencia: "", tipo: "guia", secciones: ["", "", ""], cta: "", producto: "" });
@@ -1462,9 +1462,9 @@ function LeadMagnetTab({ saved, onSave, onDelete }) {
 }
 
 // ── HOOKS ──────────────────────────────────────────────────────
-function HooksTab({ saved, onSave, onCrearGuion }) {
-  const [tema, setTema]       = useState("");
-  const [nicho, setNicho]     = useState("");
+function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {} }) {
+  const [tema, setTema]       = useState(brandProfile.queOfreces || "");
+  const [nicho, setNicho]     = useState(brandProfile.clienteIdeal || "");
   const [hooks, setHooks]     = useState(null);
   const [thinking, setThinking] = useState(false);
   const [copiado, setCopiado] = useState("");
@@ -1732,12 +1732,12 @@ function HooksTab({ saved, onSave, onCrearGuion }) {
 }
 
 // ── GUIÓN ──────────────────────────────────────────────────────
-function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
+function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {} }) {
   const [subTab,    setSubTab]    = useState("guion");
-  const [wizard,    setWizard]    = useState({ step: 1, objetivo: "Vender", logro: seed || "", dolor: "", cambio: "", cta: "Guardar el video", ctaPersonalizado: "" });
+  const [wizard,    setWizard]    = useState({ step: 1, objetivo: "Vender", logro: seed || brandProfile.transformacion || "", dolor: "", cambio: "", cta: "Guardar el video", ctaPersonalizado: "" });
   const [guion,     setGuion]     = useState(null);
   const [escritura, setEscritura] = useState({});
-  const [c,         setC]         = useState({ red: "Instagram", tono: "Cercano", tema: "", cta: "", hashtags: true });
+  const [c,         setC]         = useState({ red: brandProfile.redPrincipal || "Instagram", tono: brandProfile.tono || "Cercano", tema: brandProfile.queOfreces || "", cta: "", hashtags: true });
   const [caption,   setCaption]   = useState(null);
   const [copiado,    setCopiado]    = useState("");
   const [fraseIdx,   setFraseIdx]   = useState({});
@@ -2522,7 +2522,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
 }
 
 // ── EMAIL ──────────────────────────────────────────────────────
-function EmailTab({ saved, onSave, onDelete }) {
+function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
   const [view,      setView]      = useState("inicio");
   const [objetivo,  setObjetivo]  = useState("Lanzar producto");
   const [comunicar, setComunicar] = useState("");
@@ -2530,7 +2530,7 @@ function EmailTab({ saved, onSave, onDelete }) {
   const [cuerpos,   setCuerpos]   = useState({});
   const [expandido, setExpandido] = useState({});
   const [thinking,  setThinking]  = useState(false);
-  const [ef,        setEf]        = useState({ tipo: "Presentación", tono: "Cercano", tema: "", cta: "" });
+  const [ef,        setEf]        = useState({ tipo: "Presentación", tono: brandProfile.tono || "Cercano", tema: brandProfile.queOfreces || "", cta: "" });
   const [draft,     setDraft]     = useState(null);
   const [copiado,   setCopiado]   = useState("");
 
@@ -2979,9 +2979,9 @@ function EmailTab({ saved, onSave, onDelete }) {
 }
 
 // ── WHATSAPP LANZAMIENTO ───────────────────────────────────────
-function WhatsAppTab({ saved, onSave, onDelete }) {
+function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
   const FORMATOS = ["Clase gratuita","Zoom cerrado","En vivo por Instagram","Solo por WhatsApp","Webinar","Otra modalidad"];
-  const INIT = { producto:"", descripcion:"", precio:"", fecha:"", hora:"", formato:"Clase gratuita", promesa:"", escasez:"" };
+  const INIT = { producto: brandProfile.queOfreces || "", descripcion:"", precio:"", fecha:"", hora:"", formato:"Clase gratuita", promesa: brandProfile.transformacion || "", escasez:"" };
   const [form,     setForm]     = useState(INIT);
   const [plan,     setPlan]     = useState(null);
   const [thinking, setThinking] = useState(false);
@@ -3251,7 +3251,7 @@ function WhatsAppTab({ saved, onSave, onDelete }) {
 }
 
 // ── STUDIO PRINCIPAL ───────────────────────────────────────────
-export default function Studio({ onBack }) {
+export default function Studio({ onBack, brandProfile = {}, onGoToBrandProfile }) {
   const [activeTab, setActiveTab] = useState("mensaje");
   const [data, setData] = useState(() => loadStudio());
   const [guionSeed, setGuionSeed] = useState("");
@@ -3268,7 +3268,8 @@ export default function Studio({ onBack }) {
     setActiveTab("guion");
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
-  const tabProps = { saved: data, onSave: handleSave, onDelete: handleDelete };
+  const tabProps = { saved: data, onSave: handleSave, onDelete: handleDelete, brandProfile };
+  const hasBrand = !!(brandProfile.queOfreces && brandProfile.transformacion);
 
   return (
     <div className="studio-shell">
@@ -3285,6 +3286,26 @@ export default function Studio({ onBack }) {
           ))}
         </nav>
       </header>
+      {hasBrand ? (
+        <div className="studio-brand-strip">
+          <span className="sbs-star">✦</span>
+          <span className="sbs-info">
+            <b>{brandProfile.queOfreces}</b>
+            <span className="sbs-meta"> · Tono: {brandProfile.tono} · Red: {brandProfile.redPrincipal}</span>
+          </span>
+          {onGoToBrandProfile && (
+            <button className="sbs-edit-btn" onClick={onGoToBrandProfile}>Editar perfil →</button>
+          )}
+        </div>
+      ) : (
+        <div className="studio-brand-strip studio-brand-strip--empty">
+          <span className="sbs-star">💡</span>
+          <span>Completa tu <b>Perfil de Marca</b> para pre-llenar el Studio automáticamente en todos los tabs</span>
+          {onGoToBrandProfile && (
+            <button className="sbs-edit-btn" onClick={onGoToBrandProfile}>Ir a Mi Negocio →</button>
+          )}
+        </div>
+      )}
       <main className="studio-main">
         {activeTab === "mensaje"  && <MensajeTab    {...tabProps} />}
         {activeTab === "ideas"    && <IdeasTab      {...tabProps} onCrearGuion={handleCrearGuion} />}

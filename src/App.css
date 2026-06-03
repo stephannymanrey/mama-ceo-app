@@ -3280,6 +3280,165 @@ button {
   .clients-form-card { position: static; }
 }
 
+/* ── Perfil de Marca (Mi Negocio) ── */
+.bpcard {
+  background: #fff;
+  border: 1px solid rgba(201,169,110,0.35);
+  border-radius: 16px;
+  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(201,169,110,0.1);
+}
+.bpcard-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #fffdf7 0%, #faf3e7 100%);
+  border-bottom: 1px solid rgba(201,169,110,0.2);
+  gap: 12px;
+}
+.bpcard-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.bpcard-star {
+  font-size: 15px;
+  color: #C9A96E;
+  flex-shrink: 0;
+}
+.bpcard-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.bpcard-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: #1a5c3a;
+  background: var(--green-soft);
+  border: 1px solid var(--green);
+  padding: 2px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+.bpcard-toggle-btn {
+  border: 1px solid rgba(201,169,110,0.5);
+  background: #fff;
+  color: #C9A96E;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.bpcard-toggle-btn:hover {
+  background: #C9A96E;
+  color: #fff;
+}
+.bpcard-empty {
+  margin: 0;
+  padding: 16px 20px;
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.bpcard-view {
+  padding: 16px 20px;
+  display: grid;
+  gap: 12px;
+}
+.bpcard-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.bpcard-field-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #C9A96E;
+}
+.bpcard-field-val {
+  font-size: 14px;
+  color: var(--ink);
+  line-height: 1.5;
+}
+.bpcard-meta-row {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--muted);
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}
+.bpcard-meta-row b { color: var(--ink); }
+
+/* Formulario de edición del perfil de marca */
+.bpcard-form {
+  padding: 18px 20px 20px;
+  animation: ck-form-in 0.18s ease;
+}
+.bpcard-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.bpcard-form-col { display: flex; flex-direction: column; gap: 5px; }
+.bpcard-form-col--full { grid-column: 1 / -1; }
+.bpcard-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+}
+.bpcard-req { color: #C4526A; }
+.bpcard-textarea,
+.bpcard-input,
+.bpcard-select {
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #FAF7F5;
+  padding: 10px 12px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  resize: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.bpcard-select { min-height: 42px; padding: 0 12px; resize: none; }
+.bpcard-input  { min-height: 42px; padding: 0 12px; }
+.bpcard-textarea:focus,
+.bpcard-input:focus,
+.bpcard-select:focus {
+  outline: none;
+  border-color: #C9A96E;
+  background: #fff;
+}
+.bpcard-form-footer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .bpcard-form-grid { grid-template-columns: 1fr; }
+  .bpcard-form-col--full { grid-column: 1; }
+}
+
 /* ── Content Kanban ── */
 
 /* Header */

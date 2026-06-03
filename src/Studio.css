@@ -2390,3 +2390,70 @@
   box-sizing: border-box; transition: border-color 0.15s, background 0.15s;
 }
 .wp-textarea:focus { outline: none; border-color: var(--wf-color, #25D366); background: #fff; }
+
+/* ── Brand Profile Strip ── */
+.studio-brand-strip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 24px;
+  background: linear-gradient(135deg, #fffdf7 0%, #faf3e7 100%);
+  border-bottom: 1px solid rgba(201,169,110,0.25);
+  flex-wrap: wrap;
+}
+.studio-brand-strip--empty {
+  background: #f9f8ff;
+  border-bottom: 1px solid rgba(196,82,106,0.15);
+}
+.sbs-star {
+  font-size: 13px;
+  color: #C9A96E;
+  flex-shrink: 0;
+}
+.studio-brand-strip--empty .sbs-star {
+  font-size: 14px;
+}
+.sbs-info {
+  flex: 1;
+  font-size: 13px;
+  color: var(--ink, #2D1B1B);
+  min-width: 0;
+  line-height: 1.4;
+}
+.sbs-meta {
+  color: #9A8070;
+  font-weight: 400;
+}
+.studio-brand-strip--empty .sbs-info {
+  color: #7a6fa8;
+  font-size: 13px;
+}
+.studio-brand-strip--empty b {
+  color: #C4526A;
+}
+.sbs-edit-btn {
+  border: 1px solid rgba(201,169,110,0.5);
+  background: #fff;
+  color: #C9A96E;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s;
+}
+.sbs-edit-btn:hover {
+  background: #C9A96E;
+  color: #fff;
+}
+.studio-brand-strip--empty .sbs-edit-btn {
+  border-color: rgba(196,82,106,0.4);
+  color: #C4526A;
+}
+.studio-brand-strip--empty .sbs-edit-btn:hover {
+  background: #C4526A;
+  color: #fff;
+}

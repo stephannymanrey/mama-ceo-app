@@ -297,6 +297,15 @@ const initialProfileForm = {
   mainChallenge: "Conseguir clientes"
 };
 
+const initialBrandProfile = {
+  queOfreces: "",
+  clienteIdeal: "",
+  transformacion: "",
+  tono: "Cercano",
+  redPrincipal: "Instagram",
+  hashtags: ""
+};
+
 const initialPurposeState = {
   mood: "inspirada",
   energy: "medio",
@@ -485,6 +494,9 @@ export default function App() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileForm, setProfileForm] = useState({ ...initialProfileForm });
+  const [brandProfile, setBrandProfile] = useState(stored?.brandProfile || { ...initialBrandProfile });
+  const [editingBrand, setEditingBrand] = useState(false);
+  const [brandForm, setBrandForm] = useState(stored?.brandProfile || { ...initialBrandProfile });
   const [user, setUser] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
@@ -970,6 +982,8 @@ export default function App() {
     setPurpose(createInitialPurpose(state.purpose || {}));
     setProfileSetup(state.profileSetup || null);
     setProfileForm(state.profileSetup ? { ...initialProfileForm, ...state.profileSetup } : { ...initialProfileForm });
+    setBrandProfile(state.brandProfile || { ...initialBrandProfile });
+    setBrandForm(state.brandProfile || { ...initialBrandProfile });
     setGroceryList(state.groceryList || []);
     setUserPlan(state.userPlan || "free");
     setPremiumExpiresAt(state.premiumExpiresAt || null);
@@ -1045,6 +1059,7 @@ export default function App() {
       homeBudget,
       purpose,
       profileSetup,
+      brandProfile,
       groceryList,
       userPlan,
       premiumExpiresAt
@@ -1073,7 +1088,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, profileSetup, systemTasks, maternalTasks, wellnessTasks, weekBlocks]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks]);
 
   const addMovement = (event) => {
     event.preventDefault();
@@ -1362,7 +1377,7 @@ export default function App() {
   }
 
   if (activeView === "studio") {
-    return <Studio onBack={() => setActiveView("dashboard")} />;
+    return <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onGoToBrandProfile={() => setActiveView("business")} />;
   }
 
   if (!user && awsActive) {
@@ -1990,11 +2005,91 @@ export default function App() {
     const cashFlowScore = cashFlow > 0 ? "green" : "red";
     const latestMovement = sortedMovements[0];
     const businessMovementsThisWeek = sortedMovements.filter((movement) => isDateThisWeek(movement.date || movement.createdAt, currentWeekRange));
+    const brandComplete = !!(brandProfile.queOfreces && brandProfile.transformacion);
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Negocio</h2>
           <p>{profileSetup?.businessName || "Tu negocio"} • {profileSetup?.stage || ""}</p>
+        </div>
+
+        {/* Perfil de Marca */}
+        <div className="bpcard">
+          <div className="bpcard-header">
+            <div className="bpcard-title-row">
+              <span className="bpcard-star">✦</span>
+              <span className="bpcard-title">Perfil de Marca para el Studio</span>
+              {brandComplete && <span className="bpcard-badge">✓ Activo</span>}
+            </div>
+            <button className="bpcard-toggle-btn" onClick={() => { setEditingBrand((v) => !v); setBrandForm({ ...brandProfile }); }}>
+              {editingBrand ? "Cancelar" : brandComplete ? "Editar ✏️" : "Completar →"}
+            </button>
+          </div>
+
+          {!editingBrand && brandComplete && (
+            <div className="bpcard-view">
+              <div className="bpcard-field">
+                <span className="bpcard-field-label">💼 Qué ofreces</span>
+                <span className="bpcard-field-val">{brandProfile.queOfreces}</span>
+              </div>
+              <div className="bpcard-field">
+                <span className="bpcard-field-label">👤 Cliente ideal</span>
+                <span className="bpcard-field-val">{brandProfile.clienteIdeal || "—"}</span>
+              </div>
+              <div className="bpcard-field">
+                <span className="bpcard-field-label">✨ Transformación clave</span>
+                <span className="bpcard-field-val">{brandProfile.transformacion}</span>
+              </div>
+              <div className="bpcard-meta-row">
+                <span>🎯 Tono: <b>{brandProfile.tono}</b></span>
+                <span>📱 Red: <b>{brandProfile.redPrincipal}</b></span>
+                {brandProfile.hashtags && <span>🏷️ {brandProfile.hashtags}</span>}
+              </div>
+            </div>
+          )}
+
+          {!editingBrand && !brandComplete && (
+            <p className="bpcard-empty">Completa tu perfil para que el Studio pre-llene automáticamente todos los generadores — guiones, ideas, hooks, emails y más.</p>
+          )}
+
+          {editingBrand && (
+            <form className="bpcard-form" onSubmit={(e) => { e.preventDefault(); setBrandProfile({ ...brandForm }); setEditingBrand(false); }}>
+              <div className="bpcard-form-grid">
+                <div className="bpcard-form-col">
+                  <label className="bpcard-label">¿Qué ofreces? <span className="bpcard-req">*</span></label>
+                  <textarea className="bpcard-textarea" placeholder="Ej: Coaching de maternidad consciente para mamás emprendedoras" value={brandForm.queOfreces} onChange={(e) => setBrandForm((p) => ({ ...p, queOfreces: e.target.value }))} rows={2} required />
+                </div>
+                <div className="bpcard-form-col">
+                  <label className="bpcard-label">¿Quién es tu cliente ideal?</label>
+                  <textarea className="bpcard-textarea" placeholder="Ej: Mamás de 28 a 40 años que quieren crecer en su negocio sin descuidar a su familia" value={brandForm.clienteIdeal} onChange={(e) => setBrandForm((p) => ({ ...p, clienteIdeal: e.target.value }))} rows={2} />
+                </div>
+                <div className="bpcard-form-col bpcard-form-col--full">
+                  <label className="bpcard-label">¿Cuál es tu transformación clave? (lo que logra tu cliente) <span className="bpcard-req">*</span></label>
+                  <textarea className="bpcard-textarea" placeholder="Ej: Pasar de agotada y desbordada a organizada, rentable y presente en su familia" value={brandForm.transformacion} onChange={(e) => setBrandForm((p) => ({ ...p, transformacion: e.target.value }))} rows={2} required />
+                </div>
+                <div className="bpcard-form-col">
+                  <label className="bpcard-label">Tono de comunicación</label>
+                  <select className="bpcard-select" value={brandForm.tono} onChange={(e) => setBrandForm((p) => ({ ...p, tono: e.target.value }))}>
+                    <option>Cercano</option><option>Profesional</option><option>Inspirador</option><option>Directo</option>
+                  </select>
+                </div>
+                <div className="bpcard-form-col">
+                  <label className="bpcard-label">Red social principal</label>
+                  <select className="bpcard-select" value={brandForm.redPrincipal} onChange={(e) => setBrandForm((p) => ({ ...p, redPrincipal: e.target.value }))}>
+                    <option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Spotify</option>
+                  </select>
+                </div>
+                <div className="bpcard-form-col bpcard-form-col--full">
+                  <label className="bpcard-label">Hashtags favoritos (opcional)</label>
+                  <input className="bpcard-input" placeholder="Ej: #mamaceo #emprendedora #maternidadconsciente" value={brandForm.hashtags} onChange={(e) => setBrandForm((p) => ({ ...p, hashtags: e.target.value }))} />
+                </div>
+              </div>
+              <div className="bpcard-form-footer">
+                <button className="primary-button" type="submit">Guardar perfil de marca</button>
+                <button type="button" className="ck-cancel-btn" onClick={() => setEditingBrand(false)}>Cancelar</button>
+              </div>
+            </form>
+          )}
         </div>
 
         <div className="business-top-grid">
