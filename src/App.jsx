@@ -523,7 +523,8 @@ export default function App() {
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
   const [clientSearch, setClientSearch] = useState("");
   const [weekBlocks, setWeekBlocks] = useState(stored?.weekBlocks || {});
-  const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer", goal: "Vender" });
+  const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer", goal: "Vender", publishDate: "" });
+  const [showContentForm, setShowContentForm] = useState(false);
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
@@ -1162,7 +1163,8 @@ export default function App() {
       hook: contentForm.hook.trim(), 
       createdAt: now 
     }, ...current]);
-    setContentForm({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer", goal: "Vender" });
+    setContentForm({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer", goal: "Vender", publishDate: "" });
+    setShowContentForm(false);
   };
 
   const addGoal = (event) => {
@@ -2377,139 +2379,210 @@ export default function App() {
     const unpublished = contentItems.filter((i) => i.status !== "Publicado").length;
     const byNetwork = contentItems.reduce((acc, i) => { acc[i.network] = (acc[i.network] || 0) + 1; return acc; }, {});
     const topNetwork = Object.entries(byNetwork).sort((a, b) => b[1] - a[1])[0];
-    const publishedThisWeek = contentItems.filter((i) => i.status === "Publicado" && i.week === "Semana 1").length;
     const lastPublished = contentItems.filter((i) => i.status === "Publicado" && i.createdAt).sort((a, b) => b.createdAt - a.createdAt)[0];
     const daysSincePublish = lastPublished ? Math.floor((Date.now() - lastPublished.createdAt) / 86400000) : null;
     const oldPending = contentItems.filter((i) => i.status === "Por hacer" && i.createdAt && Math.floor((Date.now() - i.createdAt) / 86400000) > 7);
-    const goalColors = { "Vender": "var(--green)", "Educar": "var(--pink)", "Conectar": "var(--orange)", "Entretener": "#8a7f7a" };
 
+    const goalMeta = {
+      "Vender":      { color: "#2f9f70", bg: "#def3e8", dot: "#2f9f70" },
+      "Educar":      { color: "#C9A96E", bg: "#faf3e7", dot: "#C9A96E" },
+      "Conectar":    { color: "#E8836E", bg: "#fdf0ec", dot: "#E8836E" },
+      "Entretener":  { color: "#8a7f7a", bg: "#f5f2f0", dot: "#8a7f7a" },
+    };
+    const formatIcon = { "Reel":"🎬", "Historia":"📸", "Post":"🖼️", "Carrusel":"📱", "Foto":"📷", "Articulo":"✍️", "Episodio":"🎙️" };
+    const networkIcon = { "Instagram":"✦", "TikTok":"♪", "YouTube":"▶", "Spotify":"🎵", "Website":"🌐" };
+    const statusMeta = {
+      "Por hacer":   { dot: "#C4526A", label: "Por hacer" },
+      "Guion hecho": { dot: "#C9A96E", label: "Guión hecho" },
+      "Grabacion":   { dot: "#E8836E", label: "Grabación" },
+      "Edicion":     { dot: "#8a7f7a", label: "Edición" },
+      "Programado":  { dot: "#2f9f70", label: "Programado" },
+      "Publicado":   { dot: "#2f9f70", label: "Publicado" },
+    };
+
+    const COLUMNAS = [
+      { id: "grabar",     label: "Por grabar",      icon: "📹", color: "#C4526A", bg: "#FFF0F3",
+        statuses: ["Por hacer", "Guion hecho"] },
+      { id: "produccion", label: "En producción",   icon: "⚙️",  color: "#E8836E", bg: "#FDF0EC",
+        statuses: ["Grabacion", "Edicion", "Programado"] },
+      { id: "publicado",  label: "Publicado",        icon: "✅", color: "#2f9f70", bg: "#def3e8",
+        statuses: ["Publicado"] },
+    ];
+
+    const filteredItems = contentFilter
+      ? contentItems.filter((i) => i.network === contentFilter)
+      : contentItems;
 
     return (
       <section className="panel workspace-panel">
-        <div className="section-title">
-          <h2>Contenido</h2>
-          <p>{publishedContent} publicadas - {contentItems.length} piezas en pipeline</p>
+
+        {/* Header */}
+        <div className="ck-header">
+          <div className="ck-header-left">
+            <h2>Mi Contenido</h2>
+            <p>{publishedContent} publicadas · {unpublished} en pipeline · {contentItems.length} total</p>
+          </div>
+          <div className="ck-header-actions">
+            <select value={contentFilter} onChange={(e) => setContentFilter(e.target.value)} className="ck-filter-select">
+              <option value="">Todas las redes</option>
+              <option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Spotify</option><option>Website</option>
+            </select>
+            <button className="ck-add-btn" onClick={() => setShowContentForm((v) => !v)}>
+              {showContentForm ? "✕ Cancelar" : "+ Nueva pieza"}
+            </button>
+          </div>
         </div>
 
         {/* KPIs */}
-        <div className="content-kpi-row">
-          <div className="client-kpi">
-            <span>Publicadas</span>
-            <strong style={{color:"var(--green)"}}>{publishedContent}</strong>
+        <div className="ck-kpi-row">
+          <div className="ck-kpi">
+            <span className="ck-kpi-label">Publicadas</span>
+            <strong className="ck-kpi-val" style={{color:"var(--green)"}}>{publishedContent}</strong>
             <small>piezas listas</small>
           </div>
-          <div className="client-kpi">
-            <span>Pendientes</span>
-            <strong style={{color:"var(--orange)"}}>{unpublished}</strong>
-            <small>por mover</small>
+          <div className="ck-kpi">
+            <span className="ck-kpi-label">En pipeline</span>
+            <strong className="ck-kpi-val" style={{color:"#C4526A"}}>{unpublished}</strong>
+            <small>por publicar</small>
           </div>
-          <div className="client-kpi">
-            <span>Red principal</span>
-            <strong style={{fontSize:"13px"}}>{topNetwork ? topNetwork[0] : "-"}</strong>
+          <div className="ck-kpi">
+            <span className="ck-kpi-label">Red top</span>
+            <strong className="ck-kpi-val" style={{fontSize:"13px"}}>{topNetwork ? topNetwork[0] : "—"}</strong>
             <small>{topNetwork ? `${topNetwork[1]} piezas` : "sin datos"}</small>
           </div>
-          <div className="client-kpi">
-            <span>Consistencia</span>
-            <strong style={{color: publishedContent >= 3 ? "var(--green)" : "var(--orange)"}}>{publishedContent >= 3 ? "Buena" : publishedContent >= 1 ? "Regular" : "Baja"}</strong>
-            <small>{publishedContent} publicadas</small>
+          <div className="ck-kpi">
+            <span className="ck-kpi-label">Consistencia</span>
+            <strong className="ck-kpi-val" style={{color: publishedContent >= 3 ? "var(--green)" : "var(--orange)"}}>
+              {publishedContent >= 3 ? "Buena" : publishedContent >= 1 ? "Regular" : "Baja"}
+            </strong>
+            <small>{daysSincePublish !== null ? `hace ${daysSincePublish}d` : "sin publicar"}</small>
           </div>
         </div>
 
         {/* Alertas */}
-        <div className="content-alerts">
-          {publishedContent >= 3 && (
-            <div className="alert-banner" style={{background:"var(--green-soft)",border:"1px solid var(--green)",color:"#1a5c3a"}}>
-              Excelente consistencia esta semana! Llevas {publishedContent} piezas publicadas. Sigue asi.
-            </div>
-          )}
-          {daysSincePublish !== null && daysSincePublish > 3 && (
-            <div className="alert-banner alert-orange">
-              Llevas {daysSincePublish} dias sin publicar. Tu audiencia te extrana - una pieza simple hoy vale mas que la perfeccion manana.
-            </div>
-          )}
-          {daysSincePublish === null && contentItems.length === 0 && (
-            <div className="alert-banner alert-orange">
-              Aun no tienes contenido registrado. Empieza con una pieza simple que venda, no con perfeccion.
-            </div>
-          )}
-          {oldPending.length > 0 && (
-            <div className="alert-banner alert-red">
-              Tienes {oldPending.length} pieza{oldPending.length > 1 ? "s" : ""} en "Por hacer" desde hace mas de 7 dias: {oldPending.map((i) => i.title).join(", ")}. Muevelas o eliminalas.
-            </div>
-          )}
-        </div>
-
-        {/* Layout principal */}
-        <div className="content-main-layout">
-
-          {/* Formulario */}
-          <form className="card content-form-card" onSubmit={addContent}>
-            <h3>Nueva pieza</h3>
-            <input placeholder="Titulo del contenido" value={contentForm.title} onChange={(e) => updateContentForm("title", e.target.value)} required />
-            <input placeholder="Hook - primera frase que engancha" value={contentForm.hook} onChange={(e) => updateContentForm("hook", e.target.value)} />
-            <label style={{fontSize:"12px",color:"var(--muted)",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.4px"}}>
-              Objetivo
-              <select value={contentForm.goal} onChange={(e) => updateContentForm("goal", e.target.value)} style={{marginTop:"4px"}}>
-                <option>Vender</option>
-                <option>Educar</option>
-                <option>Conectar</option>
-                <option>Entretener</option>
-              </select>
-            </label>
-            <select value={contentForm.format} onChange={(e) => updateContentForm("format", e.target.value)}>
-              <option>Reel</option><option>Historia</option><option>Post</option><option>Carrusel</option><option>Foto</option><option>Articulo</option><option>Episodio</option>
-            </select>
-            <select value={contentForm.network} onChange={(e) => updateContentForm("network", e.target.value)}>
-              <option>Instagram</option><option>YouTube</option><option>Spotify</option><option>TikTok</option><option>Website</option><option>Otra</option>
-            </select>
-            {contentForm.network === "Otra" && <input placeholder="Cual red social" value={contentForm.customNetwork} onChange={(e) => updateContentForm("customNetwork", e.target.value)} />}
-            <select value={contentForm.week} onChange={(e) => updateContentForm("week", e.target.value)}>
-              <option>Semana 1</option><option>Semana 2</option><option>Semana 3</option><option>Semana 4</option>
-            </select>
-            <select value={contentForm.status} onChange={(e) => updateContentForm("status", e.target.value)}>
-              <option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option>
-            </select>
-            <button className="primary-button" type="submit">Guardar pieza</button>
-          </form>
-
-          {/* Tabla de contenido */}
-          <div className="content-table-wrap">
-            <div className="content-filter-bar">
-              <select value={contentFilter} onChange={(e) => setContentFilter(e.target.value)} className="content-filter-select">
-                <option value="">Todas las redes</option>
-                <option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Spotify</option><option>Website</option>
-              </select>
-            </div>
-            {["Semana 1", "Semana 2", "Semana 3", "Semana 4"].map((week) => {
-              const items = contentItems.filter((i) => i.week === week && (contentFilter === "" || i.network === contentFilter));
-              if (items.length === 0) return null;
-              return (
-                <div className="content-week-block card" key={week}>
-                  <h4>{week}</h4>
-                  {items.map((item) => (
-                    <div className="content-row-new" key={item.id}>
-                      <div className="content-row-info">
-                        <div style={{display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap"}}>
-                          <strong>{item.title}</strong>
-                          {item.goal && <span className="content-goal-badge" style={{background: goalColors[item.goal] || "var(--muted)", opacity:0.85}}>{item.goal}</span>}
-                        </div>
-                        {item.hook && <p className="content-hook">{item.hook}</p>}
-                        <small>{item.format} - {item.network}</small>
-                      </div>
-                      <div className="content-row-actions">
-                        <select value={item.status} onChange={(e) => updateContentStatus(item.id, e.target.value)}>
-                          <option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option>
-                        </select>
-                        <button type="button" className="row-delete" onClick={() => confirmDelete("Eliminar?", () => setContentItems((c) => c.filter((ci) => ci.id !== item.id)))}>x</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              );
-            })}
-            {contentItems.length === 0 && <p className="helper-copy" style={{padding:"20px 0"}}>Agrega tu primera pieza de contenido para empezar.</p>}
+        {(publishedContent >= 3 || (daysSincePublish !== null && daysSincePublish > 3) || contentItems.length === 0 || oldPending.length > 0) && (
+          <div className="ck-alerts">
+            {publishedContent >= 3 && (
+              <div className="ck-alert ck-alert--green">Excelente consistencia — llevas {publishedContent} piezas publicadas esta semana. Sigue así.</div>
+            )}
+            {daysSincePublish !== null && daysSincePublish > 3 && (
+              <div className="ck-alert ck-alert--orange">Llevas {daysSincePublish} días sin publicar. Una pieza simple hoy vale más que la perfección mañana.</div>
+            )}
+            {contentItems.length === 0 && (
+              <div className="ck-alert ck-alert--orange">Aún no tienes contenido registrado. Empieza con una pieza simple que venda.</div>
+            )}
+            {oldPending.length > 0 && (
+              <div className="ck-alert ck-alert--red">Tienes {oldPending.length} pieza{oldPending.length > 1 ? "s" : ""} pendiente{oldPending.length > 1 ? "s" : ""} por más de 7 días. Muévelas o elimínalas.</div>
+            )}
           </div>
+        )}
+
+        {/* Formulario colapsable */}
+        {showContentForm && (
+          <form className="ck-form card" onSubmit={addContent}>
+            <div className="ck-form-grid">
+              <div className="ck-form-col">
+                <label className="ck-label">Título del contenido</label>
+                <input className="ck-input" placeholder="Ej: Cómo organicé mis finanzas siendo mamá" value={contentForm.title} onChange={(e) => updateContentForm("title", e.target.value)} required />
+              </div>
+              <div className="ck-form-col">
+                <label className="ck-label">Hook (primera frase)</label>
+                <input className="ck-input" placeholder="La frase que engancha en los primeros 3 segundos" value={contentForm.hook} onChange={(e) => updateContentForm("hook", e.target.value)} />
+              </div>
+              <div className="ck-form-col">
+                <label className="ck-label">Objetivo</label>
+                <select className="ck-input" value={contentForm.goal} onChange={(e) => updateContentForm("goal", e.target.value)}>
+                  <option>Vender</option><option>Educar</option><option>Conectar</option><option>Entretener</option>
+                </select>
+              </div>
+              <div className="ck-form-col">
+                <label className="ck-label">Formato</label>
+                <select className="ck-input" value={contentForm.format} onChange={(e) => updateContentForm("format", e.target.value)}>
+                  <option>Reel</option><option>Historia</option><option>Post</option><option>Carrusel</option><option>Foto</option><option>Articulo</option><option>Episodio</option>
+                </select>
+              </div>
+              <div className="ck-form-col">
+                <label className="ck-label">Red social</label>
+                <select className="ck-input" value={contentForm.network} onChange={(e) => updateContentForm("network", e.target.value)}>
+                  <option>Instagram</option><option>YouTube</option><option>Spotify</option><option>TikTok</option><option>Website</option><option>Otra</option>
+                </select>
+                {contentForm.network === "Otra" && <input className="ck-input" style={{marginTop:"6px"}} placeholder="¿Cuál red?" value={contentForm.customNetwork} onChange={(e) => updateContentForm("customNetwork", e.target.value)} />}
+              </div>
+              <div className="ck-form-col">
+                <label className="ck-label">Fecha de publicación</label>
+                <input className="ck-input" type="date" value={contentForm.publishDate} onChange={(e) => updateContentForm("publishDate", e.target.value)} />
+              </div>
+              <div className="ck-form-col">
+                <label className="ck-label">Estado inicial</label>
+                <select className="ck-input" value={contentForm.status} onChange={(e) => updateContentForm("status", e.target.value)}>
+                  <option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option>
+                </select>
+              </div>
+            </div>
+            <div className="ck-form-footer">
+              <button className="primary-button" type="submit">Guardar pieza</button>
+              <button type="button" className="ck-cancel-btn" onClick={() => setShowContentForm(false)}>Cancelar</button>
+            </div>
+          </form>
+        )}
+
+        {/* Kanban */}
+        <div className="ck-kanban">
+          {COLUMNAS.map((col) => {
+            const colItems = filteredItems.filter((i) => col.statuses.includes(i.status));
+            return (
+              <div className="ck-col" key={col.id}>
+                <div className="ck-col-header" style={{"--col-color": col.color, "--col-bg": col.bg}}>
+                  <span className="ck-col-icon">{col.icon}</span>
+                  <span className="ck-col-label">{col.label}</span>
+                  <span className="ck-col-count">{colItems.length}</span>
+                </div>
+                <div className="ck-col-body">
+                  {colItems.length === 0 && (
+                    <div className="ck-empty">Sin piezas aquí</div>
+                  )}
+                  {colItems.map((item) => {
+                    const gm = goalMeta[item.goal] || goalMeta["Entretener"];
+                    const sm = statusMeta[item.status] || statusMeta["Por hacer"];
+                    const fi = formatIcon[item.format] || "🎬";
+                    const ni = networkIcon[item.network] || "✦";
+                    return (
+                      <div className="ck-card" key={item.id} style={{"--card-accent": gm.color}}>
+                        <div className="ck-card-top">
+                          <div className="ck-card-badges">
+                            <span className="ck-badge ck-badge--format">{fi} {item.format}</span>
+                            <span className="ck-badge ck-badge--network">{ni} {item.network}</span>
+                          </div>
+                          <button type="button" className="ck-card-del" onClick={() => confirmDelete("¿Eliminar esta pieza?", () => setContentItems((c) => c.filter((ci) => ci.id !== item.id)))}>✕</button>
+                        </div>
+                        <div className="ck-card-body">
+                          <div className="ck-card-goal" style={{color: gm.color}}>
+                            <span className="ck-goal-dot" style={{background: gm.dot}}></span>
+                            {item.goal}
+                          </div>
+                          <p className="ck-card-title">{item.title}</p>
+                          {item.hook && <p className="ck-card-hook">"{item.hook}"</p>}
+                        </div>
+                        <div className="ck-card-footer">
+                          <div className="ck-status-wrap">
+                            <span className="ck-status-dot" style={{background: sm.dot}}></span>
+                            <select className="ck-status-select" value={item.status} onChange={(e) => updateContentStatus(item.id, e.target.value)}>
+                              <option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option>
+                            </select>
+                          </div>
+                          {item.publishDate && (
+                            <span className="ck-card-date">📅 {new Date(item.publishDate + "T00:00:00").toLocaleDateString("es", {day:"numeric",month:"short"})}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
+
       </section>
     );
   }
