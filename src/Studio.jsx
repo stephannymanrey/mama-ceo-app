@@ -1241,7 +1241,7 @@ function LeadMagnetTab({ saved, onSave, onDelete }) {
 }
 
 // ── HOOKS ──────────────────────────────────────────────────────
-function HooksTab({ saved, onSave }) {
+function HooksTab({ saved, onSave, onCrearGuion }) {
   const [tema, setTema]       = useState("");
   const [nicho, setNicho]     = useState("");
   const [hooks, setHooks]     = useState(null);
@@ -1476,6 +1476,7 @@ function HooksTab({ saved, onSave }) {
                         id: Date.now(), hook: hook.texto, cat: catKey,
                         tema: hooks.tema, fecha: new Date().toLocaleDateString("es"),
                       })}>Guardar</button>
+                      <button className="ideas-card-guion" onClick={() => onCrearGuion?.(hook.texto)}>Guión 🎬</button>
                     </div>
                   </div>
                 ))}
@@ -1805,7 +1806,7 @@ export default function Studio({ onBack }) {
         {activeTab === "mensaje"  && <MensajeTab    {...tabProps} />}
         {activeTab === "ideas"    && <IdeasTab      {...tabProps} onCrearGuion={handleCrearGuion} />}
         {activeTab === "lead"     && <LeadMagnetTab {...tabProps} />}
-        {activeTab === "hooks"    && <HooksTab      {...tabProps} />}
+        {activeTab === "hooks"    && <HooksTab      {...tabProps} onCrearGuion={handleCrearGuion} />}
         {activeTab === "guion"    && <GuionTab      {...tabProps} seed={guionSeed} onSeedConsumed={() => setGuionSeed("")} />}
         {activeTab === "email"    && <EmailTab      {...tabProps} />}
       </main>
