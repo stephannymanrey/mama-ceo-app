@@ -1242,88 +1242,265 @@ function LeadMagnetTab({ saved, onSave, onDelete }) {
 
 // ── HOOKS ──────────────────────────────────────────────────────
 function HooksTab({ saved, onSave }) {
-  const [tema, setTema] = useState("");
-  const [nicho, setNicho] = useState("");
-  const [categoria, setCategoria] = useState("Todas");
-  const [resultado, setResultado] = useState(null);
+  const [tema, setTema]       = useState("");
+  const [nicho, setNicho]     = useState("");
+  const [hooks, setHooks]     = useState(null);
+  const [thinking, setThinking] = useState(false);
   const [copiado, setCopiado] = useState("");
 
-  const CATEGORIAS = ["Curiosidad", "Dolor", "Promesa", "Pregunta", "Historia", "Número", "Contraintuitivo"];
-  const CAT_COLORS = { "Curiosidad": "#4A90D9", "Dolor": "#C4526A", "Promesa": "#27AE60", "Pregunta": "#E8755A", "Historia": "#8B6565", "Número": "#9B59B6", "Contraintuitivo": "#E67E22" };
+  const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+  const copiar  = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
 
-  const FORMULAS = [
-    { cat: "Curiosidad",      f: (t, n) => `Lo que nadie te dice sobre ${t} cuando eres ${n || "mamá emprendedora"}` },
-    { cat: "Curiosidad",      f: (t, n) => `El secreto de ${t} que las ${n || "emprendedoras exitosas"} no publican` },
-    { cat: "Dolor",           f: (t, n) => `¿Cansada de intentar ${t} sin ver resultados?` },
-    { cat: "Dolor",           f: (t, n) => `Si ${t} te está costando tiempo, dinero o paz mental, esto es para ti` },
-    { cat: "Promesa",         f: (t, n) => `Cómo lograr ${t} en menos de 30 días (sin complicarte la vida)` },
-    { cat: "Promesa",         f: (t, n) => `El método más simple para ${t} que está funcionando ahora mismo` },
-    { cat: "Pregunta",        f: (t, n) => `¿Sabías que el 80% de las ${n || "mamás emprendedoras"} comete este error con ${t}?` },
-    { cat: "Pregunta",        f: (t, n) => `¿Y si ${t} fuera más fácil de lo que crees?` },
-    { cat: "Historia",        f: (t, n) => `Hace 1 año yo tampoco creía que podía ${t}. Hoy te cuento cómo cambió todo.` },
-    { cat: "Historia",        f: (t, n) => `Una clienta me escribió llorando porque por fin logró ${t}. Esto fue lo que hicimos.` },
-    { cat: "Número",          f: (t, n) => `3 errores que te impiden ${t} (y cómo evitarlos desde hoy)` },
-    { cat: "Número",          f: (t, n) => `5 señales de que ya estás lista para ${t}` },
-    { cat: "Contraintuitivo", f: (t, n) => `Por qué hacer más no te va a ayudar a ${t}` },
-    { cat: "Contraintuitivo", f: (t, n) => `Deja de intentar ${t} de esta forma. Hay un camino más corto.` },
-  ];
-
-  const generar = () => {
-    if (!tema.trim()) return;
-    const lista = categoria === "Todas" ? FORMULAS : FORMULAS.filter(f => f.cat === categoria);
-    setResultado(lista.map(f => ({ cat: f.cat, hook: f.f(tema.trim(), nicho.trim()) })));
+  const HOOK_CATS = {
+    curiosidad: {
+      label: "🤔 Curiosidad", sub: "Detiene el scroll al instante",
+      color: "#4A90D9", bg: "#EEF5FF",
+      templates: [
+        t => `Lo que nadie te dice sobre ${t}`,
+        t => `El secreto de ${t} que las expertas se guardan`,
+        t => `Por qué las emprendedoras exitosas hacen esto con ${t}`,
+        t => `Lo que descubrí sobre ${t} que lo cambió todo`,
+        t => `La razón oculta por la que ${t} no te está funcionando`,
+        t => `Existe una forma de ${t} que casi nadie conoce`,
+        t => `Esto es lo que realmente pasa cuando haces ${t}`,
+      ],
+    },
+    dolor: {
+      label: "😩 Dolor / Frustración", sub: "Habla directo a lo que siente",
+      color: "#C4526A", bg: "#FFF0F3",
+      templates: [
+        t => `¿Cansada de que ${t} no te dé resultados?`,
+        t => `Si ${t} te tiene abrumada, para y mira esto`,
+        t => `Esto es exactamente lo que sientes cuando ${t} no avanza`,
+        t => `Dejé de luchar con ${t} cuando entendí esto`,
+        t => `El error que te está frenando en ${t} (y no lo sabías)`,
+        t => `Para las que ya estamos hartas de que ${t} no funcione`,
+        t => `${t} te está robando tiempo que no tienes — y esto lo para`,
+      ],
+    },
+    promesa: {
+      label: "✨ Promesa de Resultado", sub: "Le muestra lo que puede lograr",
+      color: "#27AE60", bg: "#EEFAF3",
+      templates: [
+        t => `Cómo mejorar tu ${t} en menos de 30 días (sin complicarte)`,
+        t => `La forma más rápida de dominar ${t} desde hoy`,
+        t => `${t} sin esfuerzo extra: el método que sí funciona`,
+        t => `En 60 segundos te enseño lo más importante de ${t}`,
+        t => `Así transformé mi ${t} — tú puedes hacer lo mismo`,
+        t => `Después de esto, ${t} va a ser mucho más fácil`,
+        t => `Lo que cambié en ${t} que me dio resultados esta semana`,
+      ],
+    },
+    pregunta: {
+      label: "❓ Pregunta Directa", sub: "Las hace parar a pensar",
+      color: "#E8755A", bg: "#FFF5F0",
+      templates: [
+        t => `¿Estás haciendo ${t} de la forma equivocada?`,
+        t => `¿Sabes por qué tu ${t} aún no despega?`,
+        t => `¿Y si ${t} fuera más fácil de lo que siempre creíste?`,
+        t => `¿Cuánto tiempo llevas intentando ${t} sin ver resultados?`,
+        t => `¿Qué pasaría si resolvieras ${t} esta semana?`,
+        t => `¿Por qué ${t} funciona para otras y para ti no?`,
+        t => `¿Alguien más batalla con ${t} o soy solo yo?`,
+      ],
+    },
+    historia: {
+      label: "📖 Historia / POV", sub: "Emoción y conexión personal",
+      color: "#8B6565", bg: "#FFF8F5",
+      templates: [
+        t => `POV: el día que todo cambió con mi ${t}`,
+        t => `Hace un año no entendía nada de ${t}. Hoy te cuento todo.`,
+        t => `Una clienta me escribió llorando porque logró ${t}. Esto es lo que hicimos.`,
+        t => `Esto me pasó con ${t} y no lo esperaba 😳`,
+        t => `La historia de cómo ${t} cambió mi negocio completamente`,
+        t => `Cuando estaba a punto de rendirme con ${t}, pasó esto`,
+        t => `Nadie me contó esto sobre ${t} cuando empecé`,
+      ],
+    },
+    numero: {
+      label: "🔢 Número / Lista", sub: "Específico y escaneable",
+      color: "#9B59B6", bg: "#F8F0FF",
+      templates: [
+        t => `3 errores que arruinan tu ${t} (y cómo evitarlos)`,
+        t => `5 señales de que necesitas mejorar tu ${t} ya`,
+        t => `Las 7 claves de ${t} que nadie te enseña`,
+        t => `Solo necesitas estos 3 pasos para dominar ${t}`,
+        t => `El 80% de las emprendedoras falla en ${t} por estas razones`,
+        t => `2 minutos de ${t} al día cambian todo — te lo demuestro`,
+        t => `4 cosas que aprendí de ${t} que ojalá hubiera sabido antes`,
+      ],
+    },
+    contraintuitivo: {
+      label: "🔄 Contraintuitivo", sub: "Rompe lo que creen saber",
+      color: "#E67E22", bg: "#FFF5EB",
+      templates: [
+        t => `Deja de intentar ${t} de esta forma. No es lo que crees.`,
+        t => `Por qué hacer MÁS no te ayuda con ${t}`,
+        t => `Lo que te enseñaron sobre ${t} está equivocado`,
+        t => `Trabajar más duro en ${t} te está frenando — y aquí explico por qué`,
+        t => `Esto que parece un error en ${t} es en realidad tu mayor ventaja`,
+        t => `${t}: todo lo que crees que sabes está al revés`,
+        t => `La estrategia de ${t} que parece incorrecta y funciona mejor que todo`,
+      ],
+    },
+    identidad: {
+      label: "🪞 Identidad / Tribu", sub: "Habla directo a mamás como ella",
+      color: "#16A085", bg: "#EDFAF6",
+      templates: [
+        t => `Este video es para las mamás que luchan con ${t} en silencio`,
+        t => `Si eres mamá emprendedora y ${t} te pesa, esto es para ti`,
+        t => `Para las que dijeron "ya no puedo con ${t}" — no estás sola`,
+        t => `¿Mamá emprendedora con problemas de ${t}? Para y mira esto`,
+        t => `Solo las mamás que se toman en serio ${t} entienden esto`,
+        t => `Si combinas maternidad y ${t}, este video te va a resonar`,
+        t => `Las mamás que logran ${t} tienen algo en común — y te lo cuento aquí`,
+      ],
+    },
   };
 
-  const copiar = (text, key) => { navigator.clipboard.writeText(text); setCopiado(key); setTimeout(() => setCopiado(""), 2000); };
+  const generar = (t) => {
+    const k = (typeof t === "string" ? t : tema).trim();
+    if (!k) return;
+    setThinking(true); setHooks(null);
+    setTimeout(() => {
+      const gen = {};
+      Object.entries(HOOK_CATS).forEach(([key, cat]) => {
+        gen[key] = shuffle([...cat.templates]).slice(0, 3).map((f, i) => ({
+          id: `hook-${key}-${Date.now()}-${i}`, texto: f(k),
+        }));
+      });
+      setHooks({ tema: k, nicho: nicho.trim(), ...gen });
+      setThinking(false);
+    }, 1100);
+  };
+
+  const masHooks = (catKey) => {
+    if (!hooks) return;
+    const nuevos = shuffle([...HOOK_CATS[catKey].templates]).slice(0, 2).map((f, i) => ({
+      id: `hook-${catKey}-mas-${Date.now()}-${i}`, texto: f(hooks.tema),
+    }));
+    setHooks(prev => ({ ...prev, [catKey]: [...prev[catKey], ...nuevos] }));
+  };
+
+  const totalHooks = hooks ? Object.values(HOOK_CATS).reduce((s, _, i) => s + (hooks[Object.keys(HOOK_CATS)[i]]?.length || 0), 0) : 0;
+  const EJEMPLOS = ["vender en WhatsApp", "cobrar sin miedo", "organizarme mejor", "conseguir clientas", "reels de negocio", "emprender con hijos"];
+
+  const CAT_COLORS_BANCO = { curiosidad:"#4A90D9", dolor:"#C4526A", promesa:"#27AE60", pregunta:"#E8755A", historia:"#8B6565", numero:"#9B59B6", contraintuitivo:"#E67E22", identidad:"#16A085" };
 
   return (
     <div className="studio-tab-content">
-      <div className="studio-two-col">
-        <div className="studio-form-card">
-          <h3>Generador de Hooks</h3>
-          <p className="studio-helper">Escribe el tema y genera hooks probados para detener el scroll.</p>
-          <label>¿Sobre qué es el contenido?</label>
-          <input placeholder="organizar las ventas, vender sin presionar, criar y emprender" value={tema} onChange={e => setTema(e.target.value)} />
-          <label>¿A quién le hablas? (opcional)</label>
-          <input placeholder="mamás emprendedoras, coaches, vendedoras de catálogo" value={nicho} onChange={e => setNicho(e.target.value)} />
-          <label>Categoría</label>
-          <select value={categoria} onChange={e => setCategoria(e.target.value)}>
-            <option>Todas</option>
-            {CATEGORIAS.map(c => <option key={c}>{c}</option>)}
-          </select>
-          <button className="studio-btn-primary" onClick={generar}>Generar hooks 🪝</button>
+
+      {/* ── BARRA DE BÚSQUEDA ─────────────────────────── */}
+      <div className="hooks-search-area">
+        <div className="ideas-search-bar">
+          <span className="ideas-search-icon">🪝</span>
+          <input
+            className="ideas-search-input"
+            placeholder="¿De qué trata tu video? Ej: vender, organizarme, reels, cobrar sin miedo..."
+            value={tema}
+            onChange={e => setTema(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && generar()}
+          />
+          <button className="ideas-search-btn" onClick={() => generar()} disabled={!tema.trim() || thinking}>
+            Generar hooks ✦
+          </button>
         </div>
-        <div className="studio-result-card">
-          {!resultado ? (
-            <div className="studio-empty-state">
-              <span>🪝</span>
-              <p>Genera hasta 14 hooks basados en fórmulas de marketing probadas.</p>
-            </div>
-          ) : (
-            <div className="studio-hooks-list">
-              <h4>{resultado.length} hooks generados</h4>
-              {resultado.map((item, i) => (
-                <div className="studio-hook-item" key={i}>
-                  <span className="studio-tipo-badge" style={{background: CAT_COLORS[item.cat] || "#8B6565"}}>{item.cat}</span>
-                  <p>{item.hook}</p>
-                  <div className="studio-hook-actions">
-                    <button className="studio-copy-btn small" onClick={() => copiar(item.hook, i)}>{copiado === i ? "¡Copiado!" : "Copiar"}</button>
-                    <button className="studio-save-small" onClick={() => onSave("hooks", { id: Date.now(), hook: item.hook, cat: item.cat, tema, fecha: new Date().toLocaleDateString("es") })}>Guardar</button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <input
+          className="hooks-nicho-input"
+          placeholder="¿A quién le hablas? (opcional) — mamás que venden desde casa, coaches, emprendedoras con hijos..."
+          value={nicho}
+          onChange={e => setNicho(e.target.value)}
+        />
       </div>
+
+      {/* ── ESTADO VACÍO ─────────────────────────────── */}
+      {!hooks && !thinking && (
+        <div className="ideas-empty">
+          <div className="ideas-brain-glow">🪝</div>
+          <h3>¿De qué trata tu próximo video?</h3>
+          <p>Escribe el tema y te genero <strong>24+ hooks</strong> organizados en 8 tipos — para detener el scroll en los primeros 3 segundos.</p>
+          <div className="ideas-chips">
+            {EJEMPLOS.map(ej => (
+              <button key={ej} className="ideas-chip" onClick={() => { setTema(ej); generar(ej); }}>{ej}</button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── PENSANDO ─────────────────────────────────── */}
+      {thinking && (
+        <div className="ideas-thinking">
+          <div className="ideas-orbit-container">
+            <div className="ideas-brain-orbit">🪝</div>
+            {["🤔","😩","✨","❓","📖","🔢","🔄","🪞"].map((s, i) => (
+              <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`}>{s}</div>
+            ))}
+          </div>
+          <p className="ideas-thinking-text">Creando hooks para tu video<span className="ideas-dots-anim">...</span></p>
+        </div>
+      )}
+
+      {/* ── RESULTADOS ───────────────────────────────── */}
+      {hooks && !thinking && (
+        <>
+          <div className="ideas-result-header">
+            <div>
+              <span className="ideas-kw-label">Hooks para </span>
+              <strong className="ideas-kw-value">"{hooks.tema}"</strong>
+              {hooks.nicho && <span className="hooks-nicho-badge"> · {hooks.nicho}</span>}
+            </div>
+            <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+              <span className="hooks-total-badge">{totalHooks} hooks</span>
+              <button className="ideas-regen-btn" onClick={() => generar(hooks.tema)}>🔄 Nuevos hooks</button>
+            </div>
+          </div>
+
+          {Object.entries(HOOK_CATS).map(([catKey, cat]) => (
+            <div className="ideas-cat-section" key={catKey} style={{ "--cat-color": cat.color, "--cat-bg": cat.bg }}>
+              <div className="ideas-cat-header">
+                <div className="ideas-cat-title">
+                  <span className="ideas-cat-label">{cat.label}</span>
+                  <span className="ideas-cat-sub">{cat.sub}</span>
+                </div>
+                <button className="ideas-mas-btn" onClick={() => masHooks(catKey)}>+ Más hooks</button>
+              </div>
+              <div className="ideas-cards-grid">
+                {hooks[catKey].map((hook, i) => (
+                  <div className="ideas-card hooks-card" key={hook.id} style={{ animationDelay: `${i * 60}ms` }}>
+                    <p className="hooks-card-text">{hook.texto}</p>
+                    <div className="ideas-card-actions">
+                      <button className="ideas-card-copy" onClick={() => copiar(hook.texto, hook.id)}>
+                        {copiado === hook.id ? "✓ Copiado" : "Copiar"}
+                      </button>
+                      <button className="ideas-card-save" onClick={() => onSave("hooks", {
+                        id: Date.now(), hook: hook.texto, cat: catKey,
+                        tema: hooks.tema, fecha: new Date().toLocaleDateString("es"),
+                      })}>Guardar</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* ── BANCO ───────────────────────────────────── */}
       {saved?.hooks?.length > 0 && (
         <div className="studio-bank">
           <h4>Hooks guardados ({saved.hooks.length})</h4>
           {saved.hooks.slice().reverse().map(h => (
-            <div className="studio-hook-item" key={h.id}>
-              <span className="studio-tipo-badge" style={{background: CAT_COLORS[h.cat] || "#8B6565"}}>{h.cat}</span>
-              <p>{h.hook}</p>
-              <button className="studio-copy-btn small" onClick={() => navigator.clipboard.writeText(h.hook)}>Copiar</button>
+            <div className="studio-bank-item" key={h.id}>
+              <div className="studio-bank-item-top">
+                <span className="studio-tipo-badge" style={{ background: CAT_COLORS_BANCO[h.cat] || "#8B6565" }}>
+                  {HOOK_CATS[h.cat]?.label || h.cat}
+                </span>
+                <small>{h.fecha}</small>
+              </div>
+              <p style={{fontSize:"13px",color:"#2D1B1B",margin:"4px 0 6px",fontWeight:500}}>{h.hook}</p>
+              <button className="studio-bank-action-copy" onClick={() => copiar(h.hook, `bank-${h.id}`)}>
+                {copiado === `bank-${h.id}` ? "¡Copiado!" : "Copiar"}
+              </button>
             </div>
           ))}
         </div>

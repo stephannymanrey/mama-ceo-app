@@ -1216,6 +1216,51 @@
   to   { opacity: 1; transform: translateX(0); }
 }
 
+/* ── HOOKS ─────────────────────────────────────────────────── */
+
+.hooks-search-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.hooks-nicho-input {
+  width: 100%; border: none;
+  border-bottom: 1.5px solid rgba(196,82,106,0.15);
+  padding: 9px 14px 9px 16px;
+  font-size: 12px; font-family: inherit; color: #2D1B1B;
+  background: transparent; outline: none;
+  transition: border-color 0.15s; box-sizing: border-box;
+  color: #9A7878;
+}
+.hooks-nicho-input:focus { border-color: #C4526A; color: #2D1B1B; }
+.hooks-nicho-input::placeholder { color: #C0A0A0; }
+
+/* Hook cards — slightly punchier than idea cards */
+.hooks-card { min-height: 80px; }
+.hooks-card-text {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #2D1B1B;
+  margin: 0;
+  line-height: 1.5;
+  flex: 1;
+  letter-spacing: -0.1px;
+}
+
+/* Result header extras */
+.hooks-nicho-badge {
+  font-size: 12px; color: #9A7878; font-weight: 500;
+}
+.hooks-total-badge {
+  background: rgba(196,82,106,0.1);
+  color: #C4526A;
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 /* ── LEAD MAGNET ───────────────────────────────────────────── */
 
 /* Landing */
