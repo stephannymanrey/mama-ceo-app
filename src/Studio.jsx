@@ -1512,37 +1512,140 @@ function HooksTab({ saved, onSave, onCrearGuion }) {
 
 // ── GUIÓN ──────────────────────────────────────────────────────
 function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
-  const [subTab, setSubTab] = useState("guion");
-  const [g, setG] = useState({ tipo: "Reel", tema: seed || "", objetivo: "Vender", duracion: "30s" });
+  const [subTab,    setSubTab]    = useState("guion");
+  const [form,      setForm]      = useState({ tema: seed || "", objetivo: "Vender", tipo: "Reel (60s)", audiencia: "" });
+  const [guion,     setGuion]     = useState(null);
+  const [escritura, setEscritura] = useState({});
+  const [c,         setC]         = useState({ red: "Instagram", tono: "Cercano", tema: "", cta: "", hashtags: true });
+  const [caption,   setCaption]   = useState(null);
+  const [copiado,   setCopiado]   = useState("");
 
-  useEffect(() => {
-    if (seed) onSeedConsumed?.();
-  }, []);
-  const [guion, setGuion] = useState(null);
-  const [c, setC] = useState({ red: "Instagram", tono: "Cercano", tema: "", cta: "", hashtags: true });
-  const [caption, setCaption] = useState(null);
-  const [copiado, setCopiado] = useState("");
+  useEffect(() => { if (seed) { setForm(p => ({...p, tema: seed})); onSeedConsumed?.(); } }, []);
 
-  const copiar = (text, key) => { navigator.clipboard.writeText(text); setCopiado(key); setTimeout(() => setCopiado(""), 2000); };
+  const copiar = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
+  const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
+
+  const buildEscenas = (tema, objetivo, tipo, aud) => {
+    const isShort = !tipo.includes("YouTube");
+
+    const HOOKS = {
+      "Vender":   [ `¿Sabías que ${tema} puede transformar tus ventas sin tener que cambiar quién eres?`, `Esto sobre ${tema} me costó años entenderlo. Hoy te lo doy en un minuto.`, `Hay una forma de ${tema} que casi nadie usa — y cuando la aplicas, todo cambia.` ],
+      "Conectar": [ `Tengo que contarte algo sobre ${tema} que cambió todo para mí.`, `El día que entendí ${tema}, sentí un alivio que no esperaba. Quiero que tú también lo sientas.`, `Nadie me dijo esto sobre ${tema} cuando más lo necesitaba. Y hoy lo cambio.` ],
+      "Educar":   [ `Hoy te enseño sobre ${tema} lo que ojalá alguien me hubiera dicho cuando empecé.`, `${tema}: lo más importante que necesitas saber — en menos de 60 segundos.`, `Esto sobre ${tema} marca la diferencia entre las que avanzan y las que se estancan.` ],
+      "Inspirar": [ `${tema} me parecía imposible. Hasta que cambié una sola cosa.`, `Si alguien me hubiera dicho que ${tema} era posible para mí, lo habría intentado antes.`, `Quiero que sepas que ${tema} SÍ es posible para ti. Aunque ahora no puedas creerlo.` ],
+    };
+    const ACCION = {
+      "Vender":   [ `"Escríbeme '${tema.split(" ")[0].toUpperCase()}' en los comentarios y te cuento el siguiente paso."`, `"Si esto te resonó, el link está en mi bio. Hay un espacio para ti."`, `"Mándame un DM — hablemos de cómo puedo ayudarte específicamente."` ],
+      "Conectar": [ `"Comenta con una sola palabra cómo te sentiste. Me encanta leerte."`, `"Guarda este video — lo vas a querer tener cuando lo necesites."`, `"¿A quién le hace falta escuchar esto hoy? Compártelo con ella."` ],
+      "Educar":   [ `"Guarda este video — lo vas a querer consultar cuando lo apliques."`, `"Sígueme para que no te pierdas lo que viene."`, `"Comparte esto con alguien que también está aprendiendo ${tema}."` ],
+      "Inspirar": [ `"Guarda este video para los días difíciles — como recordatorio de que sí puedes."`, `"Cuéntame en comentarios: ¿qué cambiarías hoy con esto en mente?"`, `"Sígueme — esto es solo el principio de lo que tengo para ti."` ],
+    };
+
+    return [
+      {
+        num: "01", nombre: "HOOK", subtitulo: "Los primeros 3 segundos",
+        tiempo: "0:00 – 0:03", color: "#1B2A4A", bgLight: "#EEF2F8",
+        emocion: "CURIOSIDAD · IDENTIDAD",
+        guia: `Los primeros 3 segundos deciden si te siguen viendo o hacen scroll. Una frase que las haga pensar "eso me pasa a mí" o "necesito escuchar esto".`,
+        frases: HOOKS[objetivo] || HOOKS["Conectar"],
+        palabras: ["¿Sabías que...?", "Esto me costó entender", "Lo que nadie dice", "¿Te ha pasado?", "Hay una forma"],
+        nota: null,
+        placeholder: "Escribe tu gancho — una pregunta, afirmación o frase de identidad que detenga el scroll...",
+      },
+      {
+        num: "02", nombre: "INTERÉS", subtitulo: "Hazla sentir vista",
+        tiempo: isShort ? "0:03 – 0:15" : "0:03 – 0:20", color: "#C4526A", bgLight: "#FFF0F3",
+        emocion: "EMPATÍA · DOLOR RECONOCIDO",
+        guia: `No des la solución todavía. Solo hazlas sentir completamente VISTAS y ENTENDIDAS. Que digan "eso es exactamente lo que siento".`,
+        frases: [
+          `"Sé que ${aud} lucha con ${tema}. Y lo más duro no es el obstáculo — es sentir que por más que lo intentas, no avanzas."`,
+          `"¿Te ha pasado que haces todo lo que dicen y aun así ${tema} no funciona? Exactamente así se siente. Es agotador."`,
+          `"La verdad sobre ${tema} es que nadie dice lo difícil que puede ser. En redes se ve fácil. Pero la realidad es otra — y tú lo sabes."`,
+        ],
+        palabras: ["Sé exactamente cómo se siente", "No estás sola", "¿Te ha pasado?", "Es agotador", "Y encima tienes que..."],
+        nota: `Miedo que activas: sentir que trabajan duro y no avanzan. Que las demás lo logran y ellas no.`,
+        placeholder: "Habla de su realidad, su dolor, lo que siente. Sin juzgar. Sin soluciones todavía — solo hazla sentir que la entiendes...",
+      },
+      {
+        num: "03", nombre: "DESEO", subtitulo: "Pinta su transformación",
+        tiempo: isShort ? "0:15 – 0:45" : "0:20 – 0:50", color: "#27AE60", bgLight: "#EEFAF3",
+        emocion: "TRANSFORMACIÓN · ESPERANZA",
+        guia: `Aquí pintas el SUEÑO — no el producto todavía. La vida que tendrán cuando esto se resuelva. Sé visual, específica, emocional.`,
+        frases: [
+          `"Imagina que ${tema} deja de pesarte. Que en lugar de resistirte, fluye y trabaja para ti."`,
+          `"¿Qué pasaría si pudieras ${tema} con seguridad — sin dudar de ti, sin el miedo al error?"`,
+          `"Mereces que ${tema} sea tu fortaleza, no tu carga. Ese lugar existe. Yo te muestro el camino."`,
+        ],
+        palabras: ["Imagina que...", "¿Qué pasaría si...?", "Mereces...", "Sin tener que...", "Con seguridad", "Es posible"],
+        nota: `Deseo que activas: libertad, resultados visibles, ser valorada — sin sacrificar lo que más les importa.`,
+        placeholder: "Describe la vida que puede tener cuando esto se resuelva. Usa 'imagina', 'mereces', '¿qué pasaría si...'...",
+      },
+      {
+        num: "04", nombre: "ACCIÓN", subtitulo: "Una sola instrucción clara",
+        tiempo: isShort ? "0:45 – 0:60" : "0:50 – 1:00", color: "#E8755A", bgLight: "#FFF5F0",
+        emocion: "DECISIÓN · CONFIANZA",
+        guia: `Una sola acción, fácil de hacer en 10 segundos. Sin presionar — invitando. La confianza que construiste en el video ya hizo el trabajo.`,
+        frases: ACCION[objetivo] || ACCION["Conectar"],
+        palabras: ["Escríbeme", "Guarda este video", "Sígueme", "Comenta con", "Link en mi bio", "Hay un lugar para ti"],
+        nota: null,
+        placeholder: "El cierre — una sola acción. Simple, directa, sin presión. Ella ya está lista porque la preparaste bien...",
+      },
+    ];
+  };
 
   const generarGuion = () => {
-    if (!g.tema) return;
-    const hooks = { "Vender": `¿Sabías que ${g.tema} puede cambiar completamente tus resultados?`, "Educar": `Hoy te voy a enseñar algo sobre ${g.tema} que ojalá alguien me hubiera dicho antes.`, "Conectar": `Tengo que contarte algo que me pasó con ${g.tema}...`, "Entretener": `Lo que voy a hacer hoy con ${g.tema} nadie lo esperaba 😂` };
-    const isShort = ["15s", "30s"].includes(g.duracion);
+    if (!form.tema.trim()) return;
+    const aud = form.audiencia.trim() || "tu audiencia";
+    setGuion({
+      tema: form.tema, objetivo: form.objetivo, tipo: form.tipo, audiencia: aud,
+      escenas: buildEscenas(form.tema, form.objetivo, form.tipo, aud),
+      fecha: new Date().toLocaleDateString("es"),
+    });
+    setEscritura({});
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+  };
 
-    const estructura = g.tipo === "Historia (3 partes)"
-      ? [
-          { parte: "Historia 1 — El gancho",       tiempo: "0-5s",   texto: `"¿${g.tema}? A ver, espérate..." [Apareces en cámara mostrando sorpresa o curiosidad]` },
-          { parte: "Historia 2 — El desarrollo",    tiempo: "5-15s",  texto: `"El tema es que [explica el punto principal sobre ${g.tema}]. Esto aplica para ti si [condición de tu audiencia]."` },
-          { parte: "Historia 3 — Cierre + CTA",     tiempo: "última", texto: `"Si quieres saber más sobre ${g.tema}, mándame un DM con la palabra [CLAVE] y te comparto más. 👇"` },
-        ]
-      : [
-          { parte: "🎯 Hook",         tiempo: "0-3s",                        texto: hooks[g.objetivo] },
-          { parte: "📖 Contexto",     tiempo: isShort ? "3-10s" : "3-15s",   texto: `"[Tu experiencia o la de una clienta con ${g.tema}. Haz que se identifiquen]"` },
-          { parte: "💡 El valor",     tiempo: isShort ? "10-25s" : "15-50s", texto: `"Lo que aprendí / lo que funciona sobre ${g.tema}: [punto 1], [punto 2], [punto 3]"` },
-          { parte: "🚀 CTA",          tiempo: "últimos 5s",                  texto: `"Si esto te resonó, [acción: guarda este video / escríbeme / link en bio / comenta con una palabra]"` },
-        ];
-    setGuion({ estructura, tipo: g.tipo, tema: g.tema, duracion: g.duracion, objetivo: g.objetivo });
+  const downloadWordGuion = () => {
+    if (!guion) return;
+    let scenesHtml = "";
+    guion.escenas.forEach((esc, i) => {
+      const txt = escritura[i];
+      scenesHtml += `<div style="border-left:5px solid ${esc.color};padding:20px 24px;margin:20px 0;background:${esc.bgLight};border-radius:0 12px 12px 0;">
+        <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
+          <span style="font-size:32px;font-weight:900;color:${esc.color};font-family:Georgia,serif;line-height:1;">${esc.num}</span>
+          <div><div style="font-size:18px;font-weight:900;color:#2D1B1B;font-family:Arial;">${esc.nombre} <span style="font-size:13px;color:#9A7878;font-style:italic;">— ${esc.subtitulo}</span></div>
+          <div style="margin-top:4px;"><span style="font-size:10px;font-weight:800;background:${esc.color};color:white;border-radius:4px;padding:2px 9px;font-family:Arial;">${esc.emocion}</span>&nbsp;<span style="font-size:11px;color:#9A7878;font-family:Arial;">⏱ ${esc.tiempo}</span></div></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.7);border-left:3px solid ${esc.color};border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:12px;">
+          <p style="font-size:12px;color:#555;margin:0;font-style:italic;font-family:Arial;">💡 ${esc.guia}</p></div>
+        ${esc.nota ? `<p style="font-size:12px;color:#666;margin:0 0 12px;font-family:Arial;">🎯 ${esc.nota}</p>` : ""}
+        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#2D1B1B;margin:0 0 6px;font-family:Arial;">FRASES SUGERIDAS</p>
+        ${esc.frases.map(f => `<div style="background:white;border-radius:6px;padding:9px 12px;margin:5px 0;font-family:Arial;font-size:13px;color:#2D1B1B;"><span style="color:${esc.color};font-weight:700;">✦</span> ${f}</div>`).join("")}
+        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#2D1B1B;margin:14px 0 6px;font-family:Arial;">PALABRAS QUE TOCAN CORAZONES</p>
+        <p style="font-size:12px;color:${esc.color};font-family:Arial;margin:0 0 14px;">${esc.palabras.join(" · ")}</p>
+        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#2D1B1B;margin:0 0 6px;font-family:Arial;">✍ TU VERSIÓN</p>
+        <div style="background:white;border:1.5px solid ${txt ? esc.color : "#ddd"};border-radius:8px;padding:16px;min-height:70px;font-family:Arial;font-size:13px;color:${txt ? "#2D1B1B" : "#ccc"};white-space:pre-wrap;">${txt || esc.placeholder}</div>
+      </div>`;
+    });
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Guión: ${guion.tema}</title></head>
+    <body style="margin:0;padding:0;font-family:Arial,sans-serif;">
+    <div style="background:linear-gradient(135deg,#1B2A4A,#2D3F6B);padding:36px 40px;color:white;">
+      <p style="font-size:10px;color:rgba(255,255,255,0.5);margin:0 0 8px;letter-spacing:1.5px;text-transform:uppercase;">Mamá CEO · Studio de Contenido · GUIÓN</p>
+      <h1 style="color:white;margin:0 0 12px;font-size:28px;font-family:Arial;">${guion.tema}</h1>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <span style="font-size:11px;background:rgba(255,255,255,0.15);color:white;border-radius:4px;padding:3px 10px;font-family:Arial;">${guion.tipo}</span>
+        <span style="font-size:11px;background:rgba(255,255,255,0.15);color:white;border-radius:4px;padding:3px 10px;font-family:Arial;">Objetivo: ${guion.objetivo}</span>
+        ${guion.audiencia ? `<span style="font-size:11px;background:rgba(255,255,255,0.15);color:white;border-radius:4px;padding:3px 10px;font-family:Arial;">Para: ${guion.audiencia}</span>` : ""}
+      </div>
+    </div>
+    <div style="max-width:700px;margin:0 auto;padding:32px 40px;">${scenesHtml}</div>
+    <div style="border-top:1px solid #eee;padding:14px 40px;text-align:center;"><p style="font-size:11px;color:#ccc;font-family:Arial;">Creado con Studio de Contenido · Mamá CEO App</p></div>
+    </body></html>`;
+    const blob = new Blob([html], { type: "application/msword" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = `Guion - ${guion.tema.replace(/[^\w\sáéíóúñÁÉÍÓÚÑ]/g,"").trim()}.doc`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   };
 
   const generarCaption = () => {
@@ -1555,54 +1658,187 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
   return (
     <div className="studio-tab-content">
       <div className="studio-mode-toggle">
-        <button className={subTab === "guion" ? "active" : ""} onClick={() => setSubTab("guion")}>Guión</button>
-        <button className={subTab === "caption" ? "active" : ""} onClick={() => setSubTab("caption")}>Caption</button>
+        <button className={subTab === "guion" ? "active" : ""} onClick={() => setSubTab("guion")}>Guión 🎬</button>
+        <button className={subTab === "caption" ? "active" : ""} onClick={() => setSubTab("caption")}>Caption 📝</button>
       </div>
 
+      {/* ── SUB-TAB GUIÓN ──────────────────────────── */}
       {subTab === "guion" && (
-        <div className="studio-two-col">
-          <div className="studio-form-card">
-            <h3>Estructura de Guión</h3>
-            <p className="studio-helper">Define el tipo y el tema — te damos la estructura completa para grabar sin improvisar.</p>
-            <label>Tipo de contenido</label>
-            <select value={g.tipo} onChange={e => setG(p => ({...p, tipo: e.target.value}))}>
-              {["Reel", "TikTok", "Historia (3 partes)", "YouTube Short", "Video largo"].map(t => <option key={t}>{t}</option>)}
-            </select>
-            <label>Tema del video</label>
-            <input placeholder="cómo organizar tus ventas en WhatsApp" value={g.tema} onChange={e => setG(p => ({...p, tema: e.target.value}))} />
-            <label>Objetivo</label>
-            <select value={g.objetivo} onChange={e => setG(p => ({...p, objetivo: e.target.value}))}>
-              {["Vender", "Educar", "Conectar", "Entretener"].map(o => <option key={o}>{o}</option>)}
-            </select>
-            <label>Duración</label>
-            <select value={g.duracion} onChange={e => setG(p => ({...p, duracion: e.target.value}))}>
-              {["15s", "30s", "60s", "90s", "3-5 min"].map(d => <option key={d}>{d}</option>)}
-            </select>
-            <button className="studio-btn-primary" onClick={generarGuion}>Generar guión 🎬</button>
-          </div>
-          <div className="studio-result-card">
-            {!guion ? (
-              <div className="studio-empty-state"><span>🎬</span><p>Tu guión estructurado aparecerá aquí con tiempos y texto guía para cada parte.</p></div>
-            ) : (
-              <>
-                <div className="studio-result-header"><strong>{guion.tipo}</strong> · <span>{guion.duracion}</span> · <em>"{guion.tema}"</em></div>
-                {guion.estructura.map((p, i) => (
-                  <div className="studio-guion-parte" key={i}>
-                    <div className="studio-guion-label">
-                      <strong>{p.parte}</strong>
-                      <span className="studio-guion-tiempo">{p.tiempo}</span>
-                    </div>
-                    <p>{p.texto}</p>
+        <>
+          {/* FORM */}
+          {!guion && (
+            <div className="guion-form-wrap">
+              <div className="guion-form-intro">
+                <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>🎬</div>
+                <h2>Crea tu guión</h2>
+                <p>Estructura con intención — frases que conectan, palabras que transforman y espacio para tu voz.</p>
+              </div>
+
+              <div className={`desc-q-card${form.tema ? " filled" : ""}`}>
+                <div className="desc-q-num">🎬</div>
+                <div className="desc-q-body">
+                  <div className="desc-q-top">
+                    <label className="desc-q-label">¿De qué trata tu video?</label>
                   </div>
-                ))}
-                <button className="studio-copy-btn" onClick={() => copiar(guion.estructura.map(p => `${p.parte} (${p.tiempo})\n${p.texto}`).join("\n\n"), "guion")}>{copiado === "guion" ? "¡Copiado!" : "Copiar guión completo"}</button>
-                <button className="studio-btn-save" style={{marginTop:"8px"}} onClick={() => onSave("guiones", { id: Date.now(), ...guion, fecha: new Date().toLocaleDateString("es") })}>Guardar guión</button>
-              </>
-            )}
-          </div>
-        </div>
+                  <input className="desc-q-input" autoFocus
+                    placeholder="cómo vender sin presionar, organizar el tiempo, reels de negocio..."
+                    value={form.tema} onChange={e => setForm(p => ({...p, tema: e.target.value}))}
+                    onKeyDown={e => e.key === "Enter" && generarGuion()} />
+                  <span className="desc-q-hint">Entre más específico, más poderoso el guión</span>
+                </div>
+              </div>
+
+              <div className="guion-obj-grid">
+                <div className="guion-obj-group">
+                  <label className="lm-crear-label">¿Para qué es este video?</label>
+                  <div className="guion-obj-pills">
+                    {[{k:"Vender",i:"💰"},{k:"Conectar",i:"💙"},{k:"Educar",i:"📖"},{k:"Inspirar",i:"⚡"}].map(o => (
+                      <button key={o.k} className={`guion-obj-pill${form.objetivo===o.k?" active":""}`}
+                        onClick={() => setForm(p => ({...p, objetivo: o.k}))}>{o.i} {o.k}</button>
+                    ))}
+                  </div>
+                </div>
+                <div className="guion-obj-group">
+                  <label className="lm-crear-label">Tipo de video</label>
+                  <div className="guion-obj-pills">
+                    {[{k:"Reel (60s)",i:"📱"},{k:"TikTok (30-60s)",i:"🎵"},{k:"Historia 3 partes",i:"📖"},{k:"YouTube (3-5 min)",i:"🎬"}].map(t => (
+                      <button key={t.k} className={`guion-obj-pill${form.tipo===t.k?" active":""}`}
+                        onClick={() => setForm(p => ({...p, tipo: t.k}))}>{t.i} {t.k}</button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className={`desc-q-card${form.audiencia?" filled":""}`}>
+                <div className="desc-q-num">👩‍💼</div>
+                <div className="desc-q-body">
+                  <div className="desc-q-top">
+                    <label className="desc-q-label">¿Para quién es? (opcional)</label>
+                  </div>
+                  <input className="desc-q-input"
+                    placeholder="mamás emprendedoras que quieren vender más, coaches que empiezan..."
+                    value={form.audiencia} onChange={e => setForm(p => ({...p, audiencia: e.target.value}))} />
+                  <span className="desc-q-hint">Si lo dejas vacío, el guión habla a mamás emprendedoras en general</span>
+                </div>
+              </div>
+
+              <button className="mpm-step-btn" onClick={generarGuion} disabled={!form.tema.trim()}>
+                Generar guión ✦
+              </button>
+            </div>
+          )}
+
+          {/* SCRIPT DOCUMENT */}
+          {guion && (
+            <div className="guion-hoja-wrap">
+              <div className="guion-hoja-topbar">
+                <button className="mpm-wizard-back-btn" onClick={() => setGuion(null)}>← Editar</button>
+                <div className="guion-hoja-actions">
+                  <button className="mpm-edit-btn" onClick={() => onSave("guiones", { id: Date.now(), tema: guion.tema, tipo: guion.tipo, objetivo: guion.objetivo, fecha: guion.fecha })}>
+                    Guardar 🎬
+                  </button>
+                  <button className="lm-dl-btn lm-dl-btn--word" onClick={downloadWordGuion}>⬇ Word</button>
+                  <button className="lm-dl-btn lm-dl-btn--pdf" onClick={() => window.print()}>🖨️ PDF</button>
+                </div>
+              </div>
+
+              <div className="guion-print-area">
+                {/* Header cinematográfico */}
+                <div className="guion-doc-header">
+                  <span className="guion-doc-brand">Mamá CEO · Studio de Contenido · GUIÓN</span>
+                  <h1 className="guion-doc-title">{guion.tema}</h1>
+                  <div className="guion-doc-meta-row">
+                    <span className="guion-doc-meta-badge">{guion.tipo}</span>
+                    <span className="guion-doc-meta-badge">Objetivo: {guion.objetivo}</span>
+                    {guion.audiencia && <span className="guion-doc-meta-badge">Para: {guion.audiencia}</span>}
+                    <span className="guion-doc-meta-badge">{guion.fecha}</span>
+                  </div>
+                </div>
+
+                {/* Escenas */}
+                <div className="guion-escenas">
+                  {guion.escenas.map((esc, i) => (
+                    <div key={i} className="guion-escena" style={{"--scene-color": esc.color, "--scene-bg": esc.bgLight}}>
+                      <div className="guion-escena-strip" />
+                      <div className="guion-escena-content">
+
+                        <div className="guion-escena-header">
+                          <span className="guion-escena-num">{esc.num}</span>
+                          <div className="guion-escena-title-group">
+                            <div className="guion-escena-name-row">
+                              <h2 className="guion-escena-nombre">{esc.nombre}</h2>
+                              <span className="guion-escena-sub">— {esc.subtitulo}</span>
+                            </div>
+                            <div className="guion-escena-badges">
+                              <span className="guion-escena-tiempo">⏱ {esc.tiempo}</span>
+                              <span className="guion-escena-emocion" style={{background: esc.color}}>{esc.emocion}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="guion-guia-box">
+                          <span>💡</span>
+                          <p>{esc.guia}</p>
+                        </div>
+
+                        {esc.nota && (
+                          <div className="guion-nota-box">
+                            <span>🎯</span>
+                            <p>{esc.nota}</p>
+                          </div>
+                        )}
+
+                        <div className="guion-frases-section">
+                          <div className="guion-frases-title">Frases que puedes usar o adaptar:</div>
+                          {esc.frases.map((frase, j) => (
+                            <div key={j} className="guion-frase-row">
+                              <span className="guion-frase-mark">✦</span>
+                              <p className="guion-frase-text">{frase}</p>
+                              <button className="guion-frase-copy" onClick={() => copiar(frase, `f-${i}-${j}`)}>
+                                {copiado === `f-${i}-${j}` ? "✓" : "Copiar"}
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="guion-palabras-section">
+                          <div className="guion-palabras-title">Palabras que tocan corazones:</div>
+                          <div className="guion-palabras-row">
+                            {esc.palabras.map((pw, j) => (
+                              <span key={j} className="guion-palabra-chip"
+                                style={{background: esc.bgLight, color: esc.color, borderColor: esc.color + "55"}}>
+                                {pw}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="guion-write-section">
+                          <div className="guion-write-label">✍ Tu versión:</div>
+                          <textarea
+                            className="guion-write-textarea"
+                            placeholder={esc.placeholder}
+                            value={escritura[i] || ""}
+                            onChange={e => setEscritura(p => ({...p, [i]: e.target.value}))}
+                            rows={4}
+                          />
+                        </div>
+
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="guion-doc-footer">
+                  <p>Creado con Studio de Contenido · Mamá CEO App</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
+      {/* ── SUB-TAB CAPTION ────────────────────────── */}
       {subTab === "caption" && (
         <div className="studio-two-col">
           <div className="studio-form-card">
@@ -1610,11 +1846,11 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
             <p className="studio-helper">Genera la estructura de tu descripción lista para completar y publicar.</p>
             <label>Red social</label>
             <select value={c.red} onChange={e => setC(p => ({...p, red: e.target.value}))}>
-              {["Instagram", "TikTok", "YouTube", "Facebook"].map(r => <option key={r}>{r}</option>)}
+              {["Instagram","TikTok","YouTube","Facebook"].map(r => <option key={r}>{r}</option>)}
             </select>
             <label>Tono</label>
             <select value={c.tono} onChange={e => setC(p => ({...p, tono: e.target.value}))}>
-              {["Cercano", "Profesional", "Emotivo", "Directo", "Divertido"].map(t => <option key={t}>{t}</option>)}
+              {["Cercano","Profesional","Emotivo","Directo","Divertido"].map(t => <option key={t}>{t}</option>)}
             </select>
             <label>Tema del post</label>
             <input placeholder="cómo le digo el precio sin miedo" value={c.tema} onChange={e => setC(p => ({...p, tema: e.target.value}))} />
@@ -1641,15 +1877,18 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
         </div>
       )}
 
+      {/* ── BANCO ────────────────────────────────────── */}
       {saved?.guiones?.length > 0 && subTab === "guion" && (
         <div className="studio-bank">
           <h4>Guiones guardados ({saved.guiones.length})</h4>
           {saved.guiones.slice().reverse().map(g => (
             <div className="studio-bank-item" key={g.id}>
-              <div style={{display:"flex",justifyContent:"space-between"}}>
-                <div><strong>{g.tema}</strong><span className="studio-plat-badge" style={{marginLeft:"8px"}}>{g.tipo}</span></div>
-                <small style={{color:"var(--muted)"}}>{g.fecha}</small>
+              <div className="studio-bank-item-top">
+                <span className="studio-tipo-badge" style={{background:"#1B2A4A"}}>{g.tipo || "Guión"}</span>
+                <small>{g.fecha}</small>
               </div>
+              <strong style={{fontSize:"13px"}}>{g.tema}</strong>
+              {g.objetivo && <span style={{fontSize:"11px",color:"#9A7878",marginLeft:"8px"}}>· {g.objetivo}</span>}
             </div>
           ))}
         </div>
