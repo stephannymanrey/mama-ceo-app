@@ -3353,13 +3353,75 @@ function buildCarruselSlides(estructura, t, ctx = "") {
   ];
 }
 
+function getApoyoSuggestions(tipo) {
+  const map = {
+    contenido: [
+      "Cuando lo apliqué por primera vez, fue un antes y un después.",
+      "El error más común: hacer exactamente lo contrario sin darse cuenta.",
+      "Empiézalo hoy: 5 minutos son suficientes para comenzar.",
+    ],
+    paso: [
+      "Aquí es donde la mayoría se salta — y por eso no llega al final.",
+      "El error que evita: querer ir al resultado sin pasar por este punto.",
+      "Hazlo ahora: da el primer micro-paso y confírmate que empezaste.",
+    ],
+    antes: [
+      "¿Te suena familiar? Es más común de lo que crees.",
+      "Lo peor no era el cansancio. Era sentir que eso era normal.",
+      "Si estás aquí ahora: lo que sientes tiene salida. De verdad.",
+    ],
+    problema: [
+      "Y lo más duro: sentir que era la única a la que le pasaba.",
+      "Eso agota más que el trabajo mismo — la sensación de no avanzar.",
+      "¿Te identificas? Cuéntame en comentarios 👇",
+    ],
+    quiebre: [
+      "Fue un momento pequeño. Pero lo cambió todo.",
+      "No lo planeé. Llegó cuando más lo necesitaba.",
+      "Desde ese día, empecé a ver las cosas diferente.",
+    ],
+    solucion: [
+      "No era complicado. Era solo algo que no había aplicado de verdad.",
+      "Lo había escuchado antes — pero esta vez lo entendí diferente.",
+      "El resultado llegó más rápido de lo que esperaba.",
+    ],
+    resultado: [
+      "No de un día para otro. Pero cuando llegó, fue real y duradero.",
+      "Y lo más valioso: la paz que viene cuando las cosas fluyen.",
+      "Si yo pude desde donde estaba, tú también puedes. En serio.",
+    ],
+    despues: [
+      "Y lo mejor: una vez que lo tienes, ya no quieres volver atrás.",
+      "No fue un gran cambio. Fue consistente y honesto.",
+      "¿Cuánto tardé? Menos de lo que pensaba.",
+    ],
+    vs: [
+      "No fue un accidente. Fue una decisión, aunque no lo pareciera.",
+      "Pequeño giro. Gran diferencia.",
+      "Ese 'algo' que cambió lo cambió todo.",
+    ],
+    portada: [
+      "Esta es mi historia real — sin filtros ni versión perfecta.",
+      "Desliza — hay algo aquí que es exactamente para ti.",
+      "Lo que nadie muestra pero muchas vivimos.",
+    ],
+    cta: [
+      "Te leo en comentarios. Cuéntame tu número favorito.",
+      "No hay respuesta incorrecta — solo quiero saber cómo estás.",
+      "Comparte esto con alguien que lo necesite hoy 🤍",
+    ],
+  };
+  return map[tipo] || map.contenido;
+}
+
 function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
-  const [tema,      setTema]      = useState(brandProfile.queOfreces || "");
-  const [estructura,setEstructura]= useState("Educativo");
-  const [contexto,  setContexto]  = useState("");
-  const [slides,    setSlides]    = useState(null);
-  const [thinking,  setThinking]  = useState(false);
-  const [copiado,   setCopiado]   = useState("");
+  const [tema,         setTema]         = useState(brandProfile.queOfreces || "");
+  const [estructura,   setEstructura]   = useState("Educativo");
+  const [contexto,     setContexto]     = useState("");
+  const [slides,       setSlides]       = useState(null);
+  const [thinking,     setThinking]     = useState(false);
+  const [copiado,      setCopiado]      = useState("");
+  const [expandedApoyo,setExpandedApoyo]= useState(null);
 
   const copiar = (txt, key) => { navigator.clipboard.writeText(txt); setCopiado(key); setTimeout(() => setCopiado(""), 2200); };
 
@@ -3491,14 +3553,38 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
                       onChange={e => updateSlide(s.id, "principal", e.target.value)}
                       rows={4}
                     />
-                    <textarea
-                      className="cr-card-apoyo"
-                      style={{color: ss.dark ? "rgba(255,255,255,0.72)" : "var(--muted)"}}
-                      value={s.apoyo}
-                      onChange={e => updateSlide(s.id, "apoyo", e.target.value)}
-                      placeholder="Texto de apoyo..."
-                      rows={2}
-                    />
+                    <div className="cr-apoyo-wrap">
+                      <div className="cr-apoyo-label" style={{color: ss.dark ? "rgba(255,255,255,0.5)" : "var(--muted)"}}>
+                        Texto de apoyo
+                      </div>
+                      <textarea
+                        className="cr-card-apoyo"
+                        style={{color: ss.dark ? "rgba(255,255,255,0.82)" : "var(--ink)"}}
+                        value={s.apoyo}
+                        onChange={e => updateSlide(s.id, "apoyo", e.target.value)}
+                        placeholder="Escribe algo aquí o usa las ideas de abajo..."
+                        rows={2}
+                      />
+                      <button
+                        className={`cr-apoyo-trigger ${expandedApoyo === s.id ? "cr-apoyo-trigger--open" : ""}`}
+                        style={{color: ss.dark ? "rgba(255,255,255,0.65)" : meta.color}}
+                        onClick={() => setExpandedApoyo(expandedApoyo === s.id ? null : s.id)}>
+                        💡 Ideas para este texto {expandedApoyo === s.id ? "↑" : "↓"}
+                      </button>
+                      {expandedApoyo === s.id && (
+                        <div className="cr-apoyo-chips">
+                          {getApoyoSuggestions(s.tipo).map((sug, j) => (
+                            <button
+                              key={j}
+                              className="cr-apoyo-chip"
+                              style={{"--chip-color": meta.color, "--chip-bg": meta.bg}}
+                              onClick={() => { updateSlide(s.id, "apoyo", sug); setExpandedApoyo(null); }}>
+                              {sug}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   <div className="cr-card-footer">
                     <button className="cr-card-copy"

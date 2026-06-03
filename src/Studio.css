@@ -2763,3 +2763,56 @@
   font-style: italic;
   margin-top: 2px;
 }
+
+/* Carrusel - apoyo suggestions */
+.cr-apoyo-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+.cr-apoyo-label {
+  font-size: 9px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cr-apoyo-trigger {
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 3px 0;
+  text-align: left;
+  transition: opacity 0.15s;
+}
+.cr-apoyo-trigger:hover { opacity: 0.75; }
+.cr-apoyo-trigger--open { opacity: 0.85; }
+.cr-apoyo-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  animation: ck-form-in 0.15s ease;
+  padding: 4px 0 2px;
+}
+.cr-apoyo-chip {
+  border: 1.5px solid var(--chip-color, #C9A96E);
+  background: var(--chip-bg, #faf3e7);
+  color: var(--ink, #2D1B1B);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.45;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.13s, transform 0.1s;
+}
+.cr-apoyo-chip:hover {
+  background: var(--chip-color, #C9A96E);
+  color: #fff;
+  transform: translateX(2px);
+}
