@@ -1932,108 +1932,456 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
 }
 
 // ── EMAIL ──────────────────────────────────────────────────────
-function EmailTab({ saved, onSave }) {
-  const [objetivo, setObjetivo] = useState("Lanzar producto");
+function EmailTab({ saved, onSave, onDelete }) {
+  const [view,      setView]      = useState("inicio");
+  const [objetivo,  setObjetivo]  = useState("Lanzar producto");
   const [comunicar, setComunicar] = useState("");
-  const [campania, setCampania] = useState(null);
-  const [copiado, setCopiado] = useState("");
+  const [campana,   setCampana]   = useState(null);
+  const [cuerpos,   setCuerpos]   = useState({});
+  const [expandido, setExpandido] = useState({});
+  const [thinking,  setThinking]  = useState(false);
+  const [ef,        setEf]        = useState({ tipo: "Presentación", tono: "Cercano", tema: "", cta: "" });
+  const [draft,     setDraft]     = useState(null);
+  const [copiado,   setCopiado]   = useState("");
 
-  const ESTRUCTURAS = {
-    "Lanzar producto": [
-      { num: 1, asunto: "🎉 Ya está aquí — [nombre del producto]",           prop: "Anuncio emocional — cuenta la historia de por qué lo creaste",          cta: "Conoce todos los detalles" },
-      { num: 2, asunto: "¿Para quién es esto exactamente?",                  prop: "Educación — describe a quién ayuda y qué problema resuelve",             cta: "¿Eres tú? Entra aquí" },
-      { num: 3, asunto: "Esto dice alguien que ya lo vivió 💬",              prop: "Prueba social — testimonio real + transformación específica",            cta: "Quiero ese resultado" },
-      { num: 4, asunto: "Últimas horas ⏰",                                  prop: "Urgencia + resumen del beneficio principal + fecha límite real",         cta: "Me uno antes del cierre" },
-    ],
-    "Nutrir lista": [
-      { num: 1, asunto: "Un tip rápido que puedes aplicar hoy",              prop: "Valor puro — una sola idea aplicable, sin venta",                       cta: "¿Quieres más como este?" },
-      { num: 2, asunto: "Mi historia con [tema de la semana]",               prop: "Conexión — algo personal relacionado a la situación de tu audiencia",   cta: "Esto también es para ti" },
-      { num: 3, asunto: "Una pregunta importante para ti",                   prop: "Engagement — haz una pregunta y pídeles que respondan",                 cta: "Respóndeme aquí" },
-    ],
-    "Recuperar inactivos": [
-      { num: 1, asunto: "¿Sigues ahí? Te extrañé 🙋",                       prop: "Reconexión — quién eres y por qué se suscribieron",                     cta: "Sigo aquí" },
-      { num: 2, asunto: "Esto cambió y quería que lo supieras",              prop: "Novedad — algo que no sabían que tienes ahora",                         cta: "Quiero saber más" },
-      { num: 3, asunto: "¿Me lees o me doy de baja?",                       prop: "Limpieza honesta — pídeles que confirmen su interés",                   cta: "Sigo suscrita, me quedo" },
-    ],
-    "Bienvenida a suscriptores": [
-      { num: 1, asunto: "¡Bienvenida! Aquí está tu regalo 🎁",               prop: "Entrega del lead magnet prometido + quién eres en 3 líneas",            cta: "Descargar mi regalo" },
-      { num: 2, asunto: "Por qué empecé todo esto...",                       prop: "Tu historia — la razón de fondo que conecta con tu audiencia",          cta: "Seguir leyendo" },
-      { num: 3, asunto: "Mis 3 mejores recursos para ti",                    prop: "Curación — tus mejores piezas de contenido gratuito",                   cta: "Ver los recursos" },
-    ],
-    "Venta directa": [
-      { num: 1, asunto: "Una oportunidad especial, solo para ti",            prop: "Exclusividad + beneficio principal del producto",                       cta: "Ver la oferta" },
-      { num: 2, asunto: "Las dudas más frecuentes — las resuelvo aquí",      prop: "Objeciones — responde las 3 más comunes de tu audiencia",               cta: "Ya no tengo dudas, quiero entrar" },
-      { num: 3, asunto: "Hoy es el último día ⏰",                           prop: "Urgencia + resumen completo de lo que se llevan",                       cta: "Entrar antes del cierre" },
-    ],
-    "Compartir valor": [
-      { num: 1, asunto: "Esto me pasó esta semana y quería contarte",        prop: "Storytelling + aprendizaje + aplicación práctica para tu audiencia",    cta: "Comparte si te resonó" },
-      { num: 2, asunto: "El recurso que más me han pedido",                  prop: "Entrega de valor — guía, checklist o consejo concreto",                 cta: "Descargar / Ver recurso" },
-    ],
+  const copiar = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
+
+  const OBJ_META = {
+    "Lanzar producto":     { emoji: "🚀", color: "#C4526A", bg: "#FFF0F3", desc: "4 emails · Anuncia con emoción y urgencia" },
+    "Nutrir lista":        { emoji: "💌", color: "#27AE60", bg: "#EEFAF3", desc: "3 emails · Valor puro sin vender" },
+    "Bienvenida":          { emoji: "🎁", color: "#4A90D9", bg: "#EEF5FF", desc: "3 emails · Conecta con nuevas suscriptoras" },
+    "Venta directa":       { emoji: "💰", color: "#E8755A", bg: "#FFF5F0", desc: "3 emails · Lleva directo a la compra" },
+    "Recuperar inactivos": { emoji: "🔄", color: "#9B59B6", bg: "#F8F0FF", desc: "3 emails · Reconecta con quienes dejaron de abrir" },
+    "Compartir valor":     { emoji: "✨", color: "#E67E22", bg: "#FFF5EB", desc: "2 emails · Educa, inspira y posiciónate" },
   };
 
-  const generar = () => {
-    if (!comunicar.trim()) return;
-    setCampania({ objetivo, comunicar: comunicar.trim(), emails: ESTRUCTURAS[objetivo] || [] });
+  const buildCampana = (obj, com) => {
+    const c = com || "ayudar a mamás emprendedoras";
+    const CAMPS = {
+      "Lanzar producto": [
+        { num: 1, dia: "Día 1 — Anuncio", asunto: "🎉 Por fin está aquí — [nombre del producto]",
+          cuerpo: `Hola [nombre],\n\nEl día llegó. Y honestamente... estoy emocionada de contártelo.\n\n[Nombre del producto] está disponible ahora mismo — y lo creé pensando en ti.\n\n¿Por qué lo creé? Porque ${c}. Y vi que faltaba algo concreto para hacerlo posible.\n\nEsto es lo que vas a lograr:\n• [Resultado 1 — específico y emocional]\n• [Resultado 2]\n• [Resultado 3]\n\nNo es información que ya tienes. Es un proceso que te lleva de donde estás ahora a donde quieres estar, con mi acompañamiento.\n\n¿Quieres ver todos los detalles?\n\n👉 [Link a la página de ventas]\n\nHasta pronto,\n[Tu nombre]`,
+          cta: "Ver todos los detalles →" },
+        { num: 2, dia: "Día 3 — Educación", asunto: "¿Para quién es exactamente esto?",
+          cuerpo: `Hola [nombre],\n\nHace dos días te conté sobre [nombre del producto].\n\nHoy quiero ser muy honesta contigo: esto no es para todo el mundo.\n\n[Nombre del producto] es para ti si:\n✅ Eres [descripción de tu clienta ideal]\n✅ Ya intentaste [lo que intentaron antes] sin los resultados que querías\n✅ Estás lista para [compromiso que requiere]\n✅ Quieres ${c} en [tiempo específico]\n\nNo es para ti si buscas resultados de la noche a la mañana. Hay proceso. Pero el proceso funciona — y yo voy contigo en cada paso.\n\n¿Te reconociste? Hay un lugar para ti. 💌\n\n👉 [Link]\n\n[Tu nombre]`,
+          cta: "Sí, quiero ese lugar →" },
+        { num: 3, dia: "Día 5 — Prueba social", asunto: "Esto dice alguien que ya lo vivió 💬",
+          cuerpo: `Hola [nombre],\n\nA veces las palabras de otra persona dicen lo que yo no puedo decir.\n\n"[Testimonio real de una clienta — en sus palabras exactas. Qué logró, en cuánto tiempo, cómo se sintió. Si no tienes uno aún, escribe el resultado más concreto que has logrado con alguien.]"\n— [Nombre de la clienta]\n\nEso es lo que es posible cuando ${c}.\n\nY esa persona empezó exactamente donde tú estás ahora — con dudas, con miedo, preguntándose si funcionaría.\n\nFuncionó.\n\n¿Quieres ese resultado?\n\n👉 [Link]\n\n[Tu nombre]`,
+          cta: "Quiero ese resultado →" },
+        { num: 4, dia: "Día 7 — Cierre", asunto: "Últimas horas ⏰ — cierra hoy a las [hora]",
+          cuerpo: `Hola [nombre],\n\nHoy es el último día.\n\nA las [hora] de hoy cierra [nombre del producto] — y no lo repetiré pronto.\n\nSé que a veces dudamos. Que pensamos "lo dejo para después". Pero "después" muchas veces significa perderse la oportunidad.\n\nTe pregunto esto desde el corazón: ¿qué sería diferente en tu negocio si pudieras ${c} en los próximos [tiempo]?\n\nEso es exactamente lo que está del otro lado de esta decisión.\n\nSi sientes que esto es para ti — confía en eso. No en el miedo.\n\n👉 [Link — último recordatorio]\n\nCon cariño,\n[Tu nombre]`,
+          cta: "Entrar antes del cierre →" },
+      ],
+      "Nutrir lista": [
+        { num: 1, dia: "Semana 1 — Tip", asunto: "Un tip rápido que puedes aplicar hoy 💡",
+          cuerpo: `Hola [nombre],\n\nCorto, directo y útil — así me gusta.\n\nUna sola idea sobre ${c} que puedes aplicar hoy mismo:\n\n[Tip específico y accionable — 3 a 5 líneas. No teoría. Algo que puedan hacer en los próximos 30 minutos. Incluye el paso exacto.]\n\nPor qué funciona: [Explicación breve del principio detrás del tip — 2 líneas máximo.]\n\n¿Lo intentas esta semana y me cuentas cómo te fue?\n\nResponde este email — me encanta leerte. 💌\n\n[Tu nombre]`,
+          cta: "Respóndeme aquí" },
+        { num: 2, dia: "Semana 2 — Historia", asunto: "Mi historia con esto (te la cuento completa)",
+          cuerpo: `Hola [nombre],\n\nHoy quiero contarte algo personal.\n\nHace [tiempo], yo también luchaba con ${c}.\n\n[Historia personal en 3 a 4 líneas. Sé específica, usa detalles reales. La vulnerabilidad genera conexión. Qué pasaba, cómo te sentías, qué hacías que no funcionaba.]\n\nLo que lo cambió fue [el momento clave — una decisión, un aprendizaje, una persona].\n\nY desde entonces, [cómo está diferente ahora — resultado concreto].\n\nTe cuento esto porque sé que tú también puedes estar en ese lugar. Y ese "antes" no tiene que ser para siempre.\n\n¿A ti te ha pasado algo parecido? Cuéntame. 💌\n\n[Tu nombre]`,
+          cta: "Respóndeme →" },
+        { num: 3, dia: "Semana 3 — Engagement", asunto: "Una pregunta para ti 🙋",
+          cuerpo: `Hola [nombre],\n\nHoy no vengo a enseñarte nada. Vengo a preguntarte algo.\n\nLlevamos un tiempo juntas en esta lista y me importa saber cómo estás realmente.\n\n¿Cuál es el mayor obstáculo que tienes ahora mismo con ${c}?\n\n[ ] No sé por dónde empezar\n[ ] Falta de tiempo para implementar\n[ ] Miedo al rechazo o al juicio\n[ ] Me falta claridad en mi mensaje\n[ ] Necesito más clientas / ventas\n[ ] Otro: ___________\n\nResponde este email con tu respuesta — o simplemente escríbeme lo que está en tu mente ahora mismo.\n\nCada respuesta me ayuda a crear contenido que realmente te sirva. 💌\n\n[Tu nombre]`,
+          cta: "Respóndeme aquí" },
+      ],
+      "Bienvenida": [
+        { num: 1, dia: "Inmediato — Entrega", asunto: "🎁 ¡Bienvenida! Tu regalo te está esperando",
+          cuerpo: `Hola [nombre],\n\n¡Bienvenida! Estoy muy contenta de que estés aquí.\n\nTu regalo está listo — solo haz clic abajo:\n\n👉 [Link de descarga del lead magnet]\n\nMi nombre es [tu nombre] y ayudo a [descripción de clienta ideal] a ${c}.\n\nEn los próximos días te enviaré [número] emails con [qué van a recibir]. Todo lo que desearía haber tenido cuando empecé.\n\nUna cosa importante: si tienes dudas o quieres contarme algo, responde este email. Sí, yo misma lo leo. 💌\n\nCon cariño,\n[Tu nombre]`,
+          cta: "Descargar mi regalo →" },
+        { num: 2, dia: "Día 2 — Conexión", asunto: "Por qué empecé todo esto... (mi historia real)",
+          cuerpo: `Hola [nombre],\n\nAyer te mandé tu regalo. Espero que ya lo hayas podido explorar.\n\nHoy quiero contarte algo más personal: por qué hago lo que hago.\n\n[Tu historia de origen en 4 a 6 líneas. El momento en que decidiste hacer esto. Los obstáculos que superaste. Por qué te importa tanto ayudar a estas personas específicamente.]\n\nNo empecé con todo claro. Empecé con ganas, con miedo, y con la certeza de que lo que yo había aprendido podía ayudar a alguien más.\n\nHoy, [resultado concreto que puedes mencionar — clientas, transformaciones, lo que más te enorgullece].\n\nAquí eres bienvenida tal y como estás. 💌\n\n[Tu nombre]`,
+          cta: "Seguir leyendo →" },
+        { num: 3, dia: "Día 5 — Recursos", asunto: "Mis 3 mejores recursos — solo para ti",
+          cuerpo: `Hola [nombre],\n\nAntes de terminar esta semana de bienvenida, quiero dejarte 3 recursos que sé que te van a servir:\n\n📌 [Título del recurso 1]\n[Descripción en una línea — por qué les será útil]\n👉 [Link]\n\n📌 [Título del recurso 2]\n[Descripción en una línea]\n👉 [Link]\n\n📌 [Título del recurso 3]\n[Descripción en una línea]\n👉 [Link]\n\nEsto es solo el principio. Cada semana voy a seguir compartiendo contigo cosas que realmente funcionan para ${c}.\n\nSi hay algo específico que quieres que comparta, responde este email. Esta lista existe para ti. 💌\n\nCon cariño,\n[Tu nombre]`,
+          cta: "Ver los recursos →" },
+      ],
+      "Venta directa": [
+        { num: 1, dia: "Día 1 — Oferta", asunto: "Una oportunidad especial, solo para ti 💌",
+          cuerpo: `Hola [nombre],\n\nHoy quiero contarte algo que no he dicho públicamente todavía.\n\n${c}. Y antes de lanzarlo al mundo, quiero darte la oportunidad de entrar primero — porque llevas tiempo en esta lista y eso tiene valor.\n\nEsto es lo que te llevas:\n✦ [Beneficio 1 — en términos de resultado, no características]\n✦ [Beneficio 2]\n✦ [Beneficio 3]\n✦ [Bonus especial o lo que hace única esta oferta]\n\nInversión: [precio]\nDisponible hasta: [fecha / hora de cierre]\n\n¿Lista para el siguiente paso?\n\n👉 [Link]\n\n[Tu nombre]`,
+          cta: "Ver la oferta completa →" },
+        { num: 2, dia: "Día 3 — Objeciones", asunto: "Las dudas más frecuentes — las resuelvo aquí",
+          cuerpo: `Hola [nombre],\n\nHace dos días te conté sobre [nombre del producto/servicio].\n\nSé que cuando vemos una oferta, surgen preguntas. Y quiero responderlas con total honestidad:\n\n❓ "¿Funciona si soy principiante?"\n→ [Respuesta honesta y específica]\n\n❓ "¿Cuánto tiempo necesito dedicarle?"\n→ [Respuesta honesta — no promesas vacías]\n\n❓ "¿Qué pasa si no me sirve?"\n→ [Tu garantía o política honesta]\n\n❓ "¿Por qué ahora?"\n→ ${c}. Y porque esperar tiene un costo que muchas no ven.\n\nSi tienes otra duda, responde este email. La respondo personalmente. 💌\n\n👉 [Link]\n\n[Tu nombre]`,
+          cta: "Ya no tengo dudas, quiero entrar →" },
+        { num: 3, dia: "Día 5 — Cierre", asunto: "Hoy es el último día ⏰",
+          cuerpo: `Hola [nombre],\n\nNo te voy a escribir un email largo hoy.\n\nSolo quiero recordarte que hoy a las [hora] cierra esta oportunidad — y no la voy a repetir pronto.\n\nLo que se llevan:\n[Resumen en 3 líneas — resultado principal, precio, por qué ahora]\n\nPrecio hasta hoy: [precio]\nSube mañana a: [precio normal]\n\n${c}.\n\nSi sientes que esto es para ti — ese feeling importa. No lo ignores.\n\n👉 [Link]\n\nCon cariño,\n[Tu nombre]`,
+          cta: "Entrar antes del cierre →" },
+      ],
+      "Recuperar inactivos": [
+        { num: 1, dia: "Email 1 — Reconexión", asunto: "¿Sigues ahí? Te extrañé 🙋",
+          cuerpo: `Hola [nombre],\n\nHace un tiempo que no me lees — y está bien. La vida se pone ocupada, los emails se acumulan, lo entiendo perfectamente.\n\nSolo quería asegurarme de que sigues recibiendo lo que te sirve.\n\nMi nombre es [tu nombre] y ayudo a [clienta ideal] a ${c}.\n\nDesde la última vez que hablamos, han pasado cosas:\n✦ [Novedad 1 — algo nuevo que tienes]\n✦ [Novedad 2 — recurso, servicio, resultado de clienta]\n✦ [Novedad 3 — lo que más te emociona compartir]\n\n¿Te quedas? Haz clic abajo para confirmar que sigues activa. 💌\n\n[Tu nombre]`,
+          cta: "Sí, me quedo →" },
+        { num: 2, dia: "Email 2 — Novedad", asunto: "Esto cambió y quería que lo supieras",
+          cuerpo: `Hola [nombre],\n\nUna actualización rápida — porque creo que te interesa.\n\n${c}. Y eso cambió algo importante para las personas en esta comunidad.\n\n[Explica la novedad en 3 a 5 líneas. Qué es, por qué importa, cómo les beneficia.]\n\nNo te lo cuento para vender nada hoy. Te lo cuento porque creo que mereces saberlo antes que nadie.\n\n¿Quieres saber más? Responde con "SÍ" y te mando todos los detalles. 💌\n\n[Tu nombre]`,
+          cta: "Quiero saber más →" },
+        { num: 3, dia: "Email 3 — Honesto", asunto: "Una última pregunta — te la digo con honestidad",
+          cuerpo: `Hola [nombre],\n\nSoy directa contigo porque te respeto.\n\nLlevo tiempo en tu bandeja de entrada. Y si mis emails no te aportan nada, lo mejor para las dos es que te des de baja — sin drama, sin rencor.\n\nPero si hay algo de valor aquí para ti, me encantaría seguir en contacto.\n\nUna pregunta: ¿qué necesitarías recibir de mi parte para que este espacio valga tu tiempo?\n\nResponde este email con tu respuesta. Me la leo completa.\n\nSi no respondo en [días], asumiré que prefieres darte de baja — y lo haré con respeto. 💌\n\n[Tu nombre]`,
+          cta: "Me quedo y te cuento qué necesito →" },
+      ],
+      "Compartir valor": [
+        { num: 1, dia: "Email 1 — Historia", asunto: "Esto me pasó esta semana y tenía que contarte",
+          cuerpo: `Hola [nombre],\n\nEsta semana pasó algo que me pareció demasiado bueno para no compartirlo.\n\n[Historia o situación concreta que viviste — con tu clienta, en tu negocio, o aprendizaje personal. 3 a 5 líneas específicas. No genérico. Detalles reales.]\n\nLo que aprendí: ${c}.\n\nCómo puedes aplicarlo tú esta semana:\n1. [Acción concreta 1]\n2. [Acción concreta 2]\n3. [Acción concreta 3]\n\nEspero que esto te sirva tanto como a mí.\n\nSi te resonó, responde este email — me encanta saber que llegó al lugar correcto. 💌\n\n[Tu nombre]`,
+          cta: "Respóndeme →" },
+        { num: 2, dia: "Email 2 — Recurso", asunto: "El recurso que más me han pedido — aquí está",
+          cuerpo: `Hola [nombre],\n\nEn los últimos [semanas/meses], la pregunta que más me hacen es:\n\n"[La pregunta más frecuente de tu audiencia relacionada a ${c}]"\n\nAsí que decidí crear algo concreto para responderla.\n\n[Describe el recurso: ¿es una guía? ¿un video? ¿un checklist? ¿una respuesta detallada?]\n\nEsto es lo que encuentras dentro:\n✦ [Punto 1]\n✦ [Punto 2]\n✦ [Punto 3]\n\nEs completamente gratuito — porque creo que esta información cambia cosas reales.\n\n👉 [Link al recurso]\n\nSi lo usas, cuéntame qué te pareció. 💌\n\n[Tu nombre]`,
+          cta: "Acceder al recurso →" },
+      ],
+    };
+    return CAMPS[obj] || CAMPS["Nutrir lista"];
   };
 
-  const copiar = (text, key) => { navigator.clipboard.writeText(text); setCopiado(key); setTimeout(() => setCopiado(""), 2000); };
+  const generarCampana = (obj, com) => {
+    const o = obj || objetivo;
+    const k = (typeof com === "string" ? com : comunicar).trim();
+    if (!k) return;
+    setThinking(true); setCampana(null); setCuerpos({}); setExpandido({});
+    setTimeout(() => {
+      const emails = buildCampana(o, k);
+      setCampana({ objetivo: o, comunicar: k, emails });
+      const ini = {};
+      emails.forEach((e, i) => { ini[i] = e.cuerpo; });
+      setCuerpos(ini);
+      setExpandido({ 0: true });
+      setThinking(false);
+    }, 1000);
+  };
+
+  const downloadWordCampana = () => {
+    if (!campana) return;
+    const meta = OBJ_META[campana.objetivo];
+    let emailsHtml = "";
+    campana.emails.forEach((email, i) => {
+      const txt = cuerpos[i] || email.cuerpo;
+      emailsHtml += `<div style="border-left:5px solid ${meta.color};padding:20px 24px;margin:20px 0;background:${meta.bg};border-radius:0 12px 12px 0;">
+        <div style="margin-bottom:10px;">
+          <span style="font-size:10px;color:#9A7878;font-family:Arial;text-transform:uppercase;letter-spacing:0.5px;">${email.dia}</span>
+          <div style="font-size:16px;font-weight:700;color:#2D1B1B;font-family:Arial;margin-top:3px;">${email.asunto}</div>
+        </div>
+        <div style="background:white;border-radius:8px;padding:16px 20px;border:1px solid rgba(0,0,0,0.07);">
+          ${txt.split("\n").map(l => l.trim() ? `<p style="font-family:Arial;font-size:13px;line-height:1.75;margin:5px 0;color:#2D1B1B;">${l}</p>` : "<br/>").join("")}
+        </div>
+        <p style="font-size:12px;font-weight:700;color:${meta.color};font-family:Arial;margin:10px 0 0;">CTA → ${email.cta}</p>
+      </div>`;
+    });
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Campaña: ${campana.objetivo}</title></head>
+    <body style="margin:0;padding:0;font-family:Arial,sans-serif;">
+    <div style="background:linear-gradient(135deg,${meta.color},#E8755A);padding:36px 40px;color:white;">
+      <p style="font-size:10px;color:rgba(255,255,255,0.55);margin:0 0 6px;letter-spacing:1.5px;text-transform:uppercase;">Mamá CEO · Studio de Contenido · EMAIL</p>
+      <h1 style="color:white;margin:0 0 8px;font-size:24px;font-family:Arial;">${meta.emoji} Campaña: ${campana.objetivo}</h1>
+      <p style="color:rgba(255,255,255,0.8);margin:0;font-size:13px;font-style:italic;">${campana.comunicar}</p>
+    </div>
+    <div style="max-width:700px;margin:0 auto;padding:32px 40px;">${emailsHtml}</div>
+    <div style="border-top:1px solid #eee;padding:14px 40px;text-align:center;"><p style="font-size:11px;color:#ccc;font-family:Arial;">Creado con Studio de Contenido · Mamá CEO App</p></div>
+    </body></html>`;
+    const blob = new Blob([html], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = `Campaña - ${campana.objetivo}.doc`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+  };
+
+  const EMAIL_TIPOS = ["Presentación", "Valor / contenido", "Venta", "Seguimiento", "Gracias", "Re-engagement"];
+  const EMAIL_TONOS = ["Cercano", "Profesional", "Emotivo", "Directo"];
+
+  const buildDraft = ({ tipo, tono, tema, cta }) => {
+    const TONOS_META = {
+      "Cercano":     { abre: "Hola [nombre] 💌", cierra: "Con cariño,\n[Tu nombre]" },
+      "Profesional": { abre: "Hola [nombre],",    cierra: "Saludos,\n[Tu nombre]" },
+      "Emotivo":     { abre: "Hola [nombre] 💙",  cierra: "Con mucho cariño,\n[Tu nombre]" },
+      "Directo":     { abre: "Hola [nombre],",    cierra: "Hasta pronto,\n[Tu nombre]" },
+    };
+    const { abre, cierra } = TONOS_META[tono] || TONOS_META["Cercano"];
+    const ctaLine = cta ? `\n👉 ${cta}` : "\n👉 [CTA — qué quieres que hagan]";
+    const DRAFTS = {
+      "Presentación":     `${abre}\n\nMe da mucho gusto escribirte.\n\nMi nombre es [tu nombre] y ayudo a [descripción de clienta ideal] a ${tema || "[resultado que logras]"}.\n\n[2 a 3 líneas sobre tu enfoque o lo que te hace diferente. Sé específica, no genérica.]\n\nCreo que hay una posibilidad de [lo que podrían lograr juntas] — y me encantaría contarte más.${ctaLine}\n\n${cierra}`,
+      "Valor / contenido":`${abre}\n\nHoy vengo a regalarte algo que sé que te va a servir.\n\nEl tema de hoy: ${tema || "[tu tema]"}.\n\n[Desarrolla en 3 a 5 párrafos. Incluye: el problema que resuelve, la idea central con un ejemplo concreto, y cómo pueden aplicarlo hoy mismo.]\n\n¿Te fue útil? Respóndeme — me encanta saber que llegó al lugar correcto. 💌${ctaLine}\n\n${cierra}`,
+      "Venta":            `${abre}\n\nTengo algo que quiero contarte — y creo que llega en el momento justo.\n\n${tema || "[Lo que quieres comunicar sobre tu oferta]"}.\n\nEsto es lo que cambia para ti cuando dices sí:\n\n✦ [Beneficio 1 — en términos de resultado, no características]\n✦ [Beneficio 2]\n✦ [Beneficio 3]\n\nPrecio: [precio] · Disponible hasta: [fecha/hora]${ctaLine}\n\n${cierra}`,
+      "Seguimiento":      `${abre}\n\nSolo quería hacer un seguimiento de ${tema || "[contexto — email anterior, conversación, interés que mostraron]"}.\n\nEntiendo que las decisiones toman su tiempo — y está bien.\n\nLo que quiero que sepas: [razón genuina por la que haces seguimiento — no presión, sino valor real que les aportarás].\n\nSi tienes preguntas, responde este email. Estoy aquí. 💌${ctaLine}\n\n${cierra}`,
+      "Gracias":          `${abre}\n\nEste email tiene un solo propósito: decirte gracias.\n\nGracias por ${tema || "[lo que hicieron — comprar, asistir, confiar, responder]"}.\n\n[2 a 3 líneas genuinas sobre lo que significa para ti. No corporativo — desde el corazón.]\n\n[Si aplica: qué viene ahora, qué pueden esperar, cómo vas a acompañarlas]${ctaLine}\n\nGracias de verdad. 💌\n\n${cierra}`,
+      "Re-engagement":    `${abre}\n\nHace un tiempo que no hablamos — y quería escribirte.\n\nNo para vender nada. Solo para ver cómo estás y recordarte que este espacio sigue aquí para ti.\n\n${tema ? `Desde la última vez, ${tema}.` : "[Algo nuevo que tienes, algo que cambió, algo valioso para ellas]"}\n\nSi hay algo en lo que pueda ayudarte ahora mismo, responde este email. Sigo aquí. 💌${ctaLine}\n\n${cierra}`,
+    };
+    return DRAFTS[tipo] || DRAFTS["Valor / contenido"];
+  };
+
+  const generarDraft = () => {
+    if (!ef.tema.trim()) return;
+    setDraft(buildDraft(ef));
+  };
+
+  const bancoEmails = saved?.campanias || [];
+  const EJEMPLOS_COM = ["lanzar mi programa de 8 semanas", "mi mentoría 1:1 para mamás", "conseguir primeras clientas", "ventas por WhatsApp", "bienestar y negocio"];
 
   return (
     <div className="studio-tab-content">
-      <div className="studio-two-col">
-        <div className="studio-form-card">
-          <h3>Campaña de Email</h3>
-          <p className="studio-helper">Dinos el objetivo y qué quieres comunicar — generamos el plan completo de la secuencia.</p>
-          <label>Objetivo de la campaña</label>
-          <select value={objetivo} onChange={e => setObjetivo(e.target.value)}>
-            {Object.keys(ESTRUCTURAS).map(o => <option key={o}>{o}</option>)}
-          </select>
-          <label>¿Qué quieres comunicar?</label>
-          <textarea
-            placeholder="Ej: Quiero lanzar mi programa de 8 semanas para mamás que quieren vender más. El precio es $197. Empieza el 15 de julio."
-            value={comunicar} onChange={e => setComunicar(e.target.value)} rows={5}
-          />
-          <button className="studio-btn-primary" onClick={generar}>Generar campaña 📧</button>
+
+      {/* ── LANDING ────────────────────────────────────── */}
+      {view === "inicio" && (
+        <div className="lm-landing">
+          <div className="mpm-landing-header">
+            <div className="mpm-landing-badge">📧</div>
+            <h2 className="mpm-landing-title">Email Marketing</h2>
+            <p className="mpm-landing-sub">El canal con mayor retorno de inversión — y el más personal. Habla directo al corazón de tu lista, sin algoritmo de por medio.</p>
+          </div>
+
+          <div className="lm-purpose-strip">
+            <div className="lm-purpose-item">
+              <span className="lm-purpose-num">1</span>
+              <div><strong>Construye confianza</strong><p>En la bandeja de entrada no hay algoritmo. Tu mensaje llega directo — sin competir.</p></div>
+            </div>
+            <div className="lm-purpose-arrow">→</div>
+            <div className="lm-purpose-item">
+              <span className="lm-purpose-num">2</span>
+              <div><strong>Educa y conecta</strong><p>Cada email es una conversación. La que más escucha, más compra.</p></div>
+            </div>
+            <div className="lm-purpose-arrow">→</div>
+            <div className="lm-purpose-item lm-purpose-item--highlight">
+              <span className="lm-purpose-num lm-purpose-num--highlight">3</span>
+              <div><strong>Convierte y vende ✦</strong><p>Una lista caliente compra cuando la tratas bien. Consistencia + valor = ventas.</p></div>
+            </div>
+          </div>
+
+          <div className="mpm-cards-row">
+            <button className="mpm-card mpm-card--highlight" onClick={() => setView("campana")}>
+              <div className="mpm-card-top">
+                <span className="mpm-card-badge-ico">📨</span>
+                <span className="mpm-card-tag mpm-card-tag--primary">Secuencia</span>
+              </div>
+              <strong className="mpm-card-name">Planificar campaña</strong>
+              <p className="mpm-card-desc">Genera una secuencia completa con cuerpos de email listos para personalizar y enviar</p>
+              <span className="mpm-card-link mpm-card-link--primary">Crear mi campaña →</span>
+            </button>
+            <button className="mpm-card" onClick={() => setView("redactar")}>
+              <div className="mpm-card-top">
+                <span className="mpm-card-emoji">✏️</span>
+                <span className="mpm-card-tag">Individual</span>
+              </div>
+              <strong className="mpm-card-name">Redactar email</strong>
+              <p className="mpm-card-desc">Escribe un email específico: presentación, venta, seguimiento, gracias, re-engagement</p>
+              <span className="mpm-card-link">Redactar →</span>
+            </button>
+          </div>
         </div>
-        <div className="studio-result-card">
-          {!campania ? (
-            <div className="studio-empty-state"><span>📧</span><p>Tu plan de campaña aparecerá aquí con asunto, propósito y CTA de cada email.</p></div>
-          ) : (
-            <>
-              <div className="studio-result-header"><strong>{campania.objetivo}</strong> · {campania.emails.length} emails</div>
-              <div className="studio-email-plan">
-                {campania.emails.map((email, i) => (
-                  <div className="studio-email-item" key={i}>
-                    <div className="studio-email-num">Email {email.num}</div>
-                    <div className="studio-email-body">
-                      <div className="studio-email-asunto">
-                        <span>Asunto:</span>
-                        <strong>{email.asunto}</strong>
-                        <button className="studio-copy-btn small" onClick={() => copiar(email.asunto, `as-${i}`)}>{copiado === `as-${i}` ? "✓" : "Copiar"}</button>
-                      </div>
-                      <p className="studio-email-prop"><strong>Propósito:</strong> {email.prop}</p>
-                      <p className="studio-email-cta"><strong>CTA:</strong> {email.cta}</p>
-                    </div>
+      )}
+
+      {/* ── CAMPAÑA ─────────────────────────────────────── */}
+      {view === "campana" && (
+        <div>
+          <div className="lm-gen-topbar">
+            <button className="mpm-wizard-back-btn" onClick={() => { setView("inicio"); setCampana(null); }}>← Inicio</button>
+            {campana && (
+              <div style={{display:"flex",gap:"8px"}}>
+                <button className="lm-dl-btn lm-dl-btn--word" onClick={downloadWordCampana}>⬇ Word</button>
+                <button className="mpm-edit-btn" onClick={() => onSave("campanias", { id: Date.now(), objetivo: campana.objetivo, comunicar: campana.comunicar, fecha: new Date().toLocaleDateString("es") })}>Guardar 📧</button>
+              </div>
+            )}
+          </div>
+
+          <div className="email-obj-section">
+            <label className="lm-crear-label" style={{marginBottom:"12px",display:"block"}}>¿Cuál es el objetivo de esta campaña?</label>
+            <div className="email-obj-grid">
+              {Object.entries(OBJ_META).map(([key, meta]) => (
+                <button key={key}
+                  className={`email-obj-pill${objetivo === key ? " active" : ""}`}
+                  style={{"--obj-color": meta.color, "--obj-bg": meta.bg}}
+                  onClick={() => setObjetivo(key)}>
+                  <span className="email-obj-emoji">{meta.emoji}</span>
+                  <div>
+                    <div className="email-obj-label">{key}</div>
+                    <div className="email-obj-desc">{meta.desc}</div>
                   </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="ideas-search-bar" style={{marginBottom:"8px"}}>
+            <span className="ideas-search-icon">📧</span>
+            <input
+              className="ideas-search-input"
+              placeholder="¿Qué quieres comunicar? Ej: lanzar mi mentoría 1:1 para mamás que quieren sus primeras clientas..."
+              value={comunicar}
+              onChange={e => setComunicar(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && generarCampana()}
+            />
+            <button className="ideas-search-btn" onClick={() => generarCampana()} disabled={!comunicar.trim() || thinking}>
+              Generar campaña ✦
+            </button>
+          </div>
+          {!campana && !thinking && (
+            <div className="ideas-chips" style={{marginBottom:"24px"}}>
+              {EJEMPLOS_COM.map(ej => (
+                <button key={ej} className="ideas-chip" onClick={() => { setComunicar(ej); generarCampana(objetivo, ej); }}>{ej}</button>
+              ))}
+            </div>
+          )}
+
+          {thinking && (
+            <div className="ideas-thinking">
+              <div className="ideas-orbit-container">
+                <div className="ideas-brain-orbit">📧</div>
+                {["💌","🚀","🎁","💰","🔄","✨"].map((s, i) => (
+                  <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`}>{s}</div>
                 ))}
               </div>
-              <button className="studio-btn-save" onClick={() => onSave("campanias", { id: Date.now(), ...campania, fecha: new Date().toLocaleDateString("es") })}>Guardar campaña</button>
-            </>
+              <p className="ideas-thinking-text">Escribiendo tu campaña<span className="ideas-dots-anim">...</span></p>
+            </div>
+          )}
+
+          {campana && !thinking && (
+            <div className="email-campana-wrap">
+              <div className="ideas-result-header">
+                <div>
+                  <span className="ideas-kw-label">{OBJ_META[campana.objetivo]?.emoji} Campaña: </span>
+                  <strong className="ideas-kw-value">{campana.objetivo}</strong>
+                </div>
+                <span style={{fontSize:"12px",color:"#9A7878"}}>{campana.emails.length} emails · edita y copia cada uno</span>
+              </div>
+              {campana.emails.map((email, i) => {
+                const meta = OBJ_META[campana.objetivo];
+                const abierto = expandido[i];
+                return (
+                  <div key={i} className="email-campana-card" style={{"--ec-color": meta.color, "--ec-bg": meta.bg}}>
+                    <div className="email-campana-header" onClick={() => setExpandido(p => ({...p, [i]: !p[i]}))}>
+                      <div className="email-num-badge">{email.num}</div>
+                      <div className="email-header-info">
+                        <div className="email-dia-badge">{email.dia}</div>
+                        <div className="email-subject-preview">{email.asunto}</div>
+                      </div>
+                      <div className="email-header-actions" onClick={e => e.stopPropagation()}>
+                        <button className="guion-frase-copy"
+                          onClick={() => copiar(cuerpos[i] || email.cuerpo, `email-q-${i}`)}>
+                          {copiado === `email-q-${i}` ? "✓" : "Copiar"}
+                        </button>
+                        <span className="email-expand-ico">{abierto ? "▲" : "▼"}</span>
+                      </div>
+                    </div>
+                    {abierto && (
+                      <div className="email-campana-body">
+                        <div className="email-asunto-full">
+                          <span className="email-asunto-label">Asunto:</span>
+                          <strong>{email.asunto}</strong>
+                        </div>
+                        <div className="email-cuerpo-label">Cuerpo — edita con tu voz y tu historia:</div>
+                        <textarea
+                          className="email-cuerpo-textarea"
+                          value={cuerpos[i] || ""}
+                          onChange={e => setCuerpos(p => ({...p, [i]: e.target.value}))}
+                          rows={14}
+                        />
+                        <div className="email-cta-row">
+                          <span className="email-cta-label">CTA sugerido:</span>
+                          <span className="email-cta-text">{email.cta}</span>
+                          <button className="guion-frase-copy" onClick={() => copiar(email.cta, `cta-${i}`)}>{copiado === `cta-${i}` ? "✓" : "Copiar CTA"}</button>
+                        </div>
+                        <button className="ideas-card-copy" style={{width:"100%",marginTop:"10px",justifyContent:"center",padding:"10px"}}
+                          onClick={() => copiar(cuerpos[i] || email.cuerpo, `email-full-${i}`)}>
+                          {copiado === `email-full-${i}` ? "✓ Email completo copiado" : "📋 Copiar email completo"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
-      </div>
+      )}
 
-      {saved?.campanias?.length > 0 && (
-        <div className="studio-bank">
-          <h4>Campañas guardadas ({saved.campanias.length})</h4>
-          {saved.campanias.slice().reverse().map(c => (
-            <div className="studio-bank-item" key={c.id}>
-              <div style={{display:"flex",justifyContent:"space-between"}}>
-                <strong>{c.objetivo}</strong><small style={{color:"var(--muted)"}}>{c.fecha}</small>
+      {/* ── REDACTAR ────────────────────────────────────── */}
+      {view === "redactar" && (
+        <div>
+          <div className="lm-gen-topbar">
+            <button className="mpm-wizard-back-btn" onClick={() => { setView("inicio"); setDraft(null); }}>← Inicio</button>
+          </div>
+
+          <div className="desc-header" style={{marginBottom:"20px"}}>
+            <h2 className="desc-title">Redactar email individual</h2>
+            <p className="desc-subtitle">Genera el borrador completo listo para personalizar con tu voz y enviar.</p>
+          </div>
+
+          <div className="guion-obj-grid">
+            <div className="guion-obj-group">
+              <label className="lm-crear-label">Tipo de email</label>
+              <div className="guion-obj-pills" style={{flexWrap:"wrap"}}>
+                {EMAIL_TIPOS.map(t => (
+                  <button key={t} className={`guion-obj-pill${ef.tipo===t?" active":""}`}
+                    onClick={() => setEf(p => ({...p, tipo: t}))}>{t}</button>
+                ))}
               </div>
-              <p style={{fontSize:"13px",color:"var(--muted)",margin:0}}>{c.comunicar.slice(0, 80)}{c.comunicar.length > 80 ? "..." : ""}</p>
             </div>
-          ))}
+            <div className="guion-obj-group">
+              <label className="lm-crear-label">Tono</label>
+              <div className="guion-obj-pills">
+                {EMAIL_TONOS.map(t => (
+                  <button key={t} className={`guion-obj-pill${ef.tono===t?" active":""}`}
+                    onClick={() => setEf(p => ({...p, tono: t}))}>{t}</button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="lm-crear-grid" style={{marginTop:"16px"}}>
+            {[
+              { num:"01", emoji:"✏️", label:"¿Sobre qué es el email?",  field:"tema", ph:"Lanzamiento de mi mentoría, tip sobre ventas, gracias por comprar...", hint:"Mientras más específico, mejor el borrador" },
+              { num:"02", emoji:"🎯", label:"¿Cuál es tu llamada a acción?", field:"cta",  ph:"Agenda tu llamada / Escríbeme / Ver el link en mi bio", hint:"Una sola acción, concreta y fácil de hacer" },
+            ].map(q => (
+              <div key={q.field} className={`desc-q-card${ef[q.field]?" filled":""}`}>
+                <div className="desc-q-num">{q.num}</div>
+                <div className="desc-q-body">
+                  <div className="desc-q-top">
+                    <span className="desc-q-emoji">{q.emoji}</span>
+                    <label className="desc-q-label">{q.label}</label>
+                  </div>
+                  <input className="desc-q-input" placeholder={q.ph} value={ef[q.field]}
+                    onChange={e => setEf(p => ({...p, [q.field]: e.target.value}))} />
+                  <span className="desc-q-hint">{q.hint}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <button className="mpm-step-btn" style={{marginTop:"16px"}} onClick={generarDraft} disabled={!ef.tema.trim()}>
+            Generar email ✦
+          </button>
+
+          {draft && (
+            <div className="email-draft-result">
+              <div className="email-cuerpo-label" style={{padding:"0 0 8px"}}>Tu borrador — edita con tu voz y tu historia:</div>
+              <textarea
+                className="email-cuerpo-textarea"
+                value={draft}
+                onChange={e => setDraft(e.target.value)}
+                rows={18}
+              />
+              <div className="studio-btn-row" style={{marginTop:"12px"}}>
+                <button className="studio-copy-btn" onClick={() => copiar(draft, "draft")}>{copiado === "draft" ? "¡Copiado!" : "Copiar email"}</button>
+                <button className="studio-btn-save" onClick={() => onSave("campanias", { id: Date.now(), objetivo: ef.tipo, comunicar: ef.tema, fecha: new Date().toLocaleDateString("es") })}>Guardar</button>
+                <button className="ideas-regen-btn" onClick={generarDraft}>🔄 Regenerar</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── BANCO ───────────────────────────────────────── */}
+      {bancoEmails.length > 0 && (
+        <div className="studio-bank">
+          <h4>Campañas y emails guardados ({bancoEmails.length})</h4>
+          {bancoEmails.slice().reverse().map(item => {
+            const meta = OBJ_META[item.objetivo];
+            return (
+              <div className="studio-bank-item" key={item.id}>
+                <div className="studio-bank-item-top">
+                  <span className="studio-tipo-badge" style={{ background: meta?.color || "#C4526A" }}>
+                    {meta?.emoji || "📧"} {item.objetivo}
+                  </span>
+                  <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                    <small>{item.fecha}</small>
+                    <button className="studio-delete-btn" onClick={() => onDelete?.("campanias", item.id)}>✕</button>
+                  </div>
+                </div>
+                <p style={{fontSize:"13px",color:"#2D1B1B",margin:"4px 0 0"}}>{item.comunicar?.slice(0,80)}{item.comunicar?.length > 80 ? "…" : ""}</p>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
