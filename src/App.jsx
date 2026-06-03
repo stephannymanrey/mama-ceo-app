@@ -1756,232 +1756,166 @@ export default function App() {
   );
 
   function renderDashboard() {
+    const firstName = (profileSetup?.name || "").split(" ")[0] || "CEO";
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? "Buenos dÃ­as" : hour < 18 ? "Buenas tardes" : "Buenas noches";
+    const todayStr = new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" });
+
     const hotLeads = clients.filter((c) => c.status === "Lead caliente").length;
-    const familyDaysCount = Object.values(purpose.familyDays || {}).filter(Boolean).length;
-    const presenceMsg = familyDaysCount >= 5 ? "Semana excelente de presencia 🌟" : familyDaysCount >= 3 ? "Buen ritmo, sigue presente" : "Puedes mejorar tu presencia esta semana";
-    const unpublishedContent = contentItems.filter((i) => i.status !== "Publicado").length;
-    const hotClient = clients.filter((c) => c.status === "Lead caliente")[0];
+    const pendingContent = contentItems.filter((i) => i.status !== "Publicado").length;
+    const homeProgress = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
+
+    const alertDayMap = { "Lead frio": 14, "Lead tibio": 7, "Lead caliente": 3 };
+    const urgentLeads = clients.filter((c) => {
+      if (!c.lastContact || c.status === "Venta ganada") return false;
+      const days = Math.floor((Date.now() - c.lastContact) / 86400000);
+      return days >= (alertDayMap[c.status] || 14);
+    });
+    const lastPublished = contentItems.filter((i) => i.status === "Publicado" && i.createdAt).sort((a, b) => b.createdAt - a.createdAt)[0];
+    const daysSincePublish = lastPublished ? Math.floor((Date.now() - lastPublished.createdAt) / 86400000) : null;
+    const urgentHomeTasks = homeTasks.filter((t) => !t.done && t.priority === "Urgente");
+    const hasAlerts = urgentLeads.length > 0 || (daysSincePublish !== null && daysSincePublish > 3) || urgentHomeTasks.length > 0;
 
     return (
-      <>
-        {/* Banner de enfoque */}
-        <section className="focus-banner">
-          <div className="focus-copy">
-            <span className="target-icon">?</span>
+      <section className="panel workspace-panel">
+        <div className="db-wrap">
+
+          {/* Hero */}
+          <div className="db-hero">
             <div>
-              <p className="eyebrow">Tu enfoque de la semana</p>
-              <h2>{monthlyProgress >= 80 ? "Cierra ventas pendientes y protege tu energía." : "Haz seguimiento a clientas y prioriza acciones que generan caja."}</h2>
-              <span className="pill">Elige la acción pequeña que más resultado produce</span>
+              <p className="db-greeting">{greeting}, <strong>{firstName}</strong></p>
+              <p className="db-date" style={{textTransform:"capitalize"}}>{todayStr}</p>
             </div>
+            <p className="db-affirmation">"{todayAffirmation}"</p>
           </div>
-          <div className="goal-box">
-            <p>Meta mensual</p>
-            <strong>{money.format(monthlyGoal)}</strong>
-            <Progress value={monthlyProgress} tone="purple" />
-            <small>{monthlyProgress}% completado</small>
-          </div>
-          <div className="week-ring" style={{"--value": monthWeekInfo.progress}}>
-            <span>Semana</span>
-            <strong>{monthWeekInfo.current} de {monthWeekInfo.total}</strong>
-            <small>{monthWeekInfo.month}</small>
-          </div>
-        </section>
 
-        {/* Acciones clave */}
-        <section className="excellence-panel">
-          <div className="excellence-copy">
-            <p className="eyebrow">Tus acciones clave de hoy</p>
-            <h2>Una sola acción bien elegida mueve más que diez hechas desde el agotamiento.</h2>
-          </div>
-          <div className="excellence-actions">
-            {excellenceActions.map((action, index) => (
-              <div className="excellence-action" key={action}>
-                <span>{index + 1}</span>
-                <p>{action}</p>
+          {/* Meta del mes + semana */}
+          <div className="db-meta-row">
+            <div className="db-meta-card">
+              <div className="db-meta-top">
+                <span className="db-section-label">Meta del mes</span>
+                <span className="db-meta-pct" style={{color: monthlyProgress >= 75 ? "var(--green)" : monthlyProgress >= 50 ? "var(--orange)" : "var(--purple)"}}>
+                  {monthlyProgress}%
+                </span>
               </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="panel">
-          {/* KPIs financieros */}
-          <div className="section-title">
-            <h2>Resumen financiero</h2>
-            <p>Actualizado con tus movimientos</p>
-          </div>
-          <div className="kpi-grid">
-            <MetricCard title="Ingresos" value={money.format(totals.income)} change="Dinero generado" tone="green" />
-            <MetricCard title="Gastos" value={money.format(totals.expenses)} change="Dinero invertido" tone="pink" />
-            <MetricCard title="Utilidad" value={money.format(totals.profit)} change="Resultado actual" tone="purple" />
-            <MetricCard title="Reinversión" value={money.format(reinvestmentAmount)} change={`${reinvestmentPercent}% de tus ventas`} tone="orange" />
-          </div>
-
-          {/* Fila principal: gráfica + acciones */}
-          <div className="dash-main-row">
-            <div className="card chart-card-wide">
-              <h3>Ingresos vs gastos</h3>
-              <LineChart movements={sortedMovements} />
+              <div className="db-meta-numbers">
+                <strong className="db-meta-income">{money.format(totals.income)}</strong>
+                <span className="db-meta-goal">de {money.format(monthlyGoal)}</span>
+              </div>
+              <Progress value={monthlyProgress} tone={monthlyProgress >= 75 ? "green" : monthlyProgress >= 50 ? "orange" : "purple"} />
+              <p className="db-meta-msg">
+                {monthlyProgress >= 100 ? "Meta cumplida. Protege lo ganado y piensa en la siguiente." :
+                 monthlyProgress >= 75 ? "EstÃ¡s muy cerca. Cierra las ventas pendientes hoy." :
+                 monthlyProgress >= 50 ? "Vas bien. Acelera el seguimiento de tus leads." :
+                 "Prioriza cobros y contacta leads calientes ahora."}
+              </p>
             </div>
-            <div className="card task-card">
-              <h3>Acciones clave ({completedTasks}/{tasks.length})</h3>
-              <p className="helper-copy">Marca las que ya completaste hoy.</p>
+            <div className="db-week-card">
+              <div className="week-ring" style={{"--value": monthWeekInfo.progress}}>
+                <span>Semana</span>
+                <strong>{monthWeekInfo.current} de {monthWeekInfo.total}</strong>
+                <small>{monthWeekInfo.month}</small>
+              </div>
+              <div className="db-week-stats">
+                <div><span>Utilidad</span><strong style={{color: totals.profit >= 0 ? "var(--green)" : "var(--pink)"}}>{money.format(totals.profit)}</strong></div>
+                <div><span>Gastos</span><strong style={{color:"var(--pink)"}}>{money.format(totals.expenses)}</strong></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Alertas urgentes */}
+          {hasAlerts && (
+            <div className="db-alerts">
+              <p className="db-section-label" style={{color:"#92400e",marginBottom:"10px"}}>Requiere atenciÃ³n ahora</p>
+              <div className="db-alerts-list">
+                {urgentLeads.length > 0 && (
+                  <button type="button" className="db-alert db-alert--red" onClick={() => setActiveView("clients")}>
+                    {urgentLeads.length} lead{urgentLeads.length > 1 ? "s" : ""} sin contacto â€” actÃºa antes de que se enfrÃ­en
+                  </button>
+                )}
+                {daysSincePublish !== null && daysSincePublish > 3 && (
+                  <button type="button" className="db-alert db-alert--orange" onClick={() => setActiveView("content")}>
+                    Llevas {daysSincePublish} dÃ­as sin publicar â€” una pieza simple hoy vale mÃ¡s que la perfecciÃ³n maÃ±ana
+                  </button>
+                )}
+                {urgentHomeTasks.length > 0 && (
+                  <button type="button" className="db-alert db-alert--purple" onClick={() => setActiveView("home")}>
+                    {urgentHomeTasks.length} tarea{urgentHomeTasks.length > 1 ? "s urgentes" : " urgente"} pendiente{urgentHomeTasks.length > 1 ? "s" : ""} en el hogar
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Foco de hoy */}
+          <div className="db-focus-card">
+            <div className="db-focus-header">
+              <div>
+                <p className="db-section-label">Tu foco de hoy</p>
+                <p className="db-focus-sub">Marca las acciones que ya completaste.</p>
+              </div>
+              {tasks.length > 0 && (
+                <ProgressLabel label={`${completedTasks}/${tasks.length}`} value={tasks.length ? Math.round((completedTasks/tasks.length)*100) : 0} tone="green" />
+              )}
+            </div>
+            <div className="db-tasks-list">
               {tasks.map((task) => (
-                <label key={task.id} className="task-row">
-                  <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} />
-                  <span>{task.text}</span>
+                <label key={task.id} className="db-task-row">
+                  <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--green)"}} />
+                  <span style={{textDecoration: task.done ? "line-through" : "none", color: task.done ? "var(--muted)" : "var(--ink)", fontSize:"14px"}}>{task.text}</span>
                 </label>
               ))}
-              <ProgressLabel label="Progreso" value={tasks.length ? Math.round((completedTasks/tasks.length)*100) : 0} tone="green" />
-            </div>
-          </div>
-
-          {/* Metas */}
-          <div className="dash-goals-row">
-            <div className="card">
-              <h3>Progreso de metas</h3>
-              <div className="mini-goals">
-                <MiniGoal label="Meta diaria" value={dailyProgress} amount={money.format(dailyGoal)} />
-                <MiniGoal label="Meta semanal" value={weeklyProgress} amount={money.format(weeklyGoal)} />
-                <MiniGoal label="Meta mensual" value={monthlyProgress} amount={money.format(monthlyGoal)} />
-              </div>
-            </div>
-          </div>
-
-          {/* Resúmenes de otras pestañas */}
-          <div className="section-title" style={{marginTop:"20px"}}>
-            <h2>Tu semana de un vistazo</h2>
-            <p>Resumen de todas las áreas</p>
-          </div>
-          <div className="dash-summary-grid">
-
-            {/* Clientes */}
-            <div className="card dash-summary-card">
-              <div className="dash-summary-icon">👩‍💼</div>
-              <h3>Clientes</h3>
-              <div className="dash-summary-stat">
-                <span>Leads calientes</span>
-                <strong style={{color:"var(--purple)"}}>{hotLeads}</strong>
-              </div>
-              <div className="dash-summary-stat">
-                <span>Ventas cerradas</span>
-                <strong style={{color:"var(--green)"}}>{money.format(wonSalesTotal)}</strong>
-              </div>
-              <div className="dash-summary-stat">
-                <span>Contactos esta semana</span>
-                <strong>{contactsThisWeek}</strong>
-              </div>
-              {hotClient && (
-                <p className="helper-copy" style={{marginTop:"6px"}}>Prioridad: <b>{hotClient.name}</b> • {hotClient.nextAction || "hacer seguimiento"}</p>
+              {tasks.length === 0 && (
+                <p style={{color:"var(--muted)",fontSize:"13px",margin:0}}>No tienes acciones definidas. <button type="button" style={{border:"none",background:"none",color:"var(--purple)",fontWeight:700,cursor:"pointer",padding:0,font:"inherit",fontSize:"13px"}} onClick={() => setActiveView("business")}>Ir a Mi Negocio</button></p>
               )}
             </div>
-
-            {/* Contenido */}
-            <div className="card dash-summary-card">
-              <div className="dash-summary-icon">📱</div>
-              <h3>Contenido</h3>
-              <div className="dash-summary-stat">
-                <span>Publicadas</span>
-                <strong style={{color:"var(--green)"}}>{publishedContent}</strong>
-              </div>
-              <div className="dash-summary-stat">
-                <span>Por publicar</span>
-                <strong style={{color:"var(--orange)"}}>{unpublishedContent}</strong>
-              </div>
-              <ProgressLabel label="Pipeline" value={contentItems.length ? Math.round((publishedContent/contentItems.length)*100) : 0} tone="orange" />
-              {nextContent && (
-                <p className="helper-copy" style={{marginTop:"6px"}}>Siguiente: <b>{nextContent.title}</b></p>
-              )}
-            </div>
-
-            {/* Hogar y presencia */}
-            <div className="card dash-summary-card">
-              <div className="dash-summary-icon">🌸</div>
-              <h3>Hogar y presencia</h3>
-              <div className="dash-summary-stat">
-                <span>Tareas del hogar</span>
-                <strong>{completedHomeTasks}/{homeTasks.length}</strong>
-              </div>
-              <ProgressLabel label="Hogar" value={homeTasks.length ? Math.round((completedHomeTasks/homeTasks.length)*100) : 0} tone="green" />
-              <div className="dash-summary-stat" style={{marginTop:"8px"}}>
-                <span>Días presente esta semana</span>
-                <strong style={{color: familyDaysCount >= 4 ? "var(--green)" : "var(--orange)"}}>{familyDaysCount} días</strong>
-              </div>
-              <div className="dash-summary-stat">
-                <span>Momentos de conexión</span>
-                <strong>{purpose.connectionMoments || 0}</strong>
-              </div>
-              <div className="dash-summary-stat">
-                <span>Pagos esta semana</span>
-                <strong>{homePaymentsThisWeek.length}</strong>
-              </div>
-              <p className="helper-copy" style={{marginTop:"6px"}}>{presenceMsg}</p>
-            </div>
-
-            {/* Energía */}
-            <div className="card dash-summary-card">
-              <div className="dash-summary-icon">?</div>
-              <h3>Energía y bienestar</h3>
-              <div className="dash-summary-stat">
-                <span>ánimo</span>
-                <strong style={{textTransform:"capitalize"}}>{purpose.mood}</strong>
-              </div>
-              <div className="dash-summary-stat">
-                <span>Nivel de energía</span>
-                <strong style={{textTransform:"capitalize"}}>{purpose.energy}</strong>
-              </div>
-              <ProgressLabel label="Autocuidado" value={Math.round(([purpose.water,purpose.walk,purpose.silence,purpose.devotional].filter(Boolean).length/4)*100)} tone="green" />
-              <div className="dash-summary-stat" style={{marginTop:"4px"}}>
-                <span>Horas trabajadas</span>
-                <strong>{purpose.hoursWorked || 0}h</strong>
-              </div>
-            </div>
-
           </div>
 
-          {/* Últimos movimientos + planificador */}
-          {(() => {
-            const today = new Date();
-            const dayNames = ["Domingo","Lunes","Martes","Miercoles","Jueves","Viernes","Sabado"];
-            const todayName = dayNames[today.getDay()];
-            const todayTasks = homeTasks.filter((t) => !t.done).slice(0, 3);
-            const todayUrgent = homeTasks.filter((t) => !t.done && t.priority === "Urgente");
-            return (
-              <div className="card dash-today-card">
-                <div className="dash-today-header">
-                  <div>
-                    <p className="eyebrow">Hoy es {todayName}</p>
-                    <h3 style={{margin:"4px 0 0"}}>Tu hogar hoy</h3>
-                  </div>
-                  <button type="button" className="dash-today-link" onClick={() => setActiveView("home")}>Ver semana completa</button>
-                </div>
-                {todayUrgent.length > 0 && (
-                  <div style={{padding:"8px 12px",background:"var(--pink-soft)",borderRadius:"8px",fontSize:"13px",color:"var(--purple)",fontWeight:700}}>
-                    Urgente: {todayUrgent.map((t) => t.title).join(", ")}
-                  </div>
-                )}
-                {todayTasks.length === 0 && <p className="helper-copy">No tienes tareas pendientes. Buen trabajo!</p>}
-                {todayTasks.map((task) => (
-                  <label key={task.id} style={{display:"flex",alignItems:"center",gap:"10px",fontSize:"14px"}}>
-                    <input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)"}} />
-                    <span style={{flex:1}}>{task.title}</span>
-                    {task.delegate && <small style={{color:"var(--pink)",fontWeight:700}}>{task.delegate}</small>}
-                  </label>
-                ))}
-                {homeTasks.filter((t) => !t.done).length > 3 && (
-                  <p className="helper-copy">+{homeTasks.filter((t) => !t.done).length - 3} tareas mas. <button type="button" style={{border:"none",background:"none",color:"var(--purple)",fontWeight:700,cursor:"pointer",padding:0}} onClick={() => setActiveView("home")}>Ver todas</button></p>
-                )}
-              </div>
-            );
-          })()}
-          <div className="dash-bottom-row">
-            {MovementList()}
-            {CalendarCard()}
+          {/* 4 tarjetas rapidas */}
+          <div className="db-quick-grid">
+            <button type="button" className="db-quick-card" onClick={() => setActiveView("business")}>
+              <span className="db-quick-icon">ðŸ’°</span>
+              <span className="db-section-label">Negocio</span>
+              <strong className="db-quick-val">{money.format(totals.income)}</strong>
+              <small>ingresos del mes</small>
+            </button>
+            <button type="button" className="db-quick-card" onClick={() => setActiveView("clients")}>
+              <span className="db-quick-icon">ðŸ‘©â€ðŸ’¼</span>
+              <span className="db-section-label">Clientas</span>
+              <strong className="db-quick-val">{hotLeads}</strong>
+              <small>{hotLeads === 1 ? "lead caliente" : hotLeads === 0 ? "sin leads calientes" : "leads calientes"}</small>
+            </button>
+            <button type="button" className="db-quick-card" onClick={() => setActiveView("content")}>
+              <span className="db-quick-icon">ðŸ“±</span>
+              <span className="db-section-label">Contenido</span>
+              <strong className="db-quick-val">{publishedContent}</strong>
+              <small>{pendingContent} por publicar</small>
+            </button>
+            <button type="button" className="db-quick-card" onClick={() => setActiveView("home")}>
+              <span className="db-quick-icon">ðŸŒ¸</span>
+              <span className="db-section-label">Hogar</span>
+              <strong className="db-quick-val">{homeProgress}%</strong>
+              <small>{completedHomeTasks} de {homeTasks.length} tareas</small>
+            </button>
           </div>
 
-        </section>
-      </>
+          {/* Studio CTA */}
+          <button type="button" className="db-studio-cta" onClick={() => setActiveView("studio")}>
+            <div className="db-studio-left">
+              <span className="db-studio-star">âœ¦</span>
+              <div style={{textAlign:"left"}}>
+                <p className="db-studio-title">Studio de contenido</p>
+                <p className="db-studio-sub">Crea guiones, carruseles, emails y mÃ¡s para tu negocio.</p>
+              </div>
+            </div>
+            <span className="db-studio-arrow">â†’</span>
+          </button>
+
+        </div>
+      </section>
     );
   }
+
 
   function renderBusiness() {
     const healthScore = totals.profit >= 0 && monthlyProgress >= 75 ? "green"
