@@ -658,113 +658,520 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion }) {
 
 // ── LEAD MAGNET ────────────────────────────────────────────────
 function LeadMagnetTab({ saved, onSave, onDelete }) {
-  const [form, setForm] = useState({ titulo: "", promesa: "", audiencia: "", formato: "PDF / Guía", secciones: [""], cta: "", estado: "Idea" });
-  const [resultado, setResultado] = useState(null);
-  const items = saved?.leads || [];
-  const FORMATOS = ["PDF / Guía", "Checklist", "Mini-curso (3-5 días)", "Reto", "Webinar / Masterclass", "Plantilla", "Quiz / Test", "Audio / Podcast"];
-  const ESTADOS = ["Idea", "En creación", "Listo", "Publicado"];
+  const [view, setView]         = useState("inicio");
+  const [keyword, setKeyword]   = useState("");
+  const [lmIdeas, setLmIdeas]   = useState(null);
+  const [thinking, setThinking] = useState(false);
+  const [form, setForm]         = useState({ titulo: "", promesa: "", audiencia: "", tipo: "guia", secciones: ["", "", ""], cta: "", producto: "" });
+  const [docData, setDocData]   = useState(null);
+  const [copiado, setCopiado]   = useState("");
 
-  const updateSeccion = (i, val) => { const a = [...form.secciones]; a[i] = val; setForm(p => ({...p, secciones: a})); };
+  const savedIdeas = (saved?.ideas || []).slice(-8).reverse();
+  const bancoLeads = saved?.leads || [];
+  const shuffle    = (arr) => [...arr].sort(() => Math.random() - 0.5);
+  const copiar     = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
 
-  const generar = () => {
-    if (!form.titulo || !form.promesa) return;
-    setResultado({
-      titulos: [
-        `El ${form.formato.split("/")[0].trim()} Gratuito: "${form.titulo}"`,
-        `Descarga Gratis: ${form.titulo}`,
-        `[GRATIS] ${form.titulo} para ${form.audiencia || "emprendedoras"}`,
-        `Guía Rápida: ${form.titulo}`,
+  const LM_CATS = {
+    guia: {
+      label: "📄 Guía / Ebook", sub: "PDF descargable · Evergreen",
+      color: "#C4526A", bg: "#FFF0F3",
+      templates: [
+        k => `La guía definitiva de ${k} para mamás emprendedoras`,
+        k => `${k}: los 5 pasos que nadie te ha explicado`,
+        k => `De cero a resultados con ${k} — guía paso a paso`,
+        k => `Todo lo que necesitas sobre ${k} en un solo lugar`,
+        k => `El método de ${k} para empezar desde hoy`,
+        k => `${k} sin complicarte: guía express de 10 minutos`,
+        k => `Las 7 claves de ${k} que cambiarán tu negocio`,
+        k => `Mini guía: cómo aplicar ${k} esta misma semana`,
+        k => `${k} para principiantes: empieza sin experiencia`,
       ],
-      descripcion: `¿Eres ${form.audiencia || "mamá emprendedora"}? Este ${form.formato.toLowerCase()} gratuito es para ti. ${form.promesa}. Sin costo, sin trampa — solo valor puro que puedes aplicar hoy.`,
-    });
+    },
+    checklist: {
+      label: "✅ Checklist / Plantilla", sub: "Listo para usar · Imprimible",
+      color: "#27AE60", bg: "#EEFAF3",
+      templates: [
+        k => `Checklist: todo lo que necesitas para dominar ${k}`,
+        k => `Plantilla lista: organiza tu ${k} paso a paso`,
+        k => `El checklist de ${k} que uso con mis clientas`,
+        k => `Lista de verificación: ¿estás lista para ${k}?`,
+        k => `Plantilla gratuita: planifica tu ${k} en minutos`,
+        k => `El checklist esencial de ${k} — descárgalo gratis`,
+        k => `Hoja de trabajo: domina ${k} en 7 acciones concretas`,
+        k => `${k}: la plantilla que te ahorra horas cada semana`,
+      ],
+    },
+    clase: {
+      label: "🎓 Mini-clase / Webinar", sub: "Video · Audio · Live",
+      color: "#4A90D9", bg: "#EEF5FF",
+      templates: [
+        k => `Mini-clase gratuita: el método de ${k} que funciona`,
+        k => `Masterclass: domina ${k} sin años de experiencia`,
+        k => `Clase exprés de ${k} en 20 minutos`,
+        k => `Taller virtual: implementa ${k} esta semana`,
+        k => `El webinar de ${k}: tu primera victoria rápida`,
+        k => `Live gratuito: ${k} para mamás que empiezan desde cero`,
+        k => `Video privado: mi proceso completo de ${k}`,
+        k => `Capacitación express: ${k} en una sola sesión`,
+      ],
+    },
+    reto: {
+      label: "🔥 Reto / Challenge", sub: "3-7 días de acción",
+      color: "#E8755A", bg: "#FFF5F0",
+      templates: [
+        k => `Reto de 5 días: transforma tu ${k} con una acción diaria`,
+        k => `Challenge gratuito: ${k} en 7 días`,
+        k => `El reto de ${k} que cambiará tu negocio esta semana`,
+        k => `3 días para dominar ${k} — únete gratis`,
+        k => `Reto express: tu primera victoria con ${k}`,
+        k => `Challenge de ${k}: una acción diaria durante 5 días`,
+        k => `El reto de ${k} que mis clientas llaman transformador`,
+        k => `Mini reto de ${k}: empieza hoy, ve resultados en 3 días`,
+      ],
+    },
   };
 
-  const guardar = () => {
-    if (!form.titulo) return;
-    onSave("leads", { id: Date.now(), ...form, fecha: new Date().toLocaleDateString("es") });
-    setForm({ titulo: "", promesa: "", audiencia: "", formato: "PDF / Guía", secciones: [""], cta: "", estado: "Idea" });
-    setResultado(null);
+  const generar = (kw) => {
+    const k = (typeof kw === "string" ? kw : keyword).trim();
+    if (!k) return;
+    setThinking(true); setLmIdeas(null);
+    setTimeout(() => {
+      const gen = {};
+      Object.entries(LM_CATS).forEach(([key, cat]) => {
+        gen[key] = shuffle([...cat.templates]).slice(0, 4).map((f, i) => ({
+          id: `lm-${key}-${Date.now()}-${i}`, texto: f(k), tipo: key,
+        }));
+      });
+      setLmIdeas({ keyword: k, ...gen });
+      setThinking(false);
+    }, 1200);
+  };
+
+  const masIdeasLm = (catKey) => {
+    if (!lmIdeas) return;
+    const nuevas = shuffle([...LM_CATS[catKey].templates]).slice(0, 2).map((f, i) => ({
+      id: `lm-${catKey}-mas-${Date.now()}-${i}`, texto: f(lmIdeas.keyword), tipo: catKey,
+    }));
+    setLmIdeas(prev => ({ ...prev, [catKey]: [...prev[catKey], ...nuevas] }));
+  };
+
+  const usarIdea = (idea) => {
+    setForm(p => ({ ...p, titulo: idea.texto, tipo: idea.tipo }));
+    setView("crear");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+  };
+
+  const TIPO_OPTIONS = [
+    { key: "guia",      emoji: "📄", label: "Guía / Ebook",         desc: "PDF descargable" },
+    { key: "checklist", emoji: "✅", label: "Checklist / Plantilla", desc: "Lista de acciones" },
+    { key: "clase",     emoji: "🎓", label: "Mini-clase / Webinar",  desc: "Video + guión" },
+    { key: "reto",      emoji: "🔥", label: "Reto / Challenge",      desc: "3-7 días" },
+  ];
+
+  const SECCIONES_META = {
+    guia:      { label: "Secciones del documento",  add: "+ Agregar sección", ph: (i) => `Sección ${i+1}: ej. "Cómo organizarte antes de vender"` },
+    checklist: { label: "Ítems del checklist",       add: "+ Agregar ítem",    ph: (i) => `Ítem ${i+1}: ej. "Identificar a tu clienta ideal"` },
+    clase:     { label: "Módulos de la clase",       add: "+ Agregar módulo",  ph: (i) => `Módulo ${i+1}: ej. "Cómo encontrar tu primera clienta"` },
+    reto:      { label: "Días / acciones del reto",  add: "+ Agregar día",     ph: (i) => `Día ${i+1}: ej. "Define tu oferta principal"` },
+  };
+
+  const TIPO_LABELS  = { guia: "📄 Guía",       checklist: "✅ Checklist", clase: "🎓 Mini-clase", reto: "🔥 Reto" };
+  const TIPO_COLORS  = { guia: "#C4526A",        checklist: "#27AE60",     clase: "#4A90D9",       reto: "#E8755A" };
+
+  const buildDoc = () => {
+    const { tipo, titulo, promesa, audiencia, secciones, cta, producto } = form;
+    const aud    = audiencia || "mamás emprendedoras";
+    const prod   = producto  || "mi programa / servicio";
+    const ctaTxt = cta       || `Conoce ${prod} →`;
+    const secc   = secciones.filter(s => s.trim());
+
+    let estructura = [];
+    if (tipo === "guia") {
+      estructura = [
+        { tipo: "intro", label: "✦ Introducción", content: `Hola! Soy [tu nombre] y creé esta guía especialmente para ti.\n\nSi eres ${aud}, sé exactamente el reto que estás viviendo. Esta guía es tu punto de partida.\n\nAl terminar, vas a ${promesa || "tener claridad y pasos concretos para avanzar"}.` },
+        ...(secc.length > 0 ? secc : ["Sección 1", "Sección 2", "Sección 3"]).map((s, i) => ({
+          tipo: "seccion", label: `Sección ${i+1}: ${s}`,
+          content: "[Desarrolla aquí el contenido — 3-5 párrafos con ejemplos concretos y pasos accionables]",
+        })),
+        { tipo: "cta", label: "🎁 ¿Lista para el siguiente nivel?", content: `Esta guía es solo el principio.\n\nCuando estés lista para ir más lejos, ${prod} fue diseñado exactamente para ti.\n\n👉 ${ctaTxt}` },
+      ];
+    } else if (tipo === "checklist") {
+      const items = secc.length > 0 ? secc : ["Paso 1: [Describe la acción]","Paso 2: [Describe la acción]","Paso 3: [Describe la acción]","Paso 4: [Describe la acción]","Paso 5: [Describe la acción]"];
+      estructura = [
+        { tipo: "intro", label: "Para qué es este checklist", content: `Para ${aud} que quieren ${promesa || "avanzar con claridad y sin pasos perdidos"}.` },
+        { tipo: "checklist-items", label: "Tu lista de acciones", items },
+        { tipo: "cta", label: "🎁 ¿Completaste el checklist?", content: `¡Eso significa que estás lista para el siguiente paso!\n\n👉 ${ctaTxt}` },
+      ];
+    } else if (tipo === "clase") {
+      estructura = [
+        { tipo: "guion-parte", label: "🎬 BIENVENIDA (2-3 min)", content: `"¡Hola! Soy [tu nombre] y bienvenida a esta mini-clase.\n\nHoy vamos a aprender: ${titulo}.\n\nAl terminar, vas a ${promesa || "tener una acción clara para implementar hoy"}."\n\n[Preséntate brevemente: quién eres y a quién ayudas]` },
+        ...(secc.length > 0 ? secc : ["Módulo 1","Módulo 2","Módulo 3"]).map((s, i) => ({
+          tipo: "guion-parte", label: `📖 MÓDULO ${i+1}: ${s}`,
+          content: `"[Desarrolla el contenido de este módulo]\n\n[Incluye 1 ejemplo concreto o historia]\n\n[Da 1 acción práctica que puedan tomar ahora mismo]"`,
+        })),
+        { tipo: "guion-parte", label: "🚀 CIERRE + CTA (3-5 min)", content: `"Hemos llegado al final y ya tienes [resume lo aprendido].\n\nSi esto te fue útil y quieres ir más lejos, ${prod} fue creado para ti.\n\n${ctaTxt}\n\n¡Gracias por estar aquí! 💌"` },
+      ];
+    } else if (tipo === "reto") {
+      const dias = secc.length > 0 ? secc : ["Día 1: Claridad","Día 2: Acción","Día 3: Revisión","Día 4: Profundidad","Día 5: Celebración"];
+      estructura = [
+        { tipo: "intro", label: "✦ Bienvenida al Reto", content: `¡Hola! Soy [tu nombre] y diseñé este reto para ${aud}.\n\nDurante los próximos días, vas a ${promesa || "avanzar con una acción pequeña cada día"}.\n\nReglas simples: un día a la vez, una acción a la vez. ¡Tú puedes!` },
+        { tipo: "reto-dias", label: "Tus días de acción", dias },
+        { tipo: "cta", label: "🎁 ¡Completaste el reto!", content: `¡Felicidades! Eso dice mucho de ti.\n\nAhora imagina lo que puedes lograr con acompañamiento real.\n\n👉 ${ctaTxt}` },
+      ];
+    }
+    return { tipo, titulo, promesa, audiencia: aud, estructura };
+  };
+
+  const generarDoc = () => {
+    if (!form.titulo.trim()) return;
+    setDocData(buildDoc());
+    setView("preview");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
   return (
     <div className="studio-tab-content">
-      <div className="studio-two-col">
-        <div className="studio-form-card">
-          <h3>Planifica tu Lead Magnet</h3>
-          <p className="studio-helper">Define la promesa antes del contenido. La promesa lo vende, el contenido lo cumple.</p>
-          <label>Título</label>
-          <input placeholder="Las 5 claves para vender sin sentirte pesada" value={form.titulo} onChange={e => setForm(p => ({...p, titulo: e.target.value}))} />
-          <label>Promesa principal</label>
-          <input placeholder="Aprenderás a vender de forma natural sin presionar" value={form.promesa} onChange={e => setForm(p => ({...p, promesa: e.target.value}))} />
-          <label>¿Para quién es?</label>
-          <input placeholder="Mamás que venden desde casa y odian el rechazo" value={form.audiencia} onChange={e => setForm(p => ({...p, audiencia: e.target.value}))} />
-          <label>Formato</label>
-          <select value={form.formato} onChange={e => setForm(p => ({...p, formato: e.target.value}))}>
-            {FORMATOS.map(f => <option key={f}>{f}</option>)}
-          </select>
-          <label>Secciones / Módulos</label>
-          {form.secciones.map((s, i) => (
-            <div key={i} className="studio-seccion-row">
-              <input placeholder={`Sección ${i + 1}`} value={s} onChange={e => updateSeccion(i, e.target.value)} />
-              {form.secciones.length > 1 && <button className="studio-delete-btn" onClick={() => setForm(p => ({...p, secciones: p.secciones.filter((_, idx) => idx !== i)}))}>✕</button>}
-            </div>
-          ))}
-          <button className="studio-add-btn" onClick={() => setForm(p => ({...p, secciones: [...p.secciones, ""]}))}>+ Agregar sección</button>
-          <label>CTA — ¿qué sigue después?</label>
-          <input placeholder="Agenda una llamada gratuita / Conoce mi programa" value={form.cta} onChange={e => setForm(p => ({...p, cta: e.target.value}))} />
-          <label>Estado</label>
-          <select value={form.estado} onChange={e => setForm(p => ({...p, estado: e.target.value}))}>
-            {ESTADOS.map(e => <option key={e}>{e}</option>)}
-          </select>
-          <div className="studio-btn-row">
-            <button className="studio-btn-secondary" onClick={generar}>Generar copy ✦</button>
-            <button className="studio-btn-primary" onClick={guardar}>Guardar 🎁</button>
+
+      {/* ── INICIO ─────────────────────────────────── */}
+      {view === "inicio" && (
+        <div className="lm-landing">
+          <div className="mpm-landing-header">
+            <div className="mpm-landing-badge">🎁</div>
+            <h2 className="mpm-landing-title">Lead Magnet</h2>
+            <p className="mpm-landing-sub">Tu regalo de bienvenida para personas que aún no te conocen bien — la puerta de entrada a tu mundo.</p>
           </div>
-        </div>
-        <div className="studio-result-card">
-          {!resultado && items.length === 0 ? (
-            <div className="studio-empty-state">
-              <span>🎁</span>
-              <p>Define tu lead magnet y genera el copy de promoción listo para publicar.</p>
+
+          <div className="lm-purpose-strip">
+            <div className="lm-purpose-item">
+              <span className="lm-purpose-num">1</span>
+              <div>
+                <strong>Primera victoria rápida</strong>
+                <p>Resuelve un problema pequeño y concreto que tu clienta tiene ahora mismo.</p>
+              </div>
             </div>
-          ) : (
+            <div className="lm-purpose-arrow">→</div>
+            <div className="lm-purpose-item">
+              <span className="lm-purpose-num">2</span>
+              <div>
+                <strong>Genera confianza</strong>
+                <p>Ella experimenta tu estilo y tu forma de enseñar. Te empieza a conocer.</p>
+              </div>
+            </div>
+            <div className="lm-purpose-arrow">→</div>
+            <div className="lm-purpose-item lm-purpose-item--highlight">
+              <span className="lm-purpose-num lm-purpose-num--highlight">3</span>
+              <div>
+                <strong>CTA a tu producto ✦</strong>
+                <p>Siempre termina invitando a tu servicio o programa de pago.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mpm-cards-row">
+            <button className="mpm-card" onClick={() => setView("generar")}>
+              <div className="mpm-card-top">
+                <span className="mpm-card-emoji">💡</span>
+                <span className="mpm-card-tag">Explorar</span>
+              </div>
+              <strong className="mpm-card-name">Generar ideas</strong>
+              <p className="mpm-card-desc">Escribe un tema y te doy ideas de lead magnets: guías, checklists, mini-clases y retos</p>
+              <span className="mpm-card-link">Explorar ideas →</span>
+            </button>
+            <button className="mpm-card mpm-card--highlight" onClick={() => setView("crear")}>
+              <div className="mpm-card-top">
+                <span className="mpm-card-badge-ico">🎁</span>
+                <span className="mpm-card-tag mpm-card-tag--primary">Crear</span>
+              </div>
+              <strong className="mpm-card-name">Crear mi lead magnet</strong>
+              <p className="mpm-card-desc">Ya tengo idea — quiero crear el documento o guión de clase listo para exportar como PDF</p>
+              <span className="mpm-card-link mpm-card-link--primary">Empezar →</span>
+            </button>
+          </div>
+
+          {savedIdeas.length > 0 && (
+            <div className="lm-inspiracion">
+              <p className="lm-inspi-label">💡 Generar ideas desde tus contenidos guardados:</p>
+              <div className="lm-inspi-chips">
+                {savedIdeas.map(idea => (
+                  <button key={idea.id} className="lm-inspi-chip"
+                    onClick={() => { const kw = idea.titulo.slice(0, 45); setKeyword(kw); generar(kw); setView("generar"); }}>
+                    {idea.titulo.length > 48 ? idea.titulo.slice(0, 48) + "…" : idea.titulo}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── GENERAR ─────────────────────────────────── */}
+      {view === "generar" && (
+        <div>
+          <div className="lm-gen-topbar">
+            <button className="mpm-wizard-back-btn" onClick={() => setView("inicio")}>← Inicio</button>
+          </div>
+
+          <div className="ideas-search-bar">
+            <span className="ideas-search-icon">🎁</span>
+            <input
+              className="ideas-search-input"
+              placeholder="¿Sobre qué tema será tu lead magnet? ventas, organización, bienestar..."
+              value={keyword}
+              onChange={e => setKeyword(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && generar()}
+            />
+            <button className="ideas-search-btn" onClick={() => generar()} disabled={!keyword.trim() || thinking}>
+              Generar ideas ✦
+            </button>
+          </div>
+
+          {savedIdeas.length > 0 && !lmIdeas && !thinking && (
+            <div className="lm-inspiracion" style={{marginBottom:"24px"}}>
+              <p className="lm-inspi-label">💡 Desde tus ideas guardadas:</p>
+              <div className="lm-inspi-chips">
+                {savedIdeas.map(idea => (
+                  <button key={idea.id} className="lm-inspi-chip"
+                    onClick={() => { const kw = idea.titulo.slice(0, 45); setKeyword(kw); generar(kw); }}>
+                    {idea.titulo.length > 45 ? idea.titulo.slice(0, 45) + "…" : idea.titulo}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!lmIdeas && !thinking && (
+            <div className="ideas-empty">
+              <div className="ideas-brain-glow">🎁</div>
+              <h3>¿Sobre qué quieres crear tu lead magnet?</h3>
+              <p>Escribe un tema y te genero ideas organizadas por tipo: guías, checklists, mini-clases y retos de acción.</p>
+              <div className="ideas-chips">
+                {["ventas en WhatsApp","organizar el tiempo","conseguir clientas","marketing de contenido","bienestar para mamás"].map(ej => (
+                  <button key={ej} className="ideas-chip" onClick={() => { setKeyword(ej); generar(ej); }}>{ej}</button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {thinking && (
+            <div className="ideas-thinking">
+              <div className="ideas-orbit-container">
+                <div className="ideas-brain-orbit">🎁</div>
+                {["📄","✅","🎓","🔥","💡","✨"].map((s, i) => (
+                  <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`}>{s}</div>
+                ))}
+              </div>
+              <p className="ideas-thinking-text">Creando ideas de lead magnet<span className="ideas-dots-anim">...</span></p>
+            </div>
+          )}
+
+          {lmIdeas && !thinking && (
             <>
-              {resultado && (
-                <div className="studio-result-main">
-                  <h4>Títulos para promocionar</h4>
-                  {resultado.titulos.map((t, i) => (
-                    <div className="studio-variation-item" key={i}>
-                      <p>{t}</p>
-                      <button className="studio-copy-btn small" onClick={() => navigator.clipboard.writeText(t)}>Copiar</button>
-                    </div>
-                  ))}
-                  <h4 style={{marginTop:"16px"}}>Descripción para publicar</h4>
-                  <p className="studio-result-text">{resultado.descripcion}</p>
-                  <button className="studio-copy-btn" onClick={() => navigator.clipboard.writeText(resultado.descripcion)}>Copiar descripción</button>
+              <div className="ideas-result-header">
+                <div>
+                  <span className="ideas-kw-label">Ideas para </span>
+                  <strong className="ideas-kw-value">"{lmIdeas.keyword}"</strong>
                 </div>
-              )}
-              {items.length > 0 && (
-                <div className={resultado ? "studio-bank" : ""} style={{marginTop: resultado ? "24px" : 0}}>
-                  <h4>Mis Lead Magnets ({items.length})</h4>
-                  {items.map(item => (
-                    <div className="studio-bank-item" key={item.id}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                        <div>
-                          <strong>{item.titulo}</strong>
-                          <span className="studio-estado-badge">{item.estado}</span>
+                <button className="ideas-regen-btn" onClick={() => generar(lmIdeas.keyword)}>🔄 Nuevas ideas</button>
+              </div>
+              {Object.entries(LM_CATS).map(([catKey, cat]) => (
+                <div className="ideas-cat-section" key={catKey} style={{ "--cat-color": cat.color, "--cat-bg": cat.bg }}>
+                  <div className="ideas-cat-header">
+                    <div className="ideas-cat-title">
+                      <span className="ideas-cat-label">{cat.label}</span>
+                      <span className="ideas-cat-sub">{cat.sub}</span>
+                    </div>
+                    <button className="ideas-mas-btn" onClick={() => masIdeasLm(catKey)}>+ Más ideas</button>
+                  </div>
+                  <div className="ideas-cards-grid">
+                    {lmIdeas[catKey].map((idea, i) => (
+                      <div className="ideas-card" key={idea.id} style={{ animationDelay: `${i * 70}ms` }}>
+                        <p className="ideas-card-text">{idea.texto}</p>
+                        <div className="ideas-card-actions">
+                          <button className="ideas-card-copy" onClick={() => copiar(idea.texto, idea.id)}>
+                            {copiado === idea.id ? "✓ Copiado" : "Copiar"}
+                          </button>
+                          <button className="ideas-card-guion lm-usar-btn" onClick={() => usarIdea(idea)}>
+                            Crear este 🎁
+                          </button>
                         </div>
-                        <button className="studio-delete-btn" onClick={() => onDelete("leads", item.id)}>✕</button>
                       </div>
-                      <small style={{color:"var(--muted)"}}>{item.formato} · {item.fecha}</small>
-                      {item.promesa && <p style={{marginTop:"6px",fontSize:"13px"}}>{item.promesa}</p>}
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              )}
+              ))}
             </>
           )}
         </div>
-      </div>
+      )}
+
+      {/* ── CREAR ───────────────────────────────────── */}
+      {view === "crear" && (
+        <div className="lm-crear-wrap">
+          <div className="desc-header">
+            <button className="mpm-wizard-back-btn" onClick={() => setView("inicio")}>← Inicio</button>
+            <h2 className="desc-title">Crea tu Lead Magnet</h2>
+            <p className="desc-subtitle">La promesa lo vende — el contenido lo cumple. Define primero qué victoria rápida le vas a dar a tu clienta.</p>
+          </div>
+
+          <div className="lm-crear-form">
+            <div className="lm-crear-section">
+              <label className="lm-crear-label">¿Qué tipo de lead magnet vas a crear?</label>
+              <div className="lm-tipo-pills">
+                {TIPO_OPTIONS.map(t => (
+                  <button key={t.key} className={`lm-tipo-pill${form.tipo === t.key ? " active" : ""}`}
+                    onClick={() => setForm(p => ({...p, tipo: t.key}))}>
+                    <span className="lm-tipo-pill-emoji">{t.emoji}</span>
+                    <span className="lm-tipo-pill-label">{t.label}</span>
+                    <span className="lm-tipo-pill-desc">{t.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="lm-crear-grid">
+              {[
+                { num:"01", emoji:"✏️", label:"Título de tu lead magnet",          field:"titulo",    ph:"Las 5 claves para vender sin sentirte pesada",                      hint:"Claro, específico y con la victoria que promete" },
+                { num:"02", emoji:"🎯", label:"¿Qué victoria rápida les das?",      field:"promesa",   ph:"Aprenderán a vender con confianza sin presionar",                   hint:"Lo que podrán hacer o sentir al terminar" },
+                { num:"03", emoji:"👩‍💼", label:"¿Para quién es?",                  field:"audiencia", ph:"Mamás que venden desde casa y odian el rechazo",                    hint:"Mientras más específico, más se identifica tu clienta ideal" },
+                { num:"04", emoji:"🚀", label:"¿A qué producto lleva el CTA final?",field:"producto",  ph:"Mi mentoría CEO en Casa / Mi programa de ventas",                   hint:"El lead magnet siempre lleva a tu producto de pago" },
+                { num:"05", emoji:"💌", label:"¿Cuál es el CTA exacto?",            field:"cta",       ph:"Agenda una llamada gratuita / Conoce mi programa en [link]",         hint:"Texto exacto que aparecerá al final del documento" },
+              ].map(q => (
+                <div key={q.field} className={`desc-q-card${form[q.field] ? " filled" : ""}`}>
+                  <div className="desc-q-num">{q.num}</div>
+                  <div className="desc-q-body">
+                    <div className="desc-q-top">
+                      <span className="desc-q-emoji">{q.emoji}</span>
+                      <label className="desc-q-label">{q.label}</label>
+                    </div>
+                    <input className="desc-q-input" placeholder={q.ph} value={form[q.field]}
+                      onChange={e => setForm(p => ({...p, [q.field]: e.target.value}))} />
+                    <span className="desc-q-hint">{q.hint}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="lm-secciones-block">
+              <label className="lm-crear-label">{SECCIONES_META[form.tipo]?.label || "Contenido"}</label>
+              <p className="studio-helper" style={{marginTop:0,marginBottom:"12px"}}>No necesitan ser perfectos — son el esqueleto de tu documento.</p>
+              {form.secciones.map((s, i) => (
+                <div key={i} className="lm-seccion-row">
+                  <span className="lm-seccion-num">{i+1}</span>
+                  <input
+                    className="lm-seccion-input"
+                    placeholder={SECCIONES_META[form.tipo]?.ph(i) || `Sección ${i+1}`}
+                    value={s}
+                    onChange={e => { const a = [...form.secciones]; a[i] = e.target.value; setForm(p => ({...p, secciones: a})); }}
+                  />
+                  {form.secciones.length > 1 && (
+                    <button className="studio-delete-btn" onClick={() => setForm(p => ({...p, secciones: p.secciones.filter((_, idx) => idx !== i)}))}>✕</button>
+                  )}
+                </div>
+              ))}
+              <button className="studio-add-btn" onClick={() => setForm(p => ({...p, secciones: [...p.secciones, ""]}))}>
+                {SECCIONES_META[form.tipo]?.add || "+ Agregar sección"}
+              </button>
+            </div>
+
+            <button className="mpm-step-btn" onClick={generarDoc} disabled={!form.titulo.trim()}>
+              Generar documento ✦
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── PREVIEW ─────────────────────────────────── */}
+      {view === "preview" && docData && (
+        <div className="lm-preview-wrap">
+          <div className="lm-preview-topbar">
+            <button className="mpm-wizard-back-btn" onClick={() => setView("crear")}>← Editar</button>
+            <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+              <button className="mpm-edit-btn" onClick={() => onSave("leads", { id: Date.now(), titulo: docData.titulo, tipo: docData.tipo, promesa: docData.promesa, audiencia: docData.audiencia, fecha: new Date().toLocaleDateString("es") })}>
+                Guardar en biblioteca 🎁
+              </button>
+              <button className="lm-print-btn" onClick={() => window.print()}>🖨️ Imprimir / Guardar PDF</button>
+            </div>
+          </div>
+
+          <p className="lm-print-tip">Al imprimir, elige <strong>"Guardar como PDF"</strong> para tener el documento en tu dispositivo.</p>
+
+          <div className="lm-print-area">
+            <div className="lm-doc-header">
+              <div className="lm-doc-brand">Mamá CEO · Studio de Contenido</div>
+              <h1 className="lm-doc-title">{docData.titulo}</h1>
+              {docData.promesa && <p className="lm-doc-promesa">"{docData.promesa}"</p>}
+              <div className="lm-doc-meta-row">
+                {docData.audiencia && <span className="lm-doc-para">Para: {docData.audiencia}</span>}
+                <span className="lm-doc-tipo-badge" style={{background: TIPO_COLORS[docData.tipo]}}>{TIPO_LABELS[docData.tipo]}</span>
+              </div>
+            </div>
+
+            <div className="lm-doc-body">
+              {docData.estructura.map((parte, i) => (
+                <div key={i} className={`lm-doc-parte lm-doc-parte--${parte.tipo}`}>
+                  <h3 className="lm-doc-parte-label">{parte.label}</h3>
+                  {parte.tipo === "checklist-items" && (
+                    <div className="lm-doc-checklist">
+                      {parte.items.map((item, j) => (
+                        <div key={j} className="lm-doc-check-item">
+                          <span className="lm-doc-checkbox">☐</span>
+                          <span>{item}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {parte.tipo === "reto-dias" && (
+                    <div className="lm-doc-dias">
+                      {parte.dias.map((dia, j) => (
+                        <div key={j} className="lm-doc-dia">
+                          <span className="lm-doc-dia-num">{j+1}</span>
+                          <div>
+                            <strong>{dia}</strong>
+                            <p className="lm-doc-dia-accion">Acción de hoy: [Describe la acción específica que harán este día]</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {parte.content && (
+                    <div className="lm-doc-content">
+                      {parte.content.split("\n").map((line, j) =>
+                        line ? <p key={j}>{line}</p> : <br key={j} />
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="lm-doc-footer">
+              <p>Creado con Studio de Contenido · Mamá CEO App</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── BANCO ───────────────────────────────────── */}
+      {bancoLeads.length > 0 && (
+        <div className="studio-bank">
+          <h4>Mis Lead Magnets ({bancoLeads.length})</h4>
+          {bancoLeads.slice().reverse().map(item => (
+            <div className="studio-bank-item" key={item.id}>
+              <div className="studio-bank-item-top">
+                <span className="studio-tipo-badge" style={{ background: TIPO_COLORS[item.tipo] || "#8B6565" }}>
+                  {TIPO_LABELS[item.tipo] || item.tipo || "Lead Magnet"}
+                </span>
+                <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                  <small>{item.fecha}</small>
+                  <button className="studio-delete-btn" onClick={() => onDelete("leads", item.id)}>✕</button>
+                </div>
+              </div>
+              <strong>{item.titulo}</strong>
+              {item.promesa && <p style={{fontSize:"13px",color:"var(--muted)",margin:"4px 0 0"}}>{item.promesa}</p>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
