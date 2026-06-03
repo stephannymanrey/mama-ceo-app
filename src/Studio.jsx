@@ -1511,7 +1511,7 @@ function HooksTab({ saved, onSave, onCrearGuion }) {
 }
 
 // ── GUIÓN ──────────────────────────────────────────────────────
-function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
+function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
   const [subTab,    setSubTab]    = useState("guion");
   const [form,      setForm]      = useState({ tema: seed || "", objetivo: "Vender", tipo: "Reel (60s)", audiencia: "" });
   const [guion,     setGuion]     = useState(null);
@@ -1627,6 +1627,21 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
     };
   };
 
+  const buildCaptionFromGuion = (tema, objetivo) => {
+    const t = tema;
+    const CAPS = {
+      "Vender":
+`¿Sabías que ${t} puede cambiar por completo tus resultados?\n\nTe lo cuento en este video — y te aseguro que no es lo que ya escuchaste antes.\n\nSi sientes que trabajas duro y aún no ves el crecimiento que mereces, este video es para ti. ✨\n\nHay una forma diferente de hacerlo. Una que fluye con quien eres. Sin presión, sin técnicas raras.\n\n👉 Guarda este video y cuéntame: ¿cuál es tu mayor reto con ${t} ahora mismo?\n\n#mamáemprendedora #negociodesdehogar #emprendimiento #mamáceo #marketingdigital #ventasconcorazón`,
+      "Conectar":
+`${t} es algo que pocas hablan con honestidad. Hoy yo sí lo hago.\n\nA veces el mayor obstáculo no es la estrategia — es lo que cargamos en la cabeza.\n\nEste video lo grabé para ti. Para que sepas que no estás sola. Que lo que sientes tiene sentido. Y que hay un camino. 💙\n\n¿A quién más le hace falta escuchar esto hoy? Etiquétala abajo. 👇\n\nGuarda este video para los días difíciles — como recordatorio de que sí puedes.\n\n#mamáemprendedora #mujeresemprendedoras #emprendimiento #mamáceo #comunidad`,
+      "Educar":
+`Todo lo que necesitas saber sobre ${t} — en menos de un minuto. 📖\n\nCuando yo empecé nadie me lo explicó así. Me hubiera ahorrado meses de ensayo y error.\n\nHoy te lo doy aquí, gratis. Sin rodeos.\n\n¿Qué parte te fue más útil? Cuéntame en comentarios 👇\n\nGuarda este video antes de que lo necesites y no lo encuentres. ⬇️\n\n#mamáemprendedora #aprendizaje #emprendimiento #mamáceo #educacionemprendedora #tips`,
+      "Inspirar":
+`${t} me parecía imposible. Hasta que cambié una sola cosa.\n\nNo fue un truco. No fue magia. Fue una decisión — y hoy quiero que la veas tú también.\n\nSi estás en ese punto donde dudas, donde te preguntas si podrás — este video es para ti. 💫\n\nNadie empieza con todo claro. Todas empezamos con miedo. Lo único que separa a las que llegan es que no se detienen.\n\n¿Qué te está deteniendo a ti hoy? Te leo en comentarios. 💙\n\n#mamáemprendedora #inspiracion #emprendimiento #mamáceo #mujeresquelograncosas`,
+    };
+    return CAPS[objetivo] || CAPS["Conectar"];
+  };
+
   const generarGuion = () => {
     if (!form.tema.trim()) return;
     const aud = form.audiencia.trim() || "tu audiencia";
@@ -1636,6 +1651,8 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
       fecha: new Date().toLocaleDateString("es"),
     });
     setEscritura(buildEscrituraInicial(form.tema, form.objetivo));
+    setCaption(buildCaptionFromGuion(form.tema, form.objetivo));
+    setC(p => ({ ...p, tema: form.tema }));
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
@@ -1684,9 +1701,17 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
 
   const generarCaption = () => {
     if (!c.tema) return;
-    const intros = { "Cercano": `Oye, te cuento algo sobre ${c.tema} 👇`, "Profesional": `Hablemos de ${c.tema}. Esto es lo que necesitas saber:`, "Emotivo": `${c.tema} cambió algo en mí que quiero compartir contigo.`, "Directo": `${c.tema}: aquí van los puntos clave.`, "Divertido": `${c.tema}... sí, vamos a hablar de eso 😅👇` };
-    const tags = c.hashtags ? `\n\n#mamáemprendedora #negociodesdehogar #emprendimiento #mamáceo #marketingdigital #mujeresemprendedoras` : "";
-    setCaption(`${intros[c.tono]}\n\n[Desarrolla tu punto principal — 3 a 5 líneas, con saltos para facilitar la lectura]\n\n${c.cta ? `👉 ${c.cta}` : ""}${tags}`);
+    const intros = {
+      "Cercano":     `Oye, te cuento algo sobre ${c.tema} 👇`,
+      "Profesional": `Hablemos de ${c.tema}. Esto es lo que necesitas saber:`,
+      "Emotivo":     `${c.tema} cambió algo en mí que quiero compartir contigo. 💙`,
+      "Directo":     `${c.tema}: aquí van los puntos clave. Sin rodeos.`,
+      "Divertido":   `${c.tema}... sí, vamos a hablar de eso 😅👇`,
+    };
+    const body = `\n\n[Tu punto principal — 3 a 5 líneas.\nSepara las ideas con saltos de línea para que sea fácil de leer en móvil.]\n\n[Agrega un detalle personal o haz una pregunta que genere conversación.]\n\n`;
+    const cta = c.cta ? `👉 ${c.cta}\n\n` : `💬 Cuéntame en comentarios — te leo siempre.\n\n`;
+    const tags = c.hashtags ? `#mamáemprendedora #negociodesdehogar #emprendimiento #mamáceo #marketingdigital #mujeresemprendedoras` : "";
+    setCaption(`${intros[c.tono] || intros["Cercano"]}${body}${cta}${tags}`.trim());
   };
 
   return (
@@ -1863,6 +1888,36 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
                   ))}
                 </div>
 
+                {/* Caption auto-generado */}
+                {caption && (
+                  <div className="guion-caption-section">
+                    <div className="guion-caption-hdr">
+                      <span className="guion-caption-ico">📝</span>
+                      <div className="guion-caption-hdr-info">
+                        <div className="guion-caption-title">Caption para este video</div>
+                        <div className="guion-caption-sub">Generado automáticamente · edita a tu gusto</div>
+                      </div>
+                      <button className="lm-dl-btn" style={{marginLeft:"auto"}} onClick={() => { setSubTab("caption"); setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}),50); }}>
+                        Ver en Caption →
+                      </button>
+                    </div>
+                    <textarea
+                      className="guion-caption-ta"
+                      value={caption}
+                      onChange={e => setCaption(e.target.value)}
+                      rows={9}
+                    />
+                    <div className="guion-caption-actions">
+                      <button className="guion-frase-copy" style={{padding:"7px 16px",fontSize:"12px"}} onClick={() => copiar(caption, "cap-doc")}>
+                        {copiado === "cap-doc" ? "✓ Copiado" : "Copiar caption"}
+                      </button>
+                      <button className="guion-frase-copy" style={{padding:"7px 16px",fontSize:"12px",marginLeft:"6px"}} onClick={() => onSave("captions", { id: Date.now(), caption, red: "Instagram", tema: guion.tema, fecha: guion.fecha })}>
+                        Guardar caption
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="guion-doc-footer">
                   <p>Creado con Studio de Contenido · Mamá CEO App</p>
                 </div>
@@ -1874,40 +1929,138 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
 
       {/* ── SUB-TAB CAPTION ────────────────────────── */}
       {subTab === "caption" && (
-        <div className="studio-two-col">
-          <div className="studio-form-card">
-            <h3>Caption para Redes</h3>
-            <p className="studio-helper">Genera la estructura de tu descripción lista para completar y publicar.</p>
-            <label>Red social</label>
-            <select value={c.red} onChange={e => setC(p => ({...p, red: e.target.value}))}>
-              {["Instagram","TikTok","YouTube","Facebook"].map(r => <option key={r}>{r}</option>)}
-            </select>
-            <label>Tono</label>
-            <select value={c.tono} onChange={e => setC(p => ({...p, tono: e.target.value}))}>
-              {["Cercano","Profesional","Emotivo","Directo","Divertido"].map(t => <option key={t}>{t}</option>)}
-            </select>
-            <label>Tema del post</label>
-            <input placeholder="cómo le digo el precio sin miedo" value={c.tema} onChange={e => setC(p => ({...p, tema: e.target.value}))} />
-            <label>CTA</label>
-            <input placeholder="Guarda este post / Comenta SÍ si te pasó" value={c.cta} onChange={e => setC(p => ({...p, cta: e.target.value}))} />
-            <label className="studio-checkbox-label">
+        <div className="cap-wrap">
+
+          {/* Header */}
+          <div className="guion-form-intro" style={{marginBottom:"4px"}}>
+            <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>📝</div>
+            <h2>Captions para Redes</h2>
+            <p>Tu caption se genera solo con cada guión. Edítalo, crea desde tus videos guardados o escribe uno nuevo desde cero.</p>
+          </div>
+
+          {/* Caption del guion actual */}
+          {caption && (
+            <div className="cap-auto-card">
+              <div className="cap-auto-hdr">
+                <div className="cap-auto-label">📽 Caption generado</div>
+                {guion && (
+                  <div className="cap-video-info">
+                    <span className="cap-video-tema">{guion.tema}</span>
+                    <span className="cap-video-meta">{guion.tipo} · {guion.objetivo}</span>
+                  </div>
+                )}
+              </div>
+              <textarea
+                className="studio-caption-edit"
+                value={caption}
+                onChange={e => setCaption(e.target.value)}
+                rows={10}
+              />
+              <div className="cap-auto-actions">
+                <button className="lm-dl-btn" onClick={() => copiar(caption, "cap-auto")}>{copiado === "cap-auto" ? "✓ Copiado" : "Copiar"}</button>
+                <button className="lm-dl-btn lm-dl-btn--word" onClick={() => onSave("captions", { id: Date.now(), caption, red: c.red, tema: c.tema || guion?.tema, fecha: new Date().toLocaleDateString("es") })}>Guardar</button>
+                <button className="lm-dl-btn" onClick={() => setCaption(null)} style={{marginLeft:"auto",color:"#9A7878",border:"none",background:"transparent",boxShadow:"none",padding:"6px 10px"}}>✕ Limpiar</button>
+              </div>
+            </div>
+          )}
+
+          {/* Ideas desde guiones guardados */}
+          {saved?.guiones?.length > 0 && (
+            <div className="cap-history-section">
+              <div className="cap-section-label">📽 Crea caption desde tus videos guardados</div>
+              <div className="cap-guiones-grid">
+                {saved.guiones.slice().reverse().slice(0, 6).map(g => (
+                  <button key={g.id} className="cap-guion-card" onClick={() => {
+                    setCaption(buildCaptionFromGuion(g.tema, g.objetivo));
+                    setC(p => ({ ...p, tema: g.tema }));
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}>
+                    <span className="cap-guion-tipo">{g.tipo?.split(" ")[0]}</span>
+                    <div className="cap-guion-tema">{g.tema}</div>
+                    <div className="cap-guion-foot">
+                      <span>{g.objetivo}</span>
+                      <span className="cap-crear-lbl">Crear caption →</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Creación manual */}
+          <div className="cap-manual-card">
+            <div className="cap-section-label">✍ Crear caption desde cero</div>
+
+            <div className="cap-pills-group">
+              <div className="cap-pills-label">Red social</div>
+              <div className="cap-pills-row">
+                {[{k:"Instagram",i:"📸"},{k:"TikTok",i:"🎵"},{k:"YouTube",i:"🎬"},{k:"Facebook",i:"💬"}].map(r => (
+                  <button key={r.k} className={`cap-pill${c.red===r.k?" active":""}`} onClick={() => setC(p => ({...p, red: r.k}))}>{r.i} {r.k}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className="cap-pills-group">
+              <div className="cap-pills-label">Tono</div>
+              <div className="cap-pills-row">
+                {[{k:"Cercano",i:"💙"},{k:"Profesional",i:"💼"},{k:"Emotivo",i:"💫"},{k:"Directo",i:"⚡"},{k:"Divertido",i:"😄"}].map(t => (
+                  <button key={t.k} className={`cap-pill${c.tono===t.k?" active":""}`} onClick={() => setC(p => ({...p, tono: t.k}))}>{t.i} {t.k}</button>
+                ))}
+              </div>
+            </div>
+
+            <div className={`desc-q-card${c.tema?" filled":""}`}>
+              <div className="desc-q-num">📝</div>
+              <div className="desc-q-body">
+                <label className="desc-q-label">Tema del post</label>
+                <input className="desc-q-input"
+                  placeholder="cómo le digo el precio sin miedo, mi historia con emprender..."
+                  value={c.tema} onChange={e => setC(p => ({...p, tema: e.target.value}))} />
+              </div>
+            </div>
+
+            <div className={`desc-q-card${c.cta?" filled":""}`}>
+              <div className="desc-q-num">👉</div>
+              <div className="desc-q-body">
+                <label className="desc-q-label">CTA — llamada a la acción</label>
+                <input className="desc-q-input"
+                  placeholder="Guarda este post / Comenta SÍ si te pasó / Link en bio"
+                  value={c.cta} onChange={e => setC(p => ({...p, cta: e.target.value}))} />
+              </div>
+            </div>
+
+            <label className="cap-checkbox-row">
               <input type="checkbox" checked={c.hashtags} onChange={e => setC(p => ({...p, hashtags: e.target.checked}))} />
-              Incluir hashtags
+              Incluir hashtags de mamá emprendedora
             </label>
-            <button className="studio-btn-primary" onClick={generarCaption}>Generar caption 📝</button>
+
+            <button className="mpm-step-btn" onClick={generarCaption} disabled={!c.tema.trim()}>
+              Generar caption ✦
+            </button>
           </div>
-          <div className="studio-result-card">
-            {!caption ? (
-              <div className="studio-empty-state"><span>📝</span><p>Tu estructura de caption aparecerá aquí, lista para completar con tu texto.</p></div>
-            ) : (
-              <>
-                <label style={{fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--muted)"}}>Caption para {c.red} · Tono {c.tono}</label>
-                <textarea className="studio-caption-edit" value={caption} onChange={e => setCaption(e.target.value)} rows={11} />
-                <button className="studio-copy-btn" onClick={() => copiar(caption, "caption")}>{copiado === "caption" ? "¡Copiado!" : "Copiar caption"}</button>
-                <button className="studio-btn-save" style={{marginTop:"8px"}} onClick={() => onSave("captions", { id: Date.now(), caption, red: c.red, tema: c.tema, fecha: new Date().toLocaleDateString("es") })}>Guardar caption</button>
-              </>
-            )}
-          </div>
+
+          {/* Banco de captions guardados */}
+          {saved?.captions?.length > 0 && (
+            <div className="studio-bank">
+              <h4>Captions guardados ({saved.captions.length})</h4>
+              {saved.captions.slice().reverse().map(cp => (
+                <div className="studio-bank-item" key={cp.id}>
+                  <div className="studio-bank-item-top">
+                    <span className="studio-tipo-badge" style={{background:"#9B59B6"}}>{cp.red || "Instagram"}</span>
+                    <small>{cp.fecha}</small>
+                  </div>
+                  {cp.tema && <strong style={{fontSize:"13px",display:"block",marginTop:"4px"}}>{cp.tema}</strong>}
+                  <p style={{fontSize:"12px",color:"#9A7878",margin:"5px 0 8px",lineHeight:"1.5",whiteSpace:"pre-wrap"}}>{cp.caption?.substring(0,120)}…</p>
+                  <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+                    <button className="studio-bank-action-copy" onClick={() => { setCaption(cp.caption); window.scrollTo({top:0,behavior:"smooth"}); }}>Usar</button>
+                    <button className="studio-bank-action-copy" onClick={() => copiar(cp.caption, `sc-${cp.id}`)}>{copiado===`sc-${cp.id}`?"✓ Copiado":"Copiar"}</button>
+                    <button className="studio-bank-action-copy" style={{color:"#C4526A"}} onClick={() => onDelete?.("captions", cp.id)}>Eliminar</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
         </div>
       )}
 
@@ -1921,8 +2074,20 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
                 <span className="studio-tipo-badge" style={{background:"#C4526A"}}>{g.tipo || "Guión"}</span>
                 <small>{g.fecha}</small>
               </div>
-              <strong style={{fontSize:"13px"}}>{g.tema}</strong>
-              {g.objetivo && <span style={{fontSize:"11px",color:"#9A7878",marginLeft:"8px"}}>· {g.objetivo}</span>}
+              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"8px",marginTop:"5px"}}>
+                <div>
+                  <strong style={{fontSize:"13px"}}>{g.tema}</strong>
+                  {g.objetivo && <span style={{fontSize:"11px",color:"#9A7878",marginLeft:"7px"}}>· {g.objetivo}</span>}
+                </div>
+                <div style={{display:"flex",gap:"6px",flexShrink:0}}>
+                  <button className="studio-bank-action-copy" onClick={() => { setCaption(buildCaptionFromGuion(g.tema, g.objetivo)); setSubTab("caption"); setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}),50); }}>
+                    📝 Caption
+                  </button>
+                  <button className="studio-bank-action-copy" style={{color:"#C4526A"}} onClick={() => onDelete?.("guiones", g.id)}>
+                    Eliminar
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>

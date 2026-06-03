@@ -1918,3 +1918,95 @@
   border-radius: 14px;
   padding: 18px 18px 14px;
 }
+
+/* ── GUIÓN — Caption section inside doc ─────────────────── */
+.guion-caption-section {
+  margin: 0 36px 28px;
+  padding: 22px 24px 18px;
+  background: linear-gradient(135deg, #F8F0FF 0%, #FFF5FB 100%);
+  border: 1.5px solid rgba(155,89,182,0.2);
+  border-radius: 14px;
+}
+@media (max-width: 580px) { .guion-caption-section { margin: 0 16px 20px; padding: 16px; } }
+.guion-caption-hdr {
+  display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap;
+}
+.guion-caption-ico { font-size: 22px; flex-shrink: 0; }
+.guion-caption-hdr-info { flex: 1; min-width: 120px; }
+.guion-caption-title { font-size: 14px; font-weight: 800; color: #2D1B1B; }
+.guion-caption-sub { font-size: 11px; color: #9B59B6; margin-top: 2px; font-weight: 600; }
+.guion-caption-ta {
+  width: 100%; border: 1.5px solid rgba(155,89,182,0.25);
+  border-radius: 10px; padding: 13px 15px; font-size: 13px;
+  resize: vertical; line-height: 1.75; background: #fff;
+  font-family: inherit; color: #2D1B1B; box-sizing: border-box;
+  transition: border-color 0.15s;
+}
+.guion-caption-ta:focus { outline: none; border-color: #9B59B6; }
+.guion-caption-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+
+/* ── CAPTION TAB — redesign ──────────────────────────────── */
+.cap-wrap { display: flex; flex-direction: column; gap: 20px; padding-top: 4px; }
+
+.cap-auto-card {
+  background: linear-gradient(135deg, #F8F0FF 0%, #FFF5FB 100%);
+  border: 1.5px solid rgba(155,89,182,0.2);
+  border-radius: 16px; padding: 20px;
+}
+.cap-auto-hdr { margin-bottom: 14px; }
+.cap-auto-label {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.8px; color: #9B59B6; margin-bottom: 8px;
+}
+.cap-video-info { display: flex; flex-direction: column; gap: 3px; }
+.cap-video-tema { font-size: 16px; font-weight: 800; color: #2D1B1B; line-height: 1.3; }
+.cap-video-meta { font-size: 12px; color: #9A7878; }
+.cap-auto-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+
+.cap-history-section { }
+.cap-section-label {
+  font-size: 11px; font-weight: 700; color: #9A7878;
+  text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 12px;
+}
+.cap-guiones-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+@media (max-width: 500px) { .cap-guiones-grid { grid-template-columns: 1fr; } }
+.cap-guion-card {
+  background: #fff; border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 12px; padding: 14px 16px; cursor: pointer;
+  text-align: left; transition: all 0.15s;
+  display: flex; flex-direction: column; gap: 6px; font-family: inherit;
+}
+.cap-guion-card:hover { border-color: #C4526A; background: #FFF5F8; transform: translateY(-1px); }
+.cap-guion-tipo {
+  font-size: 10px; font-weight: 700; background: rgba(196,82,106,0.1);
+  color: #C4526A; padding: 2px 8px; border-radius: 4px; align-self: flex-start;
+}
+.cap-guion-tema { font-size: 13px; font-weight: 700; color: #2D1B1B; line-height: 1.4; }
+.cap-guion-foot {
+  display: flex; justify-content: space-between; align-items: center; margin-top: 4px;
+}
+.cap-guion-foot > span:first-child { font-size: 11px; color: #9A7878; }
+.cap-crear-lbl { font-size: 11px; font-weight: 700; color: #C4526A; }
+
+.cap-manual-card {
+  background: #fff; border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 16px;
+}
+.cap-pills-group { display: flex; flex-direction: column; gap: 8px; }
+.cap-pills-label { font-size: 12px; font-weight: 700; color: #2D1B1B; }
+.cap-pills-row { display: flex; flex-wrap: wrap; gap: 7px; }
+.cap-pill {
+  padding: 7px 14px; font-size: 12px; font-weight: 600;
+  border: 1.5px solid rgba(0,0,0,0.1); border-radius: 20px;
+  background: #fff; cursor: pointer; color: #9A7878;
+  transition: all 0.15s; font-family: inherit;
+}
+.cap-pill:hover { border-color: rgba(196,82,106,0.3); color: #2D1B1B; }
+.cap-pill.active { border-color: #C4526A; background: rgba(196,82,106,0.07); color: #C4526A; font-weight: 700; }
+.cap-checkbox-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 13px; color: #2D1B1B; cursor: pointer; font-weight: 600;
+}
+.cap-checkbox-row input { accent-color: #C4526A; width: 15px; height: 15px; cursor: pointer; }
