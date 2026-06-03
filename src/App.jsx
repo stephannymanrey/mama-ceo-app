@@ -1756,9 +1756,8 @@ export default function App() {
   );
 
   function renderDashboard() {
-    const firstName = (profileSetup?.name || "").split(" ")[0] || "CEO";
     const hour = new Date().getHours();
-    const greeting = hour < 12 ? "Buenos dÃ­as" : hour < 18 ? "Buenas tardes" : "Buenas noches";
+    const momentoStr = hour < 12 ? "Mañana" : hour < 14 ? "Mediodía" : hour < 18 ? "Tarde" : "Noche";
     const todayStr = new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" });
 
     const hotLeads = clients.filter((c) => c.status === "Lead caliente").length;
@@ -1783,10 +1782,10 @@ export default function App() {
           {/* Hero */}
           <div className="db-hero">
             <div>
-              <p className="db-greeting">{greeting}, <strong>{firstName}</strong></p>
               <p className="db-date" style={{textTransform:"capitalize"}}>{todayStr}</p>
+              <p className="db-momento">{momentoStr} &bull; Enfocada, organizada, imparable</p>
             </div>
-            <p className="db-affirmation">"{todayAffirmation}"</p>
+            <p className="db-affirmation">&ldquo;{todayAffirmation}&rdquo;</p>
           </div>
 
           {/* Meta del mes + semana */}
@@ -1805,7 +1804,7 @@ export default function App() {
               <Progress value={monthlyProgress} tone={monthlyProgress >= 75 ? "green" : monthlyProgress >= 50 ? "orange" : "purple"} />
               <p className="db-meta-msg">
                 {monthlyProgress >= 100 ? "Meta cumplida. Protege lo ganado y piensa en la siguiente." :
-                 monthlyProgress >= 75 ? "EstÃ¡s muy cerca. Cierra las ventas pendientes hoy." :
+                 monthlyProgress >= 75 ? "Estas muy cerca. Cierra las ventas pendientes hoy." :
                  monthlyProgress >= 50 ? "Vas bien. Acelera el seguimiento de tus leads." :
                  "Prioriza cobros y contacta leads calientes ahora."}
               </p>
@@ -1826,16 +1825,16 @@ export default function App() {
           {/* Alertas urgentes */}
           {hasAlerts && (
             <div className="db-alerts">
-              <p className="db-section-label" style={{color:"#92400e",marginBottom:"10px"}}>Requiere atenciÃ³n ahora</p>
+              <p className="db-section-label" style={{color:"#92400e",marginBottom:"10px"}}>Requiere atenci&oacute;n ahora</p>
               <div className="db-alerts-list">
                 {urgentLeads.length > 0 && (
                   <button type="button" className="db-alert db-alert--red" onClick={() => setActiveView("clients")}>
-                    {urgentLeads.length} lead{urgentLeads.length > 1 ? "s" : ""} sin contacto â€” actÃºa antes de que se enfrÃ­en
+                    {urgentLeads.length} lead{urgentLeads.length > 1 ? "s" : ""} sin contacto &mdash; act&uacute;a antes de que se enfr&iacute;en
                   </button>
                 )}
                 {daysSincePublish !== null && daysSincePublish > 3 && (
                   <button type="button" className="db-alert db-alert--orange" onClick={() => setActiveView("content")}>
-                    Llevas {daysSincePublish} dÃ­as sin publicar â€” una pieza simple hoy vale mÃ¡s que la perfecciÃ³n maÃ±ana
+                    Llevas {daysSincePublish} d&iacute;as sin publicar &mdash; una pieza simple hoy vale m&aacute;s que la perfecci&oacute;n ma&ntilde;ana
                   </button>
                 )}
                 {urgentHomeTasks.length > 0 && (
@@ -1855,7 +1854,7 @@ export default function App() {
                 <p className="db-focus-sub">Marca las acciones que ya completaste.</p>
               </div>
               {tasks.length > 0 && (
-                <ProgressLabel label={`${completedTasks}/${tasks.length}`} value={tasks.length ? Math.round((completedTasks/tasks.length)*100) : 0} tone="green" />
+                <ProgressLabel label={completedTasks + "/" + tasks.length} value={tasks.length ? Math.round((completedTasks/tasks.length)*100) : 0} tone="green" />
               )}
             </div>
             <div className="db-tasks-list">
@@ -1874,25 +1873,25 @@ export default function App() {
           {/* 4 tarjetas rapidas */}
           <div className="db-quick-grid">
             <button type="button" className="db-quick-card" onClick={() => setActiveView("business")}>
-              <span className="db-quick-icon">ðŸ’°</span>
+              <span className="db-quick-icon">&#x1F4B0;</span>
               <span className="db-section-label">Negocio</span>
               <strong className="db-quick-val">{money.format(totals.income)}</strong>
               <small>ingresos del mes</small>
             </button>
             <button type="button" className="db-quick-card" onClick={() => setActiveView("clients")}>
-              <span className="db-quick-icon">ðŸ‘©â€ðŸ’¼</span>
+              <span className="db-quick-icon">&#x1F469;&#x200D;&#x1F4BC;</span>
               <span className="db-section-label">Clientas</span>
               <strong className="db-quick-val">{hotLeads}</strong>
               <small>{hotLeads === 1 ? "lead caliente" : hotLeads === 0 ? "sin leads calientes" : "leads calientes"}</small>
             </button>
             <button type="button" className="db-quick-card" onClick={() => setActiveView("content")}>
-              <span className="db-quick-icon">ðŸ“±</span>
+              <span className="db-quick-icon">&#x1F4F1;</span>
               <span className="db-section-label">Contenido</span>
               <strong className="db-quick-val">{publishedContent}</strong>
               <small>{pendingContent} por publicar</small>
             </button>
             <button type="button" className="db-quick-card" onClick={() => setActiveView("home")}>
-              <span className="db-quick-icon">ðŸŒ¸</span>
+              <span className="db-quick-icon">&#x1F338;</span>
               <span className="db-section-label">Hogar</span>
               <strong className="db-quick-val">{homeProgress}%</strong>
               <small>{completedHomeTasks} de {homeTasks.length} tareas</small>
@@ -1902,20 +1901,19 @@ export default function App() {
           {/* Studio CTA */}
           <button type="button" className="db-studio-cta" onClick={() => setActiveView("studio")}>
             <div className="db-studio-left">
-              <span className="db-studio-star">âœ¦</span>
+              <span className="db-studio-star">&#x2726;</span>
               <div style={{textAlign:"left"}}>
                 <p className="db-studio-title">Studio de contenido</p>
-                <p className="db-studio-sub">Crea guiones, carruseles, emails y mÃ¡s para tu negocio.</p>
+                <p className="db-studio-sub">Crea guiones, carruseles, emails y m&aacute;s para tu negocio.</p>
               </div>
             </div>
-            <span className="db-studio-arrow">â†’</span>
+            <span className="db-studio-arrow">&#x2192;</span>
           </button>
 
         </div>
       </section>
     );
   }
-
 
   function renderBusiness() {
     const healthScore = totals.profit >= 0 && monthlyProgress >= 75 ? "green"
