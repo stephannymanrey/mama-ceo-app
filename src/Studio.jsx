@@ -264,57 +264,81 @@ function MensajeTab({ saved, onSave }) {
 
       {/* ── DESCUBRIMIENTO ──────────────────────────── */}
       {view === "descubrir" && (
-        <div className="studio-two-col">
-          <div className="studio-form-card">
-            <button className="mpm-wizard-back-btn" style={{width:"fit-content",marginBottom:"4px"}} onClick={() => setView("inicio")}>← Inicio</button>
-            <h3>Encuentra tu mensaje desde cero</h3>
-            <p className="studio-helper">Responde desde lo que sabes hoy — no hay respuestas incorrectas.</p>
-            <label>¿Con qué te piden consejo o ayuda más frecuentemente?</label>
-            <input placeholder="organizar el tiempo, vender por WhatsApp, manejar el estrés..." value={desc.consejo} onChange={e => setDesc(p => ({...p, consejo: e.target.value}))} />
-            <label>¿Qué resultado concreto has logrado — para alguien o para ti misma?</label>
-            <input placeholder="ayudé a una amiga a conseguir sus primeras clientas..." value={desc.resultado} onChange={e => setDesc(p => ({...p, resultado: e.target.value}))} />
-            <label>¿Cuál es la queja o dolor que más escuchas?</label>
-            <input placeholder="no tengo tiempo, no sé cómo cobrar lo que valgo..." value={desc.queja} onChange={e => setDesc(p => ({...p, queja: e.target.value}))} />
-            <label>¿A qué tipo de mujer te imaginas ayudando?</label>
-            <input placeholder="mamás que quieren emprender, mujeres que venden desde casa..." value={desc.audiencia} onChange={e => setDesc(p => ({...p, audiencia: e.target.value}))} />
-            <label>¿Tienes idea del servicio que quieres ofrecer?</label>
-            <select value={desc.servicio} onChange={e => setDesc(p => ({...p, servicio: e.target.value}))}>
-              {["No lo sé aún","Mentoría / coaching 1:1","Programa o curso","Taller o masterclass","Comunidad","Consultoría","Venta de productos"].map(s => <option key={s}>{s}</option>)}
-            </select>
-            <button className="studio-btn-primary" onClick={generarMision} disabled={!desc.consejo.trim() || !desc.queja.trim()}>Ver mi mapa de negocio ✦</button>
+        <div className="desc-wrap">
+          <div className="desc-header">
+            <button className="mpm-wizard-back-btn" onClick={() => setView("inicio")}>← Inicio</button>
+            <h2 className="desc-title">Descubre tu punto de partida</h2>
+            <p className="desc-subtitle">Responde desde lo que sabes hoy — no hay respuestas incorrectas. Esto es solo tu punto de partida.</p>
           </div>
-          <div className="studio-result-card">
-            {!mision ? (
-              <div className="studio-empty-state"><span>🗺️</span><p>Responde las preguntas y verás el mapa de tu negocio en borrador — honesto, editable y tuyo.</p></div>
-            ) : (
-              <>
-                <div className="studio-mapa-nota">✦ Este es tu punto de partida. No necesita ser perfecto — solo necesitas empezar.</div>
-                <div className="studio-mapa-cards">
-                  <div className="studio-mapa-card"><div className="studio-mapa-card-header"><span>💎</span><strong>Tu zona de genialidad</strong></div><p>{mision.zonaGenialidad}</p></div>
-                  <div className="studio-mapa-card"><div className="studio-mapa-card-header"><span>👩‍💼</span><strong>Tu clienta probable</strong></div><p>{mision.clientaProb}</p></div>
-                  <div className="studio-mapa-card"><div className="studio-mapa-card-header"><span>🎯</span><strong>El problema que resuelves</strong></div><p>{mision.problemaTexto}</p></div>
-                  <div className="studio-mapa-card studio-mapa-card--highlight">
-                    <div className="studio-mapa-card-header"><span>✦</span><strong>Tu primer MPM borrador</strong></div>
-                    <p className="studio-mapa-mpm">{mision.mpmBorrador}</p>
-                    <button className="studio-copy-btn small" onClick={() => copiar(mision.mpmBorrador, "mpm-borrador")}>{copiado === "mpm-borrador" ? "¡Copiado!" : "Copiar borrador"}</button>
+
+          <div className="desc-questions">
+            {[
+              { num:"01", emoji:"💡", label:"¿Con qué te piden consejo o ayuda más frecuentemente?",        field:"consejo",   placeholder:"organizar el tiempo, vender por WhatsApp, criar con calma...", hint:"Piensa en lo que tus amigas o conocidas te preguntan más." },
+              { num:"02", emoji:"🌟", label:"¿Qué resultado concreto has logrado — para alguien o para ti?",field:"resultado", placeholder:"ayudé a una amiga a conseguir sus primeras clientas...",           hint:"No necesita ser perfecto. Un resultado pequeño también cuenta." },
+              { num:"03", emoji:"🎯", label:"¿Cuál es la queja o dolor que más escuchas a tu alrededor?",   field:"queja",     placeholder:"no tengo tiempo, no sé cómo cobrar lo que valgo...",            hint:"La frustración más repetida entre mujeres de tu círculo." },
+              { num:"04", emoji:"👩‍💼", label:"¿A qué tipo de mujer te imaginas ayudando?",                  field:"audiencia", placeholder:"mamás que quieren emprender, mujeres que venden desde casa...", hint:"Puede ser amplio — lo afinarás más adelante." },
+            ].map(q => (
+              <div className={`desc-q-card${desc[q.field] ? " filled" : ""}`} key={q.field}>
+                <div className="desc-q-num">{q.num}</div>
+                <div className="desc-q-body">
+                  <div className="desc-q-top">
+                    <span className="desc-q-emoji">{q.emoji}</span>
+                    <label className="desc-q-label">{q.label}</label>
                   </div>
+                  <input className="desc-q-input" placeholder={q.placeholder} value={desc[q.field]} onChange={e => setDesc(p => ({...p, [q.field]: e.target.value}))} />
+                  <span className="desc-q-hint">{q.hint}</span>
                 </div>
-                <div className="studio-sugerencias-box">
-                  <div className="studio-sugerencias-label">Ajusta y luego genera tus 12 variaciones</div>
-                  <p className="studio-helper" style={{margin:"0 0 8px"}}>Edita lo que no te convenza.</p>
-                  <label>Ayudo a...</label>
-                  <input value={mision.sugerencias.cliente} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, cliente: e.target.value}}))} />
-                  <label>...que quieren...</label>
-                  <input value={mision.sugerencias.problema} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, problema: e.target.value}}))} />
-                  <label>...en...</label>
-                  <input placeholder="Ej: 8 semanas, 3 meses..." value={mision.sugerencias.tiempo} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, tiempo: e.target.value}}))} />
-                  <label>...con...</label>
-                  <input value={mision.sugerencias.producto} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, producto: e.target.value}}))} />
+              </div>
+            ))}
+
+            <div className={`desc-q-card${desc.servicio !== "No lo sé aún" ? " filled" : ""}`}>
+              <div className="desc-q-num">05</div>
+              <div className="desc-q-body">
+                <div className="desc-q-top">
+                  <span className="desc-q-emoji">✨</span>
+                  <label className="desc-q-label">¿Tienes idea del servicio que quieres ofrecer?</label>
                 </div>
-                <button className="studio-btn-primary" onClick={usarEnMPM}>Crear mi MPM con esto →</button>
-              </>
-            )}
+                <div className="desc-pills">
+                  {["No lo sé aún","Mentoría / coaching 1:1","Programa o curso","Taller o masterclass","Comunidad","Consultoría","Venta de productos"].map(s => (
+                    <button key={s} className={`desc-pill${desc.servicio === s ? " active" : ""}`} onClick={() => setDesc(p => ({...p, servicio: s}))}>{s}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
+
+          <button className="mpm-step-btn" onClick={generarMision} disabled={!desc.consejo.trim() || !desc.queja.trim()}>
+            Ver mi mapa de negocio ✦
+          </button>
+
+          {mision && (
+            <div className="desc-result-section">
+              <div className="desc-result-nota">✦ Este es tu punto de partida. No necesita ser perfecto — solo necesitas empezar.</div>
+              <div className="desc-result-grid">
+                <div className="desc-rc"><div className="desc-rc-ico">💎</div><strong>Tu zona de genialidad</strong><p>{mision.zonaGenialidad}</p></div>
+                <div className="desc-rc"><div className="desc-rc-ico">👩‍💼</div><strong>Tu clienta probable</strong><p>{mision.clientaProb}</p></div>
+                <div className="desc-rc"><div className="desc-rc-ico">🎯</div><strong>El problema que resuelves</strong><p>{mision.problemaTexto}</p></div>
+                <div className="desc-rc desc-rc--highlight">
+                  <div className="desc-rc-ico">✦</div>
+                  <strong>Tu primer MPM borrador</strong>
+                  <p className="desc-mpm-text">{mision.mpmBorrador}</p>
+                  <button className="studio-copy-btn small" onClick={() => copiar(mision.mpmBorrador, "mpm-borrador")}>{copiado === "mpm-borrador" ? "¡Copiado!" : "Copiar borrador"}</button>
+                </div>
+              </div>
+
+              <div className="desc-ajusta">
+                <div className="desc-ajusta-label">Ajusta y luego genera tus 12 variaciones</div>
+                <p className="studio-helper" style={{margin:"0 0 14px"}}>Edita lo que no te convenza — esto es tuyo para moldearlo.</p>
+                <div className="desc-ajusta-grid">
+                  <div className="desc-ajusta-field"><label>Ayudo a...</label><input value={mision.sugerencias.cliente} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, cliente: e.target.value}}))} /></div>
+                  <div className="desc-ajusta-field"><label>...que quieren...</label><input value={mision.sugerencias.problema} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, problema: e.target.value}}))} /></div>
+                  <div className="desc-ajusta-field"><label>...en...</label><input placeholder="Ej: 8 semanas, 3 meses..." value={mision.sugerencias.tiempo} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, tiempo: e.target.value}}))} /></div>
+                  <div className="desc-ajusta-field"><label>...con...</label><input value={mision.sugerencias.producto} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, producto: e.target.value}}))} /></div>
+                </div>
+              </div>
+              <button className="mpm-step-btn" onClick={usarEnMPM}>Crear mi MPM con esto →</button>
+            </div>
+          )}
         </div>
       )}
 
