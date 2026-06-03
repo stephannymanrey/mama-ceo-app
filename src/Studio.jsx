@@ -1664,29 +1664,29 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed }) {
       scenesHtml += `<div style="border-left:5px solid ${esc.color};padding:20px 24px;margin:20px 0;background:${esc.bgLight};border-radius:0 12px 12px 0;">
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
           <span style="font-size:32px;font-weight:900;color:${esc.color};font-family:Georgia,serif;line-height:1;">${esc.num}</span>
-          <div><div style="font-size:18px;font-weight:900;color:#2D1B1B;font-family:Arial;">${esc.nombre} <span style="font-size:13px;color:#9A7878;font-style:italic;">— ${esc.subtitulo}</span></div>
+          <div><div style="font-size:18px;font-weight:900;color:#5C3A3A;font-family:Arial;">${esc.nombre} <span style="font-size:13px;color:#B09090;font-style:italic;">— ${esc.subtitulo}</span></div>
           <div style="margin-top:4px;"><span style="font-size:10px;font-weight:800;background:${esc.color};color:white;border-radius:4px;padding:2px 9px;font-family:Arial;">${esc.emocion}</span>&nbsp;<span style="font-size:11px;color:#9A7878;font-family:Arial;">⏱ ${esc.tiempo}</span></div></div>
         </div>
-        <div style="background:rgba(255,255,255,0.7);border-left:3px solid ${esc.color};border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:12px;">
-          <p style="font-size:12px;color:#555;margin:0;font-style:italic;font-family:Arial;">💡 ${esc.guia}</p></div>
-        ${esc.nota ? `<p style="font-size:12px;color:#666;margin:0 0 12px;font-family:Arial;">🎯 ${esc.nota}</p>` : ""}
-        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#2D1B1B;margin:0 0 6px;font-family:Arial;">FRASES SUGERIDAS</p>
-        ${esc.frases.map(f => `<div style="background:white;border-radius:6px;padding:9px 12px;margin:5px 0;font-family:Arial;font-size:13px;color:#2D1B1B;"><span style="color:${esc.color};font-weight:700;">✦</span> ${f}</div>`).join("")}
-        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#2D1B1B;margin:14px 0 6px;font-family:Arial;">PALABRAS QUE TOCAN CORAZONES</p>
-        <p style="font-size:12px;color:${esc.color};font-family:Arial;margin:0 0 14px;">${esc.palabras.join(" · ")}</p>
-        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#2D1B1B;margin:0 0 6px;font-family:Arial;">✍ TU VERSIÓN</p>
-        <div style="background:white;border:1.5px solid ${txt ? esc.color : "#ddd"};border-radius:8px;padding:16px;min-height:70px;font-family:Arial;font-size:13px;color:${txt ? "#2D1B1B" : "#ccc"};white-space:pre-wrap;">${txt || esc.placeholder}</div>
+        <div style="background:rgba(255,255,255,0.8);border-left:3px solid ${esc.color};border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:12px;">
+          <p style="font-size:12px;color:#8A6A5A;margin:0;font-style:italic;font-family:Arial;">💡 ${esc.guia}</p></div>
+        ${esc.nota ? `<p style="font-size:12px;color:#9A8070;margin:0 0 12px;font-family:Arial;">🎯 ${esc.nota}</p>` : ""}
+        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#C9A84C;margin:0 0 6px;font-family:Arial;">FRASES SUGERIDAS</p>
+        ${esc.frases.map(f => `<div style="background:#FEFCF7;border:1px solid rgba(201,168,76,0.2);border-radius:6px;padding:9px 12px;margin:5px 0;font-family:Arial;font-size:13px;color:#6A4040;"><span style="color:${esc.color};font-weight:700;">✦</span> ${f}</div>`).join("")}
+        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#C9A84C;margin:14px 0 6px;font-family:Arial;">PALABRAS QUE TOCAN CORAZONES</p>
+        <p style="font-size:12px;color:${esc.color};font-family:Arial;margin:0 0 14px;opacity:0.8;">${esc.palabras.join(" · ")}</p>
+        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#C9A84C;margin:0 0 6px;font-family:Arial;">✍ TU VERSIÓN</p>
+        <div style="background:#FDFAF5;border:1.5px solid ${txt ? esc.color : "rgba(201,168,76,0.2)"};border-radius:8px;padding:16px;min-height:70px;font-family:Arial;font-size:13px;color:${txt ? "#4A3030" : "#C0A880"};white-space:pre-wrap;">${txt || esc.placeholder}</div>
       </div>`;
     });
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Guión: ${guion.tema}</title></head>
     <body style="margin:0;padding:0;font-family:Arial,sans-serif;">
-    <div style="background:linear-gradient(135deg,#C4526A,#E8755A);padding:36px 40px;color:white;">
-      <p style="font-size:10px;color:rgba(255,255,255,0.5);margin:0 0 8px;letter-spacing:1.5px;text-transform:uppercase;">Mamá CEO · Studio de Contenido · GUIÓN</p>
-      <h1 style="color:white;margin:0 0 12px;font-size:28px;font-family:Arial;">${guion.tema}</h1>
+    <div style="background:#FFFFFF;border-bottom:3px solid #C9A84C;padding:36px 40px;">
+      <p style="font-size:10px;color:#C9A84C;margin:0 0 8px;letter-spacing:1.5px;text-transform:uppercase;">Mamá CEO · Studio de Contenido · GUIÓN</p>
+      <h1 style="color:#2D1B1B;margin:0 0 12px;font-size:28px;font-family:Arial;">${guion.tema}</h1>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:11px;background:rgba(255,255,255,0.15);color:white;border-radius:4px;padding:3px 10px;font-family:Arial;">${guion.tipo}</span>
-        <span style="font-size:11px;background:rgba(255,255,255,0.15);color:white;border-radius:4px;padding:3px 10px;font-family:Arial;">Objetivo: ${guion.objetivo}</span>
-        ${guion.audiencia ? `<span style="font-size:11px;background:rgba(255,255,255,0.15);color:white;border-radius:4px;padding:3px 10px;font-family:Arial;">Para: ${guion.audiencia}</span>` : ""}
+        <span style="font-size:11px;background:rgba(201,168,76,0.1);color:#8B6914;border:1px solid rgba(201,168,76,0.3);border-radius:4px;padding:3px 10px;font-family:Arial;">${guion.tipo}</span>
+        <span style="font-size:11px;background:rgba(201,168,76,0.1);color:#8B6914;border:1px solid rgba(201,168,76,0.3);border-radius:4px;padding:3px 10px;font-family:Arial;">Objetivo: ${guion.objetivo}</span>
+        ${guion.audiencia ? `<span style="font-size:11px;background:rgba(201,168,76,0.1);color:#8B6914;border:1px solid rgba(201,168,76,0.3);border-radius:4px;padding:3px 10px;font-family:Arial;">Para: ${guion.audiencia}</span>` : ""}
       </div>
     </div>
     <div style="max-width:700px;margin:0 auto;padding:32px 40px;">${scenesHtml}</div>
