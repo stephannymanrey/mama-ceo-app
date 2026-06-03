@@ -424,12 +424,122 @@ function MensajeTab({ saved, onSave }) {
   );
 }
 
+// ── BLUEPRINTS DE PRODUCTOS DIGITALES ─────────────────────────
+const BLUEPRINTS = {
+  "Mini-guía PDF": {
+    emoji:"📄", color:"#C4526A", bg:"#FFF0F3",
+    descripcion:"Un PDF de 10 a 20 páginas que resuelve un problema muy específico. Es el producto de entrada ideal: fácil de crear y fácil de comprar.",
+    estructura:["Portada atractiva con tu marca","Introducción: el problema que resuelves y tu promesa","3 a 5 secciones de contenido accionable","Checklist o resumen de puntos clave","Página final con CTA (siguiente oferta o servicio)"],
+    pasos:["Define el problema específico que resuelves en una sola línea","Escribe el contenido en Google Docs (máx. 15 páginas)","Diseña las páginas en Canva usando tus colores de marca","Exporta como PDF","Crea una página de venta en Stan Store, Gumroad o Payhip","Graba 1 reel mostrando el antes/después de quien lo aplique"],
+    tiempo:"3 – 7 días", precio:"$9 – $27 USD",
+    plataformas:["Gumroad","Stan Store","Payhip","Hotmart"],
+    tip:"Precio de entrada perfecto para construir confianza. Si no lo compran a $9, tampoco comprarán tu curso de $197. Empieza aquí."
+  },
+  "Masterclass": {
+    emoji:"🎓", color:"#9B59B6", bg:"#F8F0FF",
+    descripcion:"Una clase grabada de 60 a 90 minutos que enseña un resultado concreto. La asistente se va con claridad y un plan de acción.",
+    estructura:["Introducción: quién eres y por qué eres la persona indicada (5 min)","El problema y por qué la mayoría falla (10 min)","Tu método paso a paso (40-60 min)","Resumen y ejercicio de cierre (10 min)","CTA final: siguiente paso o upsell a tu servicio"],
+    pasos:["Define el resultado exacto que logra al terminar","Crea un outline de 4-6 partes (no más de 6 temas)","Graba con Loom, Zoom o tu cámara directamente","Edita en CapCut o DaVinci — solo corta las pausas largas","Sube a Hotmart, Kajabi o Google Drive + landing simple","Crea urgencia con precio de lanzamiento o acceso limitado"],
+    tiempo:"1 – 2 semanas", precio:"$27 – $97 USD",
+    plataformas:["Hotmart","Kajabi","Teachable","Stan Store"],
+    tip:"No tienes que ser perfecta en cámara. La autenticidad vende más que la producción. Grábala en una sola sesión."
+  },
+  "Pack de plantillas": {
+    emoji:"🗂️", color:"#27AE60", bg:"#EEFAF3",
+    descripcion:"Un conjunto de 5 a 15 plantillas editables en Canva, Notion o Google Sheets que ahorran tiempo a tu cliente ideal.",
+    estructura:["3 a 5 plantillas en Canva (diseño visual)","1 a 3 plantillas en Notion o Google Sheets (organización)","Instrucciones de uso en PDF o video corto de 5 min","Ejemplos de cómo usarlas completadas","Guía rápida de personalización con tu marca"],
+    pasos:["Elige las plantillas que más te piden o más usas tú misma","Crea copias en Canva y habilita 'Compartir como plantilla'","Para Notion: duplícalas como página pública con instrucciones","Crea un PDF guía con capturas y links de acceso","Empaqueta en un ZIP o página de Notion con todos los links","Vende en Gumroad, Stan Store o Etsy (sí, Etsy funciona para digitales)"],
+    tiempo:"2 – 5 días", precio:"$17 – $47 USD",
+    plataformas:["Gumroad","Stan Store","Etsy","Payhip"],
+    tip:"Las plantillas de Canva son las que más se venden. Si tu audiencia ya usa Canva, este es tu producto más fácil de crear."
+  },
+  "Mini-curso": {
+    emoji:"🎬", color:"#4A90D9", bg:"#EEF5FF",
+    descripcion:"Un curso de 3 a 5 módulos en video (15-30 min cada uno) enfocado en un resultado claro. Sin sobreproducción — enfocado en transformación.",
+    estructura:["Módulo 0: Bienvenida y cómo aprovechar el curso","Módulos 1-3: El contenido principal dividido en pasos lógicos","Ejercicios o tareas prácticas por módulo","Módulo final: Plan de acción y siguientes pasos","Bonus: plantilla, guía o sesión Q&A grabada"],
+    pasos:["Define el resultado en una sola frase: 'Al terminar podrás/sabrás/tendrás...'","Divide el proceso en 3 o 5 pasos lógicos (cada paso = un módulo)","Graba cada módulo por separado — más fácil de reeditar","Diseña las diapositivas en Canva o presenta desde pantalla con Loom","Súbelo a Hotmart o Kajabi y configura el acceso","Lanza primero como beta a precio reducido para conseguir testimonios"],
+    tiempo:"2 – 4 semanas", precio:"$47 – $197 USD",
+    plataformas:["Hotmart","Kajabi","Teachable","Podia"],
+    tip:"Lanza primero a tu lista o comunidad a precio de beta. Los primeros testimonios valen más que cualquier marketing pagado."
+  },
+  "Ebook": {
+    emoji:"📚", color:"#E8755A", bg:"#FFF5F0",
+    descripcion:"Una guía completa de 30 a 60 páginas que cubre un tema en profundidad. Posiciona tu expertise y genera ingresos pasivos de largo plazo.",
+    estructura:["Portada profesional + página de derechos de autor","Índice de contenido","Introducción: por qué escribiste esto y para quién es","4 a 8 capítulos con el contenido principal","Conclusión + plan de acción","Sobre la autora + recursos y links"],
+    pasos:["Elige un tema donde tienes experiencia real y resultados comprobados","Escribe el índice completo antes de escribir una sola página","Redacta capítulo por capítulo — no intentes hacerlo de un tirón","Diseña en Canva Pro o contrata maquetación en Fiverr","Revisa y edita en 2-3 rondas","Publica en Amazon KDP (versión Kindle) + Gumroad (PDF)"],
+    tiempo:"3 – 6 semanas", precio:"$15 – $37 USD",
+    plataformas:["Amazon KDP","Gumroad","Payhip","Stan Store"],
+    tip:"Amazon KDP te da alcance global sin esfuerzo extra. Publícalo también como PDF para márgenes más altos."
+  },
+  "Challenge": {
+    emoji:"🏁", color:"#E67E22", bg:"#FFF5EB",
+    descripcion:"Un programa de 5 a 7 días con una tarea diaria que guía al participante a un resultado concreto. Genera mucho engagement y comunidad.",
+    estructura:["Día 0: Bienvenida, reglas y mentalidad","Días 1-5 (o 1-7): Una tarea diaria accionable de max. 30 min","Grupo de WhatsApp, Telegram o comunidad de soporte","Celebración de resultados al final del reto","Oferta especial al cierre para quienes lo completaron"],
+    pasos:["Define el resultado del último día: ¿qué habrá logrado quien lo complete?","Diseña una tarea diaria que tome máximo 30 minutos","Prepara los materiales: videos cortos, PDFs o audios por día","Crea el grupo de comunidad antes de lanzar para generar expectativa","Lanza con inscripción previa — la anticipación aumenta el valor percibido","Prepara una oferta de cierre para quienes terminen el reto"],
+    tiempo:"1 – 2 semanas de preparación", precio:"$17 – $57 USD",
+    plataformas:["WhatsApp/Telegram + Hotmart","Stan Store","Kajabi Communities"],
+    tip:"Los challenges tienen las tasas de completación más altas. Crea el grupo ANTES de lanzar — la comunidad es el motor del reto."
+  },
+  "Workshop": {
+    emoji:"🛠️", color:"#8B6565", bg:"#FFF8F5",
+    descripcion:"Una sesión grabada o en vivo de 2-3 horas muy práctica. Al terminar, el participante tiene algo creado o resuelto.",
+    estructura:["Introducción y contexto (15 min)","Fundamentos clave antes de hacer (20 min)","Ejercicio práctico guiado (90 min)","Revisión de trabajo y preguntas (15 min)","Recursos adicionales y siguiente paso"],
+    pasos:["Define qué van a crear o completar al terminar el workshop","Prepara los materiales de trabajo: plantillas, hojas de trabajo, etc.","Hazlo primero en vivo por Zoom y graba la sesión","Edita para quitar los momentos muertos y la configuración inicial","Sube con acceso de por vida para revenderlo continuamente","Crea un reel que muestre el 'antes y durante' del proceso"],
+    tiempo:"1 semana", precio:"$37 – $127 USD",
+    plataformas:["Zoom + Hotmart","Kajabi","Stan Store"],
+    tip:"Hazlo primero en vivo, grábalo y véndelo para siempre. Un workshop bien ejecutado = semanas o meses de ingreso pasivo."
+  },
+  "Kit de recursos": {
+    emoji:"🎁", color:"#C9A84C", bg:"#FBF5E0",
+    descripcion:"Un paquete curado de plantillas, guías, checklists y herramientas sobre un tema. El valor está en la curaduría — no tienes que crear todo desde cero.",
+    estructura:["3 a 5 plantillas editables (Canva, Notion, Word)","Guía de instrucciones en PDF","Checklists y listas de recursos","Ejemplos reales o swipe file","Bonus: recurso extra o descuento en tu servicio"],
+    pasos:["Recopila lo que ya tienes y usas en tu propio negocio","Organiza los recursos en carpetas temáticas","Crea una guía PDF que explique cómo usar cada recurso","Empaqueta todo en un ZIP descargable","Crea una página de ventas describiendo cada elemento del kit","Graba un video de 3 min mostrando qué hay en el kit ('unboxing digital')"],
+    tiempo:"2 – 4 días", precio:"$27 – $67 USD",
+    plataformas:["Gumroad","Stan Store","Payhip"],
+    tip:"El valor percibido de un kit es mayor que el de sus partes individuales. Ponle precio al paquete, no a cada pieza por separado."
+  },
+  "Membresía": {
+    emoji:"💎", color:"#4A90D9", bg:"#EEF5FF",
+    descripcion:"Un acceso recurrente mensual o anual a contenido, comunidad o acompañamiento. El modelo de ingresos más estable del negocio digital.",
+    estructura:["Biblioteca de contenido (clases, guías, plantillas)","Comunidad privada (WhatsApp, Telegram o plataforma)","Contenido nuevo mensual: masterclass, Q&A en vivo o recursos","Acceso a grabaciones anteriores","Beneficios exclusivos: descuentos, acceso anticipado, sesiones grupales"],
+    pasos:["Define el beneficio principal que justifica el pago mensual","Empieza con contenido mínimo: 3-5 recursos ya creados + comunidad","Elige la plataforma según tu presupuesto (WhatsApp es gratis para empezar)","Fija un precio de lanzamiento bajo para conseguir los primeros 10 miembros","Entrega valor inmediato en la primera semana — la retención es clave","Sube el precio con nuevos miembros; los actuales se quedan al precio de entrada"],
+    tiempo:"2 – 4 semanas para lanzar", precio:"$19 – $67 USD / mes",
+    plataformas:["WhatsApp / Telegram","Kajabi","Hotmart Club","Skool"],
+    tip:"El primer mes es el más difícil de retener. Entrégalo todo ese mes — los que se queden serán tus mejores clientes para siempre."
+  },
+  "Guía de procesos": {
+    emoji:"📋", color:"#27AE60", bg:"#EEFAF3",
+    descripcion:"Un sistema documentado (SOP) que otros pueden seguir para replicar tus procesos. Valioso para coaches, consultoras y creadoras de contenido.",
+    estructura:["Índice de procesos incluidos","Por cada proceso: objetivo, herramientas, pasos detallados","Capturas de pantalla o diagramas de flujo","Checklists de verificación por proceso","Instrucciones de adaptación y personalización"],
+    pasos:["Documenta los 5 procesos que más te preguntan o que más usas","Escríbelos como si se los explicaras a alguien que no sabe nada","Añade capturas de pantalla reales de tus herramientas","Diseña en Notion (práctico) o en Canva/Word","Vende como 'sistema completo' — el precio se justifica por el tiempo que ahorra","Ofrece actualizaciones gratuitas para siempre como ventaja competitiva"],
+    tiempo:"1 – 2 semanas", precio:"$37 – $97 USD",
+    plataformas:["Gumroad","Notion (venta directa)","Payhip","Stan Store"],
+    tip:"El cliente no compra el PDF — compra el tiempo que le ahorras. Calcula cuántas horas vale lo que documentas y ponle precio a eso."
+  },
+};
+
+const detectProductType = (text) => {
+  const t = text.toLowerCase();
+  if (t.includes("mini-guía") || t.includes("mini guia") || t.includes("pdf")) return "Mini-guía PDF";
+  if (t.includes("masterclass")) return "Masterclass";
+  if (t.includes("plantilla")) return "Pack de plantillas";
+  if (t.includes("mini-curso") || t.includes("mini curso") || t.includes("módulos") || t.includes("curso")) return "Mini-curso";
+  if (t.includes("ebook") || t.includes("e-book")) return "Ebook";
+  if (t.includes("challenge") || t.includes("reto")) return "Challenge";
+  if (t.includes("workshop") || t.includes("taller")) return "Workshop";
+  if (t.includes("kit")) return "Kit de recursos";
+  if (t.includes("membresía") || t.includes("membresia")) return "Membresía";
+  if (t.includes("proceso") || t.includes("sop")) return "Guía de procesos";
+  return "Mini-guía PDF";
+};
+
 // ── IDEAS ──────────────────────────────────────────────────────
 function IdeasTab({ saved, onSave, onDelete, onCrearGuion }) {
-  const [keyword, setKeyword] = useState("");
-  const [ideas, setIdeas] = useState(null);
-  const [thinking, setThinking] = useState(false);
-  const [copiado, setCopiado] = useState("");
+  const [keyword,        setKeyword]        = useState("");
+  const [ideas,          setIdeas]          = useState(null);
+  const [thinking,       setThinking]       = useState(false);
+  const [copiado,        setCopiado]        = useState("");
+  const [vistaBlueprint, setVistaBlueprint] = useState(null);
 
   const copiar = (text, key) => {
     navigator.clipboard.writeText(text);
@@ -515,6 +625,22 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion }) {
         k => `Cuéntame: ¿${k} te ha traído algún reto? [caja de preguntas]`,
       ],
     },
+    digital: {
+      label: "💻 Producto Digital", sub: "Crea e ingresos pasivos",
+      color: "#7C3AED", bg: "#F5F0FF",
+      templates: [
+        k => `Mini-guía PDF: domina ${k} en 7 días`,
+        k => `Masterclass grabada: ${k} desde cero`,
+        k => `Pack de plantillas para optimizar ${k}`,
+        k => `Mini-curso de 4 módulos: sistema para ${k}`,
+        k => `Ebook: La guía completa de ${k}`,
+        k => `Challenge de 7 días: transforma tu ${k}`,
+        k => `Workshop: ${k} en una tarde`,
+        k => `Kit de recursos sobre ${k}`,
+        k => `Membresía: acompañamiento mensual en ${k}`,
+        k => `Guía de procesos (SOP): sistema para ${k}`,
+      ],
+    },
   };
 
   const generar = (kw) => {
@@ -547,6 +673,94 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion }) {
 
   const bancoIdeas = saved?.ideas || [];
   const EJEMPLOS = ["ventas en WhatsApp", "organizar el tiempo", "reels", "bienestar", "maternidad", "redes sociales"];
+
+  // ── VISTA BLUEPRINT ──────────────────────────────────────────
+  if (vistaBlueprint) {
+    const bp = BLUEPRINTS[vistaBlueprint.tipo] || BLUEPRINTS["Mini-guía PDF"];
+    return (
+      <div className="studio-tab-content">
+        <div className="bp-topbar">
+          <button className="mpm-wizard-back-btn" onClick={() => setVistaBlueprint(null)}>← Ideas</button>
+        </div>
+
+        <div className="bp-wrap">
+          {/* Hero */}
+          <div className="bp-hero">
+            <div className="bp-emoji">{bp.emoji}</div>
+            <div className="bp-hero-info">
+              <span className="bp-tipo-badge" style={{background: bp.bg, color: bp.color}}>{vistaBlueprint.tipo}</span>
+              <h2 className="bp-title">{vistaBlueprint.idea}</h2>
+              {vistaBlueprint.keyword && <p className="bp-keyword">Tema: {vistaBlueprint.keyword}</p>}
+            </div>
+          </div>
+
+          <p className="bp-descripcion">{bp.descripcion}</p>
+
+          {/* Stats */}
+          <div className="bp-stats-row">
+            <div className="bp-stat" style={{borderColor: bp.color + "33", background: bp.bg}}>
+              <div className="bp-stat-label">⏱ Tiempo para crearlo</div>
+              <div className="bp-stat-value" style={{color: bp.color}}>{bp.tiempo}</div>
+            </div>
+            <div className="bp-stat" style={{borderColor: bp.color + "33", background: bp.bg}}>
+              <div className="bp-stat-label">💰 Precio de venta</div>
+              <div className="bp-stat-value" style={{color: bp.color}}>{bp.precio}</div>
+            </div>
+          </div>
+
+          {/* Estructura */}
+          <div className="bp-section">
+            <div className="bp-section-title" style={{color: bp.color}}>📋 Qué incluye</div>
+            <ul className="bp-list">
+              {bp.estructura.map((item, i) => (
+                <li key={i} className="bp-list-item">
+                  <span className="bp-dot" style={{background: bp.color}} />
+                  {item}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Cómo crearlo */}
+          <div className="bp-section">
+            <div className="bp-section-title" style={{color: bp.color}}>🛠️ Cómo crearlo — paso a paso</div>
+            <ol className="bp-steps">
+              {bp.pasos.map((paso, i) => (
+                <li key={i} className="bp-step">
+                  <span className="bp-step-num" style={{background: bp.color, color:"#fff"}}>{i + 1}</span>
+                  <span>{paso}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+
+          {/* Dónde venderlo */}
+          <div className="bp-section">
+            <div className="bp-section-title" style={{color: bp.color}}>🛒 Dónde venderlo</div>
+            <div className="bp-platforms">
+              {bp.plataformas.map((p, i) => (
+                <span key={i} className="bp-platform-chip" style={{background: bp.bg, color: bp.color, borderColor: bp.color + "44"}}>{p}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* Tip */}
+          <div className="bp-tip" style={{borderColor: bp.color, background: bp.bg}}>
+            <span className="bp-tip-icon">💡</span>
+            <p>{bp.tip}</p>
+          </div>
+
+          {/* Acciones */}
+          <div className="bp-actions">
+            <button className="mpm-wizard-back-btn" onClick={() => setVistaBlueprint(null)}>← Volver a ideas</button>
+            <button className="mpm-step-btn" style={{flex:1}} onClick={() => { setVistaBlueprint(null); onCrearGuion?.(vistaBlueprint.idea); }}>
+              Crear guión de lanzamiento 🎬
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="studio-tab-content">
@@ -609,7 +823,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion }) {
               </div>
               <div className="ideas-cards-grid">
                 {ideas[catKey].map((idea, i) => (
-                  <div className="ideas-card" key={idea.id} style={{ animationDelay: `${i * 70}ms` }}>
+                  <div className={`ideas-card${catKey==="digital"?" ideas-card--digital":""}`} key={idea.id} style={{ animationDelay: `${i * 70}ms` }}>
                     <p className="ideas-card-text">{idea.texto}</p>
                     <div className="ideas-card-actions">
                       <button className="ideas-card-copy" onClick={() => copiar(idea.texto, idea.id)}>
@@ -620,7 +834,13 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion }) {
                         plataforma: cat.sub, color: cat.color, keyword: ideas.keyword,
                         fecha: new Date().toLocaleDateString("es"),
                       })}>Guardar</button>
-                      <button className="ideas-card-guion" onClick={() => onCrearGuion?.(idea.texto)}>Guión 🎬</button>
+                      {catKey === "digital" ? (
+                        <button className="ideas-card-plan" onClick={() => setVistaBlueprint({ tipo: detectProductType(idea.texto), keyword: ideas.keyword, idea: idea.texto })}>
+                          Ver plan →
+                        </button>
+                      ) : (
+                        <button className="ideas-card-guion" onClick={() => onCrearGuion?.(idea.texto)}>Guión 🎬</button>
+                      )}
                     </div>
                   </div>
                 ))}
