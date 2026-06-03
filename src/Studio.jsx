@@ -1544,7 +1544,7 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
     return [
       {
         num: "01", nombre: "HOOK", subtitulo: "Los primeros 3 segundos",
-        tiempo: "0:00 – 0:03", color: "#1B2A4A", bgLight: "#EEF2F8",
+        tiempo: "0:00 – 0:03", color: "#9B59B6", bgLight: "#F5F0FF",
         emocion: "CURIOSIDAD · IDENTIDAD",
         guia: `Los primeros 3 segundos deciden si te siguen viendo o hacen scroll. Una frase que las haga pensar "eso me pasa a mí" o "necesito escuchar esto".`,
         frases: HOOKS[objetivo] || HOOKS["Conectar"],
@@ -1593,6 +1593,40 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
     ];
   };
 
+  const buildEscrituraInicial = (tema, objetivo) => {
+    const t = tema;
+    const HOOK_T = {
+      "Vender":   `¿Sabías que ${t} puede transformar tus ventas sin tener que cambiar quién eres?\n\nHay una forma que casi nadie usa — y cuando la aplicas, todo cambia.`,
+      "Conectar": `Tengo que contarte algo sobre ${t} que cambió todo para mí.\n\nSi tú también has sentido que necesitabas escuchar esto, quédate — es para ti.`,
+      "Educar":   `Hoy te enseño sobre ${t} lo que ojalá alguien me hubiera dicho cuando empecé.\n\nEn 60 segundos tienes todo lo que necesitas saber.`,
+      "Inspirar": `${t} me parecía imposible. Hasta que cambié una sola cosa.\n\nSi estás donde yo estaba, este video es para ti.`,
+    };
+    const INTERES_T = {
+      "Vender":   `Sé exactamente cómo se siente intentar ${t} y no ver los resultados que esperabas.\n\nEs ese cansancio de esforzarte, de hacer todo lo que dicen... y aun así sentir que no avanzas. Que las demás lo logran y tú no.\n\nY encima tienes que manejar la casa, los hijos, y seguir sonriendo. Es agotador. No estás sola.`,
+      "Conectar": `¿Te ha pasado que haces todo lo que dicen sobre ${t} y aun así no funciona?\n\nExactamente así se siente. Es ese agotamiento de intentarlo una y otra vez y sentir que algo falla — sin saber qué.\n\nNadie habla de lo difícil que puede ser. En redes se ve fácil. Pero tú y yo sabemos que la realidad es otra.`,
+      "Educar":   `El problema con ${t} no es que sea difícil.\n\nEs que nadie te lo enseña de forma clara. Te dicen qué hacer, pero no el por qué. Y sin entender el por qué, es imposible que funcione bien.\n\nHoy eso cambia.`,
+      "Inspirar": `Hay momentos en que ${t} se siente como una montaña enorme. Como si todas las demás lo tuvieran claro y tú fueras la única que lucha.\n\nEse pensamiento de "¿para qué sigo intentándolo?" es más común de lo que crees. Y yo estuve ahí. Muchas veces.`,
+    };
+    const DESEO_T = {
+      "Vender":   `Imagina que ${t} deja de ser una carga y empieza a fluir para ti.\n\nQue puedes hacerlo con seguridad — sin dudar de ti, sin miedo al rechazo, sin sentirte pesada.\n\nQue los resultados llegan porque confías en tu valor. Eso es lo que mereces. Y es exactamente posible.`,
+      "Conectar": `Imagina que ${t} deja de pesarte.\n\nQue en lugar de resistirte, fluye y trabaja para ti. Que te sientes en paz con el proceso.\n\nEse lugar existe. No está lejos. Y yo te muestro el camino.`,
+      "Educar":   `Cuando entiendes ${t} de verdad — no solo la teoría, sino el cómo aplicarlo — todo cambia.\n\nDeja de ser una lucha constante y se convierte en algo que dominas.\n\nHoy te doy las herramientas para que eso pase.`,
+      "Inspirar": `¿Qué pasaría si ${t} fuera tu fortaleza y no tu carga?\n\nSi en lugar de frenarte, te impulsara. Si en lugar de dudar, confiaras.\n\nEso es posible para ti. Aunque ahora no puedas creerlo — lo digo porque yo misma lo viví.`,
+    };
+    const ACCION_T = {
+      "Vender":   `Si esto te resonó, escríbeme "${t.split(" ")[0].toUpperCase()}" en los comentarios — te cuento el siguiente paso.\n\nHay un espacio para ti. El link está en mi bio.`,
+      "Conectar": `Cuéntame en comentarios: ¿te identificaste con algo de lo que dije?\n\nMe encanta leerte. Y comparte este video con alguien que también lo necesite hoy.`,
+      "Educar":   `Guarda este video — lo vas a querer tener cuando lo apliques.\n\nSígueme para que no te pierdas lo que viene. Hay mucho más de esto.`,
+      "Inspirar": `Guarda este video para los días difíciles — como recordatorio de que sí puedes.\n\nY cuéntame: ¿qué cambiarías hoy con esto en mente? Te leo en comentarios.`,
+    };
+    return {
+      0: HOOK_T[objetivo]    || HOOK_T["Conectar"],
+      1: INTERES_T[objetivo] || INTERES_T["Conectar"],
+      2: DESEO_T[objetivo]   || DESEO_T["Conectar"],
+      3: ACCION_T[objetivo]  || ACCION_T["Conectar"],
+    };
+  };
+
   const generarGuion = () => {
     if (!form.tema.trim()) return;
     const aud = form.audiencia.trim() || "tu audiencia";
@@ -1601,7 +1635,7 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
       escenas: buildEscenas(form.tema, form.objetivo, form.tipo, aud),
       fecha: new Date().toLocaleDateString("es"),
     });
-    setEscritura({});
+    setEscritura(buildEscrituraInicial(form.tema, form.objetivo));
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
@@ -1629,7 +1663,7 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
     });
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Guión: ${guion.tema}</title></head>
     <body style="margin:0;padding:0;font-family:Arial,sans-serif;">
-    <div style="background:linear-gradient(135deg,#1B2A4A,#2D3F6B);padding:36px 40px;color:white;">
+    <div style="background:linear-gradient(135deg,#C4526A,#E8755A);padding:36px 40px;color:white;">
       <p style="font-size:10px;color:rgba(255,255,255,0.5);margin:0 0 8px;letter-spacing:1.5px;text-transform:uppercase;">Mamá CEO · Studio de Contenido · GUIÓN</p>
       <h1 style="color:white;margin:0 0 12px;font-size:28px;font-family:Arial;">${guion.tema}</h1>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
@@ -1814,13 +1848,13 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
                         </div>
 
                         <div className="guion-write-section">
-                          <div className="guion-write-label">✍ Tu versión:</div>
+                          <div className="guion-write-label">✍ Tu versión (edita a tu gusto):</div>
                           <textarea
                             className="guion-write-textarea"
                             placeholder={esc.placeholder}
                             value={escritura[i] || ""}
                             onChange={e => setEscritura(p => ({...p, [i]: e.target.value}))}
-                            rows={4}
+                            rows={6}
                           />
                         </div>
 
@@ -1884,7 +1918,7 @@ function GuionTab({ saved, onSave, seed, onSeedConsumed }) {
           {saved.guiones.slice().reverse().map(g => (
             <div className="studio-bank-item" key={g.id}>
               <div className="studio-bank-item-top">
-                <span className="studio-tipo-badge" style={{background:"#1B2A4A"}}>{g.tipo || "Guión"}</span>
+                <span className="studio-tipo-badge" style={{background:"#C4526A"}}>{g.tipo || "Guión"}</span>
                 <small>{g.fecha}</small>
               </div>
               <strong style={{fontSize:"13px"}}>{g.tema}</strong>

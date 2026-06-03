@@ -1264,9 +1264,9 @@
   box-shadow: 0 4px 28px rgba(0,0,0,0.09); overflow: hidden;
 }
 
-/* Cinematic dark header */
+/* Cinematic header */
 .guion-doc-header {
-  background: linear-gradient(135deg, #1B2A4A 0%, #2D3F6B 100%);
+  background: linear-gradient(135deg, #C4526A 0%, #E8755A 100%);
   padding: 32px 36px 28px;
   display: flex; flex-direction: column; gap: 10px;
 }
