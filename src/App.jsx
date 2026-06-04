@@ -559,9 +559,9 @@ export default function App() {
   const [pomodoroBlocks, setPomodoroBlocks] = useState(0);
   const [pomodoroWorkDuration, setPomodoroWorkDuration] = useState(25);
   const [pomodoroBreakDuration, setPomodoroBreakDuration] = useState(5);
-  const [pomodoroMinimized, setPomodoroMinimized] = useState(true);
+  const [pomodoroOpen, setPomodoroOpen] = useState(false);
   const [pomodoroCelebrating, setPomodoroCelebrating] = useState(false);
-  const [pomodoroPos, setPomodoroPos] = useState(null);
+  const [clockNow, setClockNow] = useState(() => new Date());
   const pomodoroRef = React.useRef(null);
 
   useEffect(() => {
@@ -595,6 +595,11 @@ export default function App() {
 
   const pomodoroReset = () => { setPomodoroRunning(false); setPomodoroMode("work"); setPomodoroMinutes(pomodoroWorkDuration); setPomodoroSeconds(0); };
   const requestNotificationPermission = () => { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); };
+
+  useEffect(() => {
+    const id = setInterval(() => setClockNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const BETA_CODE = "MAMACEO2026";
   const BETA_CODE_EXPIRY = new Date("2026-12-31T23:59:59").getTime();
@@ -1466,34 +1471,6 @@ export default function App() {
     );
   }
 
-  const startPomodoroDrag = (e) => {
-    if (e.target.tagName === "BUTTON" || e.target.tagName === "SELECT" || e.target.tagName === "OPTION") return;
-    e.preventDefault();
-    const el = document.querySelector(".pomo-widget");
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    const sx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    const sy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-    const onMove = (ev) => {
-      const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
-      const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
-      setPomodoroPos({
-        x: Math.max(0, Math.min(window.innerWidth - el.offsetWidth, cx - sx)),
-        y: Math.max(0, Math.min(window.innerHeight - el.offsetHeight, cy - sy))
-      });
-    };
-    const onUp = () => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-      document.removeEventListener("touchmove", onMove);
-      document.removeEventListener("touchend", onUp);
-    };
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
-    document.addEventListener("touchmove", onMove, { passive: false });
-    document.addEventListener("touchend", onUp);
-  };
-
   return (
     <div className="app-shell">
       {showProfileModal && (
@@ -1734,10 +1711,8 @@ export default function App() {
         {activeView === "terminos" && renderTerminos()}
         {activeView === "privacidad" && renderPrivacidad()}
 
-        {/* Pomodoro flotante - disponible a todas */}
+        {/* Pomodoro — FAB fijo + panel */}
         {(function() {
-          const _px = pomodoroPos ? pomodoroPos.x : Math.max(0, (typeof window !== "undefined" ? window.innerWidth : 1200) - 250);
-          const _py = pomodoroPos ? pomodoroPos.y : Math.max(0, (typeof window !== "undefined" ? window.innerHeight : 800) - 340);
           const _total = pomodoroMode === "work" ? pomodoroWorkDuration * 60 : pomodoroBreakDuration * 60;
           const _elapsed = _total - (pomodoroMinutes * 60 + pomodoroSeconds);
           const _progress = _total > 0 ? (_elapsed / _total) : 0;
@@ -1745,75 +1720,76 @@ export default function App() {
           const _msgs = ["Excelente sesion!", "Eres imparable.", "Pura concentracion.", "Que consistencia!"];
           const _mm = String(pomodoroMinutes).padStart(2,"0");
           const _ss = String(pomodoroSeconds).padStart(2,"0");
+          const _hasFree = effectivePlan === "free";
           return (
-            <div
-              className={`pomo-widget${pomodoroMinimized ? " pomo-widget--min" : ""}${pomodoroRunning && pomodoroMode === "work" ? " pomo-widget--focus" : pomodoroMode === "break" ? " pomo-widget--break" : ""}`}
-              style={{ position:"fixed", zIndex:9999, left:_px, top:_py }}
-            >
-              <div className="pomo-head" onMouseDown={startPomodoroDrag} onTouchStart={startPomodoroDrag}>
-                <div className="pomo-head-left">
-                  <span className="pomo-ico">&#x23F1;</span>
-                  {pomodoroMinimized ? (
-                    <span className="pomo-mini-info">
-                      {pomodoroRunning ? `${_mm}:${_ss}` : "Foco"}
-                      {pomodoroBlocks > 0 && <span className="pomo-mini-stars">&nbsp;&#x2B50;{pomodoroBlocks}</span>}
-                    </span>
-                  ) : (
-                    <span className="pomo-label">{pomodoroMode === "break" ? "Descanso" : "Pomodoro"}</span>
-                  )}
-                </div>
-                <button className="pomo-tog" onClick={(e) => { e.stopPropagation(); setPomodoroMinimized(v => !v); }}>
-                  {pomodoroMinimized ? "+" : "−"}
-                </button>
-              </div>
-              {!pomodoroMinimized && (
-                <div className="pomo-body">
-                  {pomodoroCelebrating ? (
-                    <div className="pomo-party">
-                      <div className="pomo-party-ico">&#x1F389;</div>
-                      <p className="pomo-party-title">{_msgs[(pomodoroBlocks - 1) % _msgs.length]}</p>
-                      <p className="pomo-party-sub">{pomodoroBlocks} {pomodoroBlocks === 1 ? "sesion" : "sesiones"} completada{pomodoroBlocks !== 1 ? "s" : ""} hoy</p>
-                      <p className="pomo-party-stars">{Array.from({length: Math.min(pomodoroBlocks, 8)}).map((_x,i) => <span key={i}>&#x2B50;</span>)}</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="pomo-ring-wrap">
-                        <svg viewBox="0 0 80 80" className="pomo-ring-svg">
-                          <circle cx="40" cy="40" r={R} className="pomo-ring-bg" />
-                          <circle cx="40" cy="40" r={R} className="pomo-ring-fg"
-                            strokeDasharray={_circ}
-                            strokeDashoffset={_circ * (1 - _progress)}
-                            transform="rotate(-90 40 40)"
-                          />
-                        </svg>
-                        <div className="pomo-time-disp">{_mm}:{_ss}</div>
+            <>
+              {/* Panel — abre hacia arriba */}
+              {pomodoroOpen && (
+                <div className={`pomo-panel${pomodoroRunning && pomodoroMode === "work" ? " pomo-panel--focus" : pomodoroMode === "break" ? " pomo-panel--break" : ""}`}
+                  style={{ bottom: _hasFree ? "136px" : "84px" }}>
+                  <div className="pomo-panel-head">
+                    <span className="pomo-label">{pomodoroMode === "break" ? "Descanso" : "Temporizador de foco"}</span>
+                    <button className="pomo-tog" onClick={() => setPomodoroOpen(false)}>&#x00D7;</button>
+                  </div>
+                  <div className="pomo-body">
+                    {pomodoroCelebrating ? (
+                      <div className="pomo-party">
+                        <div className="pomo-party-ico">&#x1F389;</div>
+                        <p className="pomo-party-title">{_msgs[(pomodoroBlocks - 1) % _msgs.length]}</p>
+                        <p className="pomo-party-sub">{pomodoroBlocks} {pomodoroBlocks === 1 ? "sesi\xF3n" : "sesiones"} completada{pomodoroBlocks !== 1 ? "s" : ""} hoy</p>
+                        <p className="pomo-party-stars">{Array.from({length: Math.min(pomodoroBlocks, 8)}).map((_x,i) => <span key={i}>&#x2B50;</span>)}</p>
                       </div>
-                      <div className="pomo-ctrls">
-                        <button
-                          className={`pomo-main-btn${pomodoroRunning ? " pomo-main-btn--pause" : " pomo-main-btn--start"}`}
-                          onClick={() => { setPomodoroRunning(r => !r); requestNotificationPermission(); }}
-                        >
-                          {pomodoroRunning ? "Pausar" : pomodoroMode === "break" ? "Descansar" : "Iniciar foco"}
-                        </button>
-                        <button className="pomo-reset-btn" onClick={pomodoroReset} title="Reiniciar">&#x21BA;</button>
-                      </div>
-                      <div className="pomo-durations">
-                        <select value={pomodoroWorkDuration} onChange={(e) => { const v=Number(e.target.value); setPomodoroWorkDuration(v); if(!pomodoroRunning&&pomodoroMode==="work") setPomodoroMinutes(v); }}>
-                          <option value={15}>15 min</option><option value={25}>25 min</option><option value={45}>45 min</option><option value={60}>60 min</option>
-                        </select>
-                        <span className="pomo-dur-sep">&#x2022;</span>
-                        <select value={pomodoroBreakDuration} onChange={(e) => { const v=Number(e.target.value); setPomodoroBreakDuration(v); if(!pomodoroRunning&&pomodoroMode==="break") setPomodoroMinutes(v); }}>
-                          <option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option>
-                        </select>
-                      </div>
-                      {pomodoroBlocks > 0 && (
-                        <p className="pomo-blocks-row">{Array.from({length: Math.min(pomodoroBlocks, 8)}).map((_x,i) => <span key={i}>&#x2B50;</span>)} {pomodoroBlocks} {pomodoroBlocks === 1 ? "sesion" : "sesiones"} hoy</p>
-                      )}
-                    </>
-                  )}
+                    ) : (
+                      <>
+                        <div className="pomo-ring-wrap">
+                          <svg viewBox="0 0 80 80" className="pomo-ring-svg">
+                            <circle cx="40" cy="40" r={R} className="pomo-ring-bg" />
+                            <circle cx="40" cy="40" r={R} className="pomo-ring-fg"
+                              strokeDasharray={_circ}
+                              strokeDashoffset={_circ * (1 - _progress)}
+                              transform="rotate(-90 40 40)"
+                            />
+                          </svg>
+                          <div className="pomo-time-disp">{_mm}:{_ss}</div>
+                        </div>
+                        <div className="pomo-ctrls">
+                          <button
+                            className={`pomo-main-btn${pomodoroRunning ? " pomo-main-btn--pause" : " pomo-main-btn--start"}`}
+                            onClick={() => { setPomodoroRunning(r => !r); requestNotificationPermission(); }}
+                          >
+                            {pomodoroRunning ? "Pausar" : pomodoroMode === "break" ? "Descansar" : "Iniciar foco"}
+                          </button>
+                          <button className="pomo-reset-btn" onClick={pomodoroReset} title="Reiniciar">&#x21BA;</button>
+                        </div>
+                        <div className="pomo-durations">
+                          <select value={pomodoroWorkDuration} onChange={(e) => { const v=Number(e.target.value); setPomodoroWorkDuration(v); if(!pomodoroRunning&&pomodoroMode==="work") setPomodoroMinutes(v); }}>
+                            <option value={15}>15 min</option><option value={25}>25 min</option><option value={45}>45 min</option><option value={60}>60 min</option>
+                          </select>
+                          <span className="pomo-dur-sep">&#x2022;</span>
+                          <select value={pomodoroBreakDuration} onChange={(e) => { const v=Number(e.target.value); setPomodoroBreakDuration(v); if(!pomodoroRunning&&pomodoroMode==="break") setPomodoroMinutes(v); }}>
+                            <option value={5}>5 min</option><option value={10}>10 min</option><option value={15}>15 min</option>
+                          </select>
+                        </div>
+                        {pomodoroBlocks > 0 && (
+                          <p className="pomo-blocks-row">{Array.from({length: Math.min(pomodoroBlocks, 8)}).map((_x,i) => <span key={i}>&#x2B50;</span>)} {pomodoroBlocks} {pomodoroBlocks === 1 ? "sesi\xF3n" : "sesiones"} hoy</p>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               )}
-            </div>
+              {/* FAB icono */}
+              <button
+                className={`pomo-fab${pomodoroRunning ? " pomo-fab--active" : ""}${pomodoroOpen ? " pomo-fab--open" : ""}`}
+                style={{ bottom: _hasFree ? "84px" : "28px" }}
+                onClick={() => setPomodoroOpen(v => !v)}
+                title="Temporizador de foco"
+              >
+                <span className="pomo-fab-ico">&#x23F1;</span>
+                {pomodoroRunning && <span className="pomo-fab-time">{_mm}:{_ss}</span>}
+                {!pomodoroRunning && pomodoroBlocks > 0 && <span className="pomo-fab-stars">&#x2B50;{pomodoroBlocks}</span>}
+              </button>
+            </>
           );
         }())}
         {effectivePlan === "free" && (
@@ -1834,7 +1810,8 @@ export default function App() {
   );
 
   function renderDashboard() {
-    const todayStr = new Date().toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" });
+    const todayStr = clockNow.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" });
+    const timeStr = clockNow.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
     const urgentLeads = clients.filter((c) => c.status === "Lead caliente");
     const lastPublished = contentItems.filter((i) => i.status === "Publicado" && i.createdAt).sort((a, b) => b.createdAt - a.createdAt)[0];
     const daysSincePublish = lastPublished ? Math.floor((Date.now() - lastPublished.createdAt) / 86400000) : null;
@@ -1848,7 +1825,10 @@ export default function App() {
 
           {/* Hero */}
           <div className="db-hero">
-            <p className="db-date" style={{textTransform:"capitalize"}}>{todayStr}</p>
+            <div className="db-date-row">
+              <p className="db-date" style={{textTransform:"capitalize"}}>{todayStr}</p>
+              <p className="db-time">{timeStr}</p>
+            </div>
             <p className="db-affirmation">&ldquo;{todayAffirmation}&rdquo;</p>
           </div>
 
