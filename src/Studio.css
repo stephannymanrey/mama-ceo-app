@@ -2963,3 +2963,73 @@
 @media (max-width: 520px) {
   .rp-guiones-grid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── GEMINI IA ─────────────────────────────────────────────── */
+.studio-ai-btn {
+  background: linear-gradient(135deg, #7C3AED, #9B59B6) !important;
+  border-color: #7C3AED !important;
+  color: #fff !important;
+}
+.studio-ai-btn:hover:not(:disabled) {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+.studio-ai-regen-btn {
+  background: #F5F0FF;
+  border: 1px solid rgba(124,58,237,0.3);
+  color: #7C3AED;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+.studio-ai-regen-btn:hover { background: #ede9fe; }
+
+.studio-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #7C3AED, #9B59B6);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.3px;
+  margin-left: 8px;
+}
+.studio-ai-counter {
+  font-size: 11px;
+  font-weight: 700;
+  color: #7C3AED;
+  background: #F5F0FF;
+  border: 1px solid rgba(124,58,237,0.2);
+  border-radius: 999px;
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.studio-ai-msg {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #C4526A;
+  font-weight: 600;
+}
+.studio-ai-msg-inline {
+  font-size: 12px;
+  color: #C4526A;
+  font-weight: 600;
+}
+.studio-ai-loading-inline {
+  font-size: 12px;
+  color: #7C3AED;
+  font-weight: 700;
+  animation: pomo-pulse 1.5s infinite;
+}
+.studio-ai-thinking-sub {
+  font-size: 12px;
+  color: #7C3AED;
+  margin: 4px 0 0;
+  opacity: 0.8;
+}

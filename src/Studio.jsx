@@ -537,12 +537,14 @@ const detectProductType = (text) => {
 };
 
 // ── IDEAS ──────────────────────────────────────────────────────
-function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {} }) {
+function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
   const [keyword,        setKeyword]        = useState(brandProfile.queOfreces || "");
   const [ideas,          setIdeas]          = useState(null);
   const [thinking,       setThinking]       = useState(false);
   const [copiado,        setCopiado]        = useState("");
   const [vistaBlueprint, setVistaBlueprint] = useState(null);
+  const [aiLoading,      setAiLoading]      = useState(false);
+  const [aiMsg,          setAiMsg]          = useState("");
 
   const copiar = (text, key) => {
     navigator.clipboard.writeText(text);
@@ -649,8 +651,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {} }) 
   const generar = (kw) => {
     const k = (typeof kw === "string" ? kw : keyword).trim();
     if (!k) return;
-    setThinking(true);
-    setIdeas(null);
+    setThinking(true); setIdeas(null); setAiMsg("");
     setTimeout(() => {
       const gen = {};
       Object.entries(CATS).forEach(([key, cat]) => {
@@ -662,6 +663,31 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {} }) 
       setIdeas({ keyword: k, ...gen });
       setThinking(false);
     }, 1400);
+  };
+
+  const generarConIA = async (kw) => {
+    const k = (typeof kw === "string" ? kw : keyword).trim();
+    if (!k || !callGemini) return;
+    setAiLoading(true); setIdeas(null); setAiMsg("");
+    const res = await callGemini("ideas", {
+      keyword: k,
+      nicho: brandProfile.clienteIdeal || "mamás emprendedoras",
+      tono: brandProfile.tono || "Cercano",
+    });
+    setAiLoading(false);
+    if (res?.error === "limite_alcanzado") { setAiMsg(res.message || "L\xedmite mensual de generaciones IA alcanzado."); return; }
+    if (res?.error) { setAiMsg("Error al generar con IA. Intenta de nuevo."); return; }
+    onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
+    const aiResult = res.result || {};
+    const CAT_KEYS = Object.keys(CATS);
+    const gen = {};
+    CAT_KEYS.forEach(catKey => {
+      const aiArr = aiResult[catKey] || [];
+      gen[catKey] = aiArr.length > 0
+        ? aiArr.map((texto, i) => ({ id: `${catKey}-ai-${Date.now()}-${i}`, texto }))
+        : shuffle([...CATS[catKey].templates]).slice(0, 5).map((f, i) => ({ id: `${catKey}-fb-${Date.now()}-${i}`, texto: f(k) }));
+    });
+    setIdeas({ keyword: k, ...gen, isAI: true });
   };
 
   const masIdeas = (catKey) => {
@@ -776,12 +802,18 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {} }) 
           onChange={e => setKeyword(e.target.value)}
           onKeyDown={e => e.key === "Enter" && generar()}
         />
-        <button className="ideas-search-btn" onClick={() => generar()} disabled={!keyword.trim() || thinking}>
-          Generar ideas ✦
+        <button className="ideas-search-btn" onClick={() => generar()} disabled={!keyword.trim() || thinking || aiLoading}>
+          Generar &#x2756;
         </button>
+        {callGemini && (
+          <button className="ideas-search-btn studio-ai-btn" onClick={() => generarConIA()} disabled={!keyword.trim() || thinking || aiLoading}>
+            {aiLoading ? "Generando..." : "&#x2728; Con IA"}
+          </button>
+        )}
       </div>
+      {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
 
-      {!ideas && !thinking && (
+      {!ideas && !thinking && !aiLoading && (
         <div className="ideas-empty">
           <div className="ideas-brain-glow">🧠</div>
           <h3>¿Sobre qué quieres crear contenido?</h3>
@@ -794,26 +826,31 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {} }) 
         </div>
       )}
 
-      {thinking && (
+      {(thinking || aiLoading) && (
         <div className="ideas-thinking">
           <div className="ideas-orbit-container">
-            <div className="ideas-brain-orbit">🧠</div>
-            {["💡","🎬","📱","🎠","💬","✨"].map((s, i) => (
-              <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`}>{s}</div>
+            <div className="ideas-brain-orbit">&#x1F9E0;</div>
+            {["&#x1F4A1;","&#x1F3AC;","&#x1F4F1;","&#x1F3A0;","&#x1F4AC;","&#x2728;"].map((s, i) => (
+              <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`} dangerouslySetInnerHTML={{__html: s}} />
             ))}
           </div>
-          <p className="ideas-thinking-text">Generando ideas para ti<span className="ideas-dots-anim">...</span></p>
+          <p className="ideas-thinking-text">{aiLoading ? "Gemini est\xe1 creando ideas para ti" : "Generando ideas para ti"}<span className="ideas-dots-anim">...</span></p>
+          {aiLoading && <p className="studio-ai-thinking-sub">Ideas originales y espec\xedficas para tu nicho &#x2728;</p>}
         </div>
       )}
 
-      {ideas && !thinking && (
+      {ideas && !thinking && !aiLoading && (
         <>
           <div className="ideas-result-header">
             <div>
               <span className="ideas-kw-label">Ideas para </span>
               <strong className="ideas-kw-value">"{ideas.keyword}"</strong>
+              {ideas.isAI && <span className="studio-ai-badge">&#x2728; Generado con IA</span>}
             </div>
-            <button className="ideas-regen-btn" onClick={() => generar(ideas.keyword)}>🔄 Nuevas ideas</button>
+            <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+              <button className="ideas-regen-btn" onClick={() => generar(ideas.keyword)}>&#x1F504; Plantillas</button>
+              {callGemini && <button className="ideas-regen-btn studio-ai-regen-btn" onClick={() => generarConIA(ideas.keyword)}>&#x2728; Nueva IA</button>}
+            </div>
           </div>
           {Object.entries(CATS).map(([catKey, cat]) => (
             <div className="ideas-cat-section" key={catKey} style={{ "--cat-color": cat.color, "--cat-bg": cat.bg }}>
@@ -1464,12 +1501,14 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
 }
 
 // ── HOOKS ──────────────────────────────────────────────────────
-function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {} }) {
+function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
   const [tema, setTema]       = useState(brandProfile.queOfreces || "");
   const [nicho, setNicho]     = useState(brandProfile.clienteIdeal || "");
   const [hooks, setHooks]     = useState(null);
   const [thinking, setThinking] = useState(false);
   const [copiado, setCopiado] = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMsg, setAiMsg]     = useState("");
 
   const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
   const copiar  = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
@@ -1584,7 +1623,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {} }) {
   const generar = (t) => {
     const k = (typeof t === "string" ? t : tema).trim();
     if (!k) return;
-    setThinking(true); setHooks(null);
+    setThinking(true); setHooks(null); setAiMsg("");
     setTimeout(() => {
       const gen = {};
       Object.entries(HOOK_CATS).forEach(([key, cat]) => {
@@ -1595,6 +1634,28 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {} }) {
       setHooks({ tema: k, nicho: nicho.trim(), ...gen });
       setThinking(false);
     }, 1100);
+  };
+
+  const generarConIA = async (t) => {
+    const k = (typeof t === "string" ? t : tema).trim();
+    if (!k || !callGemini) return;
+    setAiLoading(true); setHooks(null); setAiMsg("");
+    const res = await callGemini("hooks", {
+      tema: k, nicho: nicho.trim() || brandProfile.clienteIdeal || "mamás emprendedoras",
+      tono: brandProfile.tono || "Cercano",
+    });
+    setAiLoading(false);
+    if (res?.error === "limite_alcanzado") { setAiMsg(res.message || "L\xedmite mensual de generaciones IA alcanzado."); return; }
+    if (res?.error) { setAiMsg("Error al generar con IA. Intenta de nuevo."); return; }
+    onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
+    const gen = {};
+    Object.keys(HOOK_CATS).forEach(catKey => {
+      const arr = res.result?.[catKey] || [];
+      gen[catKey] = arr.length > 0
+        ? arr.map((texto, i) => ({ id: `hook-${catKey}-ai-${Date.now()}-${i}`, texto }))
+        : shuffle([...HOOK_CATS[catKey].templates]).slice(0, 3).map((f, i) => ({ id: `hook-${catKey}-fb-${Date.now()}-${i}`, texto: f(k) }));
+    });
+    setHooks({ tema: k, nicho: nicho.trim(), ...gen, isAI: true });
   };
 
   const masHooks = (catKey) => {
@@ -1624,10 +1685,16 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {} }) {
             onChange={e => setTema(e.target.value)}
             onKeyDown={e => e.key === "Enter" && generar()}
           />
-          <button className="ideas-search-btn" onClick={() => generar()} disabled={!tema.trim() || thinking}>
-            Generar hooks ✦
+          <button className="ideas-search-btn" onClick={() => generar()} disabled={!tema.trim() || thinking || aiLoading}>
+            Generar &#x2756;
           </button>
+          {callGemini && (
+            <button className="ideas-search-btn studio-ai-btn" onClick={() => generarConIA()} disabled={!tema.trim() || thinking || aiLoading}>
+              {aiLoading ? "Generando..." : "&#x2728; Con IA"}
+            </button>
+          )}
         </div>
+        {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
         <input
           className="hooks-nicho-input"
           placeholder="¿A quién le hablas? (opcional) — mamás que venden desde casa, coaches, emprendedoras con hijos..."
@@ -1651,15 +1718,16 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {} }) {
       )}
 
       {/* ── PENSANDO ─────────────────────────────────── */}
-      {thinking && (
+      {(thinking || aiLoading) && (
         <div className="ideas-thinking">
           <div className="ideas-orbit-container">
-            <div className="ideas-brain-orbit">🪝</div>
-            {["🤔","😩","✨","❓","📖","🔢","🔄","🪞"].map((s, i) => (
-              <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`}>{s}</div>
+            <div className="ideas-brain-orbit">&#x1FA9D;</div>
+            {["&#x1F914;","&#x1F629;","&#x2728;","&#x2753;","&#x1F4D6;","&#x1F522;","&#x1F504;","&#x1FA9E;"].map((s, i) => (
+              <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`} dangerouslySetInnerHTML={{__html: s}} />
             ))}
           </div>
-          <p className="ideas-thinking-text">Creando hooks para tu video<span className="ideas-dots-anim">...</span></p>
+          <p className="ideas-thinking-text">{aiLoading ? "Gemini est\xe1 escribiendo hooks para ti" : "Creando hooks para tu video"}<span className="ideas-dots-anim">...</span></p>
+          {aiLoading && <p className="studio-ai-thinking-sub">Esto tarda unos segundos &#x2014; vale la pena &#x2728;</p>}
         </div>
       )}
 
@@ -1670,11 +1738,13 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {} }) {
             <div>
               <span className="ideas-kw-label">Hooks para </span>
               <strong className="ideas-kw-value">"{hooks.tema}"</strong>
-              {hooks.nicho && <span className="hooks-nicho-badge"> · {hooks.nicho}</span>}
+              {hooks.nicho && <span className="hooks-nicho-badge"> &middot; {hooks.nicho}</span>}
+              {hooks.isAI && <span className="studio-ai-badge">&#x2728; Generado con IA</span>}
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
               <span className="hooks-total-badge">{totalHooks} hooks</span>
-              <button className="ideas-regen-btn" onClick={() => generar(hooks.tema)}>🔄 Nuevos hooks</button>
+              <button className="ideas-regen-btn" onClick={() => generar(hooks.tema)}>&#x1F504; Plantillas</button>
+              {callGemini && <button className="ideas-regen-btn studio-ai-regen-btn" onClick={() => generarConIA(hooks.tema)}>&#x2728; Nueva IA</button>}
             </div>
           </div>
 
@@ -1734,7 +1804,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {} }) {
 }
 
 // ── GUIÓN ──────────────────────────────────────────────────────
-function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {} }) {
+function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
   const [subTab,    setSubTab]    = useState("guion");
   const [wizard,    setWizard]    = useState({ step: 1, objetivo: "Vender", logro: seed || brandProfile.transformacion || "", dolor: "", cambio: "", cta: "Guardar el video", ctaPersonalizado: "" });
   const [guion,     setGuion]     = useState(null);
@@ -1744,6 +1814,8 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
   const [copiado,    setCopiado]    = useState("");
   const [fraseIdx,   setFraseIdx]   = useState({});
   const [verCompleto,setVerCompleto] = useState(false);
+  const [aiLoading,  setAiLoading]  = useState(false);
+  const [aiMsg,      setAiMsg]      = useState("");
 
   useEffect(() => { if (seed) { setWizard(p => ({...p, logro: seed})); onSeedConsumed?.(); } }, []);
 
@@ -1881,7 +1953,45 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
     setEscritura(buildEscrituraInicial(objetivo, logro, dolor, cambio, ctaTexto));
     setCaption(buildCaptionFromGuion(objetivo, logro, dolor, cambio, ctaTexto));
     setFraseIdx({});
+    setAiMsg("");
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+  };
+
+  const generarGuionConIA = async () => {
+    const { objetivo, logro, dolor, cambio, cta, ctaPersonalizado } = wizard;
+    if (!logro.trim() || !callGemini) return;
+    const ctaTexto = cta === "Otro"
+      ? (ctaPersonalizado.trim() || "Guarda este video — lo vas a querer cuando lo necesites.")
+      : (CTA_MAP[cta] || CTA_MAP["Guardar el video"]);
+    // Genera la estructura con plantillas primero (muestra algo inmediato)
+    generarGuion();
+    setAiLoading(true); setAiMsg("");
+    const res = await callGemini("guion", {
+      objetivo, logro, dolor, cambio,
+      queOfreces: brandProfile.queOfreces || logro,
+      nicho: brandProfile.clienteIdeal || "mam\xe1s emprendedoras",
+      tono: brandProfile.tono || "Cercano",
+    });
+    setAiLoading(false);
+    if (res?.error === "limite_alcanzado") { setAiMsg(res.message || "L\xedmite mensual de generaciones IA alcanzado."); return; }
+    if (res?.error) { setAiMsg("Error al generar con IA. Intenta de nuevo."); return; }
+    onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
+    const aiResult = res.result || {};
+    const SCENE_KEYS = ["hook", "interes", "deseo", "accion"];
+    setGuion(prev => {
+      if (!prev) return prev;
+      const escenas = prev.escenas.map((esc, i) => {
+        const aiFreases = aiResult[SCENE_KEYS[i]];
+        return aiFreases && aiFreases.length > 0 ? { ...esc, frases: aiFreases } : esc;
+      });
+      return { ...prev, escenas, isAI: true };
+    });
+    const escrituraIA = {};
+    SCENE_KEYS.forEach((key, i) => {
+      if (aiResult[key]?.[0]) escrituraIA[i] = aiResult[key][0];
+    });
+    setEscritura(escrituraIA);
+    setFraseIdx({});
   };
 
   const downloadWordGuion = () => {
@@ -2161,9 +2271,16 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                     Siguiente →
                   </button>
                 ) : (
-                  <button className="mpm-step-btn" style={{flex:1}} onClick={generarGuion}>
-                    Generar guión ✦
-                  </button>
+                  <div style={{display:"flex",gap:"8px",flex:1}}>
+                    <button className="mpm-step-btn" style={{flex:1}} onClick={generarGuion}>
+                      Borrador &#x2756;
+                    </button>
+                    {callGemini && (
+                      <button className="mpm-step-btn studio-ai-btn" style={{flex:1}} onClick={generarGuionConIA} disabled={aiLoading}>
+                        {aiLoading ? "Generando..." : "&#x2728; Con IA"}
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
 
@@ -2174,8 +2291,14 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
           {guion && (
             <div className="guion-hoja-wrap">
               <div className="guion-hoja-topbar">
-                <button className="mpm-wizard-back-btn" onClick={() => setGuion(null)}>← Editar</button>
-                <button className="mpm-wizard-back-btn" onClick={() => { setGuion(null); setWizard({step:1,objetivo:"Vender",logro:"",dolor:"",cambio:"",cta:"Guardar el video"}); }}>🔄 Nuevo</button>
+                <button className="mpm-wizard-back-btn" onClick={() => setGuion(null)}>&#x2190; Editar</button>
+                <button className="mpm-wizard-back-btn" onClick={() => { setGuion(null); setWizard({step:1,objetivo:"Vender",logro:"",dolor:"",cambio:"",cta:"Guardar el video"}); }}>&#x1F504; Nuevo</button>
+                {guion && !guion.isAI && callGemini && !aiLoading && (
+                  <button className="mpm-edit-btn studio-ai-btn" onClick={generarGuionConIA}>&#x2728; Mejorar con IA</button>
+                )}
+                {aiLoading && <span className="studio-ai-loading-inline">&#x2728; Gemini est&#xe1; escribiendo...</span>}
+                {aiMsg && <span className="studio-ai-msg-inline">{aiMsg}</span>}
+                {guion?.isAI && <span className="studio-ai-badge">&#x2728; Generado con IA</span>}
                 <div className="guion-hoja-actions">
                   <button className="mpm-edit-btn" onClick={() => onSave("guiones", {
                     id: Date.now(), tema: guion.tema, tipo: guion.tipo, objetivo: guion.objetivo, fecha: guion.fecha,
@@ -3858,11 +3981,12 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
   );
 }
 
-export default function Studio({ onBack, brandProfile = {}, onGoToBrandProfile }) {
+export default function Studio({ onBack, brandProfile = {}, onGoToBrandProfile, callGemini, plan = "free" }) {
   const [activeTab, setActiveTab] = useState("mensaje");
   const [data, setData] = useState(() => loadStudio());
   const [guionSeed, setGuionSeed] = useState("");
   const [toast, setToast] = useState(null);
+  const [aiUsage, setAiUsage] = useState(null);
 
   useEffect(() => { saveStudio(data); }, [data]);
 
@@ -3875,15 +3999,20 @@ export default function Studio({ onBack, brandProfile = {}, onGoToBrandProfile }
     setActiveTab("guion");
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
-  const tabProps = { saved: data, onSave: handleSave, onDelete: handleDelete, brandProfile };
+  const tabProps = { saved: data, onSave: handleSave, onDelete: handleDelete, brandProfile, callGemini, plan, onAiUsed: setAiUsage };
   const hasBrand = !!(brandProfile.queOfreces && brandProfile.transformacion);
 
   return (
     <div className="studio-shell">
       {toast && <div className="studio-toast">{toast}</div>}
       <header className="studio-header">
-        <button className="studio-back-btn" onClick={onBack}>← Volver</button>
+        <button className="studio-back-btn" onClick={onBack}>&#x2190; Volver</button>
         <span className="studio-title-text">Studio de Contenido</span>
+        {callGemini && aiUsage && (
+          <span className="studio-ai-counter">
+            &#x2728; {Math.max(0, aiUsage.limit - aiUsage.used)} de {aiUsage.limit} gen. IA restantes
+          </span>
+        )}
         <nav className="studio-tabs-nav">
           {TABS.map(tab => (
             <button key={tab.id} className={`studio-tab-btn ${activeTab === tab.id ? "active" : ""}`} onClick={() => setActiveTab(tab.id)}>
