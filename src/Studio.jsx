@@ -675,6 +675,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
       tono: brandProfile.tono || "Cercano",
     });
     setAiLoading(false);
+    if (res?.error === "rate_limit") { setAiMsg("Muchas solicitudes en este momento. Intenta en 1 minuto."); return; }
     if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
     if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo."); return; }
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
@@ -1643,6 +1644,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
       tono: brandProfile.tono || "Cercano",
     });
     setAiLoading(false);
+    if (res?.error === "rate_limit") { setAiMsg("Muchas solicitudes en este momento. Intenta en 1 minuto."); return; }
     if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
     if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo."); return; }
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
@@ -1969,6 +1971,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
       tono: brandProfile.tono || "Cercano",
     });
     setAiLoading(false);
+    if (res?.error === "rate_limit") { setAiMsg("Muchas solicitudes en este momento. Intenta en 1 minuto."); return; }
     if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
     if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo."); return; }
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
