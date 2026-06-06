@@ -3203,14 +3203,13 @@ export default function App() {
               <div style={{ padding: "22px 24px" }}>
                 <p style={{ margin: "0 0 5px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)" }}>Tu 30 minutos de esta semana</p>
                 <p style={{ margin: "0 0 14px", fontSize: "14px", lineHeight: 1.6, color: "var(--ink)" }}>{sugg}</p>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
-                  <button onClick={() => alert("Próximamente: se agregará a tu calendario")} style={{ padding: "10px", background: "#C4526A", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 700 }}>
-                    📅 Agendar en Mamá CEO
-                  </button>
-                  <button onClick={() => alert("Próximamente: integración con Google Calendar")} style={{ padding: "10px", background: "#fff", color: "var(--ink)", border: "1.5px solid var(--line)", borderRadius: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 600 }}>
-                    📆 Google Calendar
-                  </button>
-                </div>
+                <button onClick={() => {
+                    const title = encodeURIComponent("Mis 30 minutos — Para Mí");
+                    const details = encodeURIComponent(sugg);
+                    window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}`, "_blank");
+                  }} style={{ padding: "11px 20px", background: "#C4526A", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+                  📆 Agendar en Google Calendar
+                </button>
               </div>
 
               {divider}
