@@ -183,7 +183,7 @@ const promesas = [
 const ALL_MENU_ITEMS = [
   { id: "dashboard", label: "Inicio",          icon: "🏠" },
   { id: "home",      label: "Mi Hogar",         icon: "🌸" },
-  { id: "ceo",       label: "Mi Propósito",     icon: "🎯" },
+  { id: "ceo",       label: "Para Mí",           icon: "💛" },
   { id: "business",  label: "Mi Negocio",       icon: "💼" },
   { id: "clients",   label: "Mis Clientas",     icon: "👩‍💼" },
   { id: "studio",    label: "Studio ✦",          icon: "🎬" },
@@ -331,6 +331,7 @@ const initialPurposeState = {
   checkIn: { date: "", energia: "", intencion: "", paraHoy: "" },
   sueno: "",
   tiempoParaMi: 0,
+  presenceMoments: [],
 };
 
 function cloneList(items) {
@@ -553,6 +554,8 @@ export default function App() {
   const [userPlan, setUserPlan] = useState(stored?.userPlan || "free");
   const [premiumExpiresAt, setPremiumExpiresAt] = useState(stored?.premiumExpiresAt || null);
   const [userMode, setUserMode] = useState(stored?.userMode || null);
+  const [presenceForm, setPresenceForm] = useState({ quien: [], queHicieron: "", tiempo: "30 min" });
+  const [presenceCelebration, setPresenceCelebration] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState("");
   const [betaCode, setBetaCode] = useState("");
@@ -2917,6 +2920,105 @@ export default function App() {
               )}
             </div>
 
+            {/* Presencia con mi familia */}
+            {(() => {
+              const todayStr = new Date().toISOString().slice(0,10);
+              const thisWeekMoments = (purpose.presenceMoments||[]).filter(m => {
+                const d = new Date(m.date); const now = new Date();
+                const monday = new Date(now); monday.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1)); monday.setHours(0,0,0,0);
+                return d >= monday;
+              });
+              const QUIEN_OPTS = [["👧","Hijo/a"],["💑","Pareja"],["👵","Padres/familia"],["👯","Amigas"]];
+              const toggleQuien = (label) => setPresenceForm(f => ({ ...f, quien: f.quien.includes(label) ? f.quien.filter(q=>q!==label) : [...f.quien, label] }));
+              const savePresence = () => {
+                if (!presenceForm.quien.length && !presenceForm.queHicieron.trim()) return;
+                const moment = { id: Date.now(), date: new Date().toISOString(), quien: presenceForm.quien, queHicieron: presenceForm.queHicieron, tiempo: presenceForm.tiempo };
+                updatePurpose("presenceMoments", [...(purpose.presenceMoments||[]), moment]);
+                setPresenceForm({ quien: [], queHicieron: "", tiempo: "30 min" });
+                setPresenceCelebration(true);
+                setTimeout(() => setPresenceCelebration(false), 4000);
+              };
+              const VICTORY_MSGS = ["Ese momento cuenta para siempre. 🌸","Estar presente es el regalo más grande. 💛","No lo olvidarán. Ni tú. ✨","Eso es lo que importa de verdad. 💕","Una mamá presente no necesita ser perfecta. 🌿"];
+              const victoryMsg = VICTORY_MSGS[Math.floor(Date.now()/1000) % VICTORY_MSGS.length];
+              return (
+                <div className="card home-budget-card" style={{marginTop:"0"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
+                    <h3 style={{margin:0}}>Con mi familia hoy 💛</h3>
+                    {thisWeekMoments.length > 0 && (
+                      <span style={{fontSize:"12px",fontWeight:700,color:"var(--pink)",background:"rgba(212,104,122,0.1)",padding:"3px 10px",borderRadius:"20px"}}>
+                        {thisWeekMoments.length} momento{thisWeekMoments.length>1?"s":""} esta semana
+                      </span>
+                    )}
+                  </div>
+                  <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>No mides el tiempo — mides la intención. ¿Con quién estuviste hoy?</p>
+
+                  {presenceCelebration ? (
+                    <div style={{padding:"20px",background:"linear-gradient(135deg,rgba(212,104,122,0.08),rgba(47,159,112,0.08))",borderRadius:"14px",textAlign:"center",border:"2px solid rgba(212,104,122,0.2)"}}>
+                      <p style={{fontSize:"24px",margin:"0 0 6px"}}>🌸</p>
+                      <p style={{margin:0,fontWeight:700,fontSize:"15px",color:"var(--ink)"}}>{victoryMsg}</p>
+                    </div>
+                  ) : (
+                    <div style={{display:"grid",gap:"14px"}}>
+                      <div>
+                        <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Con quién?</p>
+                        <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                          {QUIEN_OPTS.map(([icon,label]) => (
+                            <button key={label} type="button" onClick={() => toggleQuien(label)}
+                              style={{display:"flex",alignItems:"center",gap:"6px",padding:"7px 14px",borderRadius:"20px",border:`2px solid ${presenceForm.quien.includes(label)?"var(--pink)":"var(--line)"}`,background:presenceForm.quien.includes(label)?"rgba(212,104,122,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:presenceForm.quien.includes(label)?700:400}}>
+                              {icon} {label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <div>
+                        <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Qué hicieron?</p>
+                        <textarea value={presenceForm.queHicieron} onChange={e => setPresenceForm(f=>({...f,queHicieron:e.target.value}))}
+                          placeholder="Ej: Leímos un cuento antes de dormir. Cocinamos juntos. Le escuché hablar de su día..."
+                          style={{width:"100%",minHeight:"64px",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",resize:"none",boxSizing:"border-box",background:"#faf7f5"}} />
+                      </div>
+                      <div>
+                        <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Cuánto tiempo más o menos?</p>
+                        <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                          {["15 min","30 min","1 hora","Más de 1 hora"].map(t => (
+                            <button key={t} type="button" onClick={() => setPresenceForm(f=>({...f,tiempo:t}))}
+                              style={{padding:"7px 14px",borderRadius:"20px",border:`2px solid ${presenceForm.tiempo===t?"var(--purple)":"var(--line)"}`,background:presenceForm.tiempo===t?"rgba(107,70,193,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:presenceForm.tiempo===t?700:400}}>
+                              {t}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <button type="button" onClick={savePresence} disabled={!presenceForm.quien.length && !presenceForm.queHicieron.trim()}
+                        style={{padding:"12px",background:"var(--pink)",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700,opacity:(!presenceForm.quien.length&&!presenceForm.queHicieron.trim())?0.5:1}}>
+                        Guardar este momento 🌸
+                      </button>
+                    </div>
+                  )}
+
+                  {thisWeekMoments.length > 0 && (
+                    <div style={{marginTop:"16px",borderTop:"1px solid var(--line)",paddingTop:"14px"}}>
+                      <p style={{margin:"0 0 10px",fontSize:"12px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--muted)"}}>Esta semana</p>
+                      <div style={{display:"grid",gap:"8px"}}>
+                        {thisWeekMoments.slice(-5).reverse().map(m => (
+                          <div key={m.id} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"10px 12px",background:"rgba(212,104,122,0.04)",borderRadius:"10px",border:"1px solid rgba(212,104,122,0.12)"}}>
+                            <span style={{fontSize:"18px",flexShrink:0}}>💛</span>
+                            <div style={{flex:1,minWidth:0}}>
+                              <p style={{margin:"0 0 2px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>{m.quien.join(" · ")} — {m.tiempo}</p>
+                              {m.queHicieron && <p style={{margin:0,fontSize:"12px",color:"var(--muted)",whiteSpace:"pre-wrap"}}>{m.queHicieron}</p>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {thisWeekMoments.length >= 5 && (
+                        <div style={{marginTop:"12px",padding:"12px 16px",background:"linear-gradient(135deg,rgba(212,104,122,0.08),rgba(47,159,112,0.06))",borderRadius:"12px",textAlign:"center"}}>
+                          <p style={{margin:0,fontWeight:700,fontSize:"14px",color:"var(--ink)"}}>🏆 5 momentos esta semana — eso es presencia real.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Presupuesto del hogar */}
             <div className="home-budget-card card">
               <div className="budget-head">
@@ -2979,8 +3081,8 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Mi Propósito 🎯</h2>
-          <p>Tu bienestar, tu presencia y lo que quieres construir para ti</p>
+          <h2>Para Mí 💛</h2>
+          <p>Tu espacio. Lo que sientes, lo que necesitas, lo que sueñas.</p>
         </div>
 
         {/* Check-in diario */}
@@ -3050,225 +3152,70 @@ export default function App() {
           </div>
         </div>
 
-        {/* KPIs visuales mejorados */}
-        <div className="purpose-kpi-grid">
-          <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">👨‍👩‍👧</span>
-            <strong>{purpose.connectionMoments}</strong>
-            <small>momentos de conexión hoy</small>
-            <span className={purpose.connectionMoments >= 2 ? "kpi-badge good" : "kpi-badge alert"}>meta: 2–3</span>
-          </div>
-          {userMode !== "mama" && (
-          <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">⏱️</span>
-            <strong>{money.format(incomePerHour)}</strong>
-            <small>ingreso por hora trabajada</small>
-            <span className="kpi-badge neutral">KPI estrella</span>
-          </div>
-          )}
-          <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">⚡</span>
-            <strong>{purpose.energy === "alto" ? "Alta" : purpose.energy === "medio" ? "Media" : "Baja"}</strong>
-            <small>energía del día</small>
-            <span className={peaceScore >= 80 ? "kpi-badge good" : peaceScore >= 50 ? "kpi-badge neutral" : "kpi-badge alert"}>{purpose.mood}</span>
-          </div>
-          {userMode !== "mama" ? (
-          <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">🎯</span>
-            <strong>{purpose.clientsImpacted}</strong>
-            <small>clientes impactados esta semana</small>
-            <span className="kpi-badge neutral">impacto real</span>
-          </div>
-          ) : (
-          <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">💆</span>
-            <strong>{purpose.tiempoParaMi || 0}h</strong>
-            <small>tiempo para mí esta semana</small>
-            <span className={( purpose.tiempoParaMi || 0) >= 3 ? "kpi-badge good" : "kpi-badge alert"}>meta: 3h+</span>
-          </div>
-          )}
-          <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">🌱</span>
-            <strong>{familyDaysCount}</strong>
-            <small>días de presencia consciente</small>
-            <span className={familyDaysCount >= 4 ? "kpi-badge good" : "kpi-badge alert"}>{familyDaysCount >= 4 ? "excelente" : "puedes mejorar"}</span>
-          </div>
-          <div className="purpose-kpi">
-            <span className="purpose-kpi-icon">⚙️</span>
-            <strong>{purpose.systemsPercent}%</strong>
-            <small>tareas sistematizadas</small>
-            <span className={purpose.systemsPercent >= 60 ? "kpi-badge good" : "kpi-badge neutral"}>meta: 60%+</span>
-          </div>
-        </div>
+        <div style={{display:"grid",gap:"16px",maxWidth:"640px"}}>
 
-        <div className="purpose-sections">
-
-          <div className="card purpose-block">
-            <h3>👨‍👩‍👧 Presencia real</h3>
-            <p className="helper-copy">Puedes pasar todo el día en casa y no estar. Mide lo que importa.</p>
-            <label className="purpose-field">
-              <span>Momentos de conexión hoy (sin celular, sin multitarea)</span>
-              <div className="counter-row">
-                <button type="button" onClick={() => updatePurpose("connectionMoments", Math.max(0, (purpose.connectionMoments || 0) - 1))}>-</button>
-                <strong>{purpose.connectionMoments || 0}</strong>
-                <button type="button" onClick={() => updatePurpose("connectionMoments", (purpose.connectionMoments || 0) + 1)}>+</button>
-              </div>
-            </label>
-            <label className="purpose-field"><span>Días de presencia consciente esta semana</span></label>
-            <div className="week-checks">
-              {["L","M","X","J","V","S","D"].map((day) => (
-                <button type="button" className={purpose.familyDays?.[day] ? "checked" : ""} key={day}
-                  onClick={() => setPurpose((c) => ({ ...c, familyDays: { ...c.familyDays, [day]: !c.familyDays?.[day] } }))}>{day}</button>
-              ))}
-            </div>
-            <textarea className="purpose-textarea" placeholder="¿Cómo crees que se sintió tu hijo/a esta semana? (reflexión libre)" value={purpose.mentalLoad} onChange={(e) => updatePurpose("mentalLoad", e.target.value)} />
-          </div>
-
-          {userMode !== "mama" && (
-          <div className="card purpose-block">
-            <h3>💼 Negocio inteligente</h3>
-            <p className="helper-copy">Más horas no es más éxito. Mide lo que escala.</p>
-            <label className="purpose-field">
-              <span>Horas trabajadas esta semana</span>
-              <input type="number" min="0" max="80" value={purpose.hoursWorked || 0} onChange={(e) => updatePurpose("hoursWorked", Number(e.target.value))} />
-            </label>
-            <div className="purpose-stat">
-              <span>Ingreso por hora trabajada</span>
-              <strong>{incomePerHour > 0 ? money.format(incomePerHour) : "Registra horas"}</strong>
-            </div>
-            <label className="purpose-field">
-              <span>% de ingresos recurrentes (membresías, productos escalables)</span>
-              <input type="range" min="0" max="100" value={purpose.recurringIncomePercent || 0} onChange={(e) => updatePurpose("recurringIncomePercent", Number(e.target.value))} />
-              <small>{purpose.recurringIncomePercent || 0}% recurrente</small>
-            </label>
-          </div>
-          )}
-
-          <div className="card purpose-block">
-            <h3>🌟 Mi sueño personal</h3>
-            <p className="helper-copy">No tiene que ser un negocio. Puede ser aprender algo, descansar de verdad, escribir, viajar, estar más presente. ¿Qué quieres para ti?</p>
-            <textarea className="purpose-textarea" rows={3}
-              placeholder="Ej: Quiero retomar la pintura que dejé cuando nació mi hijo. Quiero tener una mañana a la semana solo para mí sin culpa..."
-              value={purpose.sueno || ""}
-              onChange={(e) => updatePurpose("sueno", e.target.value)} />
-            <div style={{marginTop:"14px"}}>
-              <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>Tiempo para mí esta semana</p>
-              <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
-                <input type="range" min="0" max="20" value={purpose.tiempoParaMi || 0} onChange={(e) => updatePurpose("tiempoParaMi", Number(e.target.value))} style={{flex:1,accentColor:"var(--pink)"}} />
-                <strong style={{minWidth:"60px",textAlign:"right",color:"var(--pink)",fontSize:"15px"}}>{purpose.tiempoParaMi || 0}h / sem</strong>
-              </div>
-              <small style={{color:"var(--muted)",fontSize:"12px"}}>{(purpose.tiempoParaMi || 0) === 0 ? "Aún no has registrado tiempo para ti — y eso también es información." : (purpose.tiempoParaMi || 0) >= 5 ? "Bien. Ese tiempo importa." : "Pequeño pero cuenta. Sigue sumando."}</small>
-            </div>
-          </div>
-
-          <div className="card purpose-block">
-            <h3>? Energía y salud emocional</h3>
-            <p className="helper-copy">Si tú te quiebras, todo se cae. Tu energía es un recurso.</p>
-            <label className="purpose-field"><span>Nivel de energía hoy</span></label>
-            <div className="mood-grid">
-              {["alto","medio","bajo"].map((e) => (
-                <button type="button" key={e} className={purpose.energy === e ? "selected" : ""} onClick={() => updatePurpose("energy", e)}>{e}</button>
-              ))}
-            </div>
-            <label className="purpose-field"><span>ánimo general</span></label>
-            <div className="mood-grid">
-              {["abrumada","inspirada","feliz","controladora","cansada"].map((mood) => (
-                <button type="button" key={mood} className={purpose.mood === mood ? "selected" : ""} onClick={() => updatePurpose("mood", mood)}>{mood}</button>
-              ))}
-            </div>
-            <p className="helper-copy" style={{marginTop:"10px"}}>{mentalAdvice}</p>
-            <div className="selfcare-checks">
-              {[["water","Bebí agua"],["walk","Caminé 10 min"],["silence","Tuve silencio"],["devotional","Devocional / oración"]].map(([key, label]) => (
-                <label key={key} className="task-row">
-                  <input type="checkbox" checked={!!purpose[key]} onChange={(e) => updatePurpose(key, e.target.checked)} />
-                  <span>{label}</span>
+          {/* Autocuidado */}
+          <div className="card" style={{padding:"20px"}}>
+            <h3 style={{margin:"0 0 4px",fontSize:"16px"}}>Hoy me cuidé 🌿</h3>
+            <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Pequeñas cosas que sostienen todo lo demás.</p>
+            <div style={{display:"grid",gap:"10px"}}>
+              {[["water","💧","Tomé agua durante el día"],["walk","🚶","Me moví o caminé aunque sea 10 min"],["silence","🤫","Tuve un momento de silencio o pausa"],["devotional","🙏","Tuve mi devocional u oración"]].map(([key, icon, label]) => (
+                <label key={key} style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"10px",border:`1px solid ${purpose[key]?"var(--green)":"var(--line)"}`,background:purpose[key]?"rgba(47,159,112,0.06)":"#fff",cursor:"pointer"}}>
+                  <input type="checkbox" checked={!!purpose[key]} onChange={(e) => updatePurpose(key, e.target.checked)} style={{accentColor:"var(--green)",width:"18px",height:"18px",flexShrink:0}} />
+                  <span style={{fontSize:"18px"}}>{icon}</span>
+                  <span style={{fontSize:"14px",color:purpose[key]?"var(--green)":"var(--ink)",fontWeight:purpose[key]?600:400,textDecoration:purpose[key]?"line-through":"none"}}>{label}</span>
                 </label>
               ))}
             </div>
-            <ProgressLabel label="Autocuidado" value={Math.round((selfCareScore / 4) * 100)} tone="green" />
-          </div>
-
-          <div className="card purpose-block">
-            <h3>⚙️ Autoevaluación de sistemas</h3>
-            <p className="helper-copy">No necesitas hacer más, necesitas soltar más. Evalúa una tarea a la vez.</p>
-            <SystemsDonut tasks={systemTasks} />
-            <div className="carousel-wrap">
-              <div className="carousel-header">
-                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.max(0, s - 1))} disabled={systemSlide === 0}>?</button>
-                <span className="carousel-counter">{systemSlide + 1} de {systemTasks.length}</span>
-                <button type="button" className="carousel-nav" onClick={() => setSystemSlide((s) => Math.min(systemTasks.length - 1, s + 1))} disabled={systemSlide === systemTasks.length - 1}>?</button>
+            {selfCareScore >= 3 && (
+              <div style={{marginTop:"14px",padding:"10px 14px",background:"rgba(47,159,112,0.08)",borderRadius:"10px",fontSize:"13px",color:"#1a5c3a",fontWeight:600}}>
+                ✨ Hoy te cuidaste bien. Eso también es ser buena mamá.
               </div>
-              {(() => {
-                const task = systemTasks[systemSlide];
-                const suggestion = task ? systemSuggestions[task.title] : null;
-                return task ? (
-                  <div className="carousel-card">
-                    <span className={`system-cat system-cat-${task.category}`}>{task.category}</span>
-                    <h4>{task.title}</h4>
-                    <div className="system-modes">
-                      {task.canDelegate ? (
-                        <>
-                          <button type="button" className={task.mode === "manual" ? "mode-btn active-manual" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "manual" } : t))}>🙋 Lo hago yo</button>
-                          <button type="button" className={task.mode === "delegado" ? "mode-btn active-delegado" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "delegado" } : t))}>👥 Lo delego</button>
-                          <button type="button" className={task.mode === "automatizado" ? "mode-btn active-auto" : "mode-btn"} onClick={() => setSystemTasks((c) => c.map((t) => t.id === task.id ? { ...t, mode: "automatizado" } : t))}>⚡ Automatizado</button>
-                        </>
-                      ) : (
-                        <span className="mode-btn mode-protect">💝 Presencia materna • no se delega</span>
-                      )}
-                    </div>
-                    {task.mode === "manual" && suggestion && (
-                      <div className="system-suggestion">
-                        {suggestion.protect ? (
-                          <p>💝 {suggestion.protect}</p>
-                        ) : (
-                          <>
-                            {suggestion.auto && <p>? <strong>Automatizar:</strong> {suggestion.auto}</p>}
-                            {suggestion.delegate && <p>👥 <strong>Delegar:</strong> {suggestion.delegate}</p>}
-                            <a href="https://www.umpacademy.co/membresia" target="_blank" rel="noreferrer" className="ump-link">🔗 Aprende cómo en UMP Academy →</a>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ) : null;
-              })()}
-              <form className="source-form" style={{marginTop:"12px"}} onSubmit={(e) => { e.preventDefault(); if (!newSystemTask.trim()) return; setSystemTasks((c) => [...c, { id: Date.now(), title: newSystemTask.trim(), category: "negocio", mode: "manual", canDelegate: true }]); setNewSystemTask(""); setSystemSlide(systemTasks.length); }}>
-                <input placeholder="Agregar mi propia tarea..." value={newSystemTask} onChange={(e) => setNewSystemTask(e.target.value)} />
-                <button className="primary-button" type="submit">+</button>
-              </form>
-            </div>
+            )}
           </div>
 
-          <div className="card purpose-block purpose-block-wide">
-            <h3>🎯 Propósito e impacto</h3>
-            <p className="helper-copy">5 clientes transformados &gt; 5.000 vistas vacías.</p>
-            <div className="purpose-impact-grid">
-              <label className="purpose-field">
-                <span>Clientes impactados esta semana</span>
-                <div className="counter-row">
-                  <button type="button" onClick={() => updatePurpose("clientsImpacted", Math.max(0, (purpose.clientsImpacted || 0) - 1))}>-</button>
-                  <strong>{purpose.clientsImpacted || 0}</strong>
-                  <button type="button" onClick={() => updatePurpose("clientsImpacted", (purpose.clientsImpacted || 0) + 1)}>+</button>
-                </div>
-              </label>
-              <label className="purpose-field">
-                <span>Nivel de pasión al crear / trabajar (1–5)</span>
-                <div className="passion-stars">
-                  {[1,2,3,4,5].map((n) => (
-                    <button type="button" key={n} className={n <= (purpose.passionLevel || 3) ? "star active" : "star"} onClick={() => updatePurpose("passionLevel", n)}>?</button>
-                  ))}
-                </div>
-              </label>
-              <label className="purpose-field">
-                <span>Testimonio o transformación de esta semana</span>
-                <textarea className="purpose-textarea" placeholder="¿Qué cambió en un cliente gracias a tu trabajo?" value={purpose.weekTestimony || ""} onChange={(e) => updatePurpose("weekTestimony", e.target.value)} />
-              </label>
-              <label className="purpose-field">
-                <span>Claridad de visión • ¿sabes hacia dónde vas?</span>
-                <textarea className="purpose-textarea" placeholder="Mi visión esta semana es..." value={purpose.visionClarity || ""} onChange={(e) => updatePurpose("visionClarity", e.target.value)} />
-              </label>
-            </div>
+          {/* Mi sueño */}
+          <div className="card" style={{padding:"20px"}}>
+            <h3 style={{margin:"0 0 4px",fontSize:"16px"}}>Lo que quiero para mí 🌟</h3>
+            <p style={{margin:"0 0 12px",fontSize:"13px",color:"var(--muted)"}}>No tiene que ser un plan. Puede ser un deseo, una imagen, una sensación. Lo que sea tuyo.</p>
+            <textarea
+              style={{width:"100%",minHeight:"80px",padding:"12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",resize:"vertical",boxSizing:"border-box",background:"#faf7f5"}}
+              placeholder="Ej: Quiero retomar la pintura. Quiero tener una mañana a la semana sin culpa. Quiero volver a sentirme yo..."
+              value={purpose.sueno || ""}
+              onChange={(e) => updatePurpose("sueno", e.target.value)} />
           </div>
+
+          {/* Tiempo para mí */}
+          <div className="card" style={{padding:"20px"}}>
+            <h3 style={{margin:"0 0 4px",fontSize:"16px"}}>Tiempo para mí esta semana ⏳</h3>
+            <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>No para ser productiva. Solo para estar contigo misma.</p>
+            <div style={{display:"flex",alignItems:"center",gap:"16px"}}>
+              <input type="range" min="0" max="20" step="0.5" value={purpose.tiempoParaMi || 0}
+                onChange={(e) => updatePurpose("tiempoParaMi", Number(e.target.value))}
+                style={{flex:1,accentColor:"var(--pink)"}} />
+              <strong style={{minWidth:"56px",textAlign:"right",color:"var(--pink)",fontSize:"18px",fontWeight:800}}>{purpose.tiempoParaMi || 0}h</strong>
+            </div>
+            <p style={{margin:"8px 0 0",fontSize:"12px",color:"var(--muted)"}}>
+              {(purpose.tiempoParaMi||0)===0 ? "Todavía no registras tiempo para ti. Eso también dice algo." : (purpose.tiempoParaMi||0)<2 ? "Poco, pero cuenta. No te juzgues — empieza donde puedas." : (purpose.tiempoParaMi||0)<5 ? "Bien. Ese tiempo importa más de lo que crees." : "Eso es cuidarse. Sigue protegiendo ese espacio."}
+            </p>
+          </div>
+
+          {/* Estado de ánimo — solo si no completó check-in */}
+          {!checkInDone && (
+          <div className="card" style={{padding:"20px"}}>
+            <h3 style={{margin:"0 0 14px",fontSize:"16px"}}>¿Cómo te sientes? 💬</h3>
+            <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+              {["abrumada","inspirada","feliz","cansada","tranquila"].map((mood) => (
+                <button type="button" key={mood}
+                  onClick={() => updatePurpose("mood", mood)}
+                  style={{padding:"8px 16px",borderRadius:"20px",border:`2px solid ${purpose.mood===mood?"var(--pink)":"var(--line)"}`,background:purpose.mood===mood?"rgba(212,104,122,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:purpose.mood===mood?700:400}}>
+                  {mood}
+                </button>
+              ))}
+            </div>
+            {purpose.mood && <p style={{margin:"12px 0 0",fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>{mentalAdvice}</p>}
+          </div>
+          )}
 
         </div>
       </section>
