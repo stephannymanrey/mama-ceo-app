@@ -3067,52 +3067,68 @@ export default function App() {
     );
   }
   function renderCeo() {
-    const todayStr = new Date().toISOString().slice(0, 10);
-    const history  = purpose.checkInHistory || [];
-    const todayEntry = history.find(c => c.date === todayStr);
+    const todayStr    = new Date().toISOString().slice(0, 10);
+    const history     = purpose.checkInHistory || [];
+    const todayEntry  = history.find(c => c.date === todayStr);
     const showResults = checkInStep === 6 || (checkInStep === 0 && !!todayEntry);
     const displayResp = showResults ? (todayEntry || checkInResp) : checkInResp;
 
     const AFFIRMATIONS = {
-      "Con energía y lista":      { word: "Imparable",   phrase: "Esa energía que sientes hoy es tuya — no fue suerte. La construiste tú, con cada decisión que tomaste." },
-      "Tranquila pero cansada":   { word: "Valiente",    phrase: "El cansancio que sientes no es debilidad — es evidencia de todo lo que has cargado con amor. Eres más fuerte de lo que crees." },
-      "Con mucho en la cabeza":   { word: "Capaz",       phrase: "La mente ocupada es señal de una mujer que piensa, que siente, que no se rinde. Respira. Tú puedes con esto." },
-      "Abrumada":                 { word: "Suficiente",  phrase: "Hoy, exactamente como eres, eres suficiente. No tienes que resolverlo todo hoy. Solo este momento. Y en este momento, estás bien." },
-      "Agradecida aunque ocupada":{ word: "Sabia",       phrase: "Reconocer la gratitud en medio del caos es un regalo. Esa sabiduría que tienes es lo que te diferencia." },
+      "Con energía y lista":       { word: "Imparable",   phrase: "Esa energía que sientes hoy es tuya — no fue suerte. La construiste tú, con cada decisión que tomaste." },
+      "Tranquila pero cansada":    { word: "Valiente",    phrase: "El cansancio que sientes no es debilidad — es evidencia de todo lo que has cargado con amor. Eres más fuerte de lo que crees." },
+      "Con mucho en la cabeza":    { word: "Capaz",       phrase: "La mente ocupada es señal de una mujer que piensa, que siente, que no se rinde. Respira. Tú puedes con esto." },
+      "Abrumada":                  { word: "Suficiente",  phrase: "Hoy, exactamente como eres, eres suficiente. No tienes que resolverlo todo hoy. Solo este momento. Y en este momento, estás bien." },
+      "Agradecida aunque ocupada": { word: "Sabia",       phrase: "Reconocer la gratitud en medio del caos es un regalo. Esa sabiduría que tienes es lo que te diferencia." },
     };
 
     const THIRTY_SUGG = {
-      "Descansar sin hacer nada":          "Agenda 30 minutos el miércoles en la tarde — apaga el teléfono, acuéstate, no hagas nada. Ese descanso no es pereza: es combustible.",
-      "Leer o escuchar algo inspirador":   "Pon en tu calendario 30 minutos cualquier mañana esta semana — antes de que el día te consuma. Un podcast, un capítulo, algo que te alimente.",
-      "Moverme o hacer ejercicio":         "Esta semana, 30 minutos de movimiento para ti. No para verte bien — para sentirte bien. Ponlo en tu calendario como reunión importante.",
-      "Trabajar en mi negocio":            "Agenda una hora contigo misma esta semana para avanzar en lo que llevas posponiendo. Cierra la puerta. Apaga las notificaciones. Es tu hora.",
-      "Estar en silencio y orar":          "Agenda 30 minutos de silencio esta semana. Puede ser temprano en la mañana o cuando los niños duerman. Ese tiempo contigo y con Dios es lo que te recarga.",
-      "honestamente no sé":               "Está bien no saber. Esta semana, regálate 30 minutos sin agenda — sin saber qué harás con ellos. A veces el alma necesita espacio para descubrir qué necesita.",
+      "Descansar sin hacer nada":        "Agenda 30 minutos el miércoles en la tarde — apaga el teléfono, acuéstate, no hagas nada. Ese descanso no es pereza: es combustible.",
+      "Leer o escuchar algo inspirador": "Pon en tu calendario 30 minutos cualquier mañana esta semana — antes de que el día te consuma. Un podcast, un capítulo, algo que te alimente.",
+      "Moverme o hacer ejercicio":       "Esta semana, 30 minutos de movimiento para ti. No para verte bien — para sentirte bien. Ponlo en tu calendario como reunión importante.",
+      "Trabajar en mi negocio":          "Agenda una hora contigo misma esta semana para avanzar en lo que llevas posponiendo. Cierra la puerta. Apaga las notificaciones. Es tu hora.",
+      "Estar en silencio y orar":        "Agenda 30 minutos de silencio esta semana. Puede ser temprano en la mañana o cuando los niños duerman. Ese tiempo contigo y con Dios es lo que te recarga.",
+      "honestamente no sé":             "Está bien no saber. Esta semana, regálate 30 minutos sin agenda — sin saber qué harás con ellos. A veces el alma necesita espacio para descubrir qué necesita.",
     };
 
-    const aff  = AFFIRMATIONS[displayResp?.dia] || AFFIRMATIONS["Abrumada"];
-    const sugg = THIRTY_SUGG[displayResp?.treinta] || THIRTY_SUGG["honestamente no sé"];
+    const getHabits = (resp) => {
+      if (!resp) return [];
+      const { dia = "", emocional = 5, social = 5, proyectos = 5 } = resp;
+      const stressed = emocional <= 5 || social <= 4 || proyectos <= 4 || dia === "Abrumada" || dia === "Con mucho en la cabeza";
+      if (!stressed) return [];
+      const pool = [];
+      if (emocional <= 5 || dia === "Abrumada") {
+        pool.push({ icon: "💧", title: "Agua antes que el caos", desc: "2 vasos apenas te despiertes — antes del café y el teléfono. La deshidratación sube el cortisol más de lo que imaginas." });
+        pool.push({ icon: "🌬️", title: "3 respiraciones antes de reaccionar", desc: "Cuando sientas que vas a explotar — pausa. Inhala 4 seg, exhala 6. Eso activa el nervio vago y te regresa a ti en segundos." });
+      }
+      if (dia === "Abrumada" || dia === "Con mucho en la cabeza" || emocional <= 5) {
+        pool.push({ icon: "📵", title: "Sin pantallas los primeros 30 min", desc: "El teléfono en la mañana activa la mente en modo reactivo antes de que hayas decidido cómo quieres estar. Esos 30 min son tuyos." });
+      }
+      if (proyectos <= 4 || dia === "Con mucho en la cabeza") {
+        pool.push({ icon: "🌅", title: "Levántate 20 min antes que todos", desc: "No para hacer más — para llegar al día siendo tú, no como respuesta a lo que los demás necesitan de ti desde el primer segundo." });
+      }
+      if (emocional <= 4 || social <= 4) {
+        pool.push({ icon: "🚶", title: "5 min de movimiento antes del mediodía", desc: "Caminar, estirarte, bailar una canción. El movimiento resetea el sistema nervioso más rápido que cualquier otra cosa." });
+        pool.push({ icon: "🌙", title: "Teléfono fuera del cuarto al dormir", desc: "La luz azul bloquea la melatonina. Una noche de mejor sueño vale más que una hora extra de scroll." });
+      }
+      const seen = new Set();
+      return pool.filter(h => { if (seen.has(h.title)) return false; seen.add(h.title); return true; }).slice(0, 3);
+    };
+
+    const aff    = AFFIRMATIONS[displayResp?.dia] || AFFIRMATIONS["Abrumada"];
+    const sugg   = THIRTY_SUGG[displayResp?.treinta] || THIRTY_SUGG["honestamente no sé"];
+    const habits = getHabits(displayResp);
 
     const slideStyle = {
-      opacity:   checkInAnimating ? 0 : 1,
-      transform: checkInAnimating ? (checkInDirFwd ? "translateX(22px)" : "translateX(-22px)") : "translateX(0)",
+      opacity:    checkInAnimating ? 0 : 1,
+      transform:  checkInAnimating ? (checkInDirFwd ? "translateX(22px)" : "translateX(-22px)") : "translateX(0)",
       transition: "opacity 0.22s ease, transform 0.22s ease",
     };
 
-    const goNext = (n) => {
-      setCheckInDirFwd(true);
-      setCheckInAnimating(true);
-      setTimeout(() => { setCheckInStep(n); setCheckInAnimating(false); }, 220);
-    };
-    const goBack = (n) => {
-      setCheckInDirFwd(false);
-      setCheckInAnimating(true);
-      setTimeout(() => { setCheckInStep(n); setCheckInAnimating(false); }, 220);
-    };
+    const goNext = (n) => { setCheckInDirFwd(true);  setCheckInAnimating(true); setTimeout(() => { setCheckInStep(n); setCheckInAnimating(false); }, 220); };
+    const goBack = (n) => { setCheckInDirFwd(false); setCheckInAnimating(true); setTimeout(() => { setCheckInStep(n); setCheckInAnimating(false); }, 220); };
     const finish = () => {
       const entry = { ...checkInResp, date: todayStr };
-      const filtered = history.filter(c => c.date !== todayStr);
-      updatePurpose("checkInHistory", [...filtered, entry]);
+      updatePurpose("checkInHistory", [...history.filter(c => c.date !== todayStr), entry]);
       goNext(6);
     };
     const restart = () => {
@@ -3122,40 +3138,38 @@ export default function App() {
       setTimeout(() => { setCheckInStep(1); setCheckInAnimating(false); }, 220);
     };
 
-    const DotProgress = ({ current }) => (
-      <div style={{ display:"flex", gap:"8px", justifyContent:"center", marginBottom:"28px" }}>
-        {[1,2,3,4,5].map(i => (
-          <div key={i} style={{
-            width: i === current ? "24px" : "8px",
-            height: "8px", borderRadius: "4px",
-            background: i <= current ? "#C4526A" : "var(--line)",
-            transition: "all 0.3s ease",
-          }} />
-        ))}
+    const StepBar = ({ current }) => (
+      <div style={{ marginBottom: "28px" }}>
+        <div style={{ height: "3px", background: "var(--line)", borderRadius: "2px", overflow: "hidden" }}>
+          <div style={{ height: "100%", width: `${(current / 5) * 100}%`, background: "#C4526A", borderRadius: "2px", transition: "width 0.35s ease" }} />
+        </div>
+        <p style={{ margin: "7px 0 0", fontSize: "12px", color: "var(--muted)", textAlign: "right" }}>Paso {current} de 5</p>
       </div>
     );
 
     const ChipSelect = ({ options, value, onChange }) => (
-      <div style={{ display:"flex", flexWrap:"wrap", gap:"10px", marginTop:"16px" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: "9px", marginTop: "16px" }}>
         {options.map(opt => (
           <button key={opt} type="button" onClick={() => onChange(opt)} style={{
-            padding:"10px 18px", borderRadius:"24px",
-            border:`2px solid ${value === opt ? "#C4526A" : "var(--line)"}`,
-            background: value === opt ? "rgba(196,82,106,0.1)" : "#fff",
-            cursor:"pointer", fontFamily:"inherit", fontSize:"14px",
-            fontWeight: value === opt ? 700 : 400, color:"var(--ink)",
-            transition:"all 0.15s ease",
+            display: "flex", alignItems: "center", gap: "6px",
+            padding: "10px 16px", borderRadius: "24px",
+            border: `2px solid ${value === opt ? "#C4526A" : "var(--line)"}`,
+            background: value === opt ? "rgba(196,82,106,0.09)" : "#fff",
+            cursor: "pointer", fontFamily: "inherit", fontSize: "14px",
+            fontWeight: value === opt ? 700 : 400, color: "var(--ink)",
+            transition: "all 0.15s ease",
           }}>
+            {value === opt && <span style={{ fontSize: "11px", color: "#C4526A", lineHeight: 1 }}>✓</span>}
             {opt}
           </button>
         ))}
       </div>
     );
 
-    const wrap = { maxWidth:"560px" };
-    const navRow = { display:"flex", justifyContent:"space-between", marginTop:"28px", gap:"12px" };
-    const btnNext = { flex:2, padding:"13px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"12px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:700 };
-    const btnBack = { flex:1, padding:"13px", background:"#fff", color:"var(--ink)", border:"1.5px solid var(--line)", borderRadius:"12px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:600 };
+    const wrap    = { maxWidth: "560px" };
+    const divider = <div style={{ height: "1px", background: "var(--line)" }} />;
+    const btnNext = { flex: 2, padding: "13px", background: "#C4526A", color: "#fff", border: "none", borderRadius: "12px", cursor: "pointer", fontFamily: "inherit", fontSize: "15px", fontWeight: 700 };
+    const btnBack = { flex: 1, padding: "13px", background: "#fff", color: "var(--ink)", border: "1.5px solid var(--line)", borderRadius: "12px", cursor: "pointer", fontFamily: "inherit", fontSize: "15px", fontWeight: 600 };
 
     const header = (
       <div className="section-title">
@@ -3164,7 +3178,7 @@ export default function App() {
       </div>
     );
 
-    /* ── PANTALLA DE RESULTADOS ── */
+    /* ── RESULTADOS ── */
     if (showResults) {
       const recentHistory = history.slice(-8).reverse();
       return (
@@ -3172,66 +3186,98 @@ export default function App() {
           {header}
           <div style={wrap}>
 
-            {/* Afirmación */}
-            <div style={{ background:"#FBEAF0", border:"1.5px solid #ED93B1", borderRadius:"16px", padding:"24px", marginBottom:"16px" }}>
-              <p style={{ margin:"0 0 4px", fontSize:"11px", fontWeight:800, textTransform:"uppercase", letterSpacing:"1px", color:"#C4526A" }}>Hoy eres</p>
-              <h2 style={{ margin:"0 0 12px", fontSize:"32px", color:"#C4526A", fontWeight:800 }}>{aff.word}</h2>
-              <p style={{ margin:"0 0 16px", fontSize:"15px", lineHeight:1.6, color:"#6f2f4b" }}>{aff.phrase}</p>
-              <p style={{ margin:0, fontSize:"13px", fontStyle:"italic", color:"#C4526A", lineHeight:1.6 }}>Eres valiente. Eres esforzada. Eres fuerte. Puedes ser y hacer todo lo que te propongas.</p>
-            </div>
+            {/* Tarjeta unificada */}
+            <div className="card" style={{ padding: 0, marginBottom: "14px", overflow: "hidden" }}>
 
-            {/* 30 minutos */}
-            <div className="card" style={{ padding:"24px", marginBottom:"16px" }}>
-              <p style={{ margin:"0 0 6px", fontSize:"11px", fontWeight:800, textTransform:"uppercase", letterSpacing:"1px", color:"var(--muted)" }}>Tu 30 minutos de esta semana</p>
-              <p style={{ margin:"0 0 18px", fontSize:"15px", lineHeight:1.6, color:"var(--ink)" }}>{sugg}</p>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
-                <button onClick={() => alert("Próximamente: se agregará a tu calendario")} style={{ padding:"11px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"10px", cursor:"pointer", fontFamily:"inherit", fontSize:"13px", fontWeight:700 }}>
-                  📅 Agendar en Mamá CEO
-                </button>
-                <button onClick={() => alert("Próximamente: integración con Google Calendar")} style={{ padding:"11px", background:"#fff", color:"var(--ink)", border:"1.5px solid var(--line)", borderRadius:"10px", cursor:"pointer", fontFamily:"inherit", fontSize:"13px", fontWeight:600 }}>
-                  📆 Google Calendar
-                </button>
+              {/* Afirmación */}
+              <div style={{ background: "#FBEAF0", padding: "24px" }}>
+                <p style={{ margin: "0 0 2px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#C4526A" }}>Hoy eres</p>
+                <h2 style={{ margin: "0 0 10px", fontSize: "30px", color: "#C4526A", fontWeight: 800 }}>{aff.word}</h2>
+                <p style={{ margin: "0 0 14px", fontSize: "15px", lineHeight: 1.6, color: "#6f2f4b" }}>{aff.phrase}</p>
+                <p style={{ margin: 0, fontSize: "13px", fontStyle: "italic", color: "#a0476b", lineHeight: 1.6 }}>Eres valiente. Eres esforzada. Eres fuerte. Puedes ser y hacer todo lo que te propongas.</p>
               </div>
-            </div>
 
-            {/* 3 dimensiones */}
-            <div className="card" style={{ padding:"24px", marginBottom:"16px" }}>
-              <p style={{ margin:"0 0 16px", fontSize:"11px", fontWeight:800, textTransform:"uppercase", letterSpacing:"1px", color:"var(--muted)" }}>Tu semana en 3 dimensiones</p>
-              {[["Estado emocional","#D4537E",displayResp?.emocional||5],["Vida social","#1D9E75",displayResp?.social||5],["Proyectos personales","#7F77DD",displayResp?.proyectos||5]].map(([label,color,val]) => (
-                <div key={label} style={{ marginBottom:"16px" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"6px" }}>
-                    <span style={{ fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{label}</span>
-                    <strong style={{ fontSize:"14px", color }}>{val}/10</strong>
-                  </div>
-                  <div style={{ height:"10px", background:"var(--line)", borderRadius:"5px", overflow:"hidden" }}>
-                    <div style={{ height:"100%", width:`${val*10}%`, background:color, borderRadius:"5px", transition:"width 0.6s ease" }} />
-                  </div>
+              <div style={{ height: "1px", background: "#ede0e6" }} />
+
+              {/* 30 minutos */}
+              <div style={{ padding: "22px 24px" }}>
+                <p style={{ margin: "0 0 5px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)" }}>Tu 30 minutos de esta semana</p>
+                <p style={{ margin: "0 0 14px", fontSize: "14px", lineHeight: 1.6, color: "var(--ink)" }}>{sugg}</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  <button onClick={() => alert("Próximamente: se agregará a tu calendario")} style={{ padding: "10px", background: "#C4526A", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 700 }}>
+                    📅 Agendar en Mamá CEO
+                  </button>
+                  <button onClick={() => alert("Próximamente: integración con Google Calendar")} style={{ padding: "10px", background: "#fff", color: "var(--ink)", border: "1.5px solid var(--line)", borderRadius: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 600 }}>
+                    📆 Google Calendar
+                  </button>
                 </div>
-              ))}
-              <p style={{ margin:"16px 0 0", fontSize:"12px", color:"var(--muted)", fontStyle:"italic" }}>Cada semana que lo hagas, verás cómo evoluciona tu bienestar.</p>
-            </div>
+              </div>
 
-            {/* Historial emocional */}
-            {recentHistory.length > 1 && (
-              <div className="card" style={{ padding:"20px", marginBottom:"16px" }}>
-                <p style={{ margin:"0 0 14px", fontSize:"11px", fontWeight:800, textTransform:"uppercase", letterSpacing:"1px", color:"var(--muted)" }}>Tu estado emocional — últimos check-ins</p>
-                <div style={{ display:"flex", alignItems:"flex-end", gap:"8px", height:"60px" }}>
-                  {recentHistory.slice(0,8).reverse().map((c,i) => (
-                    <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:"4px" }}>
-                      <div style={{
-                        width:"100%", borderRadius:"4px",
-                        height:`${Math.max(8,(c.emocional||5)*5.5)}px`,
-                        background: (c.emocional||5) >= 7 ? "#1D9E75" : (c.emocional||5) >= 4 ? "#D4537E" : "#7F77DD",
-                        transition:"height 0.4s ease",
-                      }} />
-                      <span style={{ fontSize:"9px", color:"var(--muted)" }}>{(c.date||"").slice(5)}</span>
+              {divider}
+
+              {/* 3 dimensiones */}
+              <div style={{ padding: "22px 24px" }}>
+                <p style={{ margin: "0 0 16px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)" }}>Tu semana en 3 dimensiones</p>
+                {[["Estado emocional","#D4537E",displayResp?.emocional||5],["Vida social","#1D9E75",displayResp?.social||5],["Proyectos personales","#7F77DD",displayResp?.proyectos||5]].map(([label,color,val],i,arr) => (
+                  <div key={label} style={{ marginBottom: i < arr.length - 1 ? "14px" : 0 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>{label}</span>
+                      <strong style={{ fontSize: "13px", color }}>{val}/10</strong>
                     </div>
-                  ))}
-                </div>
+                    <div style={{ height: "7px", background: "var(--line)", borderRadius: "4px", overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${val * 10}%`, background: color, borderRadius: "4px", transition: "width 0.6s ease" }} />
+                    </div>
+                  </div>
+                ))}
               </div>
-            )}
 
-            <button type="button" onClick={restart} style={{ width:"100%", padding:"14px", background:"var(--line)", color:"var(--ink)", border:"none", borderRadius:"12px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:700 }}>
+              {/* Hábitos — solo si hay señales de alerta */}
+              {habits.length > 0 && (
+                <>
+                  {divider}
+                  <div style={{ padding: "22px 24px", background: "#fdf8f5" }}>
+                    <p style={{ margin: "0 0 3px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#a05a20" }}>Tu sistema nervioso necesita esto</p>
+                    <p style={{ margin: "0 0 16px", fontSize: "13px", color: "var(--muted)" }}>Hábitos simples que regulan cómo te sientes por dentro.</p>
+                    <div style={{ display: "grid", gap: "14px" }}>
+                      {habits.map((h, i) => (
+                        <div key={i} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
+                          <span style={{ fontSize: "20px", lineHeight: 1, paddingTop: "1px", flexShrink: 0 }}>{h.icon}</span>
+                          <div>
+                            <p style={{ margin: "0 0 3px", fontSize: "14px", fontWeight: 700, color: "var(--ink)" }}>{h.title}</p>
+                            <p style={{ margin: 0, fontSize: "13px", color: "var(--muted)", lineHeight: 1.5 }}>{h.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Historial emocional */}
+              {recentHistory.length > 1 && (
+                <>
+                  {divider}
+                  <div style={{ padding: "18px 24px" }}>
+                    <p style={{ margin: "0 0 12px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)" }}>Tu estado emocional — historial</p>
+                    <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "48px" }}>
+                      {recentHistory.slice(0, 8).reverse().map((c, i) => (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                          <div style={{
+                            width: "100%", borderRadius: "3px",
+                            height: `${Math.max(5, (c.emocional || 5) * 4)}px`,
+                            background: (c.emocional||5) >= 7 ? "#1D9E75" : (c.emocional||5) >= 4 ? "#D4537E" : "#7F77DD",
+                            transition: "height 0.4s ease",
+                          }} />
+                          <span style={{ fontSize: "9px", color: "var(--muted)" }}>{(c.date||"").slice(5)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            <button type="button" onClick={restart} style={{ width: "100%", padding: "13px", background: "var(--line)", color: "var(--ink)", border: "none", borderRadius: "12px", cursor: "pointer", fontFamily: "inherit", fontSize: "15px", fontWeight: 700 }}>
               Hacer otro check-in
             </button>
           </div>
@@ -3239,18 +3285,20 @@ export default function App() {
       );
     }
 
-    /* ── PASO 0: BIENVENIDA ── */
+    /* ── BIENVENIDA ── */
     if (checkInStep === 0) {
       return (
         <section className="panel workspace-panel">
           {header}
-          <div style={{ ...wrap, textAlign:"center", paddingTop:"16px" }}>
-            <span style={{ fontSize:"52px" }}>🌸</span>
-            <h3 style={{ margin:"16px 0 8px", fontSize:"22px", color:"var(--ink)" }}>¿Lista para tu check-in de hoy?</h3>
-            <p style={{ margin:"0 0 32px", color:"var(--muted)", fontSize:"15px", lineHeight:1.6 }}>5 preguntas. 3 minutos. Solo para ti.</p>
-            <button onClick={() => goNext(1)} style={{ ...btnNext, flex:"unset", padding:"16px 48px", fontSize:"16px" }}>
-              Empezar
-            </button>
+          <div style={wrap}>
+            <div style={{ textAlign: "center", padding: "20px 0 8px" }}>
+              <span style={{ fontSize: "46px" }}>🌸</span>
+              <h3 style={{ margin: "14px 0 6px", fontSize: "21px", color: "var(--ink)", fontWeight: 800 }}>¿Lista para tu check-in de hoy?</h3>
+              <p style={{ margin: "0 0 26px", color: "var(--muted)", fontSize: "14px", lineHeight: 1.6 }}>5 preguntas. 3 minutos. Solo para ti.</p>
+              <button onClick={() => goNext(1)} style={{ padding: "14px 48px", background: "#C4526A", color: "#fff", border: "none", borderRadius: "12px", cursor: "pointer", fontFamily: "inherit", fontSize: "16px", fontWeight: 700 }}>
+                Empezar
+              </button>
+            </div>
           </div>
         </section>
       );
@@ -3263,74 +3311,61 @@ export default function App() {
       <section className="panel workspace-panel">
         {header}
         <div style={wrap}>
-          <DotProgress current={checkInStep} />
+          <StepBar current={checkInStep} />
           <div style={slideStyle}>
 
-            {/* PASO 1 */}
             {checkInStep === 1 && (
               <div>
-                <h3 style={{ fontSize:"20px", margin:"0 0 6px", color:"var(--ink)" }}>¿Cómo empezó tu día hoy?</h3>
-                <p style={{ margin:0, fontSize:"14px", color:"var(--muted)" }}>Sin juicio. Solo dinos cómo llegaste aquí.</p>
-                <ChipSelect
-                  options={["Con energía y lista","Tranquila pero cansada","Con mucho en la cabeza","Abrumada","Agradecida aunque ocupada"]}
-                  value={checkInResp.dia}
-                  onChange={v => setCheckInResp(r => ({ ...r, dia:v }))}
-                />
+                <h3 style={{ fontSize: "20px", margin: "0 0 6px", color: "var(--ink)", fontWeight: 800 }}>¿Cómo empezó tu día hoy?</h3>
+                <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)" }}>Sin juicio. Solo dinos cómo llegaste aquí.</p>
+                <ChipSelect options={["Con energía y lista","Tranquila pero cansada","Con mucho en la cabeza","Abrumada","Agradecida aunque ocupada"]} value={checkInResp.dia} onChange={v => setCheckInResp(r => ({ ...r, dia:v }))} />
               </div>
             )}
 
-            {/* PASO 2 */}
             {checkInStep === 2 && (
               <div>
-                <h3 style={{ fontSize:"20px", margin:"0 0 6px", color:"var(--ink)" }}>¿Qué estás pensando en este momento?</h3>
-                <p style={{ margin:"0 0 16px", fontSize:"14px", color:"var(--muted)" }}>No lo sobrepienses, desahogate. Esto es solo tuyo.</p>
+                <h3 style={{ fontSize: "20px", margin: "0 0 6px", color: "var(--ink)", fontWeight: 800 }}>¿Qué estás pensando en este momento?</h3>
+                <p style={{ margin: "0 0 14px", fontSize: "14px", color: "var(--muted)" }}>No lo sobrepienses, desahogate. Esto es solo tuyo.</p>
                 <textarea value={checkInResp.pensando} onChange={e => setCheckInResp(r => ({ ...r, pensando:e.target.value }))}
                   placeholder="Lo que está en tu mente ahora mismo..."
                   style={{ width:"100%", minHeight:"120px", padding:"14px", border:"1.5px solid var(--line)", borderRadius:"12px", font:"inherit", fontSize:"14px", resize:"vertical", boxSizing:"border-box", background:"#faf7f5", lineHeight:1.6 }} />
               </div>
             )}
 
-            {/* PASO 3 */}
             {checkInStep === 3 && (
               <div>
-                <h3 style={{ fontSize:"20px", margin:"0 0 6px", color:"var(--ink)" }}>¿Qué llevas días o semanas posponiendo?</h3>
-                <p style={{ margin:"0 0 16px", fontSize:"14px", color:"var(--muted)" }}>Eso que sientes cuando cierras los ojos y sabes que está pendiente.</p>
+                <h3 style={{ fontSize: "20px", margin: "0 0 6px", color: "var(--ink)", fontWeight: 800 }}>¿Qué llevas días o semanas posponiendo?</h3>
+                <p style={{ margin: "0 0 14px", fontSize: "14px", color: "var(--muted)" }}>Eso que sientes cuando cierras los ojos y sabes que está pendiente.</p>
                 <textarea value={checkInResp.postergando} onChange={e => setCheckInResp(r => ({ ...r, postergando:e.target.value }))}
                   placeholder="Eso que sabes que necesitas hacer pero sigues aplazando..."
                   style={{ width:"100%", minHeight:"120px", padding:"14px", border:"1.5px solid var(--line)", borderRadius:"12px", font:"inherit", fontSize:"14px", resize:"vertical", boxSizing:"border-box", background:"#faf7f5", lineHeight:1.6 }} />
               </div>
             )}
 
-            {/* PASO 4 */}
             {checkInStep === 4 && (
               <div>
-                <h3 style={{ fontSize:"20px", margin:"0 0 6px", color:"var(--ink)" }}>Si esta semana tuvieras 30 minutos solo para ti, ¿en qué los usarías?</h3>
-                <p style={{ margin:0, fontSize:"14px", color:"var(--muted)" }}>Sin culpa. ¿Qué necesitas tú?</p>
-                <ChipSelect
-                  options={["Descansar sin hacer nada","Leer o escuchar algo inspirador","Moverme o hacer ejercicio","Trabajar en mi negocio","Estar en silencio y orar","honestamente no sé"]}
-                  value={checkInResp.treinta}
-                  onChange={v => setCheckInResp(r => ({ ...r, treinta:v }))}
-                />
+                <h3 style={{ fontSize: "20px", margin: "0 0 6px", color: "var(--ink)", fontWeight: 800 }}>Si esta semana tuvieras 30 minutos solo para ti, ¿en qué los usarías?</h3>
+                <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)" }}>Sin culpa. ¿Qué necesitas tú?</p>
+                <ChipSelect options={["Descansar sin hacer nada","Leer o escuchar algo inspirador","Moverme o hacer ejercicio","Trabajar en mi negocio","Estar en silencio y orar","honestamente no sé"]} value={checkInResp.treinta} onChange={v => setCheckInResp(r => ({ ...r, treinta:v }))} />
               </div>
             )}
 
-            {/* PASO 5 */}
             {checkInStep === 5 && (
               <div>
-                <h3 style={{ fontSize:"20px", margin:"0 0 6px", color:"var(--ink)" }}>Por último — ¿cómo está tu vida en estas tres áreas?</h3>
-                <p style={{ margin:"0 0 24px", fontSize:"14px", color:"var(--muted)" }}>Del 1 al 10. Sin presión.</p>
+                <h3 style={{ fontSize: "20px", margin: "0 0 6px", color: "var(--ink)", fontWeight: 800 }}>Por último — ¿cómo está tu vida en estas tres áreas?</h3>
+                <p style={{ margin: "0 0 22px", fontSize: "14px", color: "var(--muted)" }}>Del 1 al 10. Sin presión.</p>
                 {[["Estado emocional","#D4537E","emocional"],["Vida social","#1D9E75","social"],["Proyectos personales","#7F77DD","proyectos"]].map(([label,color,key]) => (
-                  <div key={key} style={{ marginBottom:"20px" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"8px" }}>
-                      <span style={{ fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{label}</span>
-                      <strong style={{ fontSize:"16px", color }}>{checkInResp[key]}</strong>
+                  <div key={key} style={{ marginBottom: "20px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
+                      <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>{label}</span>
+                      <strong style={{ fontSize: "16px", color }}>{checkInResp[key]}</strong>
                     </div>
                     <input type="range" min="1" max="10" value={checkInResp[key]}
                       onChange={e => setCheckInResp(r => ({ ...r, [key]:Number(e.target.value) }))}
-                      style={{ width:"100%", accentColor:color }} />
-                    <div style={{ display:"flex", justifyContent:"space-between", marginTop:"2px" }}>
-                      <span style={{ fontSize:"11px", color:"var(--muted)" }}>1 — Muy bajo</span>
-                      <span style={{ fontSize:"11px", color:"var(--muted)" }}>10 — Excelente</span>
+                      style={{ width: "100%", accentColor: color }} />
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "2px" }}>
+                      <span style={{ fontSize: "11px", color: "var(--muted)" }}>1 — Muy bajo</span>
+                      <span style={{ fontSize: "11px", color: "var(--muted)" }}>10 — Excelente</span>
                     </div>
                   </div>
                 ))}
@@ -3338,16 +3373,13 @@ export default function App() {
             )}
           </div>
 
-          {/* Navegación */}
-          <div style={navRow}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "28px", gap: "12px" }}>
             {checkInStep > 1
               ? <button onClick={() => goBack(checkInStep - 1)} style={btnBack}>← Atrás</button>
-              : <div style={{ flex:1 }} />
+              : <div style={{ flex: 1 }} />
             }
             {checkInStep < 5
-              ? <button onClick={() => goNext(checkInStep + 1)} disabled={!canNext} style={{ ...btnNext, opacity: canNext ? 1 : 0.45 }}>
-                  Siguiente →
-                </button>
+              ? <button onClick={() => goNext(checkInStep + 1)} disabled={!canNext} style={{ ...btnNext, opacity: canNext ? 1 : 0.45 }}>Siguiente →</button>
               : <button onClick={finish} style={btnNext}>Ver mi resultado ✨</button>
             }
           </div>
