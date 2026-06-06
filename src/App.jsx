@@ -554,8 +554,7 @@ export default function App() {
   const [apptForm, setApptForm] = useState({ title: "", date: "", type: "Médico" });
   const [weekMenu, setWeekMenu] = useState(stored?.weekMenu || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
   const [homeRoutines, setHomeRoutines] = useState(stored?.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
-  const [kidsActivities, setKidsActivities] = useState(stored?.kidsActivities || []);
-  const [kidsActForm, setKidsActForm] = useState({ kid:"", day:"L", activity:"", time:"" });
+  const [kidsSchedule, setKidsSchedule] = useState(stored?.kidsSchedule || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
   const [quickNotes, setQuickNotes] = useState(stored?.quickNotes || []);
   const [quickNoteInput, setQuickNoteInput] = useState("");
   const [groceryForm, setGroceryForm] = useState("");
@@ -1117,7 +1116,7 @@ export default function App() {
       appointments,
       weekMenu,
       homeRoutines,
-      kidsActivities,
+      kidsSchedule,
       quickNotes,
       userPlan,
       premiumExpiresAt,
@@ -2787,7 +2786,6 @@ export default function App() {
     const addToGCal       = appt => { const t = encodeURIComponent(appt.title); const d = appt.date.replace(/-/g,""); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${d}/${d}`, "_blank"); };
     const submitAppt      = e => { e.preventDefault(); if (!apptForm.title.trim() || !apptForm.date) return; setAppointments(c => [...c, { id:Date.now(), ...apptForm, title:apptForm.title.trim() }]); setApptForm(f => ({ ...f, title:"", date:"" })); };
     const addQuickNote    = e => { e.preventDefault(); if (!quickNoteInput.trim()) return; setQuickNotes(c => [...c, { id:Date.now(), text:quickNoteInput.trim() }]); setQuickNoteInput(""); };
-    const addKidsAct      = e => { e.preventDefault(); if (!kidsActForm.kid.trim() || !kidsActForm.activity.trim()) return; setKidsActivities(c => [...c, { id:Date.now(), ...kidsActForm }]); setKidsActForm(f => ({ ...f, kid:"", activity:"", time:"" })); };
     const STARTER_TASKS   = [
       { title:"Organizar cajones de la cocina", category:"Hogar / Limpieza" },
       { title:"Lista de mercado de la semana",  category:"Compras" },
@@ -2902,28 +2900,39 @@ export default function App() {
               )}
             </div>
 
-            {/* Menú de hoy + Rutina de hoy */}
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"14px"}}>
+            {/* Menú + Rutina + Actividades hijos de hoy */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"12px",marginBottom:"14px"}}>
               <div className="card" style={{padding:"16px"}}>
                 <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"1px",color:"var(--muted)"}}>Menú de hoy</p>
                 {weekMenu[todayDay] ? (
-                  <p style={{margin:0,fontSize:"16px",fontWeight:700,color:"var(--ink)",lineHeight:1.3}}>{weekMenu[todayDay]}</p>
+                  <p style={{margin:0,fontSize:"15px",fontWeight:700,color:"var(--ink)",lineHeight:1.3}}>{weekMenu[todayDay]}</p>
                 ) : (
                   <p style={{margin:"0 0 6px",fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin planear</p>
                 )}
                 <button type="button" onClick={() => setHomeTab(1)} style={{marginTop:"8px",fontSize:"12px",color:"var(--pink)",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600,display:"block"}}>
-                  {weekMenu[todayDay] ? "Ver menú semana →" : "Planear semana →"}
+                  {weekMenu[todayDay] ? "Ver semana →" : "Planear →"}
                 </button>
               </div>
               <div className="card" style={{padding:"16px"}}>
                 <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"1px",color:"var(--muted)"}}>Rutina de hoy</p>
                 {homeRoutines[todayDay] ? (
-                  <p style={{margin:0,fontSize:"16px",fontWeight:700,color:"var(--purple)",lineHeight:1.3}}>{homeRoutines[todayDay]}</p>
+                  <p style={{margin:0,fontSize:"15px",fontWeight:700,color:"var(--purple)",lineHeight:1.3}}>{homeRoutines[todayDay]}</p>
                 ) : (
                   <p style={{margin:"0 0 6px",fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin rutina</p>
                 )}
                 <button type="button" onClick={() => setHomeTab(2)} style={{marginTop:"8px",fontSize:"12px",color:"var(--purple)",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600,display:"block"}}>
-                  {homeRoutines[todayDay] ? "Ver tareas →" : "Definir rutinas →"}
+                  {homeRoutines[todayDay] ? "Ver tareas →" : "Definir →"}
+                </button>
+              </div>
+              <div className="card" style={{padding:"16px"}}>
+                <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"1px",color:"var(--muted)"}}>Hijos hoy</p>
+                {kidsSchedule[todayDay] ? (
+                  <p style={{margin:0,fontSize:"15px",fontWeight:700,color:"#1D9E75",lineHeight:1.3}}>{kidsSchedule[todayDay]}</p>
+                ) : (
+                  <p style={{margin:"0 0 6px",fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin actividades</p>
+                )}
+                <button type="button" onClick={() => setHomeTab(1)} style={{marginTop:"8px",fontSize:"12px",color:"#1D9E75",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600,display:"block"}}>
+                  {kidsSchedule[todayDay] ? "Ver semana →" : "Agregar →"}
                 </button>
               </div>
             </div>
@@ -3011,41 +3020,17 @@ export default function App() {
 
               <div className="card" style={{padding:"20px"}}>
                 <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Actividades de los hijos 🎒</h3>
-                <p style={{margin:"0 0 12px",fontSize:"13px",color:"var(--muted)"}}>¿Quién va dónde esta semana?</p>
-                <form onSubmit={addKidsAct} style={{display:"grid",gap:"7px",marginBottom:"12px"}}>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"7px"}}>
-                    <input placeholder="Nombre" value={kidsActForm.kid} onChange={e => setKidsActForm(f => ({...f,kid:e.target.value}))}
-                      style={{padding:"7px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
-                    <input placeholder="Actividad" value={kidsActForm.activity} onChange={e => setKidsActForm(f => ({...f,activity:e.target.value}))}
-                      style={{padding:"7px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:"7px"}}>
-                    <select value={kidsActForm.day} onChange={e => setKidsActForm(f => ({...f,day:e.target.value}))}
-                      style={{padding:"7px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}}>
-                      {DAY_LABELS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-                    </select>
-                    <input placeholder="Hora" value={kidsActForm.time} onChange={e => setKidsActForm(f => ({...f,time:e.target.value}))}
-                      style={{padding:"7px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
-                    <button type="submit" style={{padding:"7px 14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>+</button>
-                  </div>
-                </form>
-                {kidsActivities.length === 0 ? (
-                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Agrega las actividades de tus hijos.</p>
-                ) : (
-                  <div style={{display:"grid",gap:"7px"}}>
-                    {kidsActivities.sort((a,b) => "LMXJVSD".indexOf(a.day)-"LMXJVSD".indexOf(b.day)).map(act => (
-                      <div key={act.id} style={{display:"flex",alignItems:"center",gap:"9px",padding:"8px 11px",border:`1px solid ${todayDay===act.day?"rgba(196,82,106,0.3)":"var(--line)"}`,borderRadius:"9px",background:todayDay===act.day?"#fdf5f7":"#fff"}}>
-                        <span style={{width:"26px",height:"26px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===act.day?"#C4526A":"var(--line)",color:todayDay===act.day?"#fff":"var(--muted)"}}>{act.day}</span>
-                        <div style={{flex:1,minWidth:0}}>
-                          <p style={{margin:"0 0 1px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>{act.kid} — {act.activity}</p>
-                          {act.time && <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>{act.time}</p>}
-                        </div>
-                        <button type="button" onClick={() => setKidsActivities(c => c.filter(a => a.id!==act.id))}
-                          style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",lineHeight:1}}>×</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>¿Quién va dónde? Escribe todas las actividades del día en una línea.</p>
+                <div style={{display:"grid",gap:"7px"}}>
+                  {DAY_LABELS.map(([key, name]) => (
+                    <div key={key} style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                      <span style={{width:"30px",height:"30px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
+                      <input value={kidsSchedule[key]} onChange={e => setKidsSchedule(s => ({...s,[key]:e.target.value}))}
+                        placeholder={todayDay===key?"Ej: Ana fútbol 4pm, Pedro piano 5pm":"Ej: Ana natación 3pm..."}
+                        style={{flex:1,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5"}} />
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
 
