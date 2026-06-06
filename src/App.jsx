@@ -552,6 +552,12 @@ export default function App() {
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
   const [appointments, setAppointments] = useState(stored?.appointments || []);
   const [apptForm, setApptForm] = useState({ title: "", date: "", type: "Médico" });
+  const [weekMenu, setWeekMenu] = useState(stored?.weekMenu || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
+  const [homeRoutines, setHomeRoutines] = useState(stored?.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
+  const [kidsActivities, setKidsActivities] = useState(stored?.kidsActivities || []);
+  const [kidsActForm, setKidsActForm] = useState({ kid:"", day:"L", activity:"", time:"" });
+  const [quickNotes, setQuickNotes] = useState(stored?.quickNotes || []);
+  const [quickNoteInput, setQuickNoteInput] = useState("");
   const [groceryForm, setGroceryForm] = useState("");
   const [reportWeekOffset, setReportWeekOffset] = useState(0);
   const [userPlan, setUserPlan] = useState(stored?.userPlan || "free");
@@ -1108,6 +1114,10 @@ export default function App() {
       brandProfile,
       groceryList,
       appointments,
+      weekMenu,
+      homeRoutines,
+      kidsActivities,
+      quickNotes,
       userPlan,
       premiumExpiresAt,
       userMode
@@ -2766,6 +2776,12 @@ export default function App() {
       { title: "Revisar tareas del colegio", category: "Colegio / Ninos" },
       { title: "30 minutos solo para mí", category: "Bienestar" },
     ];
+    const todayDay = ["D","L","M","X","J","V","S"][new Date().getDay()];
+    const today0 = new Date(); today0.setHours(0,0,0,0);
+    const upcomingAppts = appointments.filter(a => Math.round((new Date(a.date+"T00:00:00") - today0) / 86400000) >= 0);
+    const addQuickNote = (e) => { e.preventDefault(); if (!quickNoteInput.trim()) return; setQuickNotes(c => [...c, { id: Date.now(), text: quickNoteInput.trim() }]); setQuickNoteInput(""); };
+    const addKidsAct = (e) => { e.preventDefault(); if (!kidsActForm.kid.trim() || !kidsActForm.activity.trim()) return; setKidsActivities(c => [...c, { id: Date.now(), ...kidsActForm }]); setKidsActForm(f => ({ ...f, kid:"", activity:"", time:"" })); };
+    const DAY_LABELS = [["L","Lunes"],["M","Martes"],["X","Miércoles"],["J","Jueves"],["V","Viernes"],["S","Sábado"],["D","Domingo"]];
 
     return (
       <section className="panel workspace-panel">
@@ -2777,28 +2793,18 @@ export default function App() {
         {/* KPIs */}
         <div className="home-kpi-row">
           <div className="client-kpi">
-            <span>Completadas</span>
-            <strong style={{color:"var(--green)"}}>{completedHomeTasks}/{homeTasks.length}</strong>
-            <small>{homeProgress}% esta semana</small>
-          </div>
-          <div className="client-kpi">
             <span>Carga mental</span>
             <strong style={{color: mentalLoadColor}}>{mentalLoadLevel}</strong>
             <small>{mentalLoad} pendientes</small>
           </div>
           <div className="client-kpi">
-            <span>Tiempo liberado</span>
-            <strong style={{color:"var(--green)"}}>{horasLiberadas > 0 ? `~${horasLiberadas}h` : "—"}</strong>
-            <small>{delegatedTasks.filter(t=>!t.done).length > 0 ? `${delegatedTasks.filter(t=>!t.done).length} delegadas` : "delega para ganar tiempo"}</small>
-          </div>
-          <div className="client-kpi">
-            <span>Pagos esta semana</span>
-            <strong style={{color: homePaymentsThisWeek.length ? "var(--orange)" : "var(--green)"}}>{homePaymentsThisWeek.length}</strong>
-            <small>{homePaymentsThisWeek.length ? homePaymentsThisWeek.slice(0,1).map(p=>p.description).join("") : "sin pagos"}</small>
+            <span>Próximas citas</span>
+            <strong style={{color: upcomingAppts.length ? "var(--orange)" : "var(--green)"}}>{upcomingAppts.length}</strong>
+            <small>{upcomingAppts.length ? upcomingAppts[0]?.title?.slice(0,20) : "sin citas"}</small>
           </div>
           <div className="client-kpi">
             <span>Disponible familiar</span>
-            <strong style={{fontSize:"14px"}}>{money.format(homeAvailable)}</strong>
+            <strong style={{fontSize:"14px",color:"var(--green)"}}>{money.format(homeAvailable)}</strong>
             <small>después de gastos</small>
           </div>
         </div>
@@ -2909,6 +2915,108 @@ export default function App() {
           );
         })()}
 
+        {/* Menú semanal + Actividades hijos */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:"16px", marginBottom:"16px" }}>
+
+          {/* Menú semanal */}
+          <div className="card" style={{ padding:"20px" }}>
+            <h3 style={{ margin:"0 0 2px", fontSize:"16px" }}>Menú de la semana 🍽️</h3>
+            <p style={{ margin:"0 0 14px", fontSize:"13px", color:"var(--muted)" }}>Saber qué cocinar elimina la decisión diaria.</p>
+            <div style={{ display:"grid", gap:"7px" }}>
+              {DAY_LABELS.map(([key, name]) => (
+                <div key={key} style={{ display:"flex", alignItems:"center", gap:"10px" }}>
+                  <span style={{
+                    width:"30px", height:"30px", borderRadius:"50%", flexShrink:0,
+                    display:"flex", alignItems:"center", justifyContent:"center",
+                    fontSize:"11px", fontWeight:800,
+                    background: todayDay===key ? "#C4526A" : "var(--line)",
+                    color: todayDay===key ? "#fff" : "var(--muted)",
+                  }}>{key}</span>
+                  <input
+                    value={weekMenu[key]} onChange={e => setWeekMenu(m => ({ ...m, [key]:e.target.value }))}
+                    placeholder={todayDay===key ? "¿Qué cocinas hoy?" : name+"..."}
+                    style={{
+                      flex:1, padding:"7px 10px", font:"inherit", fontSize:"13px", borderRadius:"8px",
+                      border:`1px solid ${todayDay===key ? "rgba(196,82,106,0.35)" : "var(--line)"}`,
+                      background: todayDay===key ? "#fdf5f7" : "#faf7f5",
+                    }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Actividades de los hijos */}
+          <div className="card" style={{ padding:"20px" }}>
+            <h3 style={{ margin:"0 0 2px", fontSize:"16px" }}>Actividades de los hijos 🎒</h3>
+            <p style={{ margin:"0 0 12px", fontSize:"13px", color:"var(--muted)" }}>¿Quién va dónde esta semana?</p>
+            <form onSubmit={addKidsAct} style={{ display:"grid", gap:"7px", marginBottom:"12px" }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"7px" }}>
+                <input placeholder="Nombre" value={kidsActForm.kid} onChange={e => setKidsActForm(f => ({ ...f, kid:e.target.value }))}
+                  style={{ padding:"7px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
+                <input placeholder="Actividad" value={kidsActForm.activity} onChange={e => setKidsActForm(f => ({ ...f, activity:e.target.value }))}
+                  style={{ padding:"7px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:"7px" }}>
+                <select value={kidsActForm.day} onChange={e => setKidsActForm(f => ({ ...f, day:e.target.value }))}
+                  style={{ padding:"7px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }}>
+                  {DAY_LABELS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+                <input placeholder="Hora (ej: 4pm)" value={kidsActForm.time} onChange={e => setKidsActForm(f => ({ ...f, time:e.target.value }))}
+                  style={{ padding:"7px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
+                <button type="submit" style={{ padding:"7px 14px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"8px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:700 }}>+</button>
+              </div>
+            </form>
+            {kidsActivities.length === 0 ? (
+              <p style={{ margin:0, fontSize:"13px", color:"var(--muted)", fontStyle:"italic" }}>Agrega las actividades de tus hijos.</p>
+            ) : (
+              <div style={{ display:"grid", gap:"7px" }}>
+                {kidsActivities
+                  .sort((a,b) => "LMXJVSD".indexOf(a.day) - "LMXJVSD".indexOf(b.day))
+                  .map(act => (
+                    <div key={act.id} style={{ display:"flex", alignItems:"center", gap:"9px", padding:"8px 11px", border:`1px solid ${todayDay===act.day?"rgba(196,82,106,0.3)":"var(--line)"}`, borderRadius:"9px", background: todayDay===act.day ? "#fdf5f7" : "#fff" }}>
+                      <span style={{
+                        width:"26px", height:"26px", borderRadius:"50%", flexShrink:0,
+                        display:"flex", alignItems:"center", justifyContent:"center",
+                        fontSize:"10px", fontWeight:800,
+                        background: todayDay===act.day ? "#C4526A" : "var(--line)",
+                        color: todayDay===act.day ? "#fff" : "var(--muted)",
+                      }}>{act.day}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <p style={{ margin:"0 0 1px", fontSize:"13px", fontWeight:600, color:"var(--ink)" }}>{act.kid} — {act.activity}</p>
+                        {act.time && <p style={{ margin:0, fontSize:"11px", color:"var(--muted)" }}>{act.time}</p>}
+                      </div>
+                      <button type="button" onClick={() => setKidsActivities(c => c.filter(a => a.id !== act.id))}
+                        style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"14px", lineHeight:1 }}>×</button>
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Notas rápidas */}
+        <div className="card" style={{ padding:"18px 20px", marginBottom:"16px" }}>
+          <h3 style={{ margin:"0 0 2px", fontSize:"16px" }}>Notas rápidas 📝</h3>
+          <p style={{ margin:"0 0 12px", fontSize:"13px", color:"var(--muted)" }}>Cosas que no quieres olvidar pero no son tareas formales.</p>
+          <form onSubmit={addQuickNote} style={{ display:"flex", gap:"8px", marginBottom: quickNotes.length ? "12px" : 0 }}>
+            <input placeholder="Anota algo rápido y presiona Enter..." value={quickNoteInput} onChange={e => setQuickNoteInput(e.target.value)}
+              style={{ flex:1, padding:"9px 12px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
+            <button type="submit" style={{ padding:"9px 16px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"8px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:700 }}>+</button>
+          </form>
+          {quickNotes.length > 0 && (
+            <div style={{ display:"grid", gap:"6px" }}>
+              {[...quickNotes].reverse().slice(0,8).map(note => (
+                <div key={note.id} style={{ display:"flex", alignItems:"flex-start", gap:"10px", padding:"8px 12px", background:"#fffcf0", border:"1px solid #ede8d0", borderRadius:"8px" }}>
+                  <span style={{ flex:1, fontSize:"13px", color:"var(--ink)", lineHeight:1.45 }}>{note.text}</span>
+                  <button type="button" onClick={() => setQuickNotes(c => c.filter(n => n.id !== note.id))}
+                    style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"14px", flexShrink:0, lineHeight:1 }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Layout principal */}
         <div className="home-main-layout">
 
@@ -3002,6 +3110,39 @@ export default function App() {
                   {delegatedTasks.map((t) => <p key={t.id} style={{margin:"2px 0",fontSize:"13px",color:"var(--ink)"}}>{t.title} - {t.delegate}</p>)}
                 </div>
               )}
+            </div>
+
+            {/* Rutinas del hogar */}
+            <div className="card home-budget-card" style={{ marginTop:"0" }}>
+              <h3 style={{ margin:"0 0 2px", fontSize:"16px" }}>Rutinas del hogar 🧹</h3>
+              <p style={{ margin:"0 0 14px", fontSize:"13px", color:"var(--muted)" }}>Qué toca hacer cada día para que el hogar funcione.</p>
+              {homeRoutines[todayDay] && (
+                <div style={{ marginBottom:"12px", padding:"9px 14px", background:"rgba(107,70,193,0.07)", borderRadius:"10px", border:"1px solid rgba(107,70,193,0.18)" }}>
+                  <p style={{ margin:0, fontSize:"13px", color:"var(--purple)", fontWeight:700 }}>Hoy toca: {homeRoutines[todayDay]}</p>
+                </div>
+              )}
+              <div style={{ display:"grid", gap:"6px" }}>
+                {DAY_LABELS.map(([key, name]) => (
+                  <div key={key} style={{ display:"flex", alignItems:"center", gap:"9px" }}>
+                    <span style={{
+                      width:"28px", height:"28px", borderRadius:"50%", flexShrink:0,
+                      display:"flex", alignItems:"center", justifyContent:"center",
+                      fontSize:"10px", fontWeight:800,
+                      background: todayDay===key ? "var(--purple)" : "var(--line)",
+                      color: todayDay===key ? "#fff" : "var(--muted)",
+                    }}>{key}</span>
+                    <input
+                      value={homeRoutines[key]} onChange={e => setHomeRoutines(r => ({ ...r, [key]:e.target.value }))}
+                      placeholder={`Rutina del ${name.toLowerCase()}...`}
+                      style={{
+                        flex:1, padding:"7px 10px", font:"inherit", fontSize:"13px", borderRadius:"7px",
+                        border:`1px solid ${todayDay===key ? "rgba(107,70,193,0.3)" : "var(--line)"}`,
+                        background: todayDay===key ? "#f5f0fc" : "#faf7f5",
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
 
             {/* Presencia con mi familia */}
