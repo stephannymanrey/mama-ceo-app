@@ -1,4 +1,5 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import { awsAuth, getAwsAuthToken, isAwsConfigured, confirmAwsResetPassword } from "./lib/awsClient";
 import Logo from "./Logo";
 import Studio from "./Studio";
@@ -475,6 +476,7 @@ async function deleteRemoteState() {
 }
 
 export default function App() {
+  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW();
   const stored = loadState();
   const [activeView, setActiveView] = useState(stored?.activeView || "dashboard");
   const [currency, setCurrency] = useState(stored?.currency || "USD");
@@ -624,6 +626,32 @@ export default function App() {
   useEffect(() => {
     const id = setInterval(() => setClockNow(new Date()), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (!("Notification" in window)) return;
+    const askAndNotify = async () => {
+      if (Notification.permission === "default") await Notification.requestPermission();
+      if (Notification.permission !== "granted") return;
+      const today0 = new Date(); today0.setHours(0,0,0,0);
+      const todayAppts = appointments.filter(a => {
+        const diff = Math.round((new Date(a.date + "T00:00:00") - today0) / 86400000);
+        return diff === 0 || diff === 1;
+      });
+      if (!todayAppts.length) return;
+      const lastNotif = localStorage.getItem("lastApptNotif");
+      const todayStr = new Date().toISOString().slice(0, 10);
+      if (lastNotif === todayStr) return;
+      localStorage.setItem("lastApptNotif", todayStr);
+      const todayList = todayAppts.filter(a => Math.round((new Date(a.date + "T00:00:00") - today0) / 86400000) === 0);
+      const tmrwList  = todayAppts.filter(a => Math.round((new Date(a.date + "T00:00:00") - today0) / 86400000) === 1);
+      let body = "";
+      if (todayList.length) body += `Hoy: ${todayList.map(a => a.title).join(", ")}. `;
+      if (tmrwList.length)  body += `Mañana: ${tmrwList.map(a => a.title).join(", ")}.`;
+      new Notification("MamaCEO 🌸 — Citas próximas", { body: body.trim(), icon: "/logo.png" });
+    };
+    const timer = setTimeout(askAndNotify, 1500);
+    return () => clearTimeout(timer);
   }, []);
 
   const BETA_CODE = "MAMACEO2026";
@@ -1572,6 +1600,12 @@ export default function App() {
 
   return (
     <div className="app-shell">
+      {needRefresh && (
+        <div style={{position:"fixed",bottom:"16px",left:"50%",transform:"translateX(-50%)",zIndex:9999,background:"#C4526A",color:"#fff",padding:"12px 20px",borderRadius:"12px",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 4px 20px rgba(0,0,0,0.2)",fontSize:"14px",fontWeight:600,whiteSpace:"nowrap"}}>
+          <span>🌸 Nueva versión disponible</span>
+          <button type="button" onClick={() => updateServiceWorker(true)} style={{background:"#fff",color:"#C4526A",border:"none",borderRadius:"8px",padding:"6px 14px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>Actualizar</button>
+        </div>
+      )}
       {showProfileModal && (
         <div className="profile-modal-overlay">
           <div className="profile-modal">
