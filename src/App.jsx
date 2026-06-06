@@ -587,6 +587,8 @@ export default function App() {
   const [presenceForm, setPresenceForm] = useState({ quien: [], queHicieron: "", tiempo: "30 min" });
   const [presenceCelebration, setPresenceCelebration] = useState(false);
   const [homeTab, setHomeTab] = useState(0);
+  const [reminderTime, setReminderTime] = useState(stored?.reminderTime || "08:00");
+  const [reminderEnabled, setReminderEnabled] = useState(stored?.reminderEnabled !== false);
   const [checkInStep, setCheckInStep] = useState(0);
   const [checkInResp, setCheckInResp] = useState({ dia: "", pensando: "", postergando: "", treinta: "", emocional: 5, social: 5, proyectos: 5 });
   const [checkInAnimating, setCheckInAnimating] = useState(false);
@@ -673,6 +675,52 @@ export default function App() {
     const timer = setTimeout(askAndNotify, 1500);
     return () => clearTimeout(timer);
   }, []);
+
+  function playChime() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [[523.25, 0], [659.25, 0.2], [783.99, 0.4], [1046.5, 0.6]].forEach(([freq, delay]) => {
+        const osc  = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.value = freq;
+        osc.type = "sine";
+        const t = ctx.currentTime + delay;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.22, t + 0.04);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 1.4);
+        osc.start(t);
+        osc.stop(t + 1.4);
+      });
+    } catch(e) {}
+  }
+
+  useEffect(() => {
+    if (!reminderEnabled || !reminderTime) return;
+    const [h, m] = reminderTime.split(":").map(Number);
+    const now    = new Date();
+    const target = new Date();
+    target.setHours(h, m, 0, 0);
+    const ms = target - now;
+    if (ms < 0) return;
+    const timer = setTimeout(() => {
+      playChime();
+      if (Notification.permission !== "granted") return;
+      const t0 = new Date(); t0.setHours(0,0,0,0);
+      const soon = appointments.filter(a => {
+        const diff = Math.round((new Date(a.date + "T00:00:00") - t0) / 86400000);
+        return diff >= 0 && diff <= 2;
+      });
+      if (!soon.length) return;
+      const body = soon.map(a => {
+        const diff = Math.round((new Date(a.date + "T00:00:00") - t0) / 86400000);
+        return `${diff === 0 ? "Hoy" : diff === 1 ? "Mañana" : "En 2d"}: ${a.title}`;
+      }).join(" · ");
+      new Notification("MamaCEO 🌸 — Buenos días", { body, icon: "/logo.png" });
+    }, ms);
+    return () => clearTimeout(timer);
+  }, [reminderEnabled, reminderTime, appointments]);
 
   const BETA_CODE = "MAMACEO2026";
   const BETA_CODE_EXPIRY = new Date("2026-12-31T23:59:59").getTime();
@@ -1166,6 +1214,8 @@ export default function App() {
       homeRoutines,
       kidsSchedule,
       quickNotes,
+      reminderTime,
+      reminderEnabled,
       userPlan,
       premiumExpiresAt,
       userMode
@@ -1766,6 +1816,31 @@ export default function App() {
                   </label>
                 </>
               )}
+              {/* Recordatorios */}
+              <div style={{padding:"14px",background:"#faf7f5",borderRadius:"12px",border:"1px solid var(--line)"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:reminderEnabled?"12px":"0"}}>
+                  <div>
+                    <p style={{margin:"0 0 2px",fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>🔔 Recordatorios diarios</p>
+                    <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Aviso con tus citas del día y mañana.</p>
+                  </div>
+                  <button type="button" onClick={() => setReminderEnabled(v => !v)}
+                    style={{padding:"6px 14px",borderRadius:"20px",border:`2px solid ${reminderEnabled?"var(--pink)":"var(--line)"}`,background:reminderEnabled?"rgba(212,104,122,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700,color:reminderEnabled?"var(--pink)":"var(--muted)",flexShrink:0}}>
+                    {reminderEnabled ? "Activos ✓" : "Inactivos"}
+                  </button>
+                </div>
+                {reminderEnabled && (
+                  <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                    <label style={{fontSize:"13px",color:"var(--ink)",fontWeight:600,flexShrink:0}}>¿A qué hora?</label>
+                    <input type="time" value={reminderTime} onChange={e => setReminderTime(e.target.value)}
+                      style={{flex:1,padding:"8px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"14px",background:"#fff",fontWeight:700}} />
+                    <button type="button" onClick={playChime}
+                      style={{padding:"8px 14px",background:"var(--line)",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700,flexShrink:0}}>
+                      🔔 Probar
+                    </button>
+                  </div>
+                )}
+              </div>
+
               <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ?"}</button>
               {profileSetup && (
                 <button type="button" onClick={async () => {
