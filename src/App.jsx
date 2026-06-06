@@ -573,10 +573,18 @@ export default function App() {
   const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
   const [appointments, setAppointments] = useState(stored?.appointments || []);
-  const [apptForm, setApptForm] = useState({ title: "", date: "", type: "Médico" });
+  const [apptForm, setApptForm] = useState({ title: "", date: "", time: "", type: "Médico", recurrence: "none" });
   const [weekMenu, setWeekMenu] = useState(stored?.weekMenu || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
   const [homeRoutines, setHomeRoutines] = useState(stored?.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
-  const [kidsSchedule, setKidsSchedule] = useState(stored?.kidsSchedule || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
+  const [kidsSchedule, setKidsSchedule] = useState(() => {
+    const raw = stored?.kidsSchedule || {};
+    const out = {};
+    ["L","M","X","J","V","S","D"].forEach(d => {
+      const v = raw[d];
+      out[d] = (v && typeof v === "object" && "act" in v) ? v : { act: (typeof v === "string" ? v : ""), time: "" };
+    });
+    return out;
+  });
   const [quickNotes, setQuickNotes] = useState(stored?.quickNotes || []);
   const [quickNoteInput, setQuickNoteInput] = useState("");
   const [groceryForm, setGroceryForm] = useState("");
@@ -589,6 +597,8 @@ export default function App() {
   const [homeTab, setHomeTab] = useState(0);
   const [reminderTime, setReminderTime] = useState(stored?.reminderTime || "08:00");
   const [reminderEnabled, setReminderEnabled] = useState(stored?.reminderEnabled !== false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [checkInStep, setCheckInStep] = useState(0);
   const [checkInResp, setCheckInResp] = useState({ dia: "", pensando: "", postergando: "", treinta: "", emocional: 5, social: 5, proyectos: 5 });
   const [checkInAnimating, setCheckInAnimating] = useState(false);
@@ -2105,9 +2115,106 @@ export default function App() {
             </>
           );
         }())}
+        {/* Calendar FAB */}
+        <button type="button" onClick={() => setShowCalendar(true)}
+          style={{position:"fixed",bottom:"88px",right:"20px",zIndex:200,width:"52px",height:"52px",borderRadius:"50%",background:"#fff",border:"2px solid #C4526A",color:"#C4526A",fontSize:"22px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.12)",lineHeight:1}}
+          title="Ver calendario">
+          📅
+        </button>
+
         {effectivePlan === "free" && (
           <button className="upgrade-fab" onClick={() => setActiveView("pricing")}>⭐ Upgrade</button>
         )}
+
+        {/* Calendar overlay */}
+        {showCalendar && (() => {
+          const year  = calendarMonth.getFullYear();
+          const month = calendarMonth.getMonth();
+          const MONTH_NAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+          const today = new Date(); today.setHours(0,0,0,0);
+          const firstDay = new Date(year, month, 1);
+          const lastDay  = new Date(year, month+1, 0);
+          const startOffset = (firstDay.getDay() + 6) % 7;
+          const totalCells  = Math.ceil((startOffset + lastDay.getDate()) / 7) * 7;
+
+          const t0 = new Date(year, month, 1);
+          const tEnd = new Date(year, month+1, 0);
+          tEnd.setHours(23,59,59,999);
+          const monthAppts = expandAppts(appointments, 400).filter(a => {
+            const d = new Date(a.date + "T00:00:00");
+            return d >= t0 && d <= tEnd;
+          });
+          const apptsByDay = {};
+          monthAppts.forEach(a => {
+            const d = new Date(a.date + "T00:00:00").getDate();
+            if (!apptsByDay[d]) apptsByDay[d] = [];
+            apptsByDay[d].push(a);
+          });
+
+          const TYPE_COLORS = { "Médico":"#C4526A","Colegio":"#6B46C1","Dentista":"#e87b1e","Reunión":"#1D9E75","Pago":"#2563EB","Cumpleaños":"#D97706","Otro":"#6B7280" };
+
+          return (
+            <div style={{position:"fixed",inset:0,zIndex:9000,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e => { if (e.target===e.currentTarget) setShowCalendar(false); }}>
+              <div style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:"500px",maxHeight:"90vh",overflow:"auto",paddingBottom:"24px"}}>
+                {/* Header */}
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 20px 12px",borderBottom:"1px solid var(--line)"}}>
+                  <button type="button" onClick={() => setCalendarMonth(new Date(year, month-1, 1))}
+                    style={{border:"none",background:"var(--line)",borderRadius:"8px",width:"36px",height:"36px",cursor:"pointer",fontSize:"18px",display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
+                  <div style={{textAlign:"center"}}>
+                    <h3 style={{margin:"0 0 2px",fontSize:"18px",fontWeight:800,color:"var(--ink)"}}>{MONTH_NAMES[month]}</h3>
+                    <p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontWeight:600}}>{year}</p>
+                  </div>
+                  <button type="button" onClick={() => setCalendarMonth(new Date(year, month+1, 1))}
+                    style={{border:"none",background:"var(--line)",borderRadius:"8px",width:"36px",height:"36px",cursor:"pointer",fontSize:"18px",display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
+                  <button type="button" onClick={() => setShowCalendar(false)}
+                    style={{border:"none",background:"none",fontSize:"22px",color:"var(--muted)",cursor:"pointer",position:"absolute",right:"16px",top:"16px",lineHeight:1}}>×</button>
+                </div>
+
+                {/* Day headers */}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"10px 12px 4px"}}>
+                  {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => (
+                    <div key={d} style={{textAlign:"center",fontSize:"11px",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",padding:"4px 0"}}>{d}</div>
+                  ))}
+                </div>
+
+                {/* Calendar grid */}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"2px",padding:"0 12px 12px"}}>
+                  {Array.from({length:totalCells}).map((_,i) => {
+                    const dayNum = i - startOffset + 1;
+                    const isThisMonth = dayNum >= 1 && dayNum <= lastDay.getDate();
+                    const thisDate = new Date(year, month, dayNum);
+                    const isToday = thisDate.toDateString() === today.toDateString();
+                    const dayAppts = isThisMonth ? (apptsByDay[dayNum] || []) : [];
+                    return (
+                      <div key={i} style={{minHeight:"52px",borderRadius:"10px",padding:"4px",background:isToday?"rgba(196,82,106,0.08)":dayAppts.length?"rgba(107,70,193,0.04)":"transparent",border:isToday?"2px solid rgba(196,82,106,0.4)":"2px solid transparent",display:"flex",flexDirection:"column",gap:"2px"}}>
+                        {isThisMonth && (
+                          <>
+                            <span style={{fontSize:"13px",fontWeight:isToday?800:500,color:isToday?"#C4526A":dayAppts.length?"var(--ink)":"var(--muted)",alignSelf:"center",lineHeight:1.4}}>{dayNum}</span>
+                            {dayAppts.slice(0,3).map((a,ai) => (
+                              <div key={ai} style={{fontSize:"10px",fontWeight:700,color:"#fff",background:TYPE_COLORS[a.type]||"#6B7280",borderRadius:"4px",padding:"1px 4px",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",lineHeight:1.5}}>
+                                {a.time && <span style={{opacity:0.85}}>{a.time} </span>}{a.title}
+                              </div>
+                            ))}
+                            {dayAppts.length > 3 && <span style={{fontSize:"9px",color:"var(--muted)",textAlign:"center",fontWeight:700}}>+{dayAppts.length-3}</span>}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Legend */}
+                <div style={{padding:"0 16px 8px",display:"flex",gap:"8px",flexWrap:"wrap",justifyContent:"center"}}>
+                  {Object.entries(TYPE_COLORS).map(([type,color]) => (
+                    <span key={type} style={{display:"flex",alignItems:"center",gap:"4px",fontSize:"11px",color:"var(--muted)"}}>
+                      <span style={{width:"10px",height:"10px",borderRadius:"3px",background:color,display:"inline-block"}}></span>{type}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         <footer className="app-footer">
           <span>© 2026 UMP S.A.S • Todos los derechos reservados</span>
@@ -2966,14 +3073,54 @@ export default function App() {
     const urgentTasks     = homeTasks.filter(t => !t.done && t.priority === "Urgente");
     const todayDay        = ["D","L","M","X","J","V","S"][new Date().getDay()];
     const today0          = new Date(); today0.setHours(0,0,0,0);
-    const withDiff        = appointments.map(a => ({ ...a, diff: Math.round((new Date(a.date+"T00:00:00") - today0) / 86400000) }));
-    const upcomingAppts   = withDiff.filter(a => a.diff >= 0).sort((a,b) => a.diff - b.diff);
     const DAY_LABELS      = [["L","Lunes"],["M","Martes"],["X","Miércoles"],["J","Jueves"],["V","Viernes"],["S","Sábado"],["D","Domingo"]];
     const TYPE_ICONS      = { "Médico":"🩺","Colegio":"🎒","Dentista":"🦷","Reunión":"📋","Pago":"💳","Cumpleaños":"🎂","Otro":"📌" };
+    const RECURRENCE_LABELS = { "none":"No se repite","weekly":"Cada semana","monthly":"Cada mes","yearly":"Cada año" };
     const daysLabel       = d => d === 0 ? "Hoy" : d === 1 ? "Mañana" : `En ${d}d`;
     const daysColor       = d => d === 0 ? "#C4526A" : d <= 3 ? "#e87b1e" : "#1D9E75";
-    const addToGCal       = appt => { const t = encodeURIComponent(appt.title); const d = appt.date.replace(/-/g,""); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${d}/${d}`, "_blank"); };
-    const submitAppt      = e => { e.preventDefault(); if (!apptForm.title.trim() || !apptForm.date) return; setAppointments(c => [...c, { id:Date.now(), ...apptForm, title:apptForm.title.trim() }]); setApptForm(f => ({ ...f, title:"", date:"" })); };
+
+    const expandAppts = (list, limitDays = 90) => {
+      const result = [];
+      const tEnd = new Date(today0.getTime() + limitDays * 86400000);
+      for (const appt of list) {
+        if (!appt.recurrence || appt.recurrence === "none") { result.push(appt); continue; }
+        let curr = new Date(appt.date + "T00:00:00");
+        while (curr < today0) {
+          if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
+          else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
+          else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
+          else { curr = new Date(tEnd.getTime() + 1); break; }
+        }
+        let count = 0;
+        while (curr <= tEnd && count < 15) {
+          result.push({ ...appt, date: curr.toISOString().slice(0,10), _origId: appt.id });
+          count++;
+          if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
+          else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
+          else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
+          else break;
+        }
+      }
+      return result;
+    };
+
+    const withDiff      = expandAppts(appointments).map(a => ({ ...a, diff: Math.round((new Date(a.date+"T00:00:00") - today0) / 86400000) }));
+    const upcomingAppts = withDiff.filter(a => a.diff >= 0).sort((a,b) => a.diff - b.diff);
+
+    const addToGCal = appt => {
+      const t = encodeURIComponent(appt.title);
+      const d = appt.date.replace(/-/g,"");
+      const timeStr = appt.time ? `T${appt.time.replace(":","") }00` : "";
+      const dates = timeStr ? `${d}${timeStr}/${d}${timeStr}` : `${d}/${d}`;
+      const details = appt.recurrence && appt.recurrence !== "none" ? encodeURIComponent(`Recordatorio: ${RECURRENCE_LABELS[appt.recurrence]}`) : "";
+      window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${dates}${details?"&details="+details:""}`, "_blank");
+    };
+    const submitAppt = e => {
+      e.preventDefault();
+      if (!apptForm.title.trim() || !apptForm.date) return;
+      setAppointments(c => [...c, { id:Date.now(), ...apptForm, title:apptForm.title.trim() }]);
+      setApptForm(f => ({ ...f, title:"", date:"", time:"" }));
+    };
     const addQuickNote    = e => { e.preventDefault(); if (!quickNoteInput.trim()) return; setQuickNotes(c => [...c, { id:Date.now(), text:quickNoteInput.trim() }]); setQuickNoteInput(""); };
     const STARTER_TASKS   = [
       { title:"Organizar cajones de la cocina", category:"Hogar / Limpieza" },
@@ -3005,12 +3152,16 @@ export default function App() {
       <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 12px", border:`1px solid ${appt.diff===0?"rgba(196,82,106,0.3)":appt.diff<=1?"rgba(232,123,30,0.25)":"var(--line)"}`, borderRadius:"10px", background:appt.diff===0?"#fdf5f7":appt.diff<=1?"#fef8f0":"#fff" }}>
         <span style={{ fontSize:"20px", flexShrink:0 }}>{TYPE_ICONS[appt.type]||"📌"}</span>
         <div style={{ flex:1, minWidth:0 }}>
-          <p style={{ margin:"0 0 1px", fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{appt.title}</p>
-          <p style={{ margin:0, fontSize:"12px", color:"var(--muted)" }}>{appt.type} · {new Date(appt.date+"T00:00:00").toLocaleDateString("es-CO",{ weekday:"short", day:"numeric", month:"short" })}</p>
+          <p style={{ margin:"0 0 2px", fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{appt.title}</p>
+          <p style={{ margin:0, fontSize:"12px", color:"var(--muted)" }}>
+            {appt.type} · {new Date(appt.date+"T00:00:00").toLocaleDateString("es-CO",{ weekday:"short", day:"numeric", month:"short" })}
+            {appt.time && <span style={{fontWeight:700}}> · {appt.time}</span>}
+            {appt.recurrence && appt.recurrence!=="none" && <span style={{color:"var(--purple)",fontWeight:700}}> · {RECURRENCE_LABELS[appt.recurrence]}</span>}
+          </p>
         </div>
         <span style={{ fontSize:"11px", fontWeight:800, color:daysColor(appt.diff), background:`${daysColor(appt.diff)}18`, padding:"3px 8px", borderRadius:"12px", flexShrink:0, whiteSpace:"nowrap" }}>{daysLabel(appt.diff)}</span>
         <button type="button" onClick={() => addToGCal(appt)} title="Google Calendar" style={{ border:"none", background:"none", cursor:"pointer", fontSize:"16px", flexShrink:0, padding:"2px", lineHeight:1 }}>📆</button>
-        <button type="button" onClick={() => setAppointments(c => c.filter(a => a.id!==appt.id))} style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"18px", flexShrink:0, lineHeight:1 }}>×</button>
+        <button type="button" onClick={() => setAppointments(c => c.filter(a => a.id===(appt._origId||appt.id)))} style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"18px", flexShrink:0, lineHeight:1 }}>×</button>
       </div>
     );
 
@@ -3115,8 +3266,11 @@ export default function App() {
               </div>
               <div className="card" style={{padding:"16px"}}>
                 <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"1px",color:"var(--muted)"}}>Hijos hoy</p>
-                {kidsSchedule[todayDay] ? (
-                  <p style={{margin:0,fontSize:"15px",fontWeight:700,color:"#1D9E75",lineHeight:1.3}}>{kidsSchedule[todayDay]}</p>
+                {kidsSchedule[todayDay]?.act ? (
+                  <div>
+                    <p style={{margin:"0 0 2px",fontSize:"15px",fontWeight:700,color:"#1D9E75",lineHeight:1.3}}>{kidsSchedule[todayDay].act}</p>
+                    {kidsSchedule[todayDay].time && <p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{kidsSchedule[todayDay].time}</p>}
+                  </div>
                 ) : (
                   <p style={{margin:"0 0 6px",fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin actividades</p>
                 )}
@@ -3170,12 +3324,21 @@ export default function App() {
                 <input placeholder="¿Qué cita? Ej: Cita pediatra, Reunión colegio..."
                   value={apptForm.title} onChange={e => setApptForm(f => ({...f,title:e.target.value}))}
                   style={{padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:"8px"}}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
                   <input type="date" value={apptForm.date} onChange={e => setApptForm(f => ({...f,date:e.target.value}))}
                     style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
+                  <input type="time" value={apptForm.time} onChange={e => setApptForm(f => ({...f,time:e.target.value}))}
+                    placeholder="Hora (opcional)"
+                    style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:"8px"}}>
                   <select value={apptForm.type} onChange={e => setApptForm(f => ({...f,type:e.target.value}))}
                     style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}}>
                     {Object.keys(TYPE_ICONS).map(t => <option key={t}>{t}</option>)}
+                  </select>
+                  <select value={apptForm.recurrence} onChange={e => setApptForm(f => ({...f,recurrence:e.target.value}))}
+                    style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}}>
+                    {Object.entries(RECURRENCE_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
                   </select>
                   <button type="submit" style={{padding:"9px 16px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>+</button>
                 </div>
@@ -3212,11 +3375,13 @@ export default function App() {
                 <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>¿Quién va dónde? Escribe todas las actividades del día en una línea.</p>
                 <div style={{display:"grid",gap:"7px"}}>
                   {DAY_LABELS.map(([key, name]) => (
-                    <div key={key} style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                    <div key={key} style={{display:"flex",alignItems:"center",gap:"8px"}}>
                       <span style={{width:"30px",height:"30px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
-                      <input value={kidsSchedule[key]} onChange={e => setKidsSchedule(s => ({...s,[key]:e.target.value}))}
-                        placeholder={todayDay===key?"Ej: Ana fútbol 4pm, Pedro piano 5pm":"Ej: Ana natación 3pm..."}
-                        style={{flex:1,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5"}} />
+                      <input value={kidsSchedule[key]?.act||""} onChange={e => setKidsSchedule(s => ({...s,[key]:{...s[key],act:e.target.value}}))}
+                        placeholder={todayDay===key?"Ej: Karate, Natación...":name+"..."}
+                        style={{flex:2,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5",minWidth:0}} />
+                      <input type="time" value={kidsSchedule[key]?.time||""} onChange={e => setKidsSchedule(s => ({...s,[key]:{...s[key],time:e.target.value}}))}
+                        style={{flex:1,padding:"7px 8px",font:"inherit",fontSize:"12px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5",minWidth:0}} />
                     </div>
                   ))}
                 </div>
