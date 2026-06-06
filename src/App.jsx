@@ -327,7 +327,10 @@ const initialPurposeState = {
   clientsImpacted: 0,
   weekTestimony: "",
   passionLevel: 3,
-  visionClarity: ""
+  visionClarity: "",
+  checkIn: { date: "", energia: "", intencion: "", paraHoy: "" },
+  sueno: "",
+  tiempoParaMi: 0,
 };
 
 function cloneList(items) {
@@ -2742,23 +2745,30 @@ export default function App() {
     const mentalLoad = homeTasks.filter((t) => !t.done).length;
     const mentalLoadLevel = mentalLoad >= 8 ? "alta" : mentalLoad >= 4 ? "media" : "baja";
     const mentalLoadColor = mentalLoad >= 8 ? "var(--purple)" : mentalLoad >= 4 ? "var(--orange)" : "var(--green)";
-    const familyDaysCount = Object.values(purpose.familyDays || {}).filter(Boolean).length;
     const delegatedTasks = homeTasks.filter((t) => t.delegate && t.delegate.trim() !== "");
     const urgentTasks = homeTasks.filter((t) => !t.done && t.priority === "Urgente");
+    const horasLiberadas = delegatedTasks.filter(t => !t.done).length * 0.5;
+    const STARTER_TASKS = [
+      { title: "Organizar cajones de la cocina", category: "Hogar / Limpieza" },
+      { title: "Lista de mercado de la semana", category: "Compras" },
+      { title: "Agendar cita médica pendiente", category: "Salud" },
+      { title: "Revisar tareas del colegio", category: "Colegio / Ninos" },
+      { title: "30 minutos solo para mí", category: "Bienestar" },
+    ];
 
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Hogar</h2>
-          <p>{completedHomeTasks}/{homeTasks.length} tareas completadas esta semana</p>
+          <h2>Mi Hogar 🌸</h2>
+          <p>{homeTasks.length === 0 ? "Empieza con una sola cosa hoy — no tienes que hacerlo todo" : `${completedHomeTasks} de ${homeTasks.length} listas esta semana`}</p>
         </div>
 
         {/* KPIs */}
         <div className="home-kpi-row">
           <div className="client-kpi">
-            <span>Tareas completadas</span>
+            <span>Completadas</span>
             <strong style={{color:"var(--green)"}}>{completedHomeTasks}/{homeTasks.length}</strong>
-            <small>{homeProgress}% del hogar</small>
+            <small>{homeProgress}% esta semana</small>
           </div>
           <div className="client-kpi">
             <span>Carga mental</span>
@@ -2766,31 +2776,49 @@ export default function App() {
             <small>{mentalLoad} pendientes</small>
           </div>
           <div className="client-kpi">
-            <span>Pagos por hacer esta semana</span>
+            <span>Tiempo liberado</span>
+            <strong style={{color:"var(--green)"}}>{horasLiberadas > 0 ? `~${horasLiberadas}h` : "—"}</strong>
+            <small>{delegatedTasks.filter(t=>!t.done).length > 0 ? `${delegatedTasks.filter(t=>!t.done).length} delegadas` : "delega para ganar tiempo"}</small>
+          </div>
+          <div className="client-kpi">
+            <span>Pagos esta semana</span>
             <strong style={{color: homePaymentsThisWeek.length ? "var(--orange)" : "var(--green)"}}>{homePaymentsThisWeek.length}</strong>
-            <small>{homePaymentsThisWeek.length ? `(${homePaymentsThisWeek.slice(0, 2).map((p) => p.description).join(" y ")}${homePaymentsThisWeek.length > 2 ? "..." : ""})` : "sin pagos pendientes"}</small>
+            <small>{homePaymentsThisWeek.length ? homePaymentsThisWeek.slice(0,1).map(p=>p.description).join("") : "sin pagos"}</small>
           </div>
           <div className="client-kpi">
             <span>Disponible familiar</span>
             <strong style={{fontSize:"14px"}}>{money.format(homeAvailable)}</strong>
-            <small>despues de gastos</small>
-          </div>
-          <div className="client-kpi">
-            <span>Dias de presencia</span>
-            <strong style={{color: familyDaysCount >= 4 ? "var(--green)" : "var(--orange)"}}>{familyDaysCount} dias</strong>
-            <small>{familyDaysCount >= 4 ? "excelente semana" : "puedes mejorar"}</small>
+            <small>después de gastos</small>
           </div>
         </div>
 
         {/* Alertas */}
         {mentalLoad >= 8 && (
           <div className="alert-banner alert-red" style={{marginBottom:"14px"}}>
-            Tu carga mental esta alta con {mentalLoad} tareas pendientes. Revisa cuales puedes delegar o eliminar hoy.
+            Tu carga mental está alta. Elige 3 tareas para hoy y deja el resto para después.
           </div>
         )}
         {urgentTasks.length > 0 && (
           <div className="alert-banner alert-orange" style={{marginBottom:"14px"}}>
-            Tienes {urgentTasks.length} tarea{urgentTasks.length > 1 ? "s" : ""} urgente{urgentTasks.length > 1 ? "s" : ""}: {urgentTasks.map((t) => t.title).join(", ")}
+            {urgentTasks.length} urgente{urgentTasks.length > 1 ? "s" : ""}: {urgentTasks.map((t) => t.title).join(", ")}
+          </div>
+        )}
+
+        {/* Empty state — guía para empezar */}
+        {homeTasks.length === 0 && (
+          <div className="card" style={{marginBottom:"20px",background:"linear-gradient(135deg,#fdf9f6,#fef4f0)",border:"2px dashed #e8d5c4",padding:"24px"}}>
+            <h3 style={{margin:"0 0 6px",fontSize:"16px"}}>¿Por dónde empiezo? 🌱</h3>
+            <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Elige una tarea de aquí o escribe la tuya arriba. Una sola ya cuenta.</p>
+            <div style={{display:"grid",gap:"8px"}}>
+              {STARTER_TASKS.map((t) => (
+                <button key={t.title} type="button"
+                  onClick={() => { setHomeTasks(c => [...c, { id: Date.now() + Math.random(), title: t.title, category: t.category, priority: "Normal", delegate: "", done: false, createdAt: new Date().toISOString() }]); }}
+                  style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"10px",background:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",textAlign:"left",color:"var(--ink)"}}>
+                  <span style={{fontSize:"18px"}}>{t.category === "Bienestar" ? "💆" : t.category === "Compras" ? "🛒" : t.category === "Salud" ? "💊" : t.category === "Colegio / Ninos" ? "🎒" : "🧹"}</span>
+                  {t.title}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -2936,6 +2964,9 @@ export default function App() {
     const familyDaysCount = Object.values(purpose.familyDays || {}).filter(Boolean).length;
     const incomePerHour = purpose.hoursWorked > 0 ? Math.round(totals.income / purpose.hoursWorked) : 0;
     const peaceScore = ["inspirada", "feliz"].includes(purpose.mood) ? 100 : ["cansada"].includes(purpose.mood) ? 50 : 20;
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const checkInDone = purpose.checkIn?.date === todayStr && purpose.checkIn?.energia;
+    const updateCheckIn = (field, val) => updatePurpose("checkIn", { ...purpose.checkIn, date: todayStr, [field]: val });
     const mentalAdvice = purpose.mood === "controladora"
       ? "Cambia control por presencia. Elige una cosa que sí depende de ti y suelta una que no."
       : purpose.mood === "abrumada"
@@ -2948,8 +2979,57 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Propósito &amp; Impacto</h2>
-          <p>Mide lo que realmente importa • presencia, energía, sistemas e impacto</p>
+          <h2>Mi Propósito 🎯</h2>
+          <p>Tu bienestar, tu presencia y lo que quieres construir para ti</p>
+        </div>
+
+        {/* Check-in diario */}
+        <div className="card" style={{marginBottom:"20px",border:"2px solid",borderColor: checkInDone ? "var(--green)" : "#e8d5c4",background: checkInDone ? "rgba(47,159,112,0.04)" : "linear-gradient(135deg,#fdf9f6,#fef4f0)",padding:"20px"}}>
+          {checkInDone ? (
+            <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
+              <span style={{fontSize:"28px"}}>✨</span>
+              <div>
+                <p style={{margin:"0 0 2px",fontWeight:700,fontSize:"14px",color:"var(--green)"}}>Check-in de hoy completado</p>
+                <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Energía: <strong>{purpose.checkIn.energia}</strong> · Intención: <em>{purpose.checkIn.intencion || "sin registrar"}</em></p>
+              </div>
+              <button type="button" onClick={() => updatePurpose("checkIn", { date: "", energia: "", intencion: "", paraHoy: "" })} style={{marginLeft:"auto",border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"12px"}}>Editar</button>
+            </div>
+          ) : (
+            <>
+              <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"16px"}}>
+                <span style={{fontSize:"24px"}}>🌅</span>
+                <div>
+                  <p style={{margin:"0 0 2px",fontWeight:700,fontSize:"15px",color:"var(--ink)"}}>¿Cómo empezó tu día?</p>
+                  <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>30 segundos para conectar contigo misma.</p>
+                </div>
+              </div>
+              <div style={{display:"grid",gap:"14px"}}>
+                <div>
+                  <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>Mi energía de hoy es...</p>
+                  <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                    {[["🔋","Con energía"],["😌","Tranquila"],["😴","Cansada"],["😤","Abrumada"],["✨","Inspirada"]].map(([icon,label]) => (
+                      <button key={label} type="button" onClick={() => updateCheckIn("energia", label)}
+                        style={{padding:"7px 14px",borderRadius:"20px",border:`2px solid ${purpose.checkIn?.energia===label?"var(--pink)":"var(--line)"}`,background:purpose.checkIn?.energia===label?"rgba(212,104,122,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:purpose.checkIn?.energia===label?700:400}}>
+                        {icon} {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>Mi intención para hoy es...</p>
+                  <input value={purpose.checkIn?.intencion || ""} onChange={e => updateCheckIn("intencion", e.target.value)}
+                    placeholder="Ej: Estar presente con mis hijos, avanzar en una cosa..."
+                    style={{width:"100%",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",boxSizing:"border-box"}} />
+                </div>
+                <div>
+                  <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>Una cosa que haré hoy para mí...</p>
+                  <input value={purpose.checkIn?.paraHoy || ""} onChange={e => updateCheckIn("paraHoy", e.target.value)}
+                    placeholder="Ej: Caminar 15 min, leer 10 páginas, tomarme un café sola..."
+                    style={{width:"100%",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",boxSizing:"border-box"}} />
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Banner de afirmación destacado */}
@@ -2978,24 +3058,35 @@ export default function App() {
             <small>momentos de conexión hoy</small>
             <span className={purpose.connectionMoments >= 2 ? "kpi-badge good" : "kpi-badge alert"}>meta: 2–3</span>
           </div>
+          {userMode !== "mama" && (
           <div className="purpose-kpi">
             <span className="purpose-kpi-icon">⏱️</span>
             <strong>{money.format(incomePerHour)}</strong>
             <small>ingreso por hora trabajada</small>
             <span className="kpi-badge neutral">KPI estrella</span>
           </div>
+          )}
           <div className="purpose-kpi">
             <span className="purpose-kpi-icon">⚡</span>
             <strong>{purpose.energy === "alto" ? "Alta" : purpose.energy === "medio" ? "Media" : "Baja"}</strong>
             <small>energía del día</small>
             <span className={peaceScore >= 80 ? "kpi-badge good" : peaceScore >= 50 ? "kpi-badge neutral" : "kpi-badge alert"}>{purpose.mood}</span>
           </div>
+          {userMode !== "mama" ? (
           <div className="purpose-kpi">
             <span className="purpose-kpi-icon">🎯</span>
             <strong>{purpose.clientsImpacted}</strong>
             <small>clientes impactados esta semana</small>
             <span className="kpi-badge neutral">impacto real</span>
           </div>
+          ) : (
+          <div className="purpose-kpi">
+            <span className="purpose-kpi-icon">💆</span>
+            <strong>{purpose.tiempoParaMi || 0}h</strong>
+            <small>tiempo para mí esta semana</small>
+            <span className={( purpose.tiempoParaMi || 0) >= 3 ? "kpi-badge good" : "kpi-badge alert"}>meta: 3h+</span>
+          </div>
+          )}
           <div className="purpose-kpi">
             <span className="purpose-kpi-icon">🌱</span>
             <strong>{familyDaysCount}</strong>
@@ -3033,6 +3124,7 @@ export default function App() {
             <textarea className="purpose-textarea" placeholder="¿Cómo crees que se sintió tu hijo/a esta semana? (reflexión libre)" value={purpose.mentalLoad} onChange={(e) => updatePurpose("mentalLoad", e.target.value)} />
           </div>
 
+          {userMode !== "mama" && (
           <div className="card purpose-block">
             <h3>💼 Negocio inteligente</h3>
             <p className="helper-copy">Más horas no es más éxito. Mide lo que escala.</p>
@@ -3049,6 +3141,24 @@ export default function App() {
               <input type="range" min="0" max="100" value={purpose.recurringIncomePercent || 0} onChange={(e) => updatePurpose("recurringIncomePercent", Number(e.target.value))} />
               <small>{purpose.recurringIncomePercent || 0}% recurrente</small>
             </label>
+          </div>
+          )}
+
+          <div className="card purpose-block">
+            <h3>🌟 Mi sueño personal</h3>
+            <p className="helper-copy">No tiene que ser un negocio. Puede ser aprender algo, descansar de verdad, escribir, viajar, estar más presente. ¿Qué quieres para ti?</p>
+            <textarea className="purpose-textarea" rows={3}
+              placeholder="Ej: Quiero retomar la pintura que dejé cuando nació mi hijo. Quiero tener una mañana a la semana solo para mí sin culpa..."
+              value={purpose.sueno || ""}
+              onChange={(e) => updatePurpose("sueno", e.target.value)} />
+            <div style={{marginTop:"14px"}}>
+              <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>Tiempo para mí esta semana</p>
+              <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+                <input type="range" min="0" max="20" value={purpose.tiempoParaMi || 0} onChange={(e) => updatePurpose("tiempoParaMi", Number(e.target.value))} style={{flex:1,accentColor:"var(--pink)"}} />
+                <strong style={{minWidth:"60px",textAlign:"right",color:"var(--pink)",fontSize:"15px"}}>{purpose.tiempoParaMi || 0}h / sem</strong>
+              </div>
+              <small style={{color:"var(--muted)",fontSize:"12px"}}>{(purpose.tiempoParaMi || 0) === 0 ? "Aún no has registrado tiempo para ti — y eso también es información." : (purpose.tiempoParaMi || 0) >= 5 ? "Bien. Ese tiempo importa." : "Pequeño pero cuenta. Sigue sumando."}</small>
+            </div>
           </div>
 
           <div className="card purpose-block">
