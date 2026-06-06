@@ -209,7 +209,7 @@ export const handler = async (event) => {
       usage: currentCount,
       limit,
       plan,
-      message: `Llegaste a tu límite de ${limit} generaciones IA este mes (plan ${plan}).`,
+      message: `Llegaste al límite de ${limit} generaciones este mes.`,
     }, event);
   }
 

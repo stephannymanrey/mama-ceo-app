@@ -675,8 +675,8 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
       tono: brandProfile.tono || "Cercano",
     });
     setAiLoading(false);
-    if (res?.error === "limite_alcanzado") { setAiMsg(res.message || "L\xedmite mensual de generaciones IA alcanzado."); return; }
-    if (res?.error) { setAiMsg("Error al generar con IA. Intenta de nuevo."); return; }
+    if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
+    if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo."); return; }
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
     const aiResult = res.result || {};
     const CAT_KEYS = Object.keys(CATS);
@@ -1643,8 +1643,8 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
       tono: brandProfile.tono || "Cercano",
     });
     setAiLoading(false);
-    if (res?.error === "limite_alcanzado") { setAiMsg(res.message || "L\xedmite mensual de generaciones IA alcanzado."); return; }
-    if (res?.error) { setAiMsg("Error al generar con IA. Intenta de nuevo."); return; }
+    if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
+    if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo."); return; }
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
     const gen = {};
     Object.keys(HOOK_CATS).forEach(catKey => {
@@ -1969,8 +1969,8 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
       tono: brandProfile.tono || "Cercano",
     });
     setAiLoading(false);
-    if (res?.error === "limite_alcanzado") { setAiMsg(res.message || "L\xedmite mensual de generaciones IA alcanzado."); return; }
-    if (res?.error) { setAiMsg("Error al generar con IA. Intenta de nuevo."); return; }
+    if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
+    if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo."); return; }
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
     const aiResult = res.result || {};
     const SCENE_KEYS = ["hook", "interes", "deseo", "accion"];
@@ -2288,11 +2288,11 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                 <button className="mpm-wizard-back-btn" onClick={() => setGuion(null)}>&#x2190; Editar</button>
                 <button className="mpm-wizard-back-btn" onClick={() => { setGuion(null); setWizard({step:1,objetivo:"Vender",logro:"",dolor:"",cambio:"",cta:"Guardar el video"}); }}>&#x1F504; Nuevo</button>
                 {guion && !guion.isAI && callGemini && !aiLoading && (
-                  <button className="mpm-edit-btn studio-ai-btn" onClick={generarGuionConIA}>&#x2728; Mejorar con IA</button>
+                  <button className="mpm-edit-btn studio-ai-btn" onClick={generarGuionConIA}>✨ Mejorar</button>
                 )}
-                {aiLoading && <span className="studio-ai-loading-inline">&#x2728; Gemini est&#xe1; escribiendo...</span>}
+                {aiLoading && <span className="studio-ai-loading-inline">✨ Generando...</span>}
                 {aiMsg && <span className="studio-ai-msg-inline">{aiMsg}</span>}
-                {guion?.isAI && <span className="studio-ai-badge">&#x2728; Generado con IA</span>}
+                {guion?.isAI && <span className="studio-ai-badge">✨</span>}
                 <div className="guion-hoja-actions">
                   <button className="mpm-edit-btn" onClick={() => onSave("guiones", {
                     id: Date.now(), tema: guion.tema, tipo: guion.tipo, objetivo: guion.objetivo, fecha: guion.fecha,
@@ -4004,7 +4004,7 @@ export default function Studio({ onBack, brandProfile = {}, onGoToBrandProfile, 
         <span className="studio-title-text">Studio de Contenido</span>
         {callGemini && aiUsage && (
           <span className="studio-ai-counter">
-            &#x2728; {Math.max(0, aiUsage.limit - aiUsage.used)} de {aiUsage.limit} gen. IA restantes
+            ✨ {Math.max(0, aiUsage.limit - aiUsage.used)} de {aiUsage.limit} generaciones restantes
           </span>
         )}
         <nav className="studio-tabs-nav">
