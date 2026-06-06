@@ -550,6 +550,8 @@ export default function App() {
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
+  const [appointments, setAppointments] = useState(stored?.appointments || []);
+  const [apptForm, setApptForm] = useState({ title: "", date: "", type: "Médico" });
   const [groceryForm, setGroceryForm] = useState("");
   const [reportWeekOffset, setReportWeekOffset] = useState(0);
   const [userPlan, setUserPlan] = useState(stored?.userPlan || "free");
@@ -1105,6 +1107,7 @@ export default function App() {
       profileSetup,
       brandProfile,
       groceryList,
+      appointments,
       userPlan,
       premiumExpiresAt,
       userMode
@@ -2829,6 +2832,82 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* Citas y recordatorios */}
+        {(() => {
+          const today = new Date(); today.setHours(0,0,0,0);
+          const TYPE_ICONS = { "Médico":"🩺","Colegio":"🎒","Dentista":"🦷","Reunión":"📋","Pago":"💳","Cumpleaños":"🎂","Otro":"📌" };
+          const withDiff = appointments.map(a => ({ ...a, diff: Math.round((new Date(a.date+"T00:00:00") - today) / 86400000) }));
+          const upcoming = withDiff.filter(a => a.diff >= 0).sort((a,b) => a.diff - b.diff);
+          const daysLabel = (d) => d === 0 ? "Hoy" : d === 1 ? "Mañana" : `En ${d}d`;
+          const daysColor = (d) => d === 0 ? "#C4526A" : d <= 3 ? "#e87b1e" : "#1D9E75";
+          const addToGCal = (appt) => {
+            const t = encodeURIComponent(appt.title);
+            const d = appt.date.replace(/-/g,"");
+            window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${d}/${d}`, "_blank");
+          };
+          const submitAppt = (e) => {
+            e.preventDefault();
+            if (!apptForm.title.trim() || !apptForm.date) return;
+            setAppointments(c => [...c, { id: Date.now(), ...apptForm, title: apptForm.title.trim() }]);
+            setApptForm(f => ({ ...f, title: "", date: "" }));
+          };
+          return (
+            <div className="card" style={{ padding:"20px", marginBottom:"16px" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
+                <div>
+                  <h3 style={{ margin:"0 0 2px", fontSize:"16px" }}>Citas importantes 📅</h3>
+                  <p style={{ margin:0, fontSize:"13px", color:"var(--muted)" }}>Médicos, colegios, pagos — todo en un lugar.</p>
+                </div>
+                {upcoming.length > 0 && (
+                  <span style={{ fontSize:"12px", fontWeight:700, color:"#C4526A", background:"rgba(196,82,106,0.1)", padding:"3px 10px", borderRadius:"20px", flexShrink:0 }}>
+                    {upcoming.length} próxima{upcoming.length > 1 ? "s" : ""}
+                  </span>
+                )}
+              </div>
+
+              <form onSubmit={submitAppt} style={{ display:"grid", gap:"8px", marginBottom: appointments.length ? "14px" : 0 }}>
+                <input placeholder="¿Qué cita? Ej: Cita pediatra, Reunión colegio..."
+                  value={apptForm.title} onChange={e => setApptForm(f => ({ ...f, title:e.target.value }))}
+                  style={{ padding:"9px 12px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:"8px" }}>
+                  <input type="date" value={apptForm.date} onChange={e => setApptForm(f => ({ ...f, date:e.target.value }))}
+                    style={{ padding:"9px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
+                  <select value={apptForm.type} onChange={e => setApptForm(f => ({ ...f, type:e.target.value }))}
+                    style={{ padding:"9px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }}>
+                    {Object.keys(TYPE_ICONS).map(t => <option key={t}>{t}</option>)}
+                  </select>
+                  <button type="submit" style={{ padding:"9px 16px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"8px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:700 }}>+</button>
+                </div>
+              </form>
+
+              {upcoming.length > 0 ? (
+                <div style={{ display:"grid", gap:"8px" }}>
+                  {upcoming.map(appt => (
+                    <div key={appt.id} style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 12px", border:"1px solid var(--line)", borderRadius:"10px", background:"#fff" }}>
+                      <span style={{ fontSize:"20px", flexShrink:0 }}>{TYPE_ICONS[appt.type]||"📌"}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <p style={{ margin:"0 0 1px", fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{appt.title}</p>
+                        <p style={{ margin:0, fontSize:"12px", color:"var(--muted)" }}>
+                          {appt.type} · {new Date(appt.date+"T00:00:00").toLocaleDateString("es-CO",{ weekday:"short", day:"numeric", month:"short" })}
+                        </p>
+                      </div>
+                      <span style={{ fontSize:"11px", fontWeight:800, color:daysColor(appt.diff), background:`${daysColor(appt.diff)}18`, padding:"3px 8px", borderRadius:"12px", flexShrink:0, whiteSpace:"nowrap" }}>
+                        {daysLabel(appt.diff)}
+                      </span>
+                      <button type="button" onClick={() => addToGCal(appt)} title="Agregar a Google Calendar"
+                        style={{ border:"none", background:"none", cursor:"pointer", fontSize:"16px", flexShrink:0, padding:"2px", lineHeight:1 }}>📆</button>
+                      <button type="button" onClick={() => setAppointments(c => c.filter(a => a.id !== appt.id))}
+                        style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"16px", flexShrink:0, lineHeight:1 }}>×</button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ margin:0, fontSize:"13px", color:"var(--muted)", fontStyle:"italic" }}>Sin citas próximas. Agrega una arriba.</p>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Layout principal */}
         <div className="home-main-layout">
