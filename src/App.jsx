@@ -332,6 +332,7 @@ const initialPurposeState = {
   sueno: "",
   tiempoParaMi: 0,
   presenceMoments: [],
+  checkInHistory: [],
 };
 
 function cloneList(items) {
@@ -556,6 +557,10 @@ export default function App() {
   const [userMode, setUserMode] = useState(stored?.userMode || null);
   const [presenceForm, setPresenceForm] = useState({ quien: [], queHicieron: "", tiempo: "30 min" });
   const [presenceCelebration, setPresenceCelebration] = useState(false);
+  const [checkInStep, setCheckInStep] = useState(0);
+  const [checkInResp, setCheckInResp] = useState({ dia: "", pensando: "", postergando: "", treinta: "", emocional: 5, social: 5, proyectos: 5 });
+  const [checkInAnimating, setCheckInAnimating] = useState(false);
+  const [checkInDirFwd, setCheckInDirFwd] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState("");
   const [betaCode, setBetaCode] = useState("");
@@ -3062,161 +3067,290 @@ export default function App() {
     );
   }
   function renderCeo() {
-    const selfCareScore = [purpose.water, purpose.walk, purpose.silence, purpose.devotional].filter(Boolean).length;
-    const familyDaysCount = Object.values(purpose.familyDays || {}).filter(Boolean).length;
-    const incomePerHour = purpose.hoursWorked > 0 ? Math.round(totals.income / purpose.hoursWorked) : 0;
-    const peaceScore = ["inspirada", "feliz"].includes(purpose.mood) ? 100 : ["cansada"].includes(purpose.mood) ? 50 : 20;
     const todayStr = new Date().toISOString().slice(0, 10);
-    const checkInDone = purpose.checkIn?.date === todayStr && purpose.checkIn?.energia;
-    const updateCheckIn = (field, val) => updatePurpose("checkIn", { ...purpose.checkIn, date: todayStr, [field]: val });
-    const mentalAdvice = purpose.mood === "controladora"
-      ? "Cambia control por presencia. Elige una cosa que sí depende de ti y suelta una que no."
-      : purpose.mood === "abrumada"
-        ? "Reduce la lista a una sola acción visible. No tienes que hacerlo todo hoy."
-        : purpose.mood === "cansada"
-          ? "Protégete. El descanso también es productividad."
-          : "Usa tu energía sin sobreexigirte. Deja espacio para gracia y descanso.";
-    const impactScore = Math.round(((familyDaysCount/7)*0.3 + (selfCareScore/4)*0.2 + (purpose.connectionMoments/3)*0.2 + (purpose.clientsImpacted/5)*0.15 + (purpose.systemsPercent/100)*0.15) * 100);
-    
-    return (
-      <section className="panel workspace-panel">
-        <div className="section-title">
-          <h2>Para Mí 💛</h2>
-          <p>Tu espacio. Lo que sientes, lo que necesitas, lo que sueñas.</p>
-        </div>
+    const history  = purpose.checkInHistory || [];
+    const todayEntry = history.find(c => c.date === todayStr);
+    const showResults = checkInStep === 6 || (checkInStep === 0 && !!todayEntry);
+    const displayResp = showResults ? (todayEntry || checkInResp) : checkInResp;
 
-        {/* Check-in diario */}
-        <div className="card" style={{marginBottom:"20px",border:"2px solid",borderColor: checkInDone ? "var(--green)" : "#e8d5c4",background: checkInDone ? "rgba(47,159,112,0.04)" : "linear-gradient(135deg,#fdf9f6,#fef4f0)",padding:"20px"}}>
-          {checkInDone ? (
-            <div style={{display:"flex",alignItems:"center",gap:"14px"}}>
-              <span style={{fontSize:"28px"}}>✨</span>
-              <div>
-                <p style={{margin:"0 0 2px",fontWeight:700,fontSize:"14px",color:"var(--green)"}}>Check-in de hoy completado</p>
-                <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Energía: <strong>{purpose.checkIn.energia}</strong> · Intención: <em>{purpose.checkIn.intencion || "sin registrar"}</em></p>
-              </div>
-              <button type="button" onClick={() => updatePurpose("checkIn", { date: "", energia: "", intencion: "", paraHoy: "" })} style={{marginLeft:"auto",border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"12px"}}>Editar</button>
+    const AFFIRMATIONS = {
+      "Con energía y lista":      { word: "Imparable",   phrase: "Esa energía que sientes hoy es tuya — no fue suerte. La construiste tú, con cada decisión que tomaste." },
+      "Tranquila pero cansada":   { word: "Valiente",    phrase: "El cansancio que sientes no es debilidad — es evidencia de todo lo que has cargado con amor. Eres más fuerte de lo que crees." },
+      "Con mucho en la cabeza":   { word: "Capaz",       phrase: "La mente ocupada es señal de una mujer que piensa, que siente, que no se rinde. Respira. Tú puedes con esto." },
+      "Abrumada":                 { word: "Suficiente",  phrase: "Hoy, exactamente como eres, eres suficiente. No tienes que resolverlo todo hoy. Solo este momento. Y en este momento, estás bien." },
+      "Agradecida aunque ocupada":{ word: "Sabia",       phrase: "Reconocer la gratitud en medio del caos es un regalo. Esa sabiduría que tienes es lo que te diferencia." },
+    };
+
+    const THIRTY_SUGG = {
+      "Descansar sin hacer nada":          "Agenda 30 minutos el miércoles en la tarde — apaga el teléfono, acuéstate, no hagas nada. Ese descanso no es pereza: es combustible.",
+      "Leer o escuchar algo inspirador":   "Pon en tu calendario 30 minutos cualquier mañana esta semana — antes de que el día te consuma. Un podcast, un capítulo, algo que te alimente.",
+      "Moverme o hacer ejercicio":         "Esta semana, 30 minutos de movimiento para ti. No para verte bien — para sentirte bien. Ponlo en tu calendario como reunión importante.",
+      "Trabajar en mi negocio":            "Agenda una hora contigo misma esta semana para avanzar en lo que llevas posponiendo. Cierra la puerta. Apaga las notificaciones. Es tu hora.",
+      "Estar en silencio y orar":          "Agenda 30 minutos de silencio esta semana. Puede ser temprano en la mañana o cuando los niños duerman. Ese tiempo contigo y con Dios es lo que te recarga.",
+      "honestamente no sé":               "Está bien no saber. Esta semana, regálate 30 minutos sin agenda — sin saber qué harás con ellos. A veces el alma necesita espacio para descubrir qué necesita.",
+    };
+
+    const aff  = AFFIRMATIONS[displayResp?.dia] || AFFIRMATIONS["Abrumada"];
+    const sugg = THIRTY_SUGG[displayResp?.treinta] || THIRTY_SUGG["honestamente no sé"];
+
+    const slideStyle = {
+      opacity:   checkInAnimating ? 0 : 1,
+      transform: checkInAnimating ? (checkInDirFwd ? "translateX(22px)" : "translateX(-22px)") : "translateX(0)",
+      transition: "opacity 0.22s ease, transform 0.22s ease",
+    };
+
+    const goNext = (n) => {
+      setCheckInDirFwd(true);
+      setCheckInAnimating(true);
+      setTimeout(() => { setCheckInStep(n); setCheckInAnimating(false); }, 220);
+    };
+    const goBack = (n) => {
+      setCheckInDirFwd(false);
+      setCheckInAnimating(true);
+      setTimeout(() => { setCheckInStep(n); setCheckInAnimating(false); }, 220);
+    };
+    const finish = () => {
+      const entry = { ...checkInResp, date: todayStr };
+      const filtered = history.filter(c => c.date !== todayStr);
+      updatePurpose("checkInHistory", [...filtered, entry]);
+      goNext(6);
+    };
+    const restart = () => {
+      setCheckInResp({ dia: "", pensando: "", postergando: "", treinta: "", emocional: 5, social: 5, proyectos: 5 });
+      setCheckInDirFwd(true);
+      setCheckInAnimating(true);
+      setTimeout(() => { setCheckInStep(1); setCheckInAnimating(false); }, 220);
+    };
+
+    const DotProgress = ({ current }) => (
+      <div style={{ display:"flex", gap:"8px", justifyContent:"center", marginBottom:"28px" }}>
+        {[1,2,3,4,5].map(i => (
+          <div key={i} style={{
+            width: i === current ? "24px" : "8px",
+            height: "8px", borderRadius: "4px",
+            background: i <= current ? "#C4526A" : "var(--line)",
+            transition: "all 0.3s ease",
+          }} />
+        ))}
+      </div>
+    );
+
+    const ChipSelect = ({ options, value, onChange }) => (
+      <div style={{ display:"flex", flexWrap:"wrap", gap:"10px", marginTop:"16px" }}>
+        {options.map(opt => (
+          <button key={opt} type="button" onClick={() => onChange(opt)} style={{
+            padding:"10px 18px", borderRadius:"24px",
+            border:`2px solid ${value === opt ? "#C4526A" : "var(--line)"}`,
+            background: value === opt ? "rgba(196,82,106,0.1)" : "#fff",
+            cursor:"pointer", fontFamily:"inherit", fontSize:"14px",
+            fontWeight: value === opt ? 700 : 400, color:"var(--ink)",
+            transition:"all 0.15s ease",
+          }}>
+            {opt}
+          </button>
+        ))}
+      </div>
+    );
+
+    const wrap = { maxWidth:"560px" };
+    const navRow = { display:"flex", justifyContent:"space-between", marginTop:"28px", gap:"12px" };
+    const btnNext = { flex:2, padding:"13px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"12px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:700 };
+    const btnBack = { flex:1, padding:"13px", background:"#fff", color:"var(--ink)", border:"1.5px solid var(--line)", borderRadius:"12px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:600 };
+
+    const header = (
+      <div className="section-title">
+        <h2>Para Mí 💛</h2>
+        <p>Tu espacio. Lo que sientes, lo que necesitas, lo que sueñas.</p>
+      </div>
+    );
+
+    /* ── PANTALLA DE RESULTADOS ── */
+    if (showResults) {
+      const recentHistory = history.slice(-8).reverse();
+      return (
+        <section className="panel workspace-panel">
+          {header}
+          <div style={wrap}>
+
+            {/* Afirmación */}
+            <div style={{ background:"#FBEAF0", border:"1.5px solid #ED93B1", borderRadius:"16px", padding:"24px", marginBottom:"16px" }}>
+              <p style={{ margin:"0 0 4px", fontSize:"11px", fontWeight:800, textTransform:"uppercase", letterSpacing:"1px", color:"#C4526A" }}>Hoy eres</p>
+              <h2 style={{ margin:"0 0 12px", fontSize:"32px", color:"#C4526A", fontWeight:800 }}>{aff.word}</h2>
+              <p style={{ margin:"0 0 16px", fontSize:"15px", lineHeight:1.6, color:"#6f2f4b" }}>{aff.phrase}</p>
+              <p style={{ margin:0, fontSize:"13px", fontStyle:"italic", color:"#C4526A", lineHeight:1.6 }}>Eres valiente. Eres esforzada. Eres fuerte. Puedes ser y hacer todo lo que te propongas.</p>
             </div>
-          ) : (
-            <>
-              <div style={{display:"flex",alignItems:"center",gap:"10px",marginBottom:"16px"}}>
-                <span style={{fontSize:"24px"}}>🌅</span>
-                <div>
-                  <p style={{margin:"0 0 2px",fontWeight:700,fontSize:"15px",color:"var(--ink)"}}>¿Cómo empezó tu día?</p>
-                  <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>30 segundos para conectar contigo misma.</p>
-                </div>
+
+            {/* 30 minutos */}
+            <div className="card" style={{ padding:"24px", marginBottom:"16px" }}>
+              <p style={{ margin:"0 0 6px", fontSize:"11px", fontWeight:800, textTransform:"uppercase", letterSpacing:"1px", color:"var(--muted)" }}>Tu 30 minutos de esta semana</p>
+              <p style={{ margin:"0 0 18px", fontSize:"15px", lineHeight:1.6, color:"var(--ink)" }}>{sugg}</p>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px" }}>
+                <button onClick={() => alert("Próximamente: se agregará a tu calendario")} style={{ padding:"11px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"10px", cursor:"pointer", fontFamily:"inherit", fontSize:"13px", fontWeight:700 }}>
+                  📅 Agendar en Mamá CEO
+                </button>
+                <button onClick={() => alert("Próximamente: integración con Google Calendar")} style={{ padding:"11px", background:"#fff", color:"var(--ink)", border:"1.5px solid var(--line)", borderRadius:"10px", cursor:"pointer", fontFamily:"inherit", fontSize:"13px", fontWeight:600 }}>
+                  📆 Google Calendar
+                </button>
               </div>
-              <div style={{display:"grid",gap:"14px"}}>
-                <div>
-                  <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>Mi energía de hoy es...</p>
-                  <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-                    {[["🔋","Con energía"],["😌","Tranquila"],["😴","Cansada"],["😤","Abrumada"],["✨","Inspirada"]].map(([icon,label]) => (
-                      <button key={label} type="button" onClick={() => updateCheckIn("energia", label)}
-                        style={{padding:"7px 14px",borderRadius:"20px",border:`2px solid ${purpose.checkIn?.energia===label?"var(--pink)":"var(--line)"}`,background:purpose.checkIn?.energia===label?"rgba(212,104,122,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:purpose.checkIn?.energia===label?700:400}}>
-                        {icon} {label}
-                      </button>
-                    ))}
+            </div>
+
+            {/* 3 dimensiones */}
+            <div className="card" style={{ padding:"24px", marginBottom:"16px" }}>
+              <p style={{ margin:"0 0 16px", fontSize:"11px", fontWeight:800, textTransform:"uppercase", letterSpacing:"1px", color:"var(--muted)" }}>Tu semana en 3 dimensiones</p>
+              {[["Estado emocional","#D4537E",displayResp?.emocional||5],["Vida social","#1D9E75",displayResp?.social||5],["Proyectos personales","#7F77DD",displayResp?.proyectos||5]].map(([label,color,val]) => (
+                <div key={label} style={{ marginBottom:"16px" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"6px" }}>
+                    <span style={{ fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{label}</span>
+                    <strong style={{ fontSize:"14px", color }}>{val}/10</strong>
+                  </div>
+                  <div style={{ height:"10px", background:"var(--line)", borderRadius:"5px", overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${val*10}%`, background:color, borderRadius:"5px", transition:"width 0.6s ease" }} />
                   </div>
                 </div>
-                <div>
-                  <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>Mi intención para hoy es...</p>
-                  <input value={purpose.checkIn?.intencion || ""} onChange={e => updateCheckIn("intencion", e.target.value)}
-                    placeholder="Ej: Estar presente con mis hijos, avanzar en una cosa..."
-                    style={{width:"100%",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",boxSizing:"border-box"}} />
-                </div>
-                <div>
-                  <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>Una cosa que haré hoy para mí...</p>
-                  <input value={purpose.checkIn?.paraHoy || ""} onChange={e => updateCheckIn("paraHoy", e.target.value)}
-                    placeholder="Ej: Caminar 15 min, leer 10 páginas, tomarme un café sola..."
-                    style={{width:"100%",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",boxSizing:"border-box"}} />
+              ))}
+              <p style={{ margin:"16px 0 0", fontSize:"12px", color:"var(--muted)", fontStyle:"italic" }}>Cada semana que lo hagas, verás cómo evoluciona tu bienestar.</p>
+            </div>
+
+            {/* Historial emocional */}
+            {recentHistory.length > 1 && (
+              <div className="card" style={{ padding:"20px", marginBottom:"16px" }}>
+                <p style={{ margin:"0 0 14px", fontSize:"11px", fontWeight:800, textTransform:"uppercase", letterSpacing:"1px", color:"var(--muted)" }}>Tu estado emocional — últimos check-ins</p>
+                <div style={{ display:"flex", alignItems:"flex-end", gap:"8px", height:"60px" }}>
+                  {recentHistory.slice(0,8).reverse().map((c,i) => (
+                    <div key={i} style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", gap:"4px" }}>
+                      <div style={{
+                        width:"100%", borderRadius:"4px",
+                        height:`${Math.max(8,(c.emocional||5)*5.5)}px`,
+                        background: (c.emocional||5) >= 7 ? "#1D9E75" : (c.emocional||5) >= 4 ? "#D4537E" : "#7F77DD",
+                        transition:"height 0.4s ease",
+                      }} />
+                      <span style={{ fontSize:"9px", color:"var(--muted)" }}>{(c.date||"").slice(5)}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
-            </>
-          )}
-        </div>
+            )}
 
-        {/* Banner de afirmación destacado */}
-        <div className="card" style={{background:"linear-gradient(135deg, #f8f4f1 0%, #fef9f6 100%)",border:"2px solid #e8d5c4",padding:"24px",marginBottom:"20px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:"16px",marginBottom:"12px"}}>
-            <span style={{fontSize:"32px"}}>?</span>
-            <div style={{flex:1}}>
-              <p style={{fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--purple)",margin:0}}>Tu afirmación de hoy</p>
-              <h3 style={{fontSize:"18px",lineHeight:1.4,margin:"6px 0 0",color:"#6f2f4b"}}>{todayAffirmation}</h3>
-            </div>
+            <button type="button" onClick={restart} style={{ width:"100%", padding:"14px", background:"var(--line)", color:"var(--ink)", border:"none", borderRadius:"12px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:700 }}>
+              Hacer otro check-in
+            </button>
           </div>
-          <div style={{display:"flex",gap:"20px",alignItems:"center",marginTop:"16px",paddingTop:"16px",borderTop:"1px solid #e8d5c4"}}>
-            <div style={{flex:1}}>
-              <p style={{fontSize:"12px",color:"var(--muted)",margin:"0 0 4px"}}>índice de impacto esta semana</p>
-              <Progress value={impactScore} tone="purple" />
-            </div>
-            <strong style={{fontSize:"28px",color:"var(--purple)"}}>{impactScore}%</strong>
+        </section>
+      );
+    }
+
+    /* ── PASO 0: BIENVENIDA ── */
+    if (checkInStep === 0) {
+      return (
+        <section className="panel workspace-panel">
+          {header}
+          <div style={{ ...wrap, textAlign:"center", paddingTop:"16px" }}>
+            <span style={{ fontSize:"52px" }}>🌸</span>
+            <h3 style={{ margin:"16px 0 8px", fontSize:"22px", color:"var(--ink)" }}>¿Lista para tu check-in de hoy?</h3>
+            <p style={{ margin:"0 0 32px", color:"var(--muted)", fontSize:"15px", lineHeight:1.6 }}>5 preguntas. 3 minutos. Solo para ti.</p>
+            <button onClick={() => goNext(1)} style={{ ...btnNext, flex:"unset", padding:"16px 48px", fontSize:"16px" }}>
+              Empezar
+            </button>
           </div>
-        </div>
+        </section>
+      );
+    }
 
-        <div style={{display:"grid",gap:"16px",maxWidth:"640px"}}>
+    /* ── PASOS 1–5 ── */
+    const canNext = !(checkInStep === 1 && !checkInResp.dia) && !(checkInStep === 4 && !checkInResp.treinta);
 
-          {/* Autocuidado */}
-          <div className="card" style={{padding:"20px"}}>
-            <h3 style={{margin:"0 0 4px",fontSize:"16px"}}>Hoy me cuidé 🌿</h3>
-            <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Pequeñas cosas que sostienen todo lo demás.</p>
-            <div style={{display:"grid",gap:"10px"}}>
-              {[["water","💧","Tomé agua durante el día"],["walk","🚶","Me moví o caminé aunque sea 10 min"],["silence","🤫","Tuve un momento de silencio o pausa"],["devotional","🙏","Tuve mi devocional u oración"]].map(([key, icon, label]) => (
-                <label key={key} style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 14px",borderRadius:"10px",border:`1px solid ${purpose[key]?"var(--green)":"var(--line)"}`,background:purpose[key]?"rgba(47,159,112,0.06)":"#fff",cursor:"pointer"}}>
-                  <input type="checkbox" checked={!!purpose[key]} onChange={(e) => updatePurpose(key, e.target.checked)} style={{accentColor:"var(--green)",width:"18px",height:"18px",flexShrink:0}} />
-                  <span style={{fontSize:"18px"}}>{icon}</span>
-                  <span style={{fontSize:"14px",color:purpose[key]?"var(--green)":"var(--ink)",fontWeight:purpose[key]?600:400,textDecoration:purpose[key]?"line-through":"none"}}>{label}</span>
-                </label>
-              ))}
-            </div>
-            {selfCareScore >= 3 && (
-              <div style={{marginTop:"14px",padding:"10px 14px",background:"rgba(47,159,112,0.08)",borderRadius:"10px",fontSize:"13px",color:"#1a5c3a",fontWeight:600}}>
-                ✨ Hoy te cuidaste bien. Eso también es ser buena mamá.
+    return (
+      <section className="panel workspace-panel">
+        {header}
+        <div style={wrap}>
+          <DotProgress current={checkInStep} />
+          <div style={slideStyle}>
+
+            {/* PASO 1 */}
+            {checkInStep === 1 && (
+              <div>
+                <h3 style={{ fontSize:"20px", margin:"0 0 6px", color:"var(--ink)" }}>¿Cómo empezó tu día hoy?</h3>
+                <p style={{ margin:0, fontSize:"14px", color:"var(--muted)" }}>Sin juicio. Solo dinos cómo llegaste aquí.</p>
+                <ChipSelect
+                  options={["Con energía y lista","Tranquila pero cansada","Con mucho en la cabeza","Abrumada","Agradecida aunque ocupada"]}
+                  value={checkInResp.dia}
+                  onChange={v => setCheckInResp(r => ({ ...r, dia:v }))}
+                />
+              </div>
+            )}
+
+            {/* PASO 2 */}
+            {checkInStep === 2 && (
+              <div>
+                <h3 style={{ fontSize:"20px", margin:"0 0 6px", color:"var(--ink)" }}>¿Qué estás pensando en este momento?</h3>
+                <p style={{ margin:"0 0 16px", fontSize:"14px", color:"var(--muted)" }}>No lo sobrepienses, desahogate. Esto es solo tuyo.</p>
+                <textarea value={checkInResp.pensando} onChange={e => setCheckInResp(r => ({ ...r, pensando:e.target.value }))}
+                  placeholder="Lo que está en tu mente ahora mismo..."
+                  style={{ width:"100%", minHeight:"120px", padding:"14px", border:"1.5px solid var(--line)", borderRadius:"12px", font:"inherit", fontSize:"14px", resize:"vertical", boxSizing:"border-box", background:"#faf7f5", lineHeight:1.6 }} />
+              </div>
+            )}
+
+            {/* PASO 3 */}
+            {checkInStep === 3 && (
+              <div>
+                <h3 style={{ fontSize:"20px", margin:"0 0 6px", color:"var(--ink)" }}>¿Qué llevas días o semanas posponiendo?</h3>
+                <p style={{ margin:"0 0 16px", fontSize:"14px", color:"var(--muted)" }}>Eso que sientes cuando cierras los ojos y sabes que está pendiente.</p>
+                <textarea value={checkInResp.postergando} onChange={e => setCheckInResp(r => ({ ...r, postergando:e.target.value }))}
+                  placeholder="Eso que sabes que necesitas hacer pero sigues aplazando..."
+                  style={{ width:"100%", minHeight:"120px", padding:"14px", border:"1.5px solid var(--line)", borderRadius:"12px", font:"inherit", fontSize:"14px", resize:"vertical", boxSizing:"border-box", background:"#faf7f5", lineHeight:1.6 }} />
+              </div>
+            )}
+
+            {/* PASO 4 */}
+            {checkInStep === 4 && (
+              <div>
+                <h3 style={{ fontSize:"20px", margin:"0 0 6px", color:"var(--ink)" }}>Si esta semana tuvieras 30 minutos solo para ti, ¿en qué los usarías?</h3>
+                <p style={{ margin:0, fontSize:"14px", color:"var(--muted)" }}>Sin culpa. ¿Qué necesitas tú?</p>
+                <ChipSelect
+                  options={["Descansar sin hacer nada","Leer o escuchar algo inspirador","Moverme o hacer ejercicio","Trabajar en mi negocio","Estar en silencio y orar","honestamente no sé"]}
+                  value={checkInResp.treinta}
+                  onChange={v => setCheckInResp(r => ({ ...r, treinta:v }))}
+                />
+              </div>
+            )}
+
+            {/* PASO 5 */}
+            {checkInStep === 5 && (
+              <div>
+                <h3 style={{ fontSize:"20px", margin:"0 0 6px", color:"var(--ink)" }}>Por último — ¿cómo está tu vida en estas tres áreas?</h3>
+                <p style={{ margin:"0 0 24px", fontSize:"14px", color:"var(--muted)" }}>Del 1 al 10. Sin presión.</p>
+                {[["Estado emocional","#D4537E","emocional"],["Vida social","#1D9E75","social"],["Proyectos personales","#7F77DD","proyectos"]].map(([label,color,key]) => (
+                  <div key={key} style={{ marginBottom:"20px" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"8px" }}>
+                      <span style={{ fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{label}</span>
+                      <strong style={{ fontSize:"16px", color }}>{checkInResp[key]}</strong>
+                    </div>
+                    <input type="range" min="1" max="10" value={checkInResp[key]}
+                      onChange={e => setCheckInResp(r => ({ ...r, [key]:Number(e.target.value) }))}
+                      style={{ width:"100%", accentColor:color }} />
+                    <div style={{ display:"flex", justifyContent:"space-between", marginTop:"2px" }}>
+                      <span style={{ fontSize:"11px", color:"var(--muted)" }}>1 — Muy bajo</span>
+                      <span style={{ fontSize:"11px", color:"var(--muted)" }}>10 — Excelente</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Mi sueño */}
-          <div className="card" style={{padding:"20px"}}>
-            <h3 style={{margin:"0 0 4px",fontSize:"16px"}}>Lo que quiero para mí 🌟</h3>
-            <p style={{margin:"0 0 12px",fontSize:"13px",color:"var(--muted)"}}>No tiene que ser un plan. Puede ser un deseo, una imagen, una sensación. Lo que sea tuyo.</p>
-            <textarea
-              style={{width:"100%",minHeight:"80px",padding:"12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",resize:"vertical",boxSizing:"border-box",background:"#faf7f5"}}
-              placeholder="Ej: Quiero retomar la pintura. Quiero tener una mañana a la semana sin culpa. Quiero volver a sentirme yo..."
-              value={purpose.sueno || ""}
-              onChange={(e) => updatePurpose("sueno", e.target.value)} />
-          </div>
-
-          {/* Tiempo para mí */}
-          <div className="card" style={{padding:"20px"}}>
-            <h3 style={{margin:"0 0 4px",fontSize:"16px"}}>Tiempo para mí esta semana ⏳</h3>
-            <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>No para ser productiva. Solo para estar contigo misma.</p>
-            <div style={{display:"flex",alignItems:"center",gap:"16px"}}>
-              <input type="range" min="0" max="20" step="0.5" value={purpose.tiempoParaMi || 0}
-                onChange={(e) => updatePurpose("tiempoParaMi", Number(e.target.value))}
-                style={{flex:1,accentColor:"var(--pink)"}} />
-              <strong style={{minWidth:"56px",textAlign:"right",color:"var(--pink)",fontSize:"18px",fontWeight:800}}>{purpose.tiempoParaMi || 0}h</strong>
-            </div>
-            <p style={{margin:"8px 0 0",fontSize:"12px",color:"var(--muted)"}}>
-              {(purpose.tiempoParaMi||0)===0 ? "Todavía no registras tiempo para ti. Eso también dice algo." : (purpose.tiempoParaMi||0)<2 ? "Poco, pero cuenta. No te juzgues — empieza donde puedas." : (purpose.tiempoParaMi||0)<5 ? "Bien. Ese tiempo importa más de lo que crees." : "Eso es cuidarse. Sigue protegiendo ese espacio."}
-            </p>
-          </div>
-
-          {/* Estado de ánimo — solo si no completó check-in */}
-          {!checkInDone && (
-          <div className="card" style={{padding:"20px"}}>
-            <h3 style={{margin:"0 0 14px",fontSize:"16px"}}>¿Cómo te sientes? 💬</h3>
-            <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-              {["abrumada","inspirada","feliz","cansada","tranquila"].map((mood) => (
-                <button type="button" key={mood}
-                  onClick={() => updatePurpose("mood", mood)}
-                  style={{padding:"8px 16px",borderRadius:"20px",border:`2px solid ${purpose.mood===mood?"var(--pink)":"var(--line)"}`,background:purpose.mood===mood?"rgba(212,104,122,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:purpose.mood===mood?700:400}}>
-                  {mood}
+          {/* Navegación */}
+          <div style={navRow}>
+            {checkInStep > 1
+              ? <button onClick={() => goBack(checkInStep - 1)} style={btnBack}>← Atrás</button>
+              : <div style={{ flex:1 }} />
+            }
+            {checkInStep < 5
+              ? <button onClick={() => goNext(checkInStep + 1)} disabled={!canNext} style={{ ...btnNext, opacity: canNext ? 1 : 0.45 }}>
+                  Siguiente →
                 </button>
-              ))}
-            </div>
-            {purpose.mood && <p style={{margin:"12px 0 0",fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>{mentalAdvice}</p>}
+              : <button onClick={finish} style={btnNext}>Ver mi resultado ✨</button>
+            }
           </div>
-          )}
-
         </div>
       </section>
     );
