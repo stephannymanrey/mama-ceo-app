@@ -802,14 +802,13 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
           onChange={e => setKeyword(e.target.value)}
           onKeyDown={e => e.key === "Enter" && generar()}
         />
-        <button className="ideas-search-btn" onClick={() => generar()} disabled={!keyword.trim() || thinking || aiLoading}>
-          Generar &#x2756;
+        <button
+          className={`ideas-search-btn${callGemini ? " studio-ai-btn" : ""}`}
+          onClick={() => callGemini ? generarConIA() : generar()}
+          disabled={!keyword.trim() || thinking || aiLoading}
+        >
+          {(thinking || aiLoading) ? "Generando..." : callGemini ? "Generar ✨" : "Generar ✦"}
         </button>
-        {callGemini && (
-          <button className="ideas-search-btn studio-ai-btn" onClick={() => generarConIA()} disabled={!keyword.trim() || thinking || aiLoading}>
-            {aiLoading ? "Generando..." : "&#x2728; Con IA"}
-          </button>
-        )}
       </div>
       {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
 
@@ -848,8 +847,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
               {ideas.isAI && <span className="studio-ai-badge">&#x2728; Generado con IA</span>}
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-              <button className="ideas-regen-btn" onClick={() => generar(ideas.keyword)}>&#x1F504; Plantillas</button>
-              {callGemini && <button className="ideas-regen-btn studio-ai-regen-btn" onClick={() => generarConIA(ideas.keyword)}>&#x2728; Nueva IA</button>}
+              <button className={`ideas-regen-btn${callGemini ? " studio-ai-regen-btn" : ""}`} onClick={() => callGemini ? generarConIA(ideas.keyword) : generar(ideas.keyword)}>🔄 Nuevas ideas {callGemini ? "✨" : ""}</button>
             </div>
           </div>
           {Object.entries(CATS).map(([catKey, cat]) => (
@@ -1685,14 +1683,13 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
             onChange={e => setTema(e.target.value)}
             onKeyDown={e => e.key === "Enter" && generar()}
           />
-          <button className="ideas-search-btn" onClick={() => generar()} disabled={!tema.trim() || thinking || aiLoading}>
-            Generar &#x2756;
+          <button
+            className={`ideas-search-btn${callGemini ? " studio-ai-btn" : ""}`}
+            onClick={() => callGemini ? generarConIA() : generar()}
+            disabled={!tema.trim() || thinking || aiLoading}
+          >
+            {(thinking || aiLoading) ? "Generando..." : callGemini ? "Generar ✨" : "Generar ✦"}
           </button>
-          {callGemini && (
-            <button className="ideas-search-btn studio-ai-btn" onClick={() => generarConIA()} disabled={!tema.trim() || thinking || aiLoading}>
-              {aiLoading ? "Generando..." : "&#x2728; Con IA"}
-            </button>
-          )}
         </div>
         {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
         <input
@@ -1743,8 +1740,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
               <span className="hooks-total-badge">{totalHooks} hooks</span>
-              <button className="ideas-regen-btn" onClick={() => generar(hooks.tema)}>&#x1F504; Plantillas</button>
-              {callGemini && <button className="ideas-regen-btn studio-ai-regen-btn" onClick={() => generarConIA(hooks.tema)}>&#x2728; Nueva IA</button>}
+              <button className={`ideas-regen-btn${callGemini ? " studio-ai-regen-btn" : ""}`} onClick={() => callGemini ? generarConIA(hooks.tema) : generar(hooks.tema)}>🔄 Nuevos hooks {callGemini ? "✨" : ""}</button>
             </div>
           </div>
 
@@ -2271,16 +2267,14 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                     Siguiente →
                   </button>
                 ) : (
-                  <div style={{display:"flex",gap:"8px",flex:1}}>
-                    <button className="mpm-step-btn" style={{flex:1}} onClick={generarGuion}>
-                      Borrador &#x2756;
-                    </button>
-                    {callGemini && (
-                      <button className="mpm-step-btn studio-ai-btn" style={{flex:1}} onClick={generarGuionConIA} disabled={aiLoading}>
-                        {aiLoading ? "Generando..." : "&#x2728; Con IA"}
-                      </button>
-                    )}
-                  </div>
+                  <button
+                    className={`mpm-step-btn${callGemini ? " studio-ai-btn" : ""}`}
+                    style={{flex:1}}
+                    onClick={() => callGemini ? generarGuionConIA() : generarGuion()}
+                    disabled={aiLoading}
+                  >
+                    {aiLoading ? "Generando..." : callGemini ? "Generar guión ✨" : "Generar guión ✦"}
+                  </button>
                 )}
               </div>
 
