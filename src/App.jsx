@@ -477,6 +477,26 @@ async function deleteRemoteState() {
 
 export default function App() {
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW();
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [installBannerDismissed, setInstallBannerDismissed] = useState(() => !!localStorage.getItem("installDismissed"));
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
+
+  useEffect(() => {
+    const handler = e => { e.preventDefault(); setInstallPrompt(e); };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
+
+  const handleInstallAndroid = async () => {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const { outcome } = await installPrompt.userChoice;
+    if (outcome === "accepted") { setInstallPrompt(null); setInstallBannerDismissed(true); }
+  };
+  const dismissInstall = () => { localStorage.setItem("installDismissed", "1"); setInstallBannerDismissed(true); };
+
   const stored = loadState();
   const [activeView, setActiveView] = useState(stored?.activeView || "dashboard");
   const [currency, setCurrency] = useState(stored?.currency || "USD");
@@ -1604,6 +1624,66 @@ export default function App() {
         <div style={{position:"fixed",bottom:"16px",left:"50%",transform:"translateX(-50%)",zIndex:9999,background:"#C4526A",color:"#fff",padding:"12px 20px",borderRadius:"12px",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 4px 20px rgba(0,0,0,0.2)",fontSize:"14px",fontWeight:600,whiteSpace:"nowrap"}}>
           <span>🌸 Nueva versión disponible</span>
           <button type="button" onClick={() => updateServiceWorker(true)} style={{background:"#fff",color:"#C4526A",border:"none",borderRadius:"8px",padding:"6px 14px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>Actualizar</button>
+        </div>
+      )}
+
+      {/* Banner instalación Android — 1 clic */}
+      {!isStandalone && !installBannerDismissed && installPrompt && (
+        <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:9998,background:"#fff",borderTop:"1px solid #f0e8e8",padding:"16px 20px",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 -4px 20px rgba(0,0,0,0.08)"}}>
+          <span style={{fontSize:"28px",flexShrink:0}}>🌸</span>
+          <div style={{flex:1,minWidth:0}}>
+            <p style={{margin:"0 0 2px",fontWeight:700,fontSize:"14px",color:"var(--ink)"}}>Agrega MamaCEO a tu pantalla</p>
+            <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Accede más rápido, sin abrir el navegador.</p>
+          </div>
+          <button type="button" onClick={handleInstallAndroid}
+            style={{padding:"10px 18px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700,flexShrink:0}}>
+            Instalar
+          </button>
+          <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}}>×</button>
+        </div>
+      )}
+
+      {/* Banner instalación iOS — guía visual */}
+      {!isStandalone && !installBannerDismissed && isIOS && !installPrompt && (
+        <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:9998,background:"#fff",borderTop:"1px solid #f0e8e8",padding:"16px 20px",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 -4px 20px rgba(0,0,0,0.08)"}}>
+          <span style={{fontSize:"28px",flexShrink:0}}>🌸</span>
+          <div style={{flex:1,minWidth:0}}>
+            <p style={{margin:"0 0 2px",fontWeight:700,fontSize:"14px",color:"var(--ink)"}}>Agrega MamaCEO a tu pantalla</p>
+            <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Accede como app, sin abrir Safari.</p>
+          </div>
+          <button type="button" onClick={() => setShowIOSGuide(true)}
+            style={{padding:"10px 18px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700,flexShrink:0}}>
+            Cómo hacerlo
+          </button>
+          <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}}>×</button>
+        </div>
+      )}
+
+      {/* Modal guía iOS */}
+      {showIOSGuide && (
+        <div style={{position:"fixed",inset:0,zIndex:10000,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"flex-end"}}>
+          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 24px 40px",width:"100%",maxWidth:"480px",margin:"0 auto"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px"}}>
+              <h3 style={{margin:0,fontSize:"18px"}}>Instalar MamaCEO 🌸</h3>
+              <button type="button" onClick={() => { setShowIOSGuide(false); dismissInstall(); }} style={{border:"none",background:"none",fontSize:"22px",color:"var(--muted)",cursor:"pointer",lineHeight:1}}>×</button>
+            </div>
+            <div style={{display:"grid",gap:"16px"}}>
+              {[
+                { num:"1", icon:"⬆️", title:"Toca el botón compartir", desc:'El ícono de cuadrado con flecha, al pie de Safari.' },
+                { num:"2", icon:"➕", title:'"Agregar a pantalla de inicio"', desc:'Baja en el menú hasta encontrar esta opción.' },
+                { num:"3", icon:"✅", title:'Toca "Agregar"', desc:'En la esquina superior derecha. ¡Listo!' },
+              ].map(step => (
+                <div key={step.num} style={{display:"flex",alignItems:"flex-start",gap:"14px",padding:"14px 16px",background:"#fdf9f6",borderRadius:"12px",border:"1px solid #f0e8e0"}}>
+                  <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"#C4526A",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"14px",flexShrink:0}}>{step.num}</div>
+                  <div>
+                    <p style={{margin:"0 0 3px",fontWeight:700,fontSize:"14px",color:"var(--ink)"}}>{step.icon} {step.title}</p>
+                    <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>{step.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <p style={{margin:"20px 0 0",textAlign:"center",fontSize:"13px",color:"var(--muted)"}}>Después de instalada, ábrela desde tu pantalla de inicio como cualquier app 🌸</p>
+          </div>
         </div>
       )}
       {showProfileModal && (
