@@ -14,8 +14,9 @@ const PLAN_LIMITS = {
 };
 
 const PLAN_PRICES = {
-  emprendedora: { cop: "$59.900", usd: "$14.99", copYear: "$599.000", usdYear: "$149" },
-  ceo:          { cop: "$99.900", usd: "$24.99", copYear: "$999.000", usdYear: "$249" }
+  mama:         { cop: "$39.900", usd: "$9.99",  copYear: "$399.000", usdYear: "$99"  },
+  emprendedora: { cop: "$79.900", usd: "$19.99", copYear: "$799.000", usdYear: "$199" },
+  ceo:          { cop: "$119.900",usd: "$29.99", copYear: "$1.199.000",usdYear: "$299" }
 };
 
 const POMODORO_MESSAGES = [
@@ -179,16 +180,18 @@ const promesas = [
   "Dios te da la fuerza que necesitas exactamente cuando la necesitas."
 ];
 
-const menu = [
-  { id: "dashboard", label: "Inicio", icon: "🏠" },
-  { id: "business", label: "Mi Negocio", icon: "💼" },
-  { id: "clients", label: "Mis Clientas", icon: "👩‍💼" },
-  { id: "studio",  label: "Studio ✦",     icon: "🎬" },
-  { id: "content", label: "Mi Contenido", icon: "📱" },
-  { id: "home", label: "Mi Hogar", icon: "🌸" },
-  { id: "ceo", label: "Mi Propósito", icon: "🎯" },
-  { id: "report", label: "Reporte Semanal", icon: "📊" }
+const ALL_MENU_ITEMS = [
+  { id: "dashboard", label: "Inicio",          icon: "🏠" },
+  { id: "home",      label: "Mi Hogar",         icon: "🌸" },
+  { id: "ceo",       label: "Mi Propósito",     icon: "🎯" },
+  { id: "business",  label: "Mi Negocio",       icon: "💼" },
+  { id: "clients",   label: "Mis Clientas",     icon: "👩‍💼" },
+  { id: "studio",    label: "Studio ✦",          icon: "🎬" },
+  { id: "content",   label: "Mi Contenido",     icon: "📱" },
+  { id: "report",    label: "Reporte Semanal",  icon: "📊" },
 ];
+const MENU_MAMA        = ["dashboard", "home", "ceo"];
+const MENU_EMPRENDEDORA = ["dashboard", "home", "ceo", "business", "clients", "studio", "content", "report"];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 function getWeekDays() {
@@ -417,7 +420,8 @@ function createBlankUserState(currency = "USD") {
     profileSetup: null,
     groceryList: [],
     userPlan: "free",
-    premiumExpiresAt: null
+    premiumExpiresAt: null,
+    userMode: null
   };
 }
 
@@ -545,6 +549,7 @@ export default function App() {
   const [reportWeekOffset, setReportWeekOffset] = useState(0);
   const [userPlan, setUserPlan] = useState(stored?.userPlan || "free");
   const [premiumExpiresAt, setPremiumExpiresAt] = useState(stored?.premiumExpiresAt || null);
+  const [userMode, setUserMode] = useState(stored?.userMode || null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState("");
   const [betaCode, setBetaCode] = useState("");
@@ -1014,6 +1019,7 @@ export default function App() {
     setGroceryList(state.groceryList || []);
     setUserPlan(state.userPlan || "free");
     setPremiumExpiresAt(state.premiumExpiresAt || null);
+    setUserMode(state.userMode || null);
   };
 
   useEffect(() => {
@@ -1089,7 +1095,8 @@ export default function App() {
       brandProfile,
       groceryList,
       userPlan,
-      premiumExpiresAt
+      premiumExpiresAt,
+      userMode
     };
 
     if (user && awsActive && remoteStorageEnabled) {
@@ -1115,7 +1122,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks]);
 
   const addMovement = (event) => {
     event.preventDefault();
@@ -1385,7 +1392,21 @@ export default function App() {
     setTimeout(() => setProfileSaved(false), 4000);
   };
 
-  const activeLabel = menu.find((item) => item.id === activeView)?.label || "Dashboard";
+  const menu = useMemo(() => {
+    if (!userMode || userMode === "ambas") return ALL_MENU_ITEMS;
+    if (userMode === "mama") return ALL_MENU_ITEMS.filter(i => MENU_MAMA.includes(i.id));
+    return ALL_MENU_ITEMS.filter(i => MENU_EMPRENDEDORA.includes(i.id));
+  }, [userMode]);
+
+  const activeLabel = menu.find((item) => item.id === activeView)?.label || "Inicio";
+
+  const selectUserMode = (mode) => {
+    setUserMode(mode);
+    const trialEnd = Date.now() + 14 * 24 * 60 * 60 * 1000;
+    setPremiumExpiresAt(trialEnd);
+    const plan = mode === "mama" ? "emprendedora" : "ceo";
+    setUserPlan(plan);
+  };
 
   if (!ready || isRestoringRemote) {
     return (
@@ -1490,6 +1511,41 @@ export default function App() {
     );
   }
 
+  if (!userMode) {
+    return (
+      <div className="auth-shell">
+        <div style={{maxWidth:"560px",width:"100%",padding:"32px 20px",margin:"auto"}}>
+          <div style={{textAlign:"center",marginBottom:"36px"}}>
+            <Logo width={160} />
+            <h2 style={{margin:"20px 0 8px",fontSize:"24px",color:"var(--ink)"}}>Bienvenida, {profileSetup?.name || "Mamá"} 🌸</h2>
+            <p style={{color:"var(--muted)",fontSize:"15px",margin:0}}>¿Qué te describe mejor? Esto personaliza tu experiencia.</p>
+          </div>
+          <div style={{display:"grid",gap:"14px"}}>
+            {[
+              { mode: "mama",        icon: "🌸", title: "Solo quiero organizarme",        desc: "Hogar, familia, bienestar y tiempo para mí. Sin funciones de negocio." },
+              { mode: "emprendedora",icon: "💼", title: "Tengo un negocio o quiero emprender", desc: "Clientas, finanzas, Studio de contenido y todo para hacer crecer mi negocio." },
+              { mode: "ambas",       icon: "✨", title: "Las dos cosas",                   desc: "Quiero un hogar organizado Y construir mi negocio al mismo tiempo." },
+            ].map(({ mode, icon, title, desc }) => (
+              <button key={mode} onClick={() => selectUserMode(mode)}
+                style={{display:"flex",alignItems:"flex-start",gap:"16px",padding:"20px",border:"2px solid var(--line)",borderRadius:"16px",background:"#fff",cursor:"pointer",textAlign:"left",transition:"border-color 0.2s,box-shadow 0.2s",fontFamily:"inherit"}}
+                onMouseEnter={e => { e.currentTarget.style.borderColor="var(--pink)"; e.currentTarget.style.boxShadow="0 4px 16px rgba(212,104,122,0.12)"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor="var(--line)"; e.currentTarget.style.boxShadow="none"; }}>
+                <span style={{fontSize:"32px",lineHeight:1,flexShrink:0}}>{icon}</span>
+                <div>
+                  <strong style={{fontSize:"16px",color:"var(--ink)",display:"block",marginBottom:"4px"}}>{title}</strong>
+                  <span style={{fontSize:"13px",color:"var(--muted)",lineHeight:1.5}}>{desc}</span>
+                </div>
+              </button>
+            ))}
+          </div>
+          <p style={{textAlign:"center",marginTop:"24px",fontSize:"12px",color:"var(--muted)"}}>
+            Prueba gratuita de 14 días con acceso completo. Puedes cambiar esto desde tu perfil en cualquier momento.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app-shell">
       {showProfileModal && (
@@ -1547,6 +1603,24 @@ export default function App() {
                   <option>Equilibrar negocio y hogar</option>
                 </select>
               </label>
+              {profileSetup && (
+                <div style={{marginTop:"16px",padding:"16px",background:"#faf7f5",borderRadius:"12px",border:"1px solid var(--line)"}}>
+                  <p style={{margin:"0 0 10px",fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>Tipo de cuenta</p>
+                  <div style={{display:"grid",gap:"8px"}}>
+                    {[
+                      { mode: "mama",         icon: "🌸", label: "Solo organizarme"          },
+                      { mode: "emprendedora",  icon: "💼", label: "Solo mi negocio"           },
+                      { mode: "ambas",         icon: "✨", label: "Hogar y negocio"           },
+                    ].map(({ mode, icon, label }) => (
+                      <button key={mode} type="button"
+                        onClick={() => setUserMode(mode)}
+                        style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",border:`2px solid ${userMode===mode?"var(--pink)":"var(--line)"}`,borderRadius:"10px",background:userMode===mode?"rgba(212,104,122,0.06)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:userMode===mode?700:400,color:"var(--ink)"}}>
+                        <span>{icon}</span>{label}{userMode===mode&&<span style={{marginLeft:"auto",color:"var(--pink)"}}>✓</span>}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ?"}</button>
               {profileSetup && (
                 <button type="button" onClick={async () => {
@@ -3537,33 +3611,38 @@ export default function App() {
 
   function renderPricing() {
     const plans = [
-      { id: "free", name: "Gratis", price: "$0", period: "", color: "var(--muted)",
-        features: [`${PLAN_LIMITS.free.movements} movimientos/mes`,`${PLAN_LIMITS.free.clients} clientes`,`${PLAN_LIMITS.free.content} contenidos/mes`,`${PLAN_LIMITS.free.homeTasks} tareas hogar/mes`,"Sincronización en la nube","Todas las funciones básicas"] },
-      { id: "emprendedora", name: "Emprendedora", price: PLAN_PRICES.emprendedora.usd, period: "/mes USD",
-        priceCop: PLAN_PRICES.emprendedora.cop+" COP/mes", priceYear: PLAN_PRICES.emprendedora.usdYear+" USD/año (2 meses gratis)",
+      { id: "mama", name: "🌸 Mamá", price: PLAN_PRICES.mama.usd, period: "/mes USD",
+        priceCop: PLAN_PRICES.mama.cop+" COP/mes", priceYear: PLAN_PRICES.mama.usdYear+" USD/año (2 meses gratis)",
         color: "var(--pink)",
-        features: [`${PLAN_LIMITS.emprendedora.movements} movimientos/mes`,`${PLAN_LIMITS.emprendedora.clients} clientes`,`${PLAN_LIMITS.emprendedora.content} contenidos/mes`,`${PLAN_LIMITS.emprendedora.homeTasks} tareas hogar/mes`,"Exportar Excel y PDF","Historial 6 meses","Soporte email 48h"] },
-      { id: "ceo", name: "CEO", price: PLAN_PRICES.ceo.usd, period: "/mes USD",
+        desc: "Para la mamá que quiere organizarse y tener más tiempo para sí misma.",
+        features: ["Mi Hogar completo — tareas, mercado, rutinas","Mi Propósito — bienestar y presencia","Presupuesto familiar","Check-in diario","Acceso sin límites a las funciones del hogar"] },
+      { id: "emprendedora", name: "💼 Emprendedora", price: PLAN_PRICES.emprendedora.usd, period: "/mes USD",
+        priceCop: PLAN_PRICES.emprendedora.cop+" COP/mes", priceYear: PLAN_PRICES.emprendedora.usdYear+" USD/año (2 meses gratis)",
+        color: "var(--purple)",
+        desc: "Para la mamá que tiene un negocio o quiere emprender.",
+        features: ["Todo el plan Mamá incluido","Mi Negocio y Mis Clientas","Studio de contenido (60 generaciones/mes)","Mi Contenido — planificador","Reporte semanal","Soporte email 48h"] },
+      { id: "ceo", name: "👑 CEO", price: PLAN_PRICES.ceo.usd, period: "/mes USD",
         priceCop: PLAN_PRICES.ceo.cop+" COP/mes", priceYear: PLAN_PRICES.ceo.usdYear+" USD/año (2 meses gratis)",
-        badge: "RECOMENDADO", color: "var(--purple)",
-        features: ["Todo ilimitado","Exportar Excel y PDF","Historial ilimitado","Calculadora de precio de servicios ?","Proyección de ingresos ?","Temporizador Pomodoro flotante ?","Acceso anticipado a nuevas funciones","Soporte prioritario 24h"] }
+        badge: "RECOMENDADO", color: "var(--gold,#c9a96e)",
+        desc: "Para la mamá que quiere el hogar organizado Y escalar su negocio.",
+        features: ["Todo ilimitado — hogar y negocio","Studio con 200 generaciones/mes","Exportar Excel y PDF","Proyección de ingresos","Pomodoro flotante","Soporte prioritario 24h","Acceso anticipado a nuevas funciones"] },
     ];
     return (
       <section className="panel workspace-panel">
-        <div className="section-title"><h2>Planes y Precios</h2><p>Elige el plan que mejor se adapte a tu negocio</p></div>
+        <div className="section-title"><h2>Planes y Precios</h2><p>14 días de prueba gratis con acceso completo — elige tu plan cuando estés lista</p></div>
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"20px",maxWidth:"1000px",margin:"0 auto"}}>
           {plans.map((plan) => {
-            const isCurrent = effectivePlan===plan.id||(plan.id==="ceo"&&effectivePlan==="premium");
+            const isCurrent = effectivePlan===plan.id||(plan.id==="ceo"&&effectivePlan==="premium")||(plan.id==="mama"&&userMode==="mama"&&effectivePlan==="emprendedora");
             return (
               <div key={plan.id} className="card" style={{border:`2px solid ${isCurrent||plan.id==="ceo"?plan.color:"var(--line)"}`,background:plan.id==="ceo"?"linear-gradient(135deg,rgba(212,104,122,0.05),rgba(201,169,110,0.05))":"#fff",position:"relative"}}>
                 {isCurrent&&<div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:plan.color,color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:800}}>PLAN ACTUAL</div>}
                 {plan.badge&&!isCurrent&&<div style={{position:"absolute",top:"12px",right:"12px",background:"var(--green)",color:"#fff",padding:"3px 10px",borderRadius:"20px",fontSize:"11px",fontWeight:800}}>{plan.badge}</div>}
                 <div style={{padding:"24px"}}>
-                  <h3 style={{margin:"0 0 4px",fontSize:"22px",color:plan.color}}>{plan.name}</h3>
-                  <div style={{fontSize:"34px",fontWeight:800,color:plan.color,lineHeight:1,marginBottom:"2px"}}>{plan.price}<span style={{fontSize:"14px",fontWeight:400,color:"var(--muted)"}}>{plan.period}</span></div>
+                  <h3 style={{margin:"0 0 4px",fontSize:"20px",color:plan.color}}>{plan.name}</h3>
+                  {plan.desc&&<p style={{margin:"0 0 10px",fontSize:"13px",color:"var(--muted)",lineHeight:1.4}}>{plan.desc}</p>}
+                  <div style={{fontSize:"32px",fontWeight:800,color:plan.color,lineHeight:1,marginBottom:"2px"}}>{plan.price}<span style={{fontSize:"14px",fontWeight:400,color:"var(--muted)"}}>{plan.period}</span></div>
                   {plan.priceCop&&<p style={{margin:"0 0 2px",fontSize:"13px",color:"var(--muted)"}}>{plan.priceCop}</p>}
                   {plan.priceYear&&<p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>{plan.priceYear}</p>}
-                  {!plan.priceCop&&<p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Para empezar a organizarte</p>}
                   <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
                     {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>?</span><span>{f}</span></div>))}
                   </div>
