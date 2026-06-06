@@ -191,7 +191,7 @@ const ALL_MENU_ITEMS = [
   { id: "report",    label: "Reporte Semanal",  icon: "📊" },
 ];
 const MENU_MAMA        = ["dashboard", "home", "ceo"];
-const MENU_EMPRENDEDORA = ["dashboard", "home", "ceo", "business", "clients", "studio", "content", "report"];
+const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio", "content", "report"];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 function getWeekDays() {
@@ -1590,60 +1590,67 @@ export default function App() {
                 ¿Cómo te llamamos?
                 <input placeholder="Tu nombre" value={profileForm.name} onChange={(e) => setProfileForm((c) => ({ ...c, name: e.target.value }))} required />
               </label>
-              <label>
-                Nombre de tu negocio
-                <input placeholder="Ej: Coaching con Ana" value={profileForm.businessName} onChange={(e) => setProfileForm((c) => ({ ...c, businessName: e.target.value }))} required />
-              </label>
-              <label>
-                Tipo de negocio
-                <select value={profileForm.businessType} onChange={(e) => setProfileForm((c) => ({ ...c, businessType: e.target.value }))}>
-                  <option>Servicios 1:1</option>
-                  <option>Coaching o mentoría</option>
-                  <option>Productos digitales</option>
-                  <option>E-commerce</option>
-                  <option>Membresías / Recurrente</option>
-                  <option>Otro</option>
-                </select>
-              </label>
-              <label>
-                ¿En qué etapa está tu negocio?
-                <select value={profileForm.stage} onChange={(e) => setProfileForm((c) => ({ ...c, stage: e.target.value }))}>
-                  <option>Comenzando</option>
-                  <option>Creciendo</option>
-                  <option>Escalando</option>
-                </select>
-              </label>
-              <label>
-                Meta de ingresos mensual
-                <input type="number" min="0" placeholder="Ej: 3000" value={profileForm.monthlyGoalSetup} onChange={(e) => setProfileForm((c) => ({ ...c, monthlyGoalSetup: e.target.value }))} required />
-              </label>
-              <label>
-                Tu mayor reto ahora mismo
-                <select value={profileForm.mainChallenge} onChange={(e) => setProfileForm((c) => ({ ...c, mainChallenge: e.target.value }))}>
-                  <option>Conseguir clientes</option>
-                  <option>Organizar mis finanzas</option>
-                  <option>Tener más tiempo</option>
-                  <option>Escalar mi negocio</option>
-                  <option>Equilibrar negocio y hogar</option>
-                </select>
-              </label>
+
+              {/* Tipo de cuenta — arriba para que controle los campos siguientes */}
               {profileSetup && (
-                <div style={{marginTop:"16px",padding:"16px",background:"#faf7f5",borderRadius:"12px",border:"1px solid var(--line)"}}>
-                  <p style={{margin:"0 0 10px",fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>Tipo de cuenta</p>
+                <div style={{padding:"14px",background:"#faf7f5",borderRadius:"12px",border:"1px solid var(--line)"}}>
+                  <p style={{margin:"0 0 10px",fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>¿Qué quieres hacer con Mamá CEO?</p>
                   <div style={{display:"grid",gap:"8px"}}>
                     {[
-                      { mode: "mama",         icon: "🌸", label: "Solo organizarme"          },
-                      { mode: "emprendedora",  icon: "💼", label: "Solo mi negocio"           },
-                      { mode: "ambas",         icon: "✨", label: "Hogar y negocio"           },
+                      { mode: "mama",        icon: "🌸", label: "Solo organizarme"  },
+                      { mode: "emprendedora", icon: "💼", label: "Solo mi negocio"   },
+                      { mode: "ambas",        icon: "✨", label: "Hogar y negocio"   },
                     ].map(({ mode, icon, label }) => (
-                      <button key={mode} type="button"
-                        onClick={() => setUserMode(mode)}
+                      <button key={mode} type="button" onClick={() => setUserMode(mode)}
                         style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",border:`2px solid ${userMode===mode?"var(--pink)":"var(--line)"}`,borderRadius:"10px",background:userMode===mode?"rgba(212,104,122,0.06)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:userMode===mode?700:400,color:"var(--ink)"}}>
                         <span>{icon}</span>{label}{userMode===mode&&<span style={{marginLeft:"auto",color:"var(--pink)"}}>✓</span>}
                       </button>
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* Campos de negocio — solo si NO es modo "Solo organizarme" */}
+              {userMode !== "mama" && (
+                <>
+                  <label>
+                    Nombre de tu negocio
+                    <input placeholder="Ej: Coaching con Ana" value={profileForm.businessName} onChange={(e) => setProfileForm((c) => ({ ...c, businessName: e.target.value }))} required={userMode !== "mama"} />
+                  </label>
+                  <label>
+                    Tipo de negocio
+                    <select value={profileForm.businessType} onChange={(e) => setProfileForm((c) => ({ ...c, businessType: e.target.value }))}>
+                      <option>Servicios 1:1</option>
+                      <option>Coaching o mentoría</option>
+                      <option>Productos digitales</option>
+                      <option>E-commerce</option>
+                      <option>Membresías / Recurrente</option>
+                      <option>Otro</option>
+                    </select>
+                  </label>
+                  <label>
+                    ¿En qué etapa está tu negocio?
+                    <select value={profileForm.stage} onChange={(e) => setProfileForm((c) => ({ ...c, stage: e.target.value }))}>
+                      <option>Comenzando</option>
+                      <option>Creciendo</option>
+                      <option>Escalando</option>
+                    </select>
+                  </label>
+                  <label>
+                    Meta de ingresos mensual
+                    <input type="number" min="0" placeholder="Ej: 3000" value={profileForm.monthlyGoalSetup} onChange={(e) => setProfileForm((c) => ({ ...c, monthlyGoalSetup: e.target.value }))} required={userMode !== "mama"} />
+                  </label>
+                  <label>
+                    Tu mayor reto ahora mismo
+                    <select value={profileForm.mainChallenge} onChange={(e) => setProfileForm((c) => ({ ...c, mainChallenge: e.target.value }))}>
+                      <option>Conseguir clientes</option>
+                      <option>Organizar mis finanzas</option>
+                      <option>Tener más tiempo</option>
+                      <option>Escalar mi negocio</option>
+                      <option>Equilibrar negocio y hogar</option>
+                    </select>
+                  </label>
+                </>
               )}
               <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ?"}</button>
               {profileSetup && (
