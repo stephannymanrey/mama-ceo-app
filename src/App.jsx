@@ -565,6 +565,7 @@ export default function App() {
   const [userMode, setUserMode] = useState(stored?.userMode || null);
   const [presenceForm, setPresenceForm] = useState({ quien: [], queHicieron: "", tiempo: "30 min" });
   const [presenceCelebration, setPresenceCelebration] = useState(false);
+  const [homeTab, setHomeTab] = useState(0);
   const [checkInStep, setCheckInStep] = useState(0);
   const [checkInResp, setCheckInResp] = useState({ dia: "", pensando: "", postergando: "", treinta: "", emocional: 5, social: 5, proyectos: 5 });
   const [checkInAnimating, setCheckInAnimating] = useState(false);
@@ -2769,527 +2770,530 @@ export default function App() {
     );
   }
   function renderHome() {
-    const homeProgress = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
-    const mentalLoad = homeTasks.filter((t) => !t.done).length;
+    const homeProgress    = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
+    const mentalLoad      = homeTasks.filter(t => !t.done).length;
     const mentalLoadLevel = mentalLoad >= 8 ? "alta" : mentalLoad >= 4 ? "media" : "baja";
     const mentalLoadColor = mentalLoad >= 8 ? "var(--purple)" : mentalLoad >= 4 ? "var(--orange)" : "var(--green)";
-    const delegatedTasks = homeTasks.filter((t) => t.delegate && t.delegate.trim() !== "");
-    const urgentTasks = homeTasks.filter((t) => !t.done && t.priority === "Urgente");
-    const horasLiberadas = delegatedTasks.filter(t => !t.done).length * 0.5;
-    const STARTER_TASKS = [
-      { title: "Organizar cajones de la cocina", category: "Hogar / Limpieza" },
-      { title: "Lista de mercado de la semana", category: "Compras" },
-      { title: "Agendar cita médica pendiente", category: "Salud" },
-      { title: "Revisar tareas del colegio", category: "Colegio / Ninos" },
-      { title: "30 minutos solo para mí", category: "Bienestar" },
+    const delegatedTasks  = homeTasks.filter(t => t.delegate && t.delegate.trim() !== "");
+    const urgentTasks     = homeTasks.filter(t => !t.done && t.priority === "Urgente");
+    const todayDay        = ["D","L","M","X","J","V","S"][new Date().getDay()];
+    const today0          = new Date(); today0.setHours(0,0,0,0);
+    const withDiff        = appointments.map(a => ({ ...a, diff: Math.round((new Date(a.date+"T00:00:00") - today0) / 86400000) }));
+    const upcomingAppts   = withDiff.filter(a => a.diff >= 0).sort((a,b) => a.diff - b.diff);
+    const DAY_LABELS      = [["L","Lunes"],["M","Martes"],["X","Miércoles"],["J","Jueves"],["V","Viernes"],["S","Sábado"],["D","Domingo"]];
+    const TYPE_ICONS      = { "Médico":"🩺","Colegio":"🎒","Dentista":"🦷","Reunión":"📋","Pago":"💳","Cumpleaños":"🎂","Otro":"📌" };
+    const daysLabel       = d => d === 0 ? "Hoy" : d === 1 ? "Mañana" : `En ${d}d`;
+    const daysColor       = d => d === 0 ? "#C4526A" : d <= 3 ? "#e87b1e" : "#1D9E75";
+    const addToGCal       = appt => { const t = encodeURIComponent(appt.title); const d = appt.date.replace(/-/g,""); window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${d}/${d}`, "_blank"); };
+    const submitAppt      = e => { e.preventDefault(); if (!apptForm.title.trim() || !apptForm.date) return; setAppointments(c => [...c, { id:Date.now(), ...apptForm, title:apptForm.title.trim() }]); setApptForm(f => ({ ...f, title:"", date:"" })); };
+    const addQuickNote    = e => { e.preventDefault(); if (!quickNoteInput.trim()) return; setQuickNotes(c => [...c, { id:Date.now(), text:quickNoteInput.trim() }]); setQuickNoteInput(""); };
+    const addKidsAct      = e => { e.preventDefault(); if (!kidsActForm.kid.trim() || !kidsActForm.activity.trim()) return; setKidsActivities(c => [...c, { id:Date.now(), ...kidsActForm }]); setKidsActForm(f => ({ ...f, kid:"", activity:"", time:"" })); };
+    const STARTER_TASKS   = [
+      { title:"Organizar cajones de la cocina", category:"Hogar / Limpieza" },
+      { title:"Lista de mercado de la semana",  category:"Compras" },
+      { title:"Agendar cita médica pendiente",  category:"Salud" },
+      { title:"Revisar tareas del colegio",     category:"Colegio / Ninos" },
+      { title:"30 minutos solo para mí",        category:"Bienestar" },
     ];
-    const todayDay = ["D","L","M","X","J","V","S"][new Date().getDay()];
-    const today0 = new Date(); today0.setHours(0,0,0,0);
-    const upcomingAppts = appointments.filter(a => Math.round((new Date(a.date+"T00:00:00") - today0) / 86400000) >= 0);
-    const addQuickNote = (e) => { e.preventDefault(); if (!quickNoteInput.trim()) return; setQuickNotes(c => [...c, { id: Date.now(), text: quickNoteInput.trim() }]); setQuickNoteInput(""); };
-    const addKidsAct = (e) => { e.preventDefault(); if (!kidsActForm.kid.trim() || !kidsActForm.activity.trim()) return; setKidsActivities(c => [...c, { id: Date.now(), ...kidsActForm }]); setKidsActForm(f => ({ ...f, kid:"", activity:"", time:"" })); };
-    const DAY_LABELS = [["L","Lunes"],["M","Martes"],["X","Miércoles"],["J","Jueves"],["V","Viernes"],["S","Sábado"],["D","Domingo"]];
+    const thisWeekMoments = (purpose.presenceMoments||[]).filter(m => {
+      const d = new Date(m.date); const now = new Date();
+      const monday = new Date(now); monday.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1)); monday.setHours(0,0,0,0);
+      return d >= monday;
+    });
+    const QUIEN_OPTS  = [["👧","Hijo/a"],["💑","Pareja"],["👵","Padres/familia"],["👯","Amigas"]];
+    const toggleQuien = label => setPresenceForm(f => ({ ...f, quien: f.quien.includes(label) ? f.quien.filter(q=>q!==label) : [...f.quien, label] }));
+    const savePresence = () => {
+      if (!presenceForm.quien.length && !presenceForm.queHicieron.trim()) return;
+      const moment = { id:Date.now(), date:new Date().toISOString(), quien:presenceForm.quien, queHicieron:presenceForm.queHicieron, tiempo:presenceForm.tiempo };
+      updatePurpose("presenceMoments", [...(purpose.presenceMoments||[]), moment]);
+      setPresenceForm({ quien:[], queHicieron:"", tiempo:"30 min" });
+      setPresenceCelebration(true);
+      setTimeout(() => setPresenceCelebration(false), 4000);
+    };
+    const VICTORY_MSGS = ["Ese momento cuenta para siempre. 🌸","Estar presente es el regalo más grande. 💛","No lo olvidarán. Ni tú. ✨","Eso es lo que importa de verdad. 💕","Una mamá presente no necesita ser perfecta. 🌿"];
+    const victoryMsg   = VICTORY_MSGS[Math.floor(Date.now()/1000) % VICTORY_MSGS.length];
+    const TABS         = ["Hoy","Semana","Tareas","Presupuesto"];
+
+    const ApptRow = ({ appt }) => (
+      <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 12px", border:`1px solid ${appt.diff===0?"rgba(196,82,106,0.3)":appt.diff<=1?"rgba(232,123,30,0.25)":"var(--line)"}`, borderRadius:"10px", background:appt.diff===0?"#fdf5f7":appt.diff<=1?"#fef8f0":"#fff" }}>
+        <span style={{ fontSize:"20px", flexShrink:0 }}>{TYPE_ICONS[appt.type]||"📌"}</span>
+        <div style={{ flex:1, minWidth:0 }}>
+          <p style={{ margin:"0 0 1px", fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{appt.title}</p>
+          <p style={{ margin:0, fontSize:"12px", color:"var(--muted)" }}>{appt.type} · {new Date(appt.date+"T00:00:00").toLocaleDateString("es-CO",{ weekday:"short", day:"numeric", month:"short" })}</p>
+        </div>
+        <span style={{ fontSize:"11px", fontWeight:800, color:daysColor(appt.diff), background:`${daysColor(appt.diff)}18`, padding:"3px 8px", borderRadius:"12px", flexShrink:0, whiteSpace:"nowrap" }}>{daysLabel(appt.diff)}</span>
+        <button type="button" onClick={() => addToGCal(appt)} title="Google Calendar" style={{ border:"none", background:"none", cursor:"pointer", fontSize:"16px", flexShrink:0, padding:"2px", lineHeight:1 }}>📆</button>
+        <button type="button" onClick={() => setAppointments(c => c.filter(a => a.id!==appt.id))} style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"18px", flexShrink:0, lineHeight:1 }}>×</button>
+      </div>
+    );
 
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Mi Hogar 🌸</h2>
-          <p>{homeTasks.length === 0 ? "Empieza con una sola cosa hoy — no tienes que hacerlo todo" : `${completedHomeTasks} de ${homeTasks.length} listas esta semana`}</p>
+          <p>{homeTasks.length === 0 ? "Empieza con una sola cosa hoy — no tienes que hacerlo todo" : `${completedHomeTasks} de ${homeTasks.length} tareas listas`}</p>
         </div>
 
-        {/* KPIs */}
+        {/* KPIs — siempre visibles */}
         <div className="home-kpi-row">
           <div className="client-kpi">
             <span>Carga mental</span>
-            <strong style={{color: mentalLoadColor}}>{mentalLoadLevel}</strong>
+            <strong style={{color:mentalLoadColor}}>{mentalLoadLevel}</strong>
             <small>{mentalLoad} pendientes</small>
           </div>
           <div className="client-kpi">
             <span>Próximas citas</span>
-            <strong style={{color: upcomingAppts.length ? "var(--orange)" : "var(--green)"}}>{upcomingAppts.length}</strong>
+            <strong style={{color:upcomingAppts.length?"var(--orange)":"var(--green)"}}>{upcomingAppts.length}</strong>
             <small>{upcomingAppts.length ? upcomingAppts[0]?.title?.slice(0,20) : "sin citas"}</small>
           </div>
           <div className="client-kpi">
-            <span>Disponible familiar</span>
+            <span>Dinero familiar</span>
             <strong style={{fontSize:"14px",color:"var(--green)"}}>{money.format(homeAvailable)}</strong>
-            <small>después de gastos</small>
+            <small>disponible</small>
           </div>
         </div>
 
-        {/* Alertas */}
-        {mentalLoad >= 8 && (
-          <div className="alert-banner alert-red" style={{marginBottom:"14px"}}>
-            Tu carga mental está alta. Elige 3 tareas para hoy y deja el resto para después.
-          </div>
-        )}
-        {urgentTasks.length > 0 && (
-          <div className="alert-banner alert-orange" style={{marginBottom:"14px"}}>
-            {urgentTasks.length} urgente{urgentTasks.length > 1 ? "s" : ""}: {urgentTasks.map((t) => t.title).join(", ")}
-          </div>
-        )}
+        {/* Tab nav */}
+        <div style={{display:"flex",gap:"4px",background:"var(--line)",padding:"4px",borderRadius:"12px",marginBottom:"20px"}}>
+          {TABS.map((label, i) => (
+            <button key={i} type="button" onClick={() => setHomeTab(i)} style={{
+              flex:1, padding:"9px 0", borderRadius:"8px", border:"none",
+              background: homeTab===i ? "#fff" : "transparent",
+              cursor:"pointer", fontFamily:"inherit", fontSize:"13px",
+              fontWeight: homeTab===i ? 700 : 400,
+              color: homeTab===i ? "var(--ink)" : "var(--muted)",
+              boxShadow: homeTab===i ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+              transition:"all 0.15s ease",
+            }}>{label}</button>
+          ))}
+        </div>
 
-        {/* Empty state — guía para empezar */}
-        {homeTasks.length === 0 && (
-          <div className="card" style={{marginBottom:"20px",background:"linear-gradient(135deg,#fdf9f6,#fef4f0)",border:"2px dashed #e8d5c4",padding:"24px"}}>
-            <h3 style={{margin:"0 0 6px",fontSize:"16px"}}>¿Por dónde empiezo? 🌱</h3>
-            <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Elige una tarea de aquí o escribe la tuya arriba. Una sola ya cuenta.</p>
-            <div style={{display:"grid",gap:"8px"}}>
-              {STARTER_TASKS.map((t) => (
-                <button key={t.title} type="button"
-                  onClick={() => { setHomeTasks(c => [...c, { id: Date.now() + Math.random(), title: t.title, category: t.category, priority: "Normal", delegate: "", done: false, createdAt: new Date().toISOString() }]); }}
-                  style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"10px",background:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",textAlign:"left",color:"var(--ink)"}}>
-                  <span style={{fontSize:"18px"}}>{t.category === "Bienestar" ? "💆" : t.category === "Compras" ? "🛒" : t.category === "Salud" ? "💊" : t.category === "Colegio / Ninos" ? "🎒" : "🧹"}</span>
-                  {t.title}
+        {/* ── TAB 0: HOY ── */}
+        {homeTab === 0 && (
+          <div>
+            {/* Citas próximas — prominente */}
+            <div className="card" style={{padding:"20px",marginBottom:"14px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+                <div>
+                  <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Citas y recordatorios 📅</h3>
+                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Lo que viene próximamente.</p>
+                </div>
+                <button type="button" onClick={() => setHomeTab(1)}
+                  style={{fontSize:"12px",color:"#C4526A",background:"rgba(196,82,106,0.08)",border:"none",borderRadius:"8px",padding:"5px 12px",cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>
+                  + Agregar
                 </button>
-              ))}
+              </div>
+              {upcomingAppts.length === 0 ? (
+                <div style={{textAlign:"center",padding:"16px 0"}}>
+                  <p style={{margin:"0 0 10px",fontSize:"13px",color:"var(--muted)"}}>Sin citas próximas.</p>
+                  <button type="button" onClick={() => setHomeTab(1)} style={{padding:"8px 20px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>
+                    Agregar cita
+                  </button>
+                </div>
+              ) : (
+                <div style={{display:"grid",gap:"8px"}}>
+                  {upcomingAppts.slice(0,4).map(appt => <ApptRow key={appt.id} appt={appt} />)}
+                  {upcomingAppts.length > 4 && (
+                    <button type="button" onClick={() => setHomeTab(1)} style={{padding:"8px",background:"var(--line)",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",color:"var(--muted)"}}>
+                      Ver {upcomingAppts.length-4} más →
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Menú de hoy + Rutina de hoy */}
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"14px"}}>
+              <div className="card" style={{padding:"16px"}}>
+                <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"1px",color:"var(--muted)"}}>Menú de hoy</p>
+                {weekMenu[todayDay] ? (
+                  <p style={{margin:0,fontSize:"16px",fontWeight:700,color:"var(--ink)",lineHeight:1.3}}>{weekMenu[todayDay]}</p>
+                ) : (
+                  <p style={{margin:"0 0 6px",fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin planear</p>
+                )}
+                <button type="button" onClick={() => setHomeTab(1)} style={{marginTop:"8px",fontSize:"12px",color:"var(--pink)",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600,display:"block"}}>
+                  {weekMenu[todayDay] ? "Ver menú semana →" : "Planear semana →"}
+                </button>
+              </div>
+              <div className="card" style={{padding:"16px"}}>
+                <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"1px",color:"var(--muted)"}}>Rutina de hoy</p>
+                {homeRoutines[todayDay] ? (
+                  <p style={{margin:0,fontSize:"16px",fontWeight:700,color:"var(--purple)",lineHeight:1.3}}>{homeRoutines[todayDay]}</p>
+                ) : (
+                  <p style={{margin:"0 0 6px",fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin rutina</p>
+                )}
+                <button type="button" onClick={() => setHomeTab(2)} style={{marginTop:"8px",fontSize:"12px",color:"var(--purple)",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600,display:"block"}}>
+                  {homeRoutines[todayDay] ? "Ver tareas →" : "Definir rutinas →"}
+                </button>
+              </div>
+            </div>
+
+            {/* Notas rápidas */}
+            <div className="card" style={{padding:"18px 20px"}}>
+              <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Notas rápidas 📝</h3>
+              <p style={{margin:"0 0 12px",fontSize:"13px",color:"var(--muted)"}}>Cosas que no quieres olvidar.</p>
+              <form onSubmit={addQuickNote} style={{display:"flex",gap:"8px",marginBottom:quickNotes.length?"12px":0}}>
+                <input placeholder="Anota algo rápido..." value={quickNoteInput} onChange={e => setQuickNoteInput(e.target.value)}
+                  style={{flex:1,padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
+                <button type="submit" style={{padding:"9px 16px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>+</button>
+              </form>
+              {quickNotes.length > 0 && (
+                <div style={{display:"grid",gap:"6px"}}>
+                  {[...quickNotes].reverse().slice(0,6).map(note => (
+                    <div key={note.id} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"8px 12px",background:"#fffcf0",border:"1px solid #ede8d0",borderRadius:"8px"}}>
+                      <span style={{flex:1,fontSize:"13px",color:"var(--ink)",lineHeight:1.45}}>{note.text}</span>
+                      <button type="button" onClick={() => setQuickNotes(c => c.filter(n => n.id!==note.id))}
+                        style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",flexShrink:0,lineHeight:1}}>×</button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
 
-        {/* Citas y recordatorios */}
-        {(() => {
-          const today = new Date(); today.setHours(0,0,0,0);
-          const TYPE_ICONS = { "Médico":"🩺","Colegio":"🎒","Dentista":"🦷","Reunión":"📋","Pago":"💳","Cumpleaños":"🎂","Otro":"📌" };
-          const withDiff = appointments.map(a => ({ ...a, diff: Math.round((new Date(a.date+"T00:00:00") - today) / 86400000) }));
-          const upcoming = withDiff.filter(a => a.diff >= 0).sort((a,b) => a.diff - b.diff);
-          const daysLabel = (d) => d === 0 ? "Hoy" : d === 1 ? "Mañana" : `En ${d}d`;
-          const daysColor = (d) => d === 0 ? "#C4526A" : d <= 3 ? "#e87b1e" : "#1D9E75";
-          const addToGCal = (appt) => {
-            const t = encodeURIComponent(appt.title);
-            const d = appt.date.replace(/-/g,"");
-            window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${d}/${d}`, "_blank");
-          };
-          const submitAppt = (e) => {
-            e.preventDefault();
-            if (!apptForm.title.trim() || !apptForm.date) return;
-            setAppointments(c => [...c, { id: Date.now(), ...apptForm, title: apptForm.title.trim() }]);
-            setApptForm(f => ({ ...f, title: "", date: "" }));
-          };
-          return (
-            <div className="card" style={{ padding:"20px", marginBottom:"16px" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"14px" }}>
+        {/* ── TAB 1: SEMANA ── */}
+        {homeTab === 1 && (
+          <div>
+            {/* Citas — gestión completa */}
+            <div className="card" style={{padding:"20px",marginBottom:"14px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
                 <div>
-                  <h3 style={{ margin:"0 0 2px", fontSize:"16px" }}>Citas importantes 📅</h3>
-                  <p style={{ margin:0, fontSize:"13px", color:"var(--muted)" }}>Médicos, colegios, pagos — todo en un lugar.</p>
+                  <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Citas importantes 📅</h3>
+                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Médicos, colegios, pagos — todo en un lugar.</p>
                 </div>
-                {upcoming.length > 0 && (
-                  <span style={{ fontSize:"12px", fontWeight:700, color:"#C4526A", background:"rgba(196,82,106,0.1)", padding:"3px 10px", borderRadius:"20px", flexShrink:0 }}>
-                    {upcoming.length} próxima{upcoming.length > 1 ? "s" : ""}
+                {upcomingAppts.length > 0 && (
+                  <span style={{fontSize:"12px",fontWeight:700,color:"#C4526A",background:"rgba(196,82,106,0.1)",padding:"3px 10px",borderRadius:"20px",flexShrink:0}}>
+                    {upcomingAppts.length} próxima{upcomingAppts.length>1?"s":""}
                   </span>
                 )}
               </div>
-
-              <form onSubmit={submitAppt} style={{ display:"grid", gap:"8px", marginBottom: appointments.length ? "14px" : 0 }}>
+              <form onSubmit={submitAppt} style={{display:"grid",gap:"8px",marginBottom:appointments.length?"14px":0}}>
                 <input placeholder="¿Qué cita? Ej: Cita pediatra, Reunión colegio..."
-                  value={apptForm.title} onChange={e => setApptForm(f => ({ ...f, title:e.target.value }))}
-                  style={{ padding:"9px 12px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:"8px" }}>
-                  <input type="date" value={apptForm.date} onChange={e => setApptForm(f => ({ ...f, date:e.target.value }))}
-                    style={{ padding:"9px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
-                  <select value={apptForm.type} onChange={e => setApptForm(f => ({ ...f, type:e.target.value }))}
-                    style={{ padding:"9px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }}>
+                  value={apptForm.title} onChange={e => setApptForm(f => ({...f,title:e.target.value}))}
+                  style={{padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:"8px"}}>
+                  <input type="date" value={apptForm.date} onChange={e => setApptForm(f => ({...f,date:e.target.value}))}
+                    style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
+                  <select value={apptForm.type} onChange={e => setApptForm(f => ({...f,type:e.target.value}))}
+                    style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}}>
                     {Object.keys(TYPE_ICONS).map(t => <option key={t}>{t}</option>)}
                   </select>
-                  <button type="submit" style={{ padding:"9px 16px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"8px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:700 }}>+</button>
+                  <button type="submit" style={{padding:"9px 16px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>+</button>
                 </div>
               </form>
-
-              {upcoming.length > 0 ? (
-                <div style={{ display:"grid", gap:"8px" }}>
-                  {upcoming.map(appt => (
-                    <div key={appt.id} style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 12px", border:"1px solid var(--line)", borderRadius:"10px", background:"#fff" }}>
-                      <span style={{ fontSize:"20px", flexShrink:0 }}>{TYPE_ICONS[appt.type]||"📌"}</span>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <p style={{ margin:"0 0 1px", fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{appt.title}</p>
-                        <p style={{ margin:0, fontSize:"12px", color:"var(--muted)" }}>
-                          {appt.type} · {new Date(appt.date+"T00:00:00").toLocaleDateString("es-CO",{ weekday:"short", day:"numeric", month:"short" })}
-                        </p>
-                      </div>
-                      <span style={{ fontSize:"11px", fontWeight:800, color:daysColor(appt.diff), background:`${daysColor(appt.diff)}18`, padding:"3px 8px", borderRadius:"12px", flexShrink:0, whiteSpace:"nowrap" }}>
-                        {daysLabel(appt.diff)}
-                      </span>
-                      <button type="button" onClick={() => addToGCal(appt)} title="Agregar a Google Calendar"
-                        style={{ border:"none", background:"none", cursor:"pointer", fontSize:"16px", flexShrink:0, padding:"2px", lineHeight:1 }}>📆</button>
-                      <button type="button" onClick={() => setAppointments(c => c.filter(a => a.id !== appt.id))}
-                        style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"16px", flexShrink:0, lineHeight:1 }}>×</button>
-                    </div>
-                  ))}
+              {upcomingAppts.length > 0 ? (
+                <div style={{display:"grid",gap:"8px"}}>
+                  {upcomingAppts.map(appt => <ApptRow key={appt.id} appt={appt} />)}
                 </div>
               ) : (
-                <p style={{ margin:0, fontSize:"13px", color:"var(--muted)", fontStyle:"italic" }}>Sin citas próximas. Agrega una arriba.</p>
+                <p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin citas próximas. Agrega una arriba.</p>
               )}
             </div>
-          );
-        })()}
 
-        {/* Menú semanal + Actividades hijos */}
-        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))", gap:"16px", marginBottom:"16px" }}>
+            {/* Menú semanal + Actividades */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"14px",marginBottom:"14px"}}>
 
-          {/* Menú semanal */}
-          <div className="card" style={{ padding:"20px" }}>
-            <h3 style={{ margin:"0 0 2px", fontSize:"16px" }}>Menú de la semana 🍽️</h3>
-            <p style={{ margin:"0 0 14px", fontSize:"13px", color:"var(--muted)" }}>Saber qué cocinar elimina la decisión diaria.</p>
-            <div style={{ display:"grid", gap:"7px" }}>
-              {DAY_LABELS.map(([key, name]) => (
-                <div key={key} style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                  <span style={{
-                    width:"30px", height:"30px", borderRadius:"50%", flexShrink:0,
-                    display:"flex", alignItems:"center", justifyContent:"center",
-                    fontSize:"11px", fontWeight:800,
-                    background: todayDay===key ? "#C4526A" : "var(--line)",
-                    color: todayDay===key ? "#fff" : "var(--muted)",
-                  }}>{key}</span>
-                  <input
-                    value={weekMenu[key]} onChange={e => setWeekMenu(m => ({ ...m, [key]:e.target.value }))}
-                    placeholder={todayDay===key ? "¿Qué cocinas hoy?" : name+"..."}
-                    style={{
-                      flex:1, padding:"7px 10px", font:"inherit", fontSize:"13px", borderRadius:"8px",
-                      border:`1px solid ${todayDay===key ? "rgba(196,82,106,0.35)" : "var(--line)"}`,
-                      background: todayDay===key ? "#fdf5f7" : "#faf7f5",
-                    }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Actividades de los hijos */}
-          <div className="card" style={{ padding:"20px" }}>
-            <h3 style={{ margin:"0 0 2px", fontSize:"16px" }}>Actividades de los hijos 🎒</h3>
-            <p style={{ margin:"0 0 12px", fontSize:"13px", color:"var(--muted)" }}>¿Quién va dónde esta semana?</p>
-            <form onSubmit={addKidsAct} style={{ display:"grid", gap:"7px", marginBottom:"12px" }}>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"7px" }}>
-                <input placeholder="Nombre" value={kidsActForm.kid} onChange={e => setKidsActForm(f => ({ ...f, kid:e.target.value }))}
-                  style={{ padding:"7px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
-                <input placeholder="Actividad" value={kidsActForm.activity} onChange={e => setKidsActForm(f => ({ ...f, activity:e.target.value }))}
-                  style={{ padding:"7px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
-              </div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr auto", gap:"7px" }}>
-                <select value={kidsActForm.day} onChange={e => setKidsActForm(f => ({ ...f, day:e.target.value }))}
-                  style={{ padding:"7px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }}>
-                  {DAY_LABELS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
-                <input placeholder="Hora (ej: 4pm)" value={kidsActForm.time} onChange={e => setKidsActForm(f => ({ ...f, time:e.target.value }))}
-                  style={{ padding:"7px 10px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
-                <button type="submit" style={{ padding:"7px 14px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"8px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:700 }}>+</button>
-              </div>
-            </form>
-            {kidsActivities.length === 0 ? (
-              <p style={{ margin:0, fontSize:"13px", color:"var(--muted)", fontStyle:"italic" }}>Agrega las actividades de tus hijos.</p>
-            ) : (
-              <div style={{ display:"grid", gap:"7px" }}>
-                {kidsActivities
-                  .sort((a,b) => "LMXJVSD".indexOf(a.day) - "LMXJVSD".indexOf(b.day))
-                  .map(act => (
-                    <div key={act.id} style={{ display:"flex", alignItems:"center", gap:"9px", padding:"8px 11px", border:`1px solid ${todayDay===act.day?"rgba(196,82,106,0.3)":"var(--line)"}`, borderRadius:"9px", background: todayDay===act.day ? "#fdf5f7" : "#fff" }}>
-                      <span style={{
-                        width:"26px", height:"26px", borderRadius:"50%", flexShrink:0,
-                        display:"flex", alignItems:"center", justifyContent:"center",
-                        fontSize:"10px", fontWeight:800,
-                        background: todayDay===act.day ? "#C4526A" : "var(--line)",
-                        color: todayDay===act.day ? "#fff" : "var(--muted)",
-                      }}>{act.day}</span>
-                      <div style={{ flex:1, minWidth:0 }}>
-                        <p style={{ margin:"0 0 1px", fontSize:"13px", fontWeight:600, color:"var(--ink)" }}>{act.kid} — {act.activity}</p>
-                        {act.time && <p style={{ margin:0, fontSize:"11px", color:"var(--muted)" }}>{act.time}</p>}
-                      </div>
-                      <button type="button" onClick={() => setKidsActivities(c => c.filter(a => a.id !== act.id))}
-                        style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"14px", lineHeight:1 }}>×</button>
+              <div className="card" style={{padding:"20px"}}>
+                <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Menú de la semana 🍽️</h3>
+                <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Saber qué cocinar elimina la decisión diaria.</p>
+                <div style={{display:"grid",gap:"7px"}}>
+                  {DAY_LABELS.map(([key, name]) => (
+                    <div key={key} style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                      <span style={{width:"30px",height:"30px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
+                      <input value={weekMenu[key]} onChange={e => setWeekMenu(m => ({...m,[key]:e.target.value}))}
+                        placeholder={todayDay===key?"¿Qué cocinas hoy?":name+"..."}
+                        style={{flex:1,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5"}} />
                     </div>
                   ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Notas rápidas */}
-        <div className="card" style={{ padding:"18px 20px", marginBottom:"16px" }}>
-          <h3 style={{ margin:"0 0 2px", fontSize:"16px" }}>Notas rápidas 📝</h3>
-          <p style={{ margin:"0 0 12px", fontSize:"13px", color:"var(--muted)" }}>Cosas que no quieres olvidar pero no son tareas formales.</p>
-          <form onSubmit={addQuickNote} style={{ display:"flex", gap:"8px", marginBottom: quickNotes.length ? "12px" : 0 }}>
-            <input placeholder="Anota algo rápido y presiona Enter..." value={quickNoteInput} onChange={e => setQuickNoteInput(e.target.value)}
-              style={{ flex:1, padding:"9px 12px", border:"1px solid var(--line)", borderRadius:"8px", font:"inherit", fontSize:"13px", background:"#faf7f5" }} />
-            <button type="submit" style={{ padding:"9px 16px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"8px", cursor:"pointer", fontFamily:"inherit", fontSize:"15px", fontWeight:700 }}>+</button>
-          </form>
-          {quickNotes.length > 0 && (
-            <div style={{ display:"grid", gap:"6px" }}>
-              {[...quickNotes].reverse().slice(0,8).map(note => (
-                <div key={note.id} style={{ display:"flex", alignItems:"flex-start", gap:"10px", padding:"8px 12px", background:"#fffcf0", border:"1px solid #ede8d0", borderRadius:"8px" }}>
-                  <span style={{ flex:1, fontSize:"13px", color:"var(--ink)", lineHeight:1.45 }}>{note.text}</span>
-                  <button type="button" onClick={() => setQuickNotes(c => c.filter(n => n.id !== note.id))}
-                    style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"14px", flexShrink:0, lineHeight:1 }}>×</button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Layout principal */}
-        <div className="home-main-layout">
-
-          {/* Columna izquierda: formularios */}
-          <div className="home-left-col">
-
-            {/* Agregar tarea */}
-            <form className="card home-form-card" onSubmit={addHomeTask}>
-              <h3>Nueva tarea</h3>
-              <input placeholder="Tarea del hogar" value={homeForm.title} onChange={(e) => updateHomeForm("title", e.target.value)} required />
-              <select value={homeForm.category} onChange={(e) => updateHomeForm("category", e.target.value)}>
-                <option>Rutina</option>
-                <option>Compras</option>
-                <option>Colegio / Ninos</option>
-                <option>Salud</option>
-                <option>Hogar / Limpieza</option>
-                <option>Bienestar</option>
-                <option>Calendario</option>
-              </select>
-              <select value={homeForm.priority} onChange={(e) => updateHomeForm("priority", e.target.value)}>
-                <option>Normal</option>
-                <option>Urgente</option>
-                <option>Puede esperar</option>
-              </select>
-              <input placeholder="Delegar a... (opcional)" value={homeForm.delegate} onChange={(e) => updateHomeForm("delegate", e.target.value)} />
-              <button className="primary-button" type="submit">Guardar tarea</button>
-            </form>
-
-            {/* Lista de mercado */}
-            <div className="card home-form-card" style={{marginTop:"0"}}>
-              <h3>Lista de mercado</h3>
-              <p className="helper-copy">Agrega lo que necesitas comprar esta semana.</p>
-              <form onSubmit={(e) => { e.preventDefault(); if (!groceryForm.trim()) return; setGroceryList((c) => [...c, { id: Date.now(), text: groceryForm.trim(), done: false }]); setGroceryForm(""); }} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px"}}>
-                <input placeholder="Ej: Leche, pan, frutas..." value={groceryForm} onChange={(e) => setGroceryForm(e.target.value)}
-                  style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 12px",font:"inherit",background:"#FAF7F5"}} />
-                <button className="primary-button" type="submit" style={{minHeight:"40px",padding:"0 14px"}}>+</button>
-              </form>
-              <div style={{display:"grid",gap:"6px",marginTop:"8px"}}>
-                {groceryList.map((item) => (
-                  <label key={item.id} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 10px",border:"1px solid var(--line)",borderRadius:"8px",background: item.done ? "rgba(47,159,112,0.06)" : "#fff"}}>
-                    <input type="checkbox" checked={item.done} onChange={() => setGroceryList((c) => c.map((g) => g.id === item.id ? { ...g, done: !g.done } : g))} style={{accentColor:"var(--green)"}} />
-                    <span style={{flex:1,fontSize:"14px",textDecoration: item.done ? "line-through" : "none",color: item.done ? "var(--muted)" : "var(--ink)"}}>{item.text}</span>
-                    <button type="button" onClick={() => setGroceryList((c) => c.filter((g) => g.id !== item.id))}
-                      style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",lineHeight:1}}>x</button>
-                  </label>
-                ))}
-                {groceryList.length === 0 && <p className="helper-copy">Tu lista esta vacia.</p>}
-              </div>
-            </div>
-          </div>
-
-          {/* Columna derecha: tareas + presupuesto */}
-          <div className="home-right-col">
-
-            {/* Tareas del hogar */}
-            <div className="card">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                <h3 style={{margin:0}}>Rutinas y pendientes</h3>
-                <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
-                  <Progress value={homeProgress} tone="green" />
-                  <b style={{fontSize:"13px",minWidth:"36px",textAlign:"right"}}>{homeProgress}%</b>
                 </div>
               </div>
-              {homeTasks.length === 0 && <p className="helper-copy">Agrega tu primera tarea del hogar.</p>}
-              {["Urgente", "Normal", "Puede esperar"].map((priority) => {
-                const tasks = homeTasks.filter((t) => (t.priority || "Normal") === priority);
-                if (tasks.length === 0) return null;
-                return (
-                  <div key={priority} style={{marginBottom:"12px"}}>
-                    <p style={{fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.5px",color: priority === "Urgente" ? "var(--purple)" : priority === "Normal" ? "var(--muted)" : "var(--muted)",margin:"0 0 6px"}}>{priority}</p>
-                    {tasks.map((task) => (
-                      <div key={task.id} className="home-task-row">
-                        <input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)",flexShrink:0}} />
+
+              <div className="card" style={{padding:"20px"}}>
+                <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Actividades de los hijos 🎒</h3>
+                <p style={{margin:"0 0 12px",fontSize:"13px",color:"var(--muted)"}}>¿Quién va dónde esta semana?</p>
+                <form onSubmit={addKidsAct} style={{display:"grid",gap:"7px",marginBottom:"12px"}}>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"7px"}}>
+                    <input placeholder="Nombre" value={kidsActForm.kid} onChange={e => setKidsActForm(f => ({...f,kid:e.target.value}))}
+                      style={{padding:"7px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
+                    <input placeholder="Actividad" value={kidsActForm.activity} onChange={e => setKidsActForm(f => ({...f,activity:e.target.value}))}
+                      style={{padding:"7px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:"7px"}}>
+                    <select value={kidsActForm.day} onChange={e => setKidsActForm(f => ({...f,day:e.target.value}))}
+                      style={{padding:"7px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}}>
+                      {DAY_LABELS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                    </select>
+                    <input placeholder="Hora" value={kidsActForm.time} onChange={e => setKidsActForm(f => ({...f,time:e.target.value}))}
+                      style={{padding:"7px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
+                    <button type="submit" style={{padding:"7px 14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>+</button>
+                  </div>
+                </form>
+                {kidsActivities.length === 0 ? (
+                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Agrega las actividades de tus hijos.</p>
+                ) : (
+                  <div style={{display:"grid",gap:"7px"}}>
+                    {kidsActivities.sort((a,b) => "LMXJVSD".indexOf(a.day)-"LMXJVSD".indexOf(b.day)).map(act => (
+                      <div key={act.id} style={{display:"flex",alignItems:"center",gap:"9px",padding:"8px 11px",border:`1px solid ${todayDay===act.day?"rgba(196,82,106,0.3)":"var(--line)"}`,borderRadius:"9px",background:todayDay===act.day?"#fdf5f7":"#fff"}}>
+                        <span style={{width:"26px",height:"26px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===act.day?"#C4526A":"var(--line)",color:todayDay===act.day?"#fff":"var(--muted)"}}>{act.day}</span>
                         <div style={{flex:1,minWidth:0}}>
-                          <strong style={{fontSize:"14px",textDecoration: task.done ? "line-through" : "none",color: task.done ? "var(--muted)" : "var(--ink)"}}>{task.title}</strong>
-                          <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"2px"}}>
-                            <small style={{color:"var(--muted)"}}>{task.category}</small>
-                            {task.delegate && <small style={{color:"var(--pink)",fontWeight:700}}>Delegar a: {task.delegate}</small>}
-                          </div>
+                          <p style={{margin:"0 0 1px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>{act.kid} — {act.activity}</p>
+                          {act.time && <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>{act.time}</p>}
                         </div>
-                        <button type="button" onClick={() => confirmDelete("Eliminar?", () => setHomeTasks((c) => c.filter((t) => t.id !== task.id)))}
-                          style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",flexShrink:0}}>x</button>
+                        <button type="button" onClick={() => setKidsActivities(c => c.filter(a => a.id!==act.id))}
+                          style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",lineHeight:1}}>×</button>
                       </div>
                     ))}
                   </div>
-                );
-              })}
-              {delegatedTasks.length > 0 && (
-                <div style={{marginTop:"12px",padding:"10px 12px",background:"var(--pink-soft)",borderRadius:"10px"}}>
-                  <p style={{margin:"0 0 6px",fontSize:"12px",fontWeight:800,color:"var(--purple)"}}>DELEGADAS ({delegatedTasks.length})</p>
-                  {delegatedTasks.map((t) => <p key={t.id} style={{margin:"2px 0",fontSize:"13px",color:"var(--ink)"}}>{t.title} - {t.delegate}</p>)}
-                </div>
-              )}
-            </div>
-
-            {/* Rutinas del hogar */}
-            <div className="card home-budget-card" style={{ marginTop:"0" }}>
-              <h3 style={{ margin:"0 0 2px", fontSize:"16px" }}>Rutinas del hogar 🧹</h3>
-              <p style={{ margin:"0 0 14px", fontSize:"13px", color:"var(--muted)" }}>Qué toca hacer cada día para que el hogar funcione.</p>
-              {homeRoutines[todayDay] && (
-                <div style={{ marginBottom:"12px", padding:"9px 14px", background:"rgba(107,70,193,0.07)", borderRadius:"10px", border:"1px solid rgba(107,70,193,0.18)" }}>
-                  <p style={{ margin:0, fontSize:"13px", color:"var(--purple)", fontWeight:700 }}>Hoy toca: {homeRoutines[todayDay]}</p>
-                </div>
-              )}
-              <div style={{ display:"grid", gap:"6px" }}>
-                {DAY_LABELS.map(([key, name]) => (
-                  <div key={key} style={{ display:"flex", alignItems:"center", gap:"9px" }}>
-                    <span style={{
-                      width:"28px", height:"28px", borderRadius:"50%", flexShrink:0,
-                      display:"flex", alignItems:"center", justifyContent:"center",
-                      fontSize:"10px", fontWeight:800,
-                      background: todayDay===key ? "var(--purple)" : "var(--line)",
-                      color: todayDay===key ? "#fff" : "var(--muted)",
-                    }}>{key}</span>
-                    <input
-                      value={homeRoutines[key]} onChange={e => setHomeRoutines(r => ({ ...r, [key]:e.target.value }))}
-                      placeholder={`Rutina del ${name.toLowerCase()}...`}
-                      style={{
-                        flex:1, padding:"7px 10px", font:"inherit", fontSize:"13px", borderRadius:"7px",
-                        border:`1px solid ${todayDay===key ? "rgba(107,70,193,0.3)" : "var(--line)"}`,
-                        background: todayDay===key ? "#f5f0fc" : "#faf7f5",
-                      }}
-                    />
-                  </div>
-                ))}
+                )}
               </div>
             </div>
 
-            {/* Presencia con mi familia */}
-            {(() => {
-              const todayStr = new Date().toISOString().slice(0,10);
-              const thisWeekMoments = (purpose.presenceMoments||[]).filter(m => {
-                const d = new Date(m.date); const now = new Date();
-                const monday = new Date(now); monday.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1)); monday.setHours(0,0,0,0);
-                return d >= monday;
-              });
-              const QUIEN_OPTS = [["👧","Hijo/a"],["💑","Pareja"],["👵","Padres/familia"],["👯","Amigas"]];
-              const toggleQuien = (label) => setPresenceForm(f => ({ ...f, quien: f.quien.includes(label) ? f.quien.filter(q=>q!==label) : [...f.quien, label] }));
-              const savePresence = () => {
-                if (!presenceForm.quien.length && !presenceForm.queHicieron.trim()) return;
-                const moment = { id: Date.now(), date: new Date().toISOString(), quien: presenceForm.quien, queHicieron: presenceForm.queHicieron, tiempo: presenceForm.tiempo };
-                updatePurpose("presenceMoments", [...(purpose.presenceMoments||[]), moment]);
-                setPresenceForm({ quien: [], queHicieron: "", tiempo: "30 min" });
-                setPresenceCelebration(true);
-                setTimeout(() => setPresenceCelebration(false), 4000);
-              };
-              const VICTORY_MSGS = ["Ese momento cuenta para siempre. 🌸","Estar presente es el regalo más grande. 💛","No lo olvidarán. Ni tú. ✨","Eso es lo que importa de verdad. 💕","Una mamá presente no necesita ser perfecta. 🌿"];
-              const victoryMsg = VICTORY_MSGS[Math.floor(Date.now()/1000) % VICTORY_MSGS.length];
-              return (
-                <div className="card home-budget-card" style={{marginTop:"0"}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
-                    <h3 style={{margin:0}}>Con mi familia hoy 💛</h3>
-                    {thisWeekMoments.length > 0 && (
-                      <span style={{fontSize:"12px",fontWeight:700,color:"var(--pink)",background:"rgba(212,104,122,0.1)",padding:"3px 10px",borderRadius:"20px"}}>
-                        {thisWeekMoments.length} momento{thisWeekMoments.length>1?"s":""} esta semana
-                      </span>
-                    )}
-                  </div>
-                  <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>No mides el tiempo — mides la intención. ¿Con quién estuviste hoy?</p>
-
-                  {presenceCelebration ? (
-                    <div style={{padding:"20px",background:"linear-gradient(135deg,rgba(212,104,122,0.08),rgba(47,159,112,0.08))",borderRadius:"14px",textAlign:"center",border:"2px solid rgba(212,104,122,0.2)"}}>
-                      <p style={{fontSize:"24px",margin:"0 0 6px"}}>🌸</p>
-                      <p style={{margin:0,fontWeight:700,fontSize:"15px",color:"var(--ink)"}}>{victoryMsg}</p>
+            {/* Con mi familia hoy */}
+            <div className="card" style={{padding:"20px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
+                <h3 style={{margin:0}}>Con mi familia hoy 💛</h3>
+                {thisWeekMoments.length > 0 && (
+                  <span style={{fontSize:"12px",fontWeight:700,color:"var(--pink)",background:"rgba(212,104,122,0.1)",padding:"3px 10px",borderRadius:"20px"}}>
+                    {thisWeekMoments.length} momento{thisWeekMoments.length>1?"s":""} esta semana
+                  </span>
+                )}
+              </div>
+              <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>No mides el tiempo — mides la intención. ¿Con quién estuviste hoy?</p>
+              {presenceCelebration ? (
+                <div style={{padding:"20px",background:"linear-gradient(135deg,rgba(212,104,122,0.08),rgba(47,159,112,0.08))",borderRadius:"14px",textAlign:"center",border:"2px solid rgba(212,104,122,0.2)"}}>
+                  <p style={{fontSize:"24px",margin:"0 0 6px"}}>🌸</p>
+                  <p style={{margin:0,fontWeight:700,fontSize:"15px",color:"var(--ink)"}}>{victoryMsg}</p>
+                </div>
+              ) : (
+                <div style={{display:"grid",gap:"14px"}}>
+                  <div>
+                    <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Con quién?</p>
+                    <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                      {QUIEN_OPTS.map(([icon,label]) => (
+                        <button key={label} type="button" onClick={() => toggleQuien(label)}
+                          style={{display:"flex",alignItems:"center",gap:"6px",padding:"7px 14px",borderRadius:"20px",border:`2px solid ${presenceForm.quien.includes(label)?"var(--pink)":"var(--line)"}`,background:presenceForm.quien.includes(label)?"rgba(212,104,122,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:presenceForm.quien.includes(label)?700:400}}>
+                          {icon} {label}
+                        </button>
+                      ))}
                     </div>
-                  ) : (
-                    <div style={{display:"grid",gap:"14px"}}>
-                      <div>
-                        <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Con quién?</p>
-                        <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-                          {QUIEN_OPTS.map(([icon,label]) => (
-                            <button key={label} type="button" onClick={() => toggleQuien(label)}
-                              style={{display:"flex",alignItems:"center",gap:"6px",padding:"7px 14px",borderRadius:"20px",border:`2px solid ${presenceForm.quien.includes(label)?"var(--pink)":"var(--line)"}`,background:presenceForm.quien.includes(label)?"rgba(212,104,122,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:presenceForm.quien.includes(label)?700:400}}>
-                              {icon} {label}
-                            </button>
-                          ))}
+                  </div>
+                  <div>
+                    <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Qué hicieron?</p>
+                    <textarea value={presenceForm.queHicieron} onChange={e => setPresenceForm(f=>({...f,queHicieron:e.target.value}))}
+                      placeholder="Ej: Leímos un cuento antes de dormir. Cocinamos juntos..."
+                      style={{width:"100%",minHeight:"64px",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",resize:"none",boxSizing:"border-box",background:"#faf7f5"}} />
+                  </div>
+                  <div>
+                    <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Cuánto tiempo?</p>
+                    <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                      {["15 min","30 min","1 hora","Más de 1 hora"].map(t => (
+                        <button key={t} type="button" onClick={() => setPresenceForm(f=>({...f,tiempo:t}))}
+                          style={{padding:"7px 14px",borderRadius:"20px",border:`2px solid ${presenceForm.tiempo===t?"var(--purple)":"var(--line)"}`,background:presenceForm.tiempo===t?"rgba(107,70,193,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:presenceForm.tiempo===t?700:400}}>
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <button type="button" onClick={savePresence} disabled={!presenceForm.quien.length&&!presenceForm.queHicieron.trim()}
+                    style={{padding:"12px",background:"var(--pink)",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700,opacity:(!presenceForm.quien.length&&!presenceForm.queHicieron.trim())?0.5:1}}>
+                    Guardar este momento 🌸
+                  </button>
+                </div>
+              )}
+              {thisWeekMoments.length > 0 && (
+                <div style={{marginTop:"16px",borderTop:"1px solid var(--line)",paddingTop:"14px"}}>
+                  <p style={{margin:"0 0 10px",fontSize:"12px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--muted)"}}>Esta semana</p>
+                  <div style={{display:"grid",gap:"8px"}}>
+                    {thisWeekMoments.slice(-5).reverse().map(m => (
+                      <div key={m.id} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"10px 12px",background:"rgba(212,104,122,0.04)",borderRadius:"10px",border:"1px solid rgba(212,104,122,0.12)"}}>
+                        <span style={{fontSize:"18px",flexShrink:0}}>💛</span>
+                        <div style={{flex:1,minWidth:0}}>
+                          <p style={{margin:"0 0 2px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>{m.quien.join(" · ")} — {m.tiempo}</p>
+                          {m.queHicieron && <p style={{margin:0,fontSize:"12px",color:"var(--muted)",whiteSpace:"pre-wrap"}}>{m.queHicieron}</p>}
                         </div>
                       </div>
-                      <div>
-                        <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Qué hicieron?</p>
-                        <textarea value={presenceForm.queHicieron} onChange={e => setPresenceForm(f=>({...f,queHicieron:e.target.value}))}
-                          placeholder="Ej: Leímos un cuento antes de dormir. Cocinamos juntos. Le escuché hablar de su día..."
-                          style={{width:"100%",minHeight:"64px",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",resize:"none",boxSizing:"border-box",background:"#faf7f5"}} />
-                      </div>
-                      <div>
-                        <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Cuánto tiempo más o menos?</p>
-                        <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-                          {["15 min","30 min","1 hora","Más de 1 hora"].map(t => (
-                            <button key={t} type="button" onClick={() => setPresenceForm(f=>({...f,tiempo:t}))}
-                              style={{padding:"7px 14px",borderRadius:"20px",border:`2px solid ${presenceForm.tiempo===t?"var(--purple)":"var(--line)"}`,background:presenceForm.tiempo===t?"rgba(107,70,193,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:presenceForm.tiempo===t?700:400}}>
-                              {t}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                      <button type="button" onClick={savePresence} disabled={!presenceForm.quien.length && !presenceForm.queHicieron.trim()}
-                        style={{padding:"12px",background:"var(--pink)",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700,opacity:(!presenceForm.quien.length&&!presenceForm.queHicieron.trim())?0.5:1}}>
-                        Guardar este momento 🌸
-                      </button>
+                    ))}
+                  </div>
+                  {thisWeekMoments.length >= 5 && (
+                    <div style={{marginTop:"12px",padding:"12px 16px",background:"linear-gradient(135deg,rgba(212,104,122,0.08),rgba(47,159,112,0.06))",borderRadius:"12px",textAlign:"center"}}>
+                      <p style={{margin:0,fontWeight:700,fontSize:"14px",color:"var(--ink)"}}>🏆 5 momentos esta semana — eso es presencia real.</p>
                     </div>
                   )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
-                  {thisWeekMoments.length > 0 && (
-                    <div style={{marginTop:"16px",borderTop:"1px solid var(--line)",paddingTop:"14px"}}>
-                      <p style={{margin:"0 0 10px",fontSize:"12px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--muted)"}}>Esta semana</p>
-                      <div style={{display:"grid",gap:"8px"}}>
-                        {thisWeekMoments.slice(-5).reverse().map(m => (
-                          <div key={m.id} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"10px 12px",background:"rgba(212,104,122,0.04)",borderRadius:"10px",border:"1px solid rgba(212,104,122,0.12)"}}>
-                            <span style={{fontSize:"18px",flexShrink:0}}>💛</span>
+        {/* ── TAB 2: TAREAS ── */}
+        {homeTab === 2 && (
+          <div>
+            {mentalLoad >= 8 && (
+              <div className="alert-banner alert-red" style={{marginBottom:"14px"}}>
+                Tu carga mental está alta. Elige 3 tareas para hoy y deja el resto para después.
+              </div>
+            )}
+            {urgentTasks.length > 0 && (
+              <div className="alert-banner alert-orange" style={{marginBottom:"14px"}}>
+                {urgentTasks.length} urgente{urgentTasks.length>1?"s":""}: {urgentTasks.map(t => t.title).join(", ")}
+              </div>
+            )}
+            {homeTasks.length === 0 && (
+              <div className="card" style={{marginBottom:"16px",background:"linear-gradient(135deg,#fdf9f6,#fef4f0)",border:"2px dashed #e8d5c4",padding:"24px"}}>
+                <h3 style={{margin:"0 0 6px",fontSize:"16px"}}>¿Por dónde empiezo? 🌱</h3>
+                <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Elige una tarea o escribe la tuya. Una sola ya cuenta.</p>
+                <div style={{display:"grid",gap:"8px"}}>
+                  {STARTER_TASKS.map(t => (
+                    <button key={t.title} type="button"
+                      onClick={() => setHomeTasks(c => [...c, {id:Date.now()+Math.random(),title:t.title,category:t.category,priority:"Normal",delegate:"",done:false,createdAt:new Date().toISOString()}])}
+                      style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"10px",background:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",textAlign:"left",color:"var(--ink)"}}>
+                      <span style={{fontSize:"18px"}}>{t.category==="Bienestar"?"💆":t.category==="Compras"?"🛒":t.category==="Salud"?"💊":t.category==="Colegio / Ninos"?"🎒":"🧹"}</span>
+                      {t.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="home-main-layout">
+              <div className="home-left-col">
+                <form className="card home-form-card" onSubmit={addHomeTask}>
+                  <h3>Nueva tarea</h3>
+                  <input placeholder="Tarea del hogar" value={homeForm.title} onChange={e => updateHomeForm("title",e.target.value)} required />
+                  <select value={homeForm.category} onChange={e => updateHomeForm("category",e.target.value)}>
+                    <option>Rutina</option><option>Compras</option><option>Colegio / Ninos</option>
+                    <option>Salud</option><option>Hogar / Limpieza</option><option>Bienestar</option><option>Calendario</option>
+                  </select>
+                  <select value={homeForm.priority} onChange={e => updateHomeForm("priority",e.target.value)}>
+                    <option>Normal</option><option>Urgente</option><option>Puede esperar</option>
+                  </select>
+                  <input placeholder="Delegar a... (opcional)" value={homeForm.delegate} onChange={e => updateHomeForm("delegate",e.target.value)} />
+                  <button className="primary-button" type="submit">Guardar tarea</button>
+                </form>
+                <div className="card home-form-card" style={{marginTop:"0"}}>
+                  <h3>Lista de mercado</h3>
+                  <p className="helper-copy">Agrega lo que necesitas comprar esta semana.</p>
+                  <form onSubmit={e => { e.preventDefault(); if (!groceryForm.trim()) return; setGroceryList(c => [...c,{id:Date.now(),text:groceryForm.trim(),done:false}]); setGroceryForm(""); }} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px"}}>
+                    <input placeholder="Ej: Leche, pan, frutas..." value={groceryForm} onChange={e => setGroceryForm(e.target.value)}
+                      style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 12px",font:"inherit",background:"#FAF7F5"}} />
+                    <button className="primary-button" type="submit" style={{minHeight:"40px",padding:"0 14px"}}>+</button>
+                  </form>
+                  <div style={{display:"grid",gap:"6px",marginTop:"8px"}}>
+                    {groceryList.map(item => (
+                      <label key={item.id} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 10px",border:"1px solid var(--line)",borderRadius:"8px",background:item.done?"rgba(47,159,112,0.06)":"#fff"}}>
+                        <input type="checkbox" checked={item.done} onChange={() => setGroceryList(c => c.map(g => g.id===item.id?{...g,done:!g.done}:g))} style={{accentColor:"var(--green)"}} />
+                        <span style={{flex:1,fontSize:"14px",textDecoration:item.done?"line-through":"none",color:item.done?"var(--muted)":"var(--ink)"}}>{item.text}</span>
+                        <button type="button" onClick={() => setGroceryList(c => c.filter(g => g.id!==item.id))}
+                          style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",lineHeight:1}}>x</button>
+                      </label>
+                    ))}
+                    {groceryList.length===0 && <p className="helper-copy">Tu lista está vacía.</p>}
+                  </div>
+                </div>
+              </div>
+              <div className="home-right-col">
+                <div className="card">
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                    <h3 style={{margin:0}}>Rutinas y pendientes</h3>
+                    <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
+                      <Progress value={homeProgress} tone="green" />
+                      <b style={{fontSize:"13px",minWidth:"36px",textAlign:"right"}}>{homeProgress}%</b>
+                    </div>
+                  </div>
+                  {homeTasks.length===0 && <p className="helper-copy">Agrega tu primera tarea del hogar.</p>}
+                  {["Urgente","Normal","Puede esperar"].map(priority => {
+                    const tasks = homeTasks.filter(t => (t.priority||"Normal")===priority);
+                    if (!tasks.length) return null;
+                    return (
+                      <div key={priority} style={{marginBottom:"12px"}}>
+                        <p style={{fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.5px",color:priority==="Urgente"?"var(--purple)":"var(--muted)",margin:"0 0 6px"}}>{priority}</p>
+                        {tasks.map(task => (
+                          <div key={task.id} className="home-task-row">
+                            <input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)",flexShrink:0}} />
                             <div style={{flex:1,minWidth:0}}>
-                              <p style={{margin:"0 0 2px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>{m.quien.join(" · ")} — {m.tiempo}</p>
-                              {m.queHicieron && <p style={{margin:0,fontSize:"12px",color:"var(--muted)",whiteSpace:"pre-wrap"}}>{m.queHicieron}</p>}
+                              <strong style={{fontSize:"14px",textDecoration:task.done?"line-through":"none",color:task.done?"var(--muted)":"var(--ink)"}}>{task.title}</strong>
+                              <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"2px"}}>
+                                <small style={{color:"var(--muted)"}}>{task.category}</small>
+                                {task.delegate && <small style={{color:"var(--pink)",fontWeight:700}}>Delegar a: {task.delegate}</small>}
+                              </div>
                             </div>
+                            <button type="button" onClick={() => confirmDelete("Eliminar?",() => setHomeTasks(c => c.filter(t => t.id!==task.id)))}
+                              style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",flexShrink:0}}>x</button>
                           </div>
                         ))}
                       </div>
-                      {thisWeekMoments.length >= 5 && (
-                        <div style={{marginTop:"12px",padding:"12px 16px",background:"linear-gradient(135deg,rgba(212,104,122,0.08),rgba(47,159,112,0.06))",borderRadius:"12px",textAlign:"center"}}>
-                          <p style={{margin:0,fontWeight:700,fontSize:"14px",color:"var(--ink)"}}>🏆 5 momentos esta semana — eso es presencia real.</p>
-                        </div>
-                      )}
+                    );
+                  })}
+                  {delegatedTasks.length>0 && (
+                    <div style={{marginTop:"12px",padding:"10px 12px",background:"var(--pink-soft)",borderRadius:"10px"}}>
+                      <p style={{margin:"0 0 6px",fontSize:"12px",fontWeight:800,color:"var(--purple)"}}>DELEGADAS ({delegatedTasks.length})</p>
+                      {delegatedTasks.map(t => <p key={t.id} style={{margin:"2px 0",fontSize:"13px",color:"var(--ink)"}}>{t.title} - {t.delegate}</p>)}
                     </div>
                   )}
                 </div>
-              );
-            })()}
-
-            {/* Presupuesto del hogar */}
-            <div className="home-budget-card card">
-              <div className="budget-head">
-                <div><h3>Presupuesto del hogar</h3><p>Ingresos, gastos y disponible familiar.</p></div>
-                <div className="budget-total"><span>Disponible</span><strong>{money.format(homeAvailable)}</strong></div>
-              </div>
-              <form className="home-budget-form" onSubmit={addHomeBudgetItem}>
-                <select value={homeBudgetForm.type} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, type: e.target.value }))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
-                <input placeholder="Descripcion" value={homeBudgetForm.description} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, description: e.target.value }))} />
-                <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, amount: e.target.value }))} />
-                <input type="date" value={homeBudgetForm.dueDate} onChange={(e) => setHomeBudgetForm((c) => ({ ...c, dueDate: e.target.value }))} />
-                <button className="primary-button" type="submit">Agregar</button>
-              </form>
-              <div className="home-money-insights">
-                <article><span>Ganando</span><strong>{money.format(homeBudgetTotals.income)}</strong></article>
-                <article><span>Gastando</span><strong>{money.format(homeSpent)}</strong></article>
-                <article><span>Mayor fuga</span><strong>{biggestHomeLeak[0]}</strong><small>{money.format(biggestHomeLeak[1])}</small></article>
-                <article><span>Ahorro</span><strong>{money.format(homeBudgetTotals.savings)}</strong></article>
-              </div>
-              <div className="money-track">
-                <span style={{width:`${Math.min(100, homeBudgetTotals.income ? (homeSpent/homeBudgetTotals.income)*100 : 0)}%`}}></span>
-                <small>Gastado vs ingresos del hogar</small>
-              </div>
-              <div className="budget-list">
-                {homeBudget.map((item) => (
-                  <div className="home-budget-row" key={item.id}>
-                    <div>
-                      <strong>{item.description}</strong>
-                      <small>{item.type} • pago: {formatShortDate(item.dueDate || item.createdAt)}</small>
+                <div className="card home-budget-card" style={{marginTop:"0"}}>
+                  <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Rutinas del hogar 🧹</h3>
+                  <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Qué toca hacer cada día para que el hogar funcione.</p>
+                  {homeRoutines[todayDay] && (
+                    <div style={{marginBottom:"12px",padding:"9px 14px",background:"rgba(107,70,193,0.07)",borderRadius:"10px",border:"1px solid rgba(107,70,193,0.18)"}}>
+                      <p style={{margin:0,fontSize:"13px",color:"var(--purple)",fontWeight:700}}>Hoy toca: {homeRoutines[todayDay]}</p>
                     </div>
-                    <input type="date" value={inputDateFromValue(item.dueDate || item.createdAt)} onChange={(e) => updateHomeBudgetDate(item.id, e.target.value)} aria-label={`Fecha de pago de ${item.description}`} />
-                    <b>{money.format(item.amount)}</b>
-                    <button className="row-delete" type="button" onClick={() => setHomeBudget((c) => c.filter((r) => r.id !== item.id))}>×</button>
+                  )}
+                  <div style={{display:"grid",gap:"6px"}}>
+                    {DAY_LABELS.map(([key,name]) => (
+                      <div key={key} style={{display:"flex",alignItems:"center",gap:"9px"}}>
+                        <span style={{width:"28px",height:"28px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===key?"var(--purple)":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
+                        <input value={homeRoutines[key]} onChange={e => setHomeRoutines(r => ({...r,[key]:e.target.value}))}
+                          placeholder={`${name}...`}
+                          style={{flex:1,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"7px",border:`1px solid ${todayDay===key?"rgba(107,70,193,0.3)":"var(--line)"}`,background:todayDay===key?"#f5f0fc":"#faf7f5"}} />
+                      </div>
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
+
+        {/* ── TAB 3: PRESUPUESTO ── */}
+        {homeTab === 3 && (
+          <div className="home-budget-card card">
+            <div className="budget-head">
+              <div><h3>Presupuesto del hogar 💰</h3><p>Ingresos, gastos y dinero disponible para la familia.</p></div>
+              <div className="budget-total"><span>Disponible</span><strong>{money.format(homeAvailable)}</strong></div>
+            </div>
+            <form className="home-budget-form" onSubmit={addHomeBudgetItem}>
+              <select value={homeBudgetForm.type} onChange={e => setHomeBudgetForm(c => ({...c,type:e.target.value}))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
+              <input placeholder="Descripción" value={homeBudgetForm.description} onChange={e => setHomeBudgetForm(c => ({...c,description:e.target.value}))} />
+              <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={e => setHomeBudgetForm(c => ({...c,amount:e.target.value}))} />
+              <input type="date" value={homeBudgetForm.dueDate} onChange={e => setHomeBudgetForm(c => ({...c,dueDate:e.target.value}))} />
+              <button className="primary-button" type="submit">Agregar</button>
+            </form>
+            <div className="home-money-insights">
+              <article><span>Ganando</span><strong>{money.format(homeBudgetTotals.income)}</strong></article>
+              <article><span>Gastando</span><strong>{money.format(homeSpent)}</strong></article>
+              <article><span>Mayor fuga</span><strong>{biggestHomeLeak[0]}</strong><small>{money.format(biggestHomeLeak[1])}</small></article>
+              <article><span>Ahorro</span><strong>{money.format(homeBudgetTotals.savings)}</strong></article>
+            </div>
+            <div className="money-track">
+              <span style={{width:`${Math.min(100,homeBudgetTotals.income?(homeSpent/homeBudgetTotals.income)*100:0)}%`}}></span>
+              <small>Gastado vs ingresos del hogar</small>
+            </div>
+            <div className="budget-list">
+              {homeBudget.map(item => (
+                <div className="home-budget-row" key={item.id}>
+                  <div>
+                    <strong>{item.description}</strong>
+                    <small>{item.type} • pago: {formatShortDate(item.dueDate||item.createdAt)}</small>
+                  </div>
+                  <input type="date" value={inputDateFromValue(item.dueDate||item.createdAt)} onChange={e => updateHomeBudgetDate(item.id,e.target.value)} aria-label={`Fecha de pago de ${item.description}`} />
+                  <b>{money.format(item.amount)}</b>
+                  <button className="row-delete" type="button" onClick={() => setHomeBudget(c => c.filter(r => r.id!==item.id))}>×</button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
     );
   }
