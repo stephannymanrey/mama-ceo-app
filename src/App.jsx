@@ -2254,11 +2254,11 @@ export default function App() {
                       const isThisMonth = dayNum >= 1 && dayNum <= lastDay.getDate();
                       const dateStr = isThisMonth ? `${year}-${String(month+1).padStart(2,"0")}-${String(dayNum).padStart(2,"0")}` : null;
                       const isToday = isThisMonth && new Date(year,month,dayNum).toDateString() === today.toDateString();
-                      const isSelected = dateStr === calendarAddDate;
+                      const isSelected = !!dateStr && dateStr === calendarAddDate;
                       const dayAppts = isThisMonth ? (apptsByDay[dayNum] || []) : [];
                       return (
                         <div key={i} className={isThisMonth?"_cal-day":""} onClick={() => isThisMonth && setCalendarAddDate(isSelected?null:dateStr)}
-                          style={{borderRadius:"8px",padding:"4px 3px",background:isSelected?"rgba(196,82,106,0.13)":isToday?"#FEF3E0":dayAppts.length?"rgba(107,70,193,0.03)":"transparent",border:isSelected?"2px solid #C4526A":isToday?"2px solid rgba(200,155,70,0.28)":"2px solid transparent",display:"flex",flexDirection:"column",gap:"2px",overflow:"hidden",cursor:isThisMonth?"pointer":"default",transition:"all 0.12s"}}>
+                          style={{borderRadius:"8px",padding:"4px 3px",background:isSelected?"rgba(196,82,106,0.11)":isToday?"#FEF3E0":"transparent",border:isSelected?"2px solid #C4526A":"2px solid transparent",display:"flex",flexDirection:"column",gap:"2px",overflow:"hidden",cursor:isThisMonth?"pointer":"default",transition:"all 0.12s"}}>
                           {isThisMonth && (<>
                             <span style={{fontSize:"13px",fontWeight:isToday||isSelected?800:500,color:isSelected?"#C4526A":isToday?"#A0722A":"var(--ink)",alignSelf:"center",lineHeight:1.3}}>{dayNum}</span>
                             {dayAppts.slice(0,3).map((a,ai) => (
