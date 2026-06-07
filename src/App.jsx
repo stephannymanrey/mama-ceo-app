@@ -1254,7 +1254,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled]);
 
   const addMovement = (event) => {
     event.preventDefault();
@@ -2151,7 +2151,7 @@ export default function App() {
             apptsByDay[d].push(a);
           });
 
-          const TYPE_COLORS = { "Médico":"#C4526A","Colegio":"#6B46C1","Dentista":"#e87b1e","Reunión":"#1D9E75","Pago":"#2563EB","Cumpleaños":"#D97706","Otro":"#6B7280" };
+          const TYPE_COLORS = { "Médico":"#C4526A","Cita":"#C4526A","Colegio":"#6B46C1","Dentista":"#e87b1e","Extracurricular":"#059669","Iglesia":"#7C3AED","Reunión":"#1D9E75","Pago":"#2563EB","Cumpleaños":"#D97706","Otro":"#6B7280" };
 
           return (
             <div style={{position:"fixed",inset:0,zIndex:9000,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e => { if (e.target===e.currentTarget) setShowCalendar(false); }}>
@@ -3074,7 +3074,7 @@ export default function App() {
     const todayDay        = ["D","L","M","X","J","V","S"][new Date().getDay()];
     const today0          = new Date(); today0.setHours(0,0,0,0);
     const DAY_LABELS      = [["L","Lunes"],["M","Martes"],["X","Miércoles"],["J","Jueves"],["V","Viernes"],["S","Sábado"],["D","Domingo"]];
-    const TYPE_ICONS      = { "Médico":"🩺","Colegio":"🎒","Dentista":"🦷","Reunión":"📋","Pago":"💳","Cumpleaños":"🎂","Otro":"📌" };
+    const TYPE_ICONS      = { "Médico":"🩺","Cita":"📋","Colegio":"🎒","Dentista":"🦷","Extracurricular":"⚽","Iglesia":"🙏","Reunión":"🤝","Pago":"💳","Cumpleaños":"🎂","Otro":"📌" };
     const RECURRENCE_LABELS = { "none":"No se repite","weekly":"Cada semana","monthly":"Cada mes","yearly":"Cada año" };
     const daysLabel       = d => d === 0 ? "Hoy" : d === 1 ? "Mañana" : `En ${d}d`;
     const daysColor       = d => d === 0 ? "#C4526A" : d <= 3 ? "#e87b1e" : "#1D9E75";
@@ -3104,7 +3104,29 @@ export default function App() {
       return result;
     };
 
-    const withDiff      = expandAppts(appointments).map(a => ({ ...a, diff: Math.round((new Date(a.date+"T00:00:00") - today0) / 86400000) }));
+    // For the list view: each recurring event shows only its NEXT occurrence
+    const listAppts = (() => {
+      const seen = new Set();
+      const result = [];
+      for (const appt of appointments) {
+        if (!appt.recurrence || appt.recurrence === "none") {
+          result.push(appt);
+        } else {
+          if (seen.has(appt.id)) continue;
+          seen.add(appt.id);
+          let curr = new Date(appt.date + "T00:00:00");
+          while (curr < today0) {
+            if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
+            else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
+            else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
+            else break;
+          }
+          result.push({ ...appt, date: curr.toISOString().slice(0,10), _origId: appt.id });
+        }
+      }
+      return result;
+    })();
+    const withDiff      = listAppts.map(a => ({ ...a, diff: Math.round((new Date(a.date+"T00:00:00") - today0) / 86400000) }));
     const upcomingAppts = withDiff.filter(a => a.diff >= 0).sort((a,b) => a.diff - b.diff);
 
     const addToGCal = appt => {
