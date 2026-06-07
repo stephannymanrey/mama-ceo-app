@@ -1203,12 +1203,13 @@ export default function App() {
 
   useEffect(() => {
     if (!ready) return;
-    const hasSeenModal = window.sessionStorage.getItem('profile-modal-seen');
-    if (!profileSetup && !hasSeenModal) {
+    if (isRestoringRemote) return; // wait for cloud data before deciding
+    const hasDismissed = window.localStorage.getItem('profile-modal-done');
+    if (!profileSetup && !hasDismissed) {
       setShowProfileModal(true);
-      window.sessionStorage.setItem('profile-modal-seen', 'true');
+      window.localStorage.setItem('profile-modal-done', 'true');
     }
-  }, [ready, user, isRestoringRemote, profileSetup]);
+  }, [ready, isRestoringRemote, profileSetup]);
 
   useEffect(() => {
     if (!ready) return;
@@ -1563,7 +1564,7 @@ export default function App() {
         dailyGoal: Math.round(monthly / 20)
       }));
     }
-    setShowProfileModal(false); window.sessionStorage.setItem('profile-modal-seen', 'true'); setProfileSaved(true);
+    setShowProfileModal(false); window.localStorage.setItem('profile-modal-done', 'true'); setProfileSaved(true);
     setTimeout(() => setProfileSaved(false), 4000);
   };
 
@@ -1796,7 +1797,7 @@ export default function App() {
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
                 <h2>{profileSetup ? "Editar mi perfil ✏️" : "Antes de comenzar... ✨"}</h2>
                 {profileSetup && (
-                  <button type="button" onClick={() => setShowProfileModal(false)}
+                  <button type="button" onClick={() => { setShowProfileModal(false); window.localStorage.setItem('profile-modal-done','true'); }}
                     style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>×</button>
                 )}
               </div>
