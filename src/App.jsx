@@ -2195,63 +2195,61 @@ export default function App() {
           const TYPE_COLORS = { "Médico":"#C4526A","Cita":"#C4526A","Colegio":"#6B46C1","Dentista":"#e87b1e","Extracurricular":"#059669","Iglesia":"#7C3AED","Reunión":"#1D9E75","Pago":"#2563EB","Cumpleaños":"#D97706","Otro":"#6B7280" };
 
           return (
-            <div style={{position:"fixed",inset:0,zIndex:9000,background:"rgba(0,0,0,0.55)",display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e => { if (e.target===e.currentTarget) setShowCalendar(false); }}>
-              <div style={{background:"#fff",borderRadius:"20px 20px 0 0",width:"100%",maxWidth:"500px",maxHeight:"90vh",overflow:"auto",paddingBottom:"24px"}}>
-                {/* Header */}
-                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"20px 20px 12px",borderBottom:"1px solid var(--line)"}}>
-                  <button type="button" onClick={() => setCalendarMonth(new Date(year, month-1, 1))}
-                    style={{border:"none",background:"var(--line)",borderRadius:"8px",width:"36px",height:"36px",cursor:"pointer",fontSize:"18px",display:"flex",alignItems:"center",justifyContent:"center"}}>‹</button>
-                  <div style={{textAlign:"center"}}>
-                    <h3 style={{margin:"0 0 2px",fontSize:"18px",fontWeight:800,color:"var(--ink)"}}>{MONTH_NAMES[month]}</h3>
-                    <p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontWeight:600}}>{year}</p>
-                  </div>
-                  <button type="button" onClick={() => setCalendarMonth(new Date(year, month+1, 1))}
-                    style={{border:"none",background:"var(--line)",borderRadius:"8px",width:"36px",height:"36px",cursor:"pointer",fontSize:"18px",display:"flex",alignItems:"center",justifyContent:"center"}}>›</button>
-                  <button type="button" onClick={() => setShowCalendar(false)}
-                    style={{border:"none",background:"none",fontSize:"22px",color:"var(--muted)",cursor:"pointer",position:"absolute",right:"16px",top:"16px",lineHeight:1}}>×</button>
+            <div style={{position:"fixed",inset:0,zIndex:9000,background:"#fff",display:"flex",flexDirection:"column"}}>
+              {/* Header */}
+              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 20px",borderBottom:"1px solid var(--line)",flexShrink:0,position:"relative"}}>
+                <button type="button" onClick={() => setCalendarMonth(new Date(year, month-1, 1))}
+                  style={{border:"none",background:"var(--line)",borderRadius:"10px",width:"40px",height:"40px",cursor:"pointer",fontSize:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>‹</button>
+                <div style={{textAlign:"center"}}>
+                  <h3 style={{margin:"0 0 2px",fontSize:"22px",fontWeight:800,color:"var(--ink)"}}>{MONTH_NAMES[month]}</h3>
+                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontWeight:600}}>{year}</p>
                 </div>
+                <button type="button" onClick={() => setCalendarMonth(new Date(year, month+1, 1))}
+                  style={{border:"none",background:"var(--line)",borderRadius:"10px",width:"40px",height:"40px",cursor:"pointer",fontSize:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>›</button>
+                <button type="button" onClick={() => setShowCalendar(false)}
+                  style={{border:"none",background:"rgba(0,0,0,0.07)",borderRadius:"50%",width:"32px",height:"32px",cursor:"pointer",fontSize:"18px",color:"var(--ink)",position:"absolute",right:"16px",top:"50%",transform:"translateY(-50%)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>×</button>
+              </div>
 
-                {/* Day headers */}
-                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"10px 12px 4px"}}>
-                  {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => (
-                    <div key={d} style={{textAlign:"center",fontSize:"11px",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",padding:"4px 0"}}>{d}</div>
-                  ))}
-                </div>
+              {/* Day headers */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"10px 8px 4px",flexShrink:0}}>
+                {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => (
+                  <div key={d} style={{textAlign:"center",fontSize:"12px",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",padding:"4px 0"}}>{d}</div>
+                ))}
+              </div>
 
-                {/* Calendar grid */}
-                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"2px",padding:"0 12px 12px"}}>
-                  {Array.from({length:totalCells}).map((_,i) => {
-                    const dayNum = i - startOffset + 1;
-                    const isThisMonth = dayNum >= 1 && dayNum <= lastDay.getDate();
-                    const thisDate = new Date(year, month, dayNum);
-                    const isToday = thisDate.toDateString() === today.toDateString();
-                    const dayAppts = isThisMonth ? (apptsByDay[dayNum] || []) : [];
-                    return (
-                      <div key={i} style={{minHeight:"52px",borderRadius:"10px",padding:"4px",background:isToday?"rgba(196,82,106,0.08)":dayAppts.length?"rgba(107,70,193,0.04)":"transparent",border:isToday?"2px solid rgba(196,82,106,0.4)":"2px solid transparent",display:"flex",flexDirection:"column",gap:"2px"}}>
-                        {isThisMonth && (
-                          <>
-                            <span style={{fontSize:"13px",fontWeight:isToday?800:500,color:isToday?"#C4526A":dayAppts.length?"var(--ink)":"var(--muted)",alignSelf:"center",lineHeight:1.4}}>{dayNum}</span>
-                            {dayAppts.slice(0,3).map((a,ai) => (
-                              <div key={ai} style={{fontSize:"10px",fontWeight:700,color:"#fff",background:TYPE_COLORS[a.type]||"#6B7280",borderRadius:"4px",padding:"1px 4px",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",lineHeight:1.5}}>
-                                {a.time && <span style={{opacity:0.85}}>{a.time} </span>}{a.title}
-                              </div>
-                            ))}
-                            {dayAppts.length > 3 && <span style={{fontSize:"9px",color:"var(--muted)",textAlign:"center",fontWeight:700}}>+{dayAppts.length-3}</span>}
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
+              {/* Calendar grid — flex:1 so rows stretch to fill the screen */}
+              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"3px",padding:"0 8px",flex:1,alignContent:"stretch"}}>
+                {Array.from({length:totalCells}).map((_,i) => {
+                  const dayNum = i - startOffset + 1;
+                  const isThisMonth = dayNum >= 1 && dayNum <= lastDay.getDate();
+                  const thisDate = new Date(year, month, dayNum);
+                  const isToday = thisDate.toDateString() === today.toDateString();
+                  const dayAppts = isThisMonth ? (apptsByDay[dayNum] || []) : [];
+                  return (
+                    <div key={i} style={{borderRadius:"10px",padding:"5px 4px",background:isToday?"rgba(196,82,106,0.09)":dayAppts.length?"rgba(107,70,193,0.04)":"transparent",border:isToday?"2px solid rgba(196,82,106,0.45)":"2px solid transparent",display:"flex",flexDirection:"column",gap:"2px",overflow:"hidden",minHeight:"60px"}}>
+                      {isThisMonth && (
+                        <>
+                          <span style={{fontSize:"15px",fontWeight:isToday?800:500,color:isToday?"#C4526A":dayAppts.length?"var(--ink)":"var(--muted)",alignSelf:"center",lineHeight:1.4}}>{dayNum}</span>
+                          {dayAppts.slice(0,3).map((a,ai) => (
+                            <div key={ai} style={{fontSize:"10px",fontWeight:700,color:"#fff",background:TYPE_COLORS[a.type]||"#6B7280",borderRadius:"4px",padding:"2px 4px",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",lineHeight:1.5}}>
+                              {a.time && <span style={{opacity:0.85}}>{a.time} </span>}{a.title}
+                            </div>
+                          ))}
+                          {dayAppts.length > 3 && <span style={{fontSize:"9px",color:"var(--muted)",textAlign:"center",fontWeight:700}}>+{dayAppts.length-3}</span>}
+                        </>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
 
-                {/* Legend */}
-                <div style={{padding:"0 16px 8px",display:"flex",gap:"8px",flexWrap:"wrap",justifyContent:"center"}}>
-                  {Object.entries(TYPE_COLORS).map(([type,color]) => (
-                    <span key={type} style={{display:"flex",alignItems:"center",gap:"4px",fontSize:"11px",color:"var(--muted)"}}>
-                      <span style={{width:"10px",height:"10px",borderRadius:"3px",background:color,display:"inline-block"}}></span>{type}
-                    </span>
-                  ))}
-                </div>
+              {/* Legend */}
+              <div style={{padding:"8px 16px",borderTop:"1px solid var(--line)",display:"flex",gap:"8px",flexWrap:"wrap",justifyContent:"center",flexShrink:0,paddingBottom:"max(12px,env(safe-area-inset-bottom))"}}>
+                {Object.entries(TYPE_COLORS).map(([type,color]) => (
+                  <span key={type} style={{display:"flex",alignItems:"center",gap:"4px",fontSize:"11px",color:"var(--muted)"}}>
+                    <span style={{width:"10px",height:"10px",borderRadius:"3px",background:color,display:"inline-block"}}></span>{type}
+                  </span>
+                ))}
               </div>
             </div>
           );
