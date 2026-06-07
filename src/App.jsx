@@ -599,6 +599,8 @@ export default function App() {
   const [reminderEnabled, setReminderEnabled] = useState(stored?.reminderEnabled !== false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  const [calendarAddDate, setCalendarAddDate] = useState(null);
+  const [calendarNewAppt, setCalendarNewAppt] = useState({ title: "", type: "Médico", time: "" });
   const [checkInStep, setCheckInStep] = useState(0);
   const [checkInResp, setCheckInResp] = useState({ dia: "", pensando: "", postergando: "", treinta: "", emocional: 5, social: 5, proyectos: 5 });
   const [checkInAnimating, setCheckInAnimating] = useState(false);
@@ -2194,62 +2196,131 @@ export default function App() {
 
           const TYPE_COLORS = { "Médico":"#C4526A","Cita":"#C4526A","Colegio":"#6B46C1","Dentista":"#e87b1e","Extracurricular":"#059669","Iglesia":"#7C3AED","Reunión":"#1D9E75","Pago":"#2563EB","Cumpleaños":"#D97706","Otro":"#6B7280" };
 
+          const isMobile = window.innerWidth < 700;
+          const CAL_APPT_TYPES = ["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Reunión","Pago","Cumpleaños","Otro"];
+
+          const saveCalendarAppt = () => {
+            if (!calendarNewAppt.title.trim()) return;
+            const newA = { id: Date.now(), title: calendarNewAppt.title.trim(), date: calendarAddDate, time: calendarNewAppt.time, type: calendarNewAppt.type, recurrence: "none" };
+            setAppointments(prev => [...prev, newA]);
+            setCalendarAddDate(null);
+            setCalendarNewAppt({ title: "", type: "Médico", time: "" });
+          };
+
+          const openInGCal = (a) => {
+            const t = encodeURIComponent(a.title);
+            const d = a.date.replace(/-/g,"");
+            const timeStr = a.time ? `T${a.time.replace(":","") }00` : "";
+            const dates = timeStr ? `${d}${timeStr}/${d}${timeStr}` : `${d}/${d}`;
+            window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${dates}`, "_blank");
+          };
+
           return (
-            <div style={{position:"fixed",inset:0,zIndex:9000,background:"#fff",display:"flex",flexDirection:"column"}}>
-              {/* Header */}
-              <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"16px 20px",borderBottom:"1px solid var(--line)",flexShrink:0,position:"relative"}}>
-                <button type="button" onClick={() => setCalendarMonth(new Date(year, month-1, 1))}
-                  style={{border:"none",background:"var(--line)",borderRadius:"10px",width:"40px",height:"40px",cursor:"pointer",fontSize:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>‹</button>
-                <div style={{textAlign:"center"}}>
-                  <h3 style={{margin:"0 0 2px",fontSize:"22px",fontWeight:800,color:"var(--ink)"}}>{MONTH_NAMES[month]}</h3>
-                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontWeight:600}}>{year}</p>
+            <div style={{position:"fixed",inset:0,zIndex:9000,background:isMobile?"#fff":"rgba(0,0,0,0.6)",display:"flex",alignItems:isMobile?"stretch":"center",justifyContent:"center"}}
+                 onClick={e => { if (e.target===e.currentTarget) { setShowCalendar(false); setCalendarAddDate(null); } }}>
+              <div style={{background:"#fff",width:"100%",maxWidth:isMobile?"100%":"820px",height:isMobile?"100%":"92vh",borderRadius:isMobile?"0":"20px",display:"flex",flexDirection:"column",overflow:"hidden",position:"relative"}}>
+
+                {/* Header */}
+                <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"14px 20px",borderBottom:"1px solid var(--line)",flexShrink:0,position:"relative"}}>
+                  <button type="button" onClick={() => { setCalendarMonth(new Date(year, month-1, 1)); setCalendarAddDate(null); }}
+                    style={{border:"none",background:"var(--line)",borderRadius:"10px",width:"40px",height:"40px",cursor:"pointer",fontSize:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>‹</button>
+                  <div style={{textAlign:"center"}}>
+                    <h3 style={{margin:"0 0 2px",fontSize:"20px",fontWeight:800,color:"var(--ink)"}}>{MONTH_NAMES[month]}</h3>
+                    <p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{year}</p>
+                  </div>
+                  <button type="button" onClick={() => { setCalendarMonth(new Date(year, month+1, 1)); setCalendarAddDate(null); }}
+                    style={{border:"none",background:"var(--line)",borderRadius:"10px",width:"40px",height:"40px",cursor:"pointer",fontSize:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>›</button>
+                  <button type="button" onClick={() => { setShowCalendar(false); setCalendarAddDate(null); }}
+                    style={{border:"none",background:"rgba(0,0,0,0.07)",borderRadius:"50%",width:"32px",height:"32px",cursor:"pointer",fontSize:"18px",color:"var(--ink)",position:"absolute",right:"16px",top:"50%",transform:"translateY(-50%)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>×</button>
                 </div>
-                <button type="button" onClick={() => setCalendarMonth(new Date(year, month+1, 1))}
-                  style={{border:"none",background:"var(--line)",borderRadius:"10px",width:"40px",height:"40px",cursor:"pointer",fontSize:"20px",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>›</button>
-                <button type="button" onClick={() => setShowCalendar(false)}
-                  style={{border:"none",background:"rgba(0,0,0,0.07)",borderRadius:"50%",width:"32px",height:"32px",cursor:"pointer",fontSize:"18px",color:"var(--ink)",position:"absolute",right:"16px",top:"50%",transform:"translateY(-50%)",display:"flex",alignItems:"center",justifyContent:"center",lineHeight:1}}>×</button>
-              </div>
 
-              {/* Day headers */}
-              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"10px 8px 4px",flexShrink:0}}>
-                {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => (
-                  <div key={d} style={{textAlign:"center",fontSize:"12px",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",padding:"4px 0"}}>{d}</div>
-                ))}
-              </div>
+                {/* Day headers */}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"8px 8px 2px",flexShrink:0}}>
+                  {["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"].map(d => (
+                    <div key={d} style={{textAlign:"center",fontSize:"11px",fontWeight:800,color:"var(--muted)",textTransform:"uppercase",padding:"3px 0"}}>{d}</div>
+                  ))}
+                </div>
 
-              {/* Calendar grid — flex:1 so rows stretch to fill the screen */}
-              <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"3px",padding:"0 8px",flex:1,alignContent:"stretch"}}>
-                {Array.from({length:totalCells}).map((_,i) => {
-                  const dayNum = i - startOffset + 1;
-                  const isThisMonth = dayNum >= 1 && dayNum <= lastDay.getDate();
-                  const thisDate = new Date(year, month, dayNum);
-                  const isToday = thisDate.toDateString() === today.toDateString();
-                  const dayAppts = isThisMonth ? (apptsByDay[dayNum] || []) : [];
-                  return (
-                    <div key={i} style={{borderRadius:"10px",padding:"5px 4px",background:isToday?"rgba(196,82,106,0.09)":dayAppts.length?"rgba(107,70,193,0.04)":"transparent",border:isToday?"2px solid rgba(196,82,106,0.45)":"2px solid transparent",display:"flex",flexDirection:"column",gap:"2px",overflow:"hidden",minHeight:"60px"}}>
-                      {isThisMonth && (
-                        <>
-                          <span style={{fontSize:"15px",fontWeight:isToday?800:500,color:isToday?"#C4526A":dayAppts.length?"var(--ink)":"var(--muted)",alignSelf:"center",lineHeight:1.4}}>{dayNum}</span>
-                          {dayAppts.slice(0,3).map((a,ai) => (
-                            <div key={ai} style={{fontSize:"10px",fontWeight:700,color:"#fff",background:TYPE_COLORS[a.type]||"#6B7280",borderRadius:"4px",padding:"2px 4px",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",lineHeight:1.5}}>
-                              {a.time && <span style={{opacity:0.85}}>{a.time} </span>}{a.title}
-                            </div>
-                          ))}
-                          {dayAppts.length > 3 && <span style={{fontSize:"9px",color:"var(--muted)",textAlign:"center",fontWeight:700}}>+{dayAppts.length-3}</span>}
-                        </>
-                      )}
+                {/* Calendar grid */}
+                <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:"3px",padding:"0 8px",flex:1,alignContent:"stretch",minHeight:0}}>
+                  {Array.from({length:totalCells}).map((_,i) => {
+                    const dayNum = i - startOffset + 1;
+                    const isThisMonth = dayNum >= 1 && dayNum <= lastDay.getDate();
+                    const dateStr = isThisMonth ? `${year}-${String(month+1).padStart(2,"0")}-${String(dayNum).padStart(2,"0")}` : null;
+                    const thisDate = new Date(year, month, dayNum);
+                    const isToday = thisDate.toDateString() === today.toDateString();
+                    const isSelected = dateStr === calendarAddDate;
+                    const dayAppts = isThisMonth ? (apptsByDay[dayNum] || []) : [];
+                    return (
+                      <div key={i}
+                        onClick={() => isThisMonth && setCalendarAddDate(isSelected ? null : dateStr)}
+                        style={{borderRadius:"10px",padding:"5px 4px",background:isSelected?"rgba(196,82,106,0.15)":isToday?"rgba(196,82,106,0.07)":dayAppts.length?"rgba(107,70,193,0.04)":"transparent",border:isSelected?"2px solid #C4526A":isToday?"2px solid rgba(196,82,106,0.4)":"2px solid transparent",display:"flex",flexDirection:"column",gap:"2px",overflow:"hidden",cursor:isThisMonth?"pointer":"default",transition:"background 0.15s"}}>
+                        {isThisMonth && (
+                          <>
+                            <span style={{fontSize:"14px",fontWeight:isToday||isSelected?800:500,color:isSelected?"#C4526A":isToday?"#C4526A":dayAppts.length?"var(--ink)":"var(--muted)",alignSelf:"center",lineHeight:1.4}}>{dayNum}</span>
+                            {dayAppts.slice(0,3).map((a,ai) => (
+                              <div key={ai}
+                                onClick={e => { e.stopPropagation(); openInGCal(a); }}
+                                title="Abrir en Google Calendar"
+                                style={{fontSize:"10px",fontWeight:700,color:"#fff",background:TYPE_COLORS[a.type]||"#6B7280",borderRadius:"4px",padding:"2px 4px",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",lineHeight:1.5,cursor:"pointer"}}>
+                                {a.time && <span style={{opacity:0.85}}>{a.time} </span>}{a.title}
+                              </div>
+                            ))}
+                            {dayAppts.length > 3 && <span style={{fontSize:"9px",color:"var(--muted)",textAlign:"center",fontWeight:700}}>+{dayAppts.length-3}</span>}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Add form (shown when a day is selected) or Legend */}
+                {calendarAddDate ? (
+                  <div style={{borderTop:"2px solid #C4526A",background:"#FDF9F6",padding:"14px 16px",flexShrink:0,display:"flex",flexDirection:"column",gap:"10px"}}>
+                    <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+                      <span style={{fontSize:"13px",fontWeight:700,color:"#C4526A"}}>
+                        ＋ Nueva cita — {new Date(calendarAddDate+"T00:00:00").toLocaleDateString("es-CO",{weekday:"short",day:"numeric",month:"short"})}
+                      </span>
+                      <button type="button" onClick={() => setCalendarAddDate(null)}
+                        style={{border:"none",background:"none",fontSize:"18px",color:"var(--muted)",cursor:"pointer",lineHeight:1}}>×</button>
                     </div>
-                  );
-                })}
-              </div>
-
-              {/* Legend */}
-              <div style={{padding:"8px 16px",borderTop:"1px solid var(--line)",display:"flex",gap:"8px",flexWrap:"wrap",justifyContent:"center",flexShrink:0,paddingBottom:"max(12px,env(safe-area-inset-bottom))"}}>
-                {Object.entries(TYPE_COLORS).map(([type,color]) => (
-                  <span key={type} style={{display:"flex",alignItems:"center",gap:"4px",fontSize:"11px",color:"var(--muted)"}}>
-                    <span style={{width:"10px",height:"10px",borderRadius:"3px",background:color,display:"inline-block"}}></span>{type}
-                  </span>
-                ))}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px"}}>
+                      <input
+                        autoFocus
+                        placeholder="Título de la cita"
+                        value={calendarNewAppt.title}
+                        onChange={e => setCalendarNewAppt(p => ({...p, title: e.target.value}))}
+                        onKeyDown={e => e.key === "Enter" && saveCalendarAppt()}
+                        style={{border:"1px solid var(--line)",borderRadius:"8px",padding:"8px 10px",fontSize:"14px",fontFamily:"inherit",outline:"none"}}
+                      />
+                      <input
+                        type="time"
+                        value={calendarNewAppt.time}
+                        onChange={e => setCalendarNewAppt(p => ({...p, time: e.target.value}))}
+                        style={{border:"1px solid var(--line)",borderRadius:"8px",padding:"8px 10px",fontSize:"14px",fontFamily:"inherit",outline:"none",width:"100px"}}
+                      />
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px"}}>
+                      <select value={calendarNewAppt.type} onChange={e => setCalendarNewAppt(p => ({...p, type: e.target.value}))}
+                        style={{border:"1px solid var(--line)",borderRadius:"8px",padding:"8px 10px",fontSize:"14px",fontFamily:"inherit",background:"#fff",outline:"none"}}>
+                        {CAL_APPT_TYPES.map(t => <option key={t}>{t}</option>)}
+                      </select>
+                      <button type="button" onClick={saveCalendarAppt}
+                        style={{background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",padding:"8px 18px",fontSize:"14px",fontWeight:700,cursor:"pointer",whiteSpace:"nowrap"}}>
+                        Guardar
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{padding:"8px 16px",borderTop:"1px solid var(--line)",display:"flex",gap:"6px",flexWrap:"wrap",justifyContent:"center",flexShrink:0,paddingBottom:"max(10px,env(safe-area-inset-bottom))"}}>
+                    <span style={{fontSize:"11px",color:"var(--muted)",width:"100%",textAlign:"center",marginBottom:"2px"}}>Toca un día para agregar • Toca un evento para abrir en Google Calendar</span>
+                    {Object.entries(TYPE_COLORS).map(([type,color]) => (
+                      <span key={type} style={{display:"flex",alignItems:"center",gap:"4px",fontSize:"11px",color:"var(--muted)"}}>
+                        <span style={{width:"10px",height:"10px",borderRadius:"3px",background:color,display:"inline-block"}}></span>{type}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );
