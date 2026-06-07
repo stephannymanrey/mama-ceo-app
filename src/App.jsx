@@ -1145,6 +1145,21 @@ export default function App() {
     setUserPlan(state.userPlan || "free");
     setPremiumExpiresAt(state.premiumExpiresAt || null);
     setUserMode(state.userMode || null);
+    setAppointments(state.appointments || []);
+    setWeekMenu(state.weekMenu || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
+    setHomeRoutines(state.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
+    setKidsSchedule(() => {
+      const raw = state.kidsSchedule || {};
+      const out = {};
+      ["L","M","X","J","V","S","D"].forEach(d => {
+        const v = raw[d];
+        out[d] = (v && typeof v === "object" && "act" in v) ? v : { act: (typeof v === "string" ? v : ""), time: "" };
+      });
+      return out;
+    });
+    setQuickNotes(state.quickNotes || []);
+    if (state.reminderTime) setReminderTime(state.reminderTime);
+    if (state.reminderEnabled !== undefined) setReminderEnabled(state.reminderEnabled);
   };
 
   useEffect(() => {
@@ -3064,6 +3079,33 @@ export default function App() {
       </section>
     );
   }
+  // Defined at App scope so both renderHome and the calendar overlay can call it
+  const expandAppts = (list, limitDays = 90) => {
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    const result = [];
+    const tEnd = new Date(t0.getTime() + limitDays * 86400000);
+    for (const appt of list) {
+      if (!appt.recurrence || appt.recurrence === "none") { result.push(appt); continue; }
+      let curr = new Date(appt.date + "T00:00:00");
+      while (curr < t0) {
+        if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
+        else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
+        else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
+        else { curr = new Date(tEnd.getTime() + 1); break; }
+      }
+      let count = 0;
+      while (curr <= tEnd && count < 15) {
+        result.push({ ...appt, date: curr.toISOString().slice(0,10), _origId: appt.id });
+        count++;
+        if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
+        else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
+        else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
+        else break;
+      }
+    }
+    return result;
+  };
+
   function renderHome() {
     const homeProgress    = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
     const mentalLoad      = homeTasks.filter(t => !t.done).length;
@@ -3078,31 +3120,6 @@ export default function App() {
     const RECURRENCE_LABELS = { "none":"No se repite","weekly":"Cada semana","monthly":"Cada mes","yearly":"Cada año" };
     const daysLabel       = d => d === 0 ? "Hoy" : d === 1 ? "Mañana" : `En ${d}d`;
     const daysColor       = d => d === 0 ? "#C4526A" : d <= 3 ? "#e87b1e" : "#1D9E75";
-
-    const expandAppts = (list, limitDays = 90) => {
-      const result = [];
-      const tEnd = new Date(today0.getTime() + limitDays * 86400000);
-      for (const appt of list) {
-        if (!appt.recurrence || appt.recurrence === "none") { result.push(appt); continue; }
-        let curr = new Date(appt.date + "T00:00:00");
-        while (curr < today0) {
-          if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
-          else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
-          else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
-          else { curr = new Date(tEnd.getTime() + 1); break; }
-        }
-        let count = 0;
-        while (curr <= tEnd && count < 15) {
-          result.push({ ...appt, date: curr.toISOString().slice(0,10), _origId: appt.id });
-          count++;
-          if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
-          else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
-          else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
-          else break;
-        }
-      }
-      return result;
-    };
 
     // For the list view: each recurring event shows only its NEXT occurrence
     const listAppts = (() => {
