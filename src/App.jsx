@@ -1271,6 +1271,32 @@ export default function App() {
     }
   }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled]);
 
+  const expandAppts = (list, limitDays = 90) => {
+    const t0 = new Date(); t0.setHours(0, 0, 0, 0);
+    const result = [];
+    const tEnd = new Date(t0.getTime() + limitDays * 86400000);
+    for (const appt of list) {
+      if (!appt.recurrence || appt.recurrence === "none") { result.push(appt); continue; }
+      let curr = new Date(appt.date + "T00:00:00");
+      while (curr < t0) {
+        if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
+        else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
+        else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
+        else { curr = new Date(tEnd.getTime() + 1); break; }
+      }
+      let count = 0;
+      while (curr <= tEnd && count < 15) {
+        result.push({ ...appt, date: curr.toISOString().slice(0,10), _origId: appt.id });
+        count++;
+        if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
+        else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
+        else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
+        else break;
+      }
+    }
+    return result;
+  };
+
   const addMovement = (event) => {
     event.preventDefault();
     const amount = Number(form.amount);
@@ -3079,33 +3105,6 @@ export default function App() {
       </section>
     );
   }
-  // Defined at App scope so both renderHome and the calendar overlay can call it
-  const expandAppts = (list, limitDays = 90) => {
-    const t0 = new Date(); t0.setHours(0, 0, 0, 0);
-    const result = [];
-    const tEnd = new Date(t0.getTime() + limitDays * 86400000);
-    for (const appt of list) {
-      if (!appt.recurrence || appt.recurrence === "none") { result.push(appt); continue; }
-      let curr = new Date(appt.date + "T00:00:00");
-      while (curr < t0) {
-        if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
-        else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
-        else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
-        else { curr = new Date(tEnd.getTime() + 1); break; }
-      }
-      let count = 0;
-      while (curr <= tEnd && count < 15) {
-        result.push({ ...appt, date: curr.toISOString().slice(0,10), _origId: appt.id });
-        count++;
-        if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
-        else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
-        else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
-        else break;
-      }
-    }
-    return result;
-  };
-
   function renderHome() {
     const homeProgress    = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
     const mentalLoad      = homeTasks.filter(t => !t.done).length;
