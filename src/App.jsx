@@ -434,7 +434,7 @@ const API_URL      = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/def
 const GEMINI_URL   = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-gemini";
 const PAYMENTS_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-payments";
 
-const PAYPAL_CLIENT_ID = "AcKqAXZyBM9MyzxGBhrjhoP8wPC3t_L1r5A7ZJF8LgomRPDj6bTs3r9_avBYby4L0zomkB0bMNkYLcTO";
+const PAYPAL_CLIENT_ID = "AeS56ptU569VQKMGhVeWn1cYsDYTFlq0oxmRPmzcle0g1jxhBjcu4uo29AQofLNHhkzrwRxKYm4tKchS";
 const PAYPAL_PLAN_IDS  = {
   mama:         "P-1JS89076U5207463PNITBXNI",
   emprendedora: "P-4BJ96851N4568881DNITBYZY",
