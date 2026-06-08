@@ -2239,7 +2239,7 @@ export default function App() {
               {/* Panel — abre hacia arriba */}
               {pomodoroOpen && (
                 <div className={`pomo-panel${pomodoroRunning && pomodoroMode === "work" ? " pomo-panel--focus" : pomodoroMode === "break" ? " pomo-panel--break" : ""}`}
-                  style={{ bottom: _hasFree ? "136px" : "84px" }}>
+                  style={{ bottom: "136px" }}>
                   <div className="pomo-panel-head">
                     <span className="pomo-label">{pomodoroMode === "break" ? "Descanso" : "Temporizador de foco"}</span>
                     <button className="pomo-tog" onClick={() => setPomodoroOpen(false)}>&#x00D7;</button>
@@ -2294,7 +2294,7 @@ export default function App() {
               {/* FAB icono */}
               <button
                 className={`pomo-fab${pomodoroRunning ? " pomo-fab--active" : ""}${pomodoroOpen ? " pomo-fab--open" : ""}`}
-                style={{ bottom: _hasFree ? "84px" : "28px" }}
+                style={{ bottom: "84px" }}
                 onClick={() => setPomodoroOpen(v => !v)}
                 title="Temporizador de foco"
               >
@@ -2312,9 +2312,13 @@ export default function App() {
           📅
         </button>
 
-        {effectivePlan === "free" && (
-          <button className="upgrade-fab" onClick={() => setActiveView("pricing")}>⭐ Upgrade</button>
-        )}
+        <button
+          className="upgrade-fab"
+          onClick={() => setActiveView("pricing")}
+          style={effectivePlan !== "free" ? { background: "var(--green)", fontSize: "12px" } : {}}
+        >
+          {effectivePlan === "free" ? "⭐ Upgrade" : "👑 Mi Plan"}
+        </button>
 
         {/* Calendar overlay */}
         {showCalendar && (() => {
