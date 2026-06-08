@@ -3979,18 +3979,92 @@ export default function App() {
 
     /* ── BIENVENIDA ── */
     if (checkInStep === 0) {
+      // Streak: días consecutivos anteriores a hoy con check-in
+      const streak = (() => {
+        let count = 0;
+        const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - 1);
+        while (history.find(c => c.date === d.toISOString().slice(0,10))) {
+          count++;
+          d.setDate(d.getDate() - 1);
+        }
+        return count;
+      })();
+      const lastEntry = [...history].filter(c => c.date !== todayStr).sort((a,b) => b.date.localeCompare(a.date))[0];
+
       return (
         <section className="panel workspace-panel">
           {header}
           <div style={wrap}>
-            <div style={{ textAlign: "center", padding: "20px 0 8px" }}>
-              <span style={{ fontSize: "46px" }}>🌸</span>
-              <h3 style={{ margin: "14px 0 6px", fontSize: "21px", color: "var(--ink)", fontWeight: 800 }}>¿Lista para tu check-in de hoy?</h3>
-              <p style={{ margin: "0 0 26px", color: "var(--muted)", fontSize: "14px", lineHeight: 1.6 }}>5 preguntas. 3 minutos. Solo para ti.</p>
-              <button onClick={() => goNext(1)} style={{ padding: "14px 48px", background: "#C4526A", color: "#fff", border: "none", borderRadius: "12px", cursor: "pointer", fontFamily: "inherit", fontSize: "16px", fontWeight: 700 }}>
-                Empezar
+
+            {/* Racha */}
+            {streak > 0 && (
+              <div style={{ display:"flex", alignItems:"center", gap:"14px", background:"#FFFBEB", border:"1px solid rgba(202,138,4,0.25)", borderRadius:"16px", padding:"14px 18px", marginBottom:"16px" }}>
+                <span style={{ fontSize:"32px", lineHeight:1 }}>🔥</span>
+                <div>
+                  <p style={{ margin:"0 0 2px", fontSize:"18px", fontWeight:800, color:"#92400e" }}>{streak} {streak===1?"día":"días"} seguidos</p>
+                  <p style={{ margin:0, fontSize:"13px", color:"#b45309" }}>Haz el de hoy y la racha llega a {streak+1}</p>
+                </div>
+              </div>
+            )}
+
+            {/* Último check-in */}
+            {lastEntry && (
+              <div style={{ background:"#fff", border:"1px solid var(--line)", borderRadius:"16px", padding:"16px 18px", marginBottom:"20px" }}>
+                <p style={{ margin:"0 0 10px", fontSize:"11px", fontWeight:700, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px" }}>
+                  Último check-in · {new Date(lastEntry.date+"T00:00:00").toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"short"})}
+                </p>
+                {lastEntry.dia && (
+                  <p style={{ margin:"0 0 12px", fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{lastEntry.dia}</p>
+                )}
+                <div style={{ display:"flex", gap:"10px" }}>
+                  {[["😊","Emocional","#D4537E",lastEntry.emocional||5],["🤝","Social","#1D9E75",lastEntry.social||5],["⚡","Proyectos","#7F77DD",lastEntry.proyectos||5]].map(([emoji,label,color,val]) => (
+                    <div key={label} style={{ flex:1 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
+                        <span style={{ fontSize:"11px", color:"var(--muted)" }}>{emoji} {label}</span>
+                        <span style={{ fontSize:"11px", fontWeight:700, color }}>{val}/10</span>
+                      </div>
+                      <div style={{ height:"5px", background:"var(--line)", borderRadius:"3px", overflow:"hidden" }}>
+                        <div style={{ height:"100%", width:`${val*10}%`, background:color, borderRadius:"3px" }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* CTA */}
+            <div style={{ textAlign:"center", padding:"4px 0 20px" }}>
+              {!lastEntry && <span style={{ fontSize:"44px", display:"block", marginBottom:"12px" }}>🌸</span>}
+              <h3 style={{ margin:"0 0 6px", fontSize:"21px", color:"var(--ink)", fontWeight:800 }}>
+                {streak > 0 ? `¡Vas por el día ${streak+1}!` : "¿Lista para tu check-in de hoy?"}
+              </h3>
+              <p style={{ margin:"0 0 22px", color:"var(--muted)", fontSize:"14px", lineHeight:1.6 }}>5 preguntas · 3 minutos · Solo para ti</p>
+              <button onClick={() => goNext(1)} style={{ padding:"14px 48px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"12px", cursor:"pointer", fontFamily:"inherit", fontSize:"16px", fontWeight:700 }}>
+                Empezar ✨
               </button>
             </div>
+
+            {/* Puntos de la semana */}
+            <div style={{ display:"flex", gap:"8px", justifyContent:"center", alignItems:"flex-end", paddingTop:"4px" }}>
+              {Array.from({length:7}).map((_,i) => {
+                const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - (6-i));
+                const ds = d.toISOString().slice(0,10);
+                const done = !!history.find(c => c.date === ds);
+                const isT = ds === todayStr;
+                return (
+                  <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"5px" }}>
+                    <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:done?"#C4526A":"var(--line)", border:isT&&!done?"2px solid #C4526A":"none", display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.2s" }}>
+                      {done && <span style={{ color:"#fff", fontSize:"13px", fontWeight:700 }}>✓</span>}
+                      {isT && !done && <span style={{ width:"8px", height:"8px", borderRadius:"50%", background:"#C4526A", display:"block" }} />}
+                    </div>
+                    <span style={{ fontSize:"10px", color:isT?"#C4526A":"var(--muted)", fontWeight:isT?700:400 }}>
+                      {d.toLocaleDateString("es-CO",{weekday:"short"}).slice(0,2).toUpperCase()}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+
           </div>
         </section>
       );
