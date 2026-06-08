@@ -15,9 +15,9 @@ const PLAN_LIMITS = {
 };
 
 const PLAN_PRICES = {
-  mama:         { cop: "$39.900", usd: "$9.99",  copYear: "$399.000", usdYear: "$99"  },
-  emprendedora: { cop: "$79.900", usd: "$19.99", copYear: "$799.000", usdYear: "$199" },
-  ceo:          { cop: "$119.900",usd: "$29.99", copYear: "$1.199.000",usdYear: "$299" }
+  mama:         { cop: "$19.900", usd: "~$5.5",  copYear: "$199.000", usdYear: "$55"  },
+  emprendedora: { cop: "$39.900", usd: "~$11",   copYear: "$399.000", usdYear: "$110" },
+  ceo:          { cop: "$64.900", usd: "~$18",   copYear: "$649.000", usdYear: "$180" }
 };
 
 const POMODORO_MESSAGES = [
@@ -4860,21 +4860,21 @@ export default function App() {
 
   function renderPricing() {
     const plans = [
-      { id: "mama", name: "🌸 Mamá", price: PLAN_PRICES.mama.usd, period: "/mes USD",
-        priceCop: PLAN_PRICES.mama.cop+" COP/mes", priceYear: PLAN_PRICES.mama.usdYear+" USD/año (2 meses gratis)",
+      { id: "mama", name: "🌸 Mamá", price: PLAN_PRICES.mama.cop, period: " COP/mes",
+        priceUsd: PLAN_PRICES.mama.usd+" USD/mes", priceYear: PLAN_PRICES.mama.copYear+" COP/año (2 meses gratis)",
         color: "var(--pink)",
         desc: "Para la mamá que quiere organizarse y tener más tiempo para sí misma.",
-        features: ["Mi Hogar completo — tareas, mercado, rutinas","Mi Propósito — bienestar y presencia","Presupuesto familiar","Check-in diario","Acceso sin límites a las funciones del hogar"] },
-      { id: "emprendedora", name: "💼 Emprendedora", price: PLAN_PRICES.emprendedora.usd, period: "/mes USD",
-        priceCop: PLAN_PRICES.emprendedora.cop+" COP/mes", priceYear: PLAN_PRICES.emprendedora.usdYear+" USD/año (2 meses gratis)",
+        features: ["✓ Mi Hogar — tareas, mercado, rutinas","✓ Mi Propósito — bienestar y presencia","✓ Presupuesto familiar","✓ Check-in diario de bienestar","✓ Calendario MamaCEO","✓ Recordatorios y rutinas"] },
+      { id: "emprendedora", name: "💼 Emprendedora", price: PLAN_PRICES.emprendedora.cop, period: " COP/mes",
+        priceUsd: PLAN_PRICES.emprendedora.usd+" USD/mes", priceYear: PLAN_PRICES.emprendedora.copYear+" COP/año (2 meses gratis)",
         color: "var(--purple)",
         desc: "Para la mamá que tiene un negocio o quiere emprender.",
-        features: ["Todo el plan Mamá incluido","Mi Negocio y Mis Clientas","Studio de contenido (60 generaciones/mes)","Mi Contenido — planificador","Reporte semanal","Soporte email 48h"] },
-      { id: "ceo", name: "👑 CEO", price: PLAN_PRICES.ceo.usd, period: "/mes USD",
-        priceCop: PLAN_PRICES.ceo.cop+" COP/mes", priceYear: PLAN_PRICES.ceo.usdYear+" USD/año (2 meses gratis)",
+        features: ["✓ Todo el plan Mamá incluido","✓ Mi Negocio — ingresos, gastos y metas","✓ Mis Clientas — CRM básico","✓ Mi Contenido — planificador","✓ Studio IA (60 generaciones/mes)","✓ Soporte por email 48h"] },
+      { id: "ceo", name: "👑 CEO — Todo incluido", price: PLAN_PRICES.ceo.cop, period: " COP/mes",
+        priceUsd: PLAN_PRICES.ceo.usd+" USD/mes", priceYear: PLAN_PRICES.ceo.copYear+" COP/año (2 meses gratis)",
         badge: "RECOMENDADO", color: "var(--gold,#c9a96e)",
         desc: "Para la mamá que quiere el hogar organizado Y escalar su negocio.",
-        features: ["Todo ilimitado — hogar y negocio","Studio con 200 generaciones/mes","Exportar Excel y PDF","Proyección de ingresos","Pomodoro flotante","Soporte prioritario 24h","Acceso anticipado a nuevas funciones"] },
+        features: ["✓ TODO ilimitado — hogar y negocio","✓ Studio IA (200 generaciones/mes)","✓ Exportar Excel y PDF","✓ Proyección de ingresos","✓ Pomodoro y modo enfoque","✓ Soporte prioritario 24h","✓ Acceso anticipado a nuevas funciones"] },
     ];
     return (
       <section className="panel workspace-panel">
@@ -4900,9 +4900,9 @@ export default function App() {
                 <div style={{padding:"24px"}}>
                   <h3 style={{margin:"0 0 4px",fontSize:"20px",color:plan.color}}>{plan.name}</h3>
                   {plan.desc&&<p style={{margin:"0 0 10px",fontSize:"13px",color:"var(--muted)",lineHeight:1.4}}>{plan.desc}</p>}
-                  <div style={{fontSize:"32px",fontWeight:800,color:plan.color,lineHeight:1,marginBottom:"2px"}}>{plan.price}<span style={{fontSize:"14px",fontWeight:400,color:"var(--muted)"}}>{plan.period}</span></div>
-                  {plan.priceCop&&<p style={{margin:"0 0 2px",fontSize:"13px",color:"var(--muted)"}}>{plan.priceCop}</p>}
-                  {plan.priceYear&&<p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>{plan.priceYear}</p>}
+                  <div style={{fontSize:"34px",fontWeight:800,color:plan.color,lineHeight:1,marginBottom:"2px"}}>{plan.price}<span style={{fontSize:"15px",fontWeight:500,color:"var(--muted)"}}>{plan.period}</span></div>
+                  {plan.priceUsd&&<p style={{margin:"0 0 2px",fontSize:"12px",color:"var(--muted)"}}>{plan.priceUsd}</p>}
+                  {plan.priceYear&&<p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>💡 {plan.priceYear}</p>}
                   <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
                     {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>✓</span><span>{f}</span></div>))}
                   </div>

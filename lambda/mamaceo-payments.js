@@ -23,9 +23,9 @@ const TABLE  = process.env.DYNAMODB_TABLE || "mama-ceo-users";
 // Ajusta estos valores antes de activar. MP cobra en tu moneda local.
 // Para Colombia usa COP; para México usa MXN; para Argentina usa ARS.
 const MP_PLAN_PRICES = {
-  mama:         { amount: 29900, currency_id: "COP", reason: "MamaCEO — Plan Mamá" },
-  emprendedora: { amount: 49900, currency_id: "COP", reason: "MamaCEO — Plan Emprendedora" },
-  ceo:          { amount: 79900, currency_id: "COP", reason: "MamaCEO — Plan CEO" },
+  mama:         { amount: 19900, currency_id: "COP", reason: "MamaCEO — Plan Mamá" },
+  emprendedora: { amount: 39900, currency_id: "COP", reason: "MamaCEO — Plan Emprendedora" },
+  ceo:          { amount: 64900, currency_id: "COP", reason: "MamaCEO — Plan CEO" },
 };
 
 // ─── Helpers HTTP ─────────────────────────────────────────────────────────────
