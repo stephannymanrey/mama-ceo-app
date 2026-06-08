@@ -798,9 +798,10 @@ export default function App() {
           onApprove: async (data) => {
             setPaymentProcessing(planId);
             try {
-              const headers = await getRemoteAuthHeaders(true);
               const res  = await fetch(PAYMENTS_URL, {
-                method: "POST", headers,
+                method: "POST",
+                mode: "cors",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ action: "verify-paypal", subscriptionId: data.subscriptionID, planType: planId })
               });
               const json = await res.json();
@@ -835,20 +836,21 @@ export default function App() {
     if (!user) { setPaymentMessage({ type: "error", text: "Debes iniciar sesión para suscribirte." }); return; }
     setPaymentProcessing(`mp-${planId}`);
     try {
-      const headers = await getRemoteAuthHeaders(true);
-      const res  = await fetch(PAYMENTS_URL, {
-        method: "POST", headers,
+      const res = await fetch(PAYMENTS_URL, {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "create-mp-subscription", planType: planId, userEmail: user.email || profileSetup?.email || "" })
       });
       const json = await res.json();
       if (json.init_point) {
         window.location.href = json.init_point;
       } else {
-        setPaymentMessage({ type: "error", text: "Error al conectar con Mercado Pago. Intenta de nuevo." });
+        setPaymentMessage({ type: "error", text: json.error || "Error al conectar con Mercado Pago. Intenta de nuevo." });
         setPaymentProcessing(null);
       }
-    } catch {
-      setPaymentMessage({ type: "error", text: "Error de conexión. Intenta de nuevo." });
+    } catch (err) {
+      setPaymentMessage({ type: "error", text: `Error: ${err.message || "No se pudo conectar con el servidor de pagos."}` });
       setPaymentProcessing(null);
     }
   };
