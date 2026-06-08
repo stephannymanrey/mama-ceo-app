@@ -430,8 +430,17 @@ function createBlankUserState(currency = "USD") {
   };
 }
 
-const API_URL     = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-user-data";
-const GEMINI_URL  = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-gemini";
+const API_URL      = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-user-data";
+const GEMINI_URL   = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-gemini";
+const PAYMENTS_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-payments";
+
+const PAYPAL_CLIENT_ID = "AcKqAXZyBM9MyzxGBhrjhoP8wPC3t_L1r5A7ZJF8LgomRPDj6bTs3r9_avBYby4L0zomkB0bMNkYLcTO";
+const PAYPAL_PLAN_IDS  = {
+  mama:         "P-1JS89076U5207463PNITBXNI",
+  emprendedora: "P-4BJ96851N4568881DNITBYZY",
+  ceo:          "P-4FG244764W7235101NITBZ6Y",
+};
+const MP_PUBLIC_KEY = "APP_USR-e76c6b9b-9905-4a1a-b946-9f66e40c6e8e";
 
 async function getRemoteAuthHeaders(includeJson = false) {
   const token = await getAwsAuthToken();
@@ -480,6 +489,8 @@ export default function App() {
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [installBannerDismissed, setInstallBannerDismissed] = useState(() => !!localStorage.getItem("installDismissed"));
   const [localWarnDismissed, setLocalWarnDismissed] = useState(() => !!localStorage.getItem("localWarnDismissed"));
+  const [paymentProcessing, setPaymentProcessing] = useState(null);
+  const [paymentMessage, setPaymentMessage] = useState(null);
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
 
@@ -752,6 +763,95 @@ export default function App() {
     }, ms);
     return () => clearTimeout(timer);
   }, [checkInReminderEnabled, checkInReminderTime]);
+
+  // Detectar redirect de Mercado Pago después de que usuaria aprueba suscripción
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const mpResult = params.get("mp_result");
+    const mpPlan   = params.get("mp_plan");
+    if (mpResult === "approved" && mpPlan) {
+      setUserPlan(mpPlan);
+      setPremiumExpiresAt(Date.now() + 31 * 24 * 60 * 60 * 1000);
+      setPaymentMessage({ type: "success", text: `¡Suscripción activada! Bienvenida al plan ${mpPlan === "mama" ? "Mamá" : mpPlan === "emprendedora" ? "Emprendedora" : "CEO"}. 🎉` });
+      setActiveView("pricing");
+      window.history.replaceState({}, "", "/");
+    }
+    if (mpResult === "failure" || mpResult === "pending") {
+      setPaymentMessage({ type: "error", text: "El pago no se completó. Puedes intentarlo de nuevo cuando quieras." });
+      setActiveView("pricing");
+      window.history.replaceState({}, "", "/");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Renderizar botones PayPal cuando la usuaria está en la página de precios
+  useEffect(() => {
+    if (activeView !== "pricing") return;
+    const loadAndRender = () => {
+      if (!window.paypal) return;
+      ["mama", "emprendedora", "ceo"].forEach(planId => {
+        const el = document.getElementById(`paypal-btn-${planId}`);
+        if (!el || el.children.length > 0) return;
+        window.paypal.Buttons({
+          style: { shape: "rect", color: "gold", layout: "vertical", label: "subscribe", height: 40 },
+          createSubscription: (_data, actions) => actions.subscription.create({ plan_id: PAYPAL_PLAN_IDS[planId] }),
+          onApprove: async (data) => {
+            setPaymentProcessing(planId);
+            try {
+              const headers = await getRemoteAuthHeaders(true);
+              const res  = await fetch(`${PAYMENTS_URL}/verify-paypal`, {
+                method: "POST", headers,
+                body: JSON.stringify({ subscriptionId: data.subscriptionID, planType: planId })
+              });
+              const json = await res.json();
+              if (json.success) {
+                setUserPlan(planId);
+                setPremiumExpiresAt(json.premiumExpiresAt);
+                setPaymentMessage({ type: "success", text: `¡Suscripción con PayPal activada! Bienvenida al plan ${planId === "mama" ? "Mamá" : planId === "emprendedora" ? "Emprendedora" : "CEO"}. 🎉` });
+              } else {
+                setPaymentMessage({ type: "error", text: "No pudimos confirmar tu pago. Escríbenos a soporte." });
+              }
+            } catch {
+              setPaymentMessage({ type: "error", text: "Error de conexión. Intenta de nuevo." });
+            }
+            setPaymentProcessing(null);
+          },
+          onError: () => setPaymentMessage({ type: "error", text: "Ocurrió un error con PayPal. Intenta de nuevo." })
+        }).render(`#paypal-btn-${planId}`);
+      });
+    };
+
+    if (window.paypal) {
+      loadAndRender();
+    } else {
+      const script = document.createElement("script");
+      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&vault=true&intent=subscription&currency=USD`;
+      script.onload = loadAndRender;
+      document.body.appendChild(script);
+    }
+  }, [activeView]);
+
+  const startMPSubscription = async (planId) => {
+    if (!user) { setPaymentMessage({ type: "error", text: "Debes iniciar sesión para suscribirte." }); return; }
+    setPaymentProcessing(`mp-${planId}`);
+    try {
+      const headers = await getRemoteAuthHeaders(true);
+      const res  = await fetch(`${PAYMENTS_URL}/create-mp-subscription`, {
+        method: "POST", headers,
+        body: JSON.stringify({ planType: planId, userEmail: user.email || profileSetup?.email || "" })
+      });
+      const json = await res.json();
+      if (json.init_point) {
+        window.location.href = json.init_point;
+      } else {
+        setPaymentMessage({ type: "error", text: "Error al conectar con Mercado Pago. Intenta de nuevo." });
+        setPaymentProcessing(null);
+      }
+    } catch {
+      setPaymentMessage({ type: "error", text: "Error de conexión. Intenta de nuevo." });
+      setPaymentProcessing(null);
+    }
+  };
 
   const BETA_CODE_HASH   = "1df2627e3ac0f8268c070acdbf13b0d354f16f2c38bf873dee2d54b86af13440";
   const BETA_CODE_EXPIRY = new Date("2026-12-31T23:59:59").getTime();
@@ -4779,9 +4879,20 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="section-title"><h2>Planes y Precios</h2><p>14 días de prueba gratis con acceso completo — elige tu plan cuando estés lista</p></div>
+
+        {/* Mensaje de resultado de pago */}
+        {paymentMessage&&(
+          <div style={{maxWidth:"1000px",margin:"0 auto 20px",padding:"14px 20px",borderRadius:"12px",background:paymentMessage.type==="success"?"#ecfdf5":"#fef2f2",border:`1px solid ${paymentMessage.type==="success"?"#86efac":"#fca5a5"}`,color:paymentMessage.type==="success"?"#166534":"#991b1b",fontSize:"15px",fontWeight:600,display:"flex",alignItems:"center",gap:"12px"}}>
+            <span style={{fontSize:"22px"}}>{paymentMessage.type==="success"?"✅":"❌"}</span>
+            <span style={{flex:1}}>{paymentMessage.text}</span>
+            <button onClick={()=>setPaymentMessage(null)} style={{border:"none",background:"none",fontSize:"20px",cursor:"pointer",color:"inherit",opacity:0.6,lineHeight:1,padding:"2px"}}>×</button>
+          </div>
+        )}
+
         <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"20px",maxWidth:"1000px",margin:"0 auto"}}>
           {plans.map((plan) => {
             const isCurrent = effectivePlan===plan.id||(plan.id==="ceo"&&effectivePlan==="premium")||(plan.id==="mama"&&userMode==="mama"&&effectivePlan==="emprendedora");
+            const mpLoading = paymentProcessing===`mp-${plan.id}`;
             return (
               <div key={plan.id} className="card" style={{border:`2px solid ${isCurrent||plan.id==="ceo"?plan.color:"var(--line)"}`,background:plan.id==="ceo"?"linear-gradient(135deg,rgba(212,104,122,0.05),rgba(201,169,110,0.05))":"#fff",position:"relative"}}>
                 {isCurrent&&<div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:plan.color,color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:800}}>PLAN ACTUAL</div>}
@@ -4793,14 +4904,33 @@ export default function App() {
                   {plan.priceCop&&<p style={{margin:"0 0 2px",fontSize:"13px",color:"var(--muted)"}}>{plan.priceCop}</p>}
                   {plan.priceYear&&<p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>{plan.priceYear}</p>}
                   <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
-                    {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>?</span><span>{f}</span></div>))}
+                    {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>✓</span><span>{f}</span></div>))}
                   </div>
+
                   {isCurrent?(
-                    <div style={{padding:"10px",background:"rgba(0,0,0,0.05)",borderRadius:"8px",textAlign:"center",color:plan.color,fontWeight:700,fontSize:"14px"}}>Plan actual</div>
-                  ):plan.id==="free"?(
-                    <button className="primary-button" onClick={()=>setUserPlan("free")} style={{width:"100%",background:"var(--muted)"}}>Cambiar a gratis</button>
+                    <div style={{padding:"10px",background:"rgba(0,0,0,0.05)",borderRadius:"8px",textAlign:"center",color:plan.color,fontWeight:700,fontSize:"14px"}}>Plan actual ✓</div>
                   ):(
-                    <button className="primary-button" style={{width:"100%",background:plan.color,fontSize:"15px",opacity:0.7,cursor:"not-allowed"}} disabled>Próximamente</button>
+                    <div style={{display:"grid",gap:"10px"}}>
+                      {/* Botón Mercado Pago */}
+                      <button
+                        onClick={()=>startMPSubscription(plan.id)}
+                        disabled={!!paymentProcessing}
+                        style={{width:"100%",padding:"11px 0",borderRadius:"10px",border:"none",background:mpLoading?"#ccc":"#009ee3",color:"#fff",fontWeight:700,fontSize:"14px",cursor:mpLoading?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",transition:"opacity 0.2s"}}
+                      >
+                        {mpLoading?<span style={{fontSize:"18px",animation:"spin 1s linear infinite",display:"inline-block"}}>⏳</span>:<span style={{fontSize:"17px"}}>💳</span>}
+                        {mpLoading?"Redirigiendo...":"Pagar con Mercado Pago"}
+                      </button>
+
+                      {/* Separador */}
+                      <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                        <div style={{flex:1,height:"1px",background:"var(--line)"}}></div>
+                        <span style={{fontSize:"12px",color:"var(--muted)"}}>o</span>
+                        <div style={{flex:1,height:"1px",background:"var(--line)"}}></div>
+                      </div>
+
+                      {/* Botón PayPal (se renderiza dinámicamente) */}
+                      <div id={`paypal-btn-${plan.id}`} style={{minHeight:"44px"}}></div>
+                    </div>
                   )}
                 </div>
               </div>
