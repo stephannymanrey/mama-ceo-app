@@ -189,10 +189,9 @@ const ALL_MENU_ITEMS = [
   { id: "clients",   label: "Mis Clientas",     icon: "👩‍💼" },
   { id: "studio",    label: "Studio ✦",          icon: "🎬" },
   { id: "content",   label: "Mi Contenido",     icon: "📱" },
-  { id: "report",    label: "Reporte Semanal",  icon: "📊" },
 ];
 const MENU_MAMA        = ["dashboard", "home", "ceo"];
-const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio", "content", "report"];
+const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio", "content"];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 function getWeekDays() {
@@ -589,6 +588,7 @@ export default function App() {
   const [quickNoteInput, setQuickNoteInput] = useState("");
   const [groceryForm, setGroceryForm] = useState("");
   const [reportWeekOffset, setReportWeekOffset] = useState(0);
+  const [businessTab, setBusinessTab] = useState(0);
   const [userPlan, setUserPlan] = useState(stored?.userPlan || "free");
   const [premiumExpiresAt, setPremiumExpiresAt] = useState(stored?.premiumExpiresAt || null);
   const [userMode, setUserMode] = useState(stored?.userMode || null);
@@ -2095,7 +2095,7 @@ export default function App() {
         {activeView === "content" && renderContent()}
         {activeView === "home" && renderHome()}
         {activeView === "ceo" && renderCeo()}
-        {activeView === "report" && renderWeeklyReport()}
+        {/* report tab merged into business */}
         {activeView === "pricing" && renderPricing()}
         {activeView === "terminos" && renderTerminos()}
         {activeView === "privacidad" && renderPrivacidad()}
@@ -2515,241 +2515,277 @@ export default function App() {
   }
 
   function renderBusiness() {
-    const healthScore = totals.profit >= 0 && monthlyProgress >= 75 ? "green"
-      : totals.profit >= 0 || monthlyProgress >= 50 ? "orange" : "red";
-    const healthLabel = healthScore === "green" ? "Negocio saludable"
-      : healthScore === "orange" ? "Atencion requerida" : "Alerta financiera";
-    const healthMsg = healthScore === "green"
-      ? "Tus ingresos superan tus gastos y vas bien hacia tu meta."
-      : healthScore === "orange"
-        ? "Hay margen pero necesitas acelerar ventas o reducir gastos."
-        : "Tus gastos superan tus ingresos. Prioriza cobros y reduce gastos no esenciales hoy.";
-    const incomeBySource = incomeSources.map((src) => {
-      const actual = movements.filter((m) => m.type === "income" && m.classification === src.name).reduce((sum, m) => sum + m.amount, 0);
-      const progress = src.monthlyGoal > 0 ? Math.min(Math.round((actual / src.monthlyGoal) * 100), 100) : 0;
-      const feeEstimated = calcFee(src.monthlyGoal, src.platform);
-      const netEstimated = src.monthlyGoal - feeEstimated;
-      return { ...src, actual, progress, feeEstimated, netEstimated };
-    });
-    const fixedExpensesTotal = movements.filter((m) => m.type === "expense" && m.classification === "Gasto fijo").reduce((sum, m) => sum + m.amount, 0);
-    const cashFlow = totals.income - fixedExpensesTotal;
-    const cashFlowScore = cashFlow > 0 ? "green" : "red";
-    const latestMovement = sortedMovements[0];
-    const businessMovementsThisWeek = sortedMovements.filter((movement) => isDateThisWeek(movement.date || movement.createdAt, currentWeekRange));
     const brandComplete = !!(brandProfile.queOfreces && brandProfile.transformacion);
+
+    // Salud del mes
+    const healthColor = totals.profit >= 0 && monthlyProgress >= 75 ? "#1D9E75"
+      : totals.profit >= 0 || monthlyProgress >= 50 ? "#e87b1e" : "#C4526A";
+    const healthLabel = totals.profit >= 0 && monthlyProgress >= 75 ? "Negocio saludable 💚"
+      : totals.profit >= 0 || monthlyProgress >= 50 ? "Atención requerida ⚠️" : "Alerta financiera 🚨";
+
+    // Semana actual vs anterior
+    const weekBounds = (offset) => {
+      const now = new Date();
+      const day = now.getDay();
+      const mon = new Date(now); mon.setDate(now.getDate() - (day === 0 ? 6 : day - 1) + offset * 7); mon.setHours(0,0,0,0);
+      const sun = new Date(mon); sun.setDate(mon.getDate() + 6); sun.setHours(23,59,59,999);
+      return { start: mon.getTime(), end: sun.getTime() };
+    };
+    const thisWeek = weekBounds(0);
+    const lastWeek = weekBounds(-1);
+    const inWeek = (m, w) => { const ts = timestampFromInputDate(m.date || m.createdAt); return ts >= w.start && ts <= w.end; };
+    const twMovs = sortedMovements.filter(m => inWeek(m, thisWeek));
+    const lwMovs = sortedMovements.filter(m => inWeek(m, lastWeek));
+    const twIncome  = twMovs.filter(m => m.type === "income").reduce((s,m) => s + m.amount, 0);
+    const lwIncome  = lwMovs.filter(m => m.type === "income").reduce((s,m) => s + m.amount, 0);
+    const twChange  = lwIncome > 0 ? Math.round(((twIncome - lwIncome) / lwIncome) * 100) : null;
+    const twWon     = clients.filter(c => c.status === "Venta ganada" && inWeek({date: c.updatedAt || c.lastContact || c.createdAt}, thisWeek)).length;
+    const twContacts = Object.values(contactLog).filter(e => { const ts = timestampFromInputDate(e.date); return ts >= thisWeek.start && ts <= thisWeek.end; }).length;
+
+    // Alertas urgentes
+    const alerts = [];
+    if (twIncome < weeklyGoal * 0.5) alerts.push({ tone: "red",    msg: `Ingresos de la semana por debajo del 50% de tu meta (${money.format(twIncome)} de ${money.format(weeklyGoal)})` });
+    if (twContacts < 3)              alerts.push({ tone: "orange", msg: `Solo ${twContacts} contactos esta semana. Apunta a 5+ para mantener el pipeline activo.` });
+    const hotLeads = clients.filter(c => c.status === "Lead caliente").length;
+    if (hotLeads >= 3)               alerts.push({ tone: "green",  msg: `Tienes ${hotLeads} leads calientes. ¡Momento de cerrar ventas!` });
+
+    // Insights automáticos
+    const autoInsights = [];
+    const incomeByDay = {};
+    twMovs.filter(m => m.type === "income").forEach(m => {
+      const d = (parseDateValue(m.date || m.createdAt) || new Date()).toLocaleDateString("es", { weekday: "long" });
+      incomeByDay[d] = (incomeByDay[d] || 0) + m.amount;
+    });
+    const bestDay = Object.entries(incomeByDay).sort((a,b) => b[1]-a[1])[0];
+    if (bestDay) autoInsights.push(`Mejor día esta semana: ${bestDay[0]} con ${money.format(bestDay[1])}.`);
+    const srcCounts = clients.reduce((acc,c) => { const s = c.source||"Sin fuente"; acc[s]=(acc[s]||0)+1; return acc; }, {});
+    const topSrc = Object.entries(srcCounts).sort((a,b)=>b[1]-a[1])[0];
+    if (topSrc) autoInsights.push(`Tu fuente top de clientas: ${topSrc[0]} (${topSrc[1]} ${topSrc[1]===1?"clienta":"clientas"}).`);
+
+    // Fuentes de ingreso simplificadas
+    const incomeBySource = incomeSources.map(src => {
+      const actual = movements.filter(m => m.type==="income" && m.classification===src.name).reduce((s,m)=>s+m.amount,0);
+      const progress = src.monthlyGoal > 0 ? Math.min(Math.round((actual/src.monthlyGoal)*100),100) : 0;
+      return { ...src, actual, progress };
+    });
+
+    // Meta de ventas
+    const salesGoalProgress = salesGoal > 0 ? Math.min(Math.round((wonSalesTotal/salesGoal)*100),100) : 0;
+
+    const inp = { border:"1px solid var(--line)", borderRadius:"8px", padding:"8px 12px", fontSize:"14px", fontFamily:"inherit", outline:"none", background:"#fff", width:"100%" };
+    const TABS_BIZ = ["Esta semana", "Historial"];
+
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Negocio</h2>
-          <p>{profileSetup?.businessName || "Tu negocio"} • {profileSetup?.stage || ""}</p>
+          <h2>Mi Negocio 💼</h2>
+          <p style={{color:healthColor,fontWeight:700}}>{healthLabel}</p>
         </div>
 
-        {/* Perfil de Marca */}
-        <div className="bpcard">
-          <div className="bpcard-header">
-            <div className="bpcard-title-row">
-              <span className="bpcard-star">✦</span>
-              <span className="bpcard-title">Perfil de Marca para el Studio</span>
-              {brandComplete && <span className="bpcard-badge">✓ Activo</span>}
-            </div>
-            <button className="bpcard-toggle-btn" onClick={() => { setEditingBrand((v) => !v); setBrandForm({ ...brandProfile }); }}>
-              {editingBrand ? "Cancelar" : brandComplete ? "Editar ✏️" : "Completar →"}
-            </button>
-          </div>
-
-          {!editingBrand && brandComplete && (
-            <div className="bpcard-view">
-              <div className="bpcard-field">
-                <span className="bpcard-field-label">💼 Qué ofreces</span>
-                <span className="bpcard-field-val">{brandProfile.queOfreces}</span>
-              </div>
-              <div className="bpcard-field">
-                <span className="bpcard-field-label">👤 Cliente ideal</span>
-                <span className="bpcard-field-val">{brandProfile.clienteIdeal || "—"}</span>
-              </div>
-              <div className="bpcard-field">
-                <span className="bpcard-field-label">✨ Transformación clave</span>
-                <span className="bpcard-field-val">{brandProfile.transformacion}</span>
-              </div>
-              <div className="bpcard-meta-row">
-                <span>🎯 Tono: <b>{brandProfile.tono}</b></span>
-                <span>📱 Red: <b>{brandProfile.redPrincipal}</b></span>
-                {brandProfile.hashtags && <span>🏷️ {brandProfile.hashtags}</span>}
-              </div>
-            </div>
-          )}
-
-          {!editingBrand && !brandComplete && (
-            <p className="bpcard-empty">Completa tu perfil para que el Studio pre-llene automáticamente todos los generadores — guiones, ideas, hooks, emails y más.</p>
-          )}
-
-          {editingBrand && (
-            <form className="bpcard-form" onSubmit={(e) => { e.preventDefault(); setBrandProfile({ ...brandForm }); setEditingBrand(false); }}>
-              <div className="bpcard-form-grid">
-                <div className="bpcard-form-col">
-                  <label className="bpcard-label">¿Qué ofreces? <span className="bpcard-req">*</span></label>
-                  <textarea className="bpcard-textarea" placeholder="Ej: Coaching de maternidad consciente para mamás emprendedoras" value={brandForm.queOfreces} onChange={(e) => setBrandForm((p) => ({ ...p, queOfreces: e.target.value }))} rows={2} required />
-                </div>
-                <div className="bpcard-form-col">
-                  <label className="bpcard-label">¿Quién es tu cliente ideal?</label>
-                  <textarea className="bpcard-textarea" placeholder="Ej: Mamás de 28 a 40 años que quieren crecer en su negocio sin descuidar a su familia" value={brandForm.clienteIdeal} onChange={(e) => setBrandForm((p) => ({ ...p, clienteIdeal: e.target.value }))} rows={2} />
-                </div>
-                <div className="bpcard-form-col bpcard-form-col--full">
-                  <label className="bpcard-label">¿Cuál es tu transformación clave? (lo que logra tu cliente) <span className="bpcard-req">*</span></label>
-                  <textarea className="bpcard-textarea" placeholder="Ej: Pasar de agotada y desbordada a organizada, rentable y presente en su familia" value={brandForm.transformacion} onChange={(e) => setBrandForm((p) => ({ ...p, transformacion: e.target.value }))} rows={2} required />
-                </div>
-                <div className="bpcard-form-col">
-                  <label className="bpcard-label">Tono de comunicación</label>
-                  <select className="bpcard-select" value={brandForm.tono} onChange={(e) => setBrandForm((p) => ({ ...p, tono: e.target.value }))}>
-                    <option>Cercano</option><option>Profesional</option><option>Inspirador</option><option>Directo</option>
-                  </select>
-                </div>
-                <div className="bpcard-form-col">
-                  <label className="bpcard-label">Red social principal</label>
-                  <select className="bpcard-select" value={brandForm.redPrincipal} onChange={(e) => setBrandForm((p) => ({ ...p, redPrincipal: e.target.value }))}>
-                    <option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Spotify</option>
-                  </select>
-                </div>
-                <div className="bpcard-form-col bpcard-form-col--full">
-                  <label className="bpcard-label">Hashtags favoritos (opcional)</label>
-                  <input className="bpcard-input" placeholder="Ej: #mamaceo #emprendedora #maternidadconsciente" value={brandForm.hashtags} onChange={(e) => setBrandForm((p) => ({ ...p, hashtags: e.target.value }))} />
-                </div>
-              </div>
-              <div className="bpcard-form-footer">
-                <button className="primary-button" type="submit">Guardar perfil de marca</button>
-                <button type="button" className="ck-cancel-btn" onClick={() => setEditingBrand(false)}>Cancelar</button>
-              </div>
-            </form>
-          )}
+        {/* Sub-tab nav */}
+        <div style={{display:"flex",gap:"4px",background:"var(--line)",padding:"4px",borderRadius:"12px",marginBottom:"20px"}}>
+          {TABS_BIZ.map((label,i) => (
+            <button key={i} type="button" onClick={() => setBusinessTab(i)} style={{
+              flex:1, padding:"9px 0", borderRadius:"8px", border:"none",
+              background: businessTab===i ? "#fff" : "transparent",
+              cursor:"pointer", fontFamily:"inherit", fontSize:"13px",
+              fontWeight: businessTab===i ? 700 : 400,
+              color: businessTab===i ? "var(--ink)" : "var(--muted)",
+              boxShadow: businessTab===i ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+              transition:"all 0.15s ease",
+            }}>{label}</button>
+          ))}
         </div>
 
-        <div className="business-top-grid">
-          <div className={`health-banner health-${healthScore}`}>
-            <strong>{healthLabel}</strong>
-            <p>{healthMsg}</p>
-            <div className="health-stats">
-              <span>Ingresos: <b>{money.format(totals.income)}</b></span>
-              <span>Gastos: <b>{money.format(totals.expenses)}</b></span>
-              <span>Utilidad: <b>{money.format(totals.profit)}</b></span>
-              <span>Meta: <b>{monthlyProgress}%</b></span>
-            </div>
-          </div>
-          <div className={`cashflow-card cashflow-${cashFlowScore}`}>
-            <div className="cashflow-label">Flujo de caja del mes</div>
-            <div className="cashflow-amount">{money.format(cashFlow)}</div>
-            <div className="cashflow-detail">
-              <span>Ingresos <b>{money.format(totals.income)}</b></span>
-              <span>Gastos fijos <b>{money.format(fixedExpensesTotal)}</b></span>
-            </div>
-            <p className="helper-copy">{cashFlow >= 0 ? "Tienes margen positivo este mes. Cuida los gastos variables." : "Tus gastos fijos superan tus ingresos. Revisa que puedes reducir."}</p>
-          </div>
-        </div>
-
-        <div className="business-movements-grid">
-          <div className="card">{MovementForm()}</div>
-          <div className="card movement-detail-card">
-            <div className="movement-detail-header">
-              <div><h3>Movimientos</h3><p className="helper-copy">Tus ultimos registros.</p></div>
-              <div className="export-buttons">
-                <button type="button" onClick={exportMovementsToExcel}>Excel</button>
-                <button type="button" onClick={exportMovementsToPdf}>PDF</button>
-              </div>
-            </div>
-            {MovementList({ compact: true })}
-          </div>
-        </div>
-
-        <div className="business-sources-grid">
-          <div className="card">
-            <h3>Fuentes de ingreso</h3>
-            <p className="helper-copy">Define tus fuentes, plataforma de cobro y metas mensuales.</p>
-            {incomeBySource.map((src) => {
-              const feeInfo = PLATFORM_FEES[src.platform];
-              return (
-                <div className="source-row" key={src.id} style={{flexWrap:"wrap",gap:"10px"}}>
-                  <div className="source-info" style={{minWidth:"140px"}}>
-                    <strong>{src.name}</strong>
-                    <small>{money.format(src.actual)} de {money.format(src.monthlyGoal)} meta</small>
+        {/* ── ESTA SEMANA ── */}
+        {businessTab === 0 && (
+          <>
+            {/* Alertas */}
+            {alerts.length > 0 && (
+              <div style={{display:"grid",gap:"8px",marginBottom:"16px"}}>
+                {alerts.map((a,i) => (
+                  <div key={i} style={{padding:"12px 16px",borderRadius:"10px",fontSize:"14px",fontWeight:600,
+                    background:a.tone==="red"?"#fdf2f2":a.tone==="orange"?"#fff8f0":"#f0fdf7",
+                    color:a.tone==="red"?"#b91c1c":a.tone==="orange"?"#c2410c":"#065f46",
+                    border:`1px solid ${a.tone==="red"?"rgba(185,28,28,0.2)":a.tone==="orange"?"rgba(194,65,12,0.2)":"rgba(6,95,70,0.2)"}`}}>
+                    {a.msg}
                   </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:"4px",flex:1,minWidth:"160px"}}>
-                    <select value={src.platform || "Transferencia bancaria"}
-                      onChange={(e) => setIncomeSources((c) => c.map((s) => s.id === src.id ? { ...s, platform: e.target.value } : s))}
-                      style={{minHeight:"32px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 8px",font:"inherit",fontSize:"12px",background:"#FAF7F5"}}>
-                      {Object.keys(PLATFORM_FEES).map((k) => <option key={k}>{k}</option>)}
-                    </select>
-                    {feeInfo && feeInfo.pct > 0 && (
-                      <div style={{display:"flex",gap:"12px",fontSize:"12px",flexWrap:"wrap"}}>
-                        <span style={{color:"var(--pink)",fontWeight:700}}>Fee est.: {feeInfo.label} • -{money.format(src.feeEstimated)}</span>
-                        <span style={{color:"var(--green)",fontWeight:700}}>Neto est.: {money.format(src.netEstimated)}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="source-right">
-                    <Progress value={src.progress} tone={src.color} />
-                    <small>{src.progress}%</small>
-                    <input type="number" min="0" value={src.monthlyGoal} onChange={(e) => setIncomeSources((c) => c.map((s) => s.id === src.id ? { ...s, monthlyGoal: Number(e.target.value) } : s))} />
-                    <button type="button" className="row-delete" onClick={() => confirmDelete("Eliminar?", () => setIncomeSources((c) => c.filter((s) => s.id !== src.id)))}>x</button>
+                ))}
+              </div>
+            )}
+
+            {/* 3 números del mes */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px",marginBottom:"16px"}}>
+              {[
+                ["Ingresos del mes", money.format(totals.income), "#1D9E75"],
+                ["Gastos del mes",   money.format(totals.expenses), "#C4526A"],
+                ["Utilidad",         money.format(totals.profit),   totals.profit>=0?"#1D9E75":"#C4526A"],
+              ].map(([label,val,color]) => (
+                <div key={label} style={{background:"#fff",border:"1px solid var(--line)",borderRadius:"14px",padding:"16px",textAlign:"center"}}>
+                  <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}</p>
+                  <p style={{margin:0,fontSize:"20px",fontWeight:800,color}}>{val}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Meta de ventas */}
+            {(salesGoal > 0 || monthlyGoal > 0) && (
+              <div style={{background:"#fff",border:"1px solid var(--line)",borderRadius:"14px",padding:"16px",marginBottom:"16px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px",flexWrap:"wrap",gap:"8px"}}>
+                  <p style={{margin:0,fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>🎯 Meta del mes</p>
+                  <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                    <span style={{fontSize:"12px",color:"var(--muted)"}}>Meta:</span>
+                    <input type="number" min="0" value={salesGoal||""} placeholder={String(monthlyGoal)}
+                      onChange={e=>setSalesGoal(Number(e.target.value))}
+                      style={{...inp,width:"100px",padding:"4px 8px",fontSize:"13px"}} />
                   </div>
                 </div>
-              );
-            })}
-            <form className="source-form" onSubmit={(e) => { e.preventDefault(); if (!incomeSourceForm.name.trim()) return; setIncomeSources((c) => [...c, { id: Date.now(), name: incomeSourceForm.name.trim(), monthlyGoal: Number(incomeSourceForm.monthlyGoal) || 0, color: "purple", platform: "Transferencia bancaria" }]); setIncomeSourceForm({ name: "", monthlyGoal: "" }); }}>
-              <input placeholder="Nombre de la fuente" value={incomeSourceForm.name} onChange={(e) => setIncomeSourceForm((c) => ({ ...c, name: e.target.value }))} />
-              <input type="number" min="0" placeholder="Meta mensual" value={incomeSourceForm.monthlyGoal} onChange={(e) => setIncomeSourceForm((c) => ({ ...c, monthlyGoal: e.target.value }))} />
-              <button className="primary-button" type="submit">Agregar</button>
-            </form>
-
-            {/* Resumen total de fees */}
-            {(() => {
-              const totalFees = incomeSources.reduce((sum, src) => sum + calcFee(src.monthlyGoal, src.platform), 0);
-              const totalNet = incomeSources.reduce((sum, src) => sum + (src.monthlyGoal - calcFee(src.monthlyGoal, src.platform)), 0);
-              if (totalFees === 0) return null;
-              return (
-                <div style={{marginTop:"12px",padding:"12px 14px",background:"var(--pink-soft)",borderRadius:"10px",display:"flex",justifyContent:"space-between",flexWrap:"wrap",gap:"8px"}}>
-                  <div><span style={{fontSize:"12px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Fees estimados (sobre meta)</span><br/><strong style={{color:"var(--pink)",fontSize:"18px"}}>-{money.format(totalFees)}</strong></div>
-                  <div style={{textAlign:"right"}}><span style={{fontSize:"12px",color:"var(--muted)",fontWeight:800,textTransform:"uppercase"}}>Neto estimado</span><br/><strong style={{color:"var(--green)",fontSize:"18px"}}>{money.format(totalNet)}</strong></div>
+                <Progress value={salesGoalProgress} tone="green" />
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:"6px",fontSize:"12px",color:"var(--muted)"}}>
+                  <span>{salesGoalProgress}% completado · {money.format(wonSalesTotal)} cerrados</span>
+                  <span>Faltan {money.format(Math.max(0,(salesGoal||monthlyGoal)-wonSalesTotal))}</span>
                 </div>
-              );
-            })()}
-          </div>
-          <div className="card insight-card">
-            <h3>Lectura CEO</h3>
-            <p className="helper-copy">Analisis inteligente de tu situacion actual.</p>
-            <div className="ceo-reading-meta">
-              <span>{businessMovementsThisWeek.length} movimientos registrados esta semana</span>
-              <strong>{latestMovement ? `Ultimo: ${formatShortDate(latestMovement.date || latestMovement.createdAt)}` : "Sin movimientos aun"}</strong>
+              </div>
+            )}
+
+            {/* Resumen de la semana */}
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px",marginBottom:"16px"}}>
+              {[
+                ["Esta semana", money.format(twIncome), twChange!==null?`${twChange>0?"+":""}${twChange}% vs semana anterior`:null, twChange!==null?(twChange>=0?"#1D9E75":"#C4526A"):null],
+                ["Ventas cerradas", twWon, "esta semana", "#7F77DD"],
+                ["Contactos", twContacts, twContacts>=5?"¡Buen ritmo!":twContacts>=3?"Bien, sigue":"Apunta a 5+", twContacts>=5?"#1D9E75":twContacts>=3?"#e87b1e":"#C4526A"],
+              ].map(([label,val,sub,subColor]) => (
+                <div key={label} style={{background:"#fff",border:"1px solid var(--line)",borderRadius:"14px",padding:"14px",textAlign:"center"}}>
+                  <p style={{margin:"0 0 4px",fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>{label}</p>
+                  <p style={{margin:"0 0 4px",fontSize:"22px",fontWeight:800,color:"var(--ink)"}}>{val}</p>
+                  {sub && <p style={{margin:0,fontSize:"11px",color:subColor||"var(--muted)",fontWeight:600}}>{sub}</p>}
+                </div>
+              ))}
             </div>
-            {insights.map((insight) => <p key={insight} style={{borderLeft:"3px solid var(--pink)",paddingLeft:"12px",margin:"8px 0"}}>{insight}</p>)}
-          </div>
-        </div>
 
-        <div className="business-panel-row">
-          {ReinvestmentCard()}
-          <div>{BanksCard()}</div>
-        </div>
+            {/* Insights */}
+            {autoInsights.length > 0 && (
+              <div style={{background:"#faf7ff",border:"1px solid rgba(127,119,221,0.2)",borderRadius:"12px",padding:"14px 16px",marginBottom:"16px"}}>
+                <p style={{margin:"0 0 8px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.5px",color:"#7F77DD"}}>💡 Insights de la semana</p>
+                {autoInsights.map((t,i)=><p key={i} style={{margin:"4px 0",fontSize:"13px",color:"var(--ink)",lineHeight:1.5}}>• {t}</p>)}
+              </div>
+            )}
 
-        <div className="annual-budget-card card">
-          <div className="budget-head">
-            <div><h3>Presupuesto anual</h3><p>Planifica mes a mes.</p></div>
-            <div className="budget-total"><span>Utilidad anual estimada</span><strong>{money.format(annualProfit)}</strong></div>
-          </div>
-          <div className="budget-table">
-            <div className="budget-row budget-header"><span>Mes</span><span>Ingresos</span><span>Gastos fijos</span><span>Gastos variables</span><span>Fees</span><span>Utilidad</span></div>
-            {annualBudget.map((row) => {
-              const profit = Number(row.income||0)-Number(row.fixedExpenses||0)-Number(row.variableExpenses||0)-Number(row.platformFees||0);
-              return (
-                <div className="budget-row" key={row.month}>
-                  <strong>{row.month}</strong>
-                  <input type="number" min="0" value={row.income} onChange={(e) => updateAnnualBudget(row.month,"income",e.target.value)} />
-                  <input type="number" min="0" value={row.fixedExpenses} onChange={(e) => updateAnnualBudget(row.month,"fixedExpenses",e.target.value)} />
-                  <input type="number" min="0" value={row.variableExpenses} onChange={(e) => updateAnnualBudget(row.month,"variableExpenses",e.target.value)} />
-                  <input type="number" min="0" value={row.platformFees} onChange={(e) => updateAnnualBudget(row.month,"platformFees",e.target.value)} />
-                  <b style={{color: profit >= 0 ? "var(--green)" : "var(--pink)"}}>{money.format(profit)}</b>
+            {/* Registrar movimiento */}
+            {MovementForm()}
+
+            {/* Fuentes de ingreso */}
+            <div style={{background:"#fff",border:"1px solid var(--line)",borderRadius:"16px",padding:"18px",marginTop:"16px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+                <div>
+                  <p style={{margin:"0 0 2px",fontSize:"14px",fontWeight:700,color:"var(--ink)"}}>Fuentes de ingreso</p>
+                  <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Progreso hacia tu meta mensual por fuente</p>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              </div>
+              {incomeBySource.map(src => (
+                <div key={src.id} style={{marginBottom:"14px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px",gap:"8px",flexWrap:"wrap"}}>
+                    <span style={{fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>{src.name}</span>
+                    <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                      <span style={{fontSize:"12px",color:"var(--muted)"}}>{money.format(src.actual)} / </span>
+                      <input type="number" min="0" value={src.monthlyGoal}
+                        onChange={e=>setIncomeSources(c=>c.map(s=>s.id===src.id?{...s,monthlyGoal:Number(e.target.value)}:s))}
+                        style={{...inp,width:"80px",padding:"3px 6px",fontSize:"12px",textAlign:"right"}} />
+                      <button type="button" onClick={()=>confirmDelete("¿Eliminar fuente?",()=>setIncomeSources(c=>c.filter(s=>s.id!==src.id)))}
+                        style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",lineHeight:1}}>×</button>
+                    </div>
+                  </div>
+                  <div style={{height:"7px",background:"var(--line)",borderRadius:"4px",overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${src.progress}%`,background:"#1D9E75",borderRadius:"4px",transition:"width 0.4s ease"}} />
+                  </div>
+                  <p style={{margin:"3px 0 0",fontSize:"11px",color:"var(--muted)",textAlign:"right"}}>{src.progress}%</p>
+                </div>
+              ))}
+              <form onSubmit={e=>{e.preventDefault();if(!incomeSourceForm.name.trim())return;setIncomeSources(c=>[...c,{id:Date.now(),name:incomeSourceForm.name.trim(),monthlyGoal:Number(incomeSourceForm.monthlyGoal)||0,color:"purple",platform:"Transferencia bancaria"}]);setIncomeSourceForm({name:"",monthlyGoal:""});}}
+                style={{display:"flex",gap:"8px",marginTop:"8px",flexWrap:"wrap"}}>
+                <input placeholder="Nueva fuente" value={incomeSourceForm.name} onChange={e=>setIncomeSourceForm(c=>({...c,name:e.target.value}))} style={{...inp,flex:1,minWidth:"120px"}} />
+                <input type="number" min="0" placeholder="Meta mensual" value={incomeSourceForm.monthlyGoal} onChange={e=>setIncomeSourceForm(c=>({...c,monthlyGoal:e.target.value}))} style={{...inp,width:"110px"}} />
+                <button className="primary-button" type="submit" style={{whiteSpace:"nowrap"}}>+ Agregar</button>
+              </form>
+            </div>
+
+            {/* Perfil de marca — colapsado si ya está completo */}
+            <div style={{background:"#fff",border:"1px solid var(--line)",borderRadius:"16px",padding:"18px",marginTop:"16px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                  <span style={{fontSize:"16px"}}>✦</span>
+                  <p style={{margin:0,fontSize:"14px",fontWeight:700,color:"var(--ink)"}}>Perfil de Marca · Studio</p>
+                  {brandComplete && <span style={{fontSize:"11px",background:"#e8f7f0",color:"#1D9E75",fontWeight:700,padding:"2px 8px",borderRadius:"20px"}}>✓ Activo</span>}
+                </div>
+                <button onClick={()=>{setEditingBrand(v=>!v);setBrandForm({...brandProfile});}}
+                  style={{fontSize:"13px",color:"#C4526A",background:"rgba(196,82,106,0.08)",border:"none",borderRadius:"8px",padding:"5px 12px",cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>
+                  {editingBrand?"Cancelar":brandComplete?"Editar ✏️":"Completar →"}
+                </button>
+              </div>
+              {!editingBrand && brandComplete && (
+                <div style={{marginTop:"12px",display:"grid",gap:"8px"}}>
+                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}><b style={{color:"var(--ink)"}}>Qué ofreces:</b> {brandProfile.queOfreces}</p>
+                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}><b style={{color:"var(--ink)"}}>Transformación:</b> {brandProfile.transformacion}</p>
+                  <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Tono: <b>{brandProfile.tono}</b> · Red: <b>{brandProfile.redPrincipal}</b></p>
+                </div>
+              )}
+              {!editingBrand && !brandComplete && (
+                <p style={{margin:"10px 0 0",fontSize:"13px",color:"var(--muted)",lineHeight:1.5}}>Completa tu perfil para que el Studio pre-llene automáticamente todos los generadores — guiones, ideas, hooks, emails y más.</p>
+              )}
+              {editingBrand && (
+                <form style={{marginTop:"14px",display:"grid",gap:"12px"}} onSubmit={e=>{e.preventDefault();setBrandProfile({...brandForm});setEditingBrand(false);}}>
+                  <div><label className="bpcard-label">¿Qué ofreces? *</label><textarea className="bpcard-textarea" rows={2} required value={brandForm.queOfreces} onChange={e=>setBrandForm(p=>({...p,queOfreces:e.target.value}))} placeholder="Ej: Coaching de maternidad consciente para mamás emprendedoras" /></div>
+                  <div><label className="bpcard-label">¿Cliente ideal?</label><textarea className="bpcard-textarea" rows={2} value={brandForm.clienteIdeal} onChange={e=>setBrandForm(p=>({...p,clienteIdeal:e.target.value}))} placeholder="Ej: Mamás de 28-40 años que quieren crecer sin descuidar su familia" /></div>
+                  <div><label className="bpcard-label">¿Transformación clave? *</label><textarea className="bpcard-textarea" rows={2} required value={brandForm.transformacion} onChange={e=>setBrandForm(p=>({...p,transformacion:e.target.value}))} placeholder="Ej: De agotada y desbordada a organizada, rentable y presente" /></div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                    <div><label className="bpcard-label">Tono</label><select className="bpcard-select" value={brandForm.tono} onChange={e=>setBrandForm(p=>({...p,tono:e.target.value}))}><option>Cercano</option><option>Profesional</option><option>Inspirador</option><option>Directo</option></select></div>
+                    <div><label className="bpcard-label">Red principal</label><select className="bpcard-select" value={brandForm.redPrincipal} onChange={e=>setBrandForm(p=>({...p,redPrincipal:e.target.value}))}><option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Spotify</option></select></div>
+                  </div>
+                  <div><label className="bpcard-label">Hashtags (opcional)</label><input className="bpcard-input" value={brandForm.hashtags} onChange={e=>setBrandForm(p=>({...p,hashtags:e.target.value}))} placeholder="#mamaceo #emprendedora" /></div>
+                  <div style={{display:"flex",gap:"10px"}}>
+                    <button className="primary-button" type="submit">Guardar perfil</button>
+                    <button type="button" className="ck-cancel-btn" onClick={()=>setEditingBrand(false)}>Cancelar</button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ── HISTORIAL ── */}
+        {businessTab === 1 && (
+          <>
+            <div style={{display:"flex",gap:"10px",marginBottom:"16px",justifyContent:"flex-end"}}>
+              <button type="button" onClick={exportMovementsToExcel}
+                style={{padding:"8px 18px",border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>
+                📊 Excel
+              </button>
+              <button type="button" onClick={exportMovementsToPdf}
+                style={{padding:"8px 18px",border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>
+                📄 PDF
+              </button>
+            </div>
+            <div className="card movement-card">
+              <h3 style={{marginBottom:"14px"}}>Todos los movimientos</h3>
+              {sortedMovements.length === 0 && <p style={{color:"var(--muted)",fontSize:"14px"}}>Sin movimientos registrados aún.</p>}
+              {sortedMovements.map(m => (
+                <div className="movement-row" key={m.id}>
+                  <span className={m.type}>{m.type==="income"?"+":"-"}</span>
+                  <div>
+                    <strong>{m.description}</strong>
+                    <small>{m.classification} · {m.category} · {m.bank||"Sin banco"}</small>
+                    <small>Fecha: {formatShortDate(m.date||m.createdAt)}</small>
+                  </div>
+                  <input className="movement-date-input" type="date" value={inputDateFromValue(m.date||m.createdAt)}
+                    onChange={e=>updateMovementDate(m.id,e.target.value)} aria-label={`Fecha de ${m.description}`} />
+                  <b>{money.format(m.amount)}</b>
+                  <button className="row-delete" type="button"
+                    onClick={()=>confirmDelete("¿Eliminar este movimiento?",()=>setMovements(c=>c.filter(i=>i.id!==m.id)))}>×</button>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </section>
     );
   }
