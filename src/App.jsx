@@ -4898,7 +4898,7 @@ export default function App() {
           </div>
         )}
 
-        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(3,1fr)",gap:"20px",maxWidth:"1080px",margin:"0 auto"}}>
+        <div style={{display:"grid",gridTemplateColumns:window.innerWidth<700?"1fr":"repeat(3,1fr)",gap:"20px",maxWidth:"1080px",margin:"0 auto"}}>
           {plans.map((plan) => {
             const isCurrent = effectivePlan===plan.id||(plan.id==="ceo"&&effectivePlan==="premium")||(plan.id==="mama"&&userMode==="mama"&&effectivePlan==="emprendedora");
             const mpLoading = paymentProcessing===`mp-${plan.id}`;
