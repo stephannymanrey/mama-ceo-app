@@ -846,7 +846,8 @@ export default function App() {
       if (json.init_point) {
         window.location.href = json.init_point;
       } else {
-        setPaymentMessage({ type: "error", text: json.error || "Error al conectar con Mercado Pago. Intenta de nuevo." });
+        const detail = json.detail ? ` | ${JSON.stringify(json.detail).slice(0,200)}` : "";
+        setPaymentMessage({ type: "error", text: (json.error || "Error MP") + detail });
         setPaymentProcessing(null);
       }
     } catch (err) {
