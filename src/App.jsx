@@ -3918,13 +3918,23 @@ export default function App() {
               <div style={{ padding: "22px 24px" }}>
                 <p style={{ margin: "0 0 5px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)" }}>Tu 30 minutos de esta semana</p>
                 <p style={{ margin: "0 0 14px", fontSize: "14px", lineHeight: 1.6, color: "var(--ink)" }}>{sugg}</p>
-                <button onClick={() => {
-                    const title = encodeURIComponent("Mis 30 minutos — Para Mí");
-                    const details = encodeURIComponent(sugg);
-                    window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}`, "_blank");
-                  }} style={{ padding: "11px 20px", background: "#C4526A", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-                  📆 Agendar en Google Calendar
-                </button>
+                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+                  <button onClick={() => {
+                      const title = encodeURIComponent("Mis 30 minutos — Para Mí");
+                      const details = encodeURIComponent(sugg);
+                      window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}`, "_blank");
+                    }} style={{ padding: "11px 20px", background: "#C4526A", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
+                    📆 Google Calendar
+                  </button>
+                  <button onClick={() => {
+                      const today = new Date().toISOString().slice(0,10);
+                      setCalendarNewAppt({ title: "Mis 30 minutos — Para Mí", type: "Personal", time: "", recurrence: "none" });
+                      setCalendarAddDate(today);
+                      setShowCalendar(true);
+                    }} style={{ padding: "11px 20px", background: "#fff", color: "#C4526A", border: "2px solid #C4526A", borderRadius: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
+                    🗓 Calendario MamaCEO
+                  </button>
+                </div>
               </div>
 
               {divider}
