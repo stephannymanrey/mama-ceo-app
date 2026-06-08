@@ -597,6 +597,8 @@ export default function App() {
   const [homeTab, setHomeTab] = useState(0);
   const [reminderTime, setReminderTime] = useState(stored?.reminderTime || "08:00");
   const [reminderEnabled, setReminderEnabled] = useState(stored?.reminderEnabled !== false);
+  const [checkInReminderEnabled, setCheckInReminderEnabled] = useState(stored?.checkInReminderEnabled || false);
+  const [checkInReminderTime, setCheckInReminderTime] = useState(stored?.checkInReminderTime || "08:00");
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [calendarAddDate, setCalendarAddDate] = useState(null);
@@ -733,6 +735,22 @@ export default function App() {
     }, ms);
     return () => clearTimeout(timer);
   }, [reminderEnabled, reminderTime, appointments]);
+
+  useEffect(() => {
+    if (!checkInReminderEnabled || !checkInReminderTime) return;
+    const [h, m] = checkInReminderTime.split(":").map(Number);
+    const now = new Date(); const target = new Date();
+    target.setHours(h, m, 0, 0);
+    const ms = target - now;
+    if (ms < 0) return;
+    const timer = setTimeout(() => {
+      playChime();
+      if (Notification.permission === "granted") {
+        new Notification("MamaCEO 💛 — Check-in del día", { body: "¿Cómo estás hoy? 3 minutos solo para ti.", icon: "/logo.png" });
+      }
+    }, ms);
+    return () => clearTimeout(timer);
+  }, [checkInReminderEnabled, checkInReminderTime]);
 
   const BETA_CODE = "MAMACEO2026";
   const BETA_CODE_EXPIRY = new Date("2026-12-31T23:59:59").getTime();
@@ -1162,6 +1180,8 @@ export default function App() {
     setQuickNotes(state.quickNotes || []);
     if (state.reminderTime) setReminderTime(state.reminderTime);
     if (state.reminderEnabled !== undefined) setReminderEnabled(state.reminderEnabled);
+    if (state.checkInReminderTime) setCheckInReminderTime(state.checkInReminderTime);
+    if (state.checkInReminderEnabled !== undefined) setCheckInReminderEnabled(state.checkInReminderEnabled);
   };
 
   useEffect(() => {
@@ -1244,6 +1264,8 @@ export default function App() {
       quickNotes,
       reminderTime,
       reminderEnabled,
+      checkInReminderTime,
+      checkInReminderEnabled,
       userPlan,
       premiumExpiresAt,
       userMode
@@ -1272,7 +1294,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, checkInReminderTime, checkInReminderEnabled]);
 
   const expandAppts = (list, limitDays = 90) => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -4063,6 +4085,24 @@ export default function App() {
                   </div>
                 );
               })}
+            </div>
+
+            {/* Recordatorio del check-in */}
+            <div style={{ borderTop:"1px solid var(--line)", marginTop:"24px", paddingTop:"16px", display:"flex", alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
+              <span style={{ fontSize:"13px", color:"var(--muted)", flex:1, minWidth:"120px" }}>🔔 Recordatorio diario</span>
+              <button type="button"
+                onClick={() => {
+                  if (!checkInReminderEnabled && Notification.permission === "default") Notification.requestPermission();
+                  setCheckInReminderEnabled(v => !v);
+                }}
+                style={{ padding:"6px 14px", borderRadius:"20px", border:`2px solid ${checkInReminderEnabled?"#C4526A":"var(--line)"}`, background:checkInReminderEnabled?"rgba(196,82,106,0.09)":"#fff", cursor:"pointer", fontFamily:"inherit", fontSize:"12px", fontWeight:700, color:checkInReminderEnabled?"#C4526A":"var(--muted)", flexShrink:0 }}>
+                {checkInReminderEnabled ? "Activo ✓" : "Activar"}
+              </button>
+              {checkInReminderEnabled && (
+                <input type="time" value={checkInReminderTime}
+                  onChange={e => setCheckInReminderTime(e.target.value)}
+                  style={{ border:"1px solid var(--line)", borderRadius:"8px", padding:"6px 10px", fontSize:"14px", fontFamily:"inherit", outline:"none", background:"#fff" }} />
+              )}
             </div>
 
           </div>
