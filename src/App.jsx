@@ -3881,7 +3881,7 @@ export default function App() {
       </div>
     );
 
-    const wrap    = { maxWidth: "560px" };
+    const wrap    = { maxWidth: "560px", margin: "0 auto" };
     const divider = <div style={{ height: "1px", background: "var(--line)" }} />;
     const btnNext = { flex: 2, padding: "13px", background: "#C4526A", color: "#fff", border: "none", borderRadius: "12px", cursor: "pointer", fontFamily: "inherit", fontSize: "15px", fontWeight: 700 };
     const btnBack = { flex: 1, padding: "13px", background: "#fff", color: "var(--ink)", border: "1.5px solid var(--line)", borderRadius: "12px", cursor: "pointer", fontFamily: "inherit", fontSize: "15px", fontWeight: 600 };
@@ -4001,107 +4001,173 @@ export default function App() {
 
     /* ── BIENVENIDA ── */
     if (checkInStep === 0) {
-      // Streak: días consecutivos anteriores a hoy con check-in
       const streak = (() => {
         let count = 0;
         const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - 1);
-        while (history.find(c => c.date === d.toISOString().slice(0,10))) {
-          count++;
-          d.setDate(d.getDate() - 1);
-        }
+        while (history.find(c => c.date === d.toISOString().slice(0,10))) { count++; d.setDate(d.getDate() - 1); }
         return count;
       })();
       const lastEntry = [...history].filter(c => c.date !== todayStr).sort((a,b) => b.date.localeCompare(a.date))[0];
 
+      // Historial mensual
+      const now = new Date();
+      const mY = now.getFullYear(), mM = now.getMonth();
+      const mFirst = new Date(mY, mM, 1), mLast = new Date(mY, mM+1, 0);
+      const mOffset = (mFirst.getDay() + 6) % 7;
+      const MNAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+      const monthMap = {};
+      history.forEach(c => {
+        if (c.date?.startsWith(`${mY}-${String(mM+1).padStart(2,"0")}`)) monthMap[parseInt(c.date.slice(8))] = c;
+      });
+      const moodColor = e => { const v = e?.emocional||5; return v>=7?"#1D9E75":v>=4?"#D4537E":"#7F77DD"; };
+      const mEntries = Object.values(monthMap);
+      const mAvg = mEntries.length ? Math.round(mEntries.reduce((s,e)=>s+(e.emocional||5),0)/mEntries.length*10)/10 : null;
+      const isMobile = window.innerWidth < 700;
+
       return (
         <section className="panel workspace-panel">
           {header}
-          <div style={wrap}>
+          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:"24px", alignItems:"start" }}>
 
-            {/* Racha */}
-            {streak > 0 && (
-              <div style={{ display:"flex", alignItems:"center", gap:"14px", background:"#FFFBEB", border:"1px solid rgba(202,138,4,0.25)", borderRadius:"16px", padding:"14px 18px", marginBottom:"16px" }}>
-                <span style={{ fontSize:"32px", lineHeight:1 }}>🔥</span>
-                <div>
-                  <p style={{ margin:"0 0 2px", fontSize:"18px", fontWeight:800, color:"#92400e" }}>{streak} {streak===1?"día":"días"} seguidos</p>
-                  <p style={{ margin:0, fontSize:"13px", color:"#b45309" }}>Haz el de hoy y la racha llega a {streak+1}</p>
+            {/* ── COLUMNA IZQUIERDA ── */}
+            <div>
+              {streak > 0 && (
+                <div style={{ display:"flex", alignItems:"center", gap:"14px", background:"#FFFBEB", border:"1px solid rgba(202,138,4,0.25)", borderRadius:"16px", padding:"14px 18px", marginBottom:"16px" }}>
+                  <span style={{ fontSize:"32px", lineHeight:1 }}>🔥</span>
+                  <div>
+                    <p style={{ margin:"0 0 2px", fontSize:"18px", fontWeight:800, color:"#92400e" }}>{streak} {streak===1?"día":"días"} seguidos</p>
+                    <p style={{ margin:0, fontSize:"13px", color:"#b45309" }}>Haz el de hoy y la racha llega a {streak+1}</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Último check-in */}
-            {lastEntry && (
-              <div style={{ background:"#fff", border:"1px solid var(--line)", borderRadius:"16px", padding:"16px 18px", marginBottom:"20px" }}>
-                <p style={{ margin:"0 0 10px", fontSize:"11px", fontWeight:700, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px" }}>
-                  Último check-in · {new Date(lastEntry.date+"T00:00:00").toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"short"})}
-                </p>
-                {lastEntry.dia && (
-                  <p style={{ margin:"0 0 12px", fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{lastEntry.dia}</p>
+              {lastEntry && (
+                <div style={{ background:"#fff", border:"1px solid var(--line)", borderRadius:"16px", padding:"16px 18px", marginBottom:"20px" }}>
+                  <p style={{ margin:"0 0 10px", fontSize:"11px", fontWeight:700, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px" }}>
+                    Último check-in · {new Date(lastEntry.date+"T00:00:00").toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"short"})}
+                  </p>
+                  {lastEntry.dia && <p style={{ margin:"0 0 12px", fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{lastEntry.dia}</p>}
+                  <div style={{ display:"flex", gap:"10px" }}>
+                    {[["😊","Emocional","#D4537E",lastEntry.emocional||5],["🤝","Social","#1D9E75",lastEntry.social||5],["⚡","Proyectos","#7F77DD",lastEntry.proyectos||5]].map(([emoji,label,color,val]) => (
+                      <div key={label} style={{ flex:1 }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
+                          <span style={{ fontSize:"11px", color:"var(--muted)" }}>{emoji} {label}</span>
+                          <span style={{ fontSize:"11px", fontWeight:700, color }}>{val}/10</span>
+                        </div>
+                        <div style={{ height:"5px", background:"var(--line)", borderRadius:"3px", overflow:"hidden" }}>
+                          <div style={{ height:"100%", width:`${val*10}%`, background:color, borderRadius:"3px" }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ textAlign:"center", padding:"4px 0 20px" }}>
+                {!lastEntry && <span style={{ fontSize:"44px", display:"block", marginBottom:"12px" }}>🌸</span>}
+                <h3 style={{ margin:"0 0 6px", fontSize:"21px", color:"var(--ink)", fontWeight:800 }}>
+                  {streak > 0 ? `¡Vas por el día ${streak+1}!` : "¿Lista para tu check-in de hoy?"}
+                </h3>
+                <p style={{ margin:"0 0 22px", color:"var(--muted)", fontSize:"14px", lineHeight:1.6 }}>5 preguntas · 3 minutos · Solo para ti</p>
+                <button onClick={() => goNext(1)} style={{ padding:"14px 48px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"12px", cursor:"pointer", fontFamily:"inherit", fontSize:"16px", fontWeight:700 }}>
+                  Empezar ✨
+                </button>
+              </div>
+
+              <div style={{ display:"flex", gap:"8px", justifyContent:"center", alignItems:"flex-end", paddingTop:"4px" }}>
+                {Array.from({length:7}).map((_,i) => {
+                  const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-(6-i));
+                  const ds = d.toISOString().slice(0,10);
+                  const done = !!history.find(c => c.date===ds);
+                  const isT = ds===todayStr;
+                  return (
+                    <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"5px" }}>
+                      <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:done?"#C4526A":"var(--line)", border:isT&&!done?"2px solid #C4526A":"none", display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.2s" }}>
+                        {done && <span style={{ color:"#fff", fontSize:"13px", fontWeight:700 }}>✓</span>}
+                        {isT && !done && <span style={{ width:"8px", height:"8px", borderRadius:"50%", background:"#C4526A", display:"block" }} />}
+                      </div>
+                      <span style={{ fontSize:"10px", color:isT?"#C4526A":"var(--muted)", fontWeight:isT?700:400 }}>
+                        {d.toLocaleDateString("es-CO",{weekday:"short"}).slice(0,2).toUpperCase()}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ borderTop:"1px solid var(--line)", marginTop:"24px", paddingTop:"16px", display:"flex", alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
+                <span style={{ fontSize:"13px", color:"var(--muted)", flex:1, minWidth:"120px" }}>🔔 Recordatorio diario</span>
+                <button type="button"
+                  onClick={() => { if (!checkInReminderEnabled && Notification.permission==="default") Notification.requestPermission(); setCheckInReminderEnabled(v=>!v); }}
+                  style={{ padding:"6px 14px", borderRadius:"20px", border:`2px solid ${checkInReminderEnabled?"#C4526A":"var(--line)"}`, background:checkInReminderEnabled?"rgba(196,82,106,0.09)":"#fff", cursor:"pointer", fontFamily:"inherit", fontSize:"12px", fontWeight:700, color:checkInReminderEnabled?"#C4526A":"var(--muted)", flexShrink:0 }}>
+                  {checkInReminderEnabled?"Activo ✓":"Activar"}
+                </button>
+                {checkInReminderEnabled && (
+                  <input type="time" value={checkInReminderTime} onChange={e=>setCheckInReminderTime(e.target.value)}
+                    style={{ border:"1px solid var(--line)", borderRadius:"8px", padding:"6px 10px", fontSize:"14px", fontFamily:"inherit", outline:"none", background:"#fff" }} />
                 )}
-                <div style={{ display:"flex", gap:"10px" }}>
-                  {[["😊","Emocional","#D4537E",lastEntry.emocional||5],["🤝","Social","#1D9E75",lastEntry.social||5],["⚡","Proyectos","#7F77DD",lastEntry.proyectos||5]].map(([emoji,label,color,val]) => (
-                    <div key={label} style={{ flex:1 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
-                        <span style={{ fontSize:"11px", color:"var(--muted)" }}>{emoji} {label}</span>
-                        <span style={{ fontSize:"11px", fontWeight:700, color }}>{val}/10</span>
-                      </div>
-                      <div style={{ height:"5px", background:"var(--line)", borderRadius:"3px", overflow:"hidden" }}>
-                        <div style={{ height:"100%", width:`${val*10}%`, background:color, borderRadius:"3px" }} />
-                      </div>
+              </div>
+            </div>
+
+            {/* ── COLUMNA DERECHA: historial mensual ── */}
+            <div style={{ background:"#fff", border:"1px solid var(--line)", borderRadius:"20px", padding:"20px" }}>
+              <p style={{ margin:"0 0 4px", fontSize:"13px", fontWeight:800, color:"var(--ink)" }}>{MNAMES[mM]} {mY}</p>
+              <p style={{ margin:"0 0 16px", fontSize:"11px", color:"var(--muted)" }}>Tu estado emocional día a día</p>
+
+              {/* Cabecera días */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:"3px", marginBottom:"4px" }}>
+                {["L","M","X","J","V","S","D"].map(d => (
+                  <div key={d} style={{ textAlign:"center", fontSize:"10px", fontWeight:700, color:"var(--muted)" }}>{d}</div>
+                ))}
+              </div>
+
+              {/* Grid días */}
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:"4px" }}>
+                {Array.from({length:mOffset}).map((_,i) => <div key={`e${i}`} />)}
+                {Array.from({length:mLast.getDate()}).map((_,i) => {
+                  const day = i+1;
+                  const entry = monthMap[day];
+                  const isToday = day===now.getDate();
+                  const color = entry ? moodColor(entry) : null;
+                  return (
+                    <div key={day}
+                      title={entry ? `${entry.dia||""} · Emocional ${entry.emocional}/10` : isToday?"Hoy":undefined}
+                      style={{ aspectRatio:"1", borderRadius:"50%", background:color||(isToday?"rgba(196,82,106,0.1)":"var(--line)"), border:isToday&&!color?"2px solid #C4526A":"none", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"9px", fontWeight:700, color:color?"#fff":isToday?"#C4526A":"var(--muted)", cursor:entry?"default":"default", transition:"transform 0.1s" }}>
+                      {day}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Leyenda */}
+              <div style={{ display:"flex", gap:"10px", marginTop:"16px", flexWrap:"wrap" }}>
+                {[["#1D9E75","Bien (7-10)"],["#D4537E","Regular (4-6)"],["#7F77DD","Difícil (1-3)"]].map(([color,label]) => (
+                  <div key={label} style={{ display:"flex", alignItems:"center", gap:"5px" }}>
+                    <div style={{ width:"10px", height:"10px", borderRadius:"50%", background:color, flexShrink:0 }} />
+                    <span style={{ fontSize:"10px", color:"var(--muted)" }}>{label}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Stats del mes */}
+              {mEntries.length > 0 && (
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"8px", marginTop:"16px", paddingTop:"14px", borderTop:"1px solid var(--line)", textAlign:"center" }}>
+                  {[
+                    [mEntries.length,"check-ins","var(--ink)"],
+                    [mEntries.filter(e=>(e.emocional||5)>=7).length,"días bien","#1D9E75"],
+                    [mAvg+"/10","promedio","#D4537E"],
+                  ].map(([val,label,color]) => (
+                    <div key={label}>
+                      <p style={{ margin:"0 0 2px", fontSize:"22px", fontWeight:800, color }}>{val}</p>
+                      <p style={{ margin:0, fontSize:"10px", color:"var(--muted)" }}>{label}</p>
                     </div>
                   ))}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* CTA */}
-            <div style={{ textAlign:"center", padding:"4px 0 20px" }}>
-              {!lastEntry && <span style={{ fontSize:"44px", display:"block", marginBottom:"12px" }}>🌸</span>}
-              <h3 style={{ margin:"0 0 6px", fontSize:"21px", color:"var(--ink)", fontWeight:800 }}>
-                {streak > 0 ? `¡Vas por el día ${streak+1}!` : "¿Lista para tu check-in de hoy?"}
-              </h3>
-              <p style={{ margin:"0 0 22px", color:"var(--muted)", fontSize:"14px", lineHeight:1.6 }}>5 preguntas · 3 minutos · Solo para ti</p>
-              <button onClick={() => goNext(1)} style={{ padding:"14px 48px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"12px", cursor:"pointer", fontFamily:"inherit", fontSize:"16px", fontWeight:700 }}>
-                Empezar ✨
-              </button>
-            </div>
-
-            {/* Puntos de la semana */}
-            <div style={{ display:"flex", gap:"8px", justifyContent:"center", alignItems:"flex-end", paddingTop:"4px" }}>
-              {Array.from({length:7}).map((_,i) => {
-                const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - (6-i));
-                const ds = d.toISOString().slice(0,10);
-                const done = !!history.find(c => c.date === ds);
-                const isT = ds === todayStr;
-                return (
-                  <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"5px" }}>
-                    <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:done?"#C4526A":"var(--line)", border:isT&&!done?"2px solid #C4526A":"none", display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.2s" }}>
-                      {done && <span style={{ color:"#fff", fontSize:"13px", fontWeight:700 }}>✓</span>}
-                      {isT && !done && <span style={{ width:"8px", height:"8px", borderRadius:"50%", background:"#C4526A", display:"block" }} />}
-                    </div>
-                    <span style={{ fontSize:"10px", color:isT?"#C4526A":"var(--muted)", fontWeight:isT?700:400 }}>
-                      {d.toLocaleDateString("es-CO",{weekday:"short"}).slice(0,2).toUpperCase()}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Recordatorio del check-in */}
-            <div style={{ borderTop:"1px solid var(--line)", marginTop:"24px", paddingTop:"16px", display:"flex", alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
-              <span style={{ fontSize:"13px", color:"var(--muted)", flex:1, minWidth:"120px" }}>🔔 Recordatorio diario</span>
-              <button type="button"
-                onClick={() => {
-                  if (!checkInReminderEnabled && Notification.permission === "default") Notification.requestPermission();
-                  setCheckInReminderEnabled(v => !v);
-                }}
-                style={{ padding:"6px 14px", borderRadius:"20px", border:`2px solid ${checkInReminderEnabled?"#C4526A":"var(--line)"}`, background:checkInReminderEnabled?"rgba(196,82,106,0.09)":"#fff", cursor:"pointer", fontFamily:"inherit", fontSize:"12px", fontWeight:700, color:checkInReminderEnabled?"#C4526A":"var(--muted)", flexShrink:0 }}>
-                {checkInReminderEnabled ? "Activo ✓" : "Activar"}
-              </button>
-              {checkInReminderEnabled && (
-                <input type="time" value={checkInReminderTime}
-                  onChange={e => setCheckInReminderTime(e.target.value)}
-                  style={{ border:"1px solid var(--line)", borderRadius:"8px", padding:"6px 10px", fontSize:"14px", fontFamily:"inherit", outline:"none", background:"#fff" }} />
+              {mEntries.length === 0 && (
+                <p style={{ margin:"16px 0 0", fontSize:"12px", color:"var(--muted)", textAlign:"center", lineHeight:1.5 }}>
+                  Aún no hay check-ins este mes.<br/>¡Empieza hoy! 🌸
+                </p>
               )}
             </div>
 
