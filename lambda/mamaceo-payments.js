@@ -71,18 +71,20 @@ exports.handler = async (event) => {
   let body = {};
   try { body = JSON.parse(event.body || "{}"); } catch {}
 
+  // Acción: viene en body.action o como subruta de la URL
+  const action = body.action || path.split("/").filter(Boolean).pop();
+
   // ── Extraer userId del token Cognito (JWT) ────────────────────────────────
-  // El API Gateway authorizer adjunta el sub del token como requestContext.authorizer.claims.sub
   const userId =
     event.requestContext?.authorizer?.claims?.sub ||
     event.requestContext?.authorizer?.jwt?.claims?.sub ||
-    body.userEmail || // fallback: usamos email si no hay Cognito authorizer
+    body.userEmail ||
     null;
 
   // ─────────────────────────────────────────────────────────────────────────
   // 1. POST /create-mp-subscription
   // ─────────────────────────────────────────────────────────────────────────
-  if (path.endsWith("/create-mp-subscription")) {
+  if (action === "create-mp-subscription") {
     const { planType, userEmail } = body;
     if (!planType || !MP_PLAN_PRICES[planType]) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "planType inválido" }) };
@@ -137,7 +139,7 @@ exports.handler = async (event) => {
   // ─────────────────────────────────────────────────────────────────────────
   // 2. POST /verify-paypal
   // ─────────────────────────────────────────────────────────────────────────
-  if (path.endsWith("/verify-paypal")) {
+  if (action === "verify-paypal") {
     const { subscriptionId, planType } = body;
     if (!subscriptionId || !planType) {
       return { statusCode: 400, headers, body: JSON.stringify({ error: "Faltan subscriptionId o planType" }) };
@@ -185,7 +187,7 @@ exports.handler = async (event) => {
   // ─────────────────────────────────────────────────────────────────────────
   // 3. POST /mp-webhook (Mercado Pago notifica renovaciones y cancelaciones)
   // ─────────────────────────────────────────────────────────────────────────
-  if (path.endsWith("/mp-webhook")) {
+  if (action === "mp-webhook" || path.endsWith("/mp-webhook")) {
     const topic = body.type || event.queryStringParameters?.topic;
     const resourceId = body.data?.id || event.queryStringParameters?.id;
 

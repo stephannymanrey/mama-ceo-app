@@ -799,9 +799,9 @@ export default function App() {
             setPaymentProcessing(planId);
             try {
               const headers = await getRemoteAuthHeaders(true);
-              const res  = await fetch(`${PAYMENTS_URL}/verify-paypal`, {
+              const res  = await fetch(PAYMENTS_URL, {
                 method: "POST", headers,
-                body: JSON.stringify({ subscriptionId: data.subscriptionID, planType: planId })
+                body: JSON.stringify({ action: "verify-paypal", subscriptionId: data.subscriptionID, planType: planId })
               });
               const json = await res.json();
               if (json.success) {
@@ -836,9 +836,9 @@ export default function App() {
     setPaymentProcessing(`mp-${planId}`);
     try {
       const headers = await getRemoteAuthHeaders(true);
-      const res  = await fetch(`${PAYMENTS_URL}/create-mp-subscription`, {
+      const res  = await fetch(PAYMENTS_URL, {
         method: "POST", headers,
-        body: JSON.stringify({ planType: planId, userEmail: user.email || profileSetup?.email || "" })
+        body: JSON.stringify({ action: "create-mp-subscription", planType: planId, userEmail: user.email || profileSetup?.email || "" })
       });
       const json = await res.json();
       if (json.init_point) {
