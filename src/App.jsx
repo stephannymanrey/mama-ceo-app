@@ -853,8 +853,10 @@ export default function App() {
     }
   };
 
-  const BETA_CODE_HASH   = "1df2627e3ac0f8268c070acdbf13b0d354f16f2c38bf873dee2d54b86af13440";
-  const BETA_CODE_EXPIRY = new Date("2026-12-31T23:59:59").getTime();
+  const BETA_CODES = [
+    { hash: "1df2627e3ac0f8268c070acdbf13b0d354f16f2c38bf873dee2d54b86af13440", days: 90, expiry: new Date("2026-12-31T23:59:59").getTime() },
+    { hash: "42f8fdb0a7354c04e994970759b87588906eccb7741c9bc5a7dd52471f7961bf", days: 60, expiry: new Date("2027-12-31T23:59:59").getTime() },
+  ];
   const hashCode = async (str) => {
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
     return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
@@ -893,26 +895,27 @@ export default function App() {
   };
 
   const betaDaysLeft = useMemo(() => {
-    if (effectivePlan !== "premium" || !premiumExpiresAt) return null;
+    if (userPlan !== "premium" || !premiumExpiresAt) return null;
     const days = Math.ceil((premiumExpiresAt - Date.now()) / 86400000);
     return days > 0 ? days : 0;
-  }, [effectivePlan, premiumExpiresAt]);
+  }, [userPlan, premiumExpiresAt]);
 
-  const isBetaUser = premiumExpiresAt !== null;
+  const isBetaUser = userPlan === "premium" && premiumExpiresAt !== null;
 
   const activateBetaCode = async (e) => {
     e.preventDefault();
     setBetaCodeError("");
-    if (Date.now() > BETA_CODE_EXPIRY) {
-      setBetaCodeError("Este código ya expiró.");
-      return;
-    }
     const entered = await hashCode(betaCode.trim().toUpperCase());
-    if (entered !== BETA_CODE_HASH) {
+    const match = BETA_CODES.find(c => entered === c.hash);
+    if (!match) {
       setBetaCodeError("Código incorrecto. Verifica el correo de bienvenida de UMP Academy.");
       return;
     }
-    const expiresAt = Date.now() + 90 * 86400000;
+    if (Date.now() > match.expiry) {
+      setBetaCodeError("Este código ya expiró.");
+      return;
+    }
+    const expiresAt = Date.now() + match.days * 86400000;
     setUserPlan("premium");
     setPremiumExpiresAt(expiresAt);
     setShowBetaInput(false);
@@ -2206,9 +2209,9 @@ export default function App() {
             ) : betaDaysLeft > 7 ? (
               <><span>⏳</span><div><strong>Ya llevas un buen camino, {profileSetup?.name || "Mamá CEO"}</strong><p>Te quedan <b>{betaDaysLeft} días</b> de Premium gratis. Todo lo que organizaste aquí ya es tuyo • sigue construyendo.</p></div></>
             ) : betaDaysLeft > 0 ? (
-              <><span>⏰</span><div><strong>Últimos {betaDaysLeft} días de tu acceso beta</strong><p>Has avanzado mucho. Activa Premium cuando estás lista, sin presión.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Ver planes ?</button></div></>
+              <><span>⏰</span><div><strong>Últimos {betaDaysLeft} días de tu acceso beta</strong><p>Has avanzado mucho. Activa tu plan cuando estés lista, sin presión.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Ver planes →</button></div></>
             ) : (
-              <><span>💙</span><div><strong>Tu período beta terminó</strong><p>Tus datos están seguros. Activa Premium para seguir con acceso ilimitado.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Activar Premium ?</button></div></>
+              <><span>💙</span><div><strong>Tu período beta terminó</strong><p>Tus datos están seguros. Activa tu plan para seguir con acceso ilimitado.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Activar mi plan →</button></div></>
             )}
           </div>
         )}
@@ -4958,7 +4961,7 @@ export default function App() {
 
         <div className="card" style={{maxWidth:"1000px",margin:"20px auto 0",padding:"24px",border:"2px dashed var(--line)"}}>
           <h3 style={{margin:"0 0 8px"}}>🔑 ¿Tienes un código de acceso beta?</h3>
-          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu código de acceso CEO gratis por 90 días.</p>
+          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres parte de la incubadora o de UMP Academy, revisa tu correo de bienvenida — tienes un código de acceso CEO gratis.</p>
           {!showBetaInput?(
             <button className="primary-button" style={{padding:"10px 24px"}} onClick={()=>setShowBetaInput(true)}>Tengo un código</button>
           ):(
@@ -4968,9 +4971,9 @@ export default function App() {
               {betaCodeError&&<p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
           )}
-          {isBetaUser&&(effectivePlan==="ceo"||effectivePlan==="premium")&&(
+          {isBetaUser&&(
             <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
-              ? Código activo • Plan CEO gratis por {betaDaysLeft} días más
+              ✅ Código activo • Plan CEO gratis por {betaDaysLeft ?? "..."} días más
             </div>
           )}
         </div>
@@ -5145,7 +5148,7 @@ export default function App() {
         {/* Código beta */}
         <div className="card" style={{maxWidth:"900px",margin:"24px auto 0",padding:"24px",border:"2px dashed var(--line)"}}>
           <h3 style={{margin:"0 0 8px"}}>¿Tienes un código de acceso beta?</h3>
-          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres estudiante de UMP Academy, revisa tu correo de bienvenida para encontrar tu código de acceso Premium gratis por 90 días.</p>
+          <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"14px"}}>Si eres parte de la incubadora o de UMP Academy, revisa tu correo de bienvenida — tienes un código de acceso CEO gratis.</p>
           {!showBetaInput ? (
             <button className="primary-button" style={{padding:"10px 24px"}} onClick={() => setShowBetaInput(true)}>Tengo un código</button>
           ) : (
@@ -5161,9 +5164,9 @@ export default function App() {
               {betaCodeError && <p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
           )}
-          {isBetaUser && effectivePlan === "premium" && (
+          {isBetaUser && (
             <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
-              ? Código activo • Premium gratis por {betaDaysLeft} días más
+              ✅ Código activo • Plan CEO gratis por {betaDaysLeft ?? "..."} días más
             </div>
           )}
         </div>
