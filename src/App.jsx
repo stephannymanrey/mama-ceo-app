@@ -2239,7 +2239,7 @@ export default function App() {
               {/* Panel — abre hacia arriba */}
               {pomodoroOpen && (
                 <div className={`pomo-panel${pomodoroRunning && pomodoroMode === "work" ? " pomo-panel--focus" : pomodoroMode === "break" ? " pomo-panel--break" : ""}`}
-                  style={{ bottom: "136px" }}>
+                  style={{ bottom: "212px" }}>
                   <div className="pomo-panel-head">
                     <span className="pomo-label">{pomodoroMode === "break" ? "Descanso" : "Temporizador de foco"}</span>
                     <button className="pomo-tog" onClick={() => setPomodoroOpen(false)}>&#x00D7;</button>
@@ -2294,7 +2294,7 @@ export default function App() {
               {/* FAB icono */}
               <button
                 className={`pomo-fab${pomodoroRunning ? " pomo-fab--active" : ""}${pomodoroOpen ? " pomo-fab--open" : ""}`}
-                style={{ bottom: "84px" }}
+                style={{ bottom: "152px" }}
                 onClick={() => setPomodoroOpen(v => !v)}
                 title="Temporizador de foco"
               >
@@ -2306,16 +2306,18 @@ export default function App() {
           );
         }())}
         {/* Calendar FAB */}
+        {/* Calendario FAB — segundo desde abajo */}
         <button type="button" onClick={() => setShowCalendar(true)}
-          style={{position:"fixed",bottom:"88px",right:"20px",zIndex:200,width:"52px",height:"52px",borderRadius:"50%",background:"#fff",border:"2px solid #C4526A",color:"#C4526A",fontSize:"22px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.12)",lineHeight:1}}
+          style={{position:"fixed",bottom:"92px",right:"28px",zIndex:1300,width:"52px",height:"52px",borderRadius:"50%",background:"#fff",border:"2px solid #C4526A",color:"#C4526A",fontSize:"22px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.12)",lineHeight:1}}
           title="Ver calendario">
           📅
         </button>
 
+        {/* Plan FAB — abajo del todo */}
         <button
           className="upgrade-fab"
           onClick={() => setActiveView("pricing")}
-          style={effectivePlan !== "free" ? { background: "var(--green)", fontSize: "12px" } : {}}
+          style={effectivePlan !== "free" ? { background: "var(--purple)", color: "#fff", border: "none" } : {}}
         >
           {effectivePlan === "free" ? "⭐ Upgrade" : "👑 Mi Plan"}
         </button>
@@ -4893,7 +4895,7 @@ export default function App() {
           </div>
         )}
 
-        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"20px",maxWidth:"1000px",margin:"0 auto"}}>
+        <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"repeat(3,1fr)",gap:"20px",maxWidth:"1080px",margin:"0 auto"}}>
           {plans.map((plan) => {
             const isCurrent = effectivePlan===plan.id||(plan.id==="ceo"&&effectivePlan==="premium")||(plan.id==="mama"&&userMode==="mama"&&effectivePlan==="emprendedora");
             const mpLoading = paymentProcessing===`mp-${plan.id}`;
