@@ -479,6 +479,7 @@ export default function App() {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [installBannerDismissed, setInstallBannerDismissed] = useState(() => !!localStorage.getItem("installDismissed"));
+  const [localWarnDismissed, setLocalWarnDismissed] = useState(() => !!localStorage.getItem("localWarnDismissed"));
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
 
@@ -566,7 +567,7 @@ export default function App() {
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
   const [clientSearch, setClientSearch] = useState("");
   const [weekBlocks, setWeekBlocks] = useState(stored?.weekBlocks || {});
-  const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer", goal: "Vender", publishDate: "" });
+  const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Pendiente", goal: "Vender", publishDate: "" });
   const [showContentForm, setShowContentForm] = useState(false);
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
@@ -752,8 +753,12 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [checkInReminderEnabled, checkInReminderTime]);
 
-  const BETA_CODE = "MAMACEO2026";
+  const BETA_CODE_HASH   = "1df2627e3ac0f8268c070acdbf13b0d354f16f2c38bf873dee2d54b86af13440";
   const BETA_CODE_EXPIRY = new Date("2026-12-31T23:59:59").getTime();
+  const hashCode = async (str) => {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
+  };
 
   const effectivePlan = useMemo(() => {
     if (userPlan === "ceo" || userPlan === "emprendedora") {
@@ -795,15 +800,16 @@ export default function App() {
 
   const isBetaUser = premiumExpiresAt !== null;
 
-  const activateBetaCode = (e) => {
+  const activateBetaCode = async (e) => {
     e.preventDefault();
     setBetaCodeError("");
-    if (betaCode.trim().toUpperCase() !== BETA_CODE) {
-      setBetaCodeError("Código incorrecto. Verifica el correo de bienvenida de UMP Academy.");
-      return;
-    }
     if (Date.now() > BETA_CODE_EXPIRY) {
       setBetaCodeError("Este código ya expiró.");
+      return;
+    }
+    const entered = await hashCode(betaCode.trim().toUpperCase());
+    if (entered !== BETA_CODE_HASH) {
+      setBetaCodeError("Código incorrecto. Verifica el correo de bienvenida de UMP Academy.");
       return;
     }
     const expiresAt = Date.now() + 90 * 86400000;
@@ -1555,6 +1561,20 @@ export default function App() {
   const updateContentStatus = (contentId, status) => {
     setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, status } : item));
   };
+  // Migrate old 6-status items to new 3-status scheme on first render
+  const migrateContentStatus = (s) => {
+    if (s === "Por hacer" || s === "Guion hecho") return "Pendiente";
+    if (s === "Grabacion" || s === "Edicion" || s === "Programado") return "En proceso";
+    return s; // "Publicado" unchanged
+  };
+  // Run migration once when contentItems load with legacy statuses
+  useEffect(() => {
+    const LEGACY = new Set(["Por hacer","Guion hecho","Grabacion","Edicion","Programado"]);
+    if (contentItems.some(i => LEGACY.has(i.status))) {
+      setContentItems(c => c.map(i => LEGACY.has(i.status) ? { ...i, status: migrateContentStatus(i.status) } : i));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const updateClientNotes = (clientId, notes) => {
     setClients((current) => current.map((client) => client.id === clientId ? { ...client, notes, updatedAt: Date.now() } : client));
   };
@@ -2063,9 +2083,13 @@ export default function App() {
           </div>
         </header>
 
-        {!awsActive && (
-          <div className="local-banner">
-            <strong>Modo sin conexión</strong> • tus datos se guardan en este navegador. Si cambias de dispositivo o navegador, no verás tus datos.
+        {!awsActive && !localWarnDismissed && (
+          <div style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 20px",background:"#FFFBEB",borderBottom:"1px solid rgba(202,138,4,0.25)"}}>
+            <span style={{fontSize:"18px",flexShrink:0}}>⚠️</span>
+            <p style={{margin:0,fontSize:"13px",color:"#92400e",lineHeight:1.4,flex:1}}>
+              <strong>Tus datos se guardan solo en este dispositivo.</strong> Si borras el historial del navegador o cambias de dispositivo, perderás tu información.
+            </p>
+            <button onClick={() => { setLocalWarnDismissed(true); localStorage.setItem("localWarnDismissed","1"); }} style={{border:"none",background:"none",fontSize:"20px",color:"#b45309",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}}>×</button>
           </div>
         )}
         {syncError && (
@@ -3043,32 +3067,26 @@ export default function App() {
     const topNetwork = Object.entries(byNetwork).sort((a, b) => b[1] - a[1])[0];
     const lastPublished = contentItems.filter((i) => i.status === "Publicado" && i.createdAt).sort((a, b) => b.createdAt - a.createdAt)[0];
     const daysSincePublish = lastPublished ? Math.floor((Date.now() - lastPublished.createdAt) / 86400000) : null;
-    const oldPending = contentItems.filter((i) => i.status === "Por hacer" && i.createdAt && Math.floor((Date.now() - i.createdAt) / 86400000) > 7);
+    const oldPending = contentItems.filter((i) => i.status === "Pendiente" && i.createdAt && Math.floor((Date.now() - i.createdAt) / 86400000) > 7);
 
     const goalMeta = {
-      "Vender":      { color: "#2f9f70", bg: "#def3e8", dot: "#2f9f70" },
-      "Educar":      { color: "#C9A96E", bg: "#faf3e7", dot: "#C9A96E" },
-      "Conectar":    { color: "#E8836E", bg: "#fdf0ec", dot: "#E8836E" },
-      "Entretener":  { color: "#8a7f7a", bg: "#f5f2f0", dot: "#8a7f7a" },
+      "Vender":     { color: "#2f9f70", dot: "#2f9f70" },
+      "Educar":     { color: "#C9A96E", dot: "#C9A96E" },
+      "Conectar":   { color: "#E8836E", dot: "#E8836E" },
+      "Entretener": { color: "#8a7f7a", dot: "#8a7f7a" },
     };
-    const formatIcon = { "Reel":"🎬", "Historia":"📸", "Post":"🖼️", "Carrusel":"📱", "Foto":"📷", "Articulo":"✍️", "Episodio":"🎙️" };
-    const networkIcon = { "Instagram":"✦", "TikTok":"♪", "YouTube":"▶", "Spotify":"🎵", "Website":"🌐" };
-    const statusMeta = {
-      "Por hacer":   { dot: "#C4526A", label: "Por hacer" },
-      "Guion hecho": { dot: "#C9A96E", label: "Guión hecho" },
-      "Grabacion":   { dot: "#E8836E", label: "Grabación" },
-      "Edicion":     { dot: "#8a7f7a", label: "Edición" },
-      "Programado":  { dot: "#2f9f70", label: "Programado" },
-      "Publicado":   { dot: "#2f9f70", label: "Publicado" },
+    const formatIcon  = { "Reel":"🎬","Historia":"📸","Post":"🖼️","Carrusel":"📱","Foto":"📷","Articulo":"✍️","Episodio":"🎙️" };
+    const networkIcon = { "Instagram":"✦","TikTok":"♪","YouTube":"▶","Spotify":"🎵","Website":"🌐" };
+    const statusMeta  = {
+      "Pendiente":  { dot: "#C4526A",  label: "Pendiente" },
+      "En proceso": { dot: "#E8836E",  label: "En proceso" },
+      "Publicado":  { dot: "#2f9f70",  label: "Publicado" },
     };
 
     const COLUMNAS = [
-      { id: "grabar",     label: "Por grabar",      icon: "📹", color: "#C4526A", bg: "#FFF0F3",
-        statuses: ["Por hacer", "Guion hecho"] },
-      { id: "produccion", label: "En producción",   icon: "⚙️",  color: "#E8836E", bg: "#FDF0EC",
-        statuses: ["Grabacion", "Edicion", "Programado"] },
-      { id: "publicado",  label: "Publicado",        icon: "✅", color: "#2f9f70", bg: "#def3e8",
-        statuses: ["Publicado"] },
+      { status: "Pendiente",  label: "Pendiente",   icon: "📋", color: "#C4526A", bg: "#FFF0F3",  hint: "Ideas y piezas por crear" },
+      { status: "En proceso", label: "En proceso",  icon: "⚙️",  color: "#E8836E", bg: "#FDF0EC",  hint: "Grabando, editando o programado" },
+      { status: "Publicado",  label: "Publicado",   icon: "✅", color: "#2f9f70", bg: "#def3e8",  hint: "Ya salió al mundo" },
     ];
 
     const filteredItems = contentFilter
@@ -3103,9 +3121,9 @@ export default function App() {
             <small>piezas listas</small>
           </div>
           <div className="ck-kpi">
-            <span className="ck-kpi-label">En pipeline</span>
-            <strong className="ck-kpi-val" style={{color:"#C4526A"}}>{unpublished}</strong>
-            <small>por publicar</small>
+            <span className="ck-kpi-label">En proceso</span>
+            <strong className="ck-kpi-val" style={{color:"#E8836E"}}>{contentItems.filter(i=>i.status==="En proceso").length}</strong>
+            <small>en producción</small>
           </div>
           <div className="ck-kpi">
             <span className="ck-kpi-label">Red top</span>
@@ -3114,7 +3132,7 @@ export default function App() {
           </div>
           <div className="ck-kpi">
             <span className="ck-kpi-label">Consistencia</span>
-            <strong className="ck-kpi-val" style={{color: publishedContent >= 3 ? "var(--green)" : "var(--orange)"}}>
+            <strong className="ck-kpi-val" style={{color: publishedContent >= 3 ? "var(--green)" : publishedContent >= 1 ? "var(--orange)" : "#C4526A"}}>
               {publishedContent >= 3 ? "Buena" : publishedContent >= 1 ? "Regular" : "Baja"}
             </strong>
             <small>{daysSincePublish !== null ? `hace ${daysSincePublish}d` : "sin publicar"}</small>
@@ -3124,31 +3142,23 @@ export default function App() {
         {/* Alertas */}
         {(publishedContent >= 3 || (daysSincePublish !== null && daysSincePublish > 3) || contentItems.length === 0 || oldPending.length > 0) && (
           <div className="ck-alerts">
-            {publishedContent >= 3 && (
-              <div className="ck-alert ck-alert--green">Excelente consistencia — llevas {publishedContent} piezas publicadas esta semana. Sigue así.</div>
-            )}
-            {daysSincePublish !== null && daysSincePublish > 3 && (
-              <div className="ck-alert ck-alert--orange">Llevas {daysSincePublish} días sin publicar. Una pieza simple hoy vale más que la perfección mañana.</div>
-            )}
-            {contentItems.length === 0 && (
-              <div className="ck-alert ck-alert--orange">Aún no tienes contenido registrado. Empieza con una pieza simple que venda.</div>
-            )}
-            {oldPending.length > 0 && (
-              <div className="ck-alert ck-alert--red">Tienes {oldPending.length} pieza{oldPending.length > 1 ? "s" : ""} pendiente{oldPending.length > 1 ? "s" : ""} por más de 7 días. Muévelas o elimínalas.</div>
-            )}
+            {publishedContent >= 3 && <div className="ck-alert ck-alert--green">Excelente consistencia — llevas {publishedContent} piezas publicadas. Sigue así.</div>}
+            {daysSincePublish !== null && daysSincePublish > 3 && <div className="ck-alert ck-alert--orange">Llevas {daysSincePublish} días sin publicar. Una pieza simple hoy vale más que la perfección mañana.</div>}
+            {contentItems.length === 0 && <div className="ck-alert ck-alert--orange">Aún no tienes contenido registrado. Empieza con una pieza simple que venda.</div>}
+            {oldPending.length > 0 && <div className="ck-alert ck-alert--red">Tienes {oldPending.length} pieza{oldPending.length > 1 ? "s" : ""} pendiente{oldPending.length > 1 ? "s" : ""} por más de 7 días. Muévelas o elimínalas.</div>}
           </div>
         )}
 
-        {/* Formulario colapsable */}
+        {/* Formulario */}
         {showContentForm && (
           <form className="ck-form card" onSubmit={addContent}>
             <div className="ck-form-grid">
               <div className="ck-form-col">
-                <label className="ck-label">Título del contenido</label>
+                <label className="ck-label">Título del contenido *</label>
                 <input className="ck-input" placeholder="Ej: Cómo organicé mis finanzas siendo mamá" value={contentForm.title} onChange={(e) => updateContentForm("title", e.target.value)} required />
               </div>
               <div className="ck-form-col">
-                <label className="ck-label">Hook (primera frase)</label>
+                <label className="ck-label">Hook (opcional)</label>
                 <input className="ck-input" placeholder="La frase que engancha en los primeros 3 segundos" value={contentForm.hook} onChange={(e) => updateContentForm("hook", e.target.value)} />
               </div>
               <div className="ck-form-col">
@@ -3166,7 +3176,7 @@ export default function App() {
               <div className="ck-form-col">
                 <label className="ck-label">Red social</label>
                 <select className="ck-input" value={contentForm.network} onChange={(e) => updateContentForm("network", e.target.value)}>
-                  <option>Instagram</option><option>YouTube</option><option>Spotify</option><option>TikTok</option><option>Website</option><option>Otra</option>
+                  <option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Spotify</option><option>Website</option><option>Otra</option>
                 </select>
                 {contentForm.network === "Otra" && <input className="ck-input" style={{marginTop:"6px"}} placeholder="¿Cuál red?" value={contentForm.customNetwork} onChange={(e) => updateContentForm("customNetwork", e.target.value)} />}
               </div>
@@ -3175,9 +3185,9 @@ export default function App() {
                 <input className="ck-input" type="date" value={contentForm.publishDate} onChange={(e) => updateContentForm("publishDate", e.target.value)} />
               </div>
               <div className="ck-form-col">
-                <label className="ck-label">Estado inicial</label>
+                <label className="ck-label">Estado</label>
                 <select className="ck-input" value={contentForm.status} onChange={(e) => updateContentForm("status", e.target.value)}>
-                  <option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option>
+                  <option>Pendiente</option><option>En proceso</option><option>Publicado</option>
                 </select>
               </div>
             </div>
@@ -3188,24 +3198,22 @@ export default function App() {
           </form>
         )}
 
-        {/* Kanban */}
+        {/* Kanban — 3 columnas */}
         <div className="ck-kanban">
           {COLUMNAS.map((col) => {
-            const colItems = filteredItems.filter((i) => col.statuses.includes(i.status));
+            const colItems = filteredItems.filter((i) => i.status === col.status);
             return (
-              <div className="ck-col" key={col.id}>
+              <div className="ck-col" key={col.status}>
                 <div className="ck-col-header" style={{"--col-color": col.color, "--col-bg": col.bg}}>
                   <span className="ck-col-icon">{col.icon}</span>
                   <span className="ck-col-label">{col.label}</span>
                   <span className="ck-col-count">{colItems.length}</span>
                 </div>
                 <div className="ck-col-body">
-                  {colItems.length === 0 && (
-                    <div className="ck-empty">Sin piezas aquí</div>
-                  )}
+                  {colItems.length === 0 && <div className="ck-empty">{col.hint}</div>}
                   {colItems.map((item) => {
                     const gm = goalMeta[item.goal] || goalMeta["Entretener"];
-                    const sm = statusMeta[item.status] || statusMeta["Por hacer"];
+                    const sm = statusMeta[item.status] || statusMeta["Pendiente"];
                     const fi = formatIcon[item.format] || "🎬";
                     const ni = networkIcon[item.network] || "✦";
                     return (
@@ -3229,7 +3237,7 @@ export default function App() {
                           <div className="ck-status-wrap">
                             <span className="ck-status-dot" style={{background: sm.dot}}></span>
                             <select className="ck-status-select" value={item.status} onChange={(e) => updateContentStatus(item.id, e.target.value)}>
-                              <option>Por hacer</option><option>Guion hecho</option><option>Grabacion</option><option>Edicion</option><option>Programado</option><option>Publicado</option>
+                              <option>Pendiente</option><option>En proceso</option><option>Publicado</option>
                             </select>
                           </div>
                           {item.publishDate && (

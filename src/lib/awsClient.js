@@ -101,9 +101,10 @@ export const awsAuth = {
     }
   },
 
-  updateUser: async ({ password }) => {
+  updateUser: async ({ oldPassword, password }) => {
     try {
-      await updatePassword({ oldPassword: '', newPassword: password });
+      if (!oldPassword) return { error: { message: 'Se requiere la contraseña actual para cambiarla.' } };
+      await updatePassword({ oldPassword, newPassword: password });
       return { error: null };
     } catch (err) {
       return { error: { message: err.message } };
