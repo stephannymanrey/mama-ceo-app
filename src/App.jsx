@@ -1940,15 +1940,23 @@ export default function App() {
                   <p style={{margin:"0 0 10px",fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>¿Qué quieres hacer con Mamá CEO?</p>
                   <div style={{display:"grid",gap:"8px"}}>
                     {[
-                      { mode: "mama",        icon: "🌸", label: "Solo organizarme"  },
-                      { mode: "emprendedora", icon: "💼", label: "Solo mi negocio"   },
-                      { mode: "ambas",        icon: "✨", label: "Hogar y negocio"   },
-                    ].map(({ mode, icon, label }) => (
-                      <button key={mode} type="button" onClick={() => setUserMode(mode)}
-                        style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",border:`2px solid ${userMode===mode?"var(--pink)":"var(--line)"}`,borderRadius:"10px",background:userMode===mode?"rgba(212,104,122,0.06)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:userMode===mode?700:400,color:"var(--ink)"}}>
-                        <span>{icon}</span>{label}{userMode===mode&&<span style={{marginLeft:"auto",color:"var(--pink)"}}>✓</span>}
-                      </button>
-                    ))}
+                      { mode: "mama",         icon: "🌸", label: "Solo organizarme", plan: "mama",         planLabel: "Plan Mamá" },
+                      { mode: "emprendedora", icon: "💼", label: "Solo mi negocio",  plan: "emprendedora", planLabel: "Plan Emprendedora" },
+                      { mode: "ambas",        icon: "✨", label: "Hogar y negocio",  plan: "ceo",          planLabel: "Plan CEO" },
+                    ].map(({ mode, icon, label, plan, planLabel }) => {
+                      const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
+                      const needsUpgrade = (planOrder[effectivePlan] ?? 0) < (planOrder[plan] ?? 0);
+                      return (
+                        <button key={mode} type="button" onClick={() => setUserMode(mode)}
+                          style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",border:`2px solid ${userMode===mode?"var(--pink)":"var(--line)"}`,borderRadius:"10px",background:userMode===mode?"rgba(212,104,122,0.06)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:userMode===mode?700:400,color:"var(--ink)"}}>
+                          <span>{icon}</span>
+                          <span style={{flex:1}}>{label}</span>
+                          {needsUpgrade
+                            ? <span style={{fontSize:"11px",fontWeight:700,color:"#fff",background:"var(--purple)",padding:"2px 8px",borderRadius:"20px",whiteSpace:"nowrap"}}>{planLabel}</span>
+                            : userMode===mode && <span style={{color:"var(--pink)"}}>✓</span>}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
