@@ -1286,20 +1286,7 @@ export default function App() {
           applyLoadedState(remoteState || createBlankUserState());
           setCloudReadyUserId(user.id);
           setSyncError("");
-          // Verificar activación pendiente de Hotmart
-          const email = user.email || profileSetup?.email;
-          if (email) {
-            fetch(PAYMENTS_URL, {
-              method: "POST", mode: "cors",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "check-pending-hotmart", userId: user.id, email })
-            }).then(r => r.json()).then(json => {
-              if (json.pending && json.planType) {
-                setUserPlan(json.planType);
-                setPremiumExpiresAt(json.premiumExpiresAt);
-              }
-            }).catch(() => {});
-          }
+          // check-pending-hotmart temporalmente desactivado
         } else {
           const storedState = loadState();
           if (!cancelled) applyLoadedState(storedState || createBlankUserState());
