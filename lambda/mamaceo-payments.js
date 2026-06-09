@@ -98,9 +98,11 @@ export const handler = async (event) => {
   // El hottok viene como query param: ?hottok=XXX
   const isHotmartWebhook = body.event && body.data?.buyer;
   if (isHotmartWebhook) {
-    const hottok = event.queryStringParameters?.hottok;
+    const hottok = event.headers?.["x-hotmart-webhook-token"] ||
+                   event.headers?.["X-Hotmart-Webhook-Token"] ||
+                   event.queryStringParameters?.hottok;
     if (process.env.HOTMART_HOTTOK && hottok !== process.env.HOTMART_HOTTOK) {
-      console.error("Hotmart hottok inválido");
+      console.error("Hotmart hottok inválido:", hottok);
       return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "Unauthorized" }) };
     }
 
