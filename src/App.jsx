@@ -4933,7 +4933,7 @@ export default function App() {
         </div>
 
         <div className="card" style={{maxWidth:"1000px",margin:"28px auto 0",padding:"24px"}}>
-          <h3 style={{margin:"0 0 16px"}}>Tu uso actual • Plan {effectivePlan==="free"?"Gratis":effectivePlan==="emprendedora"?"Emprendedora":"CEO"}</h3>
+          <h3 style={{margin:"0 0 16px"}}>Tu uso actual • Plan {effectivePlan==="free"?"Gratis":effectivePlan==="mama"?"Mamá Organizada":effectivePlan==="emprendedora"?"Emprendedora":"CEO"}</h3>
           <div style={{display:"grid",gap:"14px"}}>
             {[{label:"Movimientos",used:movements.length,limit:currentLimits.movements},{label:"Clientes",used:clients.length,limit:currentLimits.clients},{label:"Contenidos",used:contentItems.length,limit:currentLimits.content},{label:"Tareas hogar",used:homeTasks.length,limit:currentLimits.homeTasks}].map(({label,used,limit})=>(
               <div key={label}>
