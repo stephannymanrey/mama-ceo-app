@@ -502,6 +502,7 @@ export default function App() {
   const [localWarnDismissed, setLocalWarnDismissed] = useState(() => !!localStorage.getItem("localWarnDismissed"));
   const [paymentProcessing, setPaymentProcessing] = useState(null);
   const [paymentMessage, setPaymentMessage] = useState(null);
+  const [pricingCycle, setPricingCycle] = useState("monthly");
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
 
@@ -4860,8 +4861,7 @@ export default function App() {
   }
 
   function renderPricing() {
-    const [cycle, setCycle] = React.useState("monthly");
-    const isYearly = cycle === "yearly";
+    const isYearly = pricingCycle === "yearly";
     const plans = [
       { id: "mama", name: "🌸 Mamá", price: PLAN_PRICES.mama.cop, period: " COP/mes",
         priceUsd: PLAN_PRICES.mama.usd+" USD/mes", priceYear: PLAN_PRICES.mama.copYear+" COP/año (2 meses gratis)",
@@ -4886,8 +4886,8 @@ export default function App() {
         {/* Toggle mensual / anual */}
         <div style={{display:"flex",justifyContent:"center",marginBottom:"28px"}}>
           <div style={{display:"inline-flex",background:"var(--surface,#f5f5f5)",borderRadius:"40px",padding:"4px",gap:"4px",position:"relative"}}>
-            <button onClick={()=>setCycle("monthly")} style={{padding:"8px 24px",borderRadius:"40px",border:"none",fontWeight:700,fontSize:"14px",cursor:"pointer",background:!isYearly?"#fff":"transparent",color:!isYearly?"var(--purple)":"var(--muted)",boxShadow:!isYearly?"0 2px 8px rgba(0,0,0,0.12)":"none",transition:"all 0.2s"}}>Mensual</button>
-            <button onClick={()=>setCycle("yearly")} style={{padding:"8px 24px",borderRadius:"40px",border:"none",fontWeight:700,fontSize:"14px",cursor:"pointer",background:isYearly?"#fff":"transparent",color:isYearly?"var(--purple)":"var(--muted)",boxShadow:isYearly?"0 2px 8px rgba(0,0,0,0.12)":"none",transition:"all 0.2s",display:"flex",alignItems:"center",gap:"6px"}}>
+            <button onClick={()=>setPricingCycle("monthly")} style={{padding:"8px 24px",borderRadius:"40px",border:"none",fontWeight:700,fontSize:"14px",cursor:"pointer",background:!isYearly?"#fff":"transparent",color:!isYearly?"var(--purple)":"var(--muted)",boxShadow:!isYearly?"0 2px 8px rgba(0,0,0,0.12)":"none",transition:"all 0.2s"}}>Mensual</button>
+            <button onClick={()=>setPricingCycle("yearly")} style={{padding:"8px 24px",borderRadius:"40px",border:"none",fontWeight:700,fontSize:"14px",cursor:"pointer",background:isYearly?"#fff":"transparent",color:isYearly?"var(--purple)":"var(--muted)",boxShadow:isYearly?"0 2px 8px rgba(0,0,0,0.12)":"none",transition:"all 0.2s",display:"flex",alignItems:"center",gap:"6px"}}>
               Anual <span style={{background:"var(--green)",color:"#fff",fontSize:"11px",fontWeight:800,padding:"2px 8px",borderRadius:"20px"}}>2 meses gratis</span>
             </button>
           </div>
