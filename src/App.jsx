@@ -439,6 +439,11 @@ const HOTMART_LINKS = {
   emprendedora: "https://pay.hotmart.com/O106234254M?off=p2i17fh0",
   ceo:          "https://pay.hotmart.com/O106234254M?off=f4oowsve",
 };
+const HOTMART_LINKS_YEAR = {
+  mama:         "https://pay.hotmart.com/O106234254M?off=56ccbjyb",
+  emprendedora: "https://pay.hotmart.com/O106234254M?off=03099551",
+  ceo:          "https://pay.hotmart.com/O106234254M?off=sd3qm0jg",
+};
 
 const PAYPAL_CLIENT_ID = "AeS56ptU569VQKMGhVeWn1cYsDYTFlq0oxmRPmzcle0g1jxhBjcu4uo29AQofLNHhkzrwRxKYm4tKchS";
 const PAYPAL_PLAN_IDS  = {
@@ -4855,6 +4860,8 @@ export default function App() {
   }
 
   function renderPricing() {
+    const [cycle, setCycle] = React.useState("monthly");
+    const isYearly = cycle === "yearly";
     const plans = [
       { id: "mama", name: "🌸 Mamá", price: PLAN_PRICES.mama.cop, period: " COP/mes",
         priceUsd: PLAN_PRICES.mama.usd+" USD/mes", priceYear: PLAN_PRICES.mama.copYear+" COP/año (2 meses gratis)",
@@ -4876,6 +4883,16 @@ export default function App() {
       <section className="panel workspace-panel">
         <div className="section-title"><h2>Planes y Precios</h2><p>14 días de prueba gratis con acceso completo — elige tu plan cuando estés lista</p></div>
 
+        {/* Toggle mensual / anual */}
+        <div style={{display:"flex",justifyContent:"center",marginBottom:"28px"}}>
+          <div style={{display:"inline-flex",background:"var(--surface,#f5f5f5)",borderRadius:"40px",padding:"4px",gap:"4px",position:"relative"}}>
+            <button onClick={()=>setCycle("monthly")} style={{padding:"8px 24px",borderRadius:"40px",border:"none",fontWeight:700,fontSize:"14px",cursor:"pointer",background:!isYearly?"#fff":"transparent",color:!isYearly?"var(--purple)":"var(--muted)",boxShadow:!isYearly?"0 2px 8px rgba(0,0,0,0.12)":"none",transition:"all 0.2s"}}>Mensual</button>
+            <button onClick={()=>setCycle("yearly")} style={{padding:"8px 24px",borderRadius:"40px",border:"none",fontWeight:700,fontSize:"14px",cursor:"pointer",background:isYearly?"#fff":"transparent",color:isYearly?"var(--purple)":"var(--muted)",boxShadow:isYearly?"0 2px 8px rgba(0,0,0,0.12)":"none",transition:"all 0.2s",display:"flex",alignItems:"center",gap:"6px"}}>
+              Anual <span style={{background:"var(--green)",color:"#fff",fontSize:"11px",fontWeight:800,padding:"2px 8px",borderRadius:"20px"}}>2 meses gratis</span>
+            </button>
+          </div>
+        </div>
+
         {/* Mensaje de resultado de pago */}
         {paymentMessage&&(
           <div style={{maxWidth:"1000px",margin:"0 auto 20px",padding:"14px 20px",borderRadius:"12px",background:paymentMessage.type==="success"?"#ecfdf5":"#fef2f2",border:`1px solid ${paymentMessage.type==="success"?"#86efac":"#fca5a5"}`,color:paymentMessage.type==="success"?"#166534":"#991b1b",fontSize:"15px",fontWeight:600,display:"flex",alignItems:"center",gap:"12px"}}>
@@ -4896,9 +4913,15 @@ export default function App() {
                 <div style={{padding:"24px"}}>
                   <h3 style={{margin:"0 0 4px",fontSize:"20px",color:plan.color}}>{plan.name}</h3>
                   {plan.desc&&<p style={{margin:"0 0 10px",fontSize:"13px",color:"var(--muted)",lineHeight:1.4}}>{plan.desc}</p>}
-                  <div style={{fontSize:"34px",fontWeight:800,color:plan.color,lineHeight:1,marginBottom:"2px"}}>{plan.price}<span style={{fontSize:"15px",fontWeight:500,color:"var(--muted)"}}>{plan.period}</span></div>
-                  {plan.priceUsd&&<p style={{margin:"0 0 2px",fontSize:"12px",color:"var(--muted)"}}>{plan.priceUsd}</p>}
-                  {plan.priceYear&&<p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>💡 {plan.priceYear}</p>}
+                  <div style={{fontSize:"34px",fontWeight:800,color:plan.color,lineHeight:1,marginBottom:"2px"}}>
+                    {isYearly ? PLAN_PRICES[plan.id].copYear : plan.price}
+                    <span style={{fontSize:"15px",fontWeight:500,color:"var(--muted)"}}>{isYearly ? " COP/año" : plan.period}</span>
+                  </div>
+                  <p style={{margin:"0 0 2px",fontSize:"12px",color:"var(--muted)"}}>{isYearly ? PLAN_PRICES[plan.id].usdYear+" USD/año" : plan.priceUsd}</p>
+                  {isYearly
+                    ? <p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>✅ 2 meses gratis vs pago mensual</p>
+                    : plan.priceYear&&<p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>💡 {plan.priceYear}</p>
+                  }
                   <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
                     {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>✓</span><span>{f}</span></div>))}
                   </div>
@@ -4908,10 +4931,10 @@ export default function App() {
                   ):(
                     <div style={{display:"grid",gap:"10px"}}>
                       <button
-                        onClick={()=>window.open(HOTMART_LINKS[plan.id],"_blank")}
+                        onClick={()=>window.open(isYearly ? HOTMART_LINKS_YEAR[plan.id] : HOTMART_LINKS[plan.id],"_blank")}
                         style={{width:"100%",padding:"13px 0",borderRadius:"10px",border:"none",background:plan.color,color:"#fff",fontWeight:700,fontSize:"15px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",transition:"opacity 0.2s"}}
                       >
-                        <span style={{fontSize:"18px"}}>🛒</span> Suscribirme ahora
+                        <span style={{fontSize:"18px"}}>🛒</span> {isYearly ? "Suscribirme anual" : "Suscribirme mensual"}
                       </button>
                       <p style={{margin:0,fontSize:"12px",color:"var(--muted)",textAlign:"center"}}>Pago seguro · Tarjeta, PSE, efectivo y más · Cancela cuando quieras</p>
                     </div>
