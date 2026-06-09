@@ -1,26 +1,22 @@
 /**
  * Lambda: mamaceo-payments  (ES Module — para index.mjs en Node 22)
- * Acción se pasa en body.action: "create-mp-subscription" | "verify-paypal" | "mp-webhook"
+ * Acción se pasa en body.action, excepto el webhook de Hotmart que se detecta
+ * por el campo `event` en el body.
  *
  * Variables de entorno requeridas:
- *   MP_ACCESS_TOKEN   — Access Token privado de Mercado Pago
- *   PAYPAL_CLIENT_ID  — Client ID live de PayPal
- *   PAYPAL_SECRET     — Client Secret live de PayPal
+ *   HOTMART_HOTTOK    — Token de verificación del webhook de Hotmart
+ *   HOTMART_OFFER_MAP — JSON: {"offerCode":"mama","offerCode2":"emprendedora",...}
+ *   PAYPAL_CLIENT_ID  — Client ID live de PayPal (backup)
+ *   PAYPAL_SECRET     — Client Secret live de PayPal (backup)
  *   APP_BASE_URL      — URL de la app, ej: https://www.mamaceoapp.co
  *   DYNAMODB_TABLE    — nombre de la tabla DynamoDB (ej: user_states)
  */
 
 import https from "https";
-import { DynamoDBClient, UpdateItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, UpdateItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
 
 const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION || "us-east-1" });
 const TABLE  = process.env.DYNAMODB_TABLE || "user_states";
-
-const MP_PLAN_PRICES = {
-  mama:         { amount: 19900, currency_id: "COP", reason: "MamaCEO — Plan Mamá" },
-  emprendedora: { amount: 39900, currency_id: "COP", reason: "MamaCEO — Plan Emprendedora" },
-  ceo:          { amount: 64900, currency_id: "COP", reason: "MamaCEO — Plan CEO" },
-};
 
 const CORS = {
   "Content-Type": "application/json",
@@ -55,8 +51,17 @@ async function getPayPalToken() {
   return res.body.access_token;
 }
 
+async function findUserIdByEmail(email) {
+  const result = await dynamo.send(new ScanCommand({
+    TableName: TABLE,
+    FilterExpression: "userEmail = :e",
+    ExpressionAttributeValues: { ":e": { S: email.toLowerCase() } },
+    ProjectionExpression: "userId",
+  }));
+  return result.Items?.[0]?.userId?.S || null;
+}
+
 export const handler = async (event) => {
-  // OPTIONS preflight
   const method = event.requestContext?.http?.method || event.httpMethod || "POST";
   if (method === "OPTIONS") return { statusCode: 200, headers: CORS, body: "" };
 
@@ -69,40 +74,112 @@ export const handler = async (event) => {
     event.requestContext?.authorizer?.claims?.sub ||
     null;
 
-  // ── 1. Crear suscripción Mercado Pago ──────────────────────────────────────
-  if (action === "create-mp-subscription") {
-    const { planType, userEmail } = body;
-    if (!planType || !MP_PLAN_PRICES[planType])
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "planType inválido" }) };
-    if (!process.env.MP_ACCESS_TOKEN)
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: "MP_ACCESS_TOKEN no configurado" }) };
-
-    const plan    = MP_PLAN_PRICES[planType];
-    const baseUrl = (process.env.APP_BASE_URL || "https://www.mamaceoapp.co").replace(/\/$/, "");
-
-    const mpRes = await httpsRequest(
-      "https://api.mercadopago.com/preapproval",
-      { method: "POST", headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}`, "Content-Type": "application/json" } },
-      {
-        reason: plan.reason,
-        auto_recurring: { frequency: 1, frequency_type: "months", transaction_amount: plan.amount, currency_id: plan.currency_id },
-        payer_email:      userEmail || undefined,
-        back_url:         `${baseUrl}/?mp_result=approved&mp_plan=${planType}`,
-        failure_back_url: `${baseUrl}/?mp_result=failure&mp_plan=${planType}`,
-        pending_back_url: `${baseUrl}/?mp_result=pending&mp_plan=${planType}`,
-        status:           "pending",
-      }
-    );
-
-    if (mpRes.status !== 201 && mpRes.status !== 200) {
-      console.error("MP error:", JSON.stringify(mpRes.body));
-      return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: "Error MP", detail: mpRes.body }) };
+  // ── 1. Guardar email del usuario (llamado desde el frontend al abrir precios) ─
+  if (action === "save-email") {
+    const { userId: uid, email } = body;
+    if (!uid || !email)
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Faltan campos" }) };
+    try {
+      await dynamo.send(new UpdateItemCommand({
+        TableName: TABLE,
+        Key: { userId: { S: uid } },
+        UpdateExpression: "SET userEmail = :e",
+        ExpressionAttributeValues: { ":e": { S: email.toLowerCase() } },
+      }));
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true }) };
+    } catch (e) {
+      console.error("save-email error:", e.message);
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
     }
-
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ init_point: mpRes.body.init_point }) };
   }
 
-  // ── 2. Verificar suscripción PayPal ────────────────────────────────────────
+  // ── 2. Webhook de Hotmart ──────────────────────────────────────────────────
+  // Hotmart envía: { event: "PURCHASE_APPROVED", data: { buyer, purchase, product, offer } }
+  // El hottok viene como query param: ?hottok=XXX
+  const isHotmartWebhook = body.event && body.data?.buyer;
+  if (isHotmartWebhook) {
+    const hottok = event.queryStringParameters?.hottok;
+    if (process.env.HOTMART_HOTTOK && hottok !== process.env.HOTMART_HOTTOK) {
+      console.error("Hotmart hottok inválido");
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "Unauthorized" }) };
+    }
+
+    const eventType   = body.event;         // "PURCHASE_APPROVED", "SUBSCRIPTION_CANCELLATION", etc.
+    const buyerEmail  = body.data?.buyer?.email;
+    const offerCode   = body.data?.offer?.code;
+    const purchStatus = body.data?.purchase?.status; // "APPROVED", "CANCELED", "REFUNDED"
+
+    console.log(`Hotmart webhook: event=${eventType} email=${buyerEmail} offer=${offerCode} status=${purchStatus}`);
+
+    // Mapear offerCode → planType
+    let offerMap = {};
+    try { offerMap = JSON.parse(process.env.HOTMART_OFFER_MAP || "{}"); } catch {}
+    const planType = offerMap[offerCode];
+
+    if (!buyerEmail)
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ received: true, note: "sin email" }) };
+
+    // Activar o desactivar plan según el evento
+    const isApproved = ["PURCHASE_APPROVED", "PURCHASE_COMPLETE"].includes(eventType) ||
+                       purchStatus === "APPROVED";
+    const isCanceled = ["SUBSCRIPTION_CANCELLATION", "PURCHASE_REFUNDED", "PURCHASE_CANCELED"].includes(eventType) ||
+                       ["CANCELED", "REFUNDED"].includes(purchStatus);
+
+    let foundUserId = null;
+    try { foundUserId = await findUserIdByEmail(buyerEmail); } catch (e) { console.error("Scan error:", e.message); }
+
+    if (!foundUserId) {
+      // Guardar activación pendiente por email para cuando el usuario inicie sesión
+      console.log(`Usuario no encontrado para email ${buyerEmail} — guardando activación pendiente`);
+      try {
+        await dynamo.send(new UpdateItemCommand({
+          TableName: TABLE,
+          Key: { userId: { S: `pending_${buyerEmail.toLowerCase()}` } },
+          UpdateExpression: "SET userEmail = :e, pendingPlan = :p, pendingExpiresAt = :x, updatedAt = :u",
+          ExpressionAttributeValues: {
+            ":e": { S: buyerEmail.toLowerCase() },
+            ":p": { S: isApproved ? (planType || "mama") : "free" },
+            ":x": { N: String(isApproved ? Date.now() + 35 * 24 * 60 * 60 * 1000 : 0) },
+            ":u": { N: String(Date.now()) },
+          },
+        }));
+      } catch (e) { console.error("pending save error:", e.message); }
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ received: true, note: "activación pendiente guardada" }) };
+    }
+
+    // Usuario encontrado — actualizar plan directamente
+    try {
+      if (isApproved && planType) {
+        const premiumExpiresAt = Date.now() + 35 * 24 * 60 * 60 * 1000; // 35 días (buffer para renovación)
+        await dynamo.send(new UpdateItemCommand({
+          TableName: TABLE,
+          Key: { userId: { S: foundUserId } },
+          UpdateExpression: "SET userPlan = :p, premiumExpiresAt = :e, hotmartEmail = :he",
+          ExpressionAttributeValues: {
+            ":p":  { S: planType },
+            ":e":  { N: String(premiumExpiresAt) },
+            ":he": { S: buyerEmail.toLowerCase() },
+          },
+        }));
+        console.log(`Plan activado: userId=${foundUserId} plan=${planType}`);
+      } else if (isCanceled) {
+        await dynamo.send(new UpdateItemCommand({
+          TableName: TABLE,
+          Key: { userId: { S: foundUserId } },
+          UpdateExpression: "SET userPlan = :p, premiumExpiresAt = :e",
+          ExpressionAttributeValues: {
+            ":p": { S: "free" },
+            ":e": { N: "0" },
+          },
+        }));
+        console.log(`Plan cancelado: userId=${foundUserId}`);
+      }
+    } catch (e) { console.error("DynamoDB update error:", e.message); }
+
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ received: true }) };
+  }
+
+  // ── 3. Verificar suscripción PayPal (backup) ───────────────────────────────
   if (action === "verify-paypal") {
     const { subscriptionId, planType } = body;
     if (!subscriptionId || !planType)
@@ -120,7 +197,7 @@ export const handler = async (event) => {
     if (ppRes.status !== 200 || ppRes.body.status !== "ACTIVE")
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ success: false, error: "Suscripción no activa" }) };
 
-    const premiumExpiresAt = Date.now() + 31 * 24 * 60 * 60 * 1000;
+    const premiumExpiresAt = Date.now() + 35 * 24 * 60 * 60 * 1000;
 
     if (userId) {
       try {
@@ -136,18 +213,53 @@ export const handler = async (event) => {
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ success: true, planType, premiumExpiresAt }) };
   }
 
-  // ── 3. Webhook Mercado Pago ────────────────────────────────────────────────
-  if (action === "mp-webhook" || (event.path || "").endsWith("/mp-webhook")) {
-    const topic      = body.type || event.queryStringParameters?.topic;
-    const resourceId = body.data?.id || event.queryStringParameters?.id;
-    if (topic === "subscription_preapproval" && resourceId && process.env.MP_ACCESS_TOKEN) {
-      const mpRes = await httpsRequest(
-        `https://api.mercadopago.com/preapproval/${resourceId}`,
-        { method: "GET", headers: { Authorization: `Bearer ${process.env.MP_ACCESS_TOKEN}` } }
-      );
-      if (mpRes.status === 200) console.log(`MP webhook: ${resourceId} status=${mpRes.body.status}`);
+  // ── 4. Activar plan pendiente de Hotmart al iniciar sesión ─────────────────
+  if (action === "check-pending-hotmart") {
+    const { userId: uid, email } = body;
+    if (!uid || !email)
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Faltan campos" }) };
+
+    try {
+      const result = await dynamo.send(new ScanCommand({
+        TableName: TABLE,
+        FilterExpression: "userId = :pk",
+        ExpressionAttributeValues: { ":pk": { S: `pending_${email.toLowerCase()}` } },
+      }));
+      const pending = result.Items?.[0];
+      if (!pending?.pendingPlan?.S || pending.pendingPlan.S === "free")
+        return { statusCode: 200, headers: CORS, body: JSON.stringify({ pending: false }) };
+
+      const planType       = pending.pendingPlan.S;
+      const premiumExpiresAt = Number(pending.pendingExpiresAt?.N || 0);
+
+      if (premiumExpiresAt < Date.now())
+        return { statusCode: 200, headers: CORS, body: JSON.stringify({ pending: false }) };
+
+      // Mover activación pendiente al usuario real
+      await dynamo.send(new UpdateItemCommand({
+        TableName: TABLE,
+        Key: { userId: { S: uid } },
+        UpdateExpression: "SET userPlan = :p, premiumExpiresAt = :e, userEmail = :em",
+        ExpressionAttributeValues: {
+          ":p":  { S: planType },
+          ":e":  { N: String(premiumExpiresAt) },
+          ":em": { S: email.toLowerCase() },
+        },
+      }));
+
+      // Limpiar registro pendiente
+      await dynamo.send(new UpdateItemCommand({
+        TableName: TABLE,
+        Key: { userId: { S: `pending_${email.toLowerCase()}` } },
+        UpdateExpression: "SET pendingPlan = :p",
+        ExpressionAttributeValues: { ":p": { S: "free" } },
+      }));
+
+      return { statusCode: 200, headers: CORS, body: JSON.stringify({ pending: true, planType, premiumExpiresAt }) };
+    } catch (e) {
+      console.error("check-pending error:", e.message);
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
     }
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ received: true }) };
   }
 
   return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: "Acción no reconocida" }) };

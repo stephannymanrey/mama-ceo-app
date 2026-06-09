@@ -784,6 +784,18 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Guardar email en DynamoDB al abrir precios (para webhook de Hotmart)
+  useEffect(() => {
+    if (activeView !== "pricing" || !user) return;
+    const email = user.email || profileSetup?.email;
+    if (!email) return;
+    fetch(PAYMENTS_URL, {
+      method: "POST", mode: "cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "save-email", userId: user.id, email })
+    }).catch(() => {});
+  }, [activeView, user]);
+
   // Renderizar botones PayPal cuando la usuaria está en la página de precios
   useEffect(() => {
     if (activeView !== "pricing") return;
@@ -846,8 +858,7 @@ export default function App() {
       if (json.init_point) {
         window.location.href = json.init_point;
       } else {
-        const detail = json.detail ? ` | ${JSON.stringify(json.detail).slice(0,200)}` : "";
-        setPaymentMessage({ type: "error", text: (json.error || "Error MP") + detail });
+        setPaymentMessage({ type: "error", text: json.error || "Error al conectar con Mercado Pago. Intenta de nuevo." });
         setPaymentProcessing(null);
       }
     } catch (err) {
@@ -1310,6 +1321,20 @@ export default function App() {
           applyLoadedState(remoteState || createBlankUserState());
           setCloudReadyUserId(user.id);
           setSyncError("");
+          // Verificar activación pendiente de Hotmart
+          const email = user.email || profileSetup?.email;
+          if (email) {
+            fetch(PAYMENTS_URL, {
+              method: "POST", mode: "cors",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "check-pending-hotmart", userId: user.id, email })
+            }).then(r => r.json()).then(json => {
+              if (json.pending && json.planType) {
+                setUserPlan(json.planType);
+                setPremiumExpiresAt(json.premiumExpiresAt);
+              }
+            }).catch(() => {});
+          }
         } else {
           const storedState = loadState();
           if (!cancelled) applyLoadedState(storedState || createBlankUserState());
