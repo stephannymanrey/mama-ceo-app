@@ -502,6 +502,7 @@ export default function App() {
   const [localWarnDismissed, setLocalWarnDismissed] = useState(() => !!localStorage.getItem("localWarnDismissed"));
   const [paymentProcessing, setPaymentProcessing] = useState(null);
   const [paymentMessage, setPaymentMessage] = useState(null);
+  const [upgradeModal, setUpgradeModal] = useState(null);
   const [pricingCycle, setPricingCycle] = useState("monthly");
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
@@ -2135,7 +2136,7 @@ export default function App() {
             return (
               <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id}
                 onClick={() => {
-                  if (locked) { setPaymentMessage({ type: "error", text: `Para acceder a "${item.label}" necesitas el Plan Emprendedora o superior.` }); setActiveView("pricing"); setMobileMenuOpen(false); return; }
+                  if (locked) { setUpgradeModal({ feature: item.label, plan: "Emprendedora" }); setMobileMenuOpen(false); return; }
                   setActiveView(item.id); setMobileMenuOpen(false);
                 }}>
                 <span>{item.icon}</span>
@@ -2505,6 +2506,28 @@ export default function App() {
           </span>
         </footer>
       </main>
+
+      {/* Modal de upgrade */}
+      {upgradeModal && (
+        <div onClick={() => setUpgradeModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+          <div onClick={e => e.stopPropagation()} style={{background:"#fff",borderRadius:"20px",padding:"32px 28px",maxWidth:"360px",width:"100%",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,0.18)"}}>
+            <div style={{fontSize:"40px",marginBottom:"12px"}}>🔒</div>
+            <h3 style={{margin:"0 0 10px",fontSize:"20px",color:"var(--ink)"}}>Módulo bloqueado</h3>
+            <p style={{margin:"0 0 20px",color:"var(--muted)",fontSize:"15px",lineHeight:1.5}}>
+              <strong style={{color:"var(--purple)"}}>{upgradeModal.feature}</strong> está disponible desde el <strong>Plan {upgradeModal.plan}</strong>.<br/>
+              Actualiza tu plan para desbloquear este y más módulos.
+            </p>
+            <button onClick={() => { setActiveView("pricing"); setUpgradeModal(null); }}
+              style={{width:"100%",padding:"14px",borderRadius:"12px",border:"none",background:"var(--purple)",color:"#fff",fontWeight:700,fontSize:"16px",cursor:"pointer",marginBottom:"10px"}}>
+              Ver planes y precios →
+            </button>
+            <button onClick={() => setUpgradeModal(null)}
+              style={{width:"100%",padding:"10px",borderRadius:"12px",border:"1px solid var(--line)",background:"none",color:"var(--muted)",fontSize:"14px",cursor:"pointer"}}>
+              Ahora no
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 
