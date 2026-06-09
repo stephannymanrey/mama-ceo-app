@@ -2128,12 +2128,22 @@ export default function App() {
         </button>
 
         <nav className={`main-menu ${mobileMenuOpen ? "mobile-open" : ""}`} aria-label="Navegacion principal">
-          {menu.map((item) => (
-            <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id} onClick={() => { setActiveView(item.id); setMobileMenuOpen(false); }}>
-              <span>{item.icon}</span>
-              {item.label}
-            </button>
-          ))}
+          {menu.map((item) => {
+            const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
+            const itemPlan = ["business","clients","studio","content"].includes(item.id) ? "emprendedora" : "free";
+            const locked = (planOrder[effectivePlan] ?? 0) < (planOrder[itemPlan] ?? 0);
+            return (
+              <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id}
+                onClick={() => {
+                  if (locked) { setPaymentMessage({ type: "error", text: `Para acceder a "${item.label}" necesitas el Plan Emprendedora o superior.` }); setActiveView("pricing"); setMobileMenuOpen(false); return; }
+                  setActiveView(item.id); setMobileMenuOpen(false);
+                }}>
+                <span>{item.icon}</span>
+                {item.label}
+                {locked && <span style={{marginLeft:"auto",fontSize:"10px",background:"var(--purple)",color:"#fff",padding:"1px 6px",borderRadius:"20px"}}>🔒</span>}
+              </button>
+            );
+          })}
         </nav>
 
         <div className="currency-box">
