@@ -842,7 +842,7 @@ export default function App() {
   };
 
   const effectivePlan = useMemo(() => {
-    if (userPlan === "ceo" || userPlan === "emprendedora") {
+    if (userPlan === "ceo" || userPlan === "emprendedora" || userPlan === "mama") {
       if (premiumExpiresAt && Date.now() > premiumExpiresAt) return "free";
       return userPlan;
     }
