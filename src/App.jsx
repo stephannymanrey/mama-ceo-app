@@ -434,6 +434,12 @@ const API_URL      = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/def
 const GEMINI_URL   = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-gemini";
 const PAYMENTS_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-payments";
 
+const HOTMART_LINKS = {
+  mama:         "https://pay.hotmart.com/O106234254M?off=x324h3to",
+  emprendedora: "https://pay.hotmart.com/O106234254M?off=p2i17fh0",
+  ceo:          "https://pay.hotmart.com/O106234254M?off=f4oowsve",
+};
+
 const PAYPAL_CLIENT_ID = "AeS56ptU569VQKMGhVeWn1cYsDYTFlq0oxmRPmzcle0g1jxhBjcu4uo29AQofLNHhkzrwRxKYm4tKchS";
 const PAYPAL_PLAN_IDS  = {
   mama:         "P-1JS89076U5207463PNITBXNI",
@@ -796,53 +802,6 @@ export default function App() {
     }).catch(() => {});
   }, [activeView, user]);
 
-  // Renderizar botones PayPal cuando la usuaria está en la página de precios
-  useEffect(() => {
-    if (activeView !== "pricing") return;
-    const loadAndRender = () => {
-      if (!window.paypal) return;
-      ["mama", "emprendedora", "ceo"].forEach(planId => {
-        const el = document.getElementById(`paypal-btn-${planId}`);
-        if (!el || el.children.length > 0) return;
-        window.paypal.Buttons({
-          style: { shape: "rect", color: "gold", layout: "vertical", label: "subscribe", height: 40 },
-          createSubscription: (_data, actions) => actions.subscription.create({ plan_id: PAYPAL_PLAN_IDS[planId] }),
-          onApprove: async (data) => {
-            setPaymentProcessing(planId);
-            try {
-              const res  = await fetch(PAYMENTS_URL, {
-                method: "POST",
-                mode: "cors",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ action: "verify-paypal", subscriptionId: data.subscriptionID, planType: planId })
-              });
-              const json = await res.json();
-              if (json.success) {
-                setUserPlan(planId);
-                setPremiumExpiresAt(json.premiumExpiresAt);
-                setPaymentMessage({ type: "success", text: `¡Suscripción con PayPal activada! Bienvenida al plan ${planId === "mama" ? "Mamá" : planId === "emprendedora" ? "Emprendedora" : "CEO"}. 🎉` });
-              } else {
-                setPaymentMessage({ type: "error", text: "No pudimos confirmar tu pago. Escríbenos a soporte." });
-              }
-            } catch {
-              setPaymentMessage({ type: "error", text: "Error de conexión. Intenta de nuevo." });
-            }
-            setPaymentProcessing(null);
-          },
-          onError: () => setPaymentMessage({ type: "error", text: "Ocurrió un error con PayPal. Intenta de nuevo." })
-        }).render(`#paypal-btn-${planId}`);
-      });
-    };
-
-    if (window.paypal) {
-      loadAndRender();
-    } else {
-      const script = document.createElement("script");
-      script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&vault=true&intent=subscription&currency=USD`;
-      script.onload = loadAndRender;
-      document.body.appendChild(script);
-    }
-  }, [activeView]);
 
   const startMPSubscription = async (planId) => {
     if (!user) { setPaymentMessage({ type: "error", text: "Debes iniciar sesión para suscribirte." }); return; }
@@ -4948,25 +4907,13 @@ export default function App() {
                     <div style={{padding:"10px",background:"rgba(0,0,0,0.05)",borderRadius:"8px",textAlign:"center",color:plan.color,fontWeight:700,fontSize:"14px"}}>Plan actual ✓</div>
                   ):(
                     <div style={{display:"grid",gap:"10px"}}>
-                      {/* Botón Mercado Pago */}
                       <button
-                        onClick={()=>startMPSubscription(plan.id)}
-                        disabled={!!paymentProcessing}
-                        style={{width:"100%",padding:"11px 0",borderRadius:"10px",border:"none",background:mpLoading?"#ccc":"#009ee3",color:"#fff",fontWeight:700,fontSize:"14px",cursor:mpLoading?"not-allowed":"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",transition:"opacity 0.2s"}}
+                        onClick={()=>window.open(HOTMART_LINKS[plan.id],"_blank")}
+                        style={{width:"100%",padding:"13px 0",borderRadius:"10px",border:"none",background:plan.color,color:"#fff",fontWeight:700,fontSize:"15px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",transition:"opacity 0.2s"}}
                       >
-                        {mpLoading?<span style={{fontSize:"18px",animation:"spin 1s linear infinite",display:"inline-block"}}>⏳</span>:<span style={{fontSize:"17px"}}>💳</span>}
-                        {mpLoading?"Redirigiendo...":"Pagar con Mercado Pago"}
+                        <span style={{fontSize:"18px"}}>🛒</span> Suscribirme ahora
                       </button>
-
-                      {/* Separador */}
-                      <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-                        <div style={{flex:1,height:"1px",background:"var(--line)"}}></div>
-                        <span style={{fontSize:"12px",color:"var(--muted)"}}>o</span>
-                        <div style={{flex:1,height:"1px",background:"var(--line)"}}></div>
-                      </div>
-
-                      {/* Botón PayPal (se renderiza dinámicamente) */}
-                      <div id={`paypal-btn-${plan.id}`} style={{minHeight:"44px"}}></div>
+                      <p style={{margin:0,fontSize:"12px",color:"var(--muted)",textAlign:"center"}}>Pago seguro · Tarjeta, PSE, efectivo y más · Cancela cuando quieras</p>
                     </div>
                   )}
                 </div>
