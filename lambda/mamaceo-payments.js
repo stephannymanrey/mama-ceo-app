@@ -13,7 +13,7 @@
  */
 
 import https from "https";
-import { DynamoDBClient, UpdateItemCommand, ScanCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, UpdateItemCommand, ScanCommand, GetItemCommand } from "@aws-sdk/client-dynamodb";
 
 const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION || "us-east-1" });
 const TABLE  = process.env.DYNAMODB_TABLE || "user_states";
@@ -222,12 +222,11 @@ export const handler = async (event) => {
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Faltan campos" }) };
 
     try {
-      const result = await dynamo.send(new ScanCommand({
+      const result = await dynamo.send(new GetItemCommand({
         TableName: TABLE,
-        FilterExpression: "userId = :pk",
-        ExpressionAttributeValues: { ":pk": { S: `pending_${email.toLowerCase()}` } },
+        Key: { userId: { S: `pending_${email.toLowerCase()}` } },
       }));
-      const pending = result.Items?.[0];
+      const pending = result.Item ? { pendingPlan: result.Item.pendingPlan, pendingExpiresAt: result.Item.pendingExpiresAt } : null;
       if (!pending?.pendingPlan?.S || pending.pendingPlan.S === "free")
         return { statusCode: 200, headers: CORS, body: JSON.stringify({ pending: false }) };
 
