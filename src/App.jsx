@@ -184,7 +184,7 @@ const promesas = [
 const ALL_MENU_ITEMS = [
   { id: "dashboard", label: "Inicio",          icon: "🏠" },
   { id: "home",      label: "Mi Hogar",         icon: "🌸" },
-  { id: "ceo",       label: "Para Mí",           icon: "💛" },
+  { id: "ceo",       label: "Cómo Estoy",         icon: "💛" },
   { id: "business",  label: "Mi Negocio",       icon: "💼" },
   { id: "clients",   label: "Mis Clientas",     icon: "👩‍💼" },
   { id: "studio",    label: "Studio ✦",          icon: "🎬" },
@@ -586,7 +586,9 @@ export default function App() {
   });
 
   const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "", date: getTodayInputValue() });
+  const [formErrors, setFormErrors] = useState({});
   const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue() });
+  const [clientFormErrors, setClientFormErrors] = useState({});
   const [contentFilter, setContentFilter] = useState("");
   const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
@@ -1416,8 +1418,13 @@ export default function App() {
   const addMovement = (event) => {
     event.preventDefault();
     const amount = Number(form.amount);
-    if (!form.description.trim() || !form.category.trim() || !amount) return;
-    
+    const errs = {};
+    if (!form.description.trim()) errs.description = "Escribe una descripción";
+    if (!form.category.trim())    errs.category    = "Escribe la categoría";
+    if (!amount || amount <= 0)   errs.amount      = "Ingresa un monto mayor a 0";
+    if (Object.keys(errs).length) { setFormErrors(errs); return; }
+    setFormErrors({});
+
     // Validar límite del plan
     if (movements.length >= currentLimits.movements) {
       setUpgradeReason(`Has alcanzado el límite de ${currentLimits.movements} movimientos de tu plan.`);
@@ -1451,8 +1458,13 @@ export default function App() {
   const addClient = (event) => {
     event.preventDefault();
     const amount = Number(clientForm.amount);
-    if (!clientForm.name.trim() || !clientForm.service.trim() || !amount) return;
-    
+    const errs = {};
+    if (!clientForm.name.trim())    errs.name    = "Escribe el nombre de la clienta";
+    if (!clientForm.service.trim()) errs.service = "Escribe el servicio o producto";
+    if (!amount || amount <= 0)     errs.amount  = "Ingresa un monto mayor a 0";
+    if (Object.keys(errs).length) { setClientFormErrors(errs); return; }
+    setClientFormErrors({});
+
     // Validar límite del plan
     if (clients.length >= currentLimits.clients) {
       setUpgradeReason(`Has alcanzado el límite de ${currentLimits.clients} clientes de tu plan.`);
@@ -1528,7 +1540,10 @@ export default function App() {
     setHomeForm({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
   };
 
-  const updateForm = (field, value) => setForm((current) => ({ ...current, [field]: value }));
+  const updateForm = (field, value) => {
+    setForm((current) => ({ ...current, [field]: value }));
+    if (formErrors[field]) setFormErrors(e => ({ ...e, [field]: "" }));
+  };
   const updateMovementType = (type) => setForm((current) => ({
     ...current,
     type,
@@ -1541,7 +1556,10 @@ export default function App() {
       createdAt: timestampFromInputDate(date)
     } : movement));
   };
-  const updateClientForm = (field, value) => setClientForm((current) => ({ ...current, [field]: value }));
+  const updateClientForm = (field, value) => {
+    setClientForm((current) => ({ ...current, [field]: value }));
+    if (clientFormErrors[field]) setClientFormErrors(e => ({ ...e, [field]: "" }));
+  };
   const updateContentForm = (field, value) => setContentForm((current) => ({ ...current, [field]: value }));
   const updateGoalForm = (field, value) => setGoalForm((current) => ({ ...current, [field]: value }));
   const updateHomeForm = (field, value) => setHomeForm((current) => ({ ...current, [field]: value }));
@@ -2072,7 +2090,7 @@ export default function App() {
           <div className="profile-modal" style={{maxWidth:"500px"}}>
             <div className="profile-modal-header">
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
-                <h2>? Desbloquea todo tu potencial</h2>
+                <h2>🚀 Desbloquea todo tu potencial</h2>
                 <button type="button" onClick={() => setShowUpgradeModal(false)}
                   style={{border:"none",background:"none",fontSize:"24px",cursor:"pointer",color:"var(--muted)",lineHeight:1,padding:"0 4px"}}>×</button>
               </div>
@@ -2083,27 +2101,27 @@ export default function App() {
                 <h3 style={{margin:"0 0 16px",fontSize:"20px",color:"var(--purple)"}}>Plan Premium</h3>
                 <div style={{display:"grid",gap:"12px",marginBottom:"16px"}}>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
+                    <span style={{fontSize:"20px"}}>✅</span>
                     <span>Movimientos financieros ilimitados</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
+                    <span style={{fontSize:"20px"}}>✅</span>
                     <span>Clientes ilimitados</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
+                    <span style={{fontSize:"20px"}}>✅</span>
                     <span>Contenido ilimitado</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
+                    <span style={{fontSize:"20px"}}>✅</span>
                     <span>Tareas del hogar ilimitadas</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
+                    <span style={{fontSize:"20px"}}>✅</span>
                     <span>Sincronización en la nube</span>
                   </div>
                   <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{fontSize:"20px"}}>?</span>
+                    <span style={{fontSize:"20px"}}>✅</span>
                     <span>Soporte prioritario</span>
                   </div>
                 </div>
@@ -3095,12 +3113,14 @@ export default function App() {
           <div className="client-alerts">
             {urgentClients.length > 0 && (
               <div className="alert-banner alert-orange">
-                <strong>{urgentClients.length} lead{urgentClients.length > 1 ? "s" : ""} sin contacto:</strong> {urgentClients.map((c) => c.name).join(", ")} — actuas hoy o se enfriaran.
+                <strong>{urgentClients.length} lead{urgentClients.length > 1 ? "s" : ""} sin contacto:</strong>{" "}
+                {urgentClients.slice(0,3).map(c=>c.name).join(", ")}{urgentClients.length > 3 ? ` y ${urgentClients.length-3} más` : ""} — actúa hoy o se enfriarán.
               </div>
             )}
             {urgentSubscriptions.length > 0 && (
               <div className="alert-banner alert-red">
-                <strong>{urgentSubscriptions.length} clienta{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong> {urgentSubscriptions.map((c) => c.name).join(", ")} — riesgo de perder la relacion.
+                <strong>{urgentSubscriptions.length} clienta{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong>{" "}
+                {urgentSubscriptions.slice(0,3).map(c=>c.name).join(", ")}{urgentSubscriptions.length > 3 ? ` y ${urgentSubscriptions.length-3} más` : ""} — riesgo de perder la relación.
               </div>
             )}
           </div>
@@ -3112,9 +3132,19 @@ export default function App() {
           {/* Formulario nueva clienta */}
           <form className="card clients-form-card" onSubmit={addClient}>
             <h3>Nueva clienta</h3>
-            <input placeholder="Nombre" value={clientForm.name} onChange={(e) => updateClientForm("name", e.target.value)} required />
-            <input placeholder="Servicio o producto" value={clientForm.service} onChange={(e) => updateClientForm("service", e.target.value)} required />
-            <input placeholder="Telefono (ej: 573001234567)" value={clientForm.phone} onChange={(e) => updateClientForm("phone", e.target.value)} />
+            {clients.length >= currentLimits.clients && (
+              <div className="plan-limit-banner">
+                ⚠️ Llegaste al límite de <strong>{currentLimits.clients} clientas</strong> de tu plan.{" "}
+                <button type="button" className="plan-limit-link" onClick={() => setActiveView("pricing")}>Ver planes →</button>
+              </div>
+            )}
+            <input placeholder="Nombre completo *" value={clientForm.name} onChange={(e) => updateClientForm("name", e.target.value)}
+              className={clientFormErrors.name ? "input-error" : ""} />
+            {clientFormErrors.name && <span className="field-error">{clientFormErrors.name}</span>}
+            <input placeholder="Servicio o producto *" value={clientForm.service} onChange={(e) => updateClientForm("service", e.target.value)}
+              className={clientFormErrors.service ? "input-error" : ""} />
+            {clientFormErrors.service && <span className="field-error">{clientFormErrors.service}</span>}
+            <input placeholder="Teléfono (ej: 573001234567)" value={clientForm.phone} onChange={(e) => updateClientForm("phone", e.target.value)} />
             <select value={clientForm.status} onChange={(e) => updateClientForm("status", e.target.value)}>
               {stages.map((s) => <option key={s}>{s}</option>)}
             </select>
@@ -3122,14 +3152,16 @@ export default function App() {
               <span>Último contacto</span>
               <input type="date" value={clientForm.lastContactDate} onChange={(e) => updateClientForm("lastContactDate", e.target.value)} />
             </label>
-            <input placeholder="Proxima accion" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} />
-            <input placeholder="Monto potencial" type="number" min="0" value={clientForm.amount} onChange={(e) => updateClientForm("amount", e.target.value)} required />
+            <input placeholder="Próxima acción (opcional)" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} />
+            <input placeholder="Monto potencial *" type="number" min="0" value={clientForm.amount} onChange={(e) => updateClientForm("amount", e.target.value)}
+              className={clientFormErrors.amount ? "input-error" : ""} />
+            {clientFormErrors.amount && <span className="field-error">{clientFormErrors.amount}</span>}
             <select value={clientForm.source} onChange={(e) => updateClientForm("source", e.target.value)}>
-              <option value="">De donde llego?</option>
+              <option value="">¿De dónde llegó? (opcional)</option>
               {defaultSources.map((s) => <option key={s}>{s}</option>)}
             </select>
             {clientForm.source === "Otra" && (
-              <input placeholder="Cual fuente?" value={clientForm.customSource} onChange={(e) => updateClientForm("customSource", e.target.value)} />
+              <input placeholder="¿Cuál fuente?" value={clientForm.customSource} onChange={(e) => updateClientForm("customSource", e.target.value)} />
             )}
             <button className="primary-button" type="submit">Guardar clienta</button>
           </form>
@@ -3683,7 +3715,7 @@ export default function App() {
                     placeholder="Hora (opcional)"
                     style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr auto",gap:"8px"}}>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
                   <select value={apptForm.type} onChange={e => setApptForm(f => ({...f,type:e.target.value}))}
                     style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}}>
                     {Object.keys(TYPE_ICONS).map(t => <option key={t}>{t}</option>)}
@@ -3692,8 +3724,8 @@ export default function App() {
                     style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}}>
                     {Object.entries(RECURRENCE_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
                   </select>
-                  <button type="submit" style={{padding:"9px 16px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>+</button>
                 </div>
+                <button type="submit" style={{padding:"10px 16px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700,width:"100%"}}>Agregar cita</button>
               </form>
               {upcomingAppts.length > 0 ? (
                 <div style={{display:"grid",gap:"8px"}}>
@@ -4095,8 +4127,8 @@ export default function App() {
 
     const header = (
       <div className="section-title">
-        <h2>Para Mí 💛</h2>
-        <p>Tu bienestar de hoy — cómo estás emocionalmente, hábitos que te cuidan y tiempo para ti.</p>
+        <h2>¿Cómo estás hoy? 💛</h2>
+        <p>3 minutos solo para ti. Cuéntale a la app cómo te sientes y ella te sugiere qué necesitas.</p>
       </div>
     );
 
@@ -4481,9 +4513,19 @@ export default function App() {
     return (
       <form className="card form-card" onSubmit={addMovement}>
         <h3>Agregar movimiento</h3>
+        {movements.length >= currentLimits.movements && (
+          <div className="plan-limit-banner">
+            ⚠️ Llegaste al límite de <strong>{currentLimits.movements} movimientos</strong> de tu plan.{" "}
+            <button type="button" className="plan-limit-link" onClick={() => setActiveView("pricing")}>Ver planes →</button>
+          </div>
+        )}
         <div className="segmented"><button type="button" className={form.type === "income" ? "selected" : ""} onClick={() => updateMovementType("income")}>Ingreso</button><button type="button" className={form.type === "expense" ? "selected" : ""} onClick={() => updateMovementType("expense")}>Gasto</button></div>
-        <input placeholder="Descripcion" value={form.description} onChange={(event) => updateForm("description", event.target.value)} />
-        <input placeholder="Categoria" value={form.category} onChange={(event) => updateForm("category", event.target.value)} />
+        <input placeholder="Descripción *" value={form.description} onChange={(event) => updateForm("description", event.target.value)}
+          className={formErrors.description ? "input-error" : ""} />
+        {formErrors.description && <span className="field-error">{formErrors.description}</span>}
+        <input placeholder="Categoría * (ej: Mentoría, Publicidad)" value={form.category} onChange={(event) => updateForm("category", event.target.value)}
+          className={formErrors.category ? "input-error" : ""} />
+        {formErrors.category && <span className="field-error">{formErrors.category}</span>}
         <select value={form.classification} onChange={(event) => updateForm("classification", event.target.value)}>
           {form.type === "income" ? (
             <>
@@ -4501,7 +4543,9 @@ export default function App() {
         </select>
         <select value={form.bank} onChange={(event) => updateForm("bank", event.target.value)}>{banks.map((bank) => <option key={bank}>{bank}</option>)}</select>
         <input type="date" value={form.date} onChange={(event) => updateForm("date", event.target.value)} />
-        <input placeholder="Monto" type="number" min="0" value={form.amount} onChange={(event) => updateForm("amount", event.target.value)} />
+        <input placeholder="Monto *" type="number" min="0" value={form.amount} onChange={(event) => updateForm("amount", event.target.value)}
+          className={formErrors.amount ? "input-error" : ""} />
+        {formErrors.amount && <span className="field-error">{formErrors.amount}</span>}
         <button className="primary-button" type="submit">Guardar movimiento</button>
       </form>
     );

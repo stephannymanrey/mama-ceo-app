@@ -3389,6 +3389,41 @@ button {
   font: inherit;
 }
 
+.field-error {
+  display: block;
+  color: #C4526A;
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: -6px;
+  padding-left: 2px;
+}
+
+.input-error {
+  border-color: #C4526A !important;
+  background: rgba(196, 82, 106, 0.04) !important;
+}
+
+.plan-limit-banner {
+  background: #fffbeb;
+  border: 1px solid rgba(202, 138, 4, 0.3);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #78350f;
+  line-height: 1.4;
+}
+
+.plan-limit-link {
+  background: none;
+  border: none;
+  color: #C4526A;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
 .clients-form-card input:focus,
 .clients-form-card select:focus {
   outline: none;
