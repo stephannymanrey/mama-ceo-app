@@ -611,6 +611,7 @@ export default function App() {
   const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
   const [clientSearch, setClientSearch] = useState("");
+  const [showClientDetails, setShowClientDetails] = useState(false);
   const [weekBlocks, setWeekBlocks] = useState(stored?.weekBlocks || {});
   const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Pendiente", goal: "Vender", publishDate: "" });
   const [showContentForm, setShowContentForm] = useState(false);
@@ -3047,59 +3048,45 @@ export default function App() {
       return client.phone ? `https://wa.me/${client.phone.replace(/\D/g,"")}?text=${msg}` : `https://wa.me/?text=${msg}`;
     };
 
+    const pipelineStages = stages.filter(s => s !== "Venta ganada");
+    const stageEmoji = { "Lead frio": "🧊", "Lead tibio": "🌡️", "Lead caliente": "🔥" };
+
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Clientes</h2>
-          <p>{activeClients} activas - {money.format(wonSalesTotal)} en ventas cerradas</p>
+          <p>{activeClients} activas · {money.format(wonSalesTotal)} cerrados</p>
         </div>
 
-        {/* KPIs */}
-        <div className="clients-kpi-row">
-          {stages.map((stage) => (
-            <div className="client-kpi" key={stage}>
-              <span>{stage}</span>
-              <strong>{clients.filter((c) => c.status === stage).length}</strong>
-              <small>{money.format(stageTotal(stage))}</small>
-            </div>
-          ))}
-          <div className="client-kpi">
-            <span>Pipeline total</span>
-            <strong style={{fontSize:"14px"}}>{money.format(pipelineTotal)}</strong>
-            <small>potencial en proceso</small>
+        {/* 3 KPIs clave */}
+        <div className="cl-kpi-row">
+          <div className="cl-kpi">
+            <span>En proceso</span>
+            <strong>{activeClients}</strong>
+            <small>{money.format(pipelineTotal)} potencial</small>
           </div>
-          <div className="client-kpi">
-            <span>Conversion</span>
+          <div className="cl-kpi cl-kpi-divider">
+            <span>Conversión</span>
             <strong>{conversionRate}%</strong>
-            <small>{totalWon} de {totalLeads}</small>
+            <small>{totalWon} cerradas de {totalLeads}</small>
           </div>
-          <div className="client-kpi">
-            <span>Cierre promedio</span>
-            <strong>{avgCloseDays !== null ? `${avgCloseDays}d` : "-"}</strong>
-            <small>{avgCloseDays !== null ? "dias hasta venta" : "sin datos"}</small>
+          <div className="cl-kpi cl-kpi-divider">
+            <span>Ventas cerradas</span>
+            <strong style={{color:"#1D9E75"}}>{money.format(wonSalesTotal)}</strong>
+            <small>{paidClients.length} clientas</small>
           </div>
-          {topSource && (
-            <div className="client-kpi">
-              <span>Mejor fuente</span>
-              <strong style={{fontSize:"13px"}}>{topSource[0]}</strong>
-              <small>{topSource[1]} clienta{topSource[1] !== 1 ? "s" : ""}</small>
-            </div>
-          )}
         </div>
 
-        {/* Accion del dia */}
+        {/* Acción del día */}
         {priorityClient && (
           <div className="action-day-banner">
             <div className="action-day-left">
-              <span className="action-day-label">Accion del dia</span>
+              <span className="action-day-label">Acción del día</span>
               <strong>{priorityClient.name}</strong>
-              <span>{priorityClient.status} • {money.format(priorityClient.amount)} • hace {daysSince(priorityClient.lastContact)} dias sin contacto</span>
+              <span>{priorityClient.status} · {money.format(priorityClient.amount)} · hace {daysSince(priorityClient.lastContact)} días sin contacto</span>
               <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"8px"}}>
-                <button type="button" className="contact-today-btn" style={{width:"auto",padding:"0 14px"}} onClick={() => logContact(priorityClient.id, priorityClient.name)}>Contacte hoy</button>
-                <a href={waLink(priorityClient)} target="_blank" rel="noreferrer"
-                  style={{display:"inline-flex",alignItems:"center",gap:"6px",padding:"0 14px",minHeight:"32px",borderRadius:"8px",background:"#25d366",color:"#fff",fontSize:"12px",fontWeight:700,textDecoration:"none"}}>
-                  WhatsApp
-                </a>
+                <button type="button" className="contact-today-btn" style={{width:"auto",padding:"0 14px"}} onClick={() => logContact(priorityClient.id, priorityClient.name)}>✓ Contacté hoy</button>
+                <a href={waLink(priorityClient)} target="_blank" rel="noreferrer" className="cl-wa-btn">WhatsApp</a>
               </div>
             </div>
             <div className="action-day-right">
@@ -3107,7 +3094,7 @@ export default function App() {
               <div style={{marginTop:"8px",textAlign:"center"}}>
                 <strong style={{fontSize:"28px",color:"var(--green)",display:"block",lineHeight:1}}>{contactsThisWeek}</strong>
                 <small style={{color:"var(--muted)",fontSize:"11px",textTransform:"uppercase",fontWeight:800}}>contactos esta semana</small>
-                <small style={{color:"var(--green)",fontSize:"11px",fontWeight:700}}>{contactsThisWeek >= 5 ? "excelente ritmo" : contactsThisWeek >= 3 ? "buen avance" : "meta: 5+"}</small>
+                <small style={{color:"var(--green)",fontSize:"11px",fontWeight:700}}>{contactsThisWeek >= 5 ? "¡Excelente ritmo!" : contactsThisWeek >= 3 ? "Buen avance" : "Meta: 5 esta semana"}</small>
               </div>
             </div>
           </div>
@@ -3119,13 +3106,13 @@ export default function App() {
             {urgentClients.length > 0 && (
               <div className="alert-banner alert-orange">
                 <strong>{urgentClients.length} lead{urgentClients.length > 1 ? "s" : ""} sin contacto:</strong>{" "}
-                {urgentClients.slice(0,3).map(c=>c.name).join(", ")}{urgentClients.length > 3 ? ` y ${urgentClients.length-3} más` : ""} — actúa hoy o se enfriarán.
+                {urgentClients.slice(0,3).map(c=>c.name).join(", ")}{urgentClients.length > 3 ? ` y ${urgentClients.length-3} más` : ""} — actúa hoy.
               </div>
             )}
             {urgentSubscriptions.length > 0 && (
               <div className="alert-banner alert-red">
                 <strong>{urgentSubscriptions.length} clienta{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong>{" "}
-                {urgentSubscriptions.slice(0,3).map(c=>c.name).join(", ")}{urgentSubscriptions.length > 3 ? ` y ${urgentSubscriptions.length-3} más` : ""} — riesgo de perder la relación.
+                {urgentSubscriptions.slice(0,3).map(c=>c.name).join(", ")}{urgentSubscriptions.length > 3 ? ` y ${urgentSubscriptions.length-3} más` : ""}
               </div>
             )}
           </div>
@@ -3134,7 +3121,7 @@ export default function App() {
         {/* Layout: formulario + pipeline */}
         <div className="clients-main-layout">
 
-          {/* Formulario nueva clienta */}
+          {/* Formulario simplificado */}
           <form className="card clients-form-card" onSubmit={addClient}>
             <h3>Nueva clienta</h3>
             {clients.length >= currentLimits.clients && (
@@ -3143,81 +3130,107 @@ export default function App() {
                 <button type="button" className="plan-limit-link" onClick={() => setActiveView("pricing")}>Ver planes →</button>
               </div>
             )}
-            <input placeholder="Nombre completo *" value={clientForm.name} onChange={(e) => updateClientForm("name", e.target.value)}
+
+            {/* Nombre */}
+            <input placeholder="Nombre *" value={clientForm.name} onChange={(e) => updateClientForm("name", e.target.value)}
               className={clientFormErrors.name ? "input-error" : ""} />
             {clientFormErrors.name && <span className="field-error">{clientFormErrors.name}</span>}
+
+            {/* Servicio */}
             <input placeholder="Servicio o producto *" value={clientForm.service} onChange={(e) => updateClientForm("service", e.target.value)}
               className={clientFormErrors.service ? "input-error" : ""} />
             {clientFormErrors.service && <span className="field-error">{clientFormErrors.service}</span>}
-            <input placeholder="Teléfono (ej: 573001234567)" value={clientForm.phone} onChange={(e) => updateClientForm("phone", e.target.value)} />
-            <select value={clientForm.status} onChange={(e) => updateClientForm("status", e.target.value)}>
-              {stages.map((s) => <option key={s}>{s}</option>)}
-            </select>
-            <label className="inline-date-field">
-              <span>Último contacto</span>
-              <input type="date" value={clientForm.lastContactDate} onChange={(e) => updateClientForm("lastContactDate", e.target.value)} />
-            </label>
-            <input placeholder="Próxima acción (opcional)" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} />
-            <input placeholder="Monto potencial *" type="number" min="0" value={clientForm.amount} onChange={(e) => updateClientForm("amount", e.target.value)}
+
+            {/* Monto */}
+            <input placeholder="Monto *" type="number" min="0" value={clientForm.amount} onChange={(e) => updateClientForm("amount", e.target.value)}
               className={clientFormErrors.amount ? "input-error" : ""} />
             {clientFormErrors.amount && <span className="field-error">{clientFormErrors.amount}</span>}
-            <select value={clientForm.source} onChange={(e) => updateClientForm("source", e.target.value)}>
-              <option value="">¿De dónde llegó? (opcional)</option>
-              {defaultSources.map((s) => <option key={s}>{s}</option>)}
-            </select>
-            {clientForm.source === "Otra" && (
-              <input placeholder="¿Cuál fuente?" value={clientForm.customSource} onChange={(e) => updateClientForm("customSource", e.target.value)} />
+
+            {/* Estado — chips visuales */}
+            <div>
+              <p className="cl-form-label">Estado</p>
+              <div className="cl-status-chips">
+                {stages.map(s => (
+                  <button type="button" key={s}
+                    className={`cl-status-chip${clientForm.status === s ? " active" : ""}`}
+                    onClick={() => updateClientForm("status", s)}>
+                    {stageEmoji[s] || "✓"} {s.replace("Lead ", "")}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Más detalles — colapsable */}
+            <button type="button" className="cl-details-toggle" onClick={() => setShowClientDetails(v => !v)}>
+              {showClientDetails ? "▲ Menos detalles" : "▼ Agregar detalles (teléfono, fuente, acción)"}
+            </button>
+
+            {showClientDetails && (
+              <>
+                <input placeholder="Teléfono (ej: 573001234567)" value={clientForm.phone} onChange={(e) => updateClientForm("phone", e.target.value)} />
+                <input placeholder="Próxima acción (opcional)" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} />
+                <select value={clientForm.source} onChange={(e) => updateClientForm("source", e.target.value)}>
+                  <option value="">¿De dónde llegó?</option>
+                  {defaultSources.map((s) => <option key={s}>{s}</option>)}
+                </select>
+                {clientForm.source === "Otra" && (
+                  <input placeholder="¿Cuál fuente?" value={clientForm.customSource} onChange={(e) => updateClientForm("customSource", e.target.value)} />
+                )}
+                <label className="inline-date-field">
+                  <span>Último contacto</span>
+                  <input type="date" value={clientForm.lastContactDate} onChange={(e) => updateClientForm("lastContactDate", e.target.value)} />
+                </label>
+              </>
             )}
+
             <button className="primary-button" type="submit">Guardar clienta</button>
           </form>
 
-          {/* Pipeline */}
+          {/* Pipeline — solo 3 columnas (sin "Venta ganada") */}
           <div className="clients-pipeline-wrap">
             <div className="clients-search-bar">
-              <input placeholder="Buscar clienta por nombre..." value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} className="clients-search-input" />
+              <input placeholder="Buscar por nombre..." value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} className="clients-search-input" />
             </div>
             <div className="pipeline-board">
-              {stages.map((stage) => (
+              {pipelineStages.map((stage) => (
                 <div className="pipeline-column" key={stage}>
                   <div className="pipeline-col-header">
-                    <h3>{stage}</h3>
-                    <small>{money.format(stageTotal(stage))}</small>
+                    <h3>{stageEmoji[stage]} {stage.replace("Lead ", "")}</h3>
+                    <small>{filteredClients(stage).length} · {money.format(stageTotal(stage))}</small>
                   </div>
                   {filteredClients(stage).map((client) => {
                     const alert = getAlert(client);
                     const days = daysSince(client.lastContact);
+                    const daysColor = days > 7 ? "#C4526A" : days > 3 ? "#e87b1e" : "#1D9E75";
                     return (
                       <div className={`lead-card lead-alert-${alert}`} key={client.id}>
                         <div className="lead-card-top">
                           <strong>{client.name}</strong>
-                          <span className={`alert-dot alert-dot-${alert}`}></span>
+                          <span className="cl-amount-chip">{money.format(client.amount)}</span>
                         </div>
-                        <small>{client.service} • {money.format(client.amount)}</small>
-                        {client.source && <small style={{color:"var(--purple)",fontWeight:700}}>{client.source}</small>}
-                        <p>{client.nextAction || "Hacer seguimiento"}</p>
-                        <small className="last-contact">
-                          {client.lastContact ? `Último contacto: ${formatShortDate(client.lastContactDate || client.lastContact)} • hace ${days} dia${days !== 1 ? "s" : ""}` : "Sin contacto"}
-                        </small>
-                        <input className="client-date-input" type="date" value={inputDateFromValue(client.lastContactDate || client.lastContact)} onChange={(e) => updateClientLastContact(client.id, e.target.value)} aria-label={`Último contacto de ${client.name}`} />
-                        <small className="last-contact">Actualizado: {formatShortDate(client.updatedAt || client.lastContact)}</small>
-                        <div style={{display:"flex",gap:"6px",marginTop:"6px"}}>
-                          <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>Contacte hoy</button>
-                          <a href={waLink(client)} target="_blank" rel="noreferrer"
-                            style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:"36px",height:"32px",borderRadius:"8px",background:"#25d366",color:"#fff",fontSize:"16px",textDecoration:"none",flexShrink:0}}>
-                            W
-                          </a>
+                        <p className="cl-service-text">{client.service}</p>
+                        {client.nextAction && <p className="cl-next-action">→ {client.nextAction}</p>}
+                        <div className="cl-days-row">
+                          <span className="cl-days-badge" style={{color:daysColor,background:daysColor+"18"}}>
+                            {client.lastContact ? `Hace ${days} día${days !== 1 ? "s" : ""}` : "Sin contacto"}
+                          </span>
+                        </div>
+                        <div className="cl-card-actions">
+                          <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>✓ Contacté</button>
+                          <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-wa-btn">WA</a>
                         </div>
                         <div className="lead-stage-btns">
-                          {stages.filter((s) => s !== stage).map((s) => (
-                            <button type="button" key={s} onClick={() => moveClientStatus(client.id, s)}>{s.replace("Lead ", "")}</button>
+                          {pipelineStages.filter(s => s !== stage).map(s => (
+                            <button type="button" key={s} onClick={() => moveClientStatus(client.id, s)}>{stageEmoji[s]} {s.replace("Lead ","")}</button>
                           ))}
-                          <button type="button" className="delete-btn" onClick={() => confirmDelete("Eliminar?", () => setClients((c) => c.filter((cl) => cl.id !== client.id)))}>x</button>
+                          <button type="button" className="cl-close-btn" onClick={() => moveClientStatus(client.id, "Venta ganada")}>✓ Cerré</button>
+                          <button type="button" className="delete-btn" onClick={() => confirmDelete("¿Eliminar esta clienta?", () => setClients(c => c.filter(cl => cl.id !== client.id)))}>×</button>
                         </div>
                       </div>
                     );
                   })}
                   {filteredClients(stage).length === 0 && (
-                    <p style={{fontSize:"12px",color:"var(--muted)",textAlign:"center",padding:"12px 0"}}>Sin clientas aqui</p>
+                    <p className="cl-empty-col">Sin clientas aquí</p>
                   )}
                 </div>
               ))}
@@ -3225,37 +3238,36 @@ export default function App() {
           </div>
         </div>
 
-        {/* Clientas que pagaron */}
+        {/* Clientas que ya pagaron */}
         <div className="paid-clients-section card">
           <div className="section-title compact-title">
             <h2>Clientas que ya pagaron</h2>
-            <p>Cuida la experiencia, fomenta la recompra y los referidos.</p>
+            <p>Cuida la relación, fomenta la recompra y los referidos.</p>
           </div>
-          {paidClients.length === 0 && <p className="helper-copy">Aun no tienes ventas cerradas registradas.</p>}
+          {paidClients.length === 0 && <p className="helper-copy">Tus ventas cerradas aparecerán aquí.</p>}
           <div className="paid-client-grid">
-            {paidClients.map((client) => (
-              <article className="paid-client-card" key={client.id}>
-                <div className="paid-client-header">
-                  <div>
-                    <strong>{client.name}</strong>
-                    <small>{client.service} • {money.format(client.amount)}</small>
+            {paidClients.map((client) => {
+              const days = daysSince(client.lastContact);
+              const daysColor = days > 30 ? "#C4526A" : days > 14 ? "#e87b1e" : "#1D9E75";
+              return (
+                <article className="paid-client-card" key={client.id}>
+                  <div className="paid-client-header">
+                    <div>
+                      <strong>{client.name}</strong>
+                      <small>{client.service} · {money.format(client.amount)}</small>
+                    </div>
+                    <span className="cl-days-badge" style={{color:daysColor,background:daysColor+"18",fontSize:"11px"}}>
+                      {client.lastContact ? `Hace ${days}d` : "Sin contacto"}
+                    </span>
                   </div>
-                  <span className={`alert-dot alert-dot-${getAlert(client)}`}></span>
-                </div>
-                {client.source && <small style={{color:"var(--purple)",fontWeight:700}}>{client.source}</small>}
-                <small className="last-contact">{client.lastContact ? `Último contacto: ${formatShortDate(client.lastContactDate || client.lastContact)} • hace ${daysSince(client.lastContact)} dias` : "Sin contacto registrado"}</small>
-                <input className="client-date-input" type="date" value={inputDateFromValue(client.lastContactDate || client.lastContact)} onChange={(e) => updateClientLastContact(client.id, e.target.value)} aria-label={`Último contacto de ${client.name}`} />
-                <small className="last-contact">Actualizado: {formatShortDate(client.updatedAt || client.lastContact)}</small>
-                <div style={{display:"flex",gap:"6px"}}>
-                  <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>Contacte hoy</button>
-                  <a href={waLink(client)} target="_blank" rel="noreferrer"
-                    style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:"36px",height:"32px",borderRadius:"8px",background:"#25d366",color:"#fff",fontSize:"16px",textDecoration:"none",flexShrink:0}}>
-                    W
-                  </a>
-                </div>
-                <textarea placeholder="Notas de seguimiento, entrega, resultados o proxima recompra..." value={client.notes || ""} onChange={(e) => updateClientNotes(client.id, e.target.value)} />
-              </article>
-            ))}
+                  <div style={{display:"flex",gap:"6px"}}>
+                    <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>✓ Contacté hoy</button>
+                    <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-wa-btn">WA</a>
+                  </div>
+                  <textarea placeholder="Notas: entrega, resultados, próxima recompra…" value={client.notes || ""} onChange={(e) => updateClientNotes(client.id, e.target.value)} />
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>

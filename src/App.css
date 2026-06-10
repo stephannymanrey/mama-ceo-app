@@ -2510,6 +2510,16 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .cl-kpi-row {
+    grid-template-columns: 1fr;
+    border-radius: 12px;
+  }
+
+  .cl-kpi-divider {
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+
   .purpose-grid > .affirmation-card,
   .purpose-grid > .purpose-card,
   .purpose-grid > .progress-card,
@@ -3469,6 +3479,176 @@ button {
 @media (max-width: 1180px) {
   .business-top-grid { grid-template-columns: 1fr; }
   .business-movements-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Clientes rediseño ── */
+
+/* KPIs compactos */
+.cl-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.cl-kpi {
+  padding: 16px 18px;
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+
+.cl-kpi-divider {
+  border-left: 1px solid var(--line);
+}
+
+.cl-kpi span {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.cl-kpi strong {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.cl-kpi small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Chips de estado en el form */
+.cl-form-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--muted);
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.cl-status-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cl-status-chip {
+  padding: 6px 12px;
+  border: 1.5px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.cl-status-chip.active {
+  border-color: var(--purple);
+  background: var(--purple-soft);
+  color: var(--purple);
+}
+
+/* Toggle detalles */
+.cl-details-toggle {
+  border: none;
+  background: none;
+  color: var(--purple);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 0;
+  text-align: left;
+  font-family: inherit;
+  opacity: 0.8;
+  transition: opacity 0.15s;
+}
+
+.cl-details-toggle:hover { opacity: 1; }
+
+/* Lead card simplificada */
+.cl-amount-chip {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.cl-service-text {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cl-next-action {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ink);
+  font-style: italic;
+}
+
+.cl-days-row {
+  display: flex;
+  align-items: center;
+}
+
+.cl-days-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.cl-card-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.cl-wa-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  min-height: 32px;
+  border-radius: 8px;
+  background: #25d366;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-decoration: none;
+  flex-shrink: 0;
+  font-family: inherit;
+}
+
+.cl-close-btn {
+  min-height: 28px;
+  border: 1.5px solid #1D9E75 !important;
+  border-radius: 6px;
+  background: #f0fdf7 !important;
+  color: #1D9E75 !important;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+.cl-empty-col {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  padding: 20px 0;
+  margin: 0;
 }
 
 /* ── Clientes mejorado ── */
