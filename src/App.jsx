@@ -184,7 +184,7 @@ const promesas = [
 const ALL_MENU_ITEMS = [
   { id: "dashboard", label: "Inicio",          icon: "🏠" },
   { id: "home",      label: "Mi Hogar",         icon: "🌸" },
-  { id: "ceo",       label: "Cómo Estoy",         icon: "💛" },
+  { id: "ceo",       label: "Cómo Estoy",         icon: "🫶" },
   { id: "business",  label: "Mi Negocio",       icon: "💼" },
   { id: "clients",   label: "Mis Clientas",     icon: "👩‍💼" },
   { id: "studio",    label: "Studio ✦",          icon: "🎬" },
@@ -2605,6 +2605,29 @@ export default function App() {
             <p className="db-affirmation">&ldquo;{todayAffirmation}&rdquo;</p>
           </div>
 
+          {/* Acciones de hoy — primero */}
+          <div className="db-focus-card">
+            <div className="db-focus-header">
+              <span>&#x1F3AF; Acciones de hoy</span>
+              <span className="db-focus-sub">{completedTasks} de {tasks.length} completadas</span>
+            </div>
+            {tasks.length === 0 && (
+              <p style={{fontSize:"13px",color:"var(--muted)",margin:"8px 0 0"}}>Sin tareas a&uacute;n &mdash; &iquest;qu&eacute; har&aacute;s hoy para acercarte a tu meta?</p>
+            )}
+            {tasks.length > 0 && focusTasks.length === 0 && (
+              <p style={{fontSize:"13px",color:"var(--green)",fontWeight:600,margin:"8px 0 0"}}>&#x2705; Todas tus tareas completadas hoy</p>
+            )}
+            {focusTasks.map((task) => (
+              <label key={task.id} className="db-task-row">
+                <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--purple)"}} />
+                <span>{task.text}</span>
+              </label>
+            ))}
+            {tasks.filter((t) => !t.done).length > 3 && (
+              <p style={{fontSize:"12px",color:"var(--muted)",margin:"8px 0 0"}}>+{tasks.filter((t) => !t.done).length - 3} m&aacute;s pendientes</p>
+            )}
+          </div>
+
           {/* Meta del mes + Semana */}
           <div className="db-meta-row">
             <div className="db-meta-card">
@@ -2654,29 +2677,6 @@ export default function App() {
               )}
             </div>
           )}
-
-          {/* Acciones de hoy */}
-          <div className="db-focus-card">
-            <div className="db-focus-header">
-              <span>&#x1F3AF; Acciones de hoy</span>
-              <span className="db-focus-sub">{completedTasks} de {tasks.length} completadas</span>
-            </div>
-            {tasks.length === 0 && (
-              <p style={{fontSize:"13px",color:"var(--muted)",margin:"8px 0 0"}}>Sin tareas a&uacute;n &mdash; &iquest;qu&eacute; har&aacute;s hoy para acercarte a tu meta?</p>
-            )}
-            {tasks.length > 0 && focusTasks.length === 0 && (
-              <p style={{fontSize:"13px",color:"var(--green)",fontWeight:600,margin:"8px 0 0"}}>&#x2705; Todas tus tareas completadas hoy</p>
-            )}
-            {focusTasks.map((task) => (
-              <label key={task.id} className="db-task-row">
-                <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--purple)"}} />
-                <span>{task.text}</span>
-              </label>
-            ))}
-            {tasks.filter((t) => !t.done).length > 3 && (
-              <p style={{fontSize:"12px",color:"var(--muted)",margin:"8px 0 0"}}>+{tasks.filter((t) => !t.done).length - 3} m&aacute;s pendientes</p>
-            )}
-          </div>
 
           {/* Acceso r&#xE1;pido */}
           <div className="db-quick-grid">
@@ -4127,7 +4127,7 @@ export default function App() {
 
     const header = (
       <div className="section-title">
-        <h2>¿Cómo estás hoy? 💛</h2>
+        <h2>¿Cómo estás hoy? 🫶</h2>
         <p>3 minutos solo para ti. Cuéntale a la app cómo te sientes y ella te sugiere qué necesitas.</p>
       </div>
     );

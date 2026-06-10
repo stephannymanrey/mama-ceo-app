@@ -439,7 +439,7 @@ const BLUEPRINTS = {
     tip:"Precio de entrada perfecto para construir confianza. Si no lo compran a $9, tampoco comprarán tu curso de $197. Empieza aquí."
   },
   "Masterclass": {
-    emoji:"🎓", color:"#9B59B6", bg:"#F8F0FF",
+    emoji:"🎓", color:"#C9903A", bg:"#FFF8ED",
     descripcion:"Una clase grabada de 60 a 90 minutos que enseña un resultado concreto. La asistente se va con claridad y un plan de acción.",
     estructura:["Introducción: quién eres y por qué eres la persona indicada (5 min)","El problema y por qué la mayoría falla (10 min)","Tu método paso a paso (40-60 min)","Resumen y ejercicio de cierre (10 min)","CTA final: siguiente paso o upsell a tu servicio"],
     pasos:["Define el resultado exacto que logra al terminar","Crea un outline de 4-6 partes (no más de 6 temas)","Graba con Loom, Zoom o tu cámara directamente","Edita en CapCut o DaVinci — solo corta las pausas largas","Sube a Hotmart, Kajabi o Google Drive + landing simple","Crea urgencia con precio de lanzamiento o acceso limitado"],
@@ -632,7 +632,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
     },
     digital: {
       label: "💻 Producto Digital", sub: "Crea e ingresos pasivos",
-      color: "#7C3AED", bg: "#F5F0FF",
+      color: "#C9903A", bg: "#FFF8ED",
       templates: [
         k => `Mini-guía PDF: domina ${k} en 7 días`,
         k => `Masterclass grabada: ${k} desde cero`,
@@ -1580,7 +1580,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
     },
     numero: {
       label: "🔢 Número / Lista", sub: "Específico y escaneable",
-      color: "#9B59B6", bg: "#F8F0FF",
+      color: "#C9903A", bg: "#FFF8ED",
       templates: [
         t => `3 errores que arruinan los resultados con ${t} (y cómo evitarlos)`,
         t => `5 señales de que necesitas trabajar diferente tu ${t} — ya`,
@@ -1669,7 +1669,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
   const totalHooks = hooks ? Object.values(HOOK_CATS).reduce((s, _, i) => s + (hooks[Object.keys(HOOK_CATS)[i]]?.length || 0), 0) : 0;
   const EJEMPLOS = ["vender en WhatsApp", "cobrar sin miedo", "organizarme mejor", "conseguir clientas", "reels de negocio", "emprender con hijos"];
 
-  const CAT_COLORS_BANCO = { curiosidad:"#4A90D9", dolor:"#C4526A", promesa:"#27AE60", pregunta:"#E8755A", historia:"#8B6565", numero:"#9B59B6", contraintuitivo:"#E67E22", identidad:"#16A085" };
+  const CAT_COLORS_BANCO = { curiosidad:"#4A90D9", dolor:"#C4526A", promesa:"#27AE60", pregunta:"#E8755A", historia:"#8B6565", numero:"#C9903A", contraintuitivo:"#E67E22", identidad:"#16A085" };
 
   return (
     <div className="studio-tab-content">
@@ -1869,7 +1869,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
     return [
       {
         num: "01", nombre: "HOOK", subtitulo: "Los primeros 3 segundos",
-        tiempo: "0:00 – 0:03", color: "#9B59B6", bgLight: "#F5F0FF",
+        tiempo: "0:00 – 0:03", color: "#C9903A", bgLight: "#FFF8ED",
         emocion: "CURIOSIDAD · IDENTIDAD",
         guia: `Los primeros 3 segundos deciden si te siguen viendo o hacen scroll. Una frase que las haga pensar "eso me pasa a mí" o "necesito escuchar esto".`,
         frases: [hookFrase],
@@ -2038,7 +2038,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
 
   const downloadPDF = () => {
     if (!guion) return;
-    const COLORS = { "01": "#9B59B6", "02": "#C4526A", "03": "#27AE60", "04": "#E8755A" };
+    const COLORS = { "01": "#C9903A", "02": "#C4526A", "03": "#27AE60", "04": "#E8755A" };
     const scenesHtml = guion.escenas.map((esc, i) => {
       const txt = (escritura[i] || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>");
       const col = COLORS[esc.num] || "#C4526A";
@@ -2602,7 +2602,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
               {saved.captions.slice().reverse().map(cp => (
                 <div className="studio-bank-item" key={cp.id}>
                   <div className="studio-bank-item-top">
-                    <span className="studio-tipo-badge" style={{background:"#9B59B6"}}>{cp.red || "Instagram"}</span>
+                    <span className="studio-tipo-badge" style={{background:"#C9903A"}}>{cp.red || "Instagram"}</span>
                     <small>{cp.fecha}</small>
                   </div>
                   {cp.tema && <strong style={{fontSize:"13px",display:"block",marginTop:"4px"}}>{cp.tema}</strong>}
@@ -2672,7 +2672,7 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
     "Nutrir lista":        { emoji: "💌", color: "#27AE60", bg: "#EEFAF3", desc: "3 emails · Valor puro sin vender" },
     "Bienvenida":          { emoji: "🎁", color: "#4A90D9", bg: "#EEF5FF", desc: "3 emails · Conecta con nuevas suscriptoras" },
     "Venta directa":       { emoji: "💰", color: "#E8755A", bg: "#FFF5F0", desc: "3 emails · Lleva directo a la compra" },
-    "Recuperar inactivos": { emoji: "🔄", color: "#9B59B6", bg: "#F8F0FF", desc: "3 emails · Reconecta con quienes dejaron de abrir" },
+    "Recuperar inactivos": { emoji: "🔄", color: "#C9903A", bg: "#FFF8ED", desc: "3 emails · Reconecta con quienes dejaron de abrir" },
     "Compartir valor":     { emoji: "✨", color: "#E67E22", bg: "#FFF5EB", desc: "2 emails · Educa, inspira y posiciónate" },
   };
 
