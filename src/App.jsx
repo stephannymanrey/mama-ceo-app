@@ -2179,7 +2179,7 @@ export default function App() {
           </div>
           <div className="profile-area">
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
-            {(!awsActive || !remoteStorageEnabled) && !isSyncing && <div className="status-chip">Modo local</div>}
+            {(!awsActive || !remoteStorageEnabled) && !isSyncing && <div className="status-chip" title="Tus datos se guardan en este dispositivo">Solo en este dispositivo</div>}
             <button className="profile-edit-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
               <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
               <span className="profile-edit-name">{profileSetup?.name || "Mi perfil"}</span>
@@ -2511,6 +2511,31 @@ export default function App() {
             <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('privacidad'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>Privacidad</a>
           </span>
         </footer>
+
+        {/* Barra de navegación inferior — solo mobile */}
+        <nav className="mobile-bottom-nav">
+          {menu.slice(0, 5).map((item) => {
+            const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
+            const itemPlan = ["business","clients","studio","content"].includes(item.id) ? "emprendedora" : "free";
+            const locked = (planOrder[effectivePlan] ?? 0) < (planOrder[itemPlan] ?? 0);
+            return (
+              <button key={item.id} className={`mobile-bottom-nav-item${activeView === item.id ? " active" : ""}`}
+                onClick={() => {
+                  if (locked) { setUpgradeModal({ feature: item.label, plan: "Emprendedora" }); return; }
+                  setActiveView(item.id);
+                }}>
+                <span className="mobile-bottom-nav-icon">{item.icon}</span>
+                <span className="mobile-bottom-nav-label">{item.label.split(" ")[0]}</span>
+                {locked && <span className="mobile-bottom-nav-lock">🔒</span>}
+              </button>
+            );
+          })}
+          <button className={`mobile-bottom-nav-item${activeView === "pricing" ? " active" : ""}`}
+            onClick={() => setActiveView("pricing")}>
+            <span className="mobile-bottom-nav-icon">⭐</span>
+            <span className="mobile-bottom-nav-label">Planes</span>
+          </button>
+        </nav>
       </main>
 
       {/* Modal de upgrade */}

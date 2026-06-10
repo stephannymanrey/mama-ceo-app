@@ -1093,6 +1093,75 @@ button {
   color: #40475e;
 }
 
+/* ── Barra de navegación inferior mobile ── */
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 1180px) {
+  .mobile-bottom-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 62px;
+    background: #fff;
+    border-top: 1px solid rgba(180,160,140,0.2);
+    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+    z-index: 200;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .mobile-bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    color: var(--muted);
+    padding: 6px 2px 4px;
+    position: relative;
+    font-family: inherit;
+    transition: color 0.15s;
+  }
+
+  .mobile-bottom-nav-item.active {
+    color: var(--pink);
+  }
+
+  .mobile-bottom-nav-item.active .mobile-bottom-nav-icon {
+    transform: scale(1.15);
+  }
+
+  .mobile-bottom-nav-icon {
+    font-size: 22px;
+    line-height: 1;
+    transition: transform 0.15s;
+  }
+
+  .mobile-bottom-nav-label {
+    font-size: 10px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .mobile-bottom-nav-lock {
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    font-size: 9px;
+  }
+
+  .dashboard {
+    padding-bottom: 80px;
+  }
+}
+
 @media (max-width: 1180px) {
   .app-shell {
     grid-template-columns: 1fr;
