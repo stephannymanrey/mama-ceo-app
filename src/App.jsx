@@ -4044,6 +4044,13 @@ export default function App() {
       "honestamente no sé":             "Está bien no saber. Esta semana, regálate 30 minutos sin agenda — sin saber qué harás con ellos. A veces el alma necesita espacio para descubrir qué necesita.",
     };
 
+    const levelLabel = (val) => {
+      if (val >= 8) return { text: "Muy bien 🌟", color: "#1D9E75" };
+      if (val >= 6) return { text: "Bien 😊",     color: "#1D9E75" };
+      if (val >= 4) return { text: "Regular 😐",  color: "#C9A96E" };
+      return               { text: "Difícil 😔",  color: "#C4526A" };
+    };
+
     const getHabits = (resp) => {
       if (!resp) return [];
       const { dia = "", emocional = 5, social = 5, proyectos = 5 } = resp;
@@ -4128,7 +4135,7 @@ export default function App() {
     const header = (
       <div className="section-title">
         <h2>¿Cómo estás hoy? 🫶</h2>
-        <p>3 minutos solo para ti. Cuéntale a la app cómo te sientes y ella te sugiere qué necesitas.</p>
+        <p>Tu espacio diario. Aquí ves cómo has estado y los hábitos que te recomendamos para cuidarte mejor.</p>
       </div>
     );
 
@@ -4180,18 +4187,19 @@ export default function App() {
 
               {/* 3 dimensiones */}
               <div style={{ padding: "22px 24px" }}>
-                <p style={{ margin: "0 0 16px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)" }}>Tu semana en 3 dimensiones</p>
-                {[["Estado emocional","#D4537E",displayResp?.emocional||5],["Vida social","#1D9E75",displayResp?.social||5],["Proyectos personales","#7F77DD",displayResp?.proyectos||5]].map(([label,color,val],i,arr) => (
-                  <div key={label} style={{ marginBottom: i < arr.length - 1 ? "14px" : 0 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "6px" }}>
-                      <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>{label}</span>
-                      <strong style={{ fontSize: "13px", color }}>{val}/10</strong>
+                <p style={{ margin: "0 0 16px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)" }}>Cómo te sentiste hoy</p>
+                {[["💛","Energía emocional",displayResp?.emocional||5],["🤝","Vida social",displayResp?.social||5],["⚡","Proyectos personales",displayResp?.proyectos||5]].map(([emoji,label,val],i,arr) => {
+                  const lv = levelLabel(val);
+                  return (
+                    <div key={label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", background:"#FAF7F5", borderRadius:"12px", marginBottom: i < arr.length - 1 ? "8px" : 0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                        <span style={{ fontSize:"18px" }}>{emoji}</span>
+                        <span style={{ fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{label}</span>
+                      </div>
+                      <span style={{ fontSize:"14px", fontWeight:800, color:lv.color }}>{lv.text}</span>
                     </div>
-                    <div style={{ height: "7px", background: "var(--line)", borderRadius: "4px", overflow: "hidden" }}>
-                      <div style={{ height: "100%", width: `${val * 10}%`, background: color, borderRadius: "4px", transition: "width 0.6s ease" }} />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Hábitos — solo si hay señales de alerta */}
@@ -4257,6 +4265,7 @@ export default function App() {
         return count;
       })();
       const lastEntry = [...history].filter(c => c.date !== todayStr).sort((a,b) => b.date.localeCompare(a.date))[0];
+      const lastHabits = lastEntry ? getHabits(lastEntry) : [];
 
       // Historial mensual
       const now = new Date();
@@ -4295,20 +4304,30 @@ export default function App() {
                   <p style={{ margin:"0 0 10px", fontSize:"11px", fontWeight:700, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px" }}>
                     Último check-in · {new Date(lastEntry.date+"T00:00:00").toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"short"})}
                   </p>
-                  {lastEntry.dia && <p style={{ margin:"0 0 12px", fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{lastEntry.dia}</p>}
-                  <div style={{ display:"flex", gap:"10px" }}>
-                    {[["😊","Emocional","#D4537E",lastEntry.emocional||5],["🤝","Social","#1D9E75",lastEntry.social||5],["⚡","Proyectos","#7F77DD",lastEntry.proyectos||5]].map(([emoji,label,color,val]) => (
-                      <div key={label} style={{ flex:1 }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
-                          <span style={{ fontSize:"11px", color:"var(--muted)" }}>{emoji} {label}</span>
-                          <span style={{ fontSize:"11px", fontWeight:700, color }}>{val}/10</span>
+                  {lastEntry.dia && <p style={{ margin:"0 0 10px", fontSize:"15px", fontWeight:700, color:"var(--ink)" }}>{lastEntry.dia}</p>}
+                  <div style={{ display:"flex", gap:"6px", flexWrap:"wrap", marginBottom: lastHabits.length ? "12px" : 0 }}>
+                    {[["💛","Energía",lastEntry.emocional||5],["🤝","Conexión",lastEntry.social||5],["⚡","Proyectos",lastEntry.proyectos||5]].map(([emoji,label,val]) => {
+                      const lv = levelLabel(val);
+                      return (
+                        <div key={label} style={{ display:"flex", alignItems:"center", gap:"4px", padding:"4px 10px", background:"#FAF7F5", borderRadius:"20px", border:`1px solid ${lv.color}40` }}>
+                          <span style={{ fontSize:"13px" }}>{emoji}</span>
+                          <span style={{ fontSize:"12px", color:"var(--muted)" }}>{label}:</span>
+                          <span style={{ fontSize:"12px", fontWeight:700, color:lv.color }}>{lv.text}</span>
                         </div>
-                        <div style={{ height:"5px", background:"var(--line)", borderRadius:"3px", overflow:"hidden" }}>
-                          <div style={{ height:"100%", width:`${val*10}%`, background:color, borderRadius:"3px" }} />
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
+                  {lastHabits.length > 0 && (
+                    <div style={{ borderTop:"1px solid var(--line)", paddingTop:"10px" }}>
+                      <p style={{ margin:"0 0 6px", fontSize:"11px", fontWeight:700, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.4px" }}>Lo que te sugerimos ese día</p>
+                      {lastHabits.slice(0,2).map((h,i) => (
+                        <div key={i} style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"4px" }}>
+                          <span style={{ fontSize:"15px", lineHeight:1 }}>{h.icon}</span>
+                          <span style={{ fontSize:"13px", color:"var(--ink)", fontWeight:600 }}>{h.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -4400,16 +4419,18 @@ export default function App() {
               {/* Stats del mes */}
               {mEntries.length > 0 && (
                 <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"8px", marginTop:"16px", paddingTop:"14px", borderTop:"1px solid var(--line)", textAlign:"center" }}>
-                  {[
-                    [mEntries.length,"check-ins","var(--ink)"],
-                    [mEntries.filter(e=>(e.emocional||5)>=7).length,"días bien","#1D9E75"],
-                    [mAvg+"/10","promedio","#D4537E"],
-                  ].map(([val,label,color]) => (
-                    <div key={label}>
-                      <p style={{ margin:"0 0 2px", fontSize:"22px", fontWeight:800, color }}>{val}</p>
-                      <p style={{ margin:0, fontSize:"10px", color:"var(--muted)" }}>{label}</p>
-                    </div>
-                  ))}
+                  <div>
+                    <p style={{ margin:"0 0 2px", fontSize:"22px", fontWeight:800, color:"var(--ink)" }}>{mEntries.length}</p>
+                    <p style={{ margin:0, fontSize:"10px", color:"var(--muted)", lineHeight:1.3 }}>momentos<br/>para ti</p>
+                  </div>
+                  <div>
+                    <p style={{ margin:"0 0 2px", fontSize:"22px", fontWeight:800, color:"#1D9E75" }}>{mEntries.filter(e=>(e.emocional||5)>=7).length}</p>
+                    <p style={{ margin:0, fontSize:"10px", color:"var(--muted)", lineHeight:1.3 }}>días que<br/>fluyeron bien</p>
+                  </div>
+                  <div>
+                    <p style={{ margin:"0 0 2px", fontSize:"16px", fontWeight:800, color:levelLabel(mAvg||5).color }}>{levelLabel(mAvg||5).text}</p>
+                    <p style={{ margin:0, fontSize:"10px", color:"var(--muted)", lineHeight:1.3 }}>cómo vas<br/>este mes</p>
+                  </div>
                 </div>
               )}
 
