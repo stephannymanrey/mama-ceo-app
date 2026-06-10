@@ -563,6 +563,7 @@ export default function App() {
   const [showAuthPassword, setShowAuthPassword] = useState(false);
   const [showAuthPasswordConfirm, setShowAuthPasswordConfirm] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [resetPassword, setResetPassword] = useState(false);
@@ -2118,9 +2119,14 @@ export default function App() {
         </div>
       )}
 
-      <aside className="sidebar">
-        <div className="brand">
-          <Logo width={130} />
+      <aside className={`sidebar${sidebarCollapsed?" sidebar--collapsed":""}`}>
+        <div className="brand" style={{display:"flex",alignItems:"center",justifyContent:sidebarCollapsed?"center":"space-between"}}>
+          {!sidebarCollapsed && <Logo width={120} />}
+          <button onClick={()=>setSidebarCollapsed(v=>!v)} title={sidebarCollapsed?"Expandir menú":"Colapsar menú"}
+            style={{border:"none",background:"none",cursor:"pointer",fontSize:"18px",color:"var(--muted)",padding:"4px",borderRadius:"6px",display:"none"}}
+            className="sidebar-collapse-btn">
+            {sidebarCollapsed ? "▶" : "◀"}
+          </button>
         </div>
 
         {/* Botón hamburguesa solo en móvil */}
@@ -4891,81 +4897,76 @@ export default function App() {
   function renderPricing() {
     const isYearly = pricingCycle === "yearly";
     const plans = [
-      { id: "mama", name: "🌸 Mamá", price: PLAN_PRICES.mama.cop, period: " COP/mes",
-        priceUsd: PLAN_PRICES.mama.usd+" USD/mes", priceYear: PLAN_PRICES.mama.copYear+" COP/año (2 meses gratis)",
-        color: "var(--pink)",
-        desc: "Para la mamá que quiere organizarse y tener más tiempo para sí misma.",
-        features: ["✓ Mi Hogar — tareas, mercado, rutinas","✓ Mi Propósito — bienestar y presencia","✓ Presupuesto familiar","✓ Check-in diario de bienestar","✓ Calendario MamaCEO","✓ Recordatorios y rutinas"] },
-      { id: "emprendedora", name: "💼 Emprendedora", price: PLAN_PRICES.emprendedora.cop, period: " COP/mes",
-        priceUsd: PLAN_PRICES.emprendedora.usd+" USD/mes", priceYear: PLAN_PRICES.emprendedora.copYear+" COP/año (2 meses gratis)",
-        color: "var(--purple)",
-        desc: "Para la mamá que tiene un negocio o quiere emprender.",
-        features: ["✓ Todo el plan Mamá incluido","✓ Mi Negocio — ingresos, gastos y metas","✓ Mis Clientas — CRM básico","✓ Mi Contenido — planificador","✓ Studio IA (60 generaciones/mes)","✓ Soporte por email 48h"] },
-      { id: "ceo", name: "👑 CEO — Todo incluido", price: PLAN_PRICES.ceo.cop, period: " COP/mes",
-        priceUsd: PLAN_PRICES.ceo.usd+" USD/mes", priceYear: PLAN_PRICES.ceo.copYear+" COP/año (2 meses gratis)",
-        badge: "RECOMENDADO", color: "var(--gold,#c9a96e)",
-        desc: "Para la mamá que quiere el hogar organizado Y escalar su negocio.",
-        features: ["✓ TODO ilimitado — hogar y negocio","✓ Studio IA (200 generaciones/mes)","✓ Exportar Excel y PDF","✓ Proyección de ingresos","✓ Pomodoro y modo enfoque","✓ Soporte prioritario 24h","✓ Acceso anticipado a nuevas funciones"] },
+      { id: "mama", name: "🌸 Mamá", price: PLAN_PRICES.mama.cop,
+        priceUsd: PLAN_PRICES.mama.usd,
+        desc: "Para la mamá que quiere más orden en casa y tiempo para ella.",
+        features: ["Organiza tareas del hogar y la familia","Controla el presupuesto familiar","Cuida tu bienestar con un check-in diario","Calendario y recordatorios"] },
+      { id: "emprendedora", name: "💼 Emprendedora", price: PLAN_PRICES.emprendedora.cop,
+        priceUsd: PLAN_PRICES.emprendedora.usd,
+        badge: "MÁS POPULAR",
+        desc: "Para la mamá que además tiene un negocio o quiere emprender.",
+        features: ["Todo lo del plan Mamá","Lleva el control de tu negocio y tus clientas","Planifica tu contenido para redes sociales","Crea publicaciones con ayuda de IA","Te respondemos en menos de 48 horas"] },
+      { id: "ceo", name: "👑 Mamá CEO", price: PLAN_PRICES.ceo.cop,
+        priceUsd: PLAN_PRICES.ceo.usd,
+        desc: "Hogar organizado y negocio creciendo — todo en un solo lugar, sin límites.",
+        features: ["Todo lo anterior, sin límites","Exporta tus registros a Excel","Ve cuánto vas a ganar este mes","Temporizador para trabajar sin distracciones","Te respondemos en menos de 24 horas"] },
     ];
     return (
       <section className="panel workspace-panel">
-        <div className="section-title"><h2>Planes y Precios</h2><p>14 días de prueba gratis con acceso completo — elige tu plan cuando estés lista</p></div>
+        <div className="section-title">
+          <h2>Elige tu plan</h2>
+          <p>14 días gratis con acceso completo — sin tarjeta, sin compromiso</p>
+        </div>
 
         {/* Toggle mensual / anual */}
-        <div style={{display:"flex",justifyContent:"center",marginBottom:"28px"}}>
-          <div style={{display:"inline-flex",background:"var(--surface,#f5f5f5)",borderRadius:"40px",padding:"4px",gap:"4px",position:"relative"}}>
-            <button onClick={()=>setPricingCycle("monthly")} style={{padding:"8px 24px",borderRadius:"40px",border:"none",fontWeight:700,fontSize:"14px",cursor:"pointer",background:!isYearly?"#fff":"transparent",color:!isYearly?"var(--purple)":"var(--muted)",boxShadow:!isYearly?"0 2px 8px rgba(0,0,0,0.12)":"none",transition:"all 0.2s"}}>Mensual</button>
-            <button onClick={()=>setPricingCycle("yearly")} style={{padding:"8px 24px",borderRadius:"40px",border:"none",fontWeight:700,fontSize:"14px",cursor:"pointer",background:isYearly?"#fff":"transparent",color:isYearly?"var(--purple)":"var(--muted)",boxShadow:isYearly?"0 2px 8px rgba(0,0,0,0.12)":"none",transition:"all 0.2s",display:"flex",alignItems:"center",gap:"6px"}}>
-              Anual <span style={{background:"var(--green)",color:"#fff",fontSize:"11px",fontWeight:800,padding:"2px 8px",borderRadius:"20px"}}>2 meses gratis</span>
+        <div style={{display:"flex",justifyContent:"center",marginBottom:"32px"}}>
+          <div style={{display:"inline-flex",background:"var(--surface,#f5f5f5)",borderRadius:"40px",padding:"4px",gap:"4px"}}>
+            <button onClick={()=>setPricingCycle("monthly")} style={{padding:"10px 28px",borderRadius:"40px",border:"none",fontWeight:600,fontSize:"14px",cursor:"pointer",background:!isYearly?"#fff":"transparent",color:!isYearly?"var(--pink)":"var(--muted)",boxShadow:!isYearly?"0 2px 8px rgba(0,0,0,0.10)":"none",transition:"all 0.2s"}}>Mensual</button>
+            <button onClick={()=>setPricingCycle("yearly")} style={{padding:"10px 28px",borderRadius:"40px",border:"none",fontWeight:600,fontSize:"14px",cursor:"pointer",background:isYearly?"#fff":"transparent",color:isYearly?"var(--pink)":"var(--muted)",boxShadow:isYearly?"0 2px 8px rgba(0,0,0,0.10)":"none",transition:"all 0.2s",display:"flex",alignItems:"center",gap:"8px"}}>
+              Anual <span style={{background:"var(--pink)",color:"#fff",fontSize:"11px",fontWeight:700,padding:"2px 8px",borderRadius:"20px"}}>2 meses gratis</span>
             </button>
           </div>
         </div>
 
-        {/* Mensaje de resultado de pago */}
         {paymentMessage&&(
-          <div style={{maxWidth:"1000px",margin:"0 auto 20px",padding:"14px 20px",borderRadius:"12px",background:paymentMessage.type==="success"?"#ecfdf5":"#fef2f2",border:`1px solid ${paymentMessage.type==="success"?"#86efac":"#fca5a5"}`,color:paymentMessage.type==="success"?"#166534":"#991b1b",fontSize:"15px",fontWeight:600,display:"flex",alignItems:"center",gap:"12px"}}>
+          <div style={{maxWidth:"900px",margin:"0 auto 24px",padding:"14px 20px",borderRadius:"12px",background:paymentMessage.type==="success"?"#ecfdf5":"#fef2f2",border:`1px solid ${paymentMessage.type==="success"?"#86efac":"#fca5a5"}`,color:paymentMessage.type==="success"?"#166534":"#991b1b",fontSize:"15px",fontWeight:600,display:"flex",alignItems:"center",gap:"12px"}}>
             <span style={{fontSize:"22px"}}>{paymentMessage.type==="success"?"✅":"❌"}</span>
             <span style={{flex:1}}>{paymentMessage.text}</span>
             <button onClick={()=>setPaymentMessage(null)} style={{border:"none",background:"none",fontSize:"20px",cursor:"pointer",color:"inherit",opacity:0.6,lineHeight:1,padding:"2px"}}>×</button>
           </div>
         )}
 
-        <div style={{display:"grid",gridTemplateColumns:window.innerWidth<700?"1fr":"repeat(3,1fr)",gap:"20px",maxWidth:"1080px",margin:"0 auto"}}>
+        <div style={{display:"grid",gridTemplateColumns:window.innerWidth<700?"1fr":"repeat(3,1fr)",gap:"16px",maxWidth:"960px",margin:"0 auto"}}>
           {plans.map((plan) => {
             const isCurrent = effectivePlan===plan.id||(plan.id==="ceo"&&effectivePlan==="premium")||(plan.id==="mama"&&userMode==="mama"&&effectivePlan==="emprendedora");
-            const mpLoading = paymentProcessing===`mp-${plan.id}`;
             return (
-              <div key={plan.id} className="card" style={{border:`2px solid ${isCurrent||plan.id==="ceo"?plan.color:"var(--line)"}`,background:plan.id==="ceo"?"linear-gradient(135deg,rgba(212,104,122,0.05),rgba(201,169,110,0.05))":"#fff",position:"relative"}}>
-                {isCurrent&&<div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:plan.color,color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:800}}>PLAN ACTUAL</div>}
-                {plan.badge&&!isCurrent&&<div style={{position:"absolute",top:"12px",right:"12px",background:"var(--green)",color:"#fff",padding:"3px 10px",borderRadius:"20px",fontSize:"11px",fontWeight:800}}>{plan.badge}</div>}
-                <div style={{padding:"24px"}}>
-                  <h3 style={{margin:"0 0 4px",fontSize:"20px",color:plan.color}}>{plan.name}</h3>
-                  {plan.desc&&<p style={{margin:"0 0 10px",fontSize:"13px",color:"var(--muted)",lineHeight:1.4}}>{plan.desc}</p>}
-                  <div style={{fontSize:"34px",fontWeight:800,color:plan.color,lineHeight:1,marginBottom:"2px"}}>
-                    {isYearly ? PLAN_PRICES[plan.id].copYear : plan.price}
-                    <span style={{fontSize:"15px",fontWeight:500,color:"var(--muted)"}}>{isYearly ? " COP/año" : plan.period}</span>
+              <div key={plan.id} className="card" style={{border:`2px solid ${isCurrent?"var(--pink)":"var(--line)"}`,background:"#fff",position:"relative",borderRadius:"16px"}}>
+                {isCurrent&&<div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:"var(--pink)",color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:700,whiteSpace:"nowrap"}}>Tu plan actual ✓</div>}
+                {plan.badge&&!isCurrent&&<div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:"var(--purple)",color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:700,whiteSpace:"nowrap"}}>{plan.badge}</div>}
+                <div style={{padding:"24px 20px"}}>
+                  <h3 style={{margin:"0 0 6px",fontSize:"18px",color:"var(--ink)",fontWeight:700}}>{plan.name}</h3>
+                  <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)",lineHeight:1.5}}>{plan.desc}</p>
+                  <div style={{marginBottom:"16px"}}>
+                    <span style={{fontSize:"30px",fontWeight:800,color:"var(--ink)"}}>{isYearly ? PLAN_PRICES[plan.id].copYear : plan.price}</span>
+                    <span style={{fontSize:"14px",color:"var(--muted)",marginLeft:"4px"}}>{isYearly?"COP/año":"COP/mes"}</span>
+                    <div style={{fontSize:"12px",color:"var(--muted)",marginTop:"2px"}}>{isYearly ? PLAN_PRICES[plan.id].usdYear : plan.priceUsd} USD</div>
                   </div>
-                  <p style={{margin:"0 0 2px",fontSize:"12px",color:"var(--muted)"}}>{isYearly ? PLAN_PRICES[plan.id].usdYear+" USD/año" : plan.priceUsd}</p>
-                  {isYearly
-                    ? <p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>✅ 2 meses gratis vs pago mensual</p>
-                    : plan.priceYear&&<p style={{margin:"0 0 16px",fontSize:"12px",color:"var(--green)",fontWeight:700}}>💡 {plan.priceYear}</p>
-                  }
-                  <div style={{display:"grid",gap:"10px",marginBottom:"20px"}}>
-                    {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"center",gap:"8px",fontSize:"13px"}}><span style={{color:plan.color,fontSize:"16px",flexShrink:0}}>✓</span><span>{f}</span></div>))}
+                  <div style={{display:"grid",gap:"8px",marginBottom:"20px"}}>
+                    {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"flex-start",gap:"8px",fontSize:"13px",lineHeight:1.4}}><span style={{color:"var(--pink)",flexShrink:0,marginTop:"1px"}}>✓</span><span style={{color:"var(--ink)"}}>{f}</span></div>))}
                   </div>
 
                   {isCurrent?(
-                    <div style={{padding:"10px",background:"rgba(0,0,0,0.05)",borderRadius:"8px",textAlign:"center",color:plan.color,fontWeight:700,fontSize:"14px"}}>Plan actual ✓</div>
+                    <div style={{padding:"12px",background:"#fdf2f4",borderRadius:"10px",textAlign:"center",color:"var(--pink)",fontWeight:700,fontSize:"14px"}}>Tu plan actual ✓</div>
                   ):(
-                    <div style={{display:"grid",gap:"10px"}}>
+                    <>
                       <button
                         onClick={()=>window.open(isYearly ? HOTMART_LINKS_YEAR[plan.id] : HOTMART_LINKS[plan.id],"_blank")}
-                        style={{width:"100%",padding:"13px 0",borderRadius:"10px",border:"none",background:plan.color,color:"#fff",fontWeight:700,fontSize:"15px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",transition:"opacity 0.2s"}}
+                        style={{width:"100%",padding:"13px 0",borderRadius:"10px",border:"none",background:"var(--pink)",color:"#fff",fontWeight:700,fontSize:"15px",cursor:"pointer",transition:"opacity 0.2s"}}
                       >
-                        <span style={{fontSize:"18px"}}>🛒</span> {isYearly ? "Suscribirme anual" : "Suscribirme mensual"}
+                        Quiero este plan
                       </button>
-                      <p style={{margin:0,fontSize:"12px",color:"var(--muted)",textAlign:"center"}}>Pago seguro · Tarjeta, PSE, efectivo y más · Cancela cuando quieras</p>
-                    </div>
+                      <p style={{margin:"8px 0 0",fontSize:"11px",color:"var(--muted)",textAlign:"center"}}>Pago seguro · Cancela cuando quieras</p>
+                    </>
                   )}
                 </div>
               </div>

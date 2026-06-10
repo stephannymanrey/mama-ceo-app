@@ -44,6 +44,33 @@ button {
   display: grid;
   grid-template-columns: 280px minmax(0, 1fr);
   min-height: 100vh;
+  transition: grid-template-columns 0.25s ease;
+}
+
+.app-shell:has(.sidebar--collapsed) {
+  grid-template-columns: 64px minmax(0, 1fr);
+}
+
+.sidebar--collapsed {
+  padding: 20px 8px;
+  align-items: center;
+}
+
+.sidebar--collapsed .main-menu {
+  flex-direction: column;
+}
+
+.sidebar--collapsed .menu-item span:last-child:not(:first-child) {
+  display: none;
+}
+
+.sidebar--collapsed .currency-box,
+.sidebar--collapsed .quote-card {
+  display: none;
+}
+
+.sidebar-collapse-btn {
+  display: flex !important;
 }
 
 .sidebar {
