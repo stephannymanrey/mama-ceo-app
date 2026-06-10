@@ -56,9 +56,9 @@ async function findUserIdByEmail(email) {
     TableName: TABLE,
     FilterExpression: "userEmail = :e",
     ExpressionAttributeValues: { ":e": { S: email.toLowerCase() } },
-    ProjectionExpression: "userId",
+    ProjectionExpression: "user_id",
   }));
-  return result.Items?.[0]?.userId?.S || null;
+  return result.Items?.[0]?.user_id?.S || null;
 }
 
 export const handler = async (event) => {
@@ -82,7 +82,7 @@ export const handler = async (event) => {
     try {
       await dynamo.send(new UpdateItemCommand({
         TableName: TABLE,
-        Key: { userId: { S: uid } },
+        Key: { user_id: { S: uid } },
         UpdateExpression: "SET userEmail = :e",
         ExpressionAttributeValues: { ":e": { S: email.toLowerCase() } },
       }));
@@ -136,7 +136,7 @@ export const handler = async (event) => {
       try {
         await dynamo.send(new UpdateItemCommand({
           TableName: TABLE,
-          Key: { userId: { S: `pending_${buyerEmail.toLowerCase()}` } },
+          Key: { user_id: { S: `pending_${buyerEmail.toLowerCase()}` } },
           UpdateExpression: "SET userEmail = :e, pendingPlan = :p, pendingExpiresAt = :x, updatedAt = :u",
           ExpressionAttributeValues: {
             ":e": { S: buyerEmail.toLowerCase() },
@@ -155,7 +155,7 @@ export const handler = async (event) => {
         const premiumExpiresAt = Date.now() + 35 * 24 * 60 * 60 * 1000; // 35 días (buffer para renovación)
         await dynamo.send(new UpdateItemCommand({
           TableName: TABLE,
-          Key: { userId: { S: foundUserId } },
+          Key: { user_id: { S: foundUserId } },
           UpdateExpression: "SET userPlan = :p, premiumExpiresAt = :e, hotmartEmail = :he",
           ExpressionAttributeValues: {
             ":p":  { S: planType },
@@ -167,7 +167,7 @@ export const handler = async (event) => {
       } else if (isCanceled) {
         await dynamo.send(new UpdateItemCommand({
           TableName: TABLE,
-          Key: { userId: { S: foundUserId } },
+          Key: { user_id: { S: foundUserId } },
           UpdateExpression: "SET userPlan = :p, premiumExpiresAt = :e",
           ExpressionAttributeValues: {
             ":p": { S: "free" },
@@ -205,7 +205,7 @@ export const handler = async (event) => {
       try {
         await dynamo.send(new UpdateItemCommand({
           TableName: TABLE,
-          Key: { userId: { S: userId } },
+          Key: { user_id: { S: userId } },
           UpdateExpression: "SET userPlan = :p, premiumExpiresAt = :e, ppSubscriptionId = :s",
           ExpressionAttributeValues: { ":p": { S: planType }, ":e": { N: String(premiumExpiresAt) }, ":s": { S: subscriptionId } },
         }));
@@ -224,7 +224,7 @@ export const handler = async (event) => {
     try {
       const result = await dynamo.send(new GetItemCommand({
         TableName: TABLE,
-        Key: { userId: { S: `pending_${email.toLowerCase()}` } },
+        Key: { user_id: { S: `pending_${email.toLowerCase()}` } },
       }));
       const pending = result.Item ? { pendingPlan: result.Item.pendingPlan, pendingExpiresAt: result.Item.pendingExpiresAt } : null;
       if (!pending?.pendingPlan?.S || pending.pendingPlan.S === "free")
@@ -239,7 +239,7 @@ export const handler = async (event) => {
       // Mover activación pendiente al usuario real
       await dynamo.send(new UpdateItemCommand({
         TableName: TABLE,
-        Key: { userId: { S: uid } },
+        Key: { user_id: { S: uid } },
         UpdateExpression: "SET userPlan = :p, premiumExpiresAt = :e, userEmail = :em",
         ExpressionAttributeValues: {
           ":p":  { S: planType },
@@ -251,7 +251,7 @@ export const handler = async (event) => {
       // Limpiar registro pendiente
       await dynamo.send(new UpdateItemCommand({
         TableName: TABLE,
-        Key: { userId: { S: `pending_${email.toLowerCase()}` } },
+        Key: { user_id: { S: `pending_${email.toLowerCase()}` } },
         UpdateExpression: "SET pendingPlan = :p",
         ExpressionAttributeValues: { ":p": { S: "free" } },
       }));

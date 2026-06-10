@@ -164,21 +164,37 @@ const affirmations = [
 ];
 
 const promesas = [
-  "Dios tiene planes de bien para ti, no de mal. Tu futuro tiene esperanza.",
-  "Cuando pides sabiduría con fe, él la da generosamente y sin reproche.",
-  "Todo lo puedes cuando él te fortalece. No en tus fuerzas, sino en las suyas.",
-  "Dios cuida de ti. No tienes que cargar sola con la ansiedad de mañana.",
-  "Cuando estés cansada y cargada, hay descanso real esperando por ti.",
-  "Dios completa lo que empieza en ti. Tu negocio y tu familia están en sus manos.",
-  "No te ha dado espíritu de temor, sino de poder, amor y dominio propio.",
-  "Busca primero lo que importa de verdad, y lo demás se añade.",
-  "Confía en él con todo tu corazón y él enderezará tus caminos.",
-  "Eres más que vencedora. No solo sobrevives, triunfas.",
-  "Dios conoce cada detalle de tu vida y tiene cuidado de ti.",
-  "La mujer que teme a Dios es digna de alabanza. Tú eres esa mujer.",
-  "Con él, lo que parece imposible se vuelve posible.",
-  "Tu trabajo no es en vano cuando lo haces con propósito y fe.",
-  "Dios te da la fuerza que necesitas exactamente cuando la necesitas."
+  "Dios tiene planes de bien para ti, no de mal. Tu futuro tiene esperanza y propósito. — Jer 29:11",
+  "Si te falta sabiduría, pídela. Él la da generosamente y sin reprocharte. — Stg 1:5",
+  "Todo lo puedes con la fuerza que Dios te da. No en las tuyas, sino en las suyas. — Fil 4:13",
+  "Deja tus cargas en sus manos. Él cuida de ti con amor real y constante. — 1 Ped 5:7",
+  "Ven a mí cuando estés cansada y cargada. Yo te doy descanso verdadero. — Mt 11:28",
+  "Dios completa lo que comenzó en ti. Tu familia y tu negocio están en buenas manos. — Fil 1:6",
+  "No te ha dado espíritu de temor, sino de poder, amor y dominio propio. — 2 Tim 1:7",
+  "Busca primero lo que realmente importa, y todo lo demás se añade a su tiempo. — Mt 6:33",
+  "Confía en él con todo tu corazón. No te apoyes solo en lo que entiendes. — Prov 3:5",
+  "Eres más que vencedora. No solo sobrevives, triunfas gracias a él. — Rom 8:37",
+  "Mira cómo Dios cuida cada detalle. Tú vales mucho más que todo eso. — Mt 6:26",
+  "La mujer que teme a Dios es digna de alabanza. Esa mujer eres tú. — Prov 31:30",
+  "Para Dios no hay nada imposible. Eso incluye lo que hoy parece sin solución. — Lc 1:37",
+  "Tu trabajo no es en vano. Cuando lo haces con fe, cuenta para siempre. — 1 Cor 15:58",
+  "Los que esperan en Dios renuevan sus fuerzas. Volarás donde hoy te sientes sin energía. — Is 40:31",
+  "Dios está en medio de ti. No serás sacudida. Él te ayuda desde temprano. — Sal 46:5",
+  "La fortaleza y la dignidad son tu vestido. Puedes sonreír ante el futuro. — Prov 31:25",
+  "Dios hace que todo —incluso lo difícil— obre para tu bien. Confía en el proceso. — Rom 8:28",
+  "Cuando pases por aguas difíciles, él estará contigo. Las llamas no te consumirán. — Is 43:2",
+  "Dios te guiará y te enseñará el camino. Sus ojos estarán sobre ti. — Sal 32:8",
+  "No te canses de hacer el bien. A su tiempo cosecharás si no desmayas. — Gál 6:9",
+  "No temas, porque él está contigo. Él es tu Dios y te fortalece. — Is 41:10",
+  "El Señor es tu pastor. No te faltará nada de lo que realmente necesitas. — Sal 23:1",
+  "Él puede hacer mucho más de lo que pides o imaginas, con su poder actuando en ti. — Ef 3:20",
+  "Sé fuerte y valiente. Dios tu Señor estará contigo a donde vayas. — Jos 1:9",
+  "Eres maravillosa y poderosa. Dios te formó con propósito y conoce cada parte de ti. — Sal 139:14",
+  "Sus misericordias son nuevas cada mañana. No importa cómo fue ayer, hoy comienza bien. — Lam 3:23",
+  "No te afanes por el mañana. Cada día trae lo suyo y Dios ya está allá adelante. — Mt 6:34",
+  "Tu ayuda viene del Señor, que hizo el cielo y la tierra. Él no falla. — Sal 121:2",
+  "Entrega al Señor todo lo que haces y tus planes se harán realidad. — Prov 16:3",
+  "La paz de Dios, que supera todo entendimiento, guardará tu corazón y tu mente. — Fil 4:7"
 ];
 
 const ALL_MENU_ITEMS = [
@@ -2184,9 +2200,7 @@ export default function App() {
         )}
 
         <div className="quote-card">
-          <p className="brand-tagline">Negocio, hogar y visión en un solo lugar</p>
-          <span>×</span>
-          <p>{promesas[new Date().getDate() % promesas.length]}</p>
+          <p>{promesas[(new Date().getDate() - 1) % promesas.length]}</p>
         </div>
       </aside>
 

@@ -2,7 +2,7 @@
  * Lambda: mamaceo-user-data  (index.mjs — ES module, HTTP API v2)
  * Table: user_states  |  PK: user_id (String)
  */
-import { DynamoDBClient, GetItemCommand, PutItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
+import { DynamoDBClient, GetItemCommand, PutItemCommand, UpdateItemCommand, DeleteItemCommand } from "@aws-sdk/client-dynamodb";
 import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 
 const dynamo = new DynamoDBClient({ region: "us-east-1" });
@@ -70,18 +70,27 @@ export const handler = async (event) => {
         return respond(404, { data: null }, event);
       }
       const item = unmarshall(result.Item);
-      return respond(200, { data: item.data ?? null }, event);
+      const data = item.data ?? null;
+      // Mezclar atributos de plan guardados por mamaceo-payments
+      const merged = data ? {
+        ...data,
+        ...(item.userPlan        ? { userPlan: item.userPlan }               : {}),
+        ...(item.premiumExpiresAt ? { premiumExpiresAt: item.premiumExpiresAt } : {}),
+      } : data;
+      return respond(200, { data: merged }, event);
     }
 
     if (method === "POST") {
       const body = JSON.parse(event.body || "{}");
       await dynamo.send(
-        new PutItemCommand({
+        new UpdateItemCommand({
           TableName: TABLE,
-          Item: marshall({
-            user_id: userId,
-            data: body.data,
-            updatedAt: new Date().toISOString(),
+          Key: marshall({ user_id: userId }),
+          UpdateExpression: "SET #d = :data, updatedAt = :ts",
+          ExpressionAttributeNames: { "#d": "data" },
+          ExpressionAttributeValues: marshall({
+            ":data": body.data,
+            ":ts": new Date().toISOString(),
           }),
         })
       );

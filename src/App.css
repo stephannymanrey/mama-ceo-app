@@ -177,9 +177,6 @@ button {
   margin: 4px 0 0;
 }
 
-.brand-tagline {
-  display: none;
-}
 
 .main-menu {
   display: grid;
@@ -260,13 +257,6 @@ button {
   text-align: center;
 }
 
-.quote-card span {
-  color: #C9A96E;
-  font-size: 18px;
-  line-height: 1;
-  display: block;
-  margin-bottom: 4px;
-}
 
 .quote-card p {
   margin: 0;
@@ -4584,7 +4574,7 @@ button {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: linear-gradient(135deg, #3d1a5e 0%, #6f2f8b 100%);
+  background: linear-gradient(135deg, #8B6520 0%, #C9903A 100%);
   border-radius: 16px;
   padding: 20px 24px;
   cursor: pointer;
