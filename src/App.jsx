@@ -2120,12 +2120,11 @@ export default function App() {
       )}
 
       <aside className={`sidebar${sidebarCollapsed?" sidebar--collapsed":""}`}>
-        <div className="brand" style={{display:"flex",alignItems:"center",justifyContent:sidebarCollapsed?"center":"space-between"}}>
+        <div className="brand" style={{display:"flex",alignItems:"center",justifyContent:sidebarCollapsed?"center":"space-between",minHeight:"44px"}}>
           {!sidebarCollapsed && <Logo width={120} />}
           <button onClick={()=>setSidebarCollapsed(v=>!v)} title={sidebarCollapsed?"Expandir menú":"Colapsar menú"}
-            style={{border:"none",background:"none",cursor:"pointer",fontSize:"18px",color:"var(--muted)",padding:"4px",borderRadius:"6px",display:"none"}}
             className="sidebar-collapse-btn">
-            {sidebarCollapsed ? "▶" : "◀"}
+            {sidebarCollapsed ? "›" : "‹"}
           </button>
         </div>
 
@@ -2141,27 +2140,30 @@ export default function App() {
             const locked = (planOrder[effectivePlan] ?? 0) < (planOrder[itemPlan] ?? 0);
             return (
               <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id}
+                title={sidebarCollapsed ? item.label : undefined}
                 onClick={() => {
                   if (locked) { setUpgradeModal({ feature: item.label, plan: "Emprendedora" }); setMobileMenuOpen(false); return; }
                   setActiveView(item.id); setMobileMenuOpen(false);
                 }}>
-                <span>{item.icon}</span>
-                {item.label}
-                {locked && <span style={{marginLeft:"auto",fontSize:"10px",background:"var(--purple)",color:"#fff",padding:"1px 6px",borderRadius:"20px"}}>🔒</span>}
+                <span className="menu-icon">{item.icon}</span>
+                <span className="menu-label">{item.label}</span>
+                {locked && <span className="menu-lock">🔒</span>}
               </button>
             );
           })}
         </nav>
 
-        <div className="currency-box">
-          <label>Moneda base</label>
-          <select value={currency} onChange={(event) => setCurrency(event.target.value)}>
-            <option>USD</option>
-            <option>COP</option>
-            <option>MXN</option>
-            <option>EUR</option>
-          </select>
-        </div>
+        {userMode !== "mama" && (
+          <div className="currency-box">
+            <label>Moneda base</label>
+            <select value={currency} onChange={(event) => setCurrency(event.target.value)}>
+              <option>USD</option>
+              <option>COP</option>
+              <option>MXN</option>
+              <option>EUR</option>
+            </select>
+          </div>
+        )}
 
         <div className="quote-card">
           <p className="brand-tagline">Negocio, hogar y visión en un solo lugar</p>
@@ -4094,7 +4096,7 @@ export default function App() {
     const header = (
       <div className="section-title">
         <h2>Para Mí 💛</h2>
-        <p>Tu espacio. Lo que sientes, lo que necesitas, lo que sueñas.</p>
+        <p>Tu bienestar de hoy — cómo estás emocionalmente, hábitos que te cuidan y tiempo para ti.</p>
       </div>
     );
 
