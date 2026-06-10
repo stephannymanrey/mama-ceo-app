@@ -3033,3 +3033,131 @@
   margin: 4px 0 0;
   opacity: 0.8;
 }
+
+/* ── Perfil de Marca en Studio ── */
+.studio-onboarding {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.bp-form {
+  width: 100%;
+  max-width: 560px;
+  display: grid;
+  gap: 16px;
+}
+
+.bp-onboarding-intro {
+  text-align: center;
+  padding: 8px 0 16px;
+}
+
+.bp-intro-icon {
+  font-size: 32px;
+  color: #C9903A;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.bp-intro-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: #2A1A1A;
+  margin: 0 0 6px;
+}
+
+.bp-intro-sub {
+  font-size: 14px;
+  color: #8a7f7a;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.bp-field {
+  display: grid;
+  gap: 6px;
+}
+
+.bp-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #8a7f7a;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.bp-req { color: #C4526A; }
+
+.bp-textarea,
+.bp-input,
+.bp-select {
+  width: 100%;
+  border: 1px solid rgba(180,160,140,0.25);
+  border-radius: 10px;
+  background: #fff;
+  padding: 10px 14px;
+  color: #2A1A1A;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.bp-textarea:focus,
+.bp-input:focus,
+.bp-select:focus { border-color: #C9903A; }
+
+.bp-textarea { resize: vertical; min-height: 64px; }
+.bp-select   { min-height: 42px; }
+
+.bp-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.bp-actions {
+  display: flex;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.bp-save-btn {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  border-radius: 10px;
+  background: #C9903A;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.bp-save-btn:hover { opacity: 0.88; }
+
+.bp-cancel-btn {
+  border: none;
+  background: none;
+  color: #8a7f7a;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  padding: 0 8px;
+}
+
+.studio-brand-edit-panel {
+  background: #FFFAF3;
+  border-bottom: 1px solid rgba(201,144,58,0.2);
+  padding: 24px 32px;
+}
+
+@media (max-width: 720px) {
+  .bp-row-2 { grid-template-columns: 1fr; }
+  .studio-brand-edit-panel { padding: 16px; }
+}

@@ -3978,12 +3978,93 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
   );
 }
 
-export default function Studio({ onBack, brandProfile = {}, onGoToBrandProfile, callGemini, plan = "free" }) {
+const EMPTY_BRAND = { queOfreces: "", clienteIdeal: "", transformacion: "", tono: "Cercano", redPrincipal: "Instagram", hashtags: "", nombreNegocio: "" };
+
+function BrandProfileForm({ initial = {}, onSave, onCancel, isOnboarding = false }) {
+  const [form, setForm] = useState({ ...EMPTY_BRAND, ...initial });
+  const upd = (k, v) => setForm(p => ({ ...p, [k]: v }));
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!form.queOfreces.trim() || !form.transformacion.trim()) return;
+    onSave(form);
+  };
+
+  return (
+    <form className="bp-form" onSubmit={handleSubmit}>
+      {isOnboarding && (
+        <div className="bp-onboarding-intro">
+          <span className="bp-intro-icon">✦</span>
+          <h2 className="bp-intro-title">Cuéntame de tu marca</h2>
+          <p className="bp-intro-sub">Studio usa esto para pre-llenar todos los generadores con tu voz, tu nicho y tu estilo.</p>
+        </div>
+      )}
+
+      <div className="bp-field">
+        <label className="bp-label">¿Qué ofreces? <span className="bp-req">*</span></label>
+        <textarea className="bp-textarea" rows={2} required value={form.queOfreces}
+          onChange={e => upd("queOfreces", e.target.value)}
+          placeholder="Ej: Coaching de maternidad consciente para mamás emprendedoras" />
+      </div>
+
+      <div className="bp-field">
+        <label className="bp-label">¿A quién ayudas? (cliente ideal)</label>
+        <textarea className="bp-textarea" rows={2} value={form.clienteIdeal}
+          onChange={e => upd("clienteIdeal", e.target.value)}
+          placeholder="Ej: Mamás de 28-40 años que quieren crecer sin descuidar su familia" />
+      </div>
+
+      <div className="bp-field">
+        <label className="bp-label">¿Cuál es la transformación que logran contigo? <span className="bp-req">*</span></label>
+        <textarea className="bp-textarea" rows={2} required value={form.transformacion}
+          onChange={e => upd("transformacion", e.target.value)}
+          placeholder="Ej: De agotada y desbordada a organizada, rentable y presente" />
+      </div>
+
+      <div className="bp-row-2">
+        <div className="bp-field">
+          <label className="bp-label">Tono de comunicación</label>
+          <select className="bp-select" value={form.tono} onChange={e => upd("tono", e.target.value)}>
+            <option>Cercano</option><option>Profesional</option><option>Inspirador</option><option>Directo</option>
+          </select>
+        </div>
+        <div className="bp-field">
+          <label className="bp-label">Red principal</label>
+          <select className="bp-select" value={form.redPrincipal} onChange={e => upd("redPrincipal", e.target.value)}>
+            <option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Spotify</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="bp-field">
+        <label className="bp-label">Hashtags (opcional)</label>
+        <input className="bp-input" value={form.hashtags} onChange={e => upd("hashtags", e.target.value)} placeholder="#mamaceo #emprendedora" />
+      </div>
+
+      <div className="bp-actions">
+        <button className="bp-save-btn" type="submit">
+          {isOnboarding ? "Guardar y empezar ✦" : "Guardar perfil"}
+        </button>
+        {onCancel && (
+          <button type="button" className="bp-cancel-btn" onClick={onCancel}>
+            {isOnboarding ? "Saltar por ahora" : "Cancelar"}
+          </button>
+        )}
+      </div>
+    </form>
+  );
+}
+
+export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, callGemini, plan = "free" }) {
   const [activeTab, setActiveTab] = useState("mensaje");
   const [data, setData] = useState(() => loadStudio());
   const [guionSeed, setGuionSeed] = useState("");
   const [toast, setToast] = useState(null);
   const [aiUsage, setAiUsage] = useState(null);
+  const [editingBrand, setEditingBrand] = useState(false);
+
+  const hasBrand = !!(brandProfile.queOfreces && brandProfile.transformacion);
+  const [skippedOnboarding, setSkippedOnboarding] = useState(hasBrand);
 
   useEffect(() => { saveStudio(data); }, [data]);
 
@@ -3996,8 +4077,33 @@ export default function Studio({ onBack, brandProfile = {}, onGoToBrandProfile, 
     setActiveTab("guion");
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
+
+  const handleSaveBrand = (data) => {
+    onSaveBrandProfile && onSaveBrandProfile(data);
+    setEditingBrand(false);
+    setSkippedOnboarding(true);
+  };
+
   const tabProps = { saved: data, onSave: handleSave, onDelete: handleDelete, brandProfile, callGemini, plan, onAiUsed: setAiUsage };
-  const hasBrand = !!(brandProfile.queOfreces && brandProfile.transformacion);
+
+  // Pantalla de bienvenida si no hay perfil y no saltó
+  if (!hasBrand && !skippedOnboarding) {
+    return (
+      <div className="studio-shell">
+        <header className="studio-header">
+          <button className="studio-back-btn" onClick={onBack}>&#x2190; Volver</button>
+          <span className="studio-title-text">Studio de Contenido</span>
+        </header>
+        <main className="studio-main studio-onboarding">
+          <BrandProfileForm
+            isOnboarding
+            onSave={handleSaveBrand}
+            onCancel={() => setSkippedOnboarding(true)}
+          />
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="studio-shell">
@@ -4019,26 +4125,33 @@ export default function Studio({ onBack, brandProfile = {}, onGoToBrandProfile, 
           ))}
         </nav>
       </header>
-      {hasBrand ? (
+
+      {/* Strip de perfil de marca */}
+      {editingBrand ? (
+        <div className="studio-brand-edit-panel">
+          <BrandProfileForm
+            initial={brandProfile}
+            onSave={handleSaveBrand}
+            onCancel={() => setEditingBrand(false)}
+          />
+        </div>
+      ) : hasBrand ? (
         <div className="studio-brand-strip">
           <span className="sbs-star">✦</span>
           <span className="sbs-info">
             <b>{brandProfile.queOfreces}</b>
             <span className="sbs-meta"> · Tono: {brandProfile.tono} · Red: {brandProfile.redPrincipal}</span>
           </span>
-          {onGoToBrandProfile && (
-            <button className="sbs-edit-btn" onClick={onGoToBrandProfile}>Editar perfil →</button>
-          )}
+          <button className="sbs-edit-btn" onClick={() => setEditingBrand(true)}>Editar perfil ✏️</button>
         </div>
       ) : (
         <div className="studio-brand-strip studio-brand-strip--empty">
           <span className="sbs-star">💡</span>
-          <span>Completa tu <b>Perfil de Marca</b> para pre-llenar el Studio automáticamente en todos los tabs</span>
-          {onGoToBrandProfile && (
-            <button className="sbs-edit-btn" onClick={onGoToBrandProfile}>Ir a Mi Negocio →</button>
-          )}
+          <span>Completa tu <b>Perfil de Marca</b> para que Studio use tu voz en todo</span>
+          <button className="sbs-edit-btn" onClick={() => setEditingBrand(true)}>Completar →</button>
         </div>
       )}
+
       <main className="studio-main">
         {activeTab === "mensaje"  && <MensajeTab    {...tabProps} />}
         {activeTab === "ideas"    && <IdeasTab      {...tabProps} onCrearGuion={handleCrearGuion} />}

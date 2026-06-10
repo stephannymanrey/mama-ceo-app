@@ -1765,7 +1765,7 @@ export default function App() {
   }
 
   if (activeView === "studio") {
-    return <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onGoToBrandProfile={() => setActiveView("business")} callGemini={callGemini} plan={effectivePlan} />;
+    return <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} />;
   }
 
   if (!user && awsActive) {
