@@ -4930,11 +4930,30 @@ export default function App() {
         priceUsd: PLAN_PRICES.emprendedora.usd,
         badge: "MÁS POPULAR",
         desc: "Para la mamá que además tiene un negocio o quiere emprender.",
-        features: ["Todo lo del plan Mamá","Lleva el control de tu negocio y tus clientas","Planifica tu contenido para redes sociales","Crea publicaciones con ayuda de IA","Te respondemos en menos de 48 horas"] },
+        features: [
+          "Todo lo del plan Mamá incluido",
+          "Registra ingresos y gastos de tu negocio",
+          "Lleva el control de tus clientas y su seguimiento",
+          "Fija y sigue tus metas de ventas cada mes",
+          "Ve de dónde vienen tus mejores clientas",
+          "Planifica tu contenido para redes sociales",
+          "Crea hasta 60 publicaciones al mes con ayuda de IA",
+          "Agenda citas y reuniones de tu negocio",
+          "Te respondemos en menos de 48 horas",
+        ] },
       { id: "ceo", name: "👑 Mamá CEO", price: PLAN_PRICES.ceo.cop,
         priceUsd: PLAN_PRICES.ceo.usd,
         desc: "Hogar organizado y negocio creciendo — todo en un solo lugar, sin límites.",
-        features: ["Todo lo anterior, sin límites","Exporta tus registros a Excel","Ve cuánto vas a ganar este mes","Temporizador para trabajar sin distracciones","Te respondemos en menos de 24 horas"] },
+        features: [
+          "Todo lo anterior, sin ningún límite",
+          "Crea hasta 200 publicaciones al mes con IA",
+          "Exporta todos tus registros a Excel",
+          "Ve cuánto vas a ganar este mes antes de que llegue",
+          "Analiza la rentabilidad real de tu negocio",
+          "Temporizador para trabajar sin distracciones",
+          "Acceso anticipado a cada nueva función",
+          "Te respondemos en menos de 24 horas",
+        ] },
     ];
     return (
       <section className="panel workspace-panel">
