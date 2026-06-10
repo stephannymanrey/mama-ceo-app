@@ -4545,43 +4545,62 @@ export default function App() {
   }
 
   function MovementForm() {
+    const isIncome = form.type === "income";
     return (
-      <form className="card form-card" onSubmit={addMovement}>
-        <h3>Agregar movimiento</h3>
+      <form className="card mov-form" onSubmit={addMovement}>
         {movements.length >= currentLimits.movements && (
           <div className="plan-limit-banner">
             ⚠️ Llegaste al límite de <strong>{currentLimits.movements} movimientos</strong> de tu plan.{" "}
             <button type="button" className="plan-limit-link" onClick={() => setActiveView("pricing")}>Ver planes →</button>
           </div>
         )}
-        <div className="segmented"><button type="button" className={form.type === "income" ? "selected" : ""} onClick={() => updateMovementType("income")}>Ingreso</button><button type="button" className={form.type === "expense" ? "selected" : ""} onClick={() => updateMovementType("expense")}>Gasto</button></div>
-        <input placeholder="Descripción *" value={form.description} onChange={(event) => updateForm("description", event.target.value)}
+
+        {/* Tipo */}
+        <div className="mov-type-tabs">
+          <button type="button" className={`mov-tab mov-tab-in${isIncome ? " active" : ""}`} onClick={() => updateMovementType("income")}>↑ Ingreso</button>
+          <button type="button" className={`mov-tab mov-tab-ex${!isIncome ? " active" : ""}`} onClick={() => updateMovementType("expense")}>↓ Gasto</button>
+        </div>
+
+        {/* Monto — campo héroe */}
+        <div className={`mov-amount-wrap${formErrors.amount ? " input-error" : ""}${isIncome ? " mov-amount-in" : " mov-amount-ex"}`}>
+          <span className="mov-curr">{currency === "EUR" ? "€" : "$"}</span>
+          <input className="mov-amount-input" placeholder="0.00" type="number" min="0" step="any"
+            value={form.amount} onChange={(e) => updateForm("amount", e.target.value)} />
+        </div>
+        {formErrors.amount && <span className="field-error">{formErrors.amount}</span>}
+
+        {/* Descripción */}
+        <input placeholder="¿Qué fue? (ej: Consultoría, venta de curso…)"
+          value={form.description} onChange={(e) => updateForm("description", e.target.value)}
           className={formErrors.description ? "input-error" : ""} />
         {formErrors.description && <span className="field-error">{formErrors.description}</span>}
-        <input placeholder="Categoría * (ej: Mentoría, Publicidad)" value={form.category} onChange={(event) => updateForm("category", event.target.value)}
-          className={formErrors.category ? "input-error" : ""} />
+
+        {/* Clasificación + banco */}
+        <div className="mov-row-2">
+          <select value={form.classification} onChange={(e) => updateForm("classification", e.target.value)}>
+            {isIncome ? (
+              <><option>Servicios</option><option>Productos</option><option>Otros ingresos</option></>
+            ) : (
+              <><option>Gasto fijo</option><option>Gasto variable</option><option>Inversión de negocio</option></>
+            )}
+          </select>
+          <select value={form.bank} onChange={(e) => updateForm("bank", e.target.value)}>
+            {banks.map((b) => <option key={b}>{b}</option>)}
+          </select>
+        </div>
+
+        {/* Categoría + fecha */}
+        <div className="mov-row-2">
+          <input placeholder="Categoría (ej: Mentoría)"
+            value={form.category} onChange={(e) => updateForm("category", e.target.value)}
+            className={formErrors.category ? "input-error" : ""} />
+          <input type="date" value={form.date} onChange={(e) => updateForm("date", e.target.value)} />
+        </div>
         {formErrors.category && <span className="field-error">{formErrors.category}</span>}
-        <select value={form.classification} onChange={(event) => updateForm("classification", event.target.value)}>
-          {form.type === "income" ? (
-            <>
-              <option>Servicios</option>
-              <option>Productos</option>
-              <option>Otros ingresos</option>
-            </>
-          ) : (
-            <>
-              <option>Gasto fijo</option>
-              <option>Gasto variable</option>
-              <option>Inversión de negocio</option>
-            </>
-          )}
-        </select>
-        <select value={form.bank} onChange={(event) => updateForm("bank", event.target.value)}>{banks.map((bank) => <option key={bank}>{bank}</option>)}</select>
-        <input type="date" value={form.date} onChange={(event) => updateForm("date", event.target.value)} />
-        <input placeholder="Monto *" type="number" min="0" value={form.amount} onChange={(event) => updateForm("amount", event.target.value)}
-          className={formErrors.amount ? "input-error" : ""} />
-        {formErrors.amount && <span className="field-error">{formErrors.amount}</span>}
-        <button className="primary-button" type="submit">Guardar movimiento</button>
+
+        <button className={`primary-button mov-submit${isIncome ? " mov-submit-in" : " mov-submit-ex"}`} type="submit">
+          {isIncome ? "Registrar ingreso ↑" : "Registrar gasto ↓"}
+        </button>
       </form>
     );
   }

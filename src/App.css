@@ -857,6 +857,100 @@ button {
   gap: 10px;
 }
 
+/* ── Movimiento Form Rediseño ── */
+.mov-form {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+}
+
+.mov-type-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  background: #f5f0f2;
+  border-radius: 12px;
+  padding: 4px;
+}
+
+.mov-tab {
+  min-height: 38px;
+  border: none;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 700;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+
+.mov-tab-in.active {
+  background: #fff;
+  color: #1D9E75;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+
+.mov-tab-ex.active {
+  background: #fff;
+  color: #C4526A;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+}
+
+.mov-amount-wrap {
+  display: flex;
+  align-items: center;
+  background: #f9f5f6;
+  border: 1.5px solid var(--line);
+  border-radius: 14px;
+  padding: 0 16px;
+  gap: 6px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.mov-amount-wrap:focus-within { border-color: var(--purple); background: #fff; }
+.mov-amount-in:focus-within   { border-color: #1D9E75; }
+.mov-amount-ex:focus-within   { border-color: #C4526A; }
+
+.mov-curr {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--muted);
+  flex-shrink: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mov-amount-input {
+  flex: 1;
+  border: none !important;
+  background: transparent !important;
+  font-size: 28px !important;
+  font-weight: 700 !important;
+  color: var(--ink) !important;
+  padding: 14px 0 !important;
+  min-height: unset !important;
+  box-shadow: none !important;
+  outline: none;
+  width: 100%;
+  -moz-appearance: textfield;
+}
+
+.mov-amount-input::-webkit-inner-spin-button,
+.mov-amount-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+.mov-amount-input::placeholder { color: #d5c8cc; }
+
+.mov-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mov-submit-in  { background: #1D9E75 !important; }
+.mov-submit-ex  { background: #C4526A !important; }
+
 .settings-card,
 .reinvestment-card,
 .summary-card {
@@ -991,7 +1085,8 @@ button {
   background: var(--purple);
 }
 
-.form-card input {
+.form-card input,
+.mov-form input:not(.mov-amount-input) {
   min-height: 42px;
   width: 100%;
   border: 1px solid var(--line);
@@ -1531,6 +1626,7 @@ button {
 }
 
 .form-card select,
+.mov-form select,
 .section-form select {
   min-height: 42px;
   width: 100%;
@@ -1552,6 +1648,7 @@ button {
 }
 
 .workspace-grid > .form-card,
+.workspace-grid > .mov-form,
 .workspace-grid > .settings-card,
 .workspace-grid > .reinvestment-card,
 .workspace-grid > .banks-card,
@@ -1689,6 +1786,7 @@ button {
   }
 
   .workspace-grid > .form-card,
+  .workspace-grid > .mov-form,
   .workspace-grid > .settings-card,
   .workspace-grid > .reinvestment-card,
   .workspace-grid > .banks-card,
@@ -1710,6 +1808,7 @@ button {
 
 @media (max-width: 720px) {
   .workspace-grid > .form-card,
+  .workspace-grid > .mov-form,
   .workspace-grid > .settings-card,
   .workspace-grid > .reinvestment-card,
   .workspace-grid > .banks-card,
@@ -1724,7 +1823,8 @@ button {
   .home-row,
   .goal-row,
   .home-budget-row,
-  .movement-row {
+  .movement-row,
+  .mov-row-2 {
     grid-template-columns: 1fr;
   }
 
