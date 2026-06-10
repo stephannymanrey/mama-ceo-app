@@ -126,20 +126,26 @@ button {
   position: sticky;
   top: 0;
   height: 100vh;
-  padding: 20px 18px;
+  padding: 14px 16px;
   border-right: 1px solid rgba(180, 160, 140, 0.15);
   background: rgba(250, 247, 245, 0.97);
   backdrop-filter: blur(18px);
   box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
   overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.sidebar::-webkit-scrollbar {
+  display: none;
 }
 
 .brand {
   text-align: center;
-  padding: 8px 4px 4px;
+  padding: 2px 4px 0;
 }
 
 .brand-mark {
@@ -184,7 +190,7 @@ button {
 .menu-item {
   position: relative;
   width: 100%;
-  min-height: 46px;
+  min-height: 42px;
   border: 0;
   border-left: 3px solid transparent;
   border-radius: 12px;
@@ -248,26 +254,30 @@ button {
 
 .quote-card {
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 14px;
   background: linear-gradient(145deg, rgba(245, 238, 232, 0.95), rgba(255, 255, 255, 0.74));
-  padding: 16px;
+  padding: 10px 12px;
   text-align: center;
 }
 
 .quote-card span {
   color: #C9A96E;
-  font-size: 28px;
+  font-size: 18px;
   line-height: 1;
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .quote-card p {
   margin: 0;
-  line-height: 1.5;
-  font-size: 12px;
+  line-height: 1.4;
+  font-size: 11px;
   color: #6B5744;
   font-style: italic;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .dashboard {
@@ -1503,22 +1513,33 @@ button {
 
 .currency-box {
   border: 1px solid var(--line);
-  border-radius: 14px;
-  padding: 14px;
+  border-radius: 12px;
+  padding: 8px 12px;
   background: rgba(255, 245, 248, 0.85);
   display: grid;
-  gap: 8px;
+  gap: 5px;
 }
 
 .currency-box label {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.7px;
   text-transform: uppercase;
 }
 
-.currency-box select,
+.currency-box select {
+  min-height: 32px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  padding: 0 10px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+}
+
 .form-card select,
 .section-form select {
   min-height: 42px;

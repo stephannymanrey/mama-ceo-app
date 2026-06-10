@@ -2138,7 +2138,7 @@ export default function App() {
       )}
 
       <aside className={`sidebar${sidebarCollapsed?" sidebar--collapsed":""}`}>
-        <div className="brand" style={{display:"flex",alignItems:"center",justifyContent:sidebarCollapsed?"center":"space-between",minHeight:"44px"}}>
+        <div className="brand" style={{display:"flex",alignItems:"center",justifyContent:sidebarCollapsed?"center":"space-between"}}>
           {!sidebarCollapsed && <Logo width={120} />}
           <button onClick={()=>setSidebarCollapsed(v=>!v)} title={sidebarCollapsed?"Expandir menú":"Colapsar menú"}
             className="sidebar-collapse-btn">
