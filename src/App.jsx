@@ -641,6 +641,9 @@ export default function App() {
   const [userMode, setUserMode] = useState(stored?.userMode || null);
   const [presenceForm, setPresenceForm] = useState({ quien: [], queHicieron: "", tiempo: "30 min" });
   const [presenceCelebration, setPresenceCelebration] = useState(false);
+  const [apptError, setApptError] = useState("");
+  const [homeTaskError, setHomeTaskError] = useState("");
+  const [homeBudgetError, setHomeBudgetError] = useState("");
   const [homeTab, setHomeTab] = useState(0);
   const [reminderTime, setReminderTime] = useState(stored?.reminderTime || "08:00");
   const [reminderEnabled, setReminderEnabled] = useState(stored?.reminderEnabled !== false);
@@ -1569,15 +1572,16 @@ export default function App() {
 
   const addHomeTask = (event) => {
     event.preventDefault();
-    if (!homeForm.title.trim()) return;
-    
+    if (!homeForm.title.trim()) { setHomeTaskError("Escribe un nombre para la tarea antes de agregar."); return; }
+    setHomeTaskError("");
+
     // Validar límite del plan
     if (homeTasks.length >= currentLimits.homeTasks) {
       setUpgradeReason(`Has alcanzado el límite de ${currentLimits.homeTasks} tareas del hogar de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
-    
+
     setHomeTasks((current) => [{ id: Date.now(), title: homeForm.title.trim(), category: homeForm.category, priority: homeForm.priority || "Normal", delegate: homeForm.delegate || "", done: false }, ...current]);
     setHomeForm({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
   };
@@ -1685,7 +1689,10 @@ export default function App() {
   const addHomeBudgetItem = (event) => {
     event.preventDefault();
     const amount = Number(homeBudgetForm.amount);
-    if (!homeBudgetForm.description.trim() || !amount) return;
+    if (!homeBudgetForm.description.trim() && !amount) { setHomeBudgetError("Completa la descripción y el monto para registrar el movimiento."); return; }
+    if (!homeBudgetForm.description.trim()) { setHomeBudgetError("Escribe una descripción para saber de qué es este movimiento."); return; }
+    if (!amount) { setHomeBudgetError("Ingresa el monto. Puede ser 0 si no aplica."); return; }
+    setHomeBudgetError("");
     const dueDate = homeBudgetForm.dueDate || getTodayInputValue();
     setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount, dueDate, createdAt: timestampFromInputDate(dueDate) }, ...current]);
     setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue() });
@@ -3566,7 +3573,10 @@ export default function App() {
     };
     const submitAppt = e => {
       e.preventDefault();
-      if (!apptForm.title.trim() || !apptForm.date) return;
+      if (!apptForm.title.trim() && !apptForm.date) { setApptError("Escribe un título y elige la fecha para agregar la cita."); return; }
+      if (!apptForm.title.trim()) { setApptError("Escribe el título de la cita — ¿qué es?"); return; }
+      if (!apptForm.date) { setApptError("Elige la fecha de la cita."); return; }
+      setApptError("");
       setAppointments(c => [...c, { id:Date.now(), ...apptForm, title:apptForm.title.trim() }]);
       setApptForm(f => ({ ...f, title:"", date:"", time:"" }));
     };
@@ -3797,6 +3807,7 @@ export default function App() {
                   {Object.entries(RECURRENCE_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
                 <button type="submit" className="appt-submit">+ Agregar cita</button>
+                {apptError && <p style={{margin:"4px 0 0",fontSize:"13px",color:"#C4526A",fontWeight:600}}>{apptError}</p>}
               </form>
               {upcomingAppts.length > 0 ? (
                 <div style={{display:"grid",gap:"8px"}}>
@@ -3953,7 +3964,8 @@ export default function App() {
               <div className="home-left-col">
                 <form className="card home-form-card" onSubmit={addHomeTask}>
                   <h3>Nueva tarea</h3>
-                  <input placeholder="Tarea del hogar" value={homeForm.title} onChange={e => updateHomeForm("title",e.target.value)} required />
+                  <input placeholder="Tarea del hogar" value={homeForm.title}
+                    onChange={e => { updateHomeForm("title",e.target.value); if (homeTaskError) setHomeTaskError(""); }} />
                   <select value={homeForm.category} onChange={e => updateHomeForm("category",e.target.value)}>
                     <option>Rutina</option><option>Compras</option><option>Colegio / Ninos</option>
                     <option>Salud</option><option>Hogar / Limpieza</option><option>Bienestar</option><option>Calendario</option>
@@ -3962,6 +3974,7 @@ export default function App() {
                     <option>Normal</option><option>Urgente</option><option>Puede esperar</option>
                   </select>
                   <input placeholder="Delegar a... (opcional)" value={homeForm.delegate} onChange={e => updateHomeForm("delegate",e.target.value)} />
+                  {homeTaskError && <p style={{margin:"0 0 4px",fontSize:"13px",color:"#C4526A",fontWeight:600}}>{homeTaskError}</p>}
                   <button className="primary-button" type="submit">Guardar tarea</button>
                 </form>
                 <div className="card home-form-card" style={{marginTop:"0"}}>
@@ -4058,11 +4071,14 @@ export default function App() {
             </div>
             <form className="home-budget-form" onSubmit={addHomeBudgetItem}>
               <select value={homeBudgetForm.type} onChange={e => setHomeBudgetForm(c => ({...c,type:e.target.value}))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
-              <input placeholder="Descripción" value={homeBudgetForm.description} onChange={e => setHomeBudgetForm(c => ({...c,description:e.target.value}))} />
-              <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount} onChange={e => setHomeBudgetForm(c => ({...c,amount:e.target.value}))} />
+              <input placeholder="Descripción" value={homeBudgetForm.description}
+                onChange={e => { setHomeBudgetForm(c => ({...c,description:e.target.value})); if (homeBudgetError) setHomeBudgetError(""); }} />
+              <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount}
+                onChange={e => { setHomeBudgetForm(c => ({...c,amount:e.target.value})); if (homeBudgetError) setHomeBudgetError(""); }} />
               <input type="date" value={homeBudgetForm.dueDate} onChange={e => setHomeBudgetForm(c => ({...c,dueDate:e.target.value}))} />
               <button className="primary-button" type="submit">Agregar</button>
             </form>
+            {homeBudgetError && <p style={{margin:"4px 0 12px",fontSize:"13px",color:"#C4526A",fontWeight:600,paddingLeft:"2px"}}>{homeBudgetError}</p>}
             <div className="home-money-insights">
               <article><span>Ganando</span><strong>{money.format(homeBudgetTotals.income)}</strong></article>
               <article><span>Gastando</span><strong>{money.format(homeSpent)}</strong></article>
@@ -4586,7 +4602,12 @@ export default function App() {
             )}
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "28px", gap: "12px" }}>
+          {!canNext && (
+            <p style={{ marginTop:"16px", marginBottom:0, textAlign:"center", fontSize:"13px", color:"#C4526A", fontWeight:600 }}>
+              Selecciona una opción para continuar ↑
+            </p>
+          )}
+          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px", gap: "12px" }}>
             {checkInStep > 1
               ? <button onClick={() => goBack(checkInStep - 1)} style={btnBack}>← Atrás</button>
               : <div style={{ flex: 1 }} />
