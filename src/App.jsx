@@ -673,6 +673,7 @@ export default function App() {
   const [pomodoroCelebrating, setPomodoroCelebrating] = useState(false);
   const [clockNow, setClockNow] = useState(() => new Date());
   const pomodoroRef = React.useRef(null);
+  const audioCtxRef = React.useRef(null);
 
   useEffect(() => {
     if (pomodoroRunning) {
@@ -686,11 +687,13 @@ export default function App() {
               setPomodoroBlocks((b) => b + 1);
               setPomodoroMode("break");
               setPomodoroMinutes(pomodoroBreakDuration);
-              if (Notification.permission === "granted") new Notification("? Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)] });
+              playChime();
+              if (Notification.permission === "granted") new Notification("🍅 Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)], icon: "/logo.png" });
             } else {
               setPomodoroMode("work");
               setPomodoroMinutes(pomodoroWorkDuration);
-              if (Notification.permission === "granted") new Notification("? ¡A trabajar", { body: "¡Nuevo bloque de enfoque!" });
+              playChime();
+              if (Notification.permission === "granted") new Notification("💪 ¡A trabajar!", { body: "¡Nuevo bloque de enfoque!", icon: "/logo.png" });
             }
             return 0;
           });
@@ -709,6 +712,19 @@ export default function App() {
   useEffect(() => {
     const id = setInterval(() => setClockNow(new Date()), 1000);
     return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const unlock = () => {
+      try {
+        if (!audioCtxRef.current) {
+          audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtxRef.current.state === "suspended") audioCtxRef.current.resume();
+      } catch(e) {}
+    };
+    document.addEventListener("click", unlock, { once: true });
+    return () => document.removeEventListener("click", unlock);
   }, []);
 
   useEffect(() => {
@@ -739,7 +755,9 @@ export default function App() {
 
   function playChime() {
     try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (!audioCtxRef.current) audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)();
+      const ctx = audioCtxRef.current;
+      if (ctx.state === "suspended") ctx.resume();
       [[523.25, 0], [659.25, 0.2], [783.99, 0.4], [1046.5, 0.6]].forEach(([freq, delay]) => {
         const osc  = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -764,7 +782,8 @@ export default function App() {
     const target = new Date();
     target.setHours(h, m, 0, 0);
     const ms = target - now;
-    if (ms < 0) return;
+    if (ms < -300000) return; // more than 5 min past → skip today
+    const delay = Math.max(0, ms);
     const timer = setTimeout(() => {
       playChime();
       if (Notification.permission !== "granted") return;
@@ -773,13 +792,16 @@ export default function App() {
         const diff = Math.round((new Date(a.date + "T00:00:00") - t0) / 86400000);
         return diff >= 0 && diff <= 2;
       });
-      if (!soon.length) return;
+      if (!soon.length) {
+        new Notification("MamaCEO 🌸 — Buenos días", { body: "¡Hoy es un gran día para tu negocio!", icon: "/logo.png" });
+        return;
+      }
       const body = soon.map(a => {
         const diff = Math.round((new Date(a.date + "T00:00:00") - t0) / 86400000);
         return `${diff === 0 ? "Hoy" : diff === 1 ? "Mañana" : "En 2d"}: ${a.title}`;
       }).join(" · ");
       new Notification("MamaCEO 🌸 — Buenos días", { body, icon: "/logo.png" });
-    }, ms);
+    }, delay);
     return () => clearTimeout(timer);
   }, [reminderEnabled, reminderTime, appointments]);
 
@@ -789,13 +811,14 @@ export default function App() {
     const now = new Date(); const target = new Date();
     target.setHours(h, m, 0, 0);
     const ms = target - now;
-    if (ms < 0) return;
+    if (ms < -300000) return; // more than 5 min past → skip today
+    const delay = Math.max(0, ms);
     const timer = setTimeout(() => {
       playChime();
       if (Notification.permission === "granted") {
         new Notification("MamaCEO 💛 — Check-in del día", { body: "¿Cómo estás hoy? 3 minutos solo para ti.", icon: "/logo.png" });
       }
-    }, ms);
+    }, delay);
     return () => clearTimeout(timer);
   }, [checkInReminderEnabled, checkInReminderTime]);
 
