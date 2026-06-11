@@ -5273,6 +5273,79 @@ button {
   .db-studio-cta { padding: 14px 16px; }
 }
 
+/* ── Formulario de citas (Hogar) ── */
+.appt-form {
+  display: grid;
+  gap: 10px;
+}
+.appt-type-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.appt-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--line);
+  background: #fff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.appt-chip.active {
+  border-color: #C4526A;
+  background: rgba(196,82,106,0.09);
+  color: #C4526A;
+}
+.appt-title-input {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  background: #faf7f5;
+  width: 100%;
+  box-sizing: border-box;
+}
+.appt-date-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+.appt-field {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  background: #faf7f5;
+  width: 100%;
+  box-sizing: border-box;
+}
+.appt-time {
+  width: 120px;
+}
+.appt-submit {
+  padding: 11px 16px;
+  background: #C4526A;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  width: 100%;
+}
+
 /* ============================================================
    POMODORO — FAB + panel fijo (.pomo-*)
    ============================================================ */

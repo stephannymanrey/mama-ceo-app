@@ -3744,28 +3744,34 @@ export default function App() {
                   </span>
                 )}
               </div>
-              <form onSubmit={submitAppt} style={{display:"grid",gap:"8px",marginBottom:appointments.length?"14px":0}}>
-                <input placeholder="¿Qué cita? Ej: Cita pediatra, Reunión colegio..."
+              <form onSubmit={submitAppt} className="appt-form" style={{marginBottom:appointments.length?"14px":0}}>
+                {/* Tipo — chips visuales */}
+                <div className="appt-type-chips">
+                  {Object.entries(TYPE_ICONS).map(([t, icon]) => (
+                    <button type="button" key={t}
+                      className={`appt-chip${apptForm.type === t ? " active" : ""}`}
+                      onClick={() => setApptForm(f => ({...f, type: t}))}>
+                      {icon} {t}
+                    </button>
+                  ))}
+                </div>
+                {/* Título */}
+                <input placeholder="¿Qué tienes? Ej: Pediatra, Reunión colegio..."
                   value={apptForm.title} onChange={e => setApptForm(f => ({...f,title:e.target.value}))}
-                  style={{padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+                  className="appt-title-input" />
+                {/* Fecha + Hora */}
+                <div className="appt-date-row">
                   <input type="date" value={apptForm.date} onChange={e => setApptForm(f => ({...f,date:e.target.value}))}
-                    style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
+                    className="appt-field" />
                   <input type="time" value={apptForm.time} onChange={e => setApptForm(f => ({...f,time:e.target.value}))}
-                    placeholder="Hora (opcional)"
-                    style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
+                    className="appt-field appt-time" />
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
-                  <select value={apptForm.type} onChange={e => setApptForm(f => ({...f,type:e.target.value}))}
-                    style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}}>
-                    {Object.keys(TYPE_ICONS).map(t => <option key={t}>{t}</option>)}
-                  </select>
-                  <select value={apptForm.recurrence} onChange={e => setApptForm(f => ({...f,recurrence:e.target.value}))}
-                    style={{padding:"9px 10px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}}>
-                    {Object.entries(RECURRENCE_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-                  </select>
-                </div>
-                <button type="submit" style={{padding:"10px 16px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700,width:"100%"}}>Agregar cita</button>
+                {/* Repetición */}
+                <select value={apptForm.recurrence} onChange={e => setApptForm(f => ({...f,recurrence:e.target.value}))}
+                  className="appt-field">
+                  {Object.entries(RECURRENCE_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                </select>
+                <button type="submit" className="appt-submit">+ Agregar cita</button>
               </form>
               {upcomingAppts.length > 0 ? (
                 <div style={{display:"grid",gap:"8px"}}>
