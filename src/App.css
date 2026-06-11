@@ -1378,6 +1378,7 @@ button {
   .section-title {
     align-items: flex-start;
     flex-direction: column;
+    padding: 16px 18px;
   }
 
   .focus-banner,
@@ -5242,6 +5243,34 @@ button {
   .db-quick-grid { grid-template-columns: repeat(2, 1fr); }
   .db-meta-income { font-size: 28px; }
   .db-studio-cta { flex-direction: column; align-items: flex-start; gap: 14px; }
+}
+
+@media (max-width: 390px) {
+  .dashboard { padding: 12px 10px; }
+
+  .topbar { padding: 14px 16px; gap: 12px; }
+  .profile-area { flex-wrap: wrap; gap: 6px; }
+  .status-chip { font-size: 11px; padding: 5px 9px; }
+  .signout-button { padding: 0 12px; min-height: 36px; font-size: 13px; }
+
+  .db-wrap { gap: 12px; }
+  .db-hero { padding: 14px 16px; gap: 8px; }
+  .db-time { font-size: 22px; letter-spacing: -0.5px; }
+
+  .db-focus-card { padding: 14px 16px; }
+  .db-meta-card { padding: 14px 16px; }
+  .db-meta-income { font-size: 22px; }
+  .db-meta-pct { font-size: 20px; }
+  .db-week-card { padding: 14px 16px; }
+
+  .db-alerts { padding: 12px 14px; }
+  .db-alert { font-size: 12px; padding: 8px 12px; }
+
+  .db-quick-card { padding: 12px 8px; gap: 2px; }
+  .db-quick-icon { font-size: 22px; margin-bottom: 4px; }
+  .db-quick-val { font-size: 15px; }
+
+  .db-studio-cta { padding: 14px 16px; }
 }
 
 /* ============================================================
