@@ -2599,26 +2599,51 @@ export default function App() {
       </main>
 
       {/* Modal de upgrade */}
-      {upgradeModal && (
-        <div onClick={() => setUpgradeModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
-          <div onClick={e => e.stopPropagation()} style={{background:"#fff",borderRadius:"20px",padding:"32px 28px",maxWidth:"360px",width:"100%",textAlign:"center",boxShadow:"0 8px 40px rgba(0,0,0,0.18)"}}>
-            <div style={{fontSize:"40px",marginBottom:"12px"}}>🔒</div>
-            <h3 style={{margin:"0 0 10px",fontSize:"20px",color:"var(--ink)"}}>Módulo bloqueado</h3>
-            <p style={{margin:"0 0 20px",color:"var(--muted)",fontSize:"15px",lineHeight:1.5}}>
-              <strong style={{color:"var(--purple)"}}>{upgradeModal.feature}</strong> está disponible desde el <strong>Plan {upgradeModal.plan}</strong>.<br/>
-              Actualiza tu plan para desbloquear este y más módulos.
-            </p>
-            <button onClick={() => { setActiveView("pricing"); setUpgradeModal(null); }}
-              style={{width:"100%",padding:"14px",borderRadius:"12px",border:"none",background:"var(--purple)",color:"#fff",fontWeight:700,fontSize:"16px",cursor:"pointer",marginBottom:"10px"}}>
-              Ver planes y precios →
-            </button>
-            <button onClick={() => setUpgradeModal(null)}
-              style={{width:"100%",padding:"10px",borderRadius:"12px",border:"1px solid var(--line)",background:"none",color:"var(--muted)",fontSize:"14px",cursor:"pointer"}}>
-              Ahora no
-            </button>
+      {upgradeModal && (() => {
+        const perks = {
+          "Emprendedora": [
+            "💰 Ingresos y gastos de tu negocio, al día",
+            "👥 Pipeline de clientas: sabe quién está lista para comprar",
+            "🤖 Hasta 60 publicaciones al mes creadas con IA",
+            "📅 Agenda de citas de tu negocio integrada",
+          ],
+          "CEO": [
+            "📊 Proyecciones de ingresos antes de que termine el mes",
+            "📤 Exporta todos tus registros a Excel cuando quieras",
+            "♾️ Sin límites en absolutamente todo",
+            "⏱️ Temporizador Pomodoro para trabajar enfocada",
+          ],
+        };
+        const planPerks = perks[upgradeModal.plan] || perks["Emprendedora"];
+        return (
+          <div onClick={() => setUpgradeModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+            <div onClick={e => e.stopPropagation()} style={{background:"#fff",borderRadius:"22px",padding:"28px 24px",maxWidth:"360px",width:"100%",boxShadow:"0 12px 50px rgba(0,0,0,0.2)"}}>
+              <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.8px",color:"var(--muted)"}}>Plan {upgradeModal.plan}</p>
+              <h3 style={{margin:"0 0 6px",fontSize:"20px",color:"var(--ink)",fontWeight:800,lineHeight:1.25}}>
+                ✨ {upgradeModal.feature} te espera
+              </h3>
+              <p style={{margin:"0 0 16px",color:"var(--muted)",fontSize:"13px",lineHeight:1.5}}>
+                Esta función es parte del Plan {upgradeModal.plan}. Aquí lo que desbloqueas:
+              </p>
+              <div style={{background:"#faf5ff",borderRadius:"12px",padding:"14px 16px",marginBottom:"20px",display:"grid",gap:"9px"}}>
+                {planPerks.map(p => (
+                  <div key={p} style={{display:"flex",gap:"8px",fontSize:"13px",color:"var(--ink)",lineHeight:1.4,alignItems:"flex-start"}}>
+                    <span style={{flexShrink:0}}>{p}</span>
+                  </div>
+                ))}
+              </div>
+              <button onClick={() => { setActiveView("pricing"); setUpgradeModal(null); }}
+                style={{width:"100%",padding:"14px",borderRadius:"12px",border:"none",background:"var(--purple)",color:"#fff",fontWeight:700,fontSize:"15px",cursor:"pointer",marginBottom:"10px"}}>
+                Ver mi plan →
+              </button>
+              <button onClick={() => setUpgradeModal(null)}
+                style={{width:"100%",padding:"10px",borderRadius:"12px",border:"1px solid var(--line)",background:"none",color:"var(--muted)",fontSize:"14px",cursor:"pointer"}}>
+                Ahora no
+              </button>
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 
@@ -5056,42 +5081,50 @@ export default function App() {
     const plans = [
       { id: "mama", name: "🌸 Mamá", price: PLAN_PRICES.mama.cop,
         priceUsd: PLAN_PRICES.mama.usd,
-        desc: "Para la mamá que quiere más orden en casa y tiempo para ella.",
-        features: ["Organiza tareas del hogar y la familia","Controla el presupuesto familiar","Cuida tu bienestar con un check-in diario","Calendario y recordatorios"] },
+        desc: "Para la mamá que quiere que el hogar funcione sin depender de su memoria.",
+        forYou: "¿Para ti si...? Manejas casa, familia y poco tiempo.",
+        features: [
+          "Tareas del hogar y la familia — nunca más se te olvida nada",
+          "Presupuesto familiar: siempre sabes en qué se va el dinero",
+          "Check-in de bienestar: 3 minutos al día solo para ti",
+          "Calendario y recordatorios: citas, pagos y eventos en un lugar",
+        ] },
       { id: "emprendedora", name: "💼 Emprendedora", price: PLAN_PRICES.emprendedora.cop,
         priceUsd: PLAN_PRICES.emprendedora.usd,
         badge: "MÁS POPULAR",
-        desc: "Para la mamá que además tiene un negocio o quiere emprender.",
+        desc: "Para la mamá que tiene un negocio y necesita que las dos vidas quepan en un día.",
+        forYou: "¿Para ti si...? Vendes, atiendes clientes y también eres mamá.",
         features: [
           "Todo lo del plan Mamá incluido",
-          "Registra ingresos y gastos de tu negocio",
-          "Lleva el control de tus clientas y su seguimiento",
-          "Fija y sigue tus metas de ventas cada mes",
-          "Ve de dónde vienen tus mejores clientas",
-          "Planifica tu contenido para redes sociales",
-          "Crea hasta 60 publicaciones al mes con ayuda de IA",
-          "Agenda citas y reuniones de tu negocio",
-          "Te respondemos en menos de 48 horas",
+          "Ingresos y gastos del negocio — siempre al día",
+          "Pipeline de clientas: sabes quién está lista para comprar",
+          "Meta de ventas mensual con seguimiento en tiempo real",
+          "Descubre de dónde vienen tus clientas más rentables",
+          "Planificación de contenido para redes sin improvisar",
+          "Hasta 60 publicaciones al mes creadas con IA en minutos",
+          "Agenda de citas de tu negocio integrada con el hogar",
+          "Soporte en menos de 48 horas",
         ] },
       { id: "ceo", name: "👑 Mamá CEO", price: PLAN_PRICES.ceo.cop,
         priceUsd: PLAN_PRICES.ceo.usd,
-        desc: "Hogar organizado y negocio creciendo — todo en un solo lugar, sin límites.",
+        desc: "Para la mamá que quiere saber exactamente hacia dónde va su negocio, sin límites.",
+        forYou: "¿Para ti si...? Tu negocio crece y necesitas datos, no suposiciones.",
         features: [
-          "Todo lo anterior, sin ningún límite",
-          "Crea hasta 200 publicaciones al mes con IA",
-          "Exporta todos tus registros a Excel",
-          "Ve cuánto vas a ganar este mes antes de que llegue",
-          "Analiza la rentabilidad real de tu negocio",
-          "Temporizador para trabajar sin distracciones",
+          "Todo lo anterior, absolutamente sin límites",
+          "Hasta 200 publicaciones al mes con IA",
+          "Exporta todos tus registros a Excel cuando quieras",
+          "Proyecciones: sabe cuánto vas a ganar antes de que llegue el dinero",
+          "Rentabilidad real de tu negocio — sin fórmulas complicadas",
+          "Temporizador Pomodoro para trabajar enfocada sin distracciones",
           "Acceso anticipado a cada nueva función",
-          "Te respondemos en menos de 24 horas",
+          "Soporte en menos de 24 horas",
         ] },
     ];
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Elige tu plan</h2>
-          <p>14 días gratis con acceso completo — sin tarjeta, sin compromiso</p>
+          <p>Empieza gratis 14 días · Sin tarjeta · Sin compromiso · Cancela cuando quieras</p>
         </div>
 
         {/* Toggle mensual / anual */}
@@ -5120,8 +5153,9 @@ export default function App() {
                 {isCurrent&&<div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:"var(--pink)",color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:700,whiteSpace:"nowrap"}}>Tu plan actual ✓</div>}
                 {plan.badge&&!isCurrent&&<div style={{position:"absolute",top:"-12px",left:"50%",transform:"translateX(-50%)",background:"var(--purple)",color:"#fff",padding:"4px 16px",borderRadius:"20px",fontSize:"12px",fontWeight:700,whiteSpace:"nowrap"}}>{plan.badge}</div>}
                 <div style={{padding:"24px 20px"}}>
-                  <h3 style={{margin:"0 0 6px",fontSize:"18px",color:"var(--ink)",fontWeight:700}}>{plan.name}</h3>
-                  <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)",lineHeight:1.5}}>{plan.desc}</p>
+                  <h3 style={{margin:"0 0 4px",fontSize:"18px",color:"var(--ink)",fontWeight:700}}>{plan.name}</h3>
+                  <p style={{margin:"0 0 8px",fontSize:"13px",color:"var(--muted)",lineHeight:1.5}}>{plan.desc}</p>
+                  {plan.forYou && <p style={{margin:"0 0 14px",fontSize:"12px",color:"var(--purple)",fontWeight:600,lineHeight:1.4,fontStyle:"italic"}}>{plan.forYou}</p>}
                   <div style={{marginBottom:"16px"}}>
                     <span style={{fontSize:"30px",fontWeight:800,color:"var(--ink)"}}>{isYearly ? PLAN_PRICES[plan.id].copYear : plan.price}</span>
                     <span style={{fontSize:"14px",color:"var(--muted)",marginLeft:"4px"}}>{isYearly?"COP/año":"COP/mes"}</span>
@@ -5139,9 +5173,9 @@ export default function App() {
                         onClick={()=>window.open(isYearly ? HOTMART_LINKS_YEAR[plan.id] : HOTMART_LINKS[plan.id],"_blank")}
                         style={{width:"100%",padding:"13px 0",borderRadius:"10px",border:"none",background:"var(--pink)",color:"#fff",fontWeight:700,fontSize:"15px",cursor:"pointer",transition:"opacity 0.2s"}}
                       >
-                        Quiero este plan
+                        Empezar gratis 14 días →
                       </button>
-                      <p style={{margin:"8px 0 0",fontSize:"11px",color:"var(--muted)",textAlign:"center"}}>Pago seguro · Cancela cuando quieras</p>
+                      <p style={{margin:"8px 0 0",fontSize:"11px",color:"var(--muted)",textAlign:"center"}}>Sin tarjeta · Cancela cuando quieras</p>
                     </>
                   )}
                 </div>
