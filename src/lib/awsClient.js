@@ -19,8 +19,8 @@ try {
           oauth: {
             domain: 'us-east-1zvjgj7ig1.auth.us-east-1.amazoncognito.com',
             scopes: ['email', 'openid', 'profile'],
-            redirectSignIn: ['https://mamaceoapp.co', 'http://localhost:5173'],
-            redirectSignOut: ['https://mamaceoapp.co', 'http://localhost:5173'],
+            redirectSignIn: ['https://mamaceoapp.co', 'https://www.mamaceoapp.co', 'http://localhost:5173'],
+            redirectSignOut: ['https://mamaceoapp.co', 'https://www.mamaceoapp.co', 'http://localhost:5173'],
             responseType: 'code'
           }
         }
