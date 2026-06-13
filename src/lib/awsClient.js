@@ -114,6 +114,11 @@ export const awsAuth = {
 
   signInWithGoogle: async () => {
     try {
+      Object.keys(localStorage).forEach(k => {
+        if (k.includes('oauth') || k.includes('hostedUI') || k.includes('pkce') || k.includes('signIn') || k.includes('amplify')) {
+          localStorage.removeItem(k);
+        }
+      });
       await signInWithRedirect({ provider: 'Google' });
     } catch (err) {
       console.error('Google sign-in error:', err);
