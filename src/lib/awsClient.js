@@ -2,7 +2,7 @@ import { Amplify } from 'aws-amplify';
 import {
   signIn, signUp, signOut, confirmSignUp,
   getCurrentUser, fetchAuthSession, resetPassword,
-  updatePassword, confirmResetPassword
+  updatePassword, confirmResetPassword, signInWithRedirect
 } from 'aws-amplify/auth';
 
 let amplifyConfigured = false;
@@ -12,7 +12,16 @@ try {
     Auth: {
       Cognito: {
         userPoolId: 'us-east-1_ZvJgj7iG1',
-        userPoolClientId: '5hjqj36u9oeud7cs8onj93d36j'
+        userPoolClientId: '5hjqj36u9oeud7cs8onj93d36j',
+        loginWith: {
+          oauth: {
+            domain: 'us-east-1zvjgj7ig1.auth.us-east-1.amazoncognito.com',
+            scopes: ['email', 'openid', 'profile'],
+            redirectSignIn: ['https://mamaceoapp.co', 'http://localhost:5173'],
+            redirectSignOut: ['https://mamaceoapp.co', 'http://localhost:5173'],
+            responseType: 'code'
+          }
+        }
       }
     }
   });
@@ -77,6 +86,15 @@ export const awsAuth = {
   confirmSignUp: async ({ email, code }) => {
     try {
       await confirmSignUp({ username: email, confirmationCode: code });
+      return { error: null };
+    } catch (err) {
+      return { error: { message: err.message } };
+    }
+  },
+
+  signInWithGoogle: async () => {
+    try {
+      await signInWithRedirect({ provider: 'Google' });
       return { error: null };
     } catch (err) {
       return { error: { message: err.message } };
