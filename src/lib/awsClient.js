@@ -1,4 +1,5 @@
 import { Amplify } from 'aws-amplify';
+import { Hub } from 'aws-amplify/utils';
 import {
   signIn, signUp, signOut, confirmSignUp,
   getCurrentUser, fetchAuthSession, resetPassword,
@@ -31,6 +32,17 @@ try {
 }
 
 export const isAwsConfigured = amplifyConfigured;
+
+export function onGoogleRedirectCallback(callback) {
+  return Hub.listen('auth', ({ payload }) => {
+    if (payload.event === 'signInWithRedirect') {
+      callback();
+    }
+    if (payload.event === 'signInWithRedirect_failure') {
+      console.error('Google sign-in failed:', payload.data);
+    }
+  });
+}
 
 export async function getAwsAuthToken() {
   try {

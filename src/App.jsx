@@ -1,6 +1,6 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import { useRegisterSW } from 'virtual:pwa-register/react';
-import { awsAuth, getAwsAuthToken, isAwsConfigured, confirmAwsResetPassword } from "./lib/awsClient";
+import { awsAuth, getAwsAuthToken, isAwsConfigured, confirmAwsResetPassword, onGoogleRedirectCallback } from "./lib/awsClient";
 import Logo from "./Logo";
 import Studio from "./Studio";
 import "./App.css";
@@ -1251,11 +1251,17 @@ export default function App() {
         if (event === 'PASSWORD_RECOVERY') {
           setResetPassword(true);
         }
-
       });
       subscription = listenerData?.subscription;
     }
-    return () => subscription?.unsubscribe?.();
+    const unlistenGoogle = onGoogleRedirectCallback(async () => {
+      const { data } = await awsAuth.getSession();
+      setUser(data?.session?.user ?? null);
+    });
+    return () => {
+      subscription?.unsubscribe?.();
+      if (typeof unlistenGoogle === 'function') unlistenGoogle();
+    };
   }, [awsActive]);
 
   useEffect(() => {
