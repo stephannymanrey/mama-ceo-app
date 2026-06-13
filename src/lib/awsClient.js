@@ -3,7 +3,8 @@ import { Hub } from 'aws-amplify/utils';
 import {
   signIn, signUp, signOut, confirmSignUp,
   getCurrentUser, fetchAuthSession, resetPassword,
-  updatePassword, confirmResetPassword, signInWithRedirect
+  updatePassword, confirmResetPassword, signInWithRedirect,
+  fetchUserAttributes
 } from 'aws-amplify/auth';
 
 let amplifyConfigured = false;
@@ -57,7 +58,14 @@ export const awsAuth = {
   getSession: async () => {
     try {
       const user = await getCurrentUser();
-      return { data: { session: { user: { id: user.userId, email: user.signInDetails?.loginId, user_metadata: { full_name: user.username } } } }, error: null };
+      let fullName = user.signInDetails?.loginId || user.username;
+      let email = user.signInDetails?.loginId || '';
+      try {
+        const attrs = await fetchUserAttributes();
+        fullName = attrs.name || attrs.email || fullName;
+        email = attrs.email || email;
+      } catch {}
+      return { data: { session: { user: { id: user.userId, email, user_metadata: { full_name: fullName } } } }, error: null };
     } catch {
       return { data: { session: null }, error: null };
     }
