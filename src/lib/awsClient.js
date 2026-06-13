@@ -92,13 +92,12 @@ export const awsAuth = {
     }
   },
 
-  signInWithGoogle: async () => {
-    try {
-      await signInWithRedirect({ provider: 'Google' });
-      return { error: null };
-    } catch (err) {
-      return { error: { message: err.message } };
-    }
+  signInWithGoogle: () => {
+    const domain = 'us-east-1zvjgj7ig1.auth.us-east-1.amazoncognito.com';
+    const clientId = '5hjqj36u9oeud7cs8onj93d36j';
+    const redirectUri = encodeURIComponent(window.location.origin);
+    const url = `https://${domain}/oauth2/authorize?client_id=${clientId}&response_type=code&scope=email+openid+profile&redirect_uri=${redirectUri}&identity_provider=Google`;
+    window.location.href = url;
   },
 
   signOut: async () => {
