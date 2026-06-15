@@ -646,6 +646,38 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
         k => `Guía de procesos (SOP): sistema para ${k}`,
       ],
     },
+    email: {
+      label: "📧 Email", sub: "Newsletter · Nurturing",
+      color: "#6366F1", bg: "#F0F0FF",
+      templates: [
+        k => `Lo que aprendí sobre ${k} este mes — y cómo lo aplico`,
+        k => `El error más común con ${k} que me costó caro`,
+        k => `Mi proceso con ${k}: lo que funciona y lo que no`,
+        k => `La pregunta que más me hacen sobre ${k} — y mi respuesta honesta`,
+        k => `3 cosas que nadie te dice sobre ${k}`,
+        k => `Si empezara de cero con ${k}, haría esto diferente`,
+        k => `Carta para la mamá que está comenzando con ${k}`,
+        k => `Por qué ${k} no está funcionando para ti (y cómo arreglarlo)`,
+        k => `Un consejo sobre ${k} que cambió cómo trabajo`,
+        k => `Cómo cambió mi perspectiva sobre ${k}: te lo cuento sin filtros`,
+      ],
+    },
+    whatsapp: {
+      label: "💬 WhatsApp", sub: "Broadcast · Estado · DM",
+      color: "#25D366", bg: "#EDFFF5",
+      templates: [
+        k => `Un tip rápido sobre ${k} que me hubiera gustado saber antes 🙌`,
+        k => `¿Estás aprovechando bien ${k}? Tengo algo para ti 🎁`,
+        k => `Tip del día: ${k} no tiene que ser complicado — te cuento 💡`,
+        k => `Hola! Quería compartirte algo sobre ${k} que está funcionando mucho`,
+        k => `Antes de que se me olvide — esto sobre ${k} puede cambiarlo todo`,
+        k => `¿Tienes 2 minutos? Esto sobre ${k} vale la pena leerlo 👀`,
+        k => `Lo que estoy aprendiendo sobre ${k} y quiero que tú también sepas`,
+        k => `¿Sabías que ${k} puede ser más simple de lo que crees? 👇`,
+        k => `Mensaje rápido: esto con ${k} me funcionó y creo que a ti también`,
+        k => `¿Qué tan seguido te dedicas a ${k}? Te hago una pregunta 🤍`,
+      ],
+    },
   };
 
   const generar = (kw) => {
@@ -863,24 +895,32 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
               </div>
               <div className="ideas-cards-grid">
                 {ideas[catKey].map((idea, i) => (
-                  <div className={`ideas-card${catKey==="digital"?" ideas-card--digital":""}`} key={idea.id} style={{ animationDelay: `${i * 70}ms` }}>
+                  <div
+                    className={`ideas-card ideas-card--tap${catKey==="digital"?" ideas-card--digital":""}`}
+                    key={idea.id}
+                    style={{ animationDelay: `${i * 70}ms` }}
+                    onClick={() => catKey === "digital"
+                      ? setVistaBlueprint({ tipo: detectProductType(idea.texto), keyword: ideas.keyword, idea: idea.texto })
+                      : onCrearGuion?.(idea.texto)
+                    }
+                  >
                     <p className="ideas-card-text">{idea.texto}</p>
-                    <div className="ideas-card-actions">
-                      <button className="ideas-card-copy" onClick={() => copiar(idea.texto, idea.id)}>
-                        {copiado === idea.id ? "✓ Copiado" : "Copiar"}
+                    <div className="ideas-card-footer">
+                      <span className="ideas-card-cta-label">
+                        {catKey === "digital" ? "Ver plan →" : "Crear guión →"}
+                      </span>
+                      <button className="ideas-card-bookmark"
+                        title="Guardar idea"
+                        onClick={e => {
+                          e.stopPropagation();
+                          onSave("ideas", {
+                            id: Date.now(), titulo: idea.texto, tipo: cat.label,
+                            plataforma: cat.sub, color: cat.color, keyword: ideas.keyword,
+                            fecha: new Date().toLocaleDateString("es"),
+                          });
+                        }}>
+                        💾
                       </button>
-                      <button className="ideas-card-save" onClick={() => onSave("ideas", {
-                        id: Date.now(), titulo: idea.texto, tipo: cat.label,
-                        plataforma: cat.sub, color: cat.color, keyword: ideas.keyword,
-                        fecha: new Date().toLocaleDateString("es"),
-                      })}>Guardar</button>
-                      {catKey === "digital" ? (
-                        <button className="ideas-card-plan" onClick={() => setVistaBlueprint({ tipo: detectProductType(idea.texto), keyword: ideas.keyword, idea: idea.texto })}>
-                          Ver plan →
-                        </button>
-                      ) : (
-                        <button className="ideas-card-guion" onClick={() => onCrearGuion?.(idea.texto)}>Guión 🎬</button>
-                      )}
                     </div>
                   </div>
                 ))}
@@ -1823,26 +1863,25 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
   const copiar = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2200); };
 
   // ── Sugestiones inteligentes basadas en el tema ─────────────
-  const getSugestiones = (t) => {
-    const T = t?.trim() || "este tema";
+  const getSugestiones = () => {
     return {
       logros: [
-        `Aprendí a implementar ${T} de forma simple, sin necesitar ser experta`,
-        `Descubrí que con ${T} logro resultados reales sin descuidar a mi familia`,
-        `Pasé de no saber por dónde empezar con ${T} a tener un sistema que funciona hoy`,
-        `Apliqué ${T} y cambió completamente la forma en que manejo mi negocio`,
+        `Aprendí a hacerlo de forma simple y paso a paso, sin necesitar ser experta`,
+        `Pasé de no saber por dónde empezar a tener un sistema que me funciona hoy`,
+        `Descubrí que sí es posible tener resultados reales sin descuidar a mi familia`,
+        `Lo implementé y cambió completamente la forma en que manejo mi negocio`,
       ],
       dolores: [
-        `Sentía que ${T} era demasiado complicado para mí y que no era para todas`,
-        `Probé todo con ${T} y nada funcionaba — estaba agotada y a punto de rendirme`,
-        `Me sentía perdida con ${T} sin saber por dónde empezar, sola y sin referentes`,
-        `Dudaba si realmente podía hacer ${T} siendo mamá, emprendedora y sin tiempo`,
+        `Sentía que era demasiado complicado para mí y que simplemente no era para todas`,
+        `Probé todo y nada funcionaba — estaba agotada y a punto de rendirme`,
+        `Me sentía perdida sin saber por dónde empezar, completamente sola y sin referentes`,
+        `Dudaba si realmente podía lograrlo siendo mamá, emprendedora y sin tiempo`,
       ],
       cambios: [
-        `Dejé de complicarlo y empecé a hacer ${T} a mi manera, desde mi realidad`,
-        `Entendí que con ${T} no necesito hacerlo perfecto — solo consistente`,
-        `Encontré un método de ${T} que se adapta a mi vida real como mamá`,
-        `Tomé la decisión de aprender ${T} paso a paso, sin presión y sin comparaciones`,
+        `Dejé de buscar la perfección y empecé a hacerlo a mi manera, desde mi realidad`,
+        `Entendí que no necesito hacerlo perfecto — solo necesito ser consistente`,
+        `Encontré un método que se adapta a mi vida real sin sacrificar lo que importa`,
+        `Tomé la decisión de aprender paso a paso, sin presión y sin compararme con nadie`,
       ],
     };
   };
@@ -1922,7 +1961,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
 
   const canContinue = topic.trim().length > 2;
   const canGenerate = !!(sel.logro.trim() && sel.dolor.trim() && sel.cambio.trim());
-  const sugestiones = getSugestiones(topic);
+  const sugestiones = getSugestiones();
 
   const PREGUNTAS_SLIDE = [
     { num:"01", key:"logro",  pregunta:"¿Cuál es tu mayor logro o aprendizaje con este tema?", hint:"Entre más específica seas, más poderoso el guión", opciones: sugestiones.logros, placeholder:"Cuéntalo con detalle — qué lograste exactamente..." },

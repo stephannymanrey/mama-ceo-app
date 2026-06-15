@@ -1124,55 +1124,32 @@
   transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
   animation: cardIn 0.35s ease both;
 }
-.ideas-card:hover {
+.ideas-card--tap {
+  cursor: pointer;
+}
+.ideas-card--tap:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 18px rgba(0,0,0,0.09);
   border-color: var(--cat-color);
 }
+.ideas-card--tap:active { transform: scale(0.98); }
 .ideas-card-text { font-size: 13px; font-weight: 500; color: #2D1B1B; margin: 0; line-height: 1.5; flex: 1; }
-.ideas-card-actions { display: flex; gap: 6px; }
-.ideas-card-copy {
-  background: rgba(255,255,255,0.8);
-  border: 1px solid rgba(0,0,0,0.1);
-  border-radius: 7px;
-  color: #9A7878;
-  font-size: 11px;
-  font-weight: 600;
-  padding: 5px 10px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: color 0.15s, border-color 0.15s;
+/* Footer row: cta label + bookmark icon */
+.ideas-card-footer {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-top: 2px;
 }
-.ideas-card-copy:hover { color: #2D1B1B; border-color: rgba(0,0,0,0.25); }
-.ideas-card-save {
-  background: var(--cat-color);
-  border: none;
-  border-radius: 7px;
-  color: #fff;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 5px 10px;
-  cursor: pointer;
-  font-family: inherit;
-  opacity: 0.82;
-  transition: opacity 0.15s;
+.ideas-card-cta-label {
+  font-size: 11px; font-weight: 700; color: var(--cat-color); opacity: 0.75;
+  letter-spacing: 0.02em;
 }
-.ideas-card-save:hover { opacity: 1; }
-.ideas-card-guion {
-  background: transparent;
-  border: 1.5px solid var(--cat-color);
-  border-radius: 7px;
-  color: var(--cat-color);
-  font-size: 11px;
-  font-weight: 700;
-  padding: 5px 10px;
-  cursor: pointer;
-  font-family: inherit;
-  white-space: nowrap;
-  opacity: 0.8;
-  transition: opacity 0.15s, background 0.15s;
+.ideas-card--tap:hover .ideas-card-cta-label { opacity: 1; }
+.ideas-card-bookmark {
+  background: none; border: none; padding: 0; cursor: pointer;
+  font-size: 14px; line-height: 1; opacity: 0.45;
+  transition: opacity 0.15s; flex-shrink: 0;
 }
-.ideas-card-guion:hover { opacity: 1; background: var(--cat-bg); }
+.ideas-card-bookmark:hover { opacity: 1; }
 
 @keyframes brainFloat {
   0%, 100% { transform: translateY(0); }

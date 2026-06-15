@@ -252,17 +252,21 @@ Genera 6 ideas para cada formato:
 - carrusel: Posts de Instagram con múltiples slides
 - story: Historias de Instagram o Facebook
 - digital: Producto digital (guía, plantilla, curso, challenge)
+- email: Asunto de email de nurturing — personal, conversacional, como carta a una amiga
+- whatsapp: Mensaje para broadcast de WhatsApp — corto, directo, con 1 emoji al final natural
 
 Reglas:
 - Títulos específicos y concretos — nada de "Cómo mejorar tu negocio" o "Transforma tu vida"
 - Que al leerlo ella piense "eso es exactamente lo que necesito saber"
 - En español de LatAm, como habla una mamá emprendedora real
 - Incluye números, situaciones o resultados concretos cuando aplique
-- Sin emojis en los títulos
+- Sin emojis en los títulos de vertical/horizontal/carrusel/story/digital
+- Para email: sin emojis, asunto corto que genere curiosidad genuina
+- Para whatsapp: máximo 20 palabras, termina con 1 solo emoji relevante
 - PROHIBIDO: "transformar", "potencial", "empoderar", "journey", "el éxito que mereces"
 
 Responde SOLO JSON válido, sin texto extra:
-{"vertical":["i1","i2","i3","i4","i5","i6"],"horizontal":["i1","i2","i3","i4","i5","i6"],"carrusel":["i1","i2","i3","i4","i5","i6"],"story":["i1","i2","i3","i4","i5","i6"],"digital":["i1","i2","i3","i4","i5","i6"]}`;
+{"vertical":["i1","i2","i3","i4","i5","i6"],"horizontal":["i1","i2","i3","i4","i5","i6"],"carrusel":["i1","i2","i3","i4","i5","i6"],"story":["i1","i2","i3","i4","i5","i6"],"digital":["i1","i2","i3","i4","i5","i6"],"email":["i1","i2","i3","i4","i5","i6"],"whatsapp":["i1","i2","i3","i4","i5","i6"]}`;
   }
 
   return "";
