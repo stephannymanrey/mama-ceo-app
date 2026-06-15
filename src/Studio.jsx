@@ -1319,9 +1319,10 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
 
           {!lmIdeas && !thinking && (
             <div className="ideas-empty">
-              <div className="ideas-brain-glow">🎁</div>
-              <h3>¿Sobre qué quieres crear tu lead magnet?</h3>
-              <p>Escribe un tema y te genero ideas organizadas por tipo: guías, checklists, mini-clases y retos de acción.</p>
+              <div className="ideas-empty-icon">🎁</div>
+              <h3 className="ideas-empty-title">¿Sobre qué quieres crear tu lead magnet?</h3>
+              <p className="ideas-empty-sub">Escribe un tema y te genero ideas organizadas por tipo — guías, checklists, mini-clases y retos de acción.</p>
+              <p className="ideas-empty-hint">Empieza con un tema:</p>
               <div className="ideas-chips">
                 {["ventas en WhatsApp","organizar el tiempo","conseguir clientas","marketing de contenido","bienestar para mamás"].map(ej => (
                   <button key={ej} className="ideas-chip" onClick={() => { setKeyword(ej); generar(ej); }}>{ej}</button>
@@ -1385,29 +1386,34 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
       {/* ── CREAR (solo IA) ─────────────────────────── */}
       {view === "crear" && (
         <div className="lm-crear-wrap">
-          <div className="desc-header">
-            <button className="mpm-wizard-back-btn" onClick={() => setView("inicio")}>← Inicio</button>
-            <h2 className="desc-title">Crear Lead Magnet con IA</h2>
-            <p className="desc-subtitle">Elige el tipo y cuéntale el tema — la IA construye el documento completo.</p>
+          <button className="mpm-wizard-back-btn" style={{alignSelf:"flex-start"}} onClick={() => setView("inicio")}>← Volver</button>
+
+          <div className="lm-crear-hero">
+            <div className="lm-crear-hero-icon">🎁</div>
+            <h2 className="lm-crear-hero-title">Crear Lead Magnet con IA</h2>
+            <p className="lm-crear-hero-sub">Elige el tipo, escribe el tema — la IA construye el documento completo listo para descargar.</p>
           </div>
 
           <div className="lm-crear-form">
             <div className="lm-crear-section">
-              <label className="lm-crear-label">¿Qué tipo de lead magnet?</label>
+              <label className="lm-crear-label">1 · ¿Qué tipo de lead magnet?</label>
               <div className="lm-tipo-pills">
                 {TIPO_OPTIONS.map(t => (
                   <button key={t.key} className={`lm-tipo-pill${form.tipo === t.key ? " active" : ""}`}
                     onClick={() => setForm(p => ({...p, tipo: t.key}))}>
                     <span className="lm-tipo-pill-emoji">{t.emoji}</span>
-                    <span className="lm-tipo-pill-label">{t.label}</span>
-                    <span className="lm-tipo-pill-desc">{t.desc}</span>
+                    <div className="lm-tipo-pill-text">
+                      <span className="lm-tipo-pill-label">{t.label}</span>
+                      <span className="lm-tipo-pill-desc">{t.desc}</span>
+                    </div>
+                    {form.tipo === t.key && <span className="lm-tipo-pill-check">✓</span>}
                   </button>
                 ))}
               </div>
             </div>
 
             <div className="lm-ai-block">
-              <label className="lm-crear-label">¿Sobre qué tema?</label>
+              <label className="lm-crear-label">2 · ¿Sobre qué tema?</label>
               <input className="gn2-input" autoFocus
                 placeholder="ej: vender por WhatsApp, organizar el tiempo, conseguir clientas..."
                 value={lmTema}
@@ -1424,7 +1430,6 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
                 </div>
               ) : (
                 <button className="mpm-step-btn studio-ai-btn"
-                  style={{marginTop:"4px"}}
                   disabled={!lmTema.trim()}
                   onClick={generarConIA}>
                   ✨ Crear mi lead magnet completo
@@ -1551,7 +1556,7 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
 // ── HOOKS ──────────────────────────────────────────────────────
 function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
   const [tema, setTema]       = useState("");
-  const [nicho, setNicho]     = useState("");
+  const nicho = brandProfile.clienteIdeal || "";
   const [hooks, setHooks]     = useState(null);
   const [thinking, setThinking] = useState(false);
   const [copiado, setCopiado] = useState("");
@@ -1743,23 +1748,18 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
           </button>
         </div>
         {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
-        <input
-          className="hooks-nicho-input"
-          placeholder="¿A quién le hablas? (opcional) — mamás que venden desde casa, coaches, emprendedoras con hijos..."
-          value={nicho}
-          onChange={e => setNicho(e.target.value)}
-        />
       </div>
 
       {/* ── ESTADO VACÍO ─────────────────────────────── */}
-      {!hooks && !thinking && (
+      {!hooks && !thinking && !aiLoading && (
         <div className="ideas-empty">
-          <div className="ideas-brain-glow">🪝</div>
-          <h3>¿De qué trata tu próximo video?</h3>
-          <p>Escribe el tema y te genero <strong>24+ hooks</strong> organizados en 8 tipos — para detener el scroll en los primeros 3 segundos.</p>
+          <div className="ideas-empty-icon">🪝</div>
+          <h3 className="ideas-empty-title">¿De qué trata tu próximo video?</h3>
+          <p className="ideas-empty-sub">Escribe el tema y genera <strong>24+ hooks</strong> en 8 estilos distintos — para detener el scroll en los primeros 3 segundos.</p>
+          <p className="ideas-empty-hint">Empieza con un tema:</p>
           <div className="ideas-chips">
             {EJEMPLOS.map(ej => (
-              <button key={ej} className="ideas-chip" onClick={() => { setTema(ej); generar(ej); }}>{ej}</button>
+              <button key={ej} className="ideas-chip" onClick={() => { setTema(ej); callGemini ? generarConIA(ej) : generar(ej); }}>{ej}</button>
             ))}
           </div>
         </div>
