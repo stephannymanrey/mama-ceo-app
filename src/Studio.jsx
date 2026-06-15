@@ -956,7 +956,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
 // ── LEAD MAGNET ────────────────────────────────────────────────
 function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
   const [view, setView]         = useState("inicio");
-  const [keyword, setKeyword]   = useState(brandProfile.queOfreces || "");
+  const [keyword, setKeyword]   = useState("");
   const [lmIdeas, setLmIdeas]   = useState(null);
   const [thinking, setThinking] = useState(false);
   const [form, setForm]         = useState({ titulo: "", promesa: "", audiencia: "", tipo: "guia", secciones: ["", "", ""], cta: "", producto: "" });
@@ -964,7 +964,7 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
   const [copiado, setCopiado]   = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMsg,     setAiMsg]     = useState("");
-  const [lmTema,    setLmTema]    = useState(brandProfile.queOfreces || "");
+  const [lmTema,    setLmTema]    = useState("");
 
   const savedIdeas = (saved?.ideas || []).slice(-8).reverse();
   const bancoLeads = saved?.leads || [];
@@ -1549,8 +1549,8 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
 
 // ── HOOKS ──────────────────────────────────────────────────────
 function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
-  const [tema, setTema]       = useState(brandProfile.queOfreces || "");
-  const [nicho, setNicho]     = useState(brandProfile.clienteIdeal || "");
+  const [tema, setTema]       = useState("");
+  const [nicho, setNicho]     = useState("");
   const [hooks, setHooks]     = useState(null);
   const [thinking, setThinking] = useState(false);
   const [copiado, setCopiado] = useState("");
@@ -3431,7 +3431,7 @@ function getApoyoSuggestions(tipo) {
 }
 
 function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
-  const [tema,         setTema]         = useState(brandProfile.queOfreces || "");
+  const [tema,         setTema]         = useState("");
   const [estructura,   setEstructura]   = useState("Educativo");
   const [contexto,     setContexto]     = useState("");
   const [slides,       setSlides]       = useState(null);
@@ -3780,6 +3780,8 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
     onSaveBrandProfile && onSaveBrandProfile(data);
     setEditingBrand(false);
     setSkippedOnboarding(true);
+    setToast("Perfil de marca guardado ✦");
+    setTimeout(() => setToast(null), 3000);
   };
 
   const tabProps = { saved: data, onSave: handleSave, onDelete: handleDelete, brandProfile, callGemini, plan, onAiUsed: setAiUsage };
@@ -3809,6 +3811,9 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
       <header className="studio-header">
         <button className="studio-back-btn" onClick={onBack}>&#x2190; Volver</button>
         <span className="studio-title-text">Studio de Contenido</span>
+        {hasBrand && (
+          <button className="studio-brand-edit-mini" onClick={() => setEditingBrand(true)} title="Editar perfil de marca">✦ Mi marca</button>
+        )}
         {callGemini && aiUsage && (
           <span className="studio-ai-counter">
             ✨ {Math.max(0, aiUsage.limit - aiUsage.used)} de {aiUsage.limit} generaciones restantes
@@ -3833,22 +3838,13 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
             onCancel={() => setEditingBrand(false)}
           />
         </div>
-      ) : hasBrand ? (
-        <div className="studio-brand-strip">
-          <span className="sbs-star">✦</span>
-          <span className="sbs-info">
-            <b>{brandProfile.queOfreces}</b>
-            <span className="sbs-meta"> · Tono: {brandProfile.tono} · Red: {brandProfile.redPrincipal}</span>
-          </span>
-          <button className="sbs-edit-btn" onClick={() => setEditingBrand(true)}>Editar perfil ✏️</button>
-        </div>
-      ) : (
+      ) : !hasBrand ? (
         <div className="studio-brand-strip studio-brand-strip--empty">
           <span className="sbs-star">💡</span>
           <span>Completa tu <b>Perfil de Marca</b> para que Studio use tu voz en todo</span>
           <button className="sbs-edit-btn" onClick={() => setEditingBrand(true)}>Completar →</button>
         </div>
-      )}
+      ) : null}
 
       <main className="studio-main">
         {activeTab === "mensaje"  && <MensajeTab    {...tabProps} />}

@@ -8,7 +8,7 @@ const TABLE       = process.env.TABLE_NAME    || "user_states";
 const GEMINI_KEY  = process.env.GEMINI_API_KEY;
 const GEMINI_URL  = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 const REGION      = process.env.AWS_REGION    || "us-east-1";
-const PLAN_LIMITS = { free: 5, emprendedora: 60, ceo: 200, premium: 200 };
+const PLAN_LIMITS = { free: 50, emprendedora: 60, ceo: 200, premium: 200 };
 
 const ALLOWED_ORIGINS = [
   "https://www.mamaceoapp.co",
@@ -100,7 +100,7 @@ async function getUserPlanAndUsage(userId) {
     let plan = "free";
     try {
       const appData = typeof item.data === "string" ? JSON.parse(item.data) : (item.data || {});
-      plan = appData.userPlan || "free";
+      plan = appData.userPlan || item.userPlan || "free";
     } catch { /* free por defecto */ }
     return { plan, usage: item.ai_usage || {} };
   } catch {
