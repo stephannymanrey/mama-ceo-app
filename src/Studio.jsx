@@ -3495,14 +3495,17 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
     <div className="cr-wrap">
 
       {/* Formulario */}
-      <div className="cr-form card">
-        <div className="cr-form-header">
-          <h3>Generador de Carrusel</h3>
-          <p>Escribe tu contenido real y el sistema arma las slides por ti</p>
+      <div className="cr-form">
+        <div className="cr-form-hero">
+          <span className="cr-form-hero-icon">🎴</span>
+          <div>
+            <h3 className="cr-form-hero-title">Generador de Carrusel</h3>
+            <p className="cr-form-hero-sub">Escribe el tema y el sistema arma todas las slides por ti</p>
+          </div>
         </div>
         <div className="cr-field">
           <label className="cr-label">Tema del carrusel</label>
-          <input className="cr-input" placeholder="Ej: organizar el tiempo cuando eres mamá y emprendes" value={tema} onChange={e => setTema(e.target.value)} />
+          <input className="cr-input" placeholder="Ej: organizar el tiempo cuando eres mamá y emprendes" value={tema} onChange={e => setTema(e.target.value)} onKeyDown={e => e.key === "Enter" && !thinking && tema.trim() && generar()} />
         </div>
         <div className="cr-field">
           <label className="cr-label">Estructura</label>
@@ -3526,20 +3529,23 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
             placeholder={ctxMeta.placeholder}
             value={contexto}
             onChange={e => setContexto(e.target.value)}
-            rows={5}
+            rows={4}
           />
-          <span className="cr-ctx-hint">Si lo dejas vacío, usamos ejemplos genéricos que puedes editar después.</span>
+          <span className="cr-ctx-hint">Opcional — si lo dejas vacío usamos ejemplos que puedes editar después.</span>
         </div>
-        <button className="primary-button" onClick={generar} disabled={thinking || !tema.trim()} style={{marginTop:"4px"}}>
-          {thinking ? "Generando slides..." : "Generar slides 🎴"}
+        <button className="mpm-step-btn" onClick={generar} disabled={thinking || !tema.trim()}>
+          {thinking ? "Generando..." : "Generar slides 🎴"}
         </button>
       </div>
 
       {/* Thinking */}
       {thinking && (
-        <div className="ideas-thinking" style={{marginTop:"16px"}}>
-          <div className="ideas-thinking-dots"><span/><span/><span/></div>
-          <p>Armando tu carrusel...</p>
+        <div className="gn2-loading-wrap" style={{paddingTop:"40px",paddingBottom:"24px"}}>
+          <div className="gn2-spinner-ring">
+            <div className="gn2-spinner-emoji">🎴</div>
+          </div>
+          <p className="gn2-loading-text">Armando tu carrusel...</p>
+          <p className="gn2-loading-sub">Preparando las slides ✦</p>
         </div>
       )}
 
@@ -3553,14 +3559,14 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
               <span className="cr-result-tipo">{estructura}</span>
             </div>
             <div className="cr-result-actions">
-              <button className="cr-btn cr-btn--secondary" onClick={copiarTodo}>
-                {copiado === "todo" ? "✓ Copiado todo" : "📋 Copiar todo"}
+              <button className="cr-btn cr-btn--copy" onClick={copiarTodo}>
+                {copiado === "todo" ? "✓ Copiado" : "📋 Copiar todo"}
               </button>
               <button className="cr-btn cr-btn--canva" onClick={() => window.open("https://www.canva.com/create/instagram-posts/", "_blank")}>
                 Diseñar en Canva ↗
               </button>
               <button className="cr-btn cr-btn--save" onClick={() => onSave("carruseles", { id:Date.now(), tema, estructura, slides, fecha:new Date().toLocaleDateString("es") })}>
-                Guardar 💾
+                Guardar
               </button>
             </div>
           </div>
