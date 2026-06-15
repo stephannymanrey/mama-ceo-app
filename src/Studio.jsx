@@ -954,7 +954,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
 }
 
 // ── LEAD MAGNET ────────────────────────────────────────────────
-function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
+function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
   const [view, setView]         = useState("inicio");
   const [keyword, setKeyword]   = useState(brandProfile.queOfreces || "");
   const [lmIdeas, setLmIdeas]   = useState(null);
@@ -962,11 +962,39 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
   const [form, setForm]         = useState({ titulo: "", promesa: "", audiencia: "", tipo: "guia", secciones: ["", "", ""], cta: "", producto: "" });
   const [docData, setDocData]   = useState(null);
   const [copiado, setCopiado]   = useState("");
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiMsg,     setAiMsg]     = useState("");
+  const [lmTema,    setLmTema]    = useState(brandProfile.queOfreces || "");
 
   const savedIdeas = (saved?.ideas || []).slice(-8).reverse();
   const bancoLeads = saved?.leads || [];
   const shuffle    = (arr) => [...arr].sort(() => Math.random() - 0.5);
   const copiar     = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
+
+  const generarConIA = async () => {
+    const tema = (lmTema || keyword || form.titulo || "").trim();
+    if (!tema || !callGemini) return;
+    setAiLoading(true); setAiMsg("");
+    const res = await callGemini("leadmagnet", {
+      tipo: form.tipo,
+      keyword: tema,
+      nicho: brandProfile.clienteIdeal || "mamás emprendedoras",
+      tono: brandProfile.tono || "Cercano",
+    });
+    setAiLoading(false);
+    if (res?.error === "rate_limit")          { setAiMsg("Muchas solicitudes. Intenta en 1 minuto."); return; }
+    if (res?.error === "limite_alcanzado")    { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
+    if (res?.error === "No autorizada" || res?.error?.includes("autent")) { setAiMsg("Inicia sesión para usar la IA."); return; }
+    if (res?.error)                           { setAiMsg("Algo salió mal. Intenta de nuevo."); return; }
+    onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
+    const r = res.result || {};
+    setForm(p => ({
+      ...p,
+      titulo:   r.titulo   || p.titulo,
+      promesa:  r.promesa  || p.promesa,
+      secciones: r.secciones?.length ? r.secciones : p.secciones,
+    }));
+  };
 
   const LM_CATS = {
     guia: {
@@ -1371,6 +1399,29 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
                 ))}
               </div>
             </div>
+
+            {/* ── IA: rellena el formulario ── */}
+            {callGemini && (
+              <div className="lm-ai-block">
+                <div className="lm-ai-field">
+                  <label className="lm-crear-label">¿Sobre qué tema es tu lead magnet?</label>
+                  <input className="gn2-input"
+                    placeholder="ej: vender por WhatsApp, organizar el tiempo, conseguir clientas..."
+                    value={lmTema}
+                    onChange={e => setLmTema(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && lmTema.trim() && generarConIA()}
+                  />
+                </div>
+                {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
+                <button className="mpm-step-btn studio-ai-btn"
+                  style={{marginTop:"8px"}}
+                  disabled={!lmTema.trim() || aiLoading}
+                  onClick={generarConIA}>
+                  {aiLoading ? "Generando estructura..." : "✨ Completar con IA"}
+                </button>
+                {aiLoading && <p style={{fontSize:"12px",color:"#9A7878",marginTop:"6px",textAlign:"center"}}>Gemini está creando tu lead magnet completo...</p>}
+              </div>
+            )}
 
             <div className="lm-crear-grid">
               {[

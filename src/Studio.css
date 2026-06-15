@@ -1521,6 +1521,18 @@
 }
 .lm-usar-btn:hover { opacity: 1 !important; }
 
+/* AI block in crear form */
+.lm-ai-block {
+  background: linear-gradient(135deg, #FFF0F3, #F0F0FF);
+  border: 1.5px solid rgba(196,82,106,0.2);
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.lm-ai-field { display: flex; flex-direction: column; gap: 6px; }
+
 /* Creator form */
 .lm-crear-wrap {
   max-width: 700px;

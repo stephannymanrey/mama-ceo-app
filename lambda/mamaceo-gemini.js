@@ -269,6 +269,33 @@ Responde SOLO JSON válido, sin texto extra:
 {"vertical":["i1","i2","i3","i4","i5","i6"],"horizontal":["i1","i2","i3","i4","i5","i6"],"carrusel":["i1","i2","i3","i4","i5","i6"],"story":["i1","i2","i3","i4","i5","i6"],"digital":["i1","i2","i3","i4","i5","i6"],"email":["i1","i2","i3","i4","i5","i6"],"whatsapp":["i1","i2","i3","i4","i5","i6"]}`;
   }
 
+  if (type === "leadmagnet") {
+    const tipoLabel = {
+      guia:      "Guía / Ebook PDF descargable",
+      checklist: "Checklist o Plantilla lista para usar",
+      clase:     "Mini-clase o Webinar grabado",
+      reto:      "Reto o Challenge de varios días",
+    }[ctx.tipo] || "Guía";
+    return `Eres experta en lead magnets para mamás emprendedoras en LatAm.
+Crea la estructura completa de un lead magnet tipo "${tipoLabel}" sobre: "${ctx.keyword}"
+Audiencia: ${nicho}
+Tono: ${tono}
+
+Genera exactamente esto:
+- titulo: Título irresistible que promete una victoria rápida y concreta. Máximo 12 palabras. Sin comillas ni emojis.
+- promesa: Lo que la clienta podrá hacer o sentir al terminar. Máximo 15 palabras. Empieza con verbo: "Aprenderás...", "Podrás...", "Sabrás cómo..."
+- secciones: Array de exactamente 5 nombres de secciones/módulos/ítems/días. Cada uno 5-8 palabras, concreto y accionable.
+
+Reglas:
+- Español de LatAm, cálido y directo — como habla una mamá emprendedora
+- Títulos con resultados claros y concretos — nada genérico
+- PROHIBIDO: "empoderar", "potencial", "transformar tu vida", "éxito que mereces", "viaje"
+- Cada sección debe ser un paso que la clienta puede completar
+
+Responde SOLO JSON válido, sin texto extra, sin markdown:
+{"titulo":"...","promesa":"...","secciones":["sec1","sec2","sec3","sec4","sec5"]}`;
+  }
+
   return "";
 }
 
@@ -286,7 +313,7 @@ export const handler = async (event) => {
 
   const { type, context } = body;
   if (!type || !context) return respond(400, { error: "Faltan campos: type, context" }, event);
-  if (!["guion", "hooks", "ideas"].includes(type)) return respond(400, { error: "Tipo no soportado" }, event);
+  if (!["guion", "hooks", "ideas", "leadmagnet"].includes(type)) return respond(400, { error: "Tipo no soportado" }, event);
   if (!GEMINI_KEY) return respond(500, { error: "API key no configurada" }, event);
 
   const { plan, usage } = await getUserPlanAndUsage(userId);
