@@ -2244,9 +2244,9 @@
   max-width: 640px; margin: 0 auto; padding: 16px 16px 40px;
   display: flex; flex-direction: column; gap: 16px;
 }
-.gn2-hero { text-align: center; padding: 8px 0 4px; }
-.gn2-hero h2 { font-size: 22px; font-weight: 800; color: #2D1B1B; margin: 8px 0 4px; }
-.gn2-hero p  { font-size: 14px; color: #9A7878; margin: 0; }
+.gn2-hero { text-align: center; padding: 16px 0 4px; }
+.gn2-hero-title { font-size: 24px; font-weight: 800; color: #2D1B1B; margin: 0 0 6px; letter-spacing: -0.4px; }
+.gn2-hero-sub  { font-size: 14px; color: #9A7878; margin: 0; }
 
 .gn2-field { display: flex; flex-direction: column; gap: 8px; }
 .gn2-label { font-size: 13px; font-weight: 700; color: #5C3A3A; }
@@ -2258,14 +2258,27 @@
 }
 .gn2-input:focus { outline: none; border-color: #C4526A; }
 
-.gn2-obj-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.gn2-obj-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .gn2-obj-pill {
-  padding: 12px; border-radius: 12px; border: 1.5px solid rgba(147,114,126,0.2);
-  background: #fff; font-size: 14px; font-weight: 600; color: var(--ink);
-  cursor: pointer; transition: all 0.15s; font-family: inherit;
+  padding: 14px 12px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(147,114,126,0.18);
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-align: center;
 }
-.gn2-obj-pill.active { border-color: #C4526A; background: #FFF0F3; color: #C4526A; }
-.gn2-obj-pill:hover:not(.active) { border-color: rgba(196,82,106,0.4); }
+.gn2-obj-pill-icon { font-size: 22px; line-height: 1; }
+.gn2-obj-pill-label { font-size: 13px; font-weight: 700; color: #2D1B1B; }
+.gn2-obj-pill-desc { font-size: 11px; color: #9A7878; }
+.gn2-obj-pill.active { border-color: #C4526A; background: #FFF0F3; }
+.gn2-obj-pill.active .gn2-obj-pill-label { color: #C4526A; }
+.gn2-obj-pill:hover:not(.active) { border-color: rgba(196,82,106,0.35); background: #FFFBFC; }
 
 /* Fase 2 — cards de preguntas */
 .gn2-fase-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }

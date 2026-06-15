@@ -2006,31 +2006,38 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
           {fase === "tema" && (
             <div className="gn2-wrap">
               <div className="gn2-hero">
-                <div className="mpm-landing-badge" style={{margin:"0 auto 8px"}}>🎬</div>
-                <h2>Crea tu guión</h2>
-                <p>Cuéntame el tema — la IA escribe el guión completo por ti.</p>
+                <h2 className="gn2-hero-title">¿Sobre qué es tu video?</h2>
+                <p className="gn2-hero-sub">Escribe el tema y la IA construye el guión completo por ti.</p>
               </div>
               <div className="gn2-field">
-                <label className="gn2-label">¿Sobre qué es este video?</label>
                 <input className="gn2-input" autoFocus
-                  placeholder="Ej: guiones con IA, plan de contenido mensual, cobrar sin culpa..."
+                  placeholder="Ej: cobrar sin culpa, plan de contenido, vender con reels..."
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && canContinue && setFase("elegir")}
                 />
+                <div className="ideas-chips" style={{marginTop:"10px"}}>
+                  {["cobrar sin culpa","vender por WhatsApp","organizar el tiempo","conseguir clientas","reels que venden","mentalidad de CEO"].map(ej => (
+                    <button key={ej} className="ideas-chip" onClick={() => setTopic(ej)}>{ej}</button>
+                  ))}
+                </div>
               </div>
               <div className="gn2-field">
-                <label className="gn2-label">¿Cuál es el objetivo del video?</label>
+                <label className="gn2-label">¿Cuál es el objetivo?</label>
                 <div className="gn2-obj-grid">
-                  {[{k:"Vender",i:"💰"},{k:"Conectar",i:"💙"},{k:"Educar",i:"📖"},{k:"Inspirar",i:"⚡"}].map(o => (
+                  {[{k:"Vender",i:"💰",d:"Llevar a comprar"},{k:"Conectar",i:"💙",d:"Generar confianza"},{k:"Educar",i:"📖",d:"Enseñar algo útil"},{k:"Inspirar",i:"⚡",d:"Motivar a actuar"}].map(o => (
                     <button key={o.k} className={`gn2-obj-pill${objetivo===o.k?" active":""}`}
-                      onClick={() => setObjetivo(o.k)}>{o.i} {o.k}</button>
+                      onClick={() => setObjetivo(o.k)}>
+                      <span className="gn2-obj-pill-icon">{o.i}</span>
+                      <span className="gn2-obj-pill-label">{o.k}</span>
+                      <span className="gn2-obj-pill-desc">{o.d}</span>
+                    </button>
                   ))}
                 </div>
               </div>
               <button className={`mpm-step-btn${callGemini?" studio-ai-btn":""}`} style={{marginTop:"8px"}}
                 disabled={!canContinue} onClick={() => setFase("elegir")}>
-                Continuar →
+                {callGemini ? "✨ Continuar" : "Continuar →"}
               </button>
               {saved?.guiones?.length > 0 && (
                 <div className="studio-bank" style={{marginTop:"20px"}}>
