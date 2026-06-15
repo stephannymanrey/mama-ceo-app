@@ -972,7 +972,7 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
   const copiar     = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
 
   const generarConIA = async () => {
-    const tema = (lmTema || keyword || form.titulo || "").trim();
+    const tema = (lmTema || keyword || "").trim();
     if (!tema || !callGemini) return;
     setAiLoading(true); setAiMsg("");
     const res = await callGemini("leadmagnet", {
@@ -988,12 +988,17 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
     if (res?.error)                           { setAiMsg("Algo salió mal. Intenta de nuevo."); return; }
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
     const r = res.result || {};
-    setForm(p => ({
-      ...p,
-      titulo:   r.titulo   || p.titulo,
-      promesa:  r.promesa  || p.promesa,
-      secciones: r.secciones?.length ? r.secciones : p.secciones,
-    }));
+    const aiForm = {
+      ...form,
+      titulo:    r.titulo   || tema,
+      promesa:   r.promesa  || "",
+      secciones: r.secciones?.length ? r.secciones : ["Sección 1", "Sección 2", "Sección 3", "Sección 4", "Sección 5"],
+      audiencia: brandProfile.clienteIdeal || "mamás emprendedoras",
+    };
+    setForm(aiForm);
+    setDocData(buildDoc(aiForm));
+    setView("preview");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
 
   const LM_CATS = {
@@ -1103,8 +1108,8 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
   const TIPO_LABELS  = { guia: "📄 Guía",       checklist: "✅ Checklist", clase: "🎓 Mini-clase", reto: "🔥 Reto" };
   const TIPO_COLORS  = { guia: "#C4526A",        checklist: "#27AE60",     clase: "#4A90D9",       reto: "#E8755A" };
 
-  const buildDoc = () => {
-    const { tipo, titulo, promesa, audiencia, secciones, cta, producto } = form;
+  const buildDoc = (data = form) => {
+    const { tipo, titulo, promesa, audiencia, secciones, cta, producto } = data;
     const aud    = audiencia || "mamás emprendedoras";
     const prod   = producto  || "mi programa / servicio";
     const ctaTxt = cta       || `Conoce ${prod} →`;
@@ -1376,18 +1381,18 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
         </div>
       )}
 
-      {/* ── CREAR ───────────────────────────────────── */}
+      {/* ── CREAR (solo IA) ─────────────────────────── */}
       {view === "crear" && (
         <div className="lm-crear-wrap">
           <div className="desc-header">
             <button className="mpm-wizard-back-btn" onClick={() => setView("inicio")}>← Inicio</button>
-            <h2 className="desc-title">Crea tu Lead Magnet</h2>
-            <p className="desc-subtitle">La promesa lo vende — el contenido lo cumple. Define primero qué victoria rápida le vas a dar a tu clienta.</p>
+            <h2 className="desc-title">Crear Lead Magnet con IA</h2>
+            <p className="desc-subtitle">Elige el tipo y cuéntale el tema — la IA construye el documento completo.</p>
           </div>
 
           <div className="lm-crear-form">
             <div className="lm-crear-section">
-              <label className="lm-crear-label">¿Qué tipo de lead magnet vas a crear?</label>
+              <label className="lm-crear-label">¿Qué tipo de lead magnet?</label>
               <div className="lm-tipo-pills">
                 {TIPO_OPTIONS.map(t => (
                   <button key={t.key} className={`lm-tipo-pill${form.tipo === t.key ? " active" : ""}`}
@@ -1400,77 +1405,31 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
               </div>
             </div>
 
-            {/* ── IA: rellena el formulario ── */}
-            {callGemini && (
-              <div className="lm-ai-block">
-                <div className="lm-ai-field">
-                  <label className="lm-crear-label">¿Sobre qué tema es tu lead magnet?</label>
-                  <input className="gn2-input"
-                    placeholder="ej: vender por WhatsApp, organizar el tiempo, conseguir clientas..."
-                    value={lmTema}
-                    onChange={e => setLmTema(e.target.value)}
-                    onKeyDown={e => e.key === "Enter" && lmTema.trim() && generarConIA()}
-                  />
+            <div className="lm-ai-block">
+              <label className="lm-crear-label">¿Sobre qué tema?</label>
+              <input className="gn2-input" autoFocus
+                placeholder="ej: vender por WhatsApp, organizar el tiempo, conseguir clientas..."
+                value={lmTema}
+                onChange={e => setLmTema(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && lmTema.trim() && !aiLoading && generarConIA()}
+              />
+              {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
+              {aiLoading ? (
+                <div className="ideas-thinking" style={{padding:"20px 0"}}>
+                  <div className="ideas-thinking-dots"><span/><span/><span/></div>
+                  <p style={{marginTop:"12px",color:"#9A7878",fontSize:"13px"}}>
+                    Gemini está creando tu lead magnet completo...
+                  </p>
                 </div>
-                {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
+              ) : (
                 <button className="mpm-step-btn studio-ai-btn"
-                  style={{marginTop:"8px"}}
-                  disabled={!lmTema.trim() || aiLoading}
+                  style={{marginTop:"4px"}}
+                  disabled={!lmTema.trim()}
                   onClick={generarConIA}>
-                  {aiLoading ? "Generando estructura..." : "✨ Completar con IA"}
+                  ✨ Crear mi lead magnet completo
                 </button>
-                {aiLoading && <p style={{fontSize:"12px",color:"#9A7878",marginTop:"6px",textAlign:"center"}}>Gemini está creando tu lead magnet completo...</p>}
-              </div>
-            )}
-
-            <div className="lm-crear-grid">
-              {[
-                { num:"01", emoji:"✏️", label:"Título de tu lead magnet",          field:"titulo",    ph:"Las 5 claves para vender sin sentirte pesada",                      hint:"Claro, específico y con la victoria que promete" },
-                { num:"02", emoji:"🎯", label:"¿Qué victoria rápida les das?",      field:"promesa",   ph:"Aprenderán a vender con confianza sin presionar",                   hint:"Lo que podrán hacer o sentir al terminar" },
-                { num:"03", emoji:"👩‍💼", label:"¿Para quién es?",                  field:"audiencia", ph:"Mamás que venden desde casa y odian el rechazo",                    hint:"Mientras más específico, más se identifica tu clienta ideal" },
-                { num:"04", emoji:"🚀", label:"¿A qué producto lleva el CTA final?",field:"producto",  ph:"Mi mentoría CEO en Casa / Mi programa de ventas",                   hint:"El lead magnet siempre lleva a tu producto de pago" },
-                { num:"05", emoji:"💌", label:"¿Cuál es el CTA exacto?",            field:"cta",       ph:"Agenda una llamada gratuita / Conoce mi programa en [link]",         hint:"Texto exacto que aparecerá al final del documento" },
-              ].map(q => (
-                <div key={q.field} className={`desc-q-card${form[q.field] ? " filled" : ""}`}>
-                  <div className="desc-q-num">{q.num}</div>
-                  <div className="desc-q-body">
-                    <div className="desc-q-top">
-                      <span className="desc-q-emoji">{q.emoji}</span>
-                      <label className="desc-q-label">{q.label}</label>
-                    </div>
-                    <input className="desc-q-input" placeholder={q.ph} value={form[q.field]}
-                      onChange={e => setForm(p => ({...p, [q.field]: e.target.value}))} />
-                    <span className="desc-q-hint">{q.hint}</span>
-                  </div>
-                </div>
-              ))}
+              )}
             </div>
-
-            <div className="lm-secciones-block">
-              <label className="lm-crear-label">{SECCIONES_META[form.tipo]?.label || "Contenido"}</label>
-              <p className="studio-helper" style={{marginTop:0,marginBottom:"12px"}}>No necesitan ser perfectos — son el esqueleto de tu documento.</p>
-              {form.secciones.map((s, i) => (
-                <div key={i} className="lm-seccion-row">
-                  <span className="lm-seccion-num">{i+1}</span>
-                  <input
-                    className="lm-seccion-input"
-                    placeholder={SECCIONES_META[form.tipo]?.ph(i) || `Sección ${i+1}`}
-                    value={s}
-                    onChange={e => { const a = [...form.secciones]; a[i] = e.target.value; setForm(p => ({...p, secciones: a})); }}
-                  />
-                  {form.secciones.length > 1 && (
-                    <button className="studio-delete-btn" onClick={() => setForm(p => ({...p, secciones: p.secciones.filter((_, idx) => idx !== i)}))}>✕</button>
-                  )}
-                </div>
-              ))}
-              <button className="studio-add-btn" onClick={() => setForm(p => ({...p, secciones: [...p.secciones, ""]}))}>
-                {SECCIONES_META[form.tipo]?.add || "+ Agregar sección"}
-              </button>
-            </div>
-
-            <button className="mpm-step-btn" onClick={generarDoc} disabled={!form.titulo.trim()}>
-              Generar documento ✦
-            </button>
           </div>
         </div>
       )}
