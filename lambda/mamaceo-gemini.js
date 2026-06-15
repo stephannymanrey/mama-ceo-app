@@ -1,13 +1,14 @@
 /**
- * Lambda: mamaceo-gemini  (ES module, Node.js 22.x)
+ * Lambda: mamaceo-claude  (ES module, Node.js 22.x)
  * Sin dependencias externas — usa fetch nativo + AWS SigV4 manual para DynamoDB.
  */
 import { createHmac, createHash } from "node:crypto";
 
-const TABLE       = process.env.TABLE_NAME    || "user_states";
-const GEMINI_KEY  = process.env.GEMINI_API_KEY;
-const GEMINI_URL  = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
-const REGION      = process.env.AWS_REGION    || "us-east-1";
+const TABLE         = process.env.TABLE_NAME      || "user_states";
+const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
+const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+const CLAUDE_MODEL  = "claude-haiku-4-5-20251001";
+const REGION        = process.env.AWS_REGION      || "us-east-1";
 const PLAN_LIMITS = { free: 50, emprendedora: 60, ceo: 200, premium: 200 };
 
 const ALLOWED_ORIGINS = [
@@ -143,20 +144,26 @@ function getUserId(event) {
   );
 }
 
-// ─── Gemini ───────────────────────────────────────────────────────────────
-async function callGemini(prompt) {
-  const res = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+// ─── Claude (Anthropic) ───────────────────────────────────────────────────
+async function callClaude(prompt) {
+  const res = await fetch(ANTHROPIC_URL, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "anthropic-version": "2023-06-01",
+      "x-api-key": ANTHROPIC_KEY,
+    },
     body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.88, maxOutputTokens: 2500 },
+      model: CLAUDE_MODEL,
+      max_tokens: 2500,
+      temperature: 0.88,
+      messages: [{ role: "user", content: prompt }],
     }),
   });
   if (res.status === 429) throw new Error("rate_limit");
-  if (!res.ok) throw new Error(`Gemini ${res.status}`);
+  if (!res.ok) throw new Error(`Claude ${res.status}: ${await res.text()}`);
   const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+  return data.content?.[0]?.text || "";
 }
 
 // ─── Prompts ──────────────────────────────────────────────────────────────
@@ -314,7 +321,7 @@ export const handler = async (event) => {
   const { type, context } = body;
   if (!type || !context) return respond(400, { error: "Faltan campos: type, context" }, event);
   if (!["guion", "hooks", "ideas", "leadmagnet"].includes(type)) return respond(400, { error: "Tipo no soportado" }, event);
-  if (!GEMINI_KEY) return respond(500, { error: "API key no configurada" }, event);
+  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
 
   const { plan, usage } = await getUserPlanAndUsage(userId);
   const mk = monthKey();
@@ -334,12 +341,12 @@ export const handler = async (event) => {
   const prompt = buildPrompt(type, context);
   let rawText;
   try {
-    rawText = await callGemini(prompt);
+    rawText = await callClaude(prompt);
   } catch (err) {
     if (err.message === "rate_limit") {
       return respond(429, { error: "rate_limit" }, event);
     }
-    console.error("Gemini error:", err);
+    console.error("Claude error:", err);
     return respond(502, { error: "Error al contactar el servicio. Intenta de nuevo." }, event);
   }
 
