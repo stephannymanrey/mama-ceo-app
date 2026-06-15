@@ -845,12 +845,13 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
 
       {!ideas && !thinking && !aiLoading && (
         <div className="ideas-empty">
-          <div className="ideas-brain-glow">🧠</div>
-          <h3>¿Sobre qué quieres crear contenido?</h3>
-          <p>Escribe un tema y te genero ideas organizadas por formato — verticales, horizontales, carruseles y stories.</p>
+          <div className="ideas-empty-icon">💡</div>
+          <h3 className="ideas-empty-title">¿Sobre qué quieres crear contenido?</h3>
+          <p className="ideas-empty-sub">Escribe un tema y genera ideas organizadas por formato — reels, emails, WhatsApp, carruseles y más.</p>
+          <p className="ideas-empty-hint">O empieza con uno de estos temas:</p>
           <div className="ideas-chips">
             {EJEMPLOS.map(ej => (
-              <button key={ej} className="ideas-chip" onClick={() => { setKeyword(ej); generar(ej); }}>{ej}</button>
+              <button key={ej} className="ideas-chip" onClick={() => { setKeyword(ej); callGemini ? generarConIA(ej) : generar(ej); }}>{ej}</button>
             ))}
           </div>
         </div>
@@ -864,8 +865,8 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
               <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`} dangerouslySetInnerHTML={{__html: s}} />
             ))}
           </div>
-          <p className="ideas-thinking-text">{aiLoading ? "Gemini est\xe1 creando ideas para ti" : "Generando ideas para ti"}<span className="ideas-dots-anim">...</span></p>
-          {aiLoading && <p className="studio-ai-thinking-sub">Ideas originales y espec\xedficas para tu nicho &#x2728;</p>}
+          <p className="ideas-thinking-text">{aiLoading ? "La IA está creando ideas para ti" : "Generando ideas para ti"}<span className="ideas-dots-anim">...</span></p>
+          {aiLoading && <p className="studio-ai-thinking-sub">Ideas originales y específicas para tu nicho ✨</p>}
         </div>
       )}
 
@@ -1418,7 +1419,7 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {}, callGemini,
                 <div className="ideas-thinking" style={{padding:"20px 0"}}>
                   <div className="ideas-thinking-dots"><span/><span/><span/></div>
                   <p style={{marginTop:"12px",color:"#9A7878",fontSize:"13px"}}>
-                    Gemini está creando tu lead magnet completo...
+                    La IA está creando tu lead magnet completo...
                   </p>
                 </div>
               ) : (
@@ -1773,7 +1774,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
               <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`} dangerouslySetInnerHTML={{__html: s}} />
             ))}
           </div>
-          <p className="ideas-thinking-text">{aiLoading ? "Gemini est\xe1 escribiendo hooks para ti" : "Creando hooks para tu video"}<span className="ideas-dots-anim">...</span></p>
+          <p className="ideas-thinking-text">{aiLoading ? "La IA está escribiendo hooks para ti" : "Creando hooks para tu video"}<span className="ideas-dots-anim">...</span></p>
           {aiLoading && <p className="studio-ai-thinking-sub">Esto tarda unos segundos &#x2014; vale la pena &#x2728;</p>}
         </div>
       )}
