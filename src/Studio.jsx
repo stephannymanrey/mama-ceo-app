@@ -535,7 +535,7 @@ const detectProductType = (text) => {
 
 // ── IDEAS ──────────────────────────────────────────────────────
 function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
-  const [keyword,        setKeyword]        = useState(brandProfile.queOfreces || "");
+  const [keyword,        setKeyword]        = useState("");
   const [ideas,          setIdeas]          = useState(null);
   const [thinking,       setThinking]       = useState(false);
   const [copiado,        setCopiado]        = useState("");

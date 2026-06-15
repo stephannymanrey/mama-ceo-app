@@ -51,31 +51,37 @@
 
 .studio-tabs-nav {
   display: flex;
-  gap: 2px;
+  gap: 4px;
   overflow-x: auto;
   scrollbar-width: none;
   flex: 1;
+  padding: 0 4px;
 }
 .studio-tabs-nav::-webkit-scrollbar { display: none; }
 
 .studio-tab-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
+  gap: 5px;
+  padding: 6px 14px;
   border: none;
-  background: none;
-  border-radius: 8px;
+  background: transparent;
+  border-radius: 20px;
   cursor: pointer;
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
+  font-family: inherit;
   color: #9A7878;
   white-space: nowrap;
   transition: background 0.15s, color 0.15s;
   flex-shrink: 0;
 }
-.studio-tab-btn:hover { background: rgba(196,82,106,0.07); color: #C4526A; }
-.studio-tab-btn.active { background: rgba(196,82,106,0.11); color: #C4526A; }
+.studio-tab-btn:hover { background: rgba(196,82,106,0.09); color: #C4526A; }
+.studio-tab-btn.active {
+  background: #C4526A;
+  color: #fff;
+  font-weight: 700;
+}
 .studio-tab-icon { font-size: 14px; }
 
 /* ── MAIN SCROLL AREA ───────────────────────────────────────── */
@@ -3134,10 +3140,10 @@
   .rp-guiones-grid { grid-template-columns: 1fr 1fr; }
 }
 
-/* ── GEMINI IA ─────────────────────────────────────────────── */
+/* ── AI BUTTONS ────────────────────────────────────────────── */
 .studio-ai-btn {
-  background: linear-gradient(135deg, #7C3AED, #9B59B6) !important;
-  border-color: #7C3AED !important;
+  background: linear-gradient(135deg, #C4526A, #d4687e) !important;
+  border-color: #C4526A !important;
   color: #fff !important;
 }
 .studio-ai-btn:hover:not(:disabled) {
@@ -3145,9 +3151,9 @@
   transform: translateY(-1px);
 }
 .studio-ai-regen-btn {
-  background: #F5F0FF;
-  border: 1px solid rgba(124,58,237,0.3);
-  color: #7C3AED;
+  background: #FFF0F3;
+  border: 1px solid rgba(196,82,106,0.3);
+  color: #C4526A;
   border-radius: 8px;
   padding: 6px 12px;
   font-size: 12px;
@@ -3161,7 +3167,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: linear-gradient(135deg, #7C3AED, #9B59B6);
+  background: linear-gradient(135deg, #C4526A, #d4687e);
   color: #fff;
   font-size: 11px;
   font-weight: 800;
@@ -3189,9 +3195,9 @@
 .studio-ai-counter {
   font-size: 11px;
   font-weight: 700;
-  color: #7C3AED;
-  background: #F5F0FF;
-  border: 1px solid rgba(124,58,237,0.2);
+  color: #C4526A;
+  background: #FFF0F3;
+  border: 1px solid rgba(196,82,106,0.2);
   border-radius: 999px;
   padding: 3px 10px;
   white-space: nowrap;
