@@ -2651,9 +2651,9 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
                         <div className="email-subject-preview">{email.asunto}</div>
                       </div>
                       <div className="email-header-actions" onClick={e => e.stopPropagation()}>
-                        <button className="guion-frase-copy"
+                        <button className="email-copy-btn"
                           onClick={() => copiar(cuerpos[i] || email.cuerpo, `email-q-${i}`)}>
-                          {copiado === `email-q-${i}` ? "✓" : "Copiar"}
+                          {copiado === `email-q-${i}` ? "✓ Copiado" : "Copiar"}
                         </button>
                         <span className="email-expand-ico">{abierto ? "▲" : "▼"}</span>
                       </div>
@@ -2674,11 +2674,11 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
                         <div className="email-cta-row">
                           <span className="email-cta-label">CTA sugerido:</span>
                           <span className="email-cta-text">{email.cta}</span>
-                          <button className="guion-frase-copy" onClick={() => copiar(email.cta, `cta-${i}`)}>{copiado === `cta-${i}` ? "✓" : "Copiar CTA"}</button>
+                          <button className="email-copy-btn" onClick={() => copiar(email.cta, `cta-${i}`)}>{copiado === `cta-${i}` ? "✓" : "Copiar"}</button>
                         </div>
-                        <button className="ideas-card-copy" style={{width:"100%",marginTop:"10px",justifyContent:"center",padding:"10px"}}
+                        <button className="email-copy-full-btn"
                           onClick={() => copiar(cuerpos[i] || email.cuerpo, `email-full-${i}`)}>
-                          {copiado === `email-full-${i}` ? "✓ Email completo copiado" : "📋 Copiar email completo"}
+                          {copiado === `email-full-${i}` ? "✓ Copiado" : "📋 Copiar email completo"}
                         </button>
                       </div>
                     )}
@@ -2697,55 +2697,47 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
             <button className="mpm-wizard-back-btn" onClick={() => { setView("inicio"); setDraft(null); }}>← Inicio</button>
           </div>
 
-          <div className="desc-header" style={{marginBottom:"20px"}}>
-            <h2 className="desc-title">Redactar email individual</h2>
-            <p className="desc-subtitle">Genera el borrador completo listo para personalizar con tu voz y enviar.</p>
+          <div className="email-redactar-hero">
+            <span className="email-redactar-icon">✏️</span>
+            <div>
+              <h2 className="email-redactar-title">Redactar email individual</h2>
+              <p className="email-redactar-sub">Genera el borrador completo listo para personalizar con tu voz.</p>
+            </div>
           </div>
 
-          <div className="guion-obj-grid">
-            <div className="guion-obj-group">
-              <label className="lm-crear-label">Tipo de email</label>
-              <div className="guion-obj-pills" style={{flexWrap:"wrap"}}>
+          <div className="email-redactar-form">
+            <div className="cap-field-group">
+              <label className="cap-field-label">Tipo de email</label>
+              <div className="cap-pills-row" style={{flexWrap:"wrap"}}>
                 {EMAIL_TIPOS.map(t => (
-                  <button key={t} className={`guion-obj-pill${ef.tipo===t?" active":""}`}
+                  <button key={t} className={`cap-pill${ef.tipo===t?" active":""}`}
                     onClick={() => setEf(p => ({...p, tipo: t}))}>{t}</button>
                 ))}
               </div>
             </div>
-            <div className="guion-obj-group">
-              <label className="lm-crear-label">Tono</label>
-              <div className="guion-obj-pills">
+            <div className="cap-field-group">
+              <label className="cap-field-label">Tono</label>
+              <div className="cap-pills-row">
                 {EMAIL_TONOS.map(t => (
-                  <button key={t} className={`guion-obj-pill${ef.tono===t?" active":""}`}
+                  <button key={t} className={`cap-pill${ef.tono===t?" active":""}`}
                     onClick={() => setEf(p => ({...p, tono: t}))}>{t}</button>
                 ))}
               </div>
             </div>
+            <div className="cap-field-group">
+              <label className="cap-field-label">✏️ ¿Sobre qué es el email?</label>
+              <input className="cap-input" placeholder="Lanzamiento de mi mentoría, tip sobre ventas, gracias por comprar..."
+                value={ef.tema} onChange={e => setEf(p => ({...p, tema: e.target.value}))} />
+            </div>
+            <div className="cap-field-group">
+              <label className="cap-field-label">🎯 Llamada a la acción <span style={{fontWeight:400,color:"#9A7878"}}>(opcional)</span></label>
+              <input className="cap-input" placeholder="Agenda tu llamada / Escríbeme / Ver el link en mi bio"
+                value={ef.cta} onChange={e => setEf(p => ({...p, cta: e.target.value}))} />
+            </div>
+            <button className="mpm-step-btn" onClick={generarDraft} disabled={!ef.tema.trim()}>
+              Generar email ✦
+            </button>
           </div>
-
-          <div className="lm-crear-grid" style={{marginTop:"16px"}}>
-            {[
-              { num:"01", emoji:"✏️", label:"¿Sobre qué es el email?",  field:"tema", ph:"Lanzamiento de mi mentoría, tip sobre ventas, gracias por comprar...", hint:"Mientras más específico, mejor el borrador" },
-              { num:"02", emoji:"🎯", label:"¿Cuál es tu llamada a acción?", field:"cta",  ph:"Agenda tu llamada / Escríbeme / Ver el link en mi bio", hint:"Una sola acción, concreta y fácil de hacer" },
-            ].map(q => (
-              <div key={q.field} className={`desc-q-card${ef[q.field]?" filled":""}`}>
-                <div className="desc-q-num">{q.num}</div>
-                <div className="desc-q-body">
-                  <div className="desc-q-top">
-                    <span className="desc-q-emoji">{q.emoji}</span>
-                    <label className="desc-q-label">{q.label}</label>
-                  </div>
-                  <input className="desc-q-input" placeholder={q.ph} value={ef[q.field]}
-                    onChange={e => setEf(p => ({...p, [q.field]: e.target.value}))} />
-                  <span className="desc-q-hint">{q.hint}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button className="mpm-step-btn" style={{marginTop:"16px"}} onClick={generarDraft} disabled={!ef.tema.trim()}>
-            Generar email ✦
-          </button>
 
           {draft && (
             <div className="email-draft-result">
@@ -2895,89 +2887,76 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
       {/* ── FORMULARIO ── */}
       {!plan && !thinking && (
         <div className="wp-form-wrap">
-          <div className="guion-form-intro">
-            <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>💬</div>
-            <h2>Plan de Lanzamiento WhatsApp</h2>
-            <p>Cuéntanos de qué trata tu lanzamiento y generaremos 13 mensajes listos para enviar: calentamiento, el gran día y el cierre.</p>
+          <div className="wp-form-hero">
+            <span className="wp-form-hero-icon">💬</span>
+            <div>
+              <h2 className="wp-form-hero-title">Plan de Lanzamiento WhatsApp</h2>
+              <p className="wp-form-hero-sub">13 mensajes listos — calentamiento, día del lanzamiento y cierre.</p>
+            </div>
           </div>
 
-          <div className={`desc-q-card${form.producto?" filled":""}`}>
-            <div className="desc-q-num">🎁</div>
-            <div className="desc-q-body">
-              <label className="desc-q-label">¿Cómo se llama tu producto o servicio?</label>
-              <input className="desc-q-input" autoFocus
+          <div className="wp-form-card">
+            <div className="cap-field-group">
+              <label className="cap-field-label">🎁 ¿Cómo se llama tu producto o servicio?</label>
+              <input className="cap-input" autoFocus
                 placeholder="Ej: Mini-curso de ventas, Membresía Mamá CEO, Consultoría VIP..."
                 value={form.producto} onChange={e => sf("producto", e.target.value)} />
             </div>
-          </div>
 
-          <div className={`desc-q-card${form.promesa?" filled":""}`}>
-            <div className="desc-q-num">✨</div>
-            <div className="desc-q-body">
-              <label className="desc-q-label">¿Qué resultado o transformación ofrece?</label>
-              <input className="desc-q-input"
+            <div className="cap-field-group">
+              <label className="cap-field-label">✨ ¿Qué resultado o transformación ofrece?</label>
+              <input className="cap-input"
                 placeholder="Ej: vender sin perseguir clientes, organizar su negocio en 4 semanas..."
                 value={form.promesa} onChange={e => sf("promesa", e.target.value)} />
             </div>
-          </div>
 
-          <div className="wp-fecha-hora-row">
-            <div className={`desc-q-card${form.fecha?" filled":""}`} style={{flex:1}}>
-              <div className="desc-q-num">📅</div>
-              <div className="desc-q-body">
-                <label className="desc-q-label">Fecha del lanzamiento</label>
-                <input className="desc-q-input" placeholder="Ej: 20 de junio" value={form.fecha} onChange={e => sf("fecha", e.target.value)} />
+            <div className="wp-two-col">
+              <div className="cap-field-group">
+                <label className="cap-field-label">📅 Fecha del lanzamiento</label>
+                <input className="cap-input" placeholder="Ej: 20 de junio" value={form.fecha} onChange={e => sf("fecha", e.target.value)} />
+              </div>
+              <div className="cap-field-group">
+                <label className="cap-field-label">🕐 Hora</label>
+                <input className="cap-input" placeholder="Ej: 8pm hora Colombia" value={form.hora} onChange={e => sf("hora", e.target.value)} />
               </div>
             </div>
-            <div className={`desc-q-card${form.hora?" filled":""}`} style={{flex:1}}>
-              <div className="desc-q-num">🕐</div>
-              <div className="desc-q-body">
-                <label className="desc-q-label">Hora</label>
-                <input className="desc-q-input" placeholder="Ej: 8pm hora Colombia" value={form.hora} onChange={e => sf("hora", e.target.value)} />
+
+            <div className="cap-field-group">
+              <label className="cap-field-label">¿Cómo lo vas a hacer?</label>
+              <div className="cap-pills-row" style={{flexWrap:"wrap"}}>
+                {FORMATOS.map(f => (
+                  <button key={f} className={`cap-pill${form.formato===f?" active":""}`}
+                    onClick={() => sf("formato", f)}>{f}</button>
+                ))}
               </div>
             </div>
-          </div>
 
-          <div className="wp-formato-group">
-            <label className="lm-crear-label">¿Cómo lo vas a hacer?</label>
-            <div className="guion-obj-pills" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
-              {FORMATOS.map(f => (
-                <button key={f} className={`guion-obj-pill${form.formato===f?" active":""}`}
-                  onClick={() => sf("formato", f)}>{f}</button>
-              ))}
-            </div>
-          </div>
-
-          <div className="wp-precio-escasez-row">
-            <div className={`desc-q-card${form.precio?" filled":""}`} style={{flex:1}}>
-              <div className="desc-q-num">💰</div>
-              <div className="desc-q-body">
-                <label className="desc-q-label">Precio o inversión (opcional)</label>
-                <input className="desc-q-input" placeholder="Ej: $97 USD, $350.000 COP" value={form.precio} onChange={e => sf("precio", e.target.value)} />
+            <div className="wp-two-col">
+              <div className="cap-field-group">
+                <label className="cap-field-label">💰 Precio <span style={{fontWeight:400,color:"#9A7878"}}>(opcional)</span></label>
+                <input className="cap-input" placeholder="Ej: $97 USD, $350.000 COP" value={form.precio} onChange={e => sf("precio", e.target.value)} />
+              </div>
+              <div className="cap-field-group">
+                <label className="cap-field-label">⏳ Escasez o urgencia <span style={{fontWeight:400,color:"#9A7878"}}>(opcional)</span></label>
+                <input className="cap-input" placeholder="Solo 30 cupos / precio especial 48h" value={form.escasez} onChange={e => sf("escasez", e.target.value)} />
               </div>
             </div>
-            <div className={`desc-q-card${form.escasez?" filled":""}`} style={{flex:1}}>
-              <div className="desc-q-num">⏳</div>
-              <div className="desc-q-body">
-                <label className="desc-q-label">Escasez o urgencia (opcional)</label>
-                <input className="desc-q-input" placeholder="Ej: Solo 30 cupos, precio especial 48h" value={form.escasez} onChange={e => sf("escasez", e.target.value)} />
-              </div>
-            </div>
-          </div>
 
-          <button className="mpm-step-btn" onClick={generarPlan} disabled={!form.producto.trim() || !form.promesa.trim()}>
-            Generar plan de lanzamiento ✦
-          </button>
+            <button className="mpm-step-btn" onClick={generarPlan} disabled={!form.producto.trim() || !form.promesa.trim()}>
+              Generar plan de lanzamiento ✦
+            </button>
+          </div>
         </div>
       )}
 
       {/* ── THINKING ── */}
       {thinking && (
-        <div className="ideas-thinking">
-          <div className="ideas-orb-container">
-            <div className="ideas-orb ideas-orb-1" /><div className="ideas-orb ideas-orb-2" /><div className="ideas-orb ideas-orb-3" />
+        <div className="gn2-loading-wrap" style={{paddingTop:"48px"}}>
+          <div className="gn2-spinner-ring">
+            <div className="gn2-spinner-emoji">💬</div>
           </div>
-          <p className="ideas-thinking-text">Creando tu plan de 13 mensajes<span className="ideas-dots-anim">...</span></p>
+          <p className="gn2-loading-text">Creando tu plan de 13 mensajes...</p>
+          <p className="gn2-loading-sub">Listo en unos segundos ✦</p>
         </div>
       )}
 
@@ -3154,14 +3133,23 @@ function RepropositoTab({ saved, brandProfile = {} }) {
 
   return (
     <div className="rp-wrap">
-      <div className="rp-intro card">
-        <h3 className="rp-intro-title">♻️ Repropósito de contenido</h3>
-        <p className="rp-intro-sub">Elige un guión guardado y conviértelo en 4 formatos distintos — semana de contenido completa con un clic.</p>
+      <div className="rp-intro">
+        <div className="rp-intro-hero">
+          <span className="rp-intro-icon">♻️</span>
+          <div>
+            <h3 className="rp-intro-title">Repropósito de contenido</h3>
+            <p className="rp-intro-sub">Elige un guión guardado y conviértelo en 4 formatos — semana completa con un clic.</p>
+          </div>
+        </div>
       </div>
 
       {/* Guiones guardados */}
       {guiones.length === 0 ? (
-        <div className="rp-empty">Aún no tienes guiones guardados. Crea uno en el tab Guión y guárdalo para reproponer su contenido aquí.</div>
+        <div className="ideas-empty">
+          <div className="ideas-empty-icon">📂</div>
+          <h3 className="ideas-empty-title">Aún no tienes guiones guardados</h3>
+          <p className="ideas-empty-sub">Crea un guión en el tab Guión 🎬, guárdalo, y vuelve aquí para convertirlo en carrusel, email, WhatsApp y stories.</p>
+        </div>
       ) : (
         <div className="rp-guiones-grid">
           {guiones.map(gg => (

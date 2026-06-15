@@ -1996,6 +1996,41 @@
 }
 .email-cta-text { flex: 1; font-size: 12px; font-weight: 600; color: var(--ec-color, #C4526A); }
 
+/* Redactar hero */
+.email-redactar-hero {
+  display: flex; align-items: center; gap: 12px; padding: 4px 0 12px;
+}
+.email-redactar-icon  { font-size: 28px; line-height: 1; flex-shrink: 0; }
+.email-redactar-title { font-size: 18px; font-weight: 800; color: #2D1B1B; margin: 0; }
+.email-redactar-sub   { font-size: 12px; color: #9A7878; margin: 2px 0 0; }
+
+.email-redactar-form {
+  display: flex; flex-direction: column; gap: 14px;
+  background: #fff; border: 1.5px solid rgba(0,0,0,0.06);
+  border-radius: 16px; padding: 20px;
+  margin-bottom: 4px;
+}
+
+/* Inline copy button (in email cards header + CTA row) */
+.email-copy-btn {
+  background: none; border: 1.5px solid rgba(196,82,106,0.25);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 11px; font-weight: 700; color: #C4526A;
+  cursor: pointer; font-family: inherit; white-space: nowrap;
+  transition: background 0.15s;
+}
+.email-copy-btn:hover { background: rgba(196,82,106,0.07); }
+
+/* Full-width copy button at bottom of expanded email */
+.email-copy-full-btn {
+  display: block; width: 100%; margin-top: 12px;
+  background: #C4526A; color: #fff; border: none;
+  border-radius: 10px; padding: 11px;
+  font-size: 13px; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: opacity 0.15s;
+}
+.email-copy-full-btn:hover { opacity: 0.87; }
+
 /* Single email draft */
 .email-draft-result {
   margin-top: 20px;
@@ -2652,7 +2687,25 @@
 }
 
 /* ── WhatsApp Lanzamiento Tab ────────────────────────────── */
-.wp-form-wrap { display: flex; flex-direction: column; gap: 14px; }
+.wp-form-wrap { display: flex; flex-direction: column; gap: 16px; }
+
+/* Hero */
+.wp-form-hero {
+  display: flex; align-items: center; gap: 12px; padding-bottom: 4px;
+}
+.wp-form-hero-icon  { font-size: 28px; line-height: 1; flex-shrink: 0; }
+.wp-form-hero-title { font-size: 18px; font-weight: 800; color: #2D1B1B; margin: 0; }
+.wp-form-hero-sub   { font-size: 12px; color: #9A7878; margin: 2px 0 0; }
+
+/* Form card */
+.wp-form-card {
+  background: #fff; border: 1.5px solid rgba(0,0,0,0.06);
+  border-radius: 16px; padding: 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.wp-two-col { display: flex; gap: 12px; }
+.wp-two-col > * { flex: 1; min-width: 0; }
+@media (max-width: 480px) { .wp-two-col { flex-direction: column; } }
 
 .wp-fecha-hora-row,
 .wp-precio-escasez-row { display: flex; gap: 12px; }
@@ -3163,9 +3216,11 @@
 /* ── Repropósito Tab ── */
 .rp-wrap { display: flex; flex-direction: column; gap: 18px; }
 
-.rp-intro { padding: 20px 24px; }
-.rp-intro-title { margin: 0 0 6px; font-size: 18px; font-weight: 800; color: var(--ink, #2D1B1B); }
-.rp-intro-sub   { margin: 0; font-size: 13px; color: var(--muted, #8A7F7A); line-height: 1.6; }
+.rp-intro { padding: 4px 0 8px; }
+.rp-intro-hero { display: flex; align-items: center; gap: 12px; }
+.rp-intro-icon  { font-size: 28px; line-height: 1; flex-shrink: 0; }
+.rp-intro-title { margin: 0; font-size: 18px; font-weight: 800; color: #2D1B1B; }
+.rp-intro-sub   { margin: 2px 0 0; font-size: 12px; color: #9A7878; }
 
 .rp-empty {
   padding: 24px; text-align: center;
