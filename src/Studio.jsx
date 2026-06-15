@@ -10,15 +10,12 @@ function saveStudio(data) {
 }
 
 const TABS = [
-  { id: "mensaje",  icon: "✦",  label: "Mensaje"    },
-  { id: "ideas",    icon: "💡", label: "Ideas"       },
-  { id: "lead",     icon: "🎁", label: "Lead Magnet" },
-  { id: "hooks",    icon: "🪝", label: "Hooks"       },
-  { id: "guion",    icon: "🎬", label: "Guión"       },
-  { id: "carrusel",   icon: "🎴", label: "Carrusel"    },
-  { id: "reproposito",icon: "♻️", label: "Repropósito" },
-  { id: "email",    icon: "📧", label: "Email"       },
-  { id: "whatsapp", icon: "💬", label: "WhatsApp"    },
+  { id: "mensaje",     icon: "✦",  label: "Mensaje"      },
+  { id: "ideas",       icon: "💡", label: "Ideas"         },
+  { id: "lead",        icon: "🎁", label: "Lead Magnet"   },
+  { id: "hooks",       icon: "🪝", label: "Hooks"         },
+  { id: "guion",       icon: "🎬", label: "Guión"         },
+  { id: "reproposito", icon: "♻️", label: "Repropósito"   },
 ];
 
 // ── MENSAJE ────────────────────────────────────────────────────
