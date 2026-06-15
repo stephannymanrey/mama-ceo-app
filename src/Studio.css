@@ -1107,37 +1107,40 @@
 .ideas-cat-section {
   background: #fff;
   border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.05);
-  border: 1px solid rgba(196,82,106,0.07);
+  padding: 18px 18px 16px;
+  box-shadow: 0 2px 14px rgba(0,0,0,0.05);
+  border: 1.5px solid rgba(0,0,0,0.05);
   border-left: 4px solid var(--cat-color);
 }
 .ideas-cat-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  align-items: flex-start;
+  margin-bottom: 14px;
   gap: 10px;
 }
-.ideas-cat-title { display: flex; flex-direction: column; gap: 2px; }
-.ideas-cat-label { font-size: 14px; font-weight: 700; color: #2D1B1B; }
-.ideas-cat-sub { font-size: 11px; color: #9A7878; font-weight: 600; }
+.ideas-cat-title { display: flex; flex-direction: column; gap: 3px; }
+.ideas-cat-label {
+  font-size: 14px; font-weight: 800; color: #2D1B1B;
+  letter-spacing: -0.2px;
+}
+.ideas-cat-sub { font-size: 11px; color: #9A7878; font-weight: 500; }
 .ideas-mas-btn {
-  background: var(--cat-bg);
+  background: none;
   border: 1.5px solid var(--cat-color);
   color: var(--cat-color);
-  border-radius: 8px;
-  padding: 6px 12px;
-  font-size: 12px;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
   white-space: nowrap;
   flex-shrink: 0;
-  opacity: 0.85;
-  transition: opacity 0.15s;
+  opacity: 0.8;
+  transition: opacity 0.15s, background 0.15s;
 }
-.ideas-mas-btn:hover { opacity: 1; }
+.ideas-mas-btn:hover { opacity: 1; background: var(--cat-bg); }
 
 /* Cards grid */
 .ideas-cards-grid {
@@ -1425,8 +1428,50 @@
 .hooks-nicho-input:focus { border-color: #C4526A; color: #2D1B1B; }
 .hooks-nicho-input::placeholder { color: #C0A0A0; }
 
+/* ── Card action buttons (shared: hooks, ideas, LM) ─── */
+.ideas-card-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+.ideas-card-copy,
+.ideas-card-save {
+  background: none;
+  border: 1.5px solid rgba(196,82,106,0.25);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #C4526A;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ideas-card-copy:hover,
+.ideas-card-save:hover {
+  background: rgba(196,82,106,0.07);
+  border-color: #C4526A;
+}
+.ideas-card-guion {
+  background: #C4526A;
+  border: none;
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+  margin-left: auto;
+}
+.ideas-card-guion:hover { opacity: 0.85; }
+
 /* Hook cards — slightly punchier than idea cards */
-.hooks-card { min-height: 80px; }
+.hooks-card { min-height: 80px; padding: 14px 14px 12px; }
 .hooks-card-text {
   font-size: 14px;
   font-weight: 600;
