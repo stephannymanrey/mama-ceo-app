@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import "./Studio.css";
 
 const STUDIO_KEY = "mama-ceo-studio-v1";
@@ -10,23 +10,23 @@ function saveStudio(data) {
 }
 
 const TABS = [
-  { id: "mensaje",  icon: "✦",  label: "Mensaje"    },
-  { id: "ideas",    icon: "💡", label: "Ideas"       },
-  { id: "lead",     icon: "🎁", label: "Lead Magnet" },
-  { id: "hooks",    icon: "🪝", label: "Hooks"       },
-  { id: "guion",    icon: "🎬", label: "Guión"       },
-  { id: "carrusel",   icon: "🎴", label: "Carrusel"    },
-  { id: "reproposito",icon: "♻️", label: "Repropósito" },
-  { id: "email",    icon: "📧", label: "Email"       },
-  { id: "whatsapp", icon: "💬", label: "WhatsApp"    },
+  { id: "mensaje",  icon: "âœ¦",  label: "Mensaje"    },
+  { id: "ideas",    icon: "ðŸ’¡", label: "Ideas"       },
+  { id: "lead",     icon: "ðŸŽ", label: "Lead Magnet" },
+  { id: "hooks",    icon: "ðŸª", label: "Hooks"       },
+  { id: "guion",    icon: "ðŸŽ¬", label: "GuiÃ³n"       },
+  { id: "carrusel",   icon: "ðŸŽ´", label: "Carrusel"    },
+  { id: "reproposito",icon: "â™»ï¸", label: "RepropÃ³sito" },
+  { id: "email",    icon: "ðŸ“§", label: "Email"       },
+  { id: "whatsapp", icon: "ðŸ’¬", label: "WhatsApp"    },
 ];
 
-// ── MENSAJE ────────────────────────────────────────────────────
+// â”€â”€ MENSAJE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function MensajeTab({ saved, onSave }) {
   const [view, setView] = useState("inicio"); // inicio | wizard | descubrir | results
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState("fwd");
-  const [desc, setDesc] = useState({ consejo: "", resultado: "", queja: "", audiencia: "", servicio: "No lo sé aún" });
+  const [desc, setDesc] = useState({ consejo: "", resultado: "", queja: "", audiencia: "", servicio: "No lo sÃ© aÃºn" });
   const [mision, setMision] = useState(null);
   const [mp, setMp] = useState({ cliente: "", problema: "", tiempo: "", producto: "" });
   const [mpResult, setMpResult] = useState(null);
@@ -40,10 +40,10 @@ function MensajeTab({ saved, onSave }) {
   };
 
   const PASOS = [
-    { field: "cliente",  emoji: "👩‍💼", pregunta: "¿A quién ayudas?",                hint: "Piensa en la persona a quien más le cambiarías la vida.",                    placeholder: "mamás emprendedoras con hijos pequeños",  ejemplo: "Ej: mujeres que venden desde casa, coaches que empiezan, mamás online" },
-    { field: "problema", emoji: "🎯",  pregunta: "¿Qué resultado logran contigo?", hint: "No el problema — el resultado positivo que quieren conseguir.",                placeholder: "vender más sin descuidar su familia",     ejemplo: "Ej: organizar su negocio, conseguir sus primeras clientas, escalar online" },
-    { field: "tiempo",   emoji: "⏱️", pregunta: "¿En cuánto tiempo lo logran?",   hint: "Un tiempo específico genera más confianza que uno vago.",                      placeholder: "8 semanas",                               ejemplo: "Ej: 30 días, 3 meses, 6 semanas, 90 días" },
-    { field: "producto", emoji: "✨",  pregunta: "¿Con qué lo logran?",            hint: "Tu servicio, programa, método o herramienta de acompañamiento.",               placeholder: "mi programa CEO en Casa",                 ejemplo: "Ej: mi mentoría, mi curso online, mis consultorías 1:1" },
+    { field: "cliente",  emoji: "ðŸ‘©â€ðŸ’¼", pregunta: "Â¿A quiÃ©n ayudas?",                hint: "Piensa en la persona a quien mÃ¡s le cambiarÃ­as la vida.",                    placeholder: "mamÃ¡s emprendedoras con hijos pequeÃ±os",  ejemplo: "Ej: mujeres que venden desde casa, coaches que empiezan, mamÃ¡s online" },
+    { field: "problema", emoji: "ðŸŽ¯",  pregunta: "Â¿QuÃ© resultado logran contigo?", hint: "No el problema â€” el resultado positivo que quieren conseguir.",                placeholder: "vender mÃ¡s sin descuidar su familia",     ejemplo: "Ej: organizar su negocio, conseguir sus primeras clientas, escalar online" },
+    { field: "tiempo",   emoji: "â±ï¸", pregunta: "Â¿En cuÃ¡nto tiempo lo logran?",   hint: "Un tiempo especÃ­fico genera mÃ¡s confianza que uno vago.",                      placeholder: "8 semanas",                               ejemplo: "Ej: 30 dÃ­as, 3 meses, 6 semanas, 90 dÃ­as" },
+    { field: "producto", emoji: "âœ¨",  pregunta: "Â¿Con quÃ© lo logran?",            hint: "Tu servicio, programa, mÃ©todo o herramienta de acompaÃ±amiento.",               placeholder: "mi programa CEO en Casa",                 ejemplo: "Ej: mi mentorÃ­a, mi curso online, mis consultorÃ­as 1:1" },
   ];
 
   const goNext = () => {
@@ -52,7 +52,7 @@ function MensajeTab({ saved, onSave }) {
     if (step < 3) { setDir("fwd"); setStep(s => s + 1); }
     else {
       const result = buildMPMResult(mp);
-      const pitch = `Ofrezco ${mp.producto} para ${mp.cliente}. Trabajo específicamente con ${mp.cliente}, ayudándoles a ${mp.problema}. Lo logramos en ${mp.tiempo} con acompañamiento cercano y estratégico. Si eso resuena contigo, me encantaría que conversáramos.`;
+      const pitch = `Ofrezco ${mp.producto} para ${mp.cliente}. Trabajo especÃ­ficamente con ${mp.cliente}, ayudÃ¡ndoles a ${mp.problema}. Lo logramos en ${mp.tiempo} con acompaÃ±amiento cercano y estratÃ©gico. Si eso resuena contigo, me encantarÃ­a que conversÃ¡ramos.`;
       setMpResult(result); setEpText(pitch); setView("results");
     }
   };
@@ -67,7 +67,7 @@ function MensajeTab({ saved, onSave }) {
     setStep(0); setDir("fwd"); setMpResult(null); setEpText(""); setView("wizard");
   };
 
-  // ── DESCUBRIMIENTO ────────────────────────────────────────────
+  // â”€â”€ DESCUBRIMIENTO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const limpiarConsejo = (texto) => {
     return texto.trim()
       .replace(/^me piden (consejo|ayuda|apoyo)( sobre| en| con| acerca de)?/i, "")
@@ -83,21 +83,21 @@ function MensajeTab({ saved, onSave }) {
 
   const transformarDeseo = (queja) => {
     let q = queja.trim();
-    // "que no saben X" → "aprender X"
+    // "que no saben X" â†’ "aprender X"
     if (/^que no saben?/i.test(q)) return q.replace(/^que no saben?\s*/i, "aprender a ");
-    // "no saben X" → "aprender a X"
+    // "no saben X" â†’ "aprender a X"
     if (/^no saben?\s/i.test(q)) return q.replace(/^no saben?\s*/i, "aprender a ");
-    // "no tengo X" → "tener X"
+    // "no tengo X" â†’ "tener X"
     if (/^no tengo\s/i.test(q)) return q.replace(/^no tengo\s*/i, "tener ");
-    // "no puedo X" → "poder X"
+    // "no puedo X" â†’ "poder X"
     if (/^no puedo\s/i.test(q)) return q.replace(/^no puedo\s*/i, "poder ");
-    // "no sé X" → "aprender X"
-    if (/^no sé\s/i.test(q)) return q.replace(/^no sé\s*/i, "aprender a ");
-    // "me falta X" → "conseguir X"
+    // "no sÃ© X" â†’ "aprender X"
+    if (/^no sÃ©\s/i.test(q)) return q.replace(/^no sÃ©\s*/i, "aprender a ");
+    // "me falta X" â†’ "conseguir X"
     if (/^me falta\s/i.test(q)) return q.replace(/^me falta\s*/i, "conseguir ");
-    // "que no tienen X" → "tener X"
+    // "que no tienen X" â†’ "tener X"
     if (/^que no tienen?\s/i.test(q)) return q.replace(/^que no tienen?\s*/i, "tener ");
-    // "siento que X" → remove filler
+    // "siento que X" â†’ remove filler
     if (/^siento que\s/i.test(q)) return q.replace(/^siento que\s*/i, "");
     return q;
   };
@@ -107,24 +107,24 @@ function MensajeTab({ saved, onSave }) {
     if (!consejo.trim() || !queja.trim()) return;
 
     const habilidad = limpiarConsejo(consejo);
-    const clientaProb = limpiarAudiencia(audiencia) || "mamás emprendedoras que están comenzando";
+    const clientaProb = limpiarAudiencia(audiencia) || "mamÃ¡s emprendedoras que estÃ¡n comenzando";
     const deseo = transformarDeseo(queja);
 
     // Zona de genialidad
     const zonaGenialidad = resultado.trim()
       ? `Tu fuerte es ${habilidad}. Ya lo has demostrado: ${resultado.trim()}.`
-      : `Tu fuerte natural es ${habilidad} — ese es tu punto de partida.`;
+      : `Tu fuerte natural es ${habilidad} â€” ese es tu punto de partida.`;
 
     // Producto sugerido
     const PRODUCTOS = {
-      "Mentoría / coaching 1:1": "mi mentoría personalizada",
+      "MentorÃ­a / coaching 1:1": "mi mentorÃ­a personalizada",
       "Programa o curso":        "mi programa paso a paso",
-      "Taller o masterclass":    "mi taller práctico",
+      "Taller o masterclass":    "mi taller prÃ¡ctico",
       "Comunidad":               "mi comunidad de apoyo",
-      "Consultoría":             "mis consultorías",
+      "ConsultorÃ­a":             "mis consultorÃ­as",
       "Venta de productos":      "mis productos",
     };
-    const productoSug = PRODUCTOS[servicio] || "mi acompañamiento";
+    const productoSug = PRODUCTOS[servicio] || "mi acompaÃ±amiento";
 
     const mpmBorrador = `Ayudo a ${clientaProb} a ${deseo} con ${productoSug}`;
 
@@ -144,20 +144,20 @@ function MensajeTab({ saved, onSave }) {
     setStep(0); setDir("fwd"); setView("wizard");
   };
 
-  // ── MENSAJE PERFECTO ──────────────────────────────────────────
+  // â”€â”€ MENSAJE PERFECTO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const buildMPMResult = ({ cliente, problema, tiempo, producto }) => ({
     completo:      `Ayudo a ${cliente} que quieren ${problema} en ${tiempo} con ${producto}`,
-    bio_ig:        `Ayudo a ${cliente} a ${problema} ✨\n📍 ${producto} | Resultados en ${tiempo}`,
-    bio_linkedin:  `Especialista en ${problema} para ${cliente}. A través de ${producto}, acompaño a mis clientas a transformar su negocio en ${tiempo}.`,
-    dm:            `Hola! 👋 Trabajo con ${cliente} y mi especialidad es ayudarles a ${problema}. Lo logramos en ${tiempo} con ${producto}. ¿Te gustaría saber cómo podría funcionar para ti?`,
-    historia:      `¿Eres ${cliente}? 👇\nSi quieres ${problema} en ${tiempo}, tengo algo para ti.\nEs ${producto} y ya está ayudando a muchas como tú.\n¡Respóndeme aquí! 💌`,
-    story_corta:   `${cliente} → ${problema} en ${tiempo} ✨`,
-    presencial:    `Hola, trabajo con ${cliente} ayudándoles a ${problema}, y lo logramos en ${tiempo} a través de ${producto}. ¿Es algo que estás buscando?`,
-    video_intro:   `Si eres ${cliente} y quieres ${problema}… este video es para ti.`,
-    pagina_ventas: `¿Lista para ${problema}?\nAyudo a ${cliente} a lograrlo en ${tiempo} con ${producto}.`,
-    email_intro:   `Hola [nombre],\n\nMe contacto porque trabajo con ${cliente} — específicamente ayudándoles a ${problema}.\n\nA través de ${producto}, hemos logrado esos resultados en tan solo ${tiempo}.\n\n¿Tienes 15 minutos para conversar?\n\n[Tu nombre]`,
-    whatsapp_bio:  `${producto} para ${cliente} 📲 | ${problema} en ${tiempo}`,
-    evento:        `Me llamo [tu nombre] y acompaño a ${cliente} a ${problema} en ${tiempo}, a través de ${producto}. Si eso te resuena, con gusto te cuento más.`,
+    bio_ig:        `Ayudo a ${cliente} a ${problema} âœ¨\nðŸ“ ${producto} | Resultados en ${tiempo}`,
+    bio_linkedin:  `Especialista en ${problema} para ${cliente}. A travÃ©s de ${producto}, acompaÃ±o a mis clientas a transformar su negocio en ${tiempo}.`,
+    dm:            `Hola! ðŸ‘‹ Trabajo con ${cliente} y mi especialidad es ayudarles a ${problema}. Lo logramos en ${tiempo} con ${producto}. Â¿Te gustarÃ­a saber cÃ³mo podrÃ­a funcionar para ti?`,
+    historia:      `Â¿Eres ${cliente}? ðŸ‘‡\nSi quieres ${problema} en ${tiempo}, tengo algo para ti.\nEs ${producto} y ya estÃ¡ ayudando a muchas como tÃº.\nÂ¡RespÃ³ndeme aquÃ­! ðŸ’Œ`,
+    story_corta:   `${cliente} â†’ ${problema} en ${tiempo} âœ¨`,
+    presencial:    `Hola, trabajo con ${cliente} ayudÃ¡ndoles a ${problema}, y lo logramos en ${tiempo} a travÃ©s de ${producto}. Â¿Es algo que estÃ¡s buscando?`,
+    video_intro:   `Si eres ${cliente} y quieres ${problema}â€¦ este video es para ti.`,
+    pagina_ventas: `Â¿Lista para ${problema}?\nAyudo a ${cliente} a lograrlo en ${tiempo} con ${producto}.`,
+    email_intro:   `Hola [nombre],\n\nMe contacto porque trabajo con ${cliente} â€” especÃ­ficamente ayudÃ¡ndoles a ${problema}.\n\nA travÃ©s de ${producto}, hemos logrado esos resultados en tan solo ${tiempo}.\n\nÂ¿Tienes 15 minutos para conversar?\n\n[Tu nombre]`,
+    whatsapp_bio:  `${producto} para ${cliente} ðŸ“² | ${problema} en ${tiempo}`,
+    evento:        `Me llamo [tu nombre] y acompaÃ±o a ${cliente} a ${problema} en ${tiempo}, a travÃ©s de ${producto}. Si eso te resuena, con gusto te cuento mÃ¡s.`,
   });
 
 
@@ -166,7 +166,7 @@ function MensajeTab({ saved, onSave }) {
     const campos = m.campos;
     setMp({ ...campos });
     setMpResult(buildMPMResult(campos));
-    setEpText(`Ofrezco ${campos.producto} para ${campos.cliente}. Trabajo específicamente con ${campos.cliente}, ayudándoles a ${campos.problema}. Lo logramos en ${campos.tiempo} con acompañamiento cercano y estratégico. Si eso resuena contigo, me encantaría que conversáramos.`);
+    setEpText(`Ofrezco ${campos.producto} para ${campos.cliente}. Trabajo especÃ­ficamente con ${campos.cliente}, ayudÃ¡ndoles a ${campos.problema}. Lo logramos en ${campos.tiempo} con acompaÃ±amiento cercano y estratÃ©gico. Si eso resuena contigo, me encantarÃ­a que conversÃ¡ramos.`);
     setView("results");
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
@@ -176,7 +176,7 @@ function MensajeTab({ saved, onSave }) {
     if (campos.cliente && campos.problema) {
       setMp({ ...campos });
       setMpResult(buildMPMResult(campos));
-      setEpText(`Ofrezco ${campos.producto || "mi servicio"} para ${campos.cliente}. Trabajo específicamente con ${campos.cliente}, ayudándoles a ${campos.problema}. Lo logramos en ${campos.tiempo || "poco tiempo"} con acompañamiento cercano y estratégico. Si eso resuena contigo, me encantaría que conversáramos.`);
+      setEpText(`Ofrezco ${campos.producto || "mi servicio"} para ${campos.cliente}. Trabajo especÃ­ficamente con ${campos.cliente}, ayudÃ¡ndoles a ${campos.problema}. Lo logramos en ${campos.tiempo || "poco tiempo"} con acompaÃ±amiento cercano y estratÃ©gico. Si eso resuena contigo, me encantarÃ­a que conversÃ¡ramos.`);
     } else {
       setEpText(m.texto || "");
     }
@@ -185,59 +185,59 @@ function MensajeTab({ saved, onSave }) {
   };
 
   const VARIACIONES = [
-    { key: "bio_ig",       label: "📌 Bio de Instagram" },
-    { key: "bio_linkedin", label: "💼 Bio de LinkedIn" },
-    { key: "dm",           label: "💬 DM / WhatsApp" },
-    { key: "historia",     label: "📸 Historia de IG" },
-    { key: "story_corta",  label: "⚡ Story ultra-corta" },
-    { key: "presencial",   label: "🤝 Networking presencial" },
-    { key: "video_intro",  label: "🎬 Intro de video" },
-    { key: "pagina_ventas",label: "🛒 Página de ventas" },
-    { key: "email_intro",  label: "📩 Email de presentación" },
-    { key: "whatsapp_bio", label: "📲 Bio de WhatsApp Business" },
-    { key: "evento",       label: "🎤 Presentación en evento" },
+    { key: "bio_ig",       label: "ðŸ“Œ Bio de Instagram" },
+    { key: "bio_linkedin", label: "ðŸ’¼ Bio de LinkedIn" },
+    { key: "dm",           label: "ðŸ’¬ DM / WhatsApp" },
+    { key: "historia",     label: "ðŸ“¸ Historia de IG" },
+    { key: "story_corta",  label: "âš¡ Story ultra-corta" },
+    { key: "presencial",   label: "ðŸ¤ Networking presencial" },
+    { key: "video_intro",  label: "ðŸŽ¬ Intro de video" },
+    { key: "pagina_ventas",label: "ðŸ›’ PÃ¡gina de ventas" },
+    { key: "email_intro",  label: "ðŸ“© Email de presentaciÃ³n" },
+    { key: "whatsapp_bio", label: "ðŸ“² Bio de WhatsApp Business" },
+    { key: "evento",       label: "ðŸŽ¤ PresentaciÃ³n en evento" },
   ];
 
 
   return (
     <div className="studio-tab-content">
 
-      {/* ── INICIO ─────────────────────────────────── */}
+      {/* â”€â”€ INICIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {view === "inicio" && (
         <div className="mpm-landing">
           <div className="mpm-landing-header">
-            <div className="mpm-landing-badge">✦</div>
+            <div className="mpm-landing-badge">âœ¦</div>
             <h2 className="mpm-landing-title">Tu Mensaje Perfecto de Marketing</h2>
-            <p className="mpm-landing-sub">El mensaje que hace que tu clienta ideal diga "¡Eso es exactamente lo que necesito!"</p>
+            <p className="mpm-landing-sub">El mensaje que hace que tu clienta ideal diga "Â¡Eso es exactamente lo que necesito!"</p>
           </div>
           <div className="mpm-cards-row">
             <button className="mpm-card" onClick={() => setView("descubrir")}>
               <div className="mpm-card-top">
-                <span className="mpm-card-emoji">🗺️</span>
-                <span className="mpm-card-tag">Exploración</span>
+                <span className="mpm-card-emoji">ðŸ—ºï¸</span>
+                <span className="mpm-card-tag">ExploraciÃ³n</span>
               </div>
               <strong className="mpm-card-name">Descubrir mi mensaje</strong>
-              <p className="mpm-card-desc">No sé aún a quién ayudo ni qué ofrezco — quiero encontrar mi punto de partida</p>
-              <span className="mpm-card-link">Comenzar →</span>
+              <p className="mpm-card-desc">No sÃ© aÃºn a quiÃ©n ayudo ni quÃ© ofrezco â€” quiero encontrar mi punto de partida</p>
+              <span className="mpm-card-link">Comenzar â†’</span>
             </button>
             <button className="mpm-card mpm-card--highlight" onClick={() => setView("wizard")}>
               <div className="mpm-card-top">
-                <span className="mpm-card-badge-ico">✦</span>
+                <span className="mpm-card-badge-ico">âœ¦</span>
                 <span className="mpm-card-tag mpm-card-tag--primary">4 pasos</span>
               </div>
               <strong className="mpm-card-name">Crear mi MPM</strong>
-              <p className="mpm-card-desc">Ya sé a quién ayudo y quiero construir mi mensaje con 12 variaciones listas</p>
-              <span className="mpm-card-link mpm-card-link--primary">Empezar →</span>
+              <p className="mpm-card-desc">Ya sÃ© a quiÃ©n ayudo y quiero construir mi mensaje con 12 variaciones listas</p>
+              <span className="mpm-card-link mpm-card-link--primary">Empezar â†’</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* ── WIZARD ──────────────────────────────────── */}
+      {/* â”€â”€ WIZARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {view === "wizard" && (
         <div className="mpm-wizard-card">
           <div className="mpm-wizard-nav">
-            <button className="mpm-wizard-back-btn" onClick={goBack}>← {step === 0 ? "Inicio" : "Anterior"}</button>
+            <button className="mpm-wizard-back-btn" onClick={goBack}>â† {step === 0 ? "Inicio" : "Anterior"}</button>
             <div className="mpm-dots">
               {PASOS.map((_, i) => <div key={i} className={`mpm-dot ${i === step ? "active" : i < step ? "done" : ""}`} />)}
             </div>
@@ -260,26 +260,26 @@ function MensajeTab({ saved, onSave }) {
           </div>
 
           <button className="mpm-step-btn" onClick={goNext} disabled={!mp[PASOS[step].field]?.trim()}>
-            {step < 3 ? "Siguiente →" : "¡Generar mi mensaje! ✦"}
+            {step < 3 ? "Siguiente â†’" : "Â¡Generar mi mensaje! âœ¦"}
           </button>
         </div>
       )}
 
-      {/* ── DESCUBRIMIENTO ──────────────────────────── */}
+      {/* â”€â”€ DESCUBRIMIENTO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {view === "descubrir" && (
         <div className="desc-wrap">
           <div className="desc-header">
-            <button className="mpm-wizard-back-btn" onClick={() => setView("inicio")}>← Inicio</button>
+            <button className="mpm-wizard-back-btn" onClick={() => setView("inicio")}>â† Inicio</button>
             <h2 className="desc-title">Descubre tu punto de partida</h2>
-            <p className="desc-subtitle">Responde desde lo que sabes hoy — no hay respuestas incorrectas. Esto es solo tu punto de partida.</p>
+            <p className="desc-subtitle">Responde desde lo que sabes hoy â€” no hay respuestas incorrectas. Esto es solo tu punto de partida.</p>
           </div>
 
           <div className="desc-questions">
             {[
-              { num:"01", emoji:"💡", label:"¿Con qué te piden consejo o ayuda más frecuentemente?",        field:"consejo",   placeholder:"organizar el tiempo, vender por WhatsApp, criar con calma...", hint:"Piensa en lo que tus amigas o conocidas te preguntan más." },
-              { num:"02", emoji:"🌟", label:"¿Qué resultado concreto has logrado — para alguien o para ti?",field:"resultado", placeholder:"ayudé a una amiga a conseguir sus primeras clientas...",           hint:"No necesita ser perfecto. Un resultado pequeño también cuenta." },
-              { num:"03", emoji:"🎯", label:"¿Cuál es la queja o dolor que más escuchas a tu alrededor?",   field:"queja",     placeholder:"no tengo tiempo, no sé cómo cobrar lo que valgo...",            hint:"La frustración más repetida entre mujeres de tu círculo." },
-              { num:"04", emoji:"👩‍💼", label:"¿A qué tipo de mujer te imaginas ayudando?",                  field:"audiencia", placeholder:"mamás que quieren emprender, mujeres que venden desde casa...", hint:"Puede ser amplio — lo afinarás más adelante." },
+              { num:"01", emoji:"ðŸ’¡", label:"Â¿Con quÃ© te piden consejo o ayuda mÃ¡s frecuentemente?",        field:"consejo",   placeholder:"organizar el tiempo, vender por WhatsApp, criar con calma...", hint:"Piensa en lo que tus amigas o conocidas te preguntan mÃ¡s." },
+              { num:"02", emoji:"ðŸŒŸ", label:"Â¿QuÃ© resultado concreto has logrado â€” para alguien o para ti?",field:"resultado", placeholder:"ayudÃ© a una amiga a conseguir sus primeras clientas...",           hint:"No necesita ser perfecto. Un resultado pequeÃ±o tambiÃ©n cuenta." },
+              { num:"03", emoji:"ðŸŽ¯", label:"Â¿CuÃ¡l es la queja o dolor que mÃ¡s escuchas a tu alrededor?",   field:"queja",     placeholder:"no tengo tiempo, no sÃ© cÃ³mo cobrar lo que valgo...",            hint:"La frustraciÃ³n mÃ¡s repetida entre mujeres de tu cÃ­rculo." },
+              { num:"04", emoji:"ðŸ‘©â€ðŸ’¼", label:"Â¿A quÃ© tipo de mujer te imaginas ayudando?",                  field:"audiencia", placeholder:"mamÃ¡s que quieren emprender, mujeres que venden desde casa...", hint:"Puede ser amplio â€” lo afinarÃ¡s mÃ¡s adelante." },
             ].map(q => (
               <div className={`desc-q-card${desc[q.field] ? " filled" : ""}`} key={q.field}>
                 <div className="desc-q-num">{q.num}</div>
@@ -294,15 +294,15 @@ function MensajeTab({ saved, onSave }) {
               </div>
             ))}
 
-            <div className={`desc-q-card${desc.servicio !== "No lo sé aún" ? " filled" : ""}`}>
+            <div className={`desc-q-card${desc.servicio !== "No lo sÃ© aÃºn" ? " filled" : ""}`}>
               <div className="desc-q-num">05</div>
               <div className="desc-q-body">
                 <div className="desc-q-top">
-                  <span className="desc-q-emoji">✨</span>
-                  <label className="desc-q-label">¿Tienes idea del servicio que quieres ofrecer?</label>
+                  <span className="desc-q-emoji">âœ¨</span>
+                  <label className="desc-q-label">Â¿Tienes idea del servicio que quieres ofrecer?</label>
                 </div>
                 <div className="desc-pills">
-                  {["No lo sé aún","Mentoría / coaching 1:1","Programa o curso","Taller o masterclass","Comunidad","Consultoría","Venta de productos"].map(s => (
+                  {["No lo sÃ© aÃºn","MentorÃ­a / coaching 1:1","Programa o curso","Taller o masterclass","Comunidad","ConsultorÃ­a","Venta de productos"].map(s => (
                     <button key={s} className={`desc-pill${desc.servicio === s ? " active" : ""}`} onClick={() => setDesc(p => ({...p, servicio: s}))}>{s}</button>
                   ))}
                 </div>
@@ -311,27 +311,27 @@ function MensajeTab({ saved, onSave }) {
           </div>
 
           <button className="mpm-step-btn" onClick={generarMision} disabled={!desc.consejo.trim() || !desc.queja.trim()}>
-            Ver mi mapa de negocio ✦
+            Ver mi mapa de negocio âœ¦
           </button>
 
           {mision && (
             <div className="desc-result-section">
-              <div className="desc-result-nota">✦ Este es tu punto de partida. No necesita ser perfecto — solo necesitas empezar.</div>
+              <div className="desc-result-nota">âœ¦ Este es tu punto de partida. No necesita ser perfecto â€” solo necesitas empezar.</div>
               <div className="desc-result-grid">
-                <div className="desc-rc"><div className="desc-rc-ico">💎</div><strong>Tu zona de genialidad</strong><p>{mision.zonaGenialidad}</p></div>
-                <div className="desc-rc"><div className="desc-rc-ico">👩‍💼</div><strong>Tu clienta probable</strong><p>{mision.clientaProb}</p></div>
-                <div className="desc-rc"><div className="desc-rc-ico">🎯</div><strong>El problema que resuelves</strong><p>{mision.problemaTexto}</p></div>
+                <div className="desc-rc"><div className="desc-rc-ico">ðŸ’Ž</div><strong>Tu zona de genialidad</strong><p>{mision.zonaGenialidad}</p></div>
+                <div className="desc-rc"><div className="desc-rc-ico">ðŸ‘©â€ðŸ’¼</div><strong>Tu clienta probable</strong><p>{mision.clientaProb}</p></div>
+                <div className="desc-rc"><div className="desc-rc-ico">ðŸŽ¯</div><strong>El problema que resuelves</strong><p>{mision.problemaTexto}</p></div>
                 <div className="desc-rc desc-rc--highlight">
-                  <div className="desc-rc-ico">✦</div>
+                  <div className="desc-rc-ico">âœ¦</div>
                   <strong>Tu primer MPM borrador</strong>
                   <p className="desc-mpm-text">{mision.mpmBorrador}</p>
-                  <button className="studio-copy-btn small" onClick={() => copiar(mision.mpmBorrador, "mpm-borrador")}>{copiado === "mpm-borrador" ? "¡Copiado!" : "Copiar borrador"}</button>
+                  <button className="studio-copy-btn small" onClick={() => copiar(mision.mpmBorrador, "mpm-borrador")}>{copiado === "mpm-borrador" ? "Â¡Copiado!" : "Copiar borrador"}</button>
                 </div>
               </div>
 
               <div className="desc-ajusta">
                 <div className="desc-ajusta-label">Ajusta y luego genera tus 12 variaciones</div>
-                <p className="studio-helper" style={{margin:"0 0 14px"}}>Edita lo que no te convenza — esto es tuyo para moldearlo.</p>
+                <p className="studio-helper" style={{margin:"0 0 14px"}}>Edita lo que no te convenza â€” esto es tuyo para moldearlo.</p>
                 <div className="desc-ajusta-grid">
                   <div className="desc-ajusta-field"><label>Ayudo a...</label><input value={mision.sugerencias.cliente} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, cliente: e.target.value}}))} /></div>
                   <div className="desc-ajusta-field"><label>...que quieren...</label><input value={mision.sugerencias.problema} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, problema: e.target.value}}))} /></div>
@@ -339,23 +339,23 @@ function MensajeTab({ saved, onSave }) {
                   <div className="desc-ajusta-field"><label>...con...</label><input value={mision.sugerencias.producto} onChange={e => setMision(p => ({...p, sugerencias: {...p.sugerencias, producto: e.target.value}}))} /></div>
                 </div>
               </div>
-              <button className="mpm-step-btn" onClick={usarEnMPM}>Crear mi MPM con esto →</button>
+              <button className="mpm-step-btn" onClick={usarEnMPM}>Crear mi MPM con esto â†’</button>
             </div>
           )}
         </div>
       )}
 
-      {/* ── RESULTADOS ──────────────────────────────── */}
+      {/* â”€â”€ RESULTADOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {view === "results" && (
         <div className="mpm-results-wrap">
           <div className="mpm-results-topbar">
             <div>
-              <h3 className="mpm-results-title">Tu Mensaje Perfecto ✦</h3>
-              {mp.cliente && <p className="studio-helper" style={{margin:0}}>Para: <strong>{mp.cliente}</strong> · {mp.problema}</p>}
+              <h3 className="mpm-results-title">Tu Mensaje Perfecto âœ¦</h3>
+              {mp.cliente && <p className="studio-helper" style={{margin:0}}>Para: <strong>{mp.cliente}</strong> Â· {mp.problema}</p>}
             </div>
             <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-              <button className="mpm-edit-btn" onClick={() => { setView("wizard"); setStep(0); }}>✏️ Editar datos</button>
-              <button className="mpm-edit-btn" onClick={() => setView("inicio")}>← Inicio</button>
+              <button className="mpm-edit-btn" onClick={() => { setView("wizard"); setStep(0); }}>âœï¸ Editar datos</button>
+              <button className="mpm-edit-btn" onClick={() => setView("inicio")}>â† Inicio</button>
             </div>
           </div>
 
@@ -367,17 +367,17 @@ function MensajeTab({ saved, onSave }) {
                     <label>Mensaje completo</label>
                     <p className="studio-result-text">{mpResult.completo}</p>
                     <div className="studio-btn-row">
-                      <button className="studio-copy-btn" onClick={() => copiar(mpResult.completo, "completo")}>{copiado === "completo" ? "¡Copiado!" : "Copiar"}</button>
+                      <button className="studio-copy-btn" onClick={() => copiar(mpResult.completo, "completo")}>{copiado === "completo" ? "Â¡Copiado!" : "Copiar"}</button>
                       <button className="studio-btn-save" onClick={() => onSave("mensajes", { id: Date.now(), tipo: "Mensaje Perfecto", texto: mpResult.completo, campos: {...mp}, fecha: new Date().toLocaleDateString("es") })}>Guardar</button>
                     </div>
                   </div>
                   <div className="studio-variations">
-                    <h4>11 variaciones — un mensaje para cada contexto</h4>
+                    <h4>11 variaciones â€” un mensaje para cada contexto</h4>
                     {VARIACIONES.map(({ key, label }) => (
                       <div className="studio-variation-item" key={key}>
                         <span className="studio-variation-label">{label}</span>
                         <p>{mpResult[key]}</p>
-                        <button className="studio-copy-btn small" onClick={() => copiar(mpResult[key], key)}>{copiado === key ? "¡Copiado!" : "Copiar"}</button>
+                        <button className="studio-copy-btn small" onClick={() => copiar(mpResult[key], key)}>{copiado === key ? "Â¡Copiado!" : "Copiar"}</button>
                       </div>
                     ))}
                   </div>
@@ -386,20 +386,20 @@ function MensajeTab({ saved, onSave }) {
             </div>
 
             <div className="mpm-results-right">
-              <h4 style={{margin:"0 0 6px",fontSize:"14px",fontWeight:700,color:"#2D1B1B"}}>🎤 Elevator Pitch</h4>
-              <p className="studio-helper">Para inversionistas, proveedores o personas de autoridad. Máximo 2 minutos.</p>
+              <h4 style={{margin:"0 0 6px",fontSize:"14px",fontWeight:700,color:"#2D1B1B"}}>ðŸŽ¤ Elevator Pitch</h4>
+              <p className="studio-helper">Para inversionistas, proveedores o personas de autoridad. MÃ¡ximo 2 minutos.</p>
               <textarea className="mpm-ep-textarea" value={epText} onChange={e => setEpText(e.target.value)} rows={9} />
               <div className="studio-btn-row" style={{marginTop:"8px"}}>
-                <button className="studio-copy-btn" onClick={() => copiar(epText, "ep")}>{copiado === "ep" ? "¡Copiado!" : "Copiar pitch"}</button>
+                <button className="studio-copy-btn" onClick={() => copiar(epText, "ep")}>{copiado === "ep" ? "Â¡Copiado!" : "Copiar pitch"}</button>
                 <button className="studio-btn-save" onClick={() => onSave("mensajes", { id: Date.now(), tipo: "Elevator Pitch", texto: epText, fecha: new Date().toLocaleDateString("es") })}>Guardar pitch</button>
               </div>
-              <button className="mpm-new-btn" onClick={resetWizard}>✦ Crear otro mensaje</button>
+              <button className="mpm-new-btn" onClick={resetWizard}>âœ¦ Crear otro mensaje</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── BANCO ───────────────────────────────────── */}
+      {/* â”€â”€ BANCO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {saved?.mensajes?.length > 0 && (
         <div className="studio-bank">
           <h4>Banco de mensajes guardados ({saved.mensajes.length})</h4>
@@ -411,11 +411,11 @@ function MensajeTab({ saved, onSave }) {
               </div>
               <p>{m.texto}</p>
               <div className="studio-bank-actions">
-                <button className="studio-bank-action-copy" onClick={() => copiar(m.texto, `bank-${m.id}`)}>{copiado === `bank-${m.id}` ? "¡Copiado!" : "Copiar"}</button>
+                <button className="studio-bank-action-copy" onClick={() => copiar(m.texto, `bank-${m.id}`)}>{copiado === `bank-${m.id}` ? "Â¡Copiado!" : "Copiar"}</button>
                 {m.campos && (
                   <>
-                    <button className="studio-bank-action-mpm" onClick={() => usarMensajeGuardado(m)}>Recrear mis 12 variaciones ✦</button>
-                    <button className="studio-bank-action-ep" onClick={() => elevatorDesdeBanco(m)}>Generar Elevator Pitch →</button>
+                    <button className="studio-bank-action-mpm" onClick={() => usarMensajeGuardado(m)}>Recrear mis 12 variaciones âœ¦</button>
+                    <button className="studio-bank-action-ep" onClick={() => elevatorDesdeBanco(m)}>Generar Elevator Pitch â†’</button>
                   </>
                 )}
               </div>
@@ -427,116 +427,116 @@ function MensajeTab({ saved, onSave }) {
   );
 }
 
-// ── BLUEPRINTS DE PRODUCTOS DIGITALES ─────────────────────────
+// â”€â”€ BLUEPRINTS DE PRODUCTOS DIGITALES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const BLUEPRINTS = {
-  "Mini-guía PDF": {
-    emoji:"📄", color:"#C4526A", bg:"#FFF0F3",
-    descripcion:"Un PDF de 10 a 20 páginas que resuelve un problema muy específico. Es el producto de entrada ideal: fácil de crear y fácil de comprar.",
-    estructura:["Portada atractiva con tu marca","Introducción: el problema que resuelves y tu promesa","3 a 5 secciones de contenido accionable","Checklist o resumen de puntos clave","Página final con CTA (siguiente oferta o servicio)"],
-    pasos:["Define el problema específico que resuelves en una sola línea","Escribe el contenido en Google Docs (máx. 15 páginas)","Diseña las páginas en Canva usando tus colores de marca","Exporta como PDF","Crea una página de venta en Stan Store, Gumroad o Payhip","Graba 1 reel mostrando el antes/después de quien lo aplique"],
-    tiempo:"3 – 7 días", precio:"$9 – $27 USD",
+  "Mini-guÃ­a PDF": {
+    emoji:"ðŸ“„", color:"#C4526A", bg:"#FFF0F3",
+    descripcion:"Un PDF de 10 a 20 pÃ¡ginas que resuelve un problema muy especÃ­fico. Es el producto de entrada ideal: fÃ¡cil de crear y fÃ¡cil de comprar.",
+    estructura:["Portada atractiva con tu marca","IntroducciÃ³n: el problema que resuelves y tu promesa","3 a 5 secciones de contenido accionable","Checklist o resumen de puntos clave","PÃ¡gina final con CTA (siguiente oferta o servicio)"],
+    pasos:["Define el problema especÃ­fico que resuelves en una sola lÃ­nea","Escribe el contenido en Google Docs (mÃ¡x. 15 pÃ¡ginas)","DiseÃ±a las pÃ¡ginas en Canva usando tus colores de marca","Exporta como PDF","Crea una pÃ¡gina de venta en Stan Store, Gumroad o Payhip","Graba 1 reel mostrando el antes/despuÃ©s de quien lo aplique"],
+    tiempo:"3 â€“ 7 dÃ­as", precio:"$9 â€“ $27 USD",
     plataformas:["Gumroad","Stan Store","Payhip","Hotmart"],
-    tip:"Precio de entrada perfecto para construir confianza. Si no lo compran a $9, tampoco comprarán tu curso de $197. Empieza aquí."
+    tip:"Precio de entrada perfecto para construir confianza. Si no lo compran a $9, tampoco comprarÃ¡n tu curso de $197. Empieza aquÃ­."
   },
   "Masterclass": {
-    emoji:"🎓", color:"#C9903A", bg:"#FFF8ED",
-    descripcion:"Una clase grabada de 60 a 90 minutos que enseña un resultado concreto. La asistente se va con claridad y un plan de acción.",
-    estructura:["Introducción: quién eres y por qué eres la persona indicada (5 min)","El problema y por qué la mayoría falla (10 min)","Tu método paso a paso (40-60 min)","Resumen y ejercicio de cierre (10 min)","CTA final: siguiente paso o upsell a tu servicio"],
-    pasos:["Define el resultado exacto que logra al terminar","Crea un outline de 4-6 partes (no más de 6 temas)","Graba con Loom, Zoom o tu cámara directamente","Edita en CapCut o DaVinci — solo corta las pausas largas","Sube a Hotmart, Kajabi o Google Drive + landing simple","Crea urgencia con precio de lanzamiento o acceso limitado"],
-    tiempo:"1 – 2 semanas", precio:"$27 – $97 USD",
+    emoji:"ðŸŽ“", color:"#C9903A", bg:"#FFF8ED",
+    descripcion:"Una clase grabada de 60 a 90 minutos que enseÃ±a un resultado concreto. La asistente se va con claridad y un plan de acciÃ³n.",
+    estructura:["IntroducciÃ³n: quiÃ©n eres y por quÃ© eres la persona indicada (5 min)","El problema y por quÃ© la mayorÃ­a falla (10 min)","Tu mÃ©todo paso a paso (40-60 min)","Resumen y ejercicio de cierre (10 min)","CTA final: siguiente paso o upsell a tu servicio"],
+    pasos:["Define el resultado exacto que logra al terminar","Crea un outline de 4-6 partes (no mÃ¡s de 6 temas)","Graba con Loom, Zoom o tu cÃ¡mara directamente","Edita en CapCut o DaVinci â€” solo corta las pausas largas","Sube a Hotmart, Kajabi o Google Drive + landing simple","Crea urgencia con precio de lanzamiento o acceso limitado"],
+    tiempo:"1 â€“ 2 semanas", precio:"$27 â€“ $97 USD",
     plataformas:["Hotmart","Kajabi","Teachable","Stan Store"],
-    tip:"No tienes que ser perfecta en cámara. La autenticidad vende más que la producción. Grábala en una sola sesión."
+    tip:"No tienes que ser perfecta en cÃ¡mara. La autenticidad vende mÃ¡s que la producciÃ³n. GrÃ¡bala en una sola sesiÃ³n."
   },
   "Pack de plantillas": {
-    emoji:"🗂️", color:"#27AE60", bg:"#EEFAF3",
+    emoji:"ðŸ—‚ï¸", color:"#27AE60", bg:"#EEFAF3",
     descripcion:"Un conjunto de 5 a 15 plantillas editables en Canva, Notion o Google Sheets que ahorran tiempo a tu cliente ideal.",
-    estructura:["3 a 5 plantillas en Canva (diseño visual)","1 a 3 plantillas en Notion o Google Sheets (organización)","Instrucciones de uso en PDF o video corto de 5 min","Ejemplos de cómo usarlas completadas","Guía rápida de personalización con tu marca"],
-    pasos:["Elige las plantillas que más te piden o más usas tú misma","Crea copias en Canva y habilita 'Compartir como plantilla'","Para Notion: duplícalas como página pública con instrucciones","Crea un PDF guía con capturas y links de acceso","Empaqueta en un ZIP o página de Notion con todos los links","Vende en Gumroad, Stan Store o Etsy (sí, Etsy funciona para digitales)"],
-    tiempo:"2 – 5 días", precio:"$17 – $47 USD",
+    estructura:["3 a 5 plantillas en Canva (diseÃ±o visual)","1 a 3 plantillas en Notion o Google Sheets (organizaciÃ³n)","Instrucciones de uso en PDF o video corto de 5 min","Ejemplos de cÃ³mo usarlas completadas","GuÃ­a rÃ¡pida de personalizaciÃ³n con tu marca"],
+    pasos:["Elige las plantillas que mÃ¡s te piden o mÃ¡s usas tÃº misma","Crea copias en Canva y habilita 'Compartir como plantilla'","Para Notion: duplÃ­calas como pÃ¡gina pÃºblica con instrucciones","Crea un PDF guÃ­a con capturas y links de acceso","Empaqueta en un ZIP o pÃ¡gina de Notion con todos los links","Vende en Gumroad, Stan Store o Etsy (sÃ­, Etsy funciona para digitales)"],
+    tiempo:"2 â€“ 5 dÃ­as", precio:"$17 â€“ $47 USD",
     plataformas:["Gumroad","Stan Store","Etsy","Payhip"],
-    tip:"Las plantillas de Canva son las que más se venden. Si tu audiencia ya usa Canva, este es tu producto más fácil de crear."
+    tip:"Las plantillas de Canva son las que mÃ¡s se venden. Si tu audiencia ya usa Canva, este es tu producto mÃ¡s fÃ¡cil de crear."
   },
   "Mini-curso": {
-    emoji:"🎬", color:"#4A90D9", bg:"#EEF5FF",
-    descripcion:"Un curso de 3 a 5 módulos en video (15-30 min cada uno) enfocado en un resultado claro. Sin sobreproducción — enfocado en transformación.",
-    estructura:["Módulo 0: Bienvenida y cómo aprovechar el curso","Módulos 1-3: El contenido principal dividido en pasos lógicos","Ejercicios o tareas prácticas por módulo","Módulo final: Plan de acción y siguientes pasos","Bonus: plantilla, guía o sesión Q&A grabada"],
-    pasos:["Define el resultado en una sola frase: 'Al terminar podrás/sabrás/tendrás...'","Divide el proceso en 3 o 5 pasos lógicos (cada paso = un módulo)","Graba cada módulo por separado — más fácil de reeditar","Diseña las diapositivas en Canva o presenta desde pantalla con Loom","Súbelo a Hotmart o Kajabi y configura el acceso","Lanza primero como beta a precio reducido para conseguir testimonios"],
-    tiempo:"2 – 4 semanas", precio:"$47 – $197 USD",
+    emoji:"ðŸŽ¬", color:"#4A90D9", bg:"#EEF5FF",
+    descripcion:"Un curso de 3 a 5 mÃ³dulos en video (15-30 min cada uno) enfocado en un resultado claro. Sin sobreproducciÃ³n â€” enfocado en transformaciÃ³n.",
+    estructura:["MÃ³dulo 0: Bienvenida y cÃ³mo aprovechar el curso","MÃ³dulos 1-3: El contenido principal dividido en pasos lÃ³gicos","Ejercicios o tareas prÃ¡cticas por mÃ³dulo","MÃ³dulo final: Plan de acciÃ³n y siguientes pasos","Bonus: plantilla, guÃ­a o sesiÃ³n Q&A grabada"],
+    pasos:["Define el resultado en una sola frase: 'Al terminar podrÃ¡s/sabrÃ¡s/tendrÃ¡s...'","Divide el proceso en 3 o 5 pasos lÃ³gicos (cada paso = un mÃ³dulo)","Graba cada mÃ³dulo por separado â€” mÃ¡s fÃ¡cil de reeditar","DiseÃ±a las diapositivas en Canva o presenta desde pantalla con Loom","SÃºbelo a Hotmart o Kajabi y configura el acceso","Lanza primero como beta a precio reducido para conseguir testimonios"],
+    tiempo:"2 â€“ 4 semanas", precio:"$47 â€“ $197 USD",
     plataformas:["Hotmart","Kajabi","Teachable","Podia"],
-    tip:"Lanza primero a tu lista o comunidad a precio de beta. Los primeros testimonios valen más que cualquier marketing pagado."
+    tip:"Lanza primero a tu lista o comunidad a precio de beta. Los primeros testimonios valen mÃ¡s que cualquier marketing pagado."
   },
   "Ebook": {
-    emoji:"📚", color:"#E8755A", bg:"#FFF5F0",
-    descripcion:"Una guía completa de 30 a 60 páginas que cubre un tema en profundidad. Posiciona tu expertise y genera ingresos pasivos de largo plazo.",
-    estructura:["Portada profesional + página de derechos de autor","Índice de contenido","Introducción: por qué escribiste esto y para quién es","4 a 8 capítulos con el contenido principal","Conclusión + plan de acción","Sobre la autora + recursos y links"],
-    pasos:["Elige un tema donde tienes experiencia real y resultados comprobados","Escribe el índice completo antes de escribir una sola página","Redacta capítulo por capítulo — no intentes hacerlo de un tirón","Diseña en Canva Pro o contrata maquetación en Fiverr","Revisa y edita en 2-3 rondas","Publica en Amazon KDP (versión Kindle) + Gumroad (PDF)"],
-    tiempo:"3 – 6 semanas", precio:"$15 – $37 USD",
+    emoji:"ðŸ“š", color:"#E8755A", bg:"#FFF5F0",
+    descripcion:"Una guÃ­a completa de 30 a 60 pÃ¡ginas que cubre un tema en profundidad. Posiciona tu expertise y genera ingresos pasivos de largo plazo.",
+    estructura:["Portada profesional + pÃ¡gina de derechos de autor","Ãndice de contenido","IntroducciÃ³n: por quÃ© escribiste esto y para quiÃ©n es","4 a 8 capÃ­tulos con el contenido principal","ConclusiÃ³n + plan de acciÃ³n","Sobre la autora + recursos y links"],
+    pasos:["Elige un tema donde tienes experiencia real y resultados comprobados","Escribe el Ã­ndice completo antes de escribir una sola pÃ¡gina","Redacta capÃ­tulo por capÃ­tulo â€” no intentes hacerlo de un tirÃ³n","DiseÃ±a en Canva Pro o contrata maquetaciÃ³n en Fiverr","Revisa y edita en 2-3 rondas","Publica en Amazon KDP (versiÃ³n Kindle) + Gumroad (PDF)"],
+    tiempo:"3 â€“ 6 semanas", precio:"$15 â€“ $37 USD",
     plataformas:["Amazon KDP","Gumroad","Payhip","Stan Store"],
-    tip:"Amazon KDP te da alcance global sin esfuerzo extra. Publícalo también como PDF para márgenes más altos."
+    tip:"Amazon KDP te da alcance global sin esfuerzo extra. PublÃ­calo tambiÃ©n como PDF para mÃ¡rgenes mÃ¡s altos."
   },
   "Challenge": {
-    emoji:"🏁", color:"#E67E22", bg:"#FFF5EB",
-    descripcion:"Un programa de 5 a 7 días con una tarea diaria que guía al participante a un resultado concreto. Genera mucho engagement y comunidad.",
-    estructura:["Día 0: Bienvenida, reglas y mentalidad","Días 1-5 (o 1-7): Una tarea diaria accionable de max. 30 min","Grupo de WhatsApp, Telegram o comunidad de soporte","Celebración de resultados al final del reto","Oferta especial al cierre para quienes lo completaron"],
-    pasos:["Define el resultado del último día: ¿qué habrá logrado quien lo complete?","Diseña una tarea diaria que tome máximo 30 minutos","Prepara los materiales: videos cortos, PDFs o audios por día","Crea el grupo de comunidad antes de lanzar para generar expectativa","Lanza con inscripción previa — la anticipación aumenta el valor percibido","Prepara una oferta de cierre para quienes terminen el reto"],
-    tiempo:"1 – 2 semanas de preparación", precio:"$17 – $57 USD",
+    emoji:"ðŸ", color:"#E67E22", bg:"#FFF5EB",
+    descripcion:"Un programa de 5 a 7 dÃ­as con una tarea diaria que guÃ­a al participante a un resultado concreto. Genera mucho engagement y comunidad.",
+    estructura:["DÃ­a 0: Bienvenida, reglas y mentalidad","DÃ­as 1-5 (o 1-7): Una tarea diaria accionable de max. 30 min","Grupo de WhatsApp, Telegram o comunidad de soporte","CelebraciÃ³n de resultados al final del reto","Oferta especial al cierre para quienes lo completaron"],
+    pasos:["Define el resultado del Ãºltimo dÃ­a: Â¿quÃ© habrÃ¡ logrado quien lo complete?","DiseÃ±a una tarea diaria que tome mÃ¡ximo 30 minutos","Prepara los materiales: videos cortos, PDFs o audios por dÃ­a","Crea el grupo de comunidad antes de lanzar para generar expectativa","Lanza con inscripciÃ³n previa â€” la anticipaciÃ³n aumenta el valor percibido","Prepara una oferta de cierre para quienes terminen el reto"],
+    tiempo:"1 â€“ 2 semanas de preparaciÃ³n", precio:"$17 â€“ $57 USD",
     plataformas:["WhatsApp/Telegram + Hotmart","Stan Store","Kajabi Communities"],
-    tip:"Los challenges tienen las tasas de completación más altas. Crea el grupo ANTES de lanzar — la comunidad es el motor del reto."
+    tip:"Los challenges tienen las tasas de completaciÃ³n mÃ¡s altas. Crea el grupo ANTES de lanzar â€” la comunidad es el motor del reto."
   },
   "Workshop": {
-    emoji:"🛠️", color:"#8B6565", bg:"#FFF8F5",
-    descripcion:"Una sesión grabada o en vivo de 2-3 horas muy práctica. Al terminar, el participante tiene algo creado o resuelto.",
-    estructura:["Introducción y contexto (15 min)","Fundamentos clave antes de hacer (20 min)","Ejercicio práctico guiado (90 min)","Revisión de trabajo y preguntas (15 min)","Recursos adicionales y siguiente paso"],
-    pasos:["Define qué van a crear o completar al terminar el workshop","Prepara los materiales de trabajo: plantillas, hojas de trabajo, etc.","Hazlo primero en vivo por Zoom y graba la sesión","Edita para quitar los momentos muertos y la configuración inicial","Sube con acceso de por vida para revenderlo continuamente","Crea un reel que muestre el 'antes y durante' del proceso"],
-    tiempo:"1 semana", precio:"$37 – $127 USD",
+    emoji:"ðŸ› ï¸", color:"#8B6565", bg:"#FFF8F5",
+    descripcion:"Una sesiÃ³n grabada o en vivo de 2-3 horas muy prÃ¡ctica. Al terminar, el participante tiene algo creado o resuelto.",
+    estructura:["IntroducciÃ³n y contexto (15 min)","Fundamentos clave antes de hacer (20 min)","Ejercicio prÃ¡ctico guiado (90 min)","RevisiÃ³n de trabajo y preguntas (15 min)","Recursos adicionales y siguiente paso"],
+    pasos:["Define quÃ© van a crear o completar al terminar el workshop","Prepara los materiales de trabajo: plantillas, hojas de trabajo, etc.","Hazlo primero en vivo por Zoom y graba la sesiÃ³n","Edita para quitar los momentos muertos y la configuraciÃ³n inicial","Sube con acceso de por vida para revenderlo continuamente","Crea un reel que muestre el 'antes y durante' del proceso"],
+    tiempo:"1 semana", precio:"$37 â€“ $127 USD",
     plataformas:["Zoom + Hotmart","Kajabi","Stan Store"],
-    tip:"Hazlo primero en vivo, grábalo y véndelo para siempre. Un workshop bien ejecutado = semanas o meses de ingreso pasivo."
+    tip:"Hazlo primero en vivo, grÃ¡balo y vÃ©ndelo para siempre. Un workshop bien ejecutado = semanas o meses de ingreso pasivo."
   },
   "Kit de recursos": {
-    emoji:"🎁", color:"#C9A84C", bg:"#FBF5E0",
-    descripcion:"Un paquete curado de plantillas, guías, checklists y herramientas sobre un tema. El valor está en la curaduría — no tienes que crear todo desde cero.",
-    estructura:["3 a 5 plantillas editables (Canva, Notion, Word)","Guía de instrucciones en PDF","Checklists y listas de recursos","Ejemplos reales o swipe file","Bonus: recurso extra o descuento en tu servicio"],
-    pasos:["Recopila lo que ya tienes y usas en tu propio negocio","Organiza los recursos en carpetas temáticas","Crea una guía PDF que explique cómo usar cada recurso","Empaqueta todo en un ZIP descargable","Crea una página de ventas describiendo cada elemento del kit","Graba un video de 3 min mostrando qué hay en el kit ('unboxing digital')"],
-    tiempo:"2 – 4 días", precio:"$27 – $67 USD",
+    emoji:"ðŸŽ", color:"#C9A84C", bg:"#FBF5E0",
+    descripcion:"Un paquete curado de plantillas, guÃ­as, checklists y herramientas sobre un tema. El valor estÃ¡ en la curadurÃ­a â€” no tienes que crear todo desde cero.",
+    estructura:["3 a 5 plantillas editables (Canva, Notion, Word)","GuÃ­a de instrucciones en PDF","Checklists y listas de recursos","Ejemplos reales o swipe file","Bonus: recurso extra o descuento en tu servicio"],
+    pasos:["Recopila lo que ya tienes y usas en tu propio negocio","Organiza los recursos en carpetas temÃ¡ticas","Crea una guÃ­a PDF que explique cÃ³mo usar cada recurso","Empaqueta todo en un ZIP descargable","Crea una pÃ¡gina de ventas describiendo cada elemento del kit","Graba un video de 3 min mostrando quÃ© hay en el kit ('unboxing digital')"],
+    tiempo:"2 â€“ 4 dÃ­as", precio:"$27 â€“ $67 USD",
     plataformas:["Gumroad","Stan Store","Payhip"],
     tip:"El valor percibido de un kit es mayor que el de sus partes individuales. Ponle precio al paquete, no a cada pieza por separado."
   },
-  "Membresía": {
-    emoji:"💎", color:"#4A90D9", bg:"#EEF5FF",
-    descripcion:"Un acceso recurrente mensual o anual a contenido, comunidad o acompañamiento. El modelo de ingresos más estable del negocio digital.",
-    estructura:["Biblioteca de contenido (clases, guías, plantillas)","Comunidad privada (WhatsApp, Telegram o plataforma)","Contenido nuevo mensual: masterclass, Q&A en vivo o recursos","Acceso a grabaciones anteriores","Beneficios exclusivos: descuentos, acceso anticipado, sesiones grupales"],
-    pasos:["Define el beneficio principal que justifica el pago mensual","Empieza con contenido mínimo: 3-5 recursos ya creados + comunidad","Elige la plataforma según tu presupuesto (WhatsApp es gratis para empezar)","Fija un precio de lanzamiento bajo para conseguir los primeros 10 miembros","Entrega valor inmediato en la primera semana — la retención es clave","Sube el precio con nuevos miembros; los actuales se quedan al precio de entrada"],
-    tiempo:"2 – 4 semanas para lanzar", precio:"$19 – $67 USD / mes",
+  "MembresÃ­a": {
+    emoji:"ðŸ’Ž", color:"#4A90D9", bg:"#EEF5FF",
+    descripcion:"Un acceso recurrente mensual o anual a contenido, comunidad o acompaÃ±amiento. El modelo de ingresos mÃ¡s estable del negocio digital.",
+    estructura:["Biblioteca de contenido (clases, guÃ­as, plantillas)","Comunidad privada (WhatsApp, Telegram o plataforma)","Contenido nuevo mensual: masterclass, Q&A en vivo o recursos","Acceso a grabaciones anteriores","Beneficios exclusivos: descuentos, acceso anticipado, sesiones grupales"],
+    pasos:["Define el beneficio principal que justifica el pago mensual","Empieza con contenido mÃ­nimo: 3-5 recursos ya creados + comunidad","Elige la plataforma segÃºn tu presupuesto (WhatsApp es gratis para empezar)","Fija un precio de lanzamiento bajo para conseguir los primeros 10 miembros","Entrega valor inmediato en la primera semana â€” la retenciÃ³n es clave","Sube el precio con nuevos miembros; los actuales se quedan al precio de entrada"],
+    tiempo:"2 â€“ 4 semanas para lanzar", precio:"$19 â€“ $67 USD / mes",
     plataformas:["WhatsApp / Telegram","Kajabi","Hotmart Club","Skool"],
-    tip:"El primer mes es el más difícil de retener. Entrégalo todo ese mes — los que se queden serán tus mejores clientes para siempre."
+    tip:"El primer mes es el mÃ¡s difÃ­cil de retener. EntrÃ©galo todo ese mes â€” los que se queden serÃ¡n tus mejores clientes para siempre."
   },
-  "Guía de procesos": {
-    emoji:"📋", color:"#27AE60", bg:"#EEFAF3",
+  "GuÃ­a de procesos": {
+    emoji:"ðŸ“‹", color:"#27AE60", bg:"#EEFAF3",
     descripcion:"Un sistema documentado (SOP) que otros pueden seguir para replicar tus procesos. Valioso para coaches, consultoras y creadoras de contenido.",
-    estructura:["Índice de procesos incluidos","Por cada proceso: objetivo, herramientas, pasos detallados","Capturas de pantalla o diagramas de flujo","Checklists de verificación por proceso","Instrucciones de adaptación y personalización"],
-    pasos:["Documenta los 5 procesos que más te preguntan o que más usas","Escríbelos como si se los explicaras a alguien que no sabe nada","Añade capturas de pantalla reales de tus herramientas","Diseña en Notion (práctico) o en Canva/Word","Vende como 'sistema completo' — el precio se justifica por el tiempo que ahorra","Ofrece actualizaciones gratuitas para siempre como ventaja competitiva"],
-    tiempo:"1 – 2 semanas", precio:"$37 – $97 USD",
+    estructura:["Ãndice de procesos incluidos","Por cada proceso: objetivo, herramientas, pasos detallados","Capturas de pantalla o diagramas de flujo","Checklists de verificaciÃ³n por proceso","Instrucciones de adaptaciÃ³n y personalizaciÃ³n"],
+    pasos:["Documenta los 5 procesos que mÃ¡s te preguntan o que mÃ¡s usas","EscrÃ­belos como si se los explicaras a alguien que no sabe nada","AÃ±ade capturas de pantalla reales de tus herramientas","DiseÃ±a en Notion (prÃ¡ctico) o en Canva/Word","Vende como 'sistema completo' â€” el precio se justifica por el tiempo que ahorra","Ofrece actualizaciones gratuitas para siempre como ventaja competitiva"],
+    tiempo:"1 â€“ 2 semanas", precio:"$37 â€“ $97 USD",
     plataformas:["Gumroad","Notion (venta directa)","Payhip","Stan Store"],
-    tip:"El cliente no compra el PDF — compra el tiempo que le ahorras. Calcula cuántas horas vale lo que documentas y ponle precio a eso."
+    tip:"El cliente no compra el PDF â€” compra el tiempo que le ahorras. Calcula cuÃ¡ntas horas vale lo que documentas y ponle precio a eso."
   },
 };
 
 const detectProductType = (text) => {
   const t = text.toLowerCase();
-  if (t.includes("mini-guía") || t.includes("mini guia") || t.includes("pdf")) return "Mini-guía PDF";
+  if (t.includes("mini-guÃ­a") || t.includes("mini guia") || t.includes("pdf")) return "Mini-guÃ­a PDF";
   if (t.includes("masterclass")) return "Masterclass";
   if (t.includes("plantilla")) return "Pack de plantillas";
-  if (t.includes("mini-curso") || t.includes("mini curso") || t.includes("módulos") || t.includes("curso")) return "Mini-curso";
+  if (t.includes("mini-curso") || t.includes("mini curso") || t.includes("mÃ³dulos") || t.includes("curso")) return "Mini-curso";
   if (t.includes("ebook") || t.includes("e-book")) return "Ebook";
   if (t.includes("challenge") || t.includes("reto")) return "Challenge";
   if (t.includes("workshop") || t.includes("taller")) return "Workshop";
   if (t.includes("kit")) return "Kit de recursos";
-  if (t.includes("membresía") || t.includes("membresia")) return "Membresía";
-  if (t.includes("proceso") || t.includes("sop")) return "Guía de procesos";
-  return "Mini-guía PDF";
+  if (t.includes("membresÃ­a") || t.includes("membresia")) return "MembresÃ­a";
+  if (t.includes("proceso") || t.includes("sop")) return "GuÃ­a de procesos";
+  return "Mini-guÃ­a PDF";
 };
 
-// ── IDEAS ──────────────────────────────────────────────────────
+// â”€â”€ IDEAS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
   const [keyword,        setKeyword]        = useState(brandProfile.queOfreces || "");
   const [ideas,          setIdeas]          = useState(null);
@@ -556,94 +556,94 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
 
   const CATS = {
     vertical: {
-      label: "📱 Video Vertical", sub: "Reels · TikTok",
+      label: "ðŸ“± Video Vertical", sub: "Reels Â· TikTok",
       color: "#C4526A", bg: "#FFF0F3",
       templates: [
-        k => `3 errores que arruinan los resultados con ${k} (y cómo evitarlos)`,
-        k => `Lo que nadie te dice sobre ${k} 👀`,
-        k => `Cómo mejorar tus resultados con ${k} en solo 24 horas`,
-        k => `POV: el día que todo cambió gracias a ${k}`,
-        k => `El truco con ${k} que cambió todo para mí`,
-        k => `¿Por qué ${k} aún no te está dando los resultados que quieres?`,
-        k => `Antes vs después de trabajar con ${k}`,
-        k => `Mini tutorial: cómo arrancar con ${k} en 60 segundos`,
-        k => `Las 3 preguntas más frecuentes sobre ${k} — respondidas`,
-        k => `La forma más fácil de empezar con ${k} aunque no tengas experiencia`,
-        k => `Esto me pasó con ${k} y no lo esperaba 😳`,
-        k => `${k}: mito vs realidad 🔥`,
-        k => `5 señales de que ya es momento de dar el siguiente paso en ${k}`,
-        k => `Así trabajo yo con ${k} — proceso completo en 60 segundos`,
-        k => `Si estás comenzando con ${k}, ve este video primero`,
+        k => `3 errores que arruinan los resultados con ${k} (y cÃ³mo evitarlos)`,
+        k => `Lo que nadie te dice sobre ${k} ðŸ‘€`,
+        k => `CÃ³mo mejorar tus resultados con ${k} en solo 24 horas`,
+        k => `POV: el dÃ­a que todo cambiÃ³ gracias a ${k}`,
+        k => `El truco con ${k} que cambiÃ³ todo para mÃ­`,
+        k => `Â¿Por quÃ© ${k} aÃºn no te estÃ¡ dando los resultados que quieres?`,
+        k => `Antes vs despuÃ©s de trabajar con ${k}`,
+        k => `Mini tutorial: cÃ³mo arrancar con ${k} en 60 segundos`,
+        k => `Las 3 preguntas mÃ¡s frecuentes sobre ${k} â€” respondidas`,
+        k => `La forma mÃ¡s fÃ¡cil de empezar con ${k} aunque no tengas experiencia`,
+        k => `Esto me pasÃ³ con ${k} y no lo esperaba ðŸ˜³`,
+        k => `${k}: mito vs realidad ðŸ”¥`,
+        k => `5 seÃ±ales de que ya es momento de dar el siguiente paso en ${k}`,
+        k => `AsÃ­ trabajo yo con ${k} â€” proceso completo en 60 segundos`,
+        k => `Si estÃ¡s comenzando con ${k}, ve este video primero`,
       ],
     },
     horizontal: {
-      label: "🎬 Video Horizontal", sub: "YouTube · Podcast",
+      label: "ðŸŽ¬ Video Horizontal", sub: "YouTube Â· Podcast",
       color: "#4A90D9", bg: "#EEF5FF",
       templates: [
-        k => `Cómo dominar ${k}: guía completa para mamás emprendedoras`,
-        k => `Mi historia con ${k}: lo que aprendí en el camino`,
-        k => `Todo lo que necesitas saber sobre ${k} — preguntas y respuestas`,
-        k => `Por qué ${k} es la pieza que le falta a tu negocio`,
+        k => `CÃ³mo dominar ${k}: guÃ­a completa para mamÃ¡s emprendedoras`,
+        k => `Mi historia con ${k}: lo que aprendÃ­ en el camino`,
+        k => `Todo lo que necesitas saber sobre ${k} â€” preguntas y respuestas`,
+        k => `Por quÃ© ${k} es la pieza que le falta a tu negocio`,
         k => `De cero a experta en ${k}: episodio completo`,
-        k => `Cómo una mamá transformó su negocio trabajando con ${k}`,
+        k => `CÃ³mo una mamÃ¡ transformÃ³ su negocio trabajando con ${k}`,
         k => `${k} paso a paso: el proceso completo que uso con mis clientas`,
-        k => `Los mitos sobre ${k} que te están frenando — y cómo superarlos`,
-        k => `Qué nadie te enseñó sobre ${k}`,
-        k => `El episodio sobre ${k} que ojalá hubiera visto cuando empecé`,
-        k => `Cómo trabajar con ${k} me ayudó a escalar sin quemarme`,
-        k => `La estrategia con ${k} que funcionó para mis clientas este mes`,
-        k => `${k} y bienestar: cómo equilibrar todo sin colapsar`,
+        k => `Los mitos sobre ${k} que te estÃ¡n frenando â€” y cÃ³mo superarlos`,
+        k => `QuÃ© nadie te enseÃ±Ã³ sobre ${k}`,
+        k => `El episodio sobre ${k} que ojalÃ¡ hubiera visto cuando empecÃ©`,
+        k => `CÃ³mo trabajar con ${k} me ayudÃ³ a escalar sin quemarme`,
+        k => `La estrategia con ${k} que funcionÃ³ para mis clientas este mes`,
+        k => `${k} y bienestar: cÃ³mo equilibrar todo sin colapsar`,
       ],
     },
     carrusel: {
-      label: "🎠 Carrusel", sub: "Instagram · Facebook",
+      label: "ðŸŽ  Carrusel", sub: "Instagram Â· Facebook",
       color: "#27AE60", bg: "#EEFAF3",
       templates: [
         k => `5 claves para dominar ${k} desde hoy`,
-        k => `Antes vs después de trabajar con ${k}`,
+        k => `Antes vs despuÃ©s de trabajar con ${k}`,
         k => `Mi proceso con ${k}: paso a paso (lo que uso con mis clientas)`,
-        k => `Errores vs soluciones: guía sobre ${k}`,
-        k => `Las preguntas más frecuentes sobre ${k} — respondidas`,
+        k => `Errores vs soluciones: guÃ­a sobre ${k}`,
+        k => `Las preguntas mÃ¡s frecuentes sobre ${k} â€” respondidas`,
         k => `Guarda este carrusel: todo sobre ${k} en un solo post`,
-        k => `${k}: la guía visual que siempre quisiste tener`,
-        k => `Lo que aprendí sobre ${k} en el último año`,
-        k => `Checklist: ¿estás aprovechando bien ${k}?`,
-        k => `Comparte si trabajar con ${k} también te ha costado 👇`,
+        k => `${k}: la guÃ­a visual que siempre quisiste tener`,
+        k => `Lo que aprendÃ­ sobre ${k} en el Ãºltimo aÃ±o`,
+        k => `Checklist: Â¿estÃ¡s aprovechando bien ${k}?`,
+        k => `Comparte si trabajar con ${k} tambiÃ©n te ha costado ðŸ‘‡`,
         k => `3 formas de mejorar tus resultados con ${k} esta semana`,
         k => `El ABC de ${k} para emprendedoras`,
       ],
     },
     story: {
-      label: "💬 Historia / Story", sub: "IG Stories · FB Stories",
+      label: "ðŸ’¬ Historia / Story", sub: "IG Stories Â· FB Stories",
       color: "#E8755A", bg: "#FFF5F0",
       templates: [
-        k => `¿Cuál es tu mayor reto con ${k}? [encuesta]`,
-        k => `Lo que aprendí sobre ${k} me tomó meses entenderlo`,
-        k => `¿Ya probaste esto con ${k}? [encuesta sí/no]`,
-        k => `Una cosa que haría diferente si empezara de cero con ${k}`,
-        k => `Mi reflexión de hoy sobre ${k} — sigue viendo`,
-        k => `¿Qué tanto sabes sobre ${k}? Ponlo a prueba [quiz]`,
+        k => `Â¿CuÃ¡l es tu mayor reto con ${k}? [encuesta]`,
+        k => `Lo que aprendÃ­ sobre ${k} me tomÃ³ meses entenderlo`,
+        k => `Â¿Ya probaste esto con ${k}? [encuesta sÃ­/no]`,
+        k => `Una cosa que harÃ­a diferente si empezara de cero con ${k}`,
+        k => `Mi reflexiÃ³n de hoy sobre ${k} â€” sigue viendo`,
+        k => `Â¿QuÃ© tanto sabes sobre ${k}? Ponlo a prueba [quiz]`,
         k => `Lo que me preguntan todo el tiempo sobre ${k}`,
-        k => `Gracias a ${k} mi negocio cambió — te cuento cómo`,
-        k => `Hoy hablamos de ${k} en el live. ¿Te unes?`,
-        k => `Tip exprés sobre ${k} que puedes aplicar hoy mismo 🔥`,
-        k => `Cuéntame: ¿${k} te ha traído algún reto? [caja de preguntas]`,
+        k => `Gracias a ${k} mi negocio cambiÃ³ â€” te cuento cÃ³mo`,
+        k => `Hoy hablamos de ${k} en el live. Â¿Te unes?`,
+        k => `Tip exprÃ©s sobre ${k} que puedes aplicar hoy mismo ðŸ”¥`,
+        k => `CuÃ©ntame: Â¿${k} te ha traÃ­do algÃºn reto? [caja de preguntas]`,
       ],
     },
     digital: {
-      label: "💻 Producto Digital", sub: "Crea e ingresos pasivos",
+      label: "ðŸ’» Producto Digital", sub: "Crea e ingresos pasivos",
       color: "#C9903A", bg: "#FFF8ED",
       templates: [
-        k => `Mini-guía PDF: domina ${k} en 7 días`,
+        k => `Mini-guÃ­a PDF: domina ${k} en 7 dÃ­as`,
         k => `Masterclass grabada: ${k} desde cero`,
         k => `Pack de plantillas para optimizar ${k}`,
-        k => `Mini-curso de 4 módulos: sistema para ${k}`,
-        k => `Ebook: La guía completa de ${k}`,
-        k => `Challenge de 7 días: transforma tu ${k}`,
+        k => `Mini-curso de 4 mÃ³dulos: sistema para ${k}`,
+        k => `Ebook: La guÃ­a completa de ${k}`,
+        k => `Challenge de 7 dÃ­as: transforma tu ${k}`,
         k => `Workshop: ${k} en una tarde`,
         k => `Kit de recursos sobre ${k}`,
-        k => `Membresía: acompañamiento mensual en ${k}`,
-        k => `Guía de procesos (SOP): sistema para ${k}`,
+        k => `MembresÃ­a: acompaÃ±amiento mensual en ${k}`,
+        k => `GuÃ­a de procesos (SOP): sistema para ${k}`,
       ],
     },
   };
@@ -671,14 +671,14 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
     setAiLoading(true); setIdeas(null); setAiMsg("");
     const res = await callGemini("ideas", {
       keyword: k,
-      nicho: brandProfile.clienteIdeal || "mamás emprendedoras",
+      nicho: brandProfile.clienteIdeal || "mamÃ¡s emprendedoras",
       tono: brandProfile.tono || "Cercano",
     });
     setAiLoading(false);
     if (res?.error === "rate_limit") { setAiMsg("Muchas solicitudes en este momento. Intenta en 1 minuto."); return; }
-    if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
-    if (res?.error === "No autorizada" || res?.error?.includes("autent")) { setAiMsg("Inicia sesión para usar la IA."); return; }
-    if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo en unos segundos."); return; }
+    if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al lÃ­mite de generaciones del mes."); return; }
+    if (res?.error === "No autorizada" || res?.error?.includes("autent")) { setAiMsg("Inicia sesiÃ³n para usar la IA."); return; }
+    if (res?.error) { setAiMsg("Algo saliÃ³ mal. Intenta de nuevo en unos segundos."); return; }
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
     const aiResult = res.result || {};
     const CAT_KEYS = Object.keys(CATS);
@@ -705,13 +705,13 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
   const bancoIdeas = saved?.ideas || [];
   const EJEMPLOS = ["ventas en WhatsApp", "organizar el tiempo", "reels", "bienestar", "maternidad", "redes sociales"];
 
-  // ── VISTA BLUEPRINT ──────────────────────────────────────────
+  // â”€â”€ VISTA BLUEPRINT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   if (vistaBlueprint) {
-    const bp = BLUEPRINTS[vistaBlueprint.tipo] || BLUEPRINTS["Mini-guía PDF"];
+    const bp = BLUEPRINTS[vistaBlueprint.tipo] || BLUEPRINTS["Mini-guÃ­a PDF"];
     return (
       <div className="studio-tab-content">
         <div className="bp-topbar">
-          <button className="mpm-wizard-back-btn" onClick={() => setVistaBlueprint(null)}>← Ideas</button>
+          <button className="mpm-wizard-back-btn" onClick={() => setVistaBlueprint(null)}>â† Ideas</button>
         </div>
 
         <div className="bp-wrap">
@@ -730,18 +730,18 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
           {/* Stats */}
           <div className="bp-stats-row">
             <div className="bp-stat" style={{borderColor: bp.color + "33", background: bp.bg}}>
-              <div className="bp-stat-label">⏱ Tiempo para crearlo</div>
+              <div className="bp-stat-label">â± Tiempo para crearlo</div>
               <div className="bp-stat-value" style={{color: bp.color}}>{bp.tiempo}</div>
             </div>
             <div className="bp-stat" style={{borderColor: bp.color + "33", background: bp.bg}}>
-              <div className="bp-stat-label">💰 Precio de venta</div>
+              <div className="bp-stat-label">ðŸ’° Precio de venta</div>
               <div className="bp-stat-value" style={{color: bp.color}}>{bp.precio}</div>
             </div>
           </div>
 
           {/* Estructura */}
           <div className="bp-section">
-            <div className="bp-section-title" style={{color: bp.color}}>📋 Qué incluye</div>
+            <div className="bp-section-title" style={{color: bp.color}}>ðŸ“‹ QuÃ© incluye</div>
             <ul className="bp-list">
               {bp.estructura.map((item, i) => (
                 <li key={i} className="bp-list-item">
@@ -752,9 +752,9 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
             </ul>
           </div>
 
-          {/* Cómo crearlo */}
+          {/* CÃ³mo crearlo */}
           <div className="bp-section">
-            <div className="bp-section-title" style={{color: bp.color}}>🛠️ Cómo crearlo — paso a paso</div>
+            <div className="bp-section-title" style={{color: bp.color}}>ðŸ› ï¸ CÃ³mo crearlo â€” paso a paso</div>
             <ol className="bp-steps">
               {bp.pasos.map((paso, i) => (
                 <li key={i} className="bp-step">
@@ -765,9 +765,9 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
             </ol>
           </div>
 
-          {/* Dónde venderlo */}
+          {/* DÃ³nde venderlo */}
           <div className="bp-section">
-            <div className="bp-section-title" style={{color: bp.color}}>🛒 Dónde venderlo</div>
+            <div className="bp-section-title" style={{color: bp.color}}>ðŸ›’ DÃ³nde venderlo</div>
             <div className="bp-platforms">
               {bp.plataformas.map((p, i) => (
                 <span key={i} className="bp-platform-chip" style={{background: bp.bg, color: bp.color, borderColor: bp.color + "44"}}>{p}</span>
@@ -777,15 +777,15 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
 
           {/* Tip */}
           <div className="bp-tip" style={{borderColor: bp.color, background: bp.bg}}>
-            <span className="bp-tip-icon">💡</span>
+            <span className="bp-tip-icon">ðŸ’¡</span>
             <p>{bp.tip}</p>
           </div>
 
           {/* Acciones */}
           <div className="bp-actions">
-            <button className="mpm-wizard-back-btn" onClick={() => setVistaBlueprint(null)}>← Volver a ideas</button>
+            <button className="mpm-wizard-back-btn" onClick={() => setVistaBlueprint(null)}>â† Volver a ideas</button>
             <button className="mpm-step-btn" style={{flex:1}} onClick={() => { setVistaBlueprint(null); onCrearGuion?.(vistaBlueprint.idea); }}>
-              Crear guión de lanzamiento 🎬
+              Crear guiÃ³n de lanzamiento ðŸŽ¬
             </button>
           </div>
         </div>
@@ -796,10 +796,10 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
   return (
     <div className="studio-tab-content">
       <div className="ideas-search-bar">
-        <span className="ideas-search-icon">💡</span>
+        <span className="ideas-search-icon">ðŸ’¡</span>
         <input
           className="ideas-search-input"
-          placeholder="Escribe un tema: ventas, reels, bienestar, organización..."
+          placeholder="Escribe un tema: ventas, reels, bienestar, organizaciÃ³n..."
           value={keyword}
           onChange={e => setKeyword(e.target.value)}
           onKeyDown={e => e.key === "Enter" && generar()}
@@ -809,16 +809,16 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
           onClick={() => callGemini ? generarConIA() : generar()}
           disabled={!keyword.trim() || thinking || aiLoading}
         >
-          {(thinking || aiLoading) ? "Generando..." : callGemini ? "Generar ✨" : "Generar ✦"}
+          {(thinking || aiLoading) ? "Generando..." : callGemini ? "Generar âœ¨" : "Generar âœ¦"}
         </button>
       </div>
       {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
 
       {!ideas && !thinking && !aiLoading && (
         <div className="ideas-empty">
-          <div className="ideas-brain-glow">🧠</div>
-          <h3>¿Sobre qué quieres crear contenido?</h3>
-          <p>Escribe un tema y te genero ideas organizadas por formato — verticales, horizontales, carruseles y stories.</p>
+          <div className="ideas-brain-glow">ðŸ§ </div>
+          <h3>Â¿Sobre quÃ© quieres crear contenido?</h3>
+          <p>Escribe un tema y te genero ideas organizadas por formato â€” verticales, horizontales, carruseles y stories.</p>
           <div className="ideas-chips">
             {EJEMPLOS.map(ej => (
               <button key={ej} className="ideas-chip" onClick={() => { setKeyword(ej); generar(ej); }}>{ej}</button>
@@ -849,7 +849,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
               {ideas.isAI && <span className="studio-ai-badge">&#x2728; Generado con IA</span>}
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
-              <button className={`ideas-regen-btn${callGemini ? " studio-ai-regen-btn" : ""}`} onClick={() => callGemini ? generarConIA(ideas.keyword) : generar(ideas.keyword)}>🔄 Nuevas ideas {callGemini ? "✨" : ""}</button>
+              <button className={`ideas-regen-btn${callGemini ? " studio-ai-regen-btn" : ""}`} onClick={() => callGemini ? generarConIA(ideas.keyword) : generar(ideas.keyword)}>ðŸ”„ Nuevas ideas {callGemini ? "âœ¨" : ""}</button>
             </div>
           </div>
           {Object.entries(CATS).map(([catKey, cat]) => (
@@ -859,7 +859,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
                   <span className="ideas-cat-label">{cat.label}</span>
                   <span className="ideas-cat-sub">{cat.sub}</span>
                 </div>
-                <button className="ideas-mas-btn" onClick={() => masIdeas(catKey)}>+ Más ideas</button>
+                <button className="ideas-mas-btn" onClick={() => masIdeas(catKey)}>+ MÃ¡s ideas</button>
               </div>
               <div className="ideas-cards-grid">
                 {ideas[catKey].map((idea, i) => (
@@ -867,7 +867,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
                     <p className="ideas-card-text">{idea.texto}</p>
                     <div className="ideas-card-actions">
                       <button className="ideas-card-copy" onClick={() => copiar(idea.texto, idea.id)}>
-                        {copiado === idea.id ? "✓ Copiado" : "Copiar"}
+                        {copiado === idea.id ? "âœ“ Copiado" : "Copiar"}
                       </button>
                       <button className="ideas-card-save" onClick={() => onSave("ideas", {
                         id: Date.now(), titulo: idea.texto, tipo: cat.label,
@@ -876,10 +876,10 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
                       })}>Guardar</button>
                       {catKey === "digital" ? (
                         <button className="ideas-card-plan" onClick={() => setVistaBlueprint({ tipo: detectProductType(idea.texto), keyword: ideas.keyword, idea: idea.texto })}>
-                          Ver plan →
+                          Ver plan â†’
                         </button>
                       ) : (
-                        <button className="ideas-card-guion" onClick={() => onCrearGuion?.(idea.texto)}>Guión 🎬</button>
+                        <button className="ideas-card-guion" onClick={() => onCrearGuion?.(idea.texto)}>GuiÃ³n ðŸŽ¬</button>
                       )}
                     </div>
                   </div>
@@ -899,13 +899,13 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
                 <span className="studio-tipo-badge" style={{ background: idea.color || "#8B6565" }}>{idea.tipo}</span>
                 <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
                   <small>{idea.fecha}</small>
-                  <button className="studio-delete-btn" onClick={() => onDelete("ideas", idea.id)}>✕</button>
+                  <button className="studio-delete-btn" onClick={() => onDelete("ideas", idea.id)}>âœ•</button>
                 </div>
               </div>
               <p className="studio-idea-titulo">{idea.titulo}</p>
               <div className="studio-bank-actions">
                 <button className="studio-bank-action-copy" onClick={() => copiar(idea.titulo, `bank-${idea.id}`)}>
-                  {copiado === `bank-${idea.id}` ? "¡Copiado!" : "Copiar"}
+                  {copiado === `bank-${idea.id}` ? "Â¡Copiado!" : "Copiar"}
                 </button>
               </div>
             </div>
@@ -916,7 +916,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
   );
 }
 
-// ── LEAD MAGNET ────────────────────────────────────────────────
+// â”€â”€ LEAD MAGNET â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
   const [view, setView]         = useState("inicio");
   const [keyword, setKeyword]   = useState(brandProfile.queOfreces || "");
@@ -933,60 +933,60 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
 
   const LM_CATS = {
     guia: {
-      label: "📄 Guía / Ebook", sub: "PDF descargable · Evergreen",
+      label: "ðŸ“„ GuÃ­a / Ebook", sub: "PDF descargable Â· Evergreen",
       color: "#C4526A", bg: "#FFF0F3",
       templates: [
-        k => `La guía definitiva de ${k} para mamás emprendedoras`,
+        k => `La guÃ­a definitiva de ${k} para mamÃ¡s emprendedoras`,
         k => `${k}: los 5 pasos que nadie te ha explicado`,
-        k => `De cero a resultados con ${k} — guía paso a paso`,
+        k => `De cero a resultados con ${k} â€” guÃ­a paso a paso`,
         k => `Todo lo que necesitas sobre ${k} en un solo lugar`,
-        k => `El método de ${k} para empezar desde hoy`,
-        k => `${k} sin complicarte: guía express de 10 minutos`,
-        k => `Las 7 claves de ${k} que cambiarán tu negocio`,
-        k => `Mini guía: cómo aplicar ${k} esta misma semana`,
+        k => `El mÃ©todo de ${k} para empezar desde hoy`,
+        k => `${k} sin complicarte: guÃ­a express de 10 minutos`,
+        k => `Las 7 claves de ${k} que cambiarÃ¡n tu negocio`,
+        k => `Mini guÃ­a: cÃ³mo aplicar ${k} esta misma semana`,
         k => `${k} para principiantes: empieza sin experiencia`,
       ],
     },
     checklist: {
-      label: "✅ Checklist / Plantilla", sub: "Listo para usar · Imprimible",
+      label: "âœ… Checklist / Plantilla", sub: "Listo para usar Â· Imprimible",
       color: "#27AE60", bg: "#EEFAF3",
       templates: [
         k => `Checklist: todo lo que necesitas para dominar ${k}`,
         k => `Plantilla lista: organiza tu ${k} paso a paso`,
         k => `El checklist de ${k} que uso con mis clientas`,
-        k => `Lista de verificación: ¿estás lista para ${k}?`,
+        k => `Lista de verificaciÃ³n: Â¿estÃ¡s lista para ${k}?`,
         k => `Plantilla gratuita: planifica tu ${k} en minutos`,
-        k => `El checklist esencial de ${k} — descárgalo gratis`,
+        k => `El checklist esencial de ${k} â€” descÃ¡rgalo gratis`,
         k => `Hoja de trabajo: domina ${k} en 7 acciones concretas`,
         k => `${k}: la plantilla que te ahorra horas cada semana`,
       ],
     },
     clase: {
-      label: "🎓 Mini-clase / Webinar", sub: "Video · Audio · Live",
+      label: "ðŸŽ“ Mini-clase / Webinar", sub: "Video Â· Audio Â· Live",
       color: "#4A90D9", bg: "#EEF5FF",
       templates: [
-        k => `Mini-clase gratuita: el método de ${k} que funciona`,
-        k => `Masterclass: domina ${k} sin años de experiencia`,
-        k => `Clase exprés de ${k} en 20 minutos`,
+        k => `Mini-clase gratuita: el mÃ©todo de ${k} que funciona`,
+        k => `Masterclass: domina ${k} sin aÃ±os de experiencia`,
+        k => `Clase exprÃ©s de ${k} en 20 minutos`,
         k => `Taller virtual: implementa ${k} esta semana`,
-        k => `El webinar de ${k}: tu primera victoria rápida`,
-        k => `Live gratuito: ${k} para mamás que empiezan desde cero`,
+        k => `El webinar de ${k}: tu primera victoria rÃ¡pida`,
+        k => `Live gratuito: ${k} para mamÃ¡s que empiezan desde cero`,
         k => `Video privado: mi proceso completo de ${k}`,
-        k => `Capacitación express: ${k} en una sola sesión`,
+        k => `CapacitaciÃ³n express: ${k} en una sola sesiÃ³n`,
       ],
     },
     reto: {
-      label: "🔥 Reto / Challenge", sub: "3-7 días de acción",
+      label: "ðŸ”¥ Reto / Challenge", sub: "3-7 dÃ­as de acciÃ³n",
       color: "#E8755A", bg: "#FFF5F0",
       templates: [
-        k => `Reto de 5 días: transforma tu ${k} con una acción diaria`,
-        k => `Challenge gratuito: ${k} en 7 días`,
-        k => `El reto de ${k} que cambiará tu negocio esta semana`,
-        k => `3 días para dominar ${k} — únete gratis`,
+        k => `Reto de 5 dÃ­as: transforma tu ${k} con una acciÃ³n diaria`,
+        k => `Challenge gratuito: ${k} en 7 dÃ­as`,
+        k => `El reto de ${k} que cambiarÃ¡ tu negocio esta semana`,
+        k => `3 dÃ­as para dominar ${k} â€” Ãºnete gratis`,
         k => `Reto express: tu primera victoria con ${k}`,
-        k => `Challenge de ${k}: una acción diaria durante 5 días`,
+        k => `Challenge de ${k}: una acciÃ³n diaria durante 5 dÃ­as`,
         k => `El reto de ${k} que mis clientas llaman transformador`,
-        k => `Mini reto de ${k}: empieza hoy, ve resultados en 3 días`,
+        k => `Mini reto de ${k}: empieza hoy, ve resultados en 3 dÃ­as`,
       ],
     },
   };
@@ -1022,61 +1022,61 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
   };
 
   const TIPO_OPTIONS = [
-    { key: "guia",      emoji: "📄", label: "Guía / Ebook",         desc: "PDF descargable" },
-    { key: "checklist", emoji: "✅", label: "Checklist / Plantilla", desc: "Lista de acciones" },
-    { key: "clase",     emoji: "🎓", label: "Mini-clase / Webinar",  desc: "Video + guión" },
-    { key: "reto",      emoji: "🔥", label: "Reto / Challenge",      desc: "3-7 días" },
+    { key: "guia",      emoji: "ðŸ“„", label: "GuÃ­a / Ebook",         desc: "PDF descargable" },
+    { key: "checklist", emoji: "âœ…", label: "Checklist / Plantilla", desc: "Lista de acciones" },
+    { key: "clase",     emoji: "ðŸŽ“", label: "Mini-clase / Webinar",  desc: "Video + guiÃ³n" },
+    { key: "reto",      emoji: "ðŸ”¥", label: "Reto / Challenge",      desc: "3-7 dÃ­as" },
   ];
 
   const SECCIONES_META = {
-    guia:      { label: "Secciones del documento",  add: "+ Agregar sección", ph: (i) => `Sección ${i+1}: ej. "Cómo organizarte antes de vender"` },
-    checklist: { label: "Ítems del checklist",       add: "+ Agregar ítem",    ph: (i) => `Ítem ${i+1}: ej. "Identificar a tu clienta ideal"` },
-    clase:     { label: "Módulos de la clase",       add: "+ Agregar módulo",  ph: (i) => `Módulo ${i+1}: ej. "Cómo encontrar tu primera clienta"` },
-    reto:      { label: "Días / acciones del reto",  add: "+ Agregar día",     ph: (i) => `Día ${i+1}: ej. "Define tu oferta principal"` },
+    guia:      { label: "Secciones del documento",  add: "+ Agregar secciÃ³n", ph: (i) => `SecciÃ³n ${i+1}: ej. "CÃ³mo organizarte antes de vender"` },
+    checklist: { label: "Ãtems del checklist",       add: "+ Agregar Ã­tem",    ph: (i) => `Ãtem ${i+1}: ej. "Identificar a tu clienta ideal"` },
+    clase:     { label: "MÃ³dulos de la clase",       add: "+ Agregar mÃ³dulo",  ph: (i) => `MÃ³dulo ${i+1}: ej. "CÃ³mo encontrar tu primera clienta"` },
+    reto:      { label: "DÃ­as / acciones del reto",  add: "+ Agregar dÃ­a",     ph: (i) => `DÃ­a ${i+1}: ej. "Define tu oferta principal"` },
   };
 
-  const TIPO_LABELS  = { guia: "📄 Guía",       checklist: "✅ Checklist", clase: "🎓 Mini-clase", reto: "🔥 Reto" };
+  const TIPO_LABELS  = { guia: "ðŸ“„ GuÃ­a",       checklist: "âœ… Checklist", clase: "ðŸŽ“ Mini-clase", reto: "ðŸ”¥ Reto" };
   const TIPO_COLORS  = { guia: "#C4526A",        checklist: "#27AE60",     clase: "#4A90D9",       reto: "#E8755A" };
 
   const buildDoc = () => {
     const { tipo, titulo, promesa, audiencia, secciones, cta, producto } = form;
-    const aud    = audiencia || "mamás emprendedoras";
+    const aud    = audiencia || "mamÃ¡s emprendedoras";
     const prod   = producto  || "mi programa / servicio";
-    const ctaTxt = cta       || `Conoce ${prod} →`;
+    const ctaTxt = cta       || `Conoce ${prod} â†’`;
     const secc   = secciones.filter(s => s.trim());
 
     let estructura = [];
     if (tipo === "guia") {
       estructura = [
-        { tipo: "intro", label: "✦ Introducción", content: `Hola! Soy [tu nombre] y creé esta guía especialmente para ti.\n\nSi eres ${aud}, sé exactamente el reto que estás viviendo. Esta guía es tu punto de partida.\n\nAl terminar, vas a ${promesa || "tener claridad y pasos concretos para avanzar"}.` },
-        ...(secc.length > 0 ? secc : ["Sección 1", "Sección 2", "Sección 3"]).map((s, i) => ({
-          tipo: "seccion", label: `Sección ${i+1}: ${s}`,
-          content: "[Desarrolla aquí el contenido — 3-5 párrafos con ejemplos concretos y pasos accionables]",
+        { tipo: "intro", label: "âœ¦ IntroducciÃ³n", content: `Hola! Soy [tu nombre] y creÃ© esta guÃ­a especialmente para ti.\n\nSi eres ${aud}, sÃ© exactamente el reto que estÃ¡s viviendo. Esta guÃ­a es tu punto de partida.\n\nAl terminar, vas a ${promesa || "tener claridad y pasos concretos para avanzar"}.` },
+        ...(secc.length > 0 ? secc : ["SecciÃ³n 1", "SecciÃ³n 2", "SecciÃ³n 3"]).map((s, i) => ({
+          tipo: "seccion", label: `SecciÃ³n ${i+1}: ${s}`,
+          content: "[Desarrolla aquÃ­ el contenido â€” 3-5 pÃ¡rrafos con ejemplos concretos y pasos accionables]",
         })),
-        { tipo: "cta", label: "🎁 ¿Lista para el siguiente nivel?", content: `Esta guía es solo el principio.\n\nCuando estés lista para ir más lejos, ${prod} fue diseñado exactamente para ti.\n\n👉 ${ctaTxt}` },
+        { tipo: "cta", label: "ðŸŽ Â¿Lista para el siguiente nivel?", content: `Esta guÃ­a es solo el principio.\n\nCuando estÃ©s lista para ir mÃ¡s lejos, ${prod} fue diseÃ±ado exactamente para ti.\n\nðŸ‘‰ ${ctaTxt}` },
       ];
     } else if (tipo === "checklist") {
-      const items = secc.length > 0 ? secc : ["Paso 1: [Describe la acción]","Paso 2: [Describe la acción]","Paso 3: [Describe la acción]","Paso 4: [Describe la acción]","Paso 5: [Describe la acción]"];
+      const items = secc.length > 0 ? secc : ["Paso 1: [Describe la acciÃ³n]","Paso 2: [Describe la acciÃ³n]","Paso 3: [Describe la acciÃ³n]","Paso 4: [Describe la acciÃ³n]","Paso 5: [Describe la acciÃ³n]"];
       estructura = [
-        { tipo: "intro", label: "Para qué es este checklist", content: `Para ${aud} que quieren ${promesa || "avanzar con claridad y sin pasos perdidos"}.` },
+        { tipo: "intro", label: "Para quÃ© es este checklist", content: `Para ${aud} que quieren ${promesa || "avanzar con claridad y sin pasos perdidos"}.` },
         { tipo: "checklist-items", label: "Tu lista de acciones", items },
-        { tipo: "cta", label: "🎁 ¿Completaste el checklist?", content: `¡Eso significa que estás lista para el siguiente paso!\n\n👉 ${ctaTxt}` },
+        { tipo: "cta", label: "ðŸŽ Â¿Completaste el checklist?", content: `Â¡Eso significa que estÃ¡s lista para el siguiente paso!\n\nðŸ‘‰ ${ctaTxt}` },
       ];
     } else if (tipo === "clase") {
       estructura = [
-        { tipo: "guion-parte", label: "🎬 BIENVENIDA (2-3 min)", content: `"¡Hola! Soy [tu nombre] y bienvenida a esta mini-clase.\n\nHoy vamos a aprender: ${titulo}.\n\nAl terminar, vas a ${promesa || "tener una acción clara para implementar hoy"}."\n\n[Preséntate brevemente: quién eres y a quién ayudas]` },
-        ...(secc.length > 0 ? secc : ["Módulo 1","Módulo 2","Módulo 3"]).map((s, i) => ({
-          tipo: "guion-parte", label: `📖 MÓDULO ${i+1}: ${s}`,
-          content: `"[Desarrolla el contenido de este módulo]\n\n[Incluye 1 ejemplo concreto o historia]\n\n[Da 1 acción práctica que puedan tomar ahora mismo]"`,
+        { tipo: "guion-parte", label: "ðŸŽ¬ BIENVENIDA (2-3 min)", content: `"Â¡Hola! Soy [tu nombre] y bienvenida a esta mini-clase.\n\nHoy vamos a aprender: ${titulo}.\n\nAl terminar, vas a ${promesa || "tener una acciÃ³n clara para implementar hoy"}."\n\n[PresÃ©ntate brevemente: quiÃ©n eres y a quiÃ©n ayudas]` },
+        ...(secc.length > 0 ? secc : ["MÃ³dulo 1","MÃ³dulo 2","MÃ³dulo 3"]).map((s, i) => ({
+          tipo: "guion-parte", label: `ðŸ“– MÃ“DULO ${i+1}: ${s}`,
+          content: `"[Desarrolla el contenido de este mÃ³dulo]\n\n[Incluye 1 ejemplo concreto o historia]\n\n[Da 1 acciÃ³n prÃ¡ctica que puedan tomar ahora mismo]"`,
         })),
-        { tipo: "guion-parte", label: "🚀 CIERRE + CTA (3-5 min)", content: `"Hemos llegado al final y ya tienes [resume lo aprendido].\n\nSi esto te fue útil y quieres ir más lejos, ${prod} fue creado para ti.\n\n${ctaTxt}\n\n¡Gracias por estar aquí! 💌"` },
+        { tipo: "guion-parte", label: "ðŸš€ CIERRE + CTA (3-5 min)", content: `"Hemos llegado al final y ya tienes [resume lo aprendido].\n\nSi esto te fue Ãºtil y quieres ir mÃ¡s lejos, ${prod} fue creado para ti.\n\n${ctaTxt}\n\nÂ¡Gracias por estar aquÃ­! ðŸ’Œ"` },
       ];
     } else if (tipo === "reto") {
-      const dias = secc.length > 0 ? secc : ["Día 1: Claridad","Día 2: Acción","Día 3: Revisión","Día 4: Profundidad","Día 5: Celebración"];
+      const dias = secc.length > 0 ? secc : ["DÃ­a 1: Claridad","DÃ­a 2: AcciÃ³n","DÃ­a 3: RevisiÃ³n","DÃ­a 4: Profundidad","DÃ­a 5: CelebraciÃ³n"];
       estructura = [
-        { tipo: "intro", label: "✦ Bienvenida al Reto", content: `¡Hola! Soy [tu nombre] y diseñé este reto para ${aud}.\n\nDurante los próximos días, vas a ${promesa || "avanzar con una acción pequeña cada día"}.\n\nReglas simples: un día a la vez, una acción a la vez. ¡Tú puedes!` },
-        { tipo: "reto-dias", label: "Tus días de acción", dias },
-        { tipo: "cta", label: "🎁 ¡Completaste el reto!", content: `¡Felicidades! Eso dice mucho de ti.\n\nAhora imagina lo que puedes lograr con acompañamiento real.\n\n👉 ${ctaTxt}` },
+        { tipo: "intro", label: "âœ¦ Bienvenida al Reto", content: `Â¡Hola! Soy [tu nombre] y diseÃ±Ã© este reto para ${aud}.\n\nDurante los prÃ³ximos dÃ­as, vas a ${promesa || "avanzar con una acciÃ³n pequeÃ±a cada dÃ­a"}.\n\nReglas simples: un dÃ­a a la vez, una acciÃ³n a la vez. Â¡TÃº puedes!` },
+        { tipo: "reto-dias", label: "Tus dÃ­as de acciÃ³n", dias },
+        { tipo: "cta", label: "ðŸŽ Â¡Completaste el reto!", content: `Â¡Felicidades! Eso dice mucho de ti.\n\nAhora imagina lo que puedes lograr con acompaÃ±amiento real.\n\nðŸ‘‰ ${ctaTxt}` },
       ];
     }
     return { tipo, titulo, promesa, audiencia: aud, estructura };
@@ -1096,13 +1096,13 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
       body += `<h2 style="color:#C4526A;font-family:Arial,sans-serif;border-bottom:2px solid #f5d0d8;padding-bottom:6px;margin-top:32px;">${parte.label}</h2>`;
       if (parte.tipo === "checklist-items") {
         parte.items.forEach(item => {
-          body += `<p style="font-family:Arial,sans-serif;margin:8px 0;font-size:14px;">☐ &nbsp;${item}</p>`;
+          body += `<p style="font-family:Arial,sans-serif;margin:8px 0;font-size:14px;">â˜ &nbsp;${item}</p>`;
         });
       } else if (parte.tipo === "reto-dias") {
         parte.dias.forEach((dia, i) => {
           body += `<div style="border:1px solid #f0d0d8;border-radius:8px;padding:12px 16px;margin:10px 0;">`;
-          body += `<p style="font-family:Arial,sans-serif;margin:0 0 6px;font-weight:bold;color:#2D1B1B;">Día ${i+1}: ${dia}</p>`;
-          body += `<p style="font-family:Arial,sans-serif;margin:0;color:#9A7878;font-size:13px;">Acción de hoy: _______________________________________</p>`;
+          body += `<p style="font-family:Arial,sans-serif;margin:0 0 6px;font-weight:bold;color:#2D1B1B;">DÃ­a ${i+1}: ${dia}</p>`;
+          body += `<p style="font-family:Arial,sans-serif;margin:0;color:#9A7878;font-size:13px;">AcciÃ³n de hoy: _______________________________________</p>`;
           body += `</div>`;
         });
       } else if (parte.content) {
@@ -1115,21 +1115,21 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
 
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>${titulo}</title></head><body style="margin:0;padding:0;font-family:Arial,sans-serif;">
 <div style="background:linear-gradient(135deg,#C4526A,#E8755A);padding:36px 40px;color:white;">
-  <p style="font-size:11px;color:rgba(255,255,255,0.65);margin:0 0 10px;letter-spacing:1px;text-transform:uppercase;">Mamá CEO · Studio de Contenido</p>
+  <p style="font-size:11px;color:rgba(255,255,255,0.65);margin:0 0 10px;letter-spacing:1px;text-transform:uppercase;">MamÃ¡ CEO Â· Studio de Contenido</p>
   <h1 style="color:white;margin:0 0 12px;font-size:28px;line-height:1.2;">${titulo}</h1>
   ${promesa ? `<p style="color:rgba(255,255,255,0.85);font-style:italic;margin:0 0 8px;font-size:15px;">"${promesa}"</p>` : ""}
   ${audiencia ? `<p style="color:rgba(255,255,255,0.7);font-size:12px;margin:0;">Para: ${audiencia}</p>` : ""}
 </div>
 <div style="max-width:700px;margin:0 auto;padding:32px 40px;">${body}</div>
 <div style="border-top:1px solid #f0d0d8;padding:16px 40px;text-align:center;">
-  <p style="font-size:11px;color:#ccc;font-family:Arial,sans-serif;">Creado con Studio de Contenido · Mamá CEO App</p>
+  <p style="font-size:11px;color:#ccc;font-family:Arial,sans-serif;">Creado con Studio de Contenido Â· MamÃ¡ CEO App</p>
 </div></body></html>`;
 
     const blob = new Blob([html], { type: "application/msword" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
     a.href     = url;
-    a.download = `${titulo.replace(/[^\w\sáéíóúñÁÉÍÓÚÑ]/g, "").trim()}.doc`;
+    a.download = `${titulo.replace(/[^\w\sÃ¡Ã©Ã­Ã³ÃºÃ±ÃÃ‰ÃÃ“ÃšÃ‘]/g, "").trim()}.doc`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1139,36 +1139,36 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
   return (
     <div className="studio-tab-content">
 
-      {/* ── INICIO ─────────────────────────────────── */}
+      {/* â”€â”€ INICIO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {view === "inicio" && (
         <div className="lm-landing">
           <div className="mpm-landing-header">
-            <div className="mpm-landing-badge">🎁</div>
+            <div className="mpm-landing-badge">ðŸŽ</div>
             <h2 className="mpm-landing-title">Lead Magnet</h2>
-            <p className="mpm-landing-sub">Tu regalo de bienvenida para personas que aún no te conocen bien — la puerta de entrada a tu mundo.</p>
+            <p className="mpm-landing-sub">Tu regalo de bienvenida para personas que aÃºn no te conocen bien â€” la puerta de entrada a tu mundo.</p>
           </div>
 
           <div className="lm-purpose-strip">
             <div className="lm-purpose-item">
               <span className="lm-purpose-num">1</span>
               <div>
-                <strong>Primera victoria rápida</strong>
-                <p>Resuelve un problema pequeño y concreto que tu clienta tiene ahora mismo.</p>
+                <strong>Primera victoria rÃ¡pida</strong>
+                <p>Resuelve un problema pequeÃ±o y concreto que tu clienta tiene ahora mismo.</p>
               </div>
             </div>
-            <div className="lm-purpose-arrow">→</div>
+            <div className="lm-purpose-arrow">â†’</div>
             <div className="lm-purpose-item">
               <span className="lm-purpose-num">2</span>
               <div>
                 <strong>Genera confianza</strong>
-                <p>Ella experimenta tu estilo y tu forma de enseñar. Te empieza a conocer.</p>
+                <p>Ella experimenta tu estilo y tu forma de enseÃ±ar. Te empieza a conocer.</p>
               </div>
             </div>
-            <div className="lm-purpose-arrow">→</div>
+            <div className="lm-purpose-arrow">â†’</div>
             <div className="lm-purpose-item lm-purpose-item--highlight">
               <span className="lm-purpose-num lm-purpose-num--highlight">3</span>
               <div>
-                <strong>CTA a tu producto ✦</strong>
+                <strong>CTA a tu producto âœ¦</strong>
                 <p>Siempre termina invitando a tu servicio o programa de pago.</p>
               </div>
             </div>
@@ -1177,32 +1177,32 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
           <div className="mpm-cards-row">
             <button className="mpm-card" onClick={() => setView("generar")}>
               <div className="mpm-card-top">
-                <span className="mpm-card-emoji">💡</span>
+                <span className="mpm-card-emoji">ðŸ’¡</span>
                 <span className="mpm-card-tag">Explorar</span>
               </div>
               <strong className="mpm-card-name">Generar ideas</strong>
-              <p className="mpm-card-desc">Escribe un tema y te doy ideas de lead magnets: guías, checklists, mini-clases y retos</p>
-              <span className="mpm-card-link">Explorar ideas →</span>
+              <p className="mpm-card-desc">Escribe un tema y te doy ideas de lead magnets: guÃ­as, checklists, mini-clases y retos</p>
+              <span className="mpm-card-link">Explorar ideas â†’</span>
             </button>
             <button className="mpm-card mpm-card--highlight" onClick={() => setView("crear")}>
               <div className="mpm-card-top">
-                <span className="mpm-card-badge-ico">🎁</span>
+                <span className="mpm-card-badge-ico">ðŸŽ</span>
                 <span className="mpm-card-tag mpm-card-tag--primary">Crear</span>
               </div>
               <strong className="mpm-card-name">Crear mi lead magnet</strong>
-              <p className="mpm-card-desc">Ya tengo idea — quiero crear el documento o guión de clase listo para exportar como PDF</p>
-              <span className="mpm-card-link mpm-card-link--primary">Empezar →</span>
+              <p className="mpm-card-desc">Ya tengo idea â€” quiero crear el documento o guiÃ³n de clase listo para exportar como PDF</p>
+              <span className="mpm-card-link mpm-card-link--primary">Empezar â†’</span>
             </button>
           </div>
 
           {savedIdeas.length > 0 && (
             <div className="lm-inspiracion">
-              <p className="lm-inspi-label">💡 Generar ideas desde tus contenidos guardados:</p>
+              <p className="lm-inspi-label">ðŸ’¡ Generar ideas desde tus contenidos guardados:</p>
               <div className="lm-inspi-chips">
                 {savedIdeas.map(idea => (
                   <button key={idea.id} className="lm-inspi-chip"
                     onClick={() => { const kw = idea.titulo.slice(0, 45); setKeyword(kw); generar(kw); setView("generar"); }}>
-                    {idea.titulo.length > 48 ? idea.titulo.slice(0, 48) + "…" : idea.titulo}
+                    {idea.titulo.length > 48 ? idea.titulo.slice(0, 48) + "â€¦" : idea.titulo}
                   </button>
                 ))}
               </div>
@@ -1211,35 +1211,35 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
         </div>
       )}
 
-      {/* ── GENERAR ─────────────────────────────────── */}
+      {/* â”€â”€ GENERAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {view === "generar" && (
         <div>
           <div className="lm-gen-topbar">
-            <button className="mpm-wizard-back-btn" onClick={() => setView("inicio")}>← Inicio</button>
+            <button className="mpm-wizard-back-btn" onClick={() => setView("inicio")}>â† Inicio</button>
           </div>
 
           <div className="ideas-search-bar">
-            <span className="ideas-search-icon">🎁</span>
+            <span className="ideas-search-icon">ðŸŽ</span>
             <input
               className="ideas-search-input"
-              placeholder="¿Sobre qué tema será tu lead magnet? ventas, organización, bienestar..."
+              placeholder="Â¿Sobre quÃ© tema serÃ¡ tu lead magnet? ventas, organizaciÃ³n, bienestar..."
               value={keyword}
               onChange={e => setKeyword(e.target.value)}
               onKeyDown={e => e.key === "Enter" && generar()}
             />
             <button className="ideas-search-btn" onClick={() => generar()} disabled={!keyword.trim() || thinking}>
-              Generar ideas ✦
+              Generar ideas âœ¦
             </button>
           </div>
 
           {savedIdeas.length > 0 && !lmIdeas && !thinking && (
             <div className="lm-inspiracion" style={{marginBottom:"24px"}}>
-              <p className="lm-inspi-label">💡 Desde tus ideas guardadas:</p>
+              <p className="lm-inspi-label">ðŸ’¡ Desde tus ideas guardadas:</p>
               <div className="lm-inspi-chips">
                 {savedIdeas.map(idea => (
                   <button key={idea.id} className="lm-inspi-chip"
                     onClick={() => { const kw = idea.titulo.slice(0, 45); setKeyword(kw); generar(kw); }}>
-                    {idea.titulo.length > 45 ? idea.titulo.slice(0, 45) + "…" : idea.titulo}
+                    {idea.titulo.length > 45 ? idea.titulo.slice(0, 45) + "â€¦" : idea.titulo}
                   </button>
                 ))}
               </div>
@@ -1248,11 +1248,11 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
 
           {!lmIdeas && !thinking && (
             <div className="ideas-empty">
-              <div className="ideas-brain-glow">🎁</div>
-              <h3>¿Sobre qué quieres crear tu lead magnet?</h3>
-              <p>Escribe un tema y te genero ideas organizadas por tipo: guías, checklists, mini-clases y retos de acción.</p>
+              <div className="ideas-brain-glow">ðŸŽ</div>
+              <h3>Â¿Sobre quÃ© quieres crear tu lead magnet?</h3>
+              <p>Escribe un tema y te genero ideas organizadas por tipo: guÃ­as, checklists, mini-clases y retos de acciÃ³n.</p>
               <div className="ideas-chips">
-                {["ventas en WhatsApp","organizar el tiempo","conseguir clientas","marketing de contenido","bienestar para mamás"].map(ej => (
+                {["ventas en WhatsApp","organizar el tiempo","conseguir clientas","marketing de contenido","bienestar para mamÃ¡s"].map(ej => (
                   <button key={ej} className="ideas-chip" onClick={() => { setKeyword(ej); generar(ej); }}>{ej}</button>
                 ))}
               </div>
@@ -1262,8 +1262,8 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
           {thinking && (
             <div className="ideas-thinking">
               <div className="ideas-orbit-container">
-                <div className="ideas-brain-orbit">🎁</div>
-                {["📄","✅","🎓","🔥","💡","✨"].map((s, i) => (
+                <div className="ideas-brain-orbit">ðŸŽ</div>
+                {["ðŸ“„","âœ…","ðŸŽ“","ðŸ”¥","ðŸ’¡","âœ¨"].map((s, i) => (
                   <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`}>{s}</div>
                 ))}
               </div>
@@ -1278,7 +1278,7 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
                   <span className="ideas-kw-label">Ideas para </span>
                   <strong className="ideas-kw-value">"{lmIdeas.keyword}"</strong>
                 </div>
-                <button className="ideas-regen-btn" onClick={() => generar(lmIdeas.keyword)}>🔄 Nuevas ideas</button>
+                <button className="ideas-regen-btn" onClick={() => generar(lmIdeas.keyword)}>ðŸ”„ Nuevas ideas</button>
               </div>
               {Object.entries(LM_CATS).map(([catKey, cat]) => (
                 <div className="ideas-cat-section" key={catKey} style={{ "--cat-color": cat.color, "--cat-bg": cat.bg }}>
@@ -1287,7 +1287,7 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
                       <span className="ideas-cat-label">{cat.label}</span>
                       <span className="ideas-cat-sub">{cat.sub}</span>
                     </div>
-                    <button className="ideas-mas-btn" onClick={() => masIdeasLm(catKey)}>+ Más ideas</button>
+                    <button className="ideas-mas-btn" onClick={() => masIdeasLm(catKey)}>+ MÃ¡s ideas</button>
                   </div>
                   <div className="ideas-cards-grid">
                     {lmIdeas[catKey].map((idea, i) => (
@@ -1295,10 +1295,10 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
                         <p className="ideas-card-text">{idea.texto}</p>
                         <div className="ideas-card-actions">
                           <button className="ideas-card-copy" onClick={() => copiar(idea.texto, idea.id)}>
-                            {copiado === idea.id ? "✓ Copiado" : "Copiar"}
+                            {copiado === idea.id ? "âœ“ Copiado" : "Copiar"}
                           </button>
                           <button className="ideas-card-guion lm-usar-btn" onClick={() => usarIdea(idea)}>
-                            Crear este 🎁
+                            Crear este ðŸŽ
                           </button>
                         </div>
                       </div>
@@ -1311,18 +1311,18 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
         </div>
       )}
 
-      {/* ── CREAR ───────────────────────────────────── */}
+      {/* â”€â”€ CREAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {view === "crear" && (
         <div className="lm-crear-wrap">
           <div className="desc-header">
-            <button className="mpm-wizard-back-btn" onClick={() => setView("inicio")}>← Inicio</button>
+            <button className="mpm-wizard-back-btn" onClick={() => setView("inicio")}>â† Inicio</button>
             <h2 className="desc-title">Crea tu Lead Magnet</h2>
-            <p className="desc-subtitle">La promesa lo vende — el contenido lo cumple. Define primero qué victoria rápida le vas a dar a tu clienta.</p>
+            <p className="desc-subtitle">La promesa lo vende â€” el contenido lo cumple. Define primero quÃ© victoria rÃ¡pida le vas a dar a tu clienta.</p>
           </div>
 
           <div className="lm-crear-form">
             <div className="lm-crear-section">
-              <label className="lm-crear-label">¿Qué tipo de lead magnet vas a crear?</label>
+              <label className="lm-crear-label">Â¿QuÃ© tipo de lead magnet vas a crear?</label>
               <div className="lm-tipo-pills">
                 {TIPO_OPTIONS.map(t => (
                   <button key={t.key} className={`lm-tipo-pill${form.tipo === t.key ? " active" : ""}`}
@@ -1337,11 +1337,11 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
 
             <div className="lm-crear-grid">
               {[
-                { num:"01", emoji:"✏️", label:"Título de tu lead magnet",          field:"titulo",    ph:"Las 5 claves para vender sin sentirte pesada",                      hint:"Claro, específico y con la victoria que promete" },
-                { num:"02", emoji:"🎯", label:"¿Qué victoria rápida les das?",      field:"promesa",   ph:"Aprenderán a vender con confianza sin presionar",                   hint:"Lo que podrán hacer o sentir al terminar" },
-                { num:"03", emoji:"👩‍💼", label:"¿Para quién es?",                  field:"audiencia", ph:"Mamás que venden desde casa y odian el rechazo",                    hint:"Mientras más específico, más se identifica tu clienta ideal" },
-                { num:"04", emoji:"🚀", label:"¿A qué producto lleva el CTA final?",field:"producto",  ph:"Mi mentoría CEO en Casa / Mi programa de ventas",                   hint:"El lead magnet siempre lleva a tu producto de pago" },
-                { num:"05", emoji:"💌", label:"¿Cuál es el CTA exacto?",            field:"cta",       ph:"Agenda una llamada gratuita / Conoce mi programa en [link]",         hint:"Texto exacto que aparecerá al final del documento" },
+                { num:"01", emoji:"âœï¸", label:"TÃ­tulo de tu lead magnet",          field:"titulo",    ph:"Las 5 claves para vender sin sentirte pesada",                      hint:"Claro, especÃ­fico y con la victoria que promete" },
+                { num:"02", emoji:"ðŸŽ¯", label:"Â¿QuÃ© victoria rÃ¡pida les das?",      field:"promesa",   ph:"AprenderÃ¡n a vender con confianza sin presionar",                   hint:"Lo que podrÃ¡n hacer o sentir al terminar" },
+                { num:"03", emoji:"ðŸ‘©â€ðŸ’¼", label:"Â¿Para quiÃ©n es?",                  field:"audiencia", ph:"MamÃ¡s que venden desde casa y odian el rechazo",                    hint:"Mientras mÃ¡s especÃ­fico, mÃ¡s se identifica tu clienta ideal" },
+                { num:"04", emoji:"ðŸš€", label:"Â¿A quÃ© producto lleva el CTA final?",field:"producto",  ph:"Mi mentorÃ­a CEO en Casa / Mi programa de ventas",                   hint:"El lead magnet siempre lleva a tu producto de pago" },
+                { num:"05", emoji:"ðŸ’Œ", label:"Â¿CuÃ¡l es el CTA exacto?",            field:"cta",       ph:"Agenda una llamada gratuita / Conoce mi programa en [link]",         hint:"Texto exacto que aparecerÃ¡ al final del documento" },
               ].map(q => (
                 <div key={q.field} className={`desc-q-card${form[q.field] ? " filled" : ""}`}>
                   <div className="desc-q-num">{q.num}</div>
@@ -1360,68 +1360,68 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
 
             <div className="lm-secciones-block">
               <label className="lm-crear-label">{SECCIONES_META[form.tipo]?.label || "Contenido"}</label>
-              <p className="studio-helper" style={{marginTop:0,marginBottom:"12px"}}>No necesitan ser perfectos — son el esqueleto de tu documento.</p>
+              <p className="studio-helper" style={{marginTop:0,marginBottom:"12px"}}>No necesitan ser perfectos â€” son el esqueleto de tu documento.</p>
               {form.secciones.map((s, i) => (
                 <div key={i} className="lm-seccion-row">
                   <span className="lm-seccion-num">{i+1}</span>
                   <input
                     className="lm-seccion-input"
-                    placeholder={SECCIONES_META[form.tipo]?.ph(i) || `Sección ${i+1}`}
+                    placeholder={SECCIONES_META[form.tipo]?.ph(i) || `SecciÃ³n ${i+1}`}
                     value={s}
                     onChange={e => { const a = [...form.secciones]; a[i] = e.target.value; setForm(p => ({...p, secciones: a})); }}
                   />
                   {form.secciones.length > 1 && (
-                    <button className="studio-delete-btn" onClick={() => setForm(p => ({...p, secciones: p.secciones.filter((_, idx) => idx !== i)}))}>✕</button>
+                    <button className="studio-delete-btn" onClick={() => setForm(p => ({...p, secciones: p.secciones.filter((_, idx) => idx !== i)}))}>âœ•</button>
                   )}
                 </div>
               ))}
               <button className="studio-add-btn" onClick={() => setForm(p => ({...p, secciones: [...p.secciones, ""]}))}>
-                {SECCIONES_META[form.tipo]?.add || "+ Agregar sección"}
+                {SECCIONES_META[form.tipo]?.add || "+ Agregar secciÃ³n"}
               </button>
             </div>
 
             <button className="mpm-step-btn" onClick={generarDoc} disabled={!form.titulo.trim()}>
-              Generar documento ✦
+              Generar documento âœ¦
             </button>
           </div>
         </div>
       )}
 
-      {/* ── PREVIEW ─────────────────────────────────── */}
+      {/* â”€â”€ PREVIEW â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {view === "preview" && docData && (
         <div className="lm-preview-wrap">
           <div className="lm-preview-topbar">
-            <button className="mpm-wizard-back-btn" onClick={() => setView("crear")}>← Editar</button>
+            <button className="mpm-wizard-back-btn" onClick={() => setView("crear")}>â† Editar</button>
             <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
               <button className="mpm-edit-btn" onClick={() => onSave("leads", { id: Date.now(), titulo: docData.titulo, tipo: docData.tipo, promesa: docData.promesa, audiencia: docData.audiencia, fecha: new Date().toLocaleDateString("es") })}>
-                Guardar 🎁
+                Guardar ðŸŽ
               </button>
-              <button className="lm-dl-btn lm-dl-btn--word" onClick={() => downloadWord(docData)}>⬇ Word (.doc)</button>
-              <button className="lm-dl-btn lm-dl-btn--pdf" onClick={() => window.print()}>🖨️ PDF</button>
+              <button className="lm-dl-btn lm-dl-btn--word" onClick={() => downloadWord(docData)}>â¬‡ Word (.doc)</button>
+              <button className="lm-dl-btn lm-dl-btn--pdf" onClick={() => window.print()}>ðŸ–¨ï¸ PDF</button>
             </div>
           </div>
 
           <div className="lm-export-strip">
             <div className="lm-export-item">
-              <span className="lm-export-ico">📄</span>
+              <span className="lm-export-ico">ðŸ“„</span>
               <div>
                 <strong>Word (.doc)</strong>
-                <p>Descarga y edita en Microsoft Word — o sube a Google Drive y ábrelo con Google Docs para editarlo online.</p>
+                <p>Descarga y edita en Microsoft Word â€” o sube a Google Drive y Ã¡brelo con Google Docs para editarlo online.</p>
               </div>
             </div>
             <div className="lm-export-sep" />
             <div className="lm-export-item">
-              <span className="lm-export-ico">🖨️</span>
+              <span className="lm-export-ico">ðŸ–¨ï¸</span>
               <div>
-                <strong>PDF (impresión)</strong>
-                <p>Al imprimir elige <strong>"Guardar como PDF"</strong> para obtener una versión lista para compartir.</p>
+                <strong>PDF (impresiÃ³n)</strong>
+                <p>Al imprimir elige <strong>"Guardar como PDF"</strong> para obtener una versiÃ³n lista para compartir.</p>
               </div>
             </div>
           </div>
 
           <div className="lm-print-area">
             <div className="lm-doc-header">
-              <div className="lm-doc-brand">Mamá CEO · Studio de Contenido</div>
+              <div className="lm-doc-brand">MamÃ¡ CEO Â· Studio de Contenido</div>
               <h1 className="lm-doc-title">{docData.titulo}</h1>
               {docData.promesa && <p className="lm-doc-promesa">"{docData.promesa}"</p>}
               <div className="lm-doc-meta-row">
@@ -1438,7 +1438,7 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
                     <div className="lm-doc-checklist">
                       {parte.items.map((item, j) => (
                         <div key={j} className="lm-doc-check-item">
-                          <span className="lm-doc-checkbox">☐</span>
+                          <span className="lm-doc-checkbox">â˜</span>
                           <span>{item}</span>
                         </div>
                       ))}
@@ -1451,7 +1451,7 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
                           <span className="lm-doc-dia-num">{j+1}</span>
                           <div>
                             <strong>{dia}</strong>
-                            <p className="lm-doc-dia-accion">Acción de hoy: [Describe la acción específica que harán este día]</p>
+                            <p className="lm-doc-dia-accion">AcciÃ³n de hoy: [Describe la acciÃ³n especÃ­fica que harÃ¡n este dÃ­a]</p>
                           </div>
                         </div>
                       ))}
@@ -1469,13 +1469,13 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
             </div>
 
             <div className="lm-doc-footer">
-              <p>Creado con Studio de Contenido · Mamá CEO App</p>
+              <p>Creado con Studio de Contenido Â· MamÃ¡ CEO App</p>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── BANCO ───────────────────────────────────── */}
+      {/* â”€â”€ BANCO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {bancoLeads.length > 0 && (
         <div className="studio-bank">
           <h4>Mis Lead Magnets ({bancoLeads.length})</h4>
@@ -1487,7 +1487,7 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
                 </span>
                 <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
                   <small>{item.fecha}</small>
-                  <button className="studio-delete-btn" onClick={() => onDelete("leads", item.id)}>✕</button>
+                  <button className="studio-delete-btn" onClick={() => onDelete("leads", item.id)}>âœ•</button>
                 </div>
               </div>
               <strong>{item.titulo}</strong>
@@ -1500,7 +1500,7 @@ function LeadMagnetTab({ saved, onSave, onDelete, brandProfile = {} }) {
   );
 }
 
-// ── HOOKS ──────────────────────────────────────────────────────
+// â”€â”€ HOOKS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
   const [tema, setTema]       = useState(brandProfile.queOfreces || "");
   const [nicho, setNicho]     = useState(brandProfile.clienteIdeal || "");
@@ -1515,107 +1515,107 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
 
   const HOOK_CATS = {
     curiosidad: {
-      label: "🤔 Curiosidad", sub: "Detiene el scroll al instante",
+      label: "ðŸ¤” Curiosidad", sub: "Detiene el scroll al instante",
       color: "#4A90D9", bg: "#EEF5FF",
       templates: [
         t => `Lo que nadie te dice sobre ${t}`,
         t => `El secreto sobre ${t} que las expertas se guardan`,
-        t => `Por qué las emprendedoras exitosas hacen esto con ${t}`,
-        t => `Lo que descubrí sobre ${t} que lo cambió todo`,
-        t => `La razón por la que ${t} no te está dando los resultados que mereces`,
+        t => `Por quÃ© las emprendedoras exitosas hacen esto con ${t}`,
+        t => `Lo que descubrÃ­ sobre ${t} que lo cambiÃ³ todo`,
+        t => `La razÃ³n por la que ${t} no te estÃ¡ dando los resultados que mereces`,
         t => `Existe una forma de trabajar con ${t} que casi nadie conoce`,
         t => `Esto es lo que realmente pasa cuando trabajas en ${t}`,
       ],
     },
     dolor: {
-      label: "😩 Dolor / Frustración", sub: "Habla directo a lo que siente",
+      label: "ðŸ˜© Dolor / FrustraciÃ³n", sub: "Habla directo a lo que siente",
       color: "#C4526A", bg: "#FFF0F3",
       templates: [
-        t => `¿Cansada de que ${t} no te dé los resultados que esperabas?`,
+        t => `Â¿Cansada de que ${t} no te dÃ© los resultados que esperabas?`,
         t => `Si lo de ${t} te tiene abrumada, para y mira esto`,
         t => `Esto es exactamente lo que sientes cuando ${t} no avanza`,
-        t => `Dejé de luchar con ${t} cuando entendí esto`,
-        t => `El error que te está frenando con ${t} (y no lo sabías)`,
+        t => `DejÃ© de luchar con ${t} cuando entendÃ­ esto`,
+        t => `El error que te estÃ¡ frenando con ${t} (y no lo sabÃ­as)`,
         t => `Para las que ya estamos hartas de que ${t} no funcione como queremos`,
-        t => `Dedicarte a ${t} te está robando tiempo que no tienes — y esto lo para`,
+        t => `Dedicarte a ${t} te estÃ¡ robando tiempo que no tienes â€” y esto lo para`,
       ],
     },
     promesa: {
-      label: "✨ Promesa de Resultado", sub: "Le muestra lo que puede lograr",
+      label: "âœ¨ Promesa de Resultado", sub: "Le muestra lo que puede lograr",
       color: "#27AE60", bg: "#EEFAF3",
       templates: [
-        t => `Cómo mejorar tus resultados con ${t} en menos de 30 días (sin complicarte)`,
-        t => `La forma más rápida de dominar ${t} desde hoy`,
-        t => `Más resultados con ${t} sin esfuerzo extra: el método que sí funciona`,
-        t => `En 60 segundos te enseño lo más importante sobre ${t}`,
-        t => `Así transformé mis resultados con ${t} — tú puedes hacer lo mismo`,
-        t => `Después de este video, ${t} va a tener mucho más sentido para ti`,
-        t => `Lo que cambié sobre ${t} que me dio resultados esta semana`,
+        t => `CÃ³mo mejorar tus resultados con ${t} en menos de 30 dÃ­as (sin complicarte)`,
+        t => `La forma mÃ¡s rÃ¡pida de dominar ${t} desde hoy`,
+        t => `MÃ¡s resultados con ${t} sin esfuerzo extra: el mÃ©todo que sÃ­ funciona`,
+        t => `En 60 segundos te enseÃ±o lo mÃ¡s importante sobre ${t}`,
+        t => `AsÃ­ transformÃ© mis resultados con ${t} â€” tÃº puedes hacer lo mismo`,
+        t => `DespuÃ©s de este video, ${t} va a tener mucho mÃ¡s sentido para ti`,
+        t => `Lo que cambiÃ© sobre ${t} que me dio resultados esta semana`,
       ],
     },
     pregunta: {
-      label: "❓ Pregunta Directa", sub: "Las hace parar a pensar",
+      label: "â“ Pregunta Directa", sub: "Las hace parar a pensar",
       color: "#E8755A", bg: "#FFF5F0",
       templates: [
-        t => `¿Estás trabajando ${t} de la forma equivocada?`,
-        t => `¿Sabes por qué los resultados con ${t} aún no despegan?`,
-        t => `¿Y si ${t} fuera más fácil de lo que siempre creíste?`,
-        t => `¿Cuánto tiempo llevas trabajando en ${t} sin ver los resultados que mereces?`,
-        t => `¿Qué pasaría si resolvieras lo de ${t} esta semana?`,
-        t => `¿Por qué ${t} funciona para otras y para ti todavía no?`,
-        t => `¿Alguien más batalla con ${t} o soy solo yo?`,
+        t => `Â¿EstÃ¡s trabajando ${t} de la forma equivocada?`,
+        t => `Â¿Sabes por quÃ© los resultados con ${t} aÃºn no despegan?`,
+        t => `Â¿Y si ${t} fuera mÃ¡s fÃ¡cil de lo que siempre creÃ­ste?`,
+        t => `Â¿CuÃ¡nto tiempo llevas trabajando en ${t} sin ver los resultados que mereces?`,
+        t => `Â¿QuÃ© pasarÃ­a si resolvieras lo de ${t} esta semana?`,
+        t => `Â¿Por quÃ© ${t} funciona para otras y para ti todavÃ­a no?`,
+        t => `Â¿Alguien mÃ¡s batalla con ${t} o soy solo yo?`,
       ],
     },
     historia: {
-      label: "📖 Historia / POV", sub: "Emoción y conexión personal",
+      label: "ðŸ“– Historia / POV", sub: "EmociÃ³n y conexiÃ³n personal",
       color: "#8B6565", bg: "#FFF8F5",
       templates: [
-        t => `POV: el día que todo cambió gracias a ${t}`,
-        t => `Hace un año no entendía nada sobre ${t}. Hoy te cuento todo.`,
-        t => `Una clienta me escribió llorando por sus resultados con ${t}. Esto es lo que hicimos.`,
-        t => `Esto me pasó con ${t} y no lo esperaba para nada 😳`,
-        t => `La historia de cómo ${t} cambió mi negocio completamente`,
-        t => `Cuando estaba a punto de rendirme con ${t}, pasó esto`,
-        t => `Nadie me contó esto sobre ${t} cuando empecé`,
+        t => `POV: el dÃ­a que todo cambiÃ³ gracias a ${t}`,
+        t => `Hace un aÃ±o no entendÃ­a nada sobre ${t}. Hoy te cuento todo.`,
+        t => `Una clienta me escribiÃ³ llorando por sus resultados con ${t}. Esto es lo que hicimos.`,
+        t => `Esto me pasÃ³ con ${t} y no lo esperaba para nada ðŸ˜³`,
+        t => `La historia de cÃ³mo ${t} cambiÃ³ mi negocio completamente`,
+        t => `Cuando estaba a punto de rendirme con ${t}, pasÃ³ esto`,
+        t => `Nadie me contÃ³ esto sobre ${t} cuando empecÃ©`,
       ],
     },
     numero: {
-      label: "🔢 Número / Lista", sub: "Específico y escaneable",
+      label: "ðŸ”¢ NÃºmero / Lista", sub: "EspecÃ­fico y escaneable",
       color: "#C9903A", bg: "#FFF8ED",
       templates: [
-        t => `3 errores que arruinan los resultados con ${t} (y cómo evitarlos)`,
-        t => `5 señales de que necesitas trabajar diferente tu ${t} — ya`,
-        t => `Las 7 claves sobre ${t} que nadie te enseña`,
+        t => `3 errores que arruinan los resultados con ${t} (y cÃ³mo evitarlos)`,
+        t => `5 seÃ±ales de que necesitas trabajar diferente tu ${t} â€” ya`,
+        t => `Las 7 claves sobre ${t} que nadie te enseÃ±a`,
         t => `Solo necesitas estos 3 pasos para dominar ${t}`,
         t => `El 80% de las emprendedoras falla con ${t} por estas razones`,
-        t => `Dedica 2 minutos a ${t} cada día — los resultados te van a sorprender`,
-        t => `4 cosas que aprendí sobre ${t} que ojalá hubiera sabido antes`,
+        t => `Dedica 2 minutos a ${t} cada dÃ­a â€” los resultados te van a sorprender`,
+        t => `4 cosas que aprendÃ­ sobre ${t} que ojalÃ¡ hubiera sabido antes`,
       ],
     },
     contraintuitivo: {
-      label: "🔄 Contraintuitivo", sub: "Rompe lo que creen saber",
+      label: "ðŸ”„ Contraintuitivo", sub: "Rompe lo que creen saber",
       color: "#E67E22", bg: "#FFF5EB",
       templates: [
         t => `Deja de hacer ${t} de esta forma. No es lo que crees.`,
-        t => `Por qué hacer MÁS no te ayuda con ${t}`,
-        t => `Lo que te enseñaron sobre ${t} está equivocado`,
-        t => `Trabajar más duro en ${t} te está frenando — y aquí explico por qué`,
+        t => `Por quÃ© hacer MÃS no te ayuda con ${t}`,
+        t => `Lo que te enseÃ±aron sobre ${t} estÃ¡ equivocado`,
+        t => `Trabajar mÃ¡s duro en ${t} te estÃ¡ frenando â€” y aquÃ­ explico por quÃ©`,
         t => `Esto que parece un error con ${t} es en realidad tu mayor ventaja`,
-        t => `${t}: todo lo que crees que sabes está al revés`,
+        t => `${t}: todo lo que crees que sabes estÃ¡ al revÃ©s`,
         t => `La estrategia de ${t} que parece incorrecta y funciona mejor que todo`,
       ],
     },
     identidad: {
-      label: "🪞 Identidad / Tribu", sub: "Habla directo a mamás como ella",
+      label: "ðŸªž Identidad / Tribu", sub: "Habla directo a mamÃ¡s como ella",
       color: "#16A085", bg: "#EDFAF6",
       templates: [
-        t => `Este video es para las mamás que luchan con ${t} en silencio`,
-        t => `Si eres mamá emprendedora y ${t} te pesa, esto es para ti`,
-        t => `Para las que dijeron "ya no puedo con ${t}" — no estás sola`,
-        t => `¿Mamá emprendedora con problemas de ${t}? Para y mira esto`,
-        t => `Solo las mamás que se toman en serio ${t} entienden esto`,
+        t => `Este video es para las mamÃ¡s que luchan con ${t} en silencio`,
+        t => `Si eres mamÃ¡ emprendedora y ${t} te pesa, esto es para ti`,
+        t => `Para las que dijeron "ya no puedo con ${t}" â€” no estÃ¡s sola`,
+        t => `Â¿MamÃ¡ emprendedora con problemas de ${t}? Para y mira esto`,
+        t => `Solo las mamÃ¡s que se toman en serio ${t} entienden esto`,
         t => `Si combinas maternidad y ${t}, este video te va a resonar`,
-        t => `Las mamás que logran ${t} tienen algo en común — y te lo cuento aquí`,
+        t => `Las mamÃ¡s que logran ${t} tienen algo en comÃºn â€” y te lo cuento aquÃ­`,
       ],
     },
   };
@@ -1641,13 +1641,13 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
     if (!k || !callGemini) return;
     setAiLoading(true); setHooks(null); setAiMsg("");
     const res = await callGemini("hooks", {
-      tema: k, nicho: nicho.trim() || brandProfile.clienteIdeal || "mamás emprendedoras",
+      tema: k, nicho: nicho.trim() || brandProfile.clienteIdeal || "mamÃ¡s emprendedoras",
       tono: brandProfile.tono || "Cercano",
     });
     setAiLoading(false);
     if (res?.error === "rate_limit") { setAiMsg("Muchas solicitudes en este momento. Intenta en 1 minuto."); return; }
-    if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
-    if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo."); return; }
+    if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al lÃ­mite de generaciones del mes."); return; }
+    if (res?.error) { setAiMsg("Algo saliÃ³ mal. Intenta de nuevo."); return; }
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
     const gen = {};
     Object.keys(HOOK_CATS).forEach(catKey => {
@@ -1675,13 +1675,13 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
   return (
     <div className="studio-tab-content">
 
-      {/* ── BARRA DE BÚSQUEDA ─────────────────────────── */}
+      {/* â”€â”€ BARRA DE BÃšSQUEDA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <div className="hooks-search-area">
         <div className="ideas-search-bar">
-          <span className="ideas-search-icon">🪝</span>
+          <span className="ideas-search-icon">ðŸª</span>
           <input
             className="ideas-search-input"
-            placeholder="¿De qué trata tu video? Ej: vender, organizarme, reels, cobrar sin miedo..."
+            placeholder="Â¿De quÃ© trata tu video? Ej: vender, organizarme, reels, cobrar sin miedo..."
             value={tema}
             onChange={e => setTema(e.target.value)}
             onKeyDown={e => e.key === "Enter" && generar()}
@@ -1691,24 +1691,24 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
             onClick={() => callGemini ? generarConIA() : generar()}
             disabled={!tema.trim() || thinking || aiLoading}
           >
-            {(thinking || aiLoading) ? "Generando..." : callGemini ? "Generar ✨" : "Generar ✦"}
+            {(thinking || aiLoading) ? "Generando..." : callGemini ? "Generar âœ¨" : "Generar âœ¦"}
           </button>
         </div>
         {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
         <input
           className="hooks-nicho-input"
-          placeholder="¿A quién le hablas? (opcional) — mamás que venden desde casa, coaches, emprendedoras con hijos..."
+          placeholder="Â¿A quiÃ©n le hablas? (opcional) â€” mamÃ¡s que venden desde casa, coaches, emprendedoras con hijos..."
           value={nicho}
           onChange={e => setNicho(e.target.value)}
         />
       </div>
 
-      {/* ── ESTADO VACÍO ─────────────────────────────── */}
+      {/* â”€â”€ ESTADO VACÃO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {!hooks && !thinking && (
         <div className="ideas-empty">
-          <div className="ideas-brain-glow">🪝</div>
-          <h3>¿De qué trata tu próximo video?</h3>
-          <p>Escribe el tema y te genero <strong>24+ hooks</strong> organizados en 8 tipos — para detener el scroll en los primeros 3 segundos.</p>
+          <div className="ideas-brain-glow">ðŸª</div>
+          <h3>Â¿De quÃ© trata tu prÃ³ximo video?</h3>
+          <p>Escribe el tema y te genero <strong>24+ hooks</strong> organizados en 8 tipos â€” para detener el scroll en los primeros 3 segundos.</p>
           <div className="ideas-chips">
             {EJEMPLOS.map(ej => (
               <button key={ej} className="ideas-chip" onClick={() => { setTema(ej); generar(ej); }}>{ej}</button>
@@ -1717,7 +1717,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
         </div>
       )}
 
-      {/* ── PENSANDO ─────────────────────────────────── */}
+      {/* â”€â”€ PENSANDO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {(thinking || aiLoading) && (
         <div className="ideas-thinking">
           <div className="ideas-orbit-container">
@@ -1731,7 +1731,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
         </div>
       )}
 
-      {/* ── RESULTADOS ───────────────────────────────── */}
+      {/* â”€â”€ RESULTADOS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {hooks && !thinking && (
         <>
           <div className="ideas-result-header">
@@ -1743,7 +1743,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
               <span className="hooks-total-badge">{totalHooks} hooks</span>
-              <button className={`ideas-regen-btn${callGemini ? " studio-ai-regen-btn" : ""}`} onClick={() => callGemini ? generarConIA(hooks.tema) : generar(hooks.tema)}>🔄 Nuevos hooks {callGemini ? "✨" : ""}</button>
+              <button className={`ideas-regen-btn${callGemini ? " studio-ai-regen-btn" : ""}`} onClick={() => callGemini ? generarConIA(hooks.tema) : generar(hooks.tema)}>ðŸ”„ Nuevos hooks {callGemini ? "âœ¨" : ""}</button>
             </div>
           </div>
 
@@ -1754,7 +1754,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
                   <span className="ideas-cat-label">{cat.label}</span>
                   <span className="ideas-cat-sub">{cat.sub}</span>
                 </div>
-                <button className="ideas-mas-btn" onClick={() => masHooks(catKey)}>+ Más hooks</button>
+                <button className="ideas-mas-btn" onClick={() => masHooks(catKey)}>+ MÃ¡s hooks</button>
               </div>
               <div className="ideas-cards-grid">
                 {hooks[catKey].map((hook, i) => (
@@ -1762,13 +1762,13 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
                     <p className="hooks-card-text">{hook.texto}</p>
                     <div className="ideas-card-actions">
                       <button className="ideas-card-copy" onClick={() => copiar(hook.texto, hook.id)}>
-                        {copiado === hook.id ? "✓ Copiado" : "Copiar"}
+                        {copiado === hook.id ? "âœ“ Copiado" : "Copiar"}
                       </button>
                       <button className="ideas-card-save" onClick={() => onSave("hooks", {
                         id: Date.now(), hook: hook.texto, cat: catKey,
                         tema: hooks.tema, fecha: new Date().toLocaleDateString("es"),
                       })}>Guardar</button>
-                      <button className="ideas-card-guion" onClick={() => onCrearGuion?.(hook.texto)}>Guión 🎬</button>
+                      <button className="ideas-card-guion" onClick={() => onCrearGuion?.(hook.texto)}>GuiÃ³n ðŸŽ¬</button>
                     </div>
                   </div>
                 ))}
@@ -1778,7 +1778,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
         </>
       )}
 
-      {/* ── BANCO ───────────────────────────────────── */}
+      {/* â”€â”€ BANCO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {saved?.hooks?.length > 0 && (
         <div className="studio-bank">
           <h4>Hooks guardados ({saved.hooks.length})</h4>
@@ -1792,7 +1792,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
               </div>
               <p style={{fontSize:"13px",color:"#2D1B1B",margin:"4px 0 6px",fontWeight:500}}>{h.hook}</p>
               <button className="studio-bank-action-copy" onClick={() => copiar(h.hook, `bank-${h.id}`)}>
-                {copiado === `bank-${h.id}` ? "¡Copiado!" : "Copiar"}
+                {copiado === `bank-${h.id}` ? "Â¡Copiado!" : "Copiar"}
               </button>
             </div>
           ))}
@@ -1802,736 +1802,322 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
   );
 }
 
-// ── GUIÓN ──────────────────────────────────────────────────────
+// â”€â”€ GUIÃ“N â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
-  const [subTab,    setSubTab]    = useState("guion");
-  const [wizard,    setWizard]    = useState({ step: 1, objetivo: "Vender", logro: seed || brandProfile.transformacion || "", dolor: "", cambio: "", cta: "Guardar el video", ctaPersonalizado: "" });
-  const [guion,     setGuion]     = useState(null);
-  const [escritura, setEscritura] = useState({});
-  const [c,         setC]         = useState({ red: brandProfile.redPrincipal || "Instagram", tono: brandProfile.tono || "Cercano", tema: brandProfile.queOfreces || "", cta: "", hashtags: true });
-  const [caption,   setCaption]   = useState(null);
-  const [copiado,    setCopiado]    = useState("");
-  const [fraseIdx,   setFraseIdx]   = useState({});
-  const [verCompleto,setVerCompleto] = useState(false);
-  const [aiLoading,  setAiLoading]  = useState(false);
-  const [aiMsg,      setAiMsg]      = useState("");
+  // â”€â”€ Nuevo flujo tipo Claude â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const [subTab,   setSubTab]   = useState("guion");
+  const [fase,     setFase]     = useState("tema");   // tema | elegir | generando | resultado
+  const [topic,    setTopic]    = useState(seed || "");
+  const [objetivo, setObjetivo] = useState("Vender");
+  const [sel,      setSel]      = useState({ logro: "", dolor: "", cambio: "", cta: "Guardar el video" });
+  const [custom,   setCustom]   = useState({ logro: false, dolor: false, cambio: false });
+  const [script,   setScript]   = useState(null);    // {hook, interes, deseo, accion, isAI}
+  const [copiado,  setCopiado]  = useState("");
+  const [aiMsg,    setAiMsg]    = useState("");
+  const [c,        setC]        = useState({ red: brandProfile.redPrincipal || "Instagram", tono: brandProfile.tono || "Cercano", tema: "", cta: "", hashtags: true });
+  const [caption,  setCaption]  = useState(null);
 
-  useEffect(() => { if (seed) { setWizard(p => ({...p, logro: seed})); onSeedConsumed?.(); } }, []);
+  useEffect(() => { if (seed) { setTopic(seed); onSeedConsumed?.(); } }, []);
 
-  const copiar      = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
-  const shuffle     = (arr) => [...arr].sort(() => Math.random() - 0.5);
-  const nextFrase   = (si, tot) => setFraseIdx(p => ({...p, [si]: ((p[si]||0) + 1) % tot}));
-  const prevFrase   = (si, tot) => setFraseIdx(p => ({...p, [si]: ((p[si]||0) - 1 + tot) % tot}));
-  const usarFrase   = (si, txt) => setEscritura(p => ({...p, [si]: p[si] ? p[si] + "\n\n" + txt : txt}));
-  const usarPalabra = (si, pal) => setEscritura(p => ({...p, [si]: p[si] ? p[si] + " " + pal : pal}));
+  const copiar = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2200); };
+
+  // â”€â”€ Sugestiones inteligentes basadas en el tema â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  const getSugestiones = (t) => {
+    const T = t?.trim() || "este tema";
+    return {
+      logros: [
+        `AprendÃ­ a implementar ${T} de forma simple, sin necesitar ser experta`,
+        `DescubrÃ­ que con ${T} logro resultados reales sin descuidar a mi familia`,
+        `PasÃ© de no saber por dÃ³nde empezar con ${T} a tener un sistema que funciona hoy`,
+        `ApliquÃ© ${T} y cambiÃ³ completamente la forma en que manejo mi negocio`,
+      ],
+      dolores: [
+        `SentÃ­a que ${T} era demasiado complicado para mÃ­ y que no era para todas`,
+        `ProbÃ© todo con ${T} y nada funcionaba â€” estaba agotada y a punto de rendirme`,
+        `Me sentÃ­a perdida con ${T} sin saber por dÃ³nde empezar, sola y sin referentes`,
+        `Dudaba si realmente podÃ­a hacer ${T} siendo mamÃ¡, emprendedora y sin tiempo`,
+      ],
+      cambios: [
+        `DejÃ© de complicarlo y empecÃ© a hacer ${T} a mi manera, desde mi realidad`,
+        `EntendÃ­ que con ${T} no necesito hacerlo perfecto â€” solo consistente`,
+        `EncontrÃ© un mÃ©todo de ${T} que se adapta a mi vida real como mamÃ¡`,
+        `TomÃ© la decisiÃ³n de aprender ${T} paso a paso, sin presiÃ³n y sin comparaciones`,
+      ],
+    };
+  };
 
   const CTA_MAP = {
-    "Guardar el video":         `Guarda este video — lo vas a querer tener cuando lo necesites.`,
-    "Comentar cómo se sienten": `Cuéntame en comentarios: ¿te identificaste con algo de lo que dije? Te leo.`,
-    "Escribirme por DM":        `Si esto te resonó, escríbeme por DM — me encantaría conocer tu historia.`,
-    "Ir al link en mi bio":     `Si quieres el siguiente paso, el link está en mi bio. Hay un espacio para ti.`,
-    "Compartirlo con alguien":  `¿Conoces a alguien que necesita escuchar esto hoy? Compártelo con ella.`,
-    "Ir a mi página web":       `Si quieres saber más, visita mi página — el link está en la descripción.`,
-    "Ir a otro link":           `El link con todos los detalles está en la descripción. No te lo pierdas.`,
+    "Guardar el video":     `Guarda este video â€” lo vas a querer cuando lo necesites.`,
+    "Comentar":             `CuÃ©ntame en comentarios: Â¿te identificaste con algo? Te leo.`,
+    "Escribirme por DM":    `Si esto te resonÃ³, escrÃ­beme por DM â€” me encantarÃ­a conocer tu historia.`,
+    "Link en mi bio":       `Si quieres el siguiente paso, el link estÃ¡ en mi bio.`,
+    "Compartirlo":          `Â¿Conoces a alguien que necesita escuchar esto hoy? CompÃ¡rteselo.`,
+    "Ir a mi pÃ¡gina web":   `Si quieres saber mÃ¡s, el link estÃ¡ en la descripciÃ³n.`,
   };
+
+  const CTAS = [
+    { k: "Guardar el video",  i: "ðŸ”–" },
+    { k: "Comentar",          i: "ðŸ’¬" },
+    { k: "Escribirme por DM", i: "âœ‰ï¸" },
+    { k: "Link en mi bio",    i: "ðŸ”—" },
+    { k: "Compartirlo",       i: "ðŸ¤" },
+  ];
   const HOOK_MAP = {
-    "Vender":   `¿Sientes que trabajas duro en tu negocio y algo todavía no está funcionando como quieres?`,
-    "Conectar": `Quiero contarte algo que me costó mucho tiempo entender — y que cambió todo para mí.`,
-    "Educar":   `Hay algo sobre este tema que ojalá alguien me hubiera dicho antes. Hoy te lo comparto.`,
-    "Inspirar": `Hubo un momento en que creí que esto no era para mí. Hasta que pasó algo que lo cambió todo.`,
+    "Vender":   `Â¿Sientes que trabajas duro en tu negocio y algo todavÃ­a no estÃ¡ funcionando como quieres?`,
+    "Conectar": `Quiero contarte algo que me costÃ³ mucho tiempo entender â€” y que cambiÃ³ todo para mÃ­.`,
+    "Educar":   `Hay algo sobre este tema que ojalÃ¡ alguien me hubiera dicho antes. Hoy te lo comparto.`,
+    "Inspirar": `Hubo un momento en que creÃ­ que esto no era para mÃ­. Hasta que pasÃ³ algo que lo cambiÃ³ todo.`,
   };
 
-  const buildEscenas = (objetivo, logro, dolor, cambio, ctaTexto) => {
-    const hookFrase    = HOOK_MAP[objetivo] || HOOK_MAP["Conectar"];
-    const interesFrase = dolor + `\n\nY lo peor es que sentías que las demás lo lograban y tú no. Eso es agotador — y nadie habla de eso con honestidad.`;
-    const deseoFrase   = cambio + `\n\nY cuando eso pasó, todo empezó a fluir diferente. Eso mismo es posible para ti.`;
-
-    const HOOK_IDEAS = {
-      "Vender":   ["Antes de que hagas scroll — necesito 10 segundos de tu atención. Esto es para ti.", "¿Cuánto tiempo llevas trabajando duro sin ver los resultados que mereces? Hoy eso cambia.", "Hay algo que la mayoría no te dice sobre hacer crecer tu negocio — y hoy lo voy a cambiar."],
-      "Conectar": ["Llevo días queriendo contarte esto — y hoy por fin lo hago.", "Si alguna vez has sentido que estás sola en esto, quédate. Este video es para ti.", "Antes de grabar esto dudé mucho. Pero sé que alguien necesita escucharlo hoy."],
-      "Educar":   ["En menos de 60 segundos te doy lo que me costó meses aprender.", "Anota esto — lo vas a querer tener cuando lo apliques.", "Si solo puedes aprender una cosa hoy, que sea esto."],
-      "Inspirar": ["Sé que hay días en que sientes que no avanzas. Hoy quiero cambiar eso.", "Si estás a punto de rendirte — espera. Escucha esto primero.", "Esto que voy a decir lo necesitaba escuchar yo hace un tiempo. Ojalá lo escuches tú hoy."],
-    };
-    const interesIdeas = [
-      "Y lo más duro no era el obstáculo en sí — era sentir que, por más que lo intentabas, algo fallaba sin saber qué.",
-      "Y encima seguías dando todo en casa, con los hijos, con tu negocio — sonriendo hacia afuera mientras por dentro se acumulaba el cansancio.",
-      "¿Cuántas veces sentiste que las demás lo tenían claro y tú eras la única que luchaba? Eso se siente muy solo.",
-    ];
-    const deseoIdeas = [
-      "Y no fue de la noche a la mañana. Pero el primer resultado lo cambió todo — porque me demostré que era posible.",
-      "Imagina tu semana diferente: avanzando con claridad, sabiendo exactamente qué hacer y sintiéndote en paz con el proceso.",
-      "Eso que yo viví — esa transformación — es lo que es posible para ti. No cuando seas perfecta. Ahora, desde donde estás.",
-    ];
-    const accionIdeas = [
-      "Solo si de verdad sientes que esto es para ti — porque los mejores resultados llegan cuando estás lista.",
-      "Gracias por quedarte hasta el final. Eso me dice que algo de lo que dije llegó donde tenía que llegar.",
-    ];
-
-    return [
-      {
-        num: "01", nombre: "HOOK", subtitulo: "Los primeros 3 segundos",
-        tiempo: "0:00 – 0:03", color: "#C9903A", bgLight: "#FFF8ED",
-        emocion: "CURIOSIDAD · IDENTIDAD",
-        guia: `Los primeros 3 segundos deciden si te siguen viendo o hacen scroll. Una frase que las haga pensar "eso me pasa a mí" o "necesito escuchar esto".`,
-        frases: [hookFrase],
-        ideas: HOOK_IDEAS[objetivo] || HOOK_IDEAS["Conectar"],
-        palabras: [],
-        nota: null,
-        placeholder: "Tu frase de apertura...",
-      },
-      {
-        num: "02", nombre: "INTERÉS", subtitulo: "Hazla sentir vista",
-        tiempo: "0:03 – 0:15", color: "#C4526A", bgLight: "#FFF0F3",
-        emocion: "EMPATÍA · DOLOR RECONOCIDO",
-        guia: `Acabas de contar tu dolor — ahora hazlas sentir que tú también viviste lo que ellas sienten. No des la solución todavía.`,
-        frases: [interesFrase],
-        ideas: interesIdeas,
-        palabras: ["Sé exactamente cómo se siente", "No estás sola", "¿Has sentido que...?", "Es agotador", "Nadie habla de esto"],
-        nota: `Miedo que activas: sentir que trabajan duro y no avanzan. Que las demás lo logran y ellas no.`,
-        placeholder: "Habla de su dolor...",
-      },
-      {
-        num: "03", nombre: "DESEO", subtitulo: "Pinta su transformación",
-        tiempo: "0:15 – 0:45", color: "#27AE60", bgLight: "#EEFAF3",
-        emocion: "TRANSFORMACIÓN · ESPERANZA",
-        guia: `Ya contaste qué cambió para ti — ahora conecta esa transformación con lo que es posible para ellas. Sé visual, específica, emocional.`,
-        frases: [deseoFrase],
-        ideas: deseoIdeas,
-        palabras: ["Imagina que...", "¿Qué pasaría si...?", "Mereces...", "Con calma y confianza", "Sin sacrificar", "Es posible"],
-        nota: `Deseo que activas: libertad, claridad, resultados — sin perder su familia ni su paz.`,
-        placeholder: "Describe la transformación...",
-      },
-      {
-        num: "04", nombre: "ACCIÓN", subtitulo: "Una sola instrucción clara",
-        tiempo: "0:45 – 1:00", color: "#E8755A", bgLight: "#FFF5F0",
-        emocion: "DECISIÓN · CONFIANZA",
-        guia: `Una sola acción, fácil de hacer en 10 segundos. Sin presionar — invitando.`,
-        frases: [ctaTexto],
-        ideas: accionIdeas,
-        palabras: [],
-        nota: null,
-        placeholder: "Tu llamada a la acción...",
-      },
-    ];
+  const buildCaptionFromGuion = (obj = objetivo) => {
+    const hook = HOOK_MAP[obj] || HOOK_MAP["Conectar"];
+    const interes = sel.dolor
+      ? sel.dolor + `\n\nY lo peor es que sentÃ­as que las demÃ¡s lo lograban y tÃº no. Eso es agotador.`
+      : `A veces el mayor obstÃ¡culo no es la estrategia â€” es lo que cargamos por dentro.`;
+    const deseo = sel.cambio
+      ? sel.cambio + `\n\nY cuando eso pasÃ³, todo empezÃ³ a fluir diferente. Eso mismo es posible para ti.`
+      : `Ese lugar donde todo fluye y avanzas con calma existe. Y con la guÃ­a correcta, puedes llegar ahÃ­.`;
+    const accion = script?.accion || CTA_MAP[sel.cta] || `Guarda este video â€” lo vas a querer tener cuando lo necesites.`;
+    return `${hook}\n\n${interes}\n\n${deseo}\n\nðŸ‘‰ ${accion}\n\n#mamÃ¡emprendedora #negociodigital #emprendimiento #mamÃ¡ceo`;
   };
 
-  const buildEscrituraInicial = (objetivo, logro, dolor, cambio, ctaTexto) => {
-    const interesFrase = dolor + `\n\nY lo peor es que sentías que las demás lo lograban y tú no. Eso es agotador — y nadie habla de eso con honestidad.`;
-    const deseoFrase   = cambio + `\n\nY cuando eso pasó, todo empezó a fluir diferente. Eso mismo es posible para ti.`;
-    return {
-      0: HOOK_MAP[objetivo] || HOOK_MAP["Conectar"],
-      1: interesFrase,
-      2: deseoFrase,
-      3: ctaTexto,
-    };
-  };
-
-  const buildCaptionFromGuion = (objetivo, logro = "", dolor = "", cambio = "", ctaTexto = "") => {
-    const hook    = HOOK_MAP[objetivo] || HOOK_MAP["Conectar"];
-    const interes = dolor
-      ? dolor + `\n\nY lo peor es que sentías que las demás lo lograban y tú no. Eso es agotador — y nadie habla de eso con honestidad.`
-      : `A veces el mayor obstáculo no es la estrategia — es lo que cargamos por dentro. Y eso es real.`;
-    const deseo   = cambio
-      ? cambio + `\n\nY cuando eso pasó, todo empezó a fluir diferente. Eso mismo es posible para ti.`
-      : `Ese lugar donde todo fluye y avanzan con calma existe. Y con la guía correcta, es posible llegar ahí.`;
-    const accion  = ctaTexto || `Guarda este video — lo vas a querer tener cuando lo necesites.`;
-    return `${hook}\n\n${interes}\n\n${deseo}\n\n👉 ${accion}\n\n#mamáemprendedora #negociodigital #emprendimiento #mamáceo`;
-  };
-
-  const generarGuion = () => {
-    const { objetivo, logro, dolor, cambio, cta, ctaPersonalizado } = wizard;
-    const ctaTexto = cta === "Otro"
-      ? (ctaPersonalizado.trim() || "Guarda este video — lo vas a querer cuando lo necesites.")
-      : (CTA_MAP[cta] || CTA_MAP["Guardar el video"]);
-    setGuion({
-      tema: logro.substring(0, 80) || objetivo,
-      objetivo, tipo: "Reel (60s)", audiencia: "",
-      escenas: buildEscenas(objetivo, logro, dolor, cambio, ctaTexto),
-      fecha: new Date().toLocaleDateString("es"),
-    });
-    setEscritura(buildEscrituraInicial(objetivo, logro, dolor, cambio, ctaTexto));
-    setCaption(buildCaptionFromGuion(objetivo, logro, dolor, cambio, ctaTexto));
-    setFraseIdx({});
+  const generar = async () => {
+    if (!sel.logro.trim() || !sel.dolor.trim() || !sel.cambio.trim()) return;
+    setFase("generando");
     setAiMsg("");
-    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
-  };
-
-  const generarGuionConIA = async () => {
-    const { objetivo, logro, dolor, cambio, cta, ctaPersonalizado } = wizard;
-    if (!logro.trim() || !callGemini) return;
-    const ctaTexto = cta === "Otro"
-      ? (ctaPersonalizado.trim() || "Guarda este video — lo vas a querer cuando lo necesites.")
-      : (CTA_MAP[cta] || CTA_MAP["Guardar el video"]);
-    // Genera la estructura con plantillas primero (muestra algo inmediato)
-    generarGuion();
-    setAiLoading(true); setAiMsg("");
-    const res = await callGemini("guion", {
-      objetivo, logro, dolor, cambio,
-      queOfreces: brandProfile.queOfreces || logro,
-      nicho: brandProfile.clienteIdeal || "mam\xe1s emprendedoras",
-      tono: brandProfile.tono || "Cercano",
-    });
-    setAiLoading(false);
-    if (res?.error === "rate_limit") { setAiMsg("Muchas solicitudes en este momento. Intenta en 1 minuto."); return; }
-    if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
-    if (res?.error === "No autorizada" || res?.error?.includes("autent")) { setAiMsg("Inicia sesión para usar la IA."); return; }
-    if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo en unos segundos."); return; }
-    onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
-    const aiResult = res.result || {};
-    const SCENE_KEYS = ["hook", "interes", "deseo", "accion"];
-    setGuion(prev => {
-      if (!prev) return prev;
-      const escenas = prev.escenas.map((esc, i) => {
-        const aiFreases = aiResult[SCENE_KEYS[i]];
-        return aiFreases && aiFreases.length > 0 ? { ...esc, frases: aiFreases } : esc;
+    const ctaTexto = CTA_MAP[sel.cta] || sel.cta;
+    if (callGemini) {
+      const res = await callGemini("guion", {
+        objetivo, logro: sel.logro, dolor: sel.dolor, cambio: sel.cambio,
+        queOfreces: topic, nicho: brandProfile.clienteIdeal || "mamÃ¡s emprendedoras",
+        tono: brandProfile.tono || "Cercano",
       });
-      return { ...prev, escenas, isAI: true };
-    });
-    const escrituraIA = {};
-    SCENE_KEYS.forEach((key, i) => {
-      if (aiResult[key]?.[0]) escrituraIA[i] = aiResult[key][0];
-    });
-    setEscritura(escrituraIA);
-    setFraseIdx({});
-    setVerCompleto(true);
-    setTimeout(() => {
-      const el = document.querySelector(".guion-script-listo");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 100);
-  };
-
-  const downloadWordGuion = () => {
-    if (!guion) return;
-    let scenesHtml = "";
-    guion.escenas.forEach((esc, i) => {
-      const txt = escritura[i];
-      scenesHtml += `<div style="border-left:5px solid ${esc.color};padding:20px 24px;margin:20px 0;background:${esc.bgLight};border-radius:0 12px 12px 0;">
-        <div style="display:flex;align-items:center;gap:14px;margin-bottom:12px;">
-          <span style="font-size:32px;font-weight:900;color:${esc.color};font-family:Georgia,serif;line-height:1;">${esc.num}</span>
-          <div><div style="font-size:18px;font-weight:900;color:#5C3A3A;font-family:Arial;">${esc.nombre} <span style="font-size:13px;color:#B09090;font-style:italic;">— ${esc.subtitulo}</span></div>
-          <div style="margin-top:4px;"><span style="font-size:10px;font-weight:800;background:${esc.color};color:white;border-radius:4px;padding:2px 9px;font-family:Arial;">${esc.emocion}</span>&nbsp;<span style="font-size:11px;color:#9A7878;font-family:Arial;">⏱ ${esc.tiempo}</span></div></div>
-        </div>
-        <div style="background:rgba(255,255,255,0.8);border-left:3px solid ${esc.color};border-radius:0 8px 8px 0;padding:10px 14px;margin-bottom:12px;">
-          <p style="font-size:12px;color:#8A6A5A;margin:0;font-style:italic;font-family:Arial;">💡 ${esc.guia}</p></div>
-        ${esc.nota ? `<p style="font-size:12px;color:#9A8070;margin:0 0 12px;font-family:Arial;">🎯 ${esc.nota}</p>` : ""}
-        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#C9A84C;margin:0 0 6px;font-family:Arial;">FRASES SUGERIDAS</p>
-        ${esc.frases.map(f => `<div style="background:#FEFCF7;border:1px solid rgba(201,168,76,0.2);border-radius:6px;padding:9px 12px;margin:5px 0;font-family:Arial;font-size:13px;color:#6A4040;"><span style="color:${esc.color};font-weight:700;">✦</span> ${f}</div>`).join("")}
-        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#C9A84C;margin:14px 0 6px;font-family:Arial;">PALABRAS QUE TOCAN CORAZONES</p>
-        <p style="font-size:12px;color:${esc.color};font-family:Arial;margin:0 0 14px;opacity:0.8;">${esc.palabras.join(" · ")}</p>
-        <p style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;color:#C9A84C;margin:0 0 6px;font-family:Arial;">✍ TU VERSIÓN</p>
-        <div style="background:#FDFAF5;border:1.5px solid ${txt ? esc.color : "rgba(201,168,76,0.2)"};border-radius:8px;padding:16px;min-height:70px;font-family:Arial;font-size:13px;color:${txt ? "#4A3030" : "#C0A880"};white-space:pre-wrap;">${txt || esc.placeholder}</div>
-      </div>`;
-    });
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Guión: ${guion.tema}</title></head>
-    <body style="margin:0;padding:0;font-family:Arial,sans-serif;">
-    <div style="background:#FFFFFF;border-bottom:3px solid #C9A84C;padding:36px 40px;">
-      <p style="font-size:10px;color:#C9A84C;margin:0 0 8px;letter-spacing:1.5px;text-transform:uppercase;">Mamá CEO · Studio de Contenido · GUIÓN</p>
-      <h1 style="color:#2D1B1B;margin:0 0 12px;font-size:28px;font-family:Arial;">${guion.tema}</h1>
-      <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <span style="font-size:11px;background:rgba(201,168,76,0.1);color:#8B6914;border:1px solid rgba(201,168,76,0.3);border-radius:4px;padding:3px 10px;font-family:Arial;">${guion.tipo}</span>
-        <span style="font-size:11px;background:rgba(201,168,76,0.1);color:#8B6914;border:1px solid rgba(201,168,76,0.3);border-radius:4px;padding:3px 10px;font-family:Arial;">Objetivo: ${guion.objetivo}</span>
-        ${guion.audiencia ? `<span style="font-size:11px;background:rgba(201,168,76,0.1);color:#8B6914;border:1px solid rgba(201,168,76,0.3);border-radius:4px;padding:3px 10px;font-family:Arial;">Para: ${guion.audiencia}</span>` : ""}
-      </div>
-    </div>
-    <div style="max-width:700px;margin:0 auto;padding:32px 40px;">${scenesHtml}</div>
-    <div style="border-top:1px solid #eee;padding:14px 40px;text-align:center;"><p style="font-size:11px;color:#ccc;font-family:Arial;">Creado con Studio de Contenido · Mamá CEO App</p></div>
-    </body></html>`;
-    const blob = new Blob([html], { type: "application/msword" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href = url; a.download = `Guion - ${guion.tema.replace(/[^\w\sáéíóúñÁÉÍÓÚÑ]/g,"").trim()}.doc`;
-    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-  };
-
-  const downloadPDF = () => {
-    if (!guion) return;
-    const COLORS = { "01": "#C9903A", "02": "#C4526A", "03": "#27AE60", "04": "#E8755A" };
-    const scenesHtml = guion.escenas.map((esc, i) => {
-      const txt = (escritura[i] || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/\n/g,"<br>");
-      const col = COLORS[esc.num] || "#C4526A";
-      return `<div class="escena" style="border-left-color:${col}">
-        <div class="esc-hdr">
-          <span class="esc-num" style="color:${col}">${esc.num}</span>
-          <div class="esc-title-group">
-            <span class="esc-nombre">${esc.nombre}</span>
-            <span class="esc-sub">— ${esc.subtitulo}</span>
-          </div>
-          <span class="esc-tiempo">⏱ ${esc.tiempo}</span>
-        </div>
-        <div class="esc-texto">${txt}</div>
-      </div>`;
-    }).join("");
-
-    const tituloSafe = guion.tema.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    const html = `<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"/>
-<title>Guión — ${tituloSafe}</title>
-<style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{font-family:Georgia,'Times New Roman',serif;color:#2D1B1B;background:#fff;line-height:1.6}
-  .page{max-width:680px;margin:0 auto;padding:52px 44px}
-  .cabecera{padding-bottom:22px;margin-bottom:40px;border-bottom:2px solid #C9A84C}
-  .marca{font-size:10px;letter-spacing:1.8px;text-transform:uppercase;color:#C9A84C;font-family:Arial;margin-bottom:10px}
-  .titulo{font-size:26px;font-weight:bold;line-height:1.3;margin-bottom:8px;color:#2D1B1B}
-  .meta{font-size:12px;color:#9A7878;font-family:Arial}
-  .escena{margin-bottom:40px;border-left:4px solid;padding-left:22px;page-break-inside:avoid}
-  .esc-hdr{display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
-  .esc-num{font-size:30px;font-weight:900;font-family:Georgia;line-height:1;opacity:.65;flex-shrink:0}
-  .esc-title-group{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;flex:1}
-  .esc-nombre{font-size:16px;font-weight:900;font-family:Arial;letter-spacing:.5px}
-  .esc-sub{font-size:13px;color:#9A7878;font-style:italic;font-family:Arial}
-  .esc-tiempo{font-size:11px;color:#9A7878;font-family:Arial;white-space:nowrap}
-  .esc-texto{font-size:14.5px;line-height:1.9;color:#2D1B1B;font-family:Georgia}
-  .pie{margin-top:52px;padding-top:14px;border-top:1px solid #E8C99A;text-align:center;font-size:11px;color:#C9A84C;font-family:Arial}
-  @media print{
-    body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-    @page{margin:2cm 2.5cm}
-    .escena{page-break-inside:avoid}
-  }
-</style>
-</head><body>
-<div class="page">
-  <div class="cabecera">
-    <div class="marca">Mamá CEO · Studio de Contenido · GUIÓN</div>
-    <div class="titulo">${tituloSafe}</div>
-    <div class="meta">Objetivo: ${guion.objetivo} &nbsp;·&nbsp; ${guion.fecha}</div>
-  </div>
-  ${scenesHtml}
-  <div class="pie">Creado con Studio de Contenido · Mamá CEO App</div>
-</div>
-<script>window.onload=function(){window.print()}<\/script>
-</body></html>`;
-
-    const win = window.open("", "_blank", "width=800,height=900");
-    if (win) {
-      win.document.write(html);
-      win.document.close();
+      if (res?.error === "rate_limit")          { setAiMsg("Muchas solicitudes. Intenta en 1 minuto."); setFase("elegir"); return; }
+      if (res?.error === "limite_alcanzado")    { setAiMsg("Llegaste al lÃ­mite de generaciones del mes."); setFase("elegir"); return; }
+      if (res?.error === "No autorizada" || res?.error?.includes("autent")) { setAiMsg("Inicia sesiÃ³n para usar la IA."); setFase("elegir"); return; }
+      if (res?.error)                           { setAiMsg("Algo saliÃ³ mal. Intenta de nuevo."); setFase("elegir"); return; }
+      onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
+      const r = res.result || {};
+      setScript({
+        hook:    r.hook?.[0]    || sel.logro,
+        interes: r.interes?.[0] || sel.dolor,
+        deseo:   r.deseo?.[0]   || sel.cambio,
+        accion:  r.accion?.[0]  || ctaTexto,
+        isAI: true,
+      });
     } else {
-      const blob = new Blob([html], { type: "text/html" });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href = url; a.download = `Guion - ${guion.tema.replace(/[^\w\sáéíóúñÁÉÍÓÚÑ]/g,"").trim()}.html`;
-      document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+      setScript({ hook: sel.logro, interes: sel.dolor, deseo: sel.cambio, accion: ctaTexto, isAI: false });
     }
+    setFase("resultado");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
   };
 
-  const generarCaption = () => {
-    if (!c.tema) return;
-    const intros = {
-      "Cercano":     `Oye, te cuento algo sobre ${c.tema} 👇`,
-      "Profesional": `Hablemos de ${c.tema}. Esto es lo que necesitas saber:`,
-      "Emotivo":     `${c.tema} cambió algo en mí que quiero compartir contigo. 💙`,
-      "Directo":     `${c.tema}: aquí van los puntos clave. Sin rodeos.`,
-      "Divertido":   `${c.tema}... sí, vamos a hablar de eso 😅👇`,
-    };
-    const body = `\n\n[Tu punto principal — 3 a 5 líneas.\nSepara las ideas con saltos de línea para que sea fácil de leer en móvil.]\n\n[Agrega un detalle personal o haz una pregunta que genere conversación.]\n\n`;
-    const cta = c.cta ? `👉 ${c.cta}\n\n` : `💬 Cuéntame en comentarios — te leo siempre.\n\n`;
-    const tags = c.hashtags ? `#mamáemprendedora #negociodesdehogar #emprendimiento #mamáceo #marketingdigital #mujeresemprendedoras` : "";
-    setCaption(`${intros[c.tono] || intros["Cercano"]}${body}${cta}${tags}`.trim());
+  const reset = () => {
+    setFase("tema"); setTopic(""); setObjetivo("Vender");
+    setSel({ logro: "", dolor: "", cambio: "", cta: "Guardar el video" });
+    setCustom({ logro: false, dolor: false, cambio: false });
+    setScript(null); setAiMsg("");
   };
+
+  const canContinue = topic.trim().length > 2;
+  const canGenerate = !!(sel.logro.trim() && sel.dolor.trim() && sel.cambio.trim());
+  const sugestiones = getSugestiones(topic);
+  const scriptTexto = script
+    ? [script.hook, script.interes, script.deseo, script.accion].filter(Boolean).join("\n\n")
+    : "";
 
   return (
     <div className="studio-tab-content">
       <div className="studio-mode-toggle">
-        <button className={subTab === "guion" ? "active" : ""} onClick={() => setSubTab("guion")}>Guión 🎬</button>
-        <button className={subTab === "caption" ? "active" : ""} onClick={() => setSubTab("caption")}>Caption 📝</button>
+        <button className={subTab === "guion" ? "active" : ""} onClick={() => setSubTab("guion")}>GuiÃ³n ðŸŽ¬</button>
+        <button className={subTab === "caption" ? "active" : ""} onClick={() => setSubTab("caption")}>Caption ðŸ“</button>
       </div>
 
-      {/* ── SUB-TAB GUIÓN ──────────────────────────── */}
       {subTab === "guion" && (
         <>
-          {/* WIZARD */}
-          {!guion && (
-            <div className="guion-form-wrap">
-
-              {/* Progreso */}
-              <div className="wiz-progress">
-                {[1,2,3,4,5].map(n => (
-                  <div key={n} className={`wiz-dot${wizard.step === n ? " active" : wizard.step > n ? " done" : ""}`} />
-                ))}
+          {/* â”€â”€ FASE 1: TEMA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {fase === "tema" && (
+            <div className="gn2-wrap">
+              <div className="gn2-hero">
+                <div className="mpm-landing-badge" style={{margin:"0 auto 8px"}}>ðŸŽ¬</div>
+                <h2>Crea tu guiÃ³n</h2>
+                <p>CuÃ©ntame el tema â€” la IA escribe el guiÃ³n completo por ti.</p>
               </div>
-
-              {/* Paso 1 — Objetivo */}
-              {wizard.step === 1 && (
-                <>
-                  <div className="guion-form-intro">
-                    <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>🎬</div>
-                    <h2>Crea tu guión</h2>
-                    <p>Responde 4 preguntas cortas y construiremos un guión desde tu historia real — sin frases genéricas.</p>
-                  </div>
-                  <div className="wiz-step-header">
-                    <span className="wiz-step-num">Paso 1 de 5</span>
-                    <span className="wiz-step-title">¿Para qué es este video?</span>
-                  </div>
-                  <div className="guion-obj-pills" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
-                    {[{k:"Vender",i:"💰"},{k:"Conectar",i:"💙"},{k:"Educar",i:"📖"},{k:"Inspirar",i:"⚡"}].map(o => (
-                      <button key={o.k} className={`guion-obj-pill${wizard.objetivo===o.k?" active":""}`}
-                        onClick={() => setWizard(p => ({...p, objetivo: o.k}))}>{o.i} {o.k}</button>
-                    ))}
-                  </div>
-                </>
-              )}
-
-              {/* Paso 2 — Logro */}
-              {wizard.step === 2 && (
-                <>
-                  <div className="wiz-step-header">
-                    <span className="wiz-step-num">Paso 2 de 5</span>
-                    <span className="wiz-step-title">¿Cuál es tu mayor logro o aprendizaje con este tema?</span>
-                  </div>
-                  <div className="wiz-help-card">
-                    💡 Entre más específica seas, más poderoso el guión. No digas solo el tema — cuenta QUÉ lograste exactamente.<br/><br/>
-                    <span className="wiz-eg-weak">Ejemplo débil: "aprendí a vender"</span><br/>
-                    <span className="wiz-eg-strong">Ejemplo poderoso: "Aprendí que no necesitaba perseguir clientes — cuando empecé a contar mi historia real en stories, las clientas correctas llegaron solas."</span>
-                  </div>
-                  <textarea className="wiz-textarea" autoFocus rows={4}
-                    placeholder="Cuenta tu logro o aprendizaje con detalle..."
-                    value={wizard.logro}
-                    onChange={e => setWizard(p => ({...p, logro: e.target.value}))} />
-                </>
-              )}
-
-              {/* Paso 3 — Dolor */}
-              {wizard.step === 3 && (
-                <>
-                  <div className="wiz-step-header">
-                    <span className="wiz-step-num">Paso 3 de 5</span>
-                    <span className="wiz-step-title">¿Qué sentías ANTES de lograr eso?</span>
-                  </div>
-                  <div className="wiz-help-card">
-                    💡 Aquí conectas con tu audiencia — ellas están donde tú estabas. Sé honesta y específica con lo que sentías.<br/><br/>
-                    <span className="wiz-eg-weak">Ejemplo débil: "me sentía mal"</span><br/>
-                    <span className="wiz-eg-strong">Ejemplo poderoso: "Me sentía agotada haciendo todo lo que decían los gurús, sin ver resultados. Dudaba si realmente esto era para mí y sentía que todas las demás lo lograban menos yo."</span>
-                  </div>
-                  <textarea className="wiz-textarea" autoFocus rows={4}
-                    placeholder="Describe cómo te sentías antes..."
-                    value={wizard.dolor}
-                    onChange={e => setWizard(p => ({...p, dolor: e.target.value}))} />
-                </>
-              )}
-
-              {/* Paso 4 — Cambio */}
-              {wizard.step === 4 && (
-                <>
-                  <div className="wiz-step-header">
-                    <span className="wiz-step-num">Paso 4 de 5</span>
-                    <span className="wiz-step-title">¿Qué cambió o qué hiciste diferente?</span>
-                  </div>
-                  <div className="wiz-help-card">
-                    💡 No tiene que ser una estrategia — puede ser una decisión, un momento, una creencia que cambió.<br/><br/>
-                    <span className="wiz-eg-weak">Ejemplo débil: "cambié mi forma de trabajar"</span><br/>
-                    <span className="wiz-eg-strong">Ejemplo poderoso: "Dejé de intentar sonar como experta y empecé a hablar como yo misma. Ese día paré de copiar a otras y publiqué desde mi corazón — y fue el post con más respuesta que había tenido."</span>
-                  </div>
-                  <textarea className="wiz-textarea" autoFocus rows={4}
-                    placeholder="Describe qué cambió o qué hiciste diferente..."
-                    value={wizard.cambio}
-                    onChange={e => setWizard(p => ({...p, cambio: e.target.value}))} />
-                </>
-              )}
-
-              {/* Paso 5 — CTA */}
-              {wizard.step === 5 && (
-                <>
-                  <div className="wiz-step-header">
-                    <span className="wiz-step-num">Paso 5 de 5</span>
-                    <span className="wiz-step-title">¿Qué quieres que hagan al terminar el video?</span>
-                  </div>
-                  <div className="wiz-cta-pills">
-                    {[
-                      { k: "Guardar el video",        i: "🔖" },
-                      { k: "Comentar cómo se sienten", i: "💬" },
-                      { k: "Escribirme por DM",        i: "✉️" },
-                      { k: "Ir al link en mi bio",     i: "🔗" },
-                      { k: "Ir a mi página web",       i: "🌐" },
-                      { k: "Ir a otro link",           i: "↗️" },
-                      { k: "Compartirlo con alguien",  i: "🤝" },
-                      { k: "Otro",                     i: "✏️" },
-                    ].map(op => (
-                      <button key={op.k} className={`wiz-cta-pill${wizard.cta===op.k?" active":""}`}
-                        onClick={() => setWizard(p => ({...p, cta: op.k}))}>
-                        {op.i} {op.k}
-                      </button>
-                    ))}
-                  </div>
-                  {wizard.cta === "Otro" && (
-                    <textarea className="wiz-textarea" style={{marginTop:"12px"}} rows={2} autoFocus
-                      placeholder='Escribe tu CTA personalizado — ej. "Apúntate a mi lista de espera escribiéndome LISTA"'
-                      value={wizard.ctaPersonalizado}
-                      onChange={e => setWizard(p => ({...p, ctaPersonalizado: e.target.value}))} />
-                  )}
-                </>
-              )}
-
-              {/* Navegación */}
-              <div className="wiz-nav">
-                {wizard.step > 1 && (
-                  <button className="mpm-wizard-back-btn" onClick={() => setWizard(p => ({...p, step: p.step - 1}))}>← Atrás</button>
-                )}
-                {wizard.step < 5 ? (
-                  <button className="mpm-step-btn" style={{flex:1}}
-                    disabled={
-                      (wizard.step === 2 && !wizard.logro.trim()) ||
-                      (wizard.step === 3 && !wizard.dolor.trim()) ||
-                      (wizard.step === 4 && !wizard.cambio.trim())
-                    }
-                    onClick={() => setWizard(p => ({...p, step: p.step + 1}))}>
-                    Siguiente →
-                  </button>
-                ) : (
-                  <button
-                    className={`mpm-step-btn${callGemini ? " studio-ai-btn" : ""}`}
-                    style={{flex:1}}
-                    onClick={() => callGemini ? generarGuionConIA() : generarGuion()}
-                    disabled={aiLoading}
-                  >
-                    {aiLoading ? "Generando..." : callGemini ? "Generar guión ✨" : "Generar guión ✦"}
-                  </button>
-                )}
+              <div className="gn2-field">
+                <label className="gn2-label">Â¿Sobre quÃ© es este video?</label>
+                <input className="gn2-input" autoFocus
+                  placeholder="Ej: guiones con IA, plan de contenido mensual, cobrar sin culpa..."
+                  value={topic}
+                  onChange={e => setTopic(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && canContinue && setFase("elegir")}
+                />
               </div>
-
-            </div>
-          )}
-
-          {/* SCRIPT DOCUMENT */}
-          {guion && (
-            <div className="guion-hoja-wrap">
-              <div className="guion-hoja-topbar">
-                <button className="mpm-wizard-back-btn" onClick={() => setGuion(null)}>&#x2190; Editar</button>
-                <button className="mpm-wizard-back-btn" onClick={() => { setGuion(null); setWizard({step:1,objetivo:"Vender",logro:"",dolor:"",cambio:"",cta:"Guardar el video"}); }}>&#x1F504; Nuevo</button>
-                {guion && !guion.isAI && callGemini && !aiLoading && (
-                  <button className="mpm-edit-btn studio-ai-btn" onClick={generarGuionConIA}>✨ Mejorar</button>
-                )}
-                {aiLoading && <span className="studio-ai-loading-inline">✨ Generando...</span>}
-                {aiMsg && <span className="studio-ai-msg-inline">{aiMsg}</span>}
-                {guion?.isAI && <span className="studio-ai-badge">✨</span>}
-                <div className="guion-hoja-actions">
-                  <button className="mpm-edit-btn" onClick={() => onSave("guiones", {
-                    id: Date.now(), tema: guion.tema, tipo: guion.tipo, objetivo: guion.objetivo, fecha: guion.fecha,
-                    logro:   wizard.logro   || "",
-                    dolor:   wizard.dolor   || "",
-                    cambio:  wizard.cambio  || "",
-                    hook:    escritura[0]   || guion.escenas?.[0]?.texto || "",
-                    interes: escritura[1]   || guion.escenas?.[1]?.texto || "",
-                    deseo:   escritura[2]   || guion.escenas?.[2]?.texto || "",
-                    ctaTxt:  escritura[3]   || guion.escenas?.[3]?.texto || "",
-                  })}>
-                    Guardar 🎬
-                  </button>
-                  <button className="lm-dl-btn lm-dl-btn--word" onClick={downloadWordGuion}>⬇ Word</button>
-                  <button className="lm-dl-btn lm-dl-btn--pdf" onClick={downloadPDF}>⬇ PDF</button>
+              <div className="gn2-field">
+                <label className="gn2-label">Â¿CuÃ¡l es el objetivo del video?</label>
+                <div className="gn2-obj-grid">
+                  {[{k:"Vender",i:"ðŸ’°"},{k:"Conectar",i:"ðŸ’™"},{k:"Educar",i:"ðŸ“–"},{k:"Inspirar",i:"âš¡"}].map(o => (
+                    <button key={o.k} className={`gn2-obj-pill${objetivo===o.k?" active":""}`}
+                      onClick={() => setObjetivo(o.k)}>{o.i} {o.k}</button>
+                  ))}
                 </div>
               </div>
-
-              <div className="guion-print-area">
-                <div className="guion-doc-header">
-                  <span className="guion-doc-brand">Mamá CEO · Studio de Contenido · GUIÓN</span>
-                  <h1 className="guion-doc-title">{guion.tema}</h1>
-                  <div className="guion-doc-meta-row">
-                    <span className="guion-doc-meta-badge">Objetivo: {guion.objetivo}</span>
-                    <span className="guion-doc-meta-badge">{guion.fecha}</span>
-                  </div>
-                </div>
-
-                {/* Script completo — visible primero cuando IA genera */}
-                {guion?.isAI && (
-                  <div className={`guion-completo-wrap guion-completo-wrap--ai`} style={{marginBottom: "8px"}}>
-                    <button className="guion-completo-toggle" onClick={() => setVerCompleto(p => !p)}>
-                      <span>✨ Guión completo listo para grabar</span>
-                      <span className="guion-completo-arrow">{verCompleto ? "↑" : "↓"}</span>
-                    </button>
-                    {verCompleto && (
-                      <div className="guion-completo-body">
-                        <div className="guion-script-listo-banner">
-                          <span>🎬</span>
-                          <p>Tu guión está listo. Léelo de corrido, edita lo que suene más a ti, y graba.</p>
-                        </div>
-                        <div className="guion-script-listo">
-                          {guion.escenas.map((esc, i) => (
-                            <div key={i} className="guion-completo-scene" style={{"--sc": esc.color}}>
-                              <div className="guion-completo-scene-hdr">
-                                <span className="guion-completo-num" style={{color: esc.color}}>{esc.num}</span>
-                                <span className="guion-completo-nombre">{esc.nombre}</span>
-                                <span className="guion-completo-sub">— {esc.subtitulo}</span>
-                                <span className="guion-completo-tiempo">⏱ {esc.tiempo}</span>
-                              </div>
-                              <p className="guion-completo-texto">{escritura[i] || esc.frases?.[0] || esc.placeholder}</p>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="guion-completo-actions">
-                          <button className="lm-dl-btn" onClick={() => {
-                            const full = guion.escenas.map((esc, i) =>
-                              `[ ${esc.nombre} — ${esc.tiempo} ]\n${escritura[i] || esc.frases?.[0] || ""}`
-                            ).join("\n\n");
-                            copiar(full, "guion-top");
-                          }}>{copiado === "guion-top" ? "✓ Copiado" : "📋 Copiar guión completo"}</button>
-                          <button className="lm-dl-btn lm-dl-btn--pdf" onClick={downloadPDF}>⬇ Descargar PDF</button>
-                        </div>
+              <button className={`mpm-step-btn${callGemini?" studio-ai-btn":""}`} style={{marginTop:"8px"}}
+                disabled={!canContinue} onClick={() => setFase("elegir")}>
+                Continuar â†’
+              </button>
+              {saved?.guiones?.length > 0 && (
+                <div className="studio-bank" style={{marginTop:"20px"}}>
+                  <h4>Guiones guardados ({saved.guiones.length})</h4>
+                  {saved.guiones.slice().reverse().map(g => (
+                    <div className="studio-bank-item" key={g.id}>
+                      <div className="studio-bank-item-top">
+                        <span className="studio-tipo-badge" style={{background:"#C4526A"}}>{g.tipo || "GuiÃ³n"}</span>
+                        <small>{g.fecha}</small>
                       </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Escenas — personaliza cada sección */}
-                {guion?.isAI && (
-                  <div className="guion-personaliza-hdr">
-                    <span>✦ Personaliza cada sección</span>
-                    <span className="guion-personaliza-sub">Navega entre variantes y ajusta a tu voz</span>
-                  </div>
-                )}
-                <div className="guion-escenas">
-                  {guion.escenas.map((esc, i) => (
-                    <div key={i} className="guion-escena" style={{"--scene-color": esc.color, "--scene-bg": esc.bgLight}}>
-                      <div className="guion-escena-strip" />
-                      <div className="guion-escena-content">
-
-                        <div className="guion-escena-header">
-                          <span className="guion-escena-num">{esc.num}</span>
-                          <div className="guion-escena-title-group">
-                            <div className="guion-escena-name-row">
-                              <h2 className="guion-escena-nombre">{esc.nombre}</h2>
-                              <span className="guion-escena-sub">— {esc.subtitulo}</span>
-                            </div>
-                            <div className="guion-escena-badges">
-                              <span className="guion-escena-tiempo">⏱ {esc.tiempo}</span>
-                              <span className="guion-escena-emocion" style={{background: esc.color}}>{esc.emocion}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="guion-guia-box">
-                          <span>💡</span>
-                          <p>{esc.guia}</p>
-                        </div>
-
-                        {esc.nota && (
-                          <div className="guion-nota-box">
-                            <span>🎯</span>
-                            <p>{esc.nota}</p>
-                          </div>
-                        )}
-
-                        {/* Ideas contextuales */}
-                        {esc.ideas && esc.ideas.length > 0 && (
-                          <div className="guion-ideas-section">
-                            <div className="guion-ideas-label">💡 Ideas para agregar — clic para insertar:</div>
-                            <div className="guion-ideas-list">
-                              {esc.ideas.map((idea, j) => (
-                                <button key={j} className="guion-idea-chip"
-                                  onClick={() => usarFrase(i, idea)}>
-                                  + {idea}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Slider de frases */}
-                        <div className="guion-frase-slider-wrap">
-                          <div className="guion-frases-title">Tu texto base — edita a tu gusto:</div>
-                          <div className="guion-frase-slide-card" key={`s-${i}-${(fraseIdx[i]||0) % esc.frases.length}`}>
-                            <span className="guion-frase-mark">✦</span>
-                            <p className="guion-frase-text">{esc.frases[(fraseIdx[i]||0) % esc.frases.length]}</p>
-                          </div>
-                          <div className="guion-frase-slider-nav">
-                            <span className="guion-frase-counter">{(fraseIdx[i]||0) % esc.frases.length + 1} / {esc.frases.length}</span>
-                            <div className="guion-frase-nav-btns">
-                              <button className="guion-frase-nav-btn" onClick={() => prevFrase(i, esc.frases.length)}>←</button>
-                              <button className="guion-frase-nav-btn" onClick={() => nextFrase(i, esc.frases.length)}>→</button>
-                              <button className="guion-frase-nav-btn guion-frase-shuffle-btn" title="Ver otra frase aleatoria"
-                                onClick={() => setFraseIdx(p => ({...p, [i]: Math.floor(Math.random() * esc.frases.length)}))}>🔀</button>
-                            </div>
-                            <button className="guion-usar-frase-btn" style={{"--scene-color": esc.color}}
-                              onClick={() => usarFrase(i, esc.frases[(fraseIdx[i]||0) % esc.frases.length])}>
-                              Usar esta ✦
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Palabras interactivas — solo escenas 2, 3, 4 (no HOOK) */}
-                        {i > 0 && (
-                          <div className="guion-palabras-section">
-                            <div className="guion-palabras-title">Palabras que tocan — clic para agregar:</div>
-                            <div className="guion-palabras-row">
-                              {esc.palabras.map((pw, j) => (
-                                <button key={j} className="guion-palabra-chip"
-                                  style={{background: esc.bgLight, color: esc.color, borderColor: esc.color + "55"}}
-                                  onClick={() => usarPalabra(i, pw)}>
-                                  + {pw}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        <div className="guion-write-section">
-                          <div className="guion-write-label">✍ Tu versión (edita a tu gusto):</div>
-                          <textarea
-                            className="guion-write-textarea"
-                            placeholder={esc.placeholder}
-                            value={escritura[i] || ""}
-                            onChange={e => setEscritura(p => ({...p, [i]: e.target.value}))}
-                            rows={6}
-                          />
-                        </div>
-
+                      <strong style={{fontSize:"13px"}}>{g.tema}</strong>
+                      <div style={{display:"flex",gap:"6px",marginTop:"8px"}}>
+                        <button className="studio-bank-action-copy" onClick={() => {
+                          setCaption(buildCaptionFromGuion(g.objetivo));
+                          setSubTab("caption");
+                          setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}),50);
+                        }}>ðŸ“ Caption</button>
+                        <button className="studio-bank-action-copy" style={{color:"#C4526A"}} onClick={() => onDelete?.("guiones", g.id)}>Eliminar</button>
                       </div>
                     </div>
                   ))}
                 </div>
+              )}
+            </div>
+          )}
 
-                {/* Guión completo — solo visible en modo sin IA (con IA ya aparece arriba) */}
-                {!guion?.isAI && (
-                  <div className="guion-completo-wrap">
-                    <button className="guion-completo-toggle" onClick={() => setVerCompleto(p => !p)}>
-                      <span>📄 Ver guión completo</span>
-                      <span className="guion-completo-arrow">{verCompleto ? "↑" : "↓"}</span>
-                    </button>
-                    {verCompleto && (
-                      <div className="guion-completo-body">
-                        <div className="guion-script-listo">
-                          {guion.escenas.map((esc, i) => (
-                            <div key={i} className="guion-completo-scene" style={{"--sc": esc.color}}>
-                              <div className="guion-completo-scene-hdr">
-                                <span className="guion-completo-num" style={{color: esc.color}}>{esc.num}</span>
-                                <span className="guion-completo-nombre">{esc.nombre}</span>
-                                <span className="guion-completo-sub">— {esc.subtitulo}</span>
-                                <span className="guion-completo-tiempo">⏱ {esc.tiempo}</span>
-                              </div>
-                              <p className="guion-completo-texto">{escritura[i] || esc.placeholder}</p>
-                            </div>
-                          ))}
-                        </div>
-                        <div className="guion-completo-actions">
-                          <button className="lm-dl-btn" onClick={() => {
-                            const full = guion.escenas.map((esc, i) =>
-                              `[ ${esc.nombre} — ${esc.tiempo} ]\n${escritura[i] || ""}`
-                            ).join("\n\n");
-                            copiar(full, "guion-completo");
-                          }}>{copiado === "guion-completo" ? "✓ Copiado" : "📋 Copiar guión completo"}</button>
-                          <button className="lm-dl-btn lm-dl-btn--pdf" onClick={downloadPDF}>⬇ Descargar PDF</button>
-                        </div>
-                      </div>
+          {/* â”€â”€ FASE 2: ELEGIR OPCIONES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {fase === "elegir" && (
+            <div className="gn2-wrap">
+              <div className="gn2-fase-hdr">
+                <button className="mpm-wizard-back-btn" onClick={() => setFase("tema")}>â† AtrÃ¡s</button>
+                <span className="gn2-topic-badge">ðŸŽ¬ {topic}</span>
+              </div>
+              {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
+
+              {[
+                { num:"01", key:"logro",  pregunta:"Â¿CuÃ¡l es tu mayor logro o aprendizaje con este tema?", hint:"Entre mÃ¡s especÃ­fica seas, mÃ¡s poderoso el guiÃ³n", opciones: sugestiones.logros, placeholder:"CuÃ©ntalo con detalle â€” quÃ© lograste exactamente..." },
+                { num:"02", key:"dolor",  pregunta:"Â¿CÃ³mo te sentÃ­as ANTES de lograr eso?", hint:"AquÃ­ conectas con tu audiencia â€” ellas estÃ¡n donde tÃº estabas", opciones: sugestiones.dolores, placeholder:"Describe cÃ³mo te sentÃ­as â€” honesta y especÃ­fica..." },
+                { num:"03", key:"cambio", pregunta:"Â¿QuÃ© cambiÃ³ o hiciste diferente?", hint:"No tiene que ser una estrategia â€” puede ser una decisiÃ³n", opciones: sugestiones.cambios, placeholder:"Â¿QuÃ© hiciste diferente que lo cambiÃ³ todo?..." },
+              ].map(({ num, key, pregunta, hint, opciones, placeholder }) => (
+                <div key={key} className="gn2-q-card">
+                  <div className="gn2-q-num">{num}</div>
+                  <div className="gn2-q-content">
+                    <div className="gn2-q-title">{pregunta}</div>
+                    <div className="gn2-q-hint">{hint}</div>
+                    <div className="gn2-options">
+                      {opciones.map((s, i) => (
+                        <button key={i}
+                          className={`gn2-option${sel[key] === s && !custom[key] ? " active" : ""}`}
+                          onClick={() => { setSel(p=>({...p,[key]:s})); setCustom(p=>({...p,[key]:false})); }}>
+                          {s}
+                        </button>
+                      ))}
+                      <button className={`gn2-option gn2-option--custom${custom[key] ? " active" : ""}`}
+                        onClick={() => { setCustom(p=>({...p,[key]:true})); setSel(p=>({...p,[key]:""})); }}>
+                        âœ Escribir mi propia versiÃ³n
+                      </button>
+                    </div>
+                    {custom[key] && (
+                      <textarea className="gn2-custom-input" autoFocus rows={3}
+                        placeholder={placeholder} value={sel[key]}
+                        onChange={e => setSel(p=>({...p,[key]:e.target.value}))} />
                     )}
+                    {sel[key] && <div className="gn2-selected-badge">âœ“ Listo</div>}
                   </div>
-                )}
+                </div>
+              ))}
 
-                {/* Caption CTA */}
-                <div className="guion-caption-cta">
-                  <div className="guion-caption-cta-info">
-                    <div className="guion-caption-cta-title">¿Listo para publicar?</div>
-                    <div className="guion-caption-cta-sub">Tu caption se crea en un clic, alineado con este video</div>
+              <div className="gn2-q-card">
+                <div className="gn2-q-num">04</div>
+                <div className="gn2-q-content">
+                  <div className="gn2-q-title">Â¿QuÃ© quieres que hagan al terminar el video?</div>
+                  <div className="gn2-options">
+                    {CTAS.map(op => (
+                      <button key={op.k} className={`gn2-option${sel.cta === op.k ? " active" : ""}`}
+                        onClick={() => setSel(p=>({...p,cta:op.k}))}>
+                        {op.i} {op.k}
+                      </button>
+                    ))}
                   </div>
-                  <button className="guion-caption-cta-btn" onClick={() => {
-                    if (!caption) setCaption(buildCaptionFromGuion(guion.objetivo));
-                    setSubTab("caption");
-                    setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}), 50);
-                  }}>
-                    📝 Generar caption
-                  </button>
+                  {sel.cta && <div className="gn2-selected-badge">âœ“ Listo</div>}
+                </div>
+              </div>
+
+              <button className={`mpm-step-btn${callGemini ? " studio-ai-btn" : ""}`}
+                style={{marginTop:"8px"}} disabled={!canGenerate} onClick={generar}>
+                {callGemini ? "âœ¨ Generar mi guiÃ³n completo" : "âœ¦ Generar guiÃ³n"}
+              </button>
+            </div>
+          )}
+
+          {/* â”€â”€ GENERANDO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {fase === "generando" && (
+            <div className="gn2-wrap" style={{paddingTop:"48px",textAlign:"center"}}>
+              <div className="ideas-thinking">
+                <div className="ideas-thinking-dots"><span/><span/><span/></div>
+                <p style={{marginTop:"16px",color:"#9A7878",fontSize:"14px"}}>Escribiendo tu guiÃ³n...</p>
+              </div>
+            </div>
+          )}
+
+          {/* â”€â”€ FASE 3: RESULTADO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
+          {fase === "resultado" && script && (
+            <div className="gn2-wrap">
+              <div className="gn2-resultado-hdr">
+                <button className="mpm-wizard-back-btn" onClick={() => setFase("elegir")}>â† Editar</button>
+                <button className="mpm-wizard-back-btn" onClick={reset}>ðŸ”„ Nuevo</button>
+                <button className="mpm-wizard-back-btn" onClick={() => onSave("guiones", {
+                  id: Date.now(), tema: topic, tipo: "Reel (60s)", objetivo,
+                  hook: script.hook, interes: script.interes,
+                  deseo: script.deseo, ctaTxt: script.accion,
+                  fecha: new Date().toLocaleDateString("es"),
+                })}>ðŸ’¾ Guardar</button>
+                {script.isAI && <span className="studio-ai-badge">âœ¨ IA</span>}
+              </div>
+
+              <div className="gn2-script-card">
+                <div className="gn2-script-title">
+                  <span>ðŸŽ¬</span>
+                  <div>
+                    <strong>{topic}</strong>
+                    <span className="gn2-script-obj"> Â· {objetivo}</span>
+                  </div>
                 </div>
 
-                <div className="guion-doc-footer">
-                  <p>Creado con Studio de Contenido · Mamá CEO App</p>
+                {[
+                  {key:"hook",    label:"01 Â· HOOK",    sub:"Detiene el scroll Â· 0â€“3 seg",            color:"#C9903A"},
+                  {key:"interes", label:"02 Â· INTERÃ‰S", sub:"Nombra el dolor Â· 3â€“15 seg",             color:"#C4526A"},
+                  {key:"deseo",   label:"03 Â· DESEO",   sub:"Pinta la transformaciÃ³n Â· 15â€“45 seg",    color:"#27AE60"},
+                  {key:"accion",  label:"04 Â· ACCIÃ“N",  sub:"Una sola instrucciÃ³n Â· Ãºltimos 10 seg",  color:"#6366F1"},
+                ].map(({key, label, sub, color}) => (
+                  <div key={key} className="gn2-section" style={{"--sc": color}}>
+                    <div className="gn2-section-hdr">
+                      <span className="gn2-section-label" style={{color}}>{label}</span>
+                      <span className="gn2-section-sub">{sub}</span>
+                    </div>
+                    <textarea className="gn2-section-text"
+                      value={script[key] || ""}
+                      onChange={e => setScript(p => ({...p, [key]: e.target.value}))}
+                      rows={3}
+                    />
+                  </div>
+                ))}
+
+                <div className="gn2-script-actions">
+                  <button className="lm-dl-btn" style={{flex:1}} onClick={() => copiar(scriptTexto, "script")}>
+                    {copiado === "script" ? "âœ“ Copiado" : "ðŸ“‹ Copiar guiÃ³n completo"}
+                  </button>
+                  <button className="guion-caption-cta-btn" onClick={() => {
+                    setC(p => ({...p, tema: topic}));
+                    setCaption(buildCaptionFromGuion());
+                    setSubTab("caption");
+                    setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}), 50);
+                  }}>ðŸ“ Caption</button>
                 </div>
               </div>
             </div>
@@ -2539,47 +2125,31 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
         </>
       )}
 
-      {/* ── SUB-TAB CAPTION ────────────────────────── */}
+      {/* â”€â”€ CAPTION SUB-TAB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {subTab === "caption" && (
         <div className="cap-wrap">
-
-          {/* Header */}
           <div className="guion-form-intro" style={{marginBottom:"4px"}}>
-            <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>📝</div>
+            <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>ðŸ“</div>
             <h2>Captions para Redes</h2>
-            <p>Tu caption se genera solo con cada guión. Edítalo, crea desde tus videos guardados o escribe uno nuevo desde cero.</p>
+            <p>Tu caption se genera con cada guiÃ³n. EdÃ­talo o crea uno nuevo desde cero.</p>
           </div>
-
-          {/* Caption del guion actual */}
           {caption && (
             <div className="cap-auto-card">
               <div className="cap-auto-hdr">
-                <div className="cap-auto-label">📽 Caption generado</div>
-                {guion && (
-                  <div className="cap-video-info">
-                    <span className="cap-video-tema">{guion.tema}</span>
-                    <span className="cap-video-meta">{guion.tipo} · {guion.objetivo}</span>
-                  </div>
-                )}
+                <div className="cap-auto-label">ðŸ“½ Caption generado</div>
+                {topic && <div className="cap-video-info"><span className="cap-video-tema">{topic}</span></div>}
               </div>
-              <textarea
-                className="studio-caption-edit"
-                value={caption}
-                onChange={e => setCaption(e.target.value)}
-                rows={10}
-              />
+              <textarea className="studio-caption-edit" value={caption} onChange={e => setCaption(e.target.value)} rows={10} />
               <div className="cap-auto-actions">
-                <button className="lm-dl-btn" onClick={() => copiar(caption, "cap-auto")}>{copiado === "cap-auto" ? "✓ Copiado" : "Copiar"}</button>
-                <button className="lm-dl-btn lm-dl-btn--word" onClick={() => onSave("captions", { id: Date.now(), caption, red: c.red, tema: c.tema || guion?.tema, fecha: new Date().toLocaleDateString("es") })}>Guardar</button>
-                <button className="lm-dl-btn" onClick={() => setCaption(null)} style={{marginLeft:"auto",color:"#9A7878",border:"none",background:"transparent",boxShadow:"none",padding:"6px 10px"}}>✕ Limpiar</button>
+                <button className="lm-dl-btn" onClick={() => copiar(caption, "cap-auto")}>{copiado === "cap-auto" ? "âœ“ Copiado" : "Copiar"}</button>
+                <button className="lm-dl-btn lm-dl-btn--word" onClick={() => onSave("captions", { id: Date.now(), caption, red: c.red, tema: topic || c.tema, fecha: new Date().toLocaleDateString("es") })}>Guardar</button>
+                <button className="lm-dl-btn" onClick={() => setCaption(null)} style={{marginLeft:"auto",color:"#9A7878",border:"none",background:"transparent",boxShadow:"none",padding:"6px 10px"}}>âœ• Limpiar</button>
               </div>
             </div>
           )}
-
-          {/* Ideas desde guiones guardados */}
           {saved?.guiones?.length > 0 && (
             <div className="cap-history-section">
-              <div className="cap-section-label">📽 Crea caption desde tus videos guardados</div>
+              <div className="cap-section-label">ðŸ“½ Crea caption desde tus videos guardados</div>
               <div className="cap-guiones-grid">
                 {saved.guiones.slice().reverse().slice(0, 6).map(g => (
                   <button key={g.id} className="cap-guion-card" onClick={() => {
@@ -2587,71 +2157,59 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                     setC(p => ({ ...p, tema: g.tema }));
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}>
-                    <span className="cap-guion-tipo">{g.tipo?.split(" ")[0]}</span>
+                    <span className="cap-guion-tipo">{g.tipo?.split(" ")[0] || "ðŸŽ¬"}</span>
                     <div className="cap-guion-tema">{g.tema}</div>
-                    <div className="cap-guion-foot">
-                      <span>{g.objetivo}</span>
-                      <span className="cap-crear-lbl">Crear caption →</span>
-                    </div>
+                    <div className="cap-guion-foot"><span>{g.objetivo}</span><span className="cap-crear-lbl">Caption â†’</span></div>
                   </button>
                 ))}
               </div>
             </div>
           )}
-
-          {/* Creación manual */}
           <div className="cap-manual-card">
-            <div className="cap-section-label">✍ Crear caption desde cero</div>
-
+            <div className="cap-section-label">âœ Crear caption desde cero</div>
             <div className="cap-pills-group">
               <div className="cap-pills-label">Red social</div>
               <div className="cap-pills-row">
-                {[{k:"Instagram",i:"📸"},{k:"TikTok",i:"🎵"},{k:"YouTube",i:"🎬"},{k:"Facebook",i:"💬"}].map(r => (
+                {[{k:"Instagram",i:"ðŸ“¸"},{k:"TikTok",i:"ðŸŽµ"},{k:"YouTube",i:"ðŸŽ¬"},{k:"Facebook",i:"ðŸ’¬"}].map(r => (
                   <button key={r.k} className={`cap-pill${c.red===r.k?" active":""}`} onClick={() => setC(p => ({...p, red: r.k}))}>{r.i} {r.k}</button>
                 ))}
               </div>
             </div>
-
             <div className="cap-pills-group">
               <div className="cap-pills-label">Tono</div>
               <div className="cap-pills-row">
-                {[{k:"Cercano",i:"💙"},{k:"Profesional",i:"💼"},{k:"Emotivo",i:"💫"},{k:"Directo",i:"⚡"},{k:"Divertido",i:"😄"}].map(t => (
+                {[{k:"Cercano",i:"ðŸ’™"},{k:"Profesional",i:"ðŸ’¼"},{k:"Emotivo",i:"ðŸ’«"},{k:"Directo",i:"âš¡"},{k:"Divertido",i:"ðŸ˜„"}].map(t => (
                   <button key={t.k} className={`cap-pill${c.tono===t.k?" active":""}`} onClick={() => setC(p => ({...p, tono: t.k}))}>{t.i} {t.k}</button>
                 ))}
               </div>
             </div>
-
             <div className={`desc-q-card${c.tema?" filled":""}`}>
-              <div className="desc-q-num">📝</div>
+              <div className="desc-q-num">ðŸ“</div>
               <div className="desc-q-body">
                 <label className="desc-q-label">Tema del post</label>
-                <input className="desc-q-input"
-                  placeholder="cómo le digo el precio sin miedo, mi historia con emprender..."
-                  value={c.tema} onChange={e => setC(p => ({...p, tema: e.target.value}))} />
+                <input className="desc-q-input" placeholder="cÃ³mo le digo el precio sin miedo..." value={c.tema} onChange={e => setC(p => ({...p, tema: e.target.value}))} />
               </div>
             </div>
-
             <div className={`desc-q-card${c.cta?" filled":""}`}>
-              <div className="desc-q-num">👉</div>
+              <div className="desc-q-num">ðŸ‘‰</div>
               <div className="desc-q-body">
-                <label className="desc-q-label">CTA — llamada a la acción</label>
-                <input className="desc-q-input"
-                  placeholder="Guarda este post / Comenta SÍ si te pasó / Link en bio"
-                  value={c.cta} onChange={e => setC(p => ({...p, cta: e.target.value}))} />
+                <label className="desc-q-label">CTA â€” llamada a la acciÃ³n</label>
+                <input className="desc-q-input" placeholder="Guarda este post / Comenta SÃ / Link en bio" value={c.cta} onChange={e => setC(p => ({...p, cta: e.target.value}))} />
               </div>
             </div>
-
             <label className="cap-checkbox-row">
               <input type="checkbox" checked={c.hashtags} onChange={e => setC(p => ({...p, hashtags: e.target.checked}))} />
-              Incluir hashtags de mamá emprendedora
+              Incluir hashtags de mamÃ¡ emprendedora
             </label>
-
-            <button className="mpm-step-btn" onClick={generarCaption} disabled={!c.tema.trim()}>
-              Generar caption ✦
-            </button>
+            <button className="mpm-step-btn" disabled={!c.tema.trim()} onClick={() => {
+              if (!c.tema) return;
+              const intros = { "Cercano":`Oye, te cuento algo sobre ${c.tema} ðŸ‘‡`, "Profesional":`Hablemos de ${c.tema}. Esto es lo que necesitas saber:`, "Emotivo":`${c.tema} cambiÃ³ algo en mÃ­ que quiero compartir contigo. ðŸ’™`, "Directo":`${c.tema}: aquÃ­ van los puntos clave. Sin rodeos.`, "Divertido":`${c.tema}... sÃ­, vamos a hablar de eso ðŸ˜…ðŸ‘‡` };
+              const body = `\n\n[Tu punto principal â€” 3 a 5 lÃ­neas cortas.]\n\n[Un detalle personal o pregunta que genere conversaciÃ³n.]\n\n`;
+              const cta  = c.cta ? `ðŸ‘‰ ${c.cta}\n\n` : `ðŸ’¬ CuÃ©ntame en comentarios â€” te leo siempre.\n\n`;
+              const tags = c.hashtags ? `#mamÃ¡emprendedora #negociodesdehogar #emprendimiento #mamÃ¡ceo #marketingdigital` : "";
+              setCaption(`${intros[c.tono]||intros["Cercano"]}${body}${cta}${tags}`.trim());
+            }}>Generar caption âœ¦</button>
           </div>
-
-          {/* Banco de captions guardados */}
           {saved?.captions?.length > 0 && (
             <div className="studio-bank">
               <h4>Captions guardados ({saved.captions.length})</h4>
@@ -2662,53 +2220,23 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                     <small>{cp.fecha}</small>
                   </div>
                   {cp.tema && <strong style={{fontSize:"13px",display:"block",marginTop:"4px"}}>{cp.tema}</strong>}
-                  <p style={{fontSize:"12px",color:"#9A7878",margin:"5px 0 8px",lineHeight:"1.5",whiteSpace:"pre-wrap"}}>{cp.caption?.substring(0,120)}…</p>
+                  <p style={{fontSize:"12px",color:"#9A7878",margin:"5px 0 8px",lineHeight:"1.5",whiteSpace:"pre-wrap"}}>{cp.caption?.substring(0,120)}â€¦</p>
                   <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
                     <button className="studio-bank-action-copy" onClick={() => { setCaption(cp.caption); window.scrollTo({top:0,behavior:"smooth"}); }}>Usar</button>
-                    <button className="studio-bank-action-copy" onClick={() => copiar(cp.caption, `sc-${cp.id}`)}>{copiado===`sc-${cp.id}`?"✓ Copiado":"Copiar"}</button>
+                    <button className="studio-bank-action-copy" onClick={() => copiar(cp.caption, `sc-${cp.id}`)}>{copiado===`sc-${cp.id}`?"âœ“ Copiado":"Copiar"}</button>
                     <button className="studio-bank-action-copy" style={{color:"#C4526A"}} onClick={() => onDelete?.("captions", cp.id)}>Eliminar</button>
                   </div>
                 </div>
               ))}
             </div>
           )}
-
-        </div>
-      )}
-
-      {/* ── BANCO ────────────────────────────────────── */}
-      {saved?.guiones?.length > 0 && subTab === "guion" && (
-        <div className="studio-bank">
-          <h4>Guiones guardados ({saved.guiones.length})</h4>
-          {saved.guiones.slice().reverse().map(g => (
-            <div className="studio-bank-item" key={g.id}>
-              <div className="studio-bank-item-top">
-                <span className="studio-tipo-badge" style={{background:"#C4526A"}}>{g.tipo || "Guión"}</span>
-                <small>{g.fecha}</small>
-              </div>
-              <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"8px",marginTop:"5px"}}>
-                <div>
-                  <strong style={{fontSize:"13px"}}>{g.tema}</strong>
-                  {g.objetivo && <span style={{fontSize:"11px",color:"#9A7878",marginLeft:"7px"}}>· {g.objetivo}</span>}
-                </div>
-                <div style={{display:"flex",gap:"6px",flexShrink:0}}>
-                  <button className="studio-bank-action-copy" onClick={() => { setCaption(buildCaptionFromGuion(g.objetivo)); setSubTab("caption"); setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}),50); }}>
-                    📝 Caption
-                  </button>
-                  <button className="studio-bank-action-copy" style={{color:"#C4526A"}} onClick={() => onDelete?.("guiones", g.id)}>
-                    Eliminar
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       )}
     </div>
   );
 }
 
-// ── EMAIL ──────────────────────────────────────────────────────
+// â”€â”€ EMAIL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
   const [view,      setView]      = useState("inicio");
   const [objetivo,  setObjetivo]  = useState("Lanzar producto");
@@ -2717,89 +2245,89 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
   const [cuerpos,   setCuerpos]   = useState({});
   const [expandido, setExpandido] = useState({});
   const [thinking,  setThinking]  = useState(false);
-  const [ef,        setEf]        = useState({ tipo: "Presentación", tono: brandProfile.tono || "Cercano", tema: brandProfile.queOfreces || "", cta: "" });
+  const [ef,        setEf]        = useState({ tipo: "PresentaciÃ³n", tono: brandProfile.tono || "Cercano", tema: brandProfile.queOfreces || "", cta: "" });
   const [draft,     setDraft]     = useState(null);
   const [copiado,   setCopiado]   = useState("");
 
   const copiar = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2000); };
 
   const OBJ_META = {
-    "Lanzar producto":     { emoji: "🚀", color: "#C4526A", bg: "#FFF0F3", desc: "4 emails · Anuncia con emoción y urgencia" },
-    "Nutrir lista":        { emoji: "💌", color: "#27AE60", bg: "#EEFAF3", desc: "3 emails · Valor puro sin vender" },
-    "Bienvenida":          { emoji: "🎁", color: "#4A90D9", bg: "#EEF5FF", desc: "3 emails · Conecta con nuevas suscriptoras" },
-    "Venta directa":       { emoji: "💰", color: "#E8755A", bg: "#FFF5F0", desc: "3 emails · Lleva directo a la compra" },
-    "Recuperar inactivos": { emoji: "🔄", color: "#C9903A", bg: "#FFF8ED", desc: "3 emails · Reconecta con quienes dejaron de abrir" },
-    "Compartir valor":     { emoji: "✨", color: "#E67E22", bg: "#FFF5EB", desc: "2 emails · Educa, inspira y posiciónate" },
+    "Lanzar producto":     { emoji: "ðŸš€", color: "#C4526A", bg: "#FFF0F3", desc: "4 emails Â· Anuncia con emociÃ³n y urgencia" },
+    "Nutrir lista":        { emoji: "ðŸ’Œ", color: "#27AE60", bg: "#EEFAF3", desc: "3 emails Â· Valor puro sin vender" },
+    "Bienvenida":          { emoji: "ðŸŽ", color: "#4A90D9", bg: "#EEF5FF", desc: "3 emails Â· Conecta con nuevas suscriptoras" },
+    "Venta directa":       { emoji: "ðŸ’°", color: "#E8755A", bg: "#FFF5F0", desc: "3 emails Â· Lleva directo a la compra" },
+    "Recuperar inactivos": { emoji: "ðŸ”„", color: "#C9903A", bg: "#FFF8ED", desc: "3 emails Â· Reconecta con quienes dejaron de abrir" },
+    "Compartir valor":     { emoji: "âœ¨", color: "#E67E22", bg: "#FFF5EB", desc: "2 emails Â· Educa, inspira y posiciÃ³nate" },
   };
 
   const buildCampana = (obj, com) => {
-    const c = com || "ayudar a mamás emprendedoras";
+    const c = com || "ayudar a mamÃ¡s emprendedoras";
     const CAMPS = {
       "Lanzar producto": [
-        { num: 1, dia: "Día 1 — Anuncio", asunto: "🎉 Por fin está aquí — [nombre del producto]",
-          cuerpo: `Hola [nombre],\n\nEl día llegó. Y honestamente... estoy emocionada de contártelo.\n\n[Nombre del producto] está disponible ahora mismo — y lo creé pensando en ti.\n\n¿Por qué lo creé? Porque ${c}. Y vi que faltaba algo concreto para hacerlo posible.\n\nEsto es lo que vas a lograr:\n• [Resultado 1 — específico y emocional]\n• [Resultado 2]\n• [Resultado 3]\n\nNo es información que ya tienes. Es un proceso que te lleva de donde estás ahora a donde quieres estar, con mi acompañamiento.\n\n¿Quieres ver todos los detalles?\n\n👉 [Link a la página de ventas]\n\nHasta pronto,\n[Tu nombre]`,
-          cta: "Ver todos los detalles →" },
-        { num: 2, dia: "Día 3 — Educación", asunto: "¿Para quién es exactamente esto?",
-          cuerpo: `Hola [nombre],\n\nHace dos días te conté sobre [nombre del producto].\n\nHoy quiero ser muy honesta contigo: esto no es para todo el mundo.\n\n[Nombre del producto] es para ti si:\n✅ Eres [descripción de tu clienta ideal]\n✅ Ya intentaste [lo que intentaron antes] sin los resultados que querías\n✅ Estás lista para [compromiso que requiere]\n✅ Quieres ${c} en [tiempo específico]\n\nNo es para ti si buscas resultados de la noche a la mañana. Hay proceso. Pero el proceso funciona — y yo voy contigo en cada paso.\n\n¿Te reconociste? Hay un lugar para ti. 💌\n\n👉 [Link]\n\n[Tu nombre]`,
-          cta: "Sí, quiero ese lugar →" },
-        { num: 3, dia: "Día 5 — Prueba social", asunto: "Esto dice alguien que ya lo vivió 💬",
-          cuerpo: `Hola [nombre],\n\nA veces las palabras de otra persona dicen lo que yo no puedo decir.\n\n"[Testimonio real de una clienta — en sus palabras exactas. Qué logró, en cuánto tiempo, cómo se sintió. Si no tienes uno aún, escribe el resultado más concreto que has logrado con alguien.]"\n— [Nombre de la clienta]\n\nEso es lo que es posible cuando ${c}.\n\nY esa persona empezó exactamente donde tú estás ahora — con dudas, con miedo, preguntándose si funcionaría.\n\nFuncionó.\n\n¿Quieres ese resultado?\n\n👉 [Link]\n\n[Tu nombre]`,
-          cta: "Quiero ese resultado →" },
-        { num: 4, dia: "Día 7 — Cierre", asunto: "Últimas horas ⏰ — cierra hoy a las [hora]",
-          cuerpo: `Hola [nombre],\n\nHoy es el último día.\n\nA las [hora] de hoy cierra [nombre del producto] — y no lo repetiré pronto.\n\nSé que a veces dudamos. Que pensamos "lo dejo para después". Pero "después" muchas veces significa perderse la oportunidad.\n\nTe pregunto esto desde el corazón: ¿qué sería diferente en tu negocio si pudieras ${c} en los próximos [tiempo]?\n\nEso es exactamente lo que está del otro lado de esta decisión.\n\nSi sientes que esto es para ti — confía en eso. No en el miedo.\n\n👉 [Link — último recordatorio]\n\nCon cariño,\n[Tu nombre]`,
-          cta: "Entrar antes del cierre →" },
+        { num: 1, dia: "DÃ­a 1 â€” Anuncio", asunto: "ðŸŽ‰ Por fin estÃ¡ aquÃ­ â€” [nombre del producto]",
+          cuerpo: `Hola [nombre],\n\nEl dÃ­a llegÃ³. Y honestamente... estoy emocionada de contÃ¡rtelo.\n\n[Nombre del producto] estÃ¡ disponible ahora mismo â€” y lo creÃ© pensando en ti.\n\nÂ¿Por quÃ© lo creÃ©? Porque ${c}. Y vi que faltaba algo concreto para hacerlo posible.\n\nEsto es lo que vas a lograr:\nâ€¢ [Resultado 1 â€” especÃ­fico y emocional]\nâ€¢ [Resultado 2]\nâ€¢ [Resultado 3]\n\nNo es informaciÃ³n que ya tienes. Es un proceso que te lleva de donde estÃ¡s ahora a donde quieres estar, con mi acompaÃ±amiento.\n\nÂ¿Quieres ver todos los detalles?\n\nðŸ‘‰ [Link a la pÃ¡gina de ventas]\n\nHasta pronto,\n[Tu nombre]`,
+          cta: "Ver todos los detalles â†’" },
+        { num: 2, dia: "DÃ­a 3 â€” EducaciÃ³n", asunto: "Â¿Para quiÃ©n es exactamente esto?",
+          cuerpo: `Hola [nombre],\n\nHace dos dÃ­as te contÃ© sobre [nombre del producto].\n\nHoy quiero ser muy honesta contigo: esto no es para todo el mundo.\n\n[Nombre del producto] es para ti si:\nâœ… Eres [descripciÃ³n de tu clienta ideal]\nâœ… Ya intentaste [lo que intentaron antes] sin los resultados que querÃ­as\nâœ… EstÃ¡s lista para [compromiso que requiere]\nâœ… Quieres ${c} en [tiempo especÃ­fico]\n\nNo es para ti si buscas resultados de la noche a la maÃ±ana. Hay proceso. Pero el proceso funciona â€” y yo voy contigo en cada paso.\n\nÂ¿Te reconociste? Hay un lugar para ti. ðŸ’Œ\n\nðŸ‘‰ [Link]\n\n[Tu nombre]`,
+          cta: "SÃ­, quiero ese lugar â†’" },
+        { num: 3, dia: "DÃ­a 5 â€” Prueba social", asunto: "Esto dice alguien que ya lo viviÃ³ ðŸ’¬",
+          cuerpo: `Hola [nombre],\n\nA veces las palabras de otra persona dicen lo que yo no puedo decir.\n\n"[Testimonio real de una clienta â€” en sus palabras exactas. QuÃ© logrÃ³, en cuÃ¡nto tiempo, cÃ³mo se sintiÃ³. Si no tienes uno aÃºn, escribe el resultado mÃ¡s concreto que has logrado con alguien.]"\nâ€” [Nombre de la clienta]\n\nEso es lo que es posible cuando ${c}.\n\nY esa persona empezÃ³ exactamente donde tÃº estÃ¡s ahora â€” con dudas, con miedo, preguntÃ¡ndose si funcionarÃ­a.\n\nFuncionÃ³.\n\nÂ¿Quieres ese resultado?\n\nðŸ‘‰ [Link]\n\n[Tu nombre]`,
+          cta: "Quiero ese resultado â†’" },
+        { num: 4, dia: "DÃ­a 7 â€” Cierre", asunto: "Ãšltimas horas â° â€” cierra hoy a las [hora]",
+          cuerpo: `Hola [nombre],\n\nHoy es el Ãºltimo dÃ­a.\n\nA las [hora] de hoy cierra [nombre del producto] â€” y no lo repetirÃ© pronto.\n\nSÃ© que a veces dudamos. Que pensamos "lo dejo para despuÃ©s". Pero "despuÃ©s" muchas veces significa perderse la oportunidad.\n\nTe pregunto esto desde el corazÃ³n: Â¿quÃ© serÃ­a diferente en tu negocio si pudieras ${c} en los prÃ³ximos [tiempo]?\n\nEso es exactamente lo que estÃ¡ del otro lado de esta decisiÃ³n.\n\nSi sientes que esto es para ti â€” confÃ­a en eso. No en el miedo.\n\nðŸ‘‰ [Link â€” Ãºltimo recordatorio]\n\nCon cariÃ±o,\n[Tu nombre]`,
+          cta: "Entrar antes del cierre â†’" },
       ],
       "Nutrir lista": [
-        { num: 1, dia: "Semana 1 — Tip", asunto: "Un tip rápido que puedes aplicar hoy 💡",
-          cuerpo: `Hola [nombre],\n\nCorto, directo y útil — así me gusta.\n\nUna sola idea sobre ${c} que puedes aplicar hoy mismo:\n\n[Tip específico y accionable — 3 a 5 líneas. No teoría. Algo que puedan hacer en los próximos 30 minutos. Incluye el paso exacto.]\n\nPor qué funciona: [Explicación breve del principio detrás del tip — 2 líneas máximo.]\n\n¿Lo intentas esta semana y me cuentas cómo te fue?\n\nResponde este email — me encanta leerte. 💌\n\n[Tu nombre]`,
-          cta: "Respóndeme aquí" },
-        { num: 2, dia: "Semana 2 — Historia", asunto: "Mi historia con esto (te la cuento completa)",
-          cuerpo: `Hola [nombre],\n\nHoy quiero contarte algo personal.\n\nHace [tiempo], yo también luchaba con ${c}.\n\n[Historia personal en 3 a 4 líneas. Sé específica, usa detalles reales. La vulnerabilidad genera conexión. Qué pasaba, cómo te sentías, qué hacías que no funcionaba.]\n\nLo que lo cambió fue [el momento clave — una decisión, un aprendizaje, una persona].\n\nY desde entonces, [cómo está diferente ahora — resultado concreto].\n\nTe cuento esto porque sé que tú también puedes estar en ese lugar. Y ese "antes" no tiene que ser para siempre.\n\n¿A ti te ha pasado algo parecido? Cuéntame. 💌\n\n[Tu nombre]`,
-          cta: "Respóndeme →" },
-        { num: 3, dia: "Semana 3 — Engagement", asunto: "Una pregunta para ti 🙋",
-          cuerpo: `Hola [nombre],\n\nHoy no vengo a enseñarte nada. Vengo a preguntarte algo.\n\nLlevamos un tiempo juntas en esta lista y me importa saber cómo estás realmente.\n\n¿Cuál es el mayor obstáculo que tienes ahora mismo con ${c}?\n\n[ ] No sé por dónde empezar\n[ ] Falta de tiempo para implementar\n[ ] Miedo al rechazo o al juicio\n[ ] Me falta claridad en mi mensaje\n[ ] Necesito más clientas / ventas\n[ ] Otro: ___________\n\nResponde este email con tu respuesta — o simplemente escríbeme lo que está en tu mente ahora mismo.\n\nCada respuesta me ayuda a crear contenido que realmente te sirva. 💌\n\n[Tu nombre]`,
-          cta: "Respóndeme aquí" },
+        { num: 1, dia: "Semana 1 â€” Tip", asunto: "Un tip rÃ¡pido que puedes aplicar hoy ðŸ’¡",
+          cuerpo: `Hola [nombre],\n\nCorto, directo y Ãºtil â€” asÃ­ me gusta.\n\nUna sola idea sobre ${c} que puedes aplicar hoy mismo:\n\n[Tip especÃ­fico y accionable â€” 3 a 5 lÃ­neas. No teorÃ­a. Algo que puedan hacer en los prÃ³ximos 30 minutos. Incluye el paso exacto.]\n\nPor quÃ© funciona: [ExplicaciÃ³n breve del principio detrÃ¡s del tip â€” 2 lÃ­neas mÃ¡ximo.]\n\nÂ¿Lo intentas esta semana y me cuentas cÃ³mo te fue?\n\nResponde este email â€” me encanta leerte. ðŸ’Œ\n\n[Tu nombre]`,
+          cta: "RespÃ³ndeme aquÃ­" },
+        { num: 2, dia: "Semana 2 â€” Historia", asunto: "Mi historia con esto (te la cuento completa)",
+          cuerpo: `Hola [nombre],\n\nHoy quiero contarte algo personal.\n\nHace [tiempo], yo tambiÃ©n luchaba con ${c}.\n\n[Historia personal en 3 a 4 lÃ­neas. SÃ© especÃ­fica, usa detalles reales. La vulnerabilidad genera conexiÃ³n. QuÃ© pasaba, cÃ³mo te sentÃ­as, quÃ© hacÃ­as que no funcionaba.]\n\nLo que lo cambiÃ³ fue [el momento clave â€” una decisiÃ³n, un aprendizaje, una persona].\n\nY desde entonces, [cÃ³mo estÃ¡ diferente ahora â€” resultado concreto].\n\nTe cuento esto porque sÃ© que tÃº tambiÃ©n puedes estar en ese lugar. Y ese "antes" no tiene que ser para siempre.\n\nÂ¿A ti te ha pasado algo parecido? CuÃ©ntame. ðŸ’Œ\n\n[Tu nombre]`,
+          cta: "RespÃ³ndeme â†’" },
+        { num: 3, dia: "Semana 3 â€” Engagement", asunto: "Una pregunta para ti ðŸ™‹",
+          cuerpo: `Hola [nombre],\n\nHoy no vengo a enseÃ±arte nada. Vengo a preguntarte algo.\n\nLlevamos un tiempo juntas en esta lista y me importa saber cÃ³mo estÃ¡s realmente.\n\nÂ¿CuÃ¡l es el mayor obstÃ¡culo que tienes ahora mismo con ${c}?\n\n[ ] No sÃ© por dÃ³nde empezar\n[ ] Falta de tiempo para implementar\n[ ] Miedo al rechazo o al juicio\n[ ] Me falta claridad en mi mensaje\n[ ] Necesito mÃ¡s clientas / ventas\n[ ] Otro: ___________\n\nResponde este email con tu respuesta â€” o simplemente escrÃ­beme lo que estÃ¡ en tu mente ahora mismo.\n\nCada respuesta me ayuda a crear contenido que realmente te sirva. ðŸ’Œ\n\n[Tu nombre]`,
+          cta: "RespÃ³ndeme aquÃ­" },
       ],
       "Bienvenida": [
-        { num: 1, dia: "Inmediato — Entrega", asunto: "🎁 ¡Bienvenida! Tu regalo te está esperando",
-          cuerpo: `Hola [nombre],\n\n¡Bienvenida! Estoy muy contenta de que estés aquí.\n\nTu regalo está listo — solo haz clic abajo:\n\n👉 [Link de descarga del lead magnet]\n\nMi nombre es [tu nombre] y ayudo a [descripción de clienta ideal] a ${c}.\n\nEn los próximos días te enviaré [número] emails con [qué van a recibir]. Todo lo que desearía haber tenido cuando empecé.\n\nUna cosa importante: si tienes dudas o quieres contarme algo, responde este email. Sí, yo misma lo leo. 💌\n\nCon cariño,\n[Tu nombre]`,
-          cta: "Descargar mi regalo →" },
-        { num: 2, dia: "Día 2 — Conexión", asunto: "Por qué empecé todo esto... (mi historia real)",
-          cuerpo: `Hola [nombre],\n\nAyer te mandé tu regalo. Espero que ya lo hayas podido explorar.\n\nHoy quiero contarte algo más personal: por qué hago lo que hago.\n\n[Tu historia de origen en 4 a 6 líneas. El momento en que decidiste hacer esto. Los obstáculos que superaste. Por qué te importa tanto ayudar a estas personas específicamente.]\n\nNo empecé con todo claro. Empecé con ganas, con miedo, y con la certeza de que lo que yo había aprendido podía ayudar a alguien más.\n\nHoy, [resultado concreto que puedes mencionar — clientas, transformaciones, lo que más te enorgullece].\n\nAquí eres bienvenida tal y como estás. 💌\n\n[Tu nombre]`,
-          cta: "Seguir leyendo →" },
-        { num: 3, dia: "Día 5 — Recursos", asunto: "Mis 3 mejores recursos — solo para ti",
-          cuerpo: `Hola [nombre],\n\nAntes de terminar esta semana de bienvenida, quiero dejarte 3 recursos que sé que te van a servir:\n\n📌 [Título del recurso 1]\n[Descripción en una línea — por qué les será útil]\n👉 [Link]\n\n📌 [Título del recurso 2]\n[Descripción en una línea]\n👉 [Link]\n\n📌 [Título del recurso 3]\n[Descripción en una línea]\n👉 [Link]\n\nEsto es solo el principio. Cada semana voy a seguir compartiendo contigo cosas que realmente funcionan para ${c}.\n\nSi hay algo específico que quieres que comparta, responde este email. Esta lista existe para ti. 💌\n\nCon cariño,\n[Tu nombre]`,
-          cta: "Ver los recursos →" },
+        { num: 1, dia: "Inmediato â€” Entrega", asunto: "ðŸŽ Â¡Bienvenida! Tu regalo te estÃ¡ esperando",
+          cuerpo: `Hola [nombre],\n\nÂ¡Bienvenida! Estoy muy contenta de que estÃ©s aquÃ­.\n\nTu regalo estÃ¡ listo â€” solo haz clic abajo:\n\nðŸ‘‰ [Link de descarga del lead magnet]\n\nMi nombre es [tu nombre] y ayudo a [descripciÃ³n de clienta ideal] a ${c}.\n\nEn los prÃ³ximos dÃ­as te enviarÃ© [nÃºmero] emails con [quÃ© van a recibir]. Todo lo que desearÃ­a haber tenido cuando empecÃ©.\n\nUna cosa importante: si tienes dudas o quieres contarme algo, responde este email. SÃ­, yo misma lo leo. ðŸ’Œ\n\nCon cariÃ±o,\n[Tu nombre]`,
+          cta: "Descargar mi regalo â†’" },
+        { num: 2, dia: "DÃ­a 2 â€” ConexiÃ³n", asunto: "Por quÃ© empecÃ© todo esto... (mi historia real)",
+          cuerpo: `Hola [nombre],\n\nAyer te mandÃ© tu regalo. Espero que ya lo hayas podido explorar.\n\nHoy quiero contarte algo mÃ¡s personal: por quÃ© hago lo que hago.\n\n[Tu historia de origen en 4 a 6 lÃ­neas. El momento en que decidiste hacer esto. Los obstÃ¡culos que superaste. Por quÃ© te importa tanto ayudar a estas personas especÃ­ficamente.]\n\nNo empecÃ© con todo claro. EmpecÃ© con ganas, con miedo, y con la certeza de que lo que yo habÃ­a aprendido podÃ­a ayudar a alguien mÃ¡s.\n\nHoy, [resultado concreto que puedes mencionar â€” clientas, transformaciones, lo que mÃ¡s te enorgullece].\n\nAquÃ­ eres bienvenida tal y como estÃ¡s. ðŸ’Œ\n\n[Tu nombre]`,
+          cta: "Seguir leyendo â†’" },
+        { num: 3, dia: "DÃ­a 5 â€” Recursos", asunto: "Mis 3 mejores recursos â€” solo para ti",
+          cuerpo: `Hola [nombre],\n\nAntes de terminar esta semana de bienvenida, quiero dejarte 3 recursos que sÃ© que te van a servir:\n\nðŸ“Œ [TÃ­tulo del recurso 1]\n[DescripciÃ³n en una lÃ­nea â€” por quÃ© les serÃ¡ Ãºtil]\nðŸ‘‰ [Link]\n\nðŸ“Œ [TÃ­tulo del recurso 2]\n[DescripciÃ³n en una lÃ­nea]\nðŸ‘‰ [Link]\n\nðŸ“Œ [TÃ­tulo del recurso 3]\n[DescripciÃ³n en una lÃ­nea]\nðŸ‘‰ [Link]\n\nEsto es solo el principio. Cada semana voy a seguir compartiendo contigo cosas que realmente funcionan para ${c}.\n\nSi hay algo especÃ­fico que quieres que comparta, responde este email. Esta lista existe para ti. ðŸ’Œ\n\nCon cariÃ±o,\n[Tu nombre]`,
+          cta: "Ver los recursos â†’" },
       ],
       "Venta directa": [
-        { num: 1, dia: "Día 1 — Oferta", asunto: "Una oportunidad especial, solo para ti 💌",
-          cuerpo: `Hola [nombre],\n\nHoy quiero contarte algo que no he dicho públicamente todavía.\n\n${c}. Y antes de lanzarlo al mundo, quiero darte la oportunidad de entrar primero — porque llevas tiempo en esta lista y eso tiene valor.\n\nEsto es lo que te llevas:\n✦ [Beneficio 1 — en términos de resultado, no características]\n✦ [Beneficio 2]\n✦ [Beneficio 3]\n✦ [Bonus especial o lo que hace única esta oferta]\n\nInversión: [precio]\nDisponible hasta: [fecha / hora de cierre]\n\n¿Lista para el siguiente paso?\n\n👉 [Link]\n\n[Tu nombre]`,
-          cta: "Ver la oferta completa →" },
-        { num: 2, dia: "Día 3 — Objeciones", asunto: "Las dudas más frecuentes — las resuelvo aquí",
-          cuerpo: `Hola [nombre],\n\nHace dos días te conté sobre [nombre del producto/servicio].\n\nSé que cuando vemos una oferta, surgen preguntas. Y quiero responderlas con total honestidad:\n\n❓ "¿Funciona si soy principiante?"\n→ [Respuesta honesta y específica]\n\n❓ "¿Cuánto tiempo necesito dedicarle?"\n→ [Respuesta honesta — no promesas vacías]\n\n❓ "¿Qué pasa si no me sirve?"\n→ [Tu garantía o política honesta]\n\n❓ "¿Por qué ahora?"\n→ ${c}. Y porque esperar tiene un costo que muchas no ven.\n\nSi tienes otra duda, responde este email. La respondo personalmente. 💌\n\n👉 [Link]\n\n[Tu nombre]`,
-          cta: "Ya no tengo dudas, quiero entrar →" },
-        { num: 3, dia: "Día 5 — Cierre", asunto: "Hoy es el último día ⏰",
-          cuerpo: `Hola [nombre],\n\nNo te voy a escribir un email largo hoy.\n\nSolo quiero recordarte que hoy a las [hora] cierra esta oportunidad — y no la voy a repetir pronto.\n\nLo que se llevan:\n[Resumen en 3 líneas — resultado principal, precio, por qué ahora]\n\nPrecio hasta hoy: [precio]\nSube mañana a: [precio normal]\n\n${c}.\n\nSi sientes que esto es para ti — ese feeling importa. No lo ignores.\n\n👉 [Link]\n\nCon cariño,\n[Tu nombre]`,
-          cta: "Entrar antes del cierre →" },
+        { num: 1, dia: "DÃ­a 1 â€” Oferta", asunto: "Una oportunidad especial, solo para ti ðŸ’Œ",
+          cuerpo: `Hola [nombre],\n\nHoy quiero contarte algo que no he dicho pÃºblicamente todavÃ­a.\n\n${c}. Y antes de lanzarlo al mundo, quiero darte la oportunidad de entrar primero â€” porque llevas tiempo en esta lista y eso tiene valor.\n\nEsto es lo que te llevas:\nâœ¦ [Beneficio 1 â€” en tÃ©rminos de resultado, no caracterÃ­sticas]\nâœ¦ [Beneficio 2]\nâœ¦ [Beneficio 3]\nâœ¦ [Bonus especial o lo que hace Ãºnica esta oferta]\n\nInversiÃ³n: [precio]\nDisponible hasta: [fecha / hora de cierre]\n\nÂ¿Lista para el siguiente paso?\n\nðŸ‘‰ [Link]\n\n[Tu nombre]`,
+          cta: "Ver la oferta completa â†’" },
+        { num: 2, dia: "DÃ­a 3 â€” Objeciones", asunto: "Las dudas mÃ¡s frecuentes â€” las resuelvo aquÃ­",
+          cuerpo: `Hola [nombre],\n\nHace dos dÃ­as te contÃ© sobre [nombre del producto/servicio].\n\nSÃ© que cuando vemos una oferta, surgen preguntas. Y quiero responderlas con total honestidad:\n\nâ“ "Â¿Funciona si soy principiante?"\nâ†’ [Respuesta honesta y especÃ­fica]\n\nâ“ "Â¿CuÃ¡nto tiempo necesito dedicarle?"\nâ†’ [Respuesta honesta â€” no promesas vacÃ­as]\n\nâ“ "Â¿QuÃ© pasa si no me sirve?"\nâ†’ [Tu garantÃ­a o polÃ­tica honesta]\n\nâ“ "Â¿Por quÃ© ahora?"\nâ†’ ${c}. Y porque esperar tiene un costo que muchas no ven.\n\nSi tienes otra duda, responde este email. La respondo personalmente. ðŸ’Œ\n\nðŸ‘‰ [Link]\n\n[Tu nombre]`,
+          cta: "Ya no tengo dudas, quiero entrar â†’" },
+        { num: 3, dia: "DÃ­a 5 â€” Cierre", asunto: "Hoy es el Ãºltimo dÃ­a â°",
+          cuerpo: `Hola [nombre],\n\nNo te voy a escribir un email largo hoy.\n\nSolo quiero recordarte que hoy a las [hora] cierra esta oportunidad â€” y no la voy a repetir pronto.\n\nLo que se llevan:\n[Resumen en 3 lÃ­neas â€” resultado principal, precio, por quÃ© ahora]\n\nPrecio hasta hoy: [precio]\nSube maÃ±ana a: [precio normal]\n\n${c}.\n\nSi sientes que esto es para ti â€” ese feeling importa. No lo ignores.\n\nðŸ‘‰ [Link]\n\nCon cariÃ±o,\n[Tu nombre]`,
+          cta: "Entrar antes del cierre â†’" },
       ],
       "Recuperar inactivos": [
-        { num: 1, dia: "Email 1 — Reconexión", asunto: "¿Sigues ahí? Te extrañé 🙋",
-          cuerpo: `Hola [nombre],\n\nHace un tiempo que no me lees — y está bien. La vida se pone ocupada, los emails se acumulan, lo entiendo perfectamente.\n\nSolo quería asegurarme de que sigues recibiendo lo que te sirve.\n\nMi nombre es [tu nombre] y ayudo a [clienta ideal] a ${c}.\n\nDesde la última vez que hablamos, han pasado cosas:\n✦ [Novedad 1 — algo nuevo que tienes]\n✦ [Novedad 2 — recurso, servicio, resultado de clienta]\n✦ [Novedad 3 — lo que más te emociona compartir]\n\n¿Te quedas? Haz clic abajo para confirmar que sigues activa. 💌\n\n[Tu nombre]`,
-          cta: "Sí, me quedo →" },
-        { num: 2, dia: "Email 2 — Novedad", asunto: "Esto cambió y quería que lo supieras",
-          cuerpo: `Hola [nombre],\n\nUna actualización rápida — porque creo que te interesa.\n\n${c}. Y eso cambió algo importante para las personas en esta comunidad.\n\n[Explica la novedad en 3 a 5 líneas. Qué es, por qué importa, cómo les beneficia.]\n\nNo te lo cuento para vender nada hoy. Te lo cuento porque creo que mereces saberlo antes que nadie.\n\n¿Quieres saber más? Responde con "SÍ" y te mando todos los detalles. 💌\n\n[Tu nombre]`,
-          cta: "Quiero saber más →" },
-        { num: 3, dia: "Email 3 — Honesto", asunto: "Una última pregunta — te la digo con honestidad",
-          cuerpo: `Hola [nombre],\n\nSoy directa contigo porque te respeto.\n\nLlevo tiempo en tu bandeja de entrada. Y si mis emails no te aportan nada, lo mejor para las dos es que te des de baja — sin drama, sin rencor.\n\nPero si hay algo de valor aquí para ti, me encantaría seguir en contacto.\n\nUna pregunta: ¿qué necesitarías recibir de mi parte para que este espacio valga tu tiempo?\n\nResponde este email con tu respuesta. Me la leo completa.\n\nSi no respondo en [días], asumiré que prefieres darte de baja — y lo haré con respeto. 💌\n\n[Tu nombre]`,
-          cta: "Me quedo y te cuento qué necesito →" },
+        { num: 1, dia: "Email 1 â€” ReconexiÃ³n", asunto: "Â¿Sigues ahÃ­? Te extraÃ±Ã© ðŸ™‹",
+          cuerpo: `Hola [nombre],\n\nHace un tiempo que no me lees â€” y estÃ¡ bien. La vida se pone ocupada, los emails se acumulan, lo entiendo perfectamente.\n\nSolo querÃ­a asegurarme de que sigues recibiendo lo que te sirve.\n\nMi nombre es [tu nombre] y ayudo a [clienta ideal] a ${c}.\n\nDesde la Ãºltima vez que hablamos, han pasado cosas:\nâœ¦ [Novedad 1 â€” algo nuevo que tienes]\nâœ¦ [Novedad 2 â€” recurso, servicio, resultado de clienta]\nâœ¦ [Novedad 3 â€” lo que mÃ¡s te emociona compartir]\n\nÂ¿Te quedas? Haz clic abajo para confirmar que sigues activa. ðŸ’Œ\n\n[Tu nombre]`,
+          cta: "SÃ­, me quedo â†’" },
+        { num: 2, dia: "Email 2 â€” Novedad", asunto: "Esto cambiÃ³ y querÃ­a que lo supieras",
+          cuerpo: `Hola [nombre],\n\nUna actualizaciÃ³n rÃ¡pida â€” porque creo que te interesa.\n\n${c}. Y eso cambiÃ³ algo importante para las personas en esta comunidad.\n\n[Explica la novedad en 3 a 5 lÃ­neas. QuÃ© es, por quÃ© importa, cÃ³mo les beneficia.]\n\nNo te lo cuento para vender nada hoy. Te lo cuento porque creo que mereces saberlo antes que nadie.\n\nÂ¿Quieres saber mÃ¡s? Responde con "SÃ" y te mando todos los detalles. ðŸ’Œ\n\n[Tu nombre]`,
+          cta: "Quiero saber mÃ¡s â†’" },
+        { num: 3, dia: "Email 3 â€” Honesto", asunto: "Una Ãºltima pregunta â€” te la digo con honestidad",
+          cuerpo: `Hola [nombre],\n\nSoy directa contigo porque te respeto.\n\nLlevo tiempo en tu bandeja de entrada. Y si mis emails no te aportan nada, lo mejor para las dos es que te des de baja â€” sin drama, sin rencor.\n\nPero si hay algo de valor aquÃ­ para ti, me encantarÃ­a seguir en contacto.\n\nUna pregunta: Â¿quÃ© necesitarÃ­as recibir de mi parte para que este espacio valga tu tiempo?\n\nResponde este email con tu respuesta. Me la leo completa.\n\nSi no respondo en [dÃ­as], asumirÃ© que prefieres darte de baja â€” y lo harÃ© con respeto. ðŸ’Œ\n\n[Tu nombre]`,
+          cta: "Me quedo y te cuento quÃ© necesito â†’" },
       ],
       "Compartir valor": [
-        { num: 1, dia: "Email 1 — Historia", asunto: "Esto me pasó esta semana y tenía que contarte",
-          cuerpo: `Hola [nombre],\n\nEsta semana pasó algo que me pareció demasiado bueno para no compartirlo.\n\n[Historia o situación concreta que viviste — con tu clienta, en tu negocio, o aprendizaje personal. 3 a 5 líneas específicas. No genérico. Detalles reales.]\n\nLo que aprendí: ${c}.\n\nCómo puedes aplicarlo tú esta semana:\n1. [Acción concreta 1]\n2. [Acción concreta 2]\n3. [Acción concreta 3]\n\nEspero que esto te sirva tanto como a mí.\n\nSi te resonó, responde este email — me encanta saber que llegó al lugar correcto. 💌\n\n[Tu nombre]`,
-          cta: "Respóndeme →" },
-        { num: 2, dia: "Email 2 — Recurso", asunto: "El recurso que más me han pedido — aquí está",
-          cuerpo: `Hola [nombre],\n\nEn los últimos [semanas/meses], la pregunta que más me hacen es:\n\n"[La pregunta más frecuente de tu audiencia relacionada a ${c}]"\n\nAsí que decidí crear algo concreto para responderla.\n\n[Describe el recurso: ¿es una guía? ¿un video? ¿un checklist? ¿una respuesta detallada?]\n\nEsto es lo que encuentras dentro:\n✦ [Punto 1]\n✦ [Punto 2]\n✦ [Punto 3]\n\nEs completamente gratuito — porque creo que esta información cambia cosas reales.\n\n👉 [Link al recurso]\n\nSi lo usas, cuéntame qué te pareció. 💌\n\n[Tu nombre]`,
-          cta: "Acceder al recurso →" },
+        { num: 1, dia: "Email 1 â€” Historia", asunto: "Esto me pasÃ³ esta semana y tenÃ­a que contarte",
+          cuerpo: `Hola [nombre],\n\nEsta semana pasÃ³ algo que me pareciÃ³ demasiado bueno para no compartirlo.\n\n[Historia o situaciÃ³n concreta que viviste â€” con tu clienta, en tu negocio, o aprendizaje personal. 3 a 5 lÃ­neas especÃ­ficas. No genÃ©rico. Detalles reales.]\n\nLo que aprendÃ­: ${c}.\n\nCÃ³mo puedes aplicarlo tÃº esta semana:\n1. [AcciÃ³n concreta 1]\n2. [AcciÃ³n concreta 2]\n3. [AcciÃ³n concreta 3]\n\nEspero que esto te sirva tanto como a mÃ­.\n\nSi te resonÃ³, responde este email â€” me encanta saber que llegÃ³ al lugar correcto. ðŸ’Œ\n\n[Tu nombre]`,
+          cta: "RespÃ³ndeme â†’" },
+        { num: 2, dia: "Email 2 â€” Recurso", asunto: "El recurso que mÃ¡s me han pedido â€” aquÃ­ estÃ¡",
+          cuerpo: `Hola [nombre],\n\nEn los Ãºltimos [semanas/meses], la pregunta que mÃ¡s me hacen es:\n\n"[La pregunta mÃ¡s frecuente de tu audiencia relacionada a ${c}]"\n\nAsÃ­ que decidÃ­ crear algo concreto para responderla.\n\n[Describe el recurso: Â¿es una guÃ­a? Â¿un video? Â¿un checklist? Â¿una respuesta detallada?]\n\nEsto es lo que encuentras dentro:\nâœ¦ [Punto 1]\nâœ¦ [Punto 2]\nâœ¦ [Punto 3]\n\nEs completamente gratuito â€” porque creo que esta informaciÃ³n cambia cosas reales.\n\nðŸ‘‰ [Link al recurso]\n\nSi lo usas, cuÃ©ntame quÃ© te pareciÃ³. ðŸ’Œ\n\n[Tu nombre]`,
+          cta: "Acceder al recurso â†’" },
       ],
     };
     return CAMPS[obj] || CAMPS["Nutrir lista"];
@@ -2835,45 +2363,45 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
         <div style="background:white;border-radius:8px;padding:16px 20px;border:1px solid rgba(0,0,0,0.07);">
           ${txt.split("\n").map(l => l.trim() ? `<p style="font-family:Arial;font-size:13px;line-height:1.75;margin:5px 0;color:#2D1B1B;">${l}</p>` : "<br/>").join("")}
         </div>
-        <p style="font-size:12px;font-weight:700;color:${meta.color};font-family:Arial;margin:10px 0 0;">CTA → ${email.cta}</p>
+        <p style="font-size:12px;font-weight:700;color:${meta.color};font-family:Arial;margin:10px 0 0;">CTA â†’ ${email.cta}</p>
       </div>`;
     });
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>Campaña: ${campana.objetivo}</title></head>
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"/><title>CampaÃ±a: ${campana.objetivo}</title></head>
     <body style="margin:0;padding:0;font-family:Arial,sans-serif;">
     <div style="background:linear-gradient(135deg,${meta.color},#E8755A);padding:36px 40px;color:white;">
-      <p style="font-size:10px;color:rgba(255,255,255,0.55);margin:0 0 6px;letter-spacing:1.5px;text-transform:uppercase;">Mamá CEO · Studio de Contenido · EMAIL</p>
-      <h1 style="color:white;margin:0 0 8px;font-size:24px;font-family:Arial;">${meta.emoji} Campaña: ${campana.objetivo}</h1>
+      <p style="font-size:10px;color:rgba(255,255,255,0.55);margin:0 0 6px;letter-spacing:1.5px;text-transform:uppercase;">MamÃ¡ CEO Â· Studio de Contenido Â· EMAIL</p>
+      <h1 style="color:white;margin:0 0 8px;font-size:24px;font-family:Arial;">${meta.emoji} CampaÃ±a: ${campana.objetivo}</h1>
       <p style="color:rgba(255,255,255,0.8);margin:0;font-size:13px;font-style:italic;">${campana.comunicar}</p>
     </div>
     <div style="max-width:700px;margin:0 auto;padding:32px 40px;">${emailsHtml}</div>
-    <div style="border-top:1px solid #eee;padding:14px 40px;text-align:center;"><p style="font-size:11px;color:#ccc;font-family:Arial;">Creado con Studio de Contenido · Mamá CEO App</p></div>
+    <div style="border-top:1px solid #eee;padding:14px 40px;text-align:center;"><p style="font-size:11px;color:#ccc;font-family:Arial;">Creado con Studio de Contenido Â· MamÃ¡ CEO App</p></div>
     </body></html>`;
     const blob = new Blob([html], { type: "application/msword" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = `Campaña - ${campana.objetivo}.doc`;
+    a.href = url; a.download = `CampaÃ±a - ${campana.objetivo}.doc`;
     document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
   };
 
-  const EMAIL_TIPOS = ["Presentación", "Valor / contenido", "Venta", "Seguimiento", "Gracias", "Re-engagement"];
+  const EMAIL_TIPOS = ["PresentaciÃ³n", "Valor / contenido", "Venta", "Seguimiento", "Gracias", "Re-engagement"];
   const EMAIL_TONOS = ["Cercano", "Profesional", "Emotivo", "Directo"];
 
   const buildDraft = ({ tipo, tono, tema, cta }) => {
     const TONOS_META = {
-      "Cercano":     { abre: "Hola [nombre] 💌", cierra: "Con cariño,\n[Tu nombre]" },
+      "Cercano":     { abre: "Hola [nombre] ðŸ’Œ", cierra: "Con cariÃ±o,\n[Tu nombre]" },
       "Profesional": { abre: "Hola [nombre],",    cierra: "Saludos,\n[Tu nombre]" },
-      "Emotivo":     { abre: "Hola [nombre] 💙",  cierra: "Con mucho cariño,\n[Tu nombre]" },
+      "Emotivo":     { abre: "Hola [nombre] ðŸ’™",  cierra: "Con mucho cariÃ±o,\n[Tu nombre]" },
       "Directo":     { abre: "Hola [nombre],",    cierra: "Hasta pronto,\n[Tu nombre]" },
     };
     const { abre, cierra } = TONOS_META[tono] || TONOS_META["Cercano"];
-    const ctaLine = cta ? `\n👉 ${cta}` : "\n👉 [CTA — qué quieres que hagan]";
+    const ctaLine = cta ? `\nðŸ‘‰ ${cta}` : "\nðŸ‘‰ [CTA â€” quÃ© quieres que hagan]";
     const DRAFTS = {
-      "Presentación":     `${abre}\n\nMe da mucho gusto escribirte.\n\nMi nombre es [tu nombre] y ayudo a [descripción de clienta ideal] a ${tema || "[resultado que logras]"}.\n\n[2 a 3 líneas sobre tu enfoque o lo que te hace diferente. Sé específica, no genérica.]\n\nCreo que hay una posibilidad de [lo que podrían lograr juntas] — y me encantaría contarte más.${ctaLine}\n\n${cierra}`,
-      "Valor / contenido":`${abre}\n\nHoy vengo a regalarte algo que sé que te va a servir.\n\nEl tema de hoy: ${tema || "[tu tema]"}.\n\n[Desarrolla en 3 a 5 párrafos. Incluye: el problema que resuelve, la idea central con un ejemplo concreto, y cómo pueden aplicarlo hoy mismo.]\n\n¿Te fue útil? Respóndeme — me encanta saber que llegó al lugar correcto. 💌${ctaLine}\n\n${cierra}`,
-      "Venta":            `${abre}\n\nTengo algo que quiero contarte — y creo que llega en el momento justo.\n\n${tema || "[Lo que quieres comunicar sobre tu oferta]"}.\n\nEsto es lo que cambia para ti cuando dices sí:\n\n✦ [Beneficio 1 — en términos de resultado, no características]\n✦ [Beneficio 2]\n✦ [Beneficio 3]\n\nPrecio: [precio] · Disponible hasta: [fecha/hora]${ctaLine}\n\n${cierra}`,
-      "Seguimiento":      `${abre}\n\nSolo quería hacer un seguimiento de ${tema || "[contexto — email anterior, conversación, interés que mostraron]"}.\n\nEntiendo que las decisiones toman su tiempo — y está bien.\n\nLo que quiero que sepas: [razón genuina por la que haces seguimiento — no presión, sino valor real que les aportarás].\n\nSi tienes preguntas, responde este email. Estoy aquí. 💌${ctaLine}\n\n${cierra}`,
-      "Gracias":          `${abre}\n\nEste email tiene un solo propósito: decirte gracias.\n\nGracias por ${tema || "[lo que hicieron — comprar, asistir, confiar, responder]"}.\n\n[2 a 3 líneas genuinas sobre lo que significa para ti. No corporativo — desde el corazón.]\n\n[Si aplica: qué viene ahora, qué pueden esperar, cómo vas a acompañarlas]${ctaLine}\n\nGracias de verdad. 💌\n\n${cierra}`,
-      "Re-engagement":    `${abre}\n\nHace un tiempo que no hablamos — y quería escribirte.\n\nNo para vender nada. Solo para ver cómo estás y recordarte que este espacio sigue aquí para ti.\n\n${tema ? `Desde la última vez, ${tema}.` : "[Algo nuevo que tienes, algo que cambió, algo valioso para ellas]"}\n\nSi hay algo en lo que pueda ayudarte ahora mismo, responde este email. Sigo aquí. 💌${ctaLine}\n\n${cierra}`,
+      "PresentaciÃ³n":     `${abre}\n\nMe da mucho gusto escribirte.\n\nMi nombre es [tu nombre] y ayudo a [descripciÃ³n de clienta ideal] a ${tema || "[resultado que logras]"}.\n\n[2 a 3 lÃ­neas sobre tu enfoque o lo que te hace diferente. SÃ© especÃ­fica, no genÃ©rica.]\n\nCreo que hay una posibilidad de [lo que podrÃ­an lograr juntas] â€” y me encantarÃ­a contarte mÃ¡s.${ctaLine}\n\n${cierra}`,
+      "Valor / contenido":`${abre}\n\nHoy vengo a regalarte algo que sÃ© que te va a servir.\n\nEl tema de hoy: ${tema || "[tu tema]"}.\n\n[Desarrolla en 3 a 5 pÃ¡rrafos. Incluye: el problema que resuelve, la idea central con un ejemplo concreto, y cÃ³mo pueden aplicarlo hoy mismo.]\n\nÂ¿Te fue Ãºtil? RespÃ³ndeme â€” me encanta saber que llegÃ³ al lugar correcto. ðŸ’Œ${ctaLine}\n\n${cierra}`,
+      "Venta":            `${abre}\n\nTengo algo que quiero contarte â€” y creo que llega en el momento justo.\n\n${tema || "[Lo que quieres comunicar sobre tu oferta]"}.\n\nEsto es lo que cambia para ti cuando dices sÃ­:\n\nâœ¦ [Beneficio 1 â€” en tÃ©rminos de resultado, no caracterÃ­sticas]\nâœ¦ [Beneficio 2]\nâœ¦ [Beneficio 3]\n\nPrecio: [precio] Â· Disponible hasta: [fecha/hora]${ctaLine}\n\n${cierra}`,
+      "Seguimiento":      `${abre}\n\nSolo querÃ­a hacer un seguimiento de ${tema || "[contexto â€” email anterior, conversaciÃ³n, interÃ©s que mostraron]"}.\n\nEntiendo que las decisiones toman su tiempo â€” y estÃ¡ bien.\n\nLo que quiero que sepas: [razÃ³n genuina por la que haces seguimiento â€” no presiÃ³n, sino valor real que les aportarÃ¡s].\n\nSi tienes preguntas, responde este email. Estoy aquÃ­. ðŸ’Œ${ctaLine}\n\n${cierra}`,
+      "Gracias":          `${abre}\n\nEste email tiene un solo propÃ³sito: decirte gracias.\n\nGracias por ${tema || "[lo que hicieron â€” comprar, asistir, confiar, responder]"}.\n\n[2 a 3 lÃ­neas genuinas sobre lo que significa para ti. No corporativo â€” desde el corazÃ³n.]\n\n[Si aplica: quÃ© viene ahora, quÃ© pueden esperar, cÃ³mo vas a acompaÃ±arlas]${ctaLine}\n\nGracias de verdad. ðŸ’Œ\n\n${cierra}`,
+      "Re-engagement":    `${abre}\n\nHace un tiempo que no hablamos â€” y querÃ­a escribirte.\n\nNo para vender nada. Solo para ver cÃ³mo estÃ¡s y recordarte que este espacio sigue aquÃ­ para ti.\n\n${tema ? `Desde la Ãºltima vez, ${tema}.` : "[Algo nuevo que tienes, algo que cambiÃ³, algo valioso para ellas]"}\n\nSi hay algo en lo que pueda ayudarte ahora mismo, responde este email. Sigo aquÃ­. ðŸ’Œ${ctaLine}\n\n${cierra}`,
     };
     return DRAFTS[tipo] || DRAFTS["Valor / contenido"];
   };
@@ -2884,75 +2412,75 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
   };
 
   const bancoEmails = saved?.campanias || [];
-  const EJEMPLOS_COM = ["lanzar mi programa de 8 semanas", "mi mentoría 1:1 para mamás", "conseguir primeras clientas", "ventas por WhatsApp", "bienestar y negocio"];
+  const EJEMPLOS_COM = ["lanzar mi programa de 8 semanas", "mi mentorÃ­a 1:1 para mamÃ¡s", "conseguir primeras clientas", "ventas por WhatsApp", "bienestar y negocio"];
 
   return (
     <div className="studio-tab-content">
 
-      {/* ── LANDING ────────────────────────────────────── */}
+      {/* â”€â”€ LANDING â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {view === "inicio" && (
         <div className="lm-landing">
           <div className="mpm-landing-header">
-            <div className="mpm-landing-badge">📧</div>
+            <div className="mpm-landing-badge">ðŸ“§</div>
             <h2 className="mpm-landing-title">Email Marketing</h2>
-            <p className="mpm-landing-sub">El canal con mayor retorno de inversión — y el más personal. Habla directo al corazón de tu lista, sin algoritmo de por medio.</p>
+            <p className="mpm-landing-sub">El canal con mayor retorno de inversiÃ³n â€” y el mÃ¡s personal. Habla directo al corazÃ³n de tu lista, sin algoritmo de por medio.</p>
           </div>
 
           <div className="lm-purpose-strip">
             <div className="lm-purpose-item">
               <span className="lm-purpose-num">1</span>
-              <div><strong>Construye confianza</strong><p>En la bandeja de entrada no hay algoritmo. Tu mensaje llega directo — sin competir.</p></div>
+              <div><strong>Construye confianza</strong><p>En la bandeja de entrada no hay algoritmo. Tu mensaje llega directo â€” sin competir.</p></div>
             </div>
-            <div className="lm-purpose-arrow">→</div>
+            <div className="lm-purpose-arrow">â†’</div>
             <div className="lm-purpose-item">
               <span className="lm-purpose-num">2</span>
-              <div><strong>Educa y conecta</strong><p>Cada email es una conversación. La que más escucha, más compra.</p></div>
+              <div><strong>Educa y conecta</strong><p>Cada email es una conversaciÃ³n. La que mÃ¡s escucha, mÃ¡s compra.</p></div>
             </div>
-            <div className="lm-purpose-arrow">→</div>
+            <div className="lm-purpose-arrow">â†’</div>
             <div className="lm-purpose-item lm-purpose-item--highlight">
               <span className="lm-purpose-num lm-purpose-num--highlight">3</span>
-              <div><strong>Convierte y vende ✦</strong><p>Una lista caliente compra cuando la tratas bien. Consistencia + valor = ventas.</p></div>
+              <div><strong>Convierte y vende âœ¦</strong><p>Una lista caliente compra cuando la tratas bien. Consistencia + valor = ventas.</p></div>
             </div>
           </div>
 
           <div className="mpm-cards-row">
             <button className="mpm-card mpm-card--highlight" onClick={() => setView("campana")}>
               <div className="mpm-card-top">
-                <span className="mpm-card-badge-ico">📨</span>
+                <span className="mpm-card-badge-ico">ðŸ“¨</span>
                 <span className="mpm-card-tag mpm-card-tag--primary">Secuencia</span>
               </div>
-              <strong className="mpm-card-name">Planificar campaña</strong>
+              <strong className="mpm-card-name">Planificar campaÃ±a</strong>
               <p className="mpm-card-desc">Genera una secuencia completa con cuerpos de email listos para personalizar y enviar</p>
-              <span className="mpm-card-link mpm-card-link--primary">Crear mi campaña →</span>
+              <span className="mpm-card-link mpm-card-link--primary">Crear mi campaÃ±a â†’</span>
             </button>
             <button className="mpm-card" onClick={() => setView("redactar")}>
               <div className="mpm-card-top">
-                <span className="mpm-card-emoji">✏️</span>
+                <span className="mpm-card-emoji">âœï¸</span>
                 <span className="mpm-card-tag">Individual</span>
               </div>
               <strong className="mpm-card-name">Redactar email</strong>
-              <p className="mpm-card-desc">Escribe un email específico: presentación, venta, seguimiento, gracias, re-engagement</p>
-              <span className="mpm-card-link">Redactar →</span>
+              <p className="mpm-card-desc">Escribe un email especÃ­fico: presentaciÃ³n, venta, seguimiento, gracias, re-engagement</p>
+              <span className="mpm-card-link">Redactar â†’</span>
             </button>
           </div>
         </div>
       )}
 
-      {/* ── CAMPAÑA ─────────────────────────────────────── */}
+      {/* â”€â”€ CAMPAÃ‘A â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {view === "campana" && (
         <div>
           <div className="lm-gen-topbar">
-            <button className="mpm-wizard-back-btn" onClick={() => { setView("inicio"); setCampana(null); }}>← Inicio</button>
+            <button className="mpm-wizard-back-btn" onClick={() => { setView("inicio"); setCampana(null); }}>â† Inicio</button>
             {campana && (
               <div style={{display:"flex",gap:"8px"}}>
-                <button className="lm-dl-btn lm-dl-btn--word" onClick={downloadWordCampana}>⬇ Word</button>
-                <button className="mpm-edit-btn" onClick={() => onSave("campanias", { id: Date.now(), objetivo: campana.objetivo, comunicar: campana.comunicar, fecha: new Date().toLocaleDateString("es") })}>Guardar 📧</button>
+                <button className="lm-dl-btn lm-dl-btn--word" onClick={downloadWordCampana}>â¬‡ Word</button>
+                <button className="mpm-edit-btn" onClick={() => onSave("campanias", { id: Date.now(), objetivo: campana.objetivo, comunicar: campana.comunicar, fecha: new Date().toLocaleDateString("es") })}>Guardar ðŸ“§</button>
               </div>
             )}
           </div>
 
           <div className="email-obj-section">
-            <label className="lm-crear-label" style={{marginBottom:"12px",display:"block"}}>¿Cuál es el objetivo de esta campaña?</label>
+            <label className="lm-crear-label" style={{marginBottom:"12px",display:"block"}}>Â¿CuÃ¡l es el objetivo de esta campaÃ±a?</label>
             <div className="email-obj-grid">
               {Object.entries(OBJ_META).map(([key, meta]) => (
                 <button key={key}
@@ -2970,16 +2498,16 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
           </div>
 
           <div className="ideas-search-bar" style={{marginBottom:"8px"}}>
-            <span className="ideas-search-icon">📧</span>
+            <span className="ideas-search-icon">ðŸ“§</span>
             <input
               className="ideas-search-input"
-              placeholder="¿Qué quieres comunicar? Ej: lanzar mi mentoría 1:1 para mamás que quieren sus primeras clientas..."
+              placeholder="Â¿QuÃ© quieres comunicar? Ej: lanzar mi mentorÃ­a 1:1 para mamÃ¡s que quieren sus primeras clientas..."
               value={comunicar}
               onChange={e => setComunicar(e.target.value)}
               onKeyDown={e => e.key === "Enter" && generarCampana()}
             />
             <button className="ideas-search-btn" onClick={() => generarCampana()} disabled={!comunicar.trim() || thinking}>
-              Generar campaña ✦
+              Generar campaÃ±a âœ¦
             </button>
           </div>
           {!campana && !thinking && (
@@ -2993,12 +2521,12 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
           {thinking && (
             <div className="ideas-thinking">
               <div className="ideas-orbit-container">
-                <div className="ideas-brain-orbit">📧</div>
-                {["💌","🚀","🎁","💰","🔄","✨"].map((s, i) => (
+                <div className="ideas-brain-orbit">ðŸ“§</div>
+                {["ðŸ’Œ","ðŸš€","ðŸŽ","ðŸ’°","ðŸ”„","âœ¨"].map((s, i) => (
                   <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`}>{s}</div>
                 ))}
               </div>
-              <p className="ideas-thinking-text">Escribiendo tu campaña<span className="ideas-dots-anim">...</span></p>
+              <p className="ideas-thinking-text">Escribiendo tu campaÃ±a<span className="ideas-dots-anim">...</span></p>
             </div>
           )}
 
@@ -3006,10 +2534,10 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
             <div className="email-campana-wrap">
               <div className="ideas-result-header">
                 <div>
-                  <span className="ideas-kw-label">{OBJ_META[campana.objetivo]?.emoji} Campaña: </span>
+                  <span className="ideas-kw-label">{OBJ_META[campana.objetivo]?.emoji} CampaÃ±a: </span>
                   <strong className="ideas-kw-value">{campana.objetivo}</strong>
                 </div>
-                <span style={{fontSize:"12px",color:"#9A7878"}}>{campana.emails.length} emails · edita y copia cada uno</span>
+                <span style={{fontSize:"12px",color:"#9A7878"}}>{campana.emails.length} emails Â· edita y copia cada uno</span>
               </div>
               {campana.emails.map((email, i) => {
                 const meta = OBJ_META[campana.objetivo];
@@ -3025,9 +2553,9 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
                       <div className="email-header-actions" onClick={e => e.stopPropagation()}>
                         <button className="guion-frase-copy"
                           onClick={() => copiar(cuerpos[i] || email.cuerpo, `email-q-${i}`)}>
-                          {copiado === `email-q-${i}` ? "✓" : "Copiar"}
+                          {copiado === `email-q-${i}` ? "âœ“" : "Copiar"}
                         </button>
-                        <span className="email-expand-ico">{abierto ? "▲" : "▼"}</span>
+                        <span className="email-expand-ico">{abierto ? "â–²" : "â–¼"}</span>
                       </div>
                     </div>
                     {abierto && (
@@ -3036,7 +2564,7 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
                           <span className="email-asunto-label">Asunto:</span>
                           <strong>{email.asunto}</strong>
                         </div>
-                        <div className="email-cuerpo-label">Cuerpo — edita con tu voz y tu historia:</div>
+                        <div className="email-cuerpo-label">Cuerpo â€” edita con tu voz y tu historia:</div>
                         <textarea
                           className="email-cuerpo-textarea"
                           value={cuerpos[i] || ""}
@@ -3046,11 +2574,11 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
                         <div className="email-cta-row">
                           <span className="email-cta-label">CTA sugerido:</span>
                           <span className="email-cta-text">{email.cta}</span>
-                          <button className="guion-frase-copy" onClick={() => copiar(email.cta, `cta-${i}`)}>{copiado === `cta-${i}` ? "✓" : "Copiar CTA"}</button>
+                          <button className="guion-frase-copy" onClick={() => copiar(email.cta, `cta-${i}`)}>{copiado === `cta-${i}` ? "âœ“" : "Copiar CTA"}</button>
                         </div>
                         <button className="ideas-card-copy" style={{width:"100%",marginTop:"10px",justifyContent:"center",padding:"10px"}}
                           onClick={() => copiar(cuerpos[i] || email.cuerpo, `email-full-${i}`)}>
-                          {copiado === `email-full-${i}` ? "✓ Email completo copiado" : "📋 Copiar email completo"}
+                          {copiado === `email-full-${i}` ? "âœ“ Email completo copiado" : "ðŸ“‹ Copiar email completo"}
                         </button>
                       </div>
                     )}
@@ -3062,11 +2590,11 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
         </div>
       )}
 
-      {/* ── REDACTAR ────────────────────────────────────── */}
+      {/* â”€â”€ REDACTAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {view === "redactar" && (
         <div>
           <div className="lm-gen-topbar">
-            <button className="mpm-wizard-back-btn" onClick={() => { setView("inicio"); setDraft(null); }}>← Inicio</button>
+            <button className="mpm-wizard-back-btn" onClick={() => { setView("inicio"); setDraft(null); }}>â† Inicio</button>
           </div>
 
           <div className="desc-header" style={{marginBottom:"20px"}}>
@@ -3097,8 +2625,8 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
 
           <div className="lm-crear-grid" style={{marginTop:"16px"}}>
             {[
-              { num:"01", emoji:"✏️", label:"¿Sobre qué es el email?",  field:"tema", ph:"Lanzamiento de mi mentoría, tip sobre ventas, gracias por comprar...", hint:"Mientras más específico, mejor el borrador" },
-              { num:"02", emoji:"🎯", label:"¿Cuál es tu llamada a acción?", field:"cta",  ph:"Agenda tu llamada / Escríbeme / Ver el link en mi bio", hint:"Una sola acción, concreta y fácil de hacer" },
+              { num:"01", emoji:"âœï¸", label:"Â¿Sobre quÃ© es el email?",  field:"tema", ph:"Lanzamiento de mi mentorÃ­a, tip sobre ventas, gracias por comprar...", hint:"Mientras mÃ¡s especÃ­fico, mejor el borrador" },
+              { num:"02", emoji:"ðŸŽ¯", label:"Â¿CuÃ¡l es tu llamada a acciÃ³n?", field:"cta",  ph:"Agenda tu llamada / EscrÃ­beme / Ver el link en mi bio", hint:"Una sola acciÃ³n, concreta y fÃ¡cil de hacer" },
             ].map(q => (
               <div key={q.field} className={`desc-q-card${ef[q.field]?" filled":""}`}>
                 <div className="desc-q-num">{q.num}</div>
@@ -3116,12 +2644,12 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
           </div>
 
           <button className="mpm-step-btn" style={{marginTop:"16px"}} onClick={generarDraft} disabled={!ef.tema.trim()}>
-            Generar email ✦
+            Generar email âœ¦
           </button>
 
           {draft && (
             <div className="email-draft-result">
-              <div className="email-cuerpo-label" style={{padding:"0 0 8px"}}>Tu borrador — edita con tu voz y tu historia:</div>
+              <div className="email-cuerpo-label" style={{padding:"0 0 8px"}}>Tu borrador â€” edita con tu voz y tu historia:</div>
               <textarea
                 className="email-cuerpo-textarea"
                 value={draft}
@@ -3129,33 +2657,33 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
                 rows={18}
               />
               <div className="studio-btn-row" style={{marginTop:"12px"}}>
-                <button className="studio-copy-btn" onClick={() => copiar(draft, "draft")}>{copiado === "draft" ? "¡Copiado!" : "Copiar email"}</button>
+                <button className="studio-copy-btn" onClick={() => copiar(draft, "draft")}>{copiado === "draft" ? "Â¡Copiado!" : "Copiar email"}</button>
                 <button className="studio-btn-save" onClick={() => onSave("campanias", { id: Date.now(), objetivo: ef.tipo, comunicar: ef.tema, fecha: new Date().toLocaleDateString("es") })}>Guardar</button>
-                <button className="ideas-regen-btn" onClick={generarDraft}>🔄 Regenerar</button>
+                <button className="ideas-regen-btn" onClick={generarDraft}>ðŸ”„ Regenerar</button>
               </div>
             </div>
           )}
         </div>
       )}
 
-      {/* ── BANCO ───────────────────────────────────────── */}
+      {/* â”€â”€ BANCO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       {bancoEmails.length > 0 && (
         <div className="studio-bank">
-          <h4>Campañas y emails guardados ({bancoEmails.length})</h4>
+          <h4>CampaÃ±as y emails guardados ({bancoEmails.length})</h4>
           {bancoEmails.slice().reverse().map(item => {
             const meta = OBJ_META[item.objetivo];
             return (
               <div className="studio-bank-item" key={item.id}>
                 <div className="studio-bank-item-top">
                   <span className="studio-tipo-badge" style={{ background: meta?.color || "#C4526A" }}>
-                    {meta?.emoji || "📧"} {item.objetivo}
+                    {meta?.emoji || "ðŸ“§"} {item.objetivo}
                   </span>
                   <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
                     <small>{item.fecha}</small>
-                    <button className="studio-delete-btn" onClick={() => onDelete?.("campanias", item.id)}>✕</button>
+                    <button className="studio-delete-btn" onClick={() => onDelete?.("campanias", item.id)}>âœ•</button>
                   </div>
                 </div>
-                <p style={{fontSize:"13px",color:"#2D1B1B",margin:"4px 0 0"}}>{item.comunicar?.slice(0,80)}{item.comunicar?.length > 80 ? "…" : ""}</p>
+                <p style={{fontSize:"13px",color:"#2D1B1B",margin:"4px 0 0"}}>{item.comunicar?.slice(0,80)}{item.comunicar?.length > 80 ? "â€¦" : ""}</p>
               </div>
             );
           })}
@@ -3165,7 +2693,7 @@ function EmailTab({ saved, onSave, onDelete, brandProfile = {} }) {
   );
 }
 
-// ── WHATSAPP LANZAMIENTO ───────────────────────────────────────
+// â”€â”€ WHATSAPP LANZAMIENTO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
   const FORMATOS = ["Clase gratuita","Zoom cerrado","En vivo por Instagram","Solo por WhatsApp","Webinar","Otra modalidad"];
   const INIT = { producto: brandProfile.queOfreces || "", descripcion:"", precio:"", fecha:"", hora:"", formato:"Clase gratuita", promesa: brandProfile.transformacion || "", escasez:"" };
@@ -3187,50 +2715,50 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
     const fmt = formato;
 
     const fase1 = [
-      { dia:"3 – 4 días antes", label:"🌱 Intriga — crea la expectativa",
-        texto:`Llevo semanas trabajando en algo — y ya casi está listo.\n\nSolo quiero que guardes esta fecha en tu agenda: ${f} a las ${h}.\n\nAlgo importante pasa ese día. Tú querrás estar aquí cuando pase. 👀\n\nTe cuento más pronto.`
+      { dia:"3 â€“ 4 dÃ­as antes", label:"ðŸŒ± Intriga â€” crea la expectativa",
+        texto:`Llevo semanas trabajando en algo â€” y ya casi estÃ¡ listo.\n\nSolo quiero que guardes esta fecha en tu agenda: ${f} a las ${h}.\n\nAlgo importante pasa ese dÃ­a. TÃº querrÃ¡s estar aquÃ­ cuando pase. ðŸ‘€\n\nTe cuento mÃ¡s pronto.`
       },
-      { dia:"2 días antes", label:"🔥 Calentamiento — más contexto",
-        texto:`Sé que te dejé con suspenso 😅 y está bien.\n\nPorque lo que viene lo merece.\n\nEl ${f} a las ${h} abro las puertas de ${p} — y quiero que seas de las primeras en conocer todos los detalles.\n\nEsto es para ti si quieres ${pr}.\n\n¿Estás lista? 🔥\n\nNos vemos el ${f}.`
+      { dia:"2 dÃ­as antes", label:"ðŸ”¥ Calentamiento â€” mÃ¡s contexto",
+        texto:`SÃ© que te dejÃ© con suspenso ðŸ˜… y estÃ¡ bien.\n\nPorque lo que viene lo merece.\n\nEl ${f} a las ${h} abro las puertas de ${p} â€” y quiero que seas de las primeras en conocer todos los detalles.\n\nEsto es para ti si quieres ${pr}.\n\nÂ¿EstÃ¡s lista? ðŸ”¥\n\nNos vemos el ${f}.`
       },
-      { dia:"1 día antes", label:"🗓️ Recordatorio — confirma asistencia",
-        texto:`Mañana es el día. 🗓️\n\nMañana ${f} a las ${h} arranca ${fmt} — y voy a estar aquí contándote todo sobre ${p}.\n\nSi quieres ${pr}, mañana es tu momento.\n\nGuarda la hora. No te vayas a ningún lado. Nos vemos aquí. 🙌`
+      { dia:"1 dÃ­a antes", label:"ðŸ—“ï¸ Recordatorio â€” confirma asistencia",
+        texto:`MaÃ±ana es el dÃ­a. ðŸ—“ï¸\n\nMaÃ±ana ${f} a las ${h} arranca ${fmt} â€” y voy a estar aquÃ­ contÃ¡ndote todo sobre ${p}.\n\nSi quieres ${pr}, maÃ±ana es tu momento.\n\nGuarda la hora. No te vayas a ningÃºn lado. Nos vemos aquÃ­. ðŸ™Œ`
       },
-      { dia:"Noche anterior", label:"🌙 Último recordatorio — corto y directo",
-        texto:`Mañana a las ${h}. 🌙\n\nSolo eso te quería decir esta noche.\n\nNos vemos aquí. 💌`
+      { dia:"Noche anterior", label:"ðŸŒ™ Ãšltimo recordatorio â€” corto y directo",
+        texto:`MaÃ±ana a las ${h}. ðŸŒ™\n\nSolo eso te querÃ­a decir esta noche.\n\nNos vemos aquÃ­. ðŸ’Œ`
       },
     ];
 
     const fase2 = [
-      { dia:"Mañana del lanzamiento", label:"🎉 ¡Llegó el día!",
-        texto:`🎉 ¡El día llegó!\n\nHoy a las ${h} arranca ${fmt} — y estoy muy emocionada de finalmente contarte todo sobre ${p}.\n\nHoy vas a entender exactamente cómo ${pr}.\n\n${esc ? `📌 ${esc}` : "Y si decides entrar hoy, hay algo especial esperándote. 🎁"}\n\nNos vemos a las ${h}. ¡Aquí estaré! 🔥`
+      { dia:"MaÃ±ana del lanzamiento", label:"ðŸŽ‰ Â¡LlegÃ³ el dÃ­a!",
+        texto:`ðŸŽ‰ Â¡El dÃ­a llegÃ³!\n\nHoy a las ${h} arranca ${fmt} â€” y estoy muy emocionada de finalmente contarte todo sobre ${p}.\n\nHoy vas a entender exactamente cÃ³mo ${pr}.\n\n${esc ? `ðŸ“Œ ${esc}` : "Y si decides entrar hoy, hay algo especial esperÃ¡ndote. ðŸŽ"}\n\nNos vemos a las ${h}. Â¡AquÃ­ estarÃ©! ðŸ”¥`
       },
-      { dia:"1 – 2 horas antes", label:"⏰ Cuenta regresiva",
-        texto:`¡Falta muy poco! ⏰\n\n${fmt} arranca en menos de 2 horas.\n\n¿Ya tienes tu espacio listo? Prepárate, acomódate y llega puntual — porque lo que compartiremos hoy puede cambiar cómo ves tu negocio.\n\nNos vemos a las ${h}. 🔥`
+      { dia:"1 â€“ 2 horas antes", label:"â° Cuenta regresiva",
+        texto:`Â¡Falta muy poco! â°\n\n${fmt} arranca en menos de 2 horas.\n\nÂ¿Ya tienes tu espacio listo? PrepÃ¡rate, acomÃ³date y llega puntual â€” porque lo que compartiremos hoy puede cambiar cÃ³mo ves tu negocio.\n\nNos vemos a las ${h}. ðŸ”¥`
       },
-      { dia:"A la hora exacta", label:"🔴 ¡Arrancamos!",
-        texto:`🔴 ¡Arrancamos!\n\n[Agrega aquí el link de ${fmt} o instrucciones de acceso]\n\n¡Nos vemos adentro! 🎉`
+      { dia:"A la hora exacta", label:"ðŸ”´ Â¡Arrancamos!",
+        texto:`ðŸ”´ Â¡Arrancamos!\n\n[Agrega aquÃ­ el link de ${fmt} o instrucciones de acceso]\n\nÂ¡Nos vemos adentro! ðŸŽ‰`
       },
-      { dia:"Inmediatamente después", label:"🚀 Apertura de ventas",
-        texto:`Wow. 🥹\n\nLo que pasó hoy fue especial. Gracias a todas las que estuvieron presentes.\n\nY para las que no pudieron estar — no se preocupen. Lo más importante viene ahora.\n\n${p} está oficialmente abierto. 🎁\n\nEsto es lo que lograrás:\n✨ ${pr}\n\nInversión: ${precio || "[precio]"}\n${esc ? `📌 ${esc}\n` : ""}\nEl link está aquí 👇\n[Link de compra o inscripción]\n\n¿Tienes preguntas? Respóndeme aquí mismo. Estoy leyendo todo. 💌`
+      { dia:"Inmediatamente despuÃ©s", label:"ðŸš€ Apertura de ventas",
+        texto:`Wow. ðŸ¥¹\n\nLo que pasÃ³ hoy fue especial. Gracias a todas las que estuvieron presentes.\n\nY para las que no pudieron estar â€” no se preocupen. Lo mÃ¡s importante viene ahora.\n\n${p} estÃ¡ oficialmente abierto. ðŸŽ\n\nEsto es lo que lograrÃ¡s:\nâœ¨ ${pr}\n\nInversiÃ³n: ${precio || "[precio]"}\n${esc ? `ðŸ“Œ ${esc}\n` : ""}\nEl link estÃ¡ aquÃ­ ðŸ‘‡\n[Link de compra o inscripciÃ³n]\n\nÂ¿Tienes preguntas? RespÃ³ndeme aquÃ­ mismo. Estoy leyendo todo. ðŸ’Œ`
       },
-      { dia:"2 – 4 horas después", label:"📊 Urgencia inicial",
-        texto:`Ya son varias las que se animaron a entrar a ${p} en las últimas horas. 🔥\n\nTiene todo el sentido — porque esto fue creado exactamente para quienes quieren ${pr}.\n\n¿Todavía tienes preguntas? Respóndeme aquí y te doy todos los detalles.\n\nEl precio especial de lanzamiento es solo por este tiempo. Después cambia.\n\n👉 [Link]`
+      { dia:"2 â€“ 4 horas despuÃ©s", label:"ðŸ“Š Urgencia inicial",
+        texto:`Ya son varias las que se animaron a entrar a ${p} en las Ãºltimas horas. ðŸ”¥\n\nTiene todo el sentido â€” porque esto fue creado exactamente para quienes quieren ${pr}.\n\nÂ¿TodavÃ­a tienes preguntas? RespÃ³ndeme aquÃ­ y te doy todos los detalles.\n\nEl precio especial de lanzamiento es solo por este tiempo. DespuÃ©s cambia.\n\nðŸ‘‰ [Link]`
       },
     ];
 
     const fase3 = [
-      { dia:"Al día siguiente", label:"☀️ Prueba social + urgencia suave",
-        texto:`Buenos días ☀️\n\nAyer fue un día increíble. Gracias a todas las que estuvieron, las que preguntaron, las que se animaron.\n\nPara las que aún están pensando:\n\n${p} todavía está abierto — pero el precio de lanzamiento es solo hasta ${esc || "que se agoten los cupos"}.\n\n¿Qué necesitas saber para tomar la decisión? Respóndeme aquí. 💌`
+      { dia:"Al dÃ­a siguiente", label:"â˜€ï¸ Prueba social + urgencia suave",
+        texto:`Buenos dÃ­as â˜€ï¸\n\nAyer fue un dÃ­a increÃ­ble. Gracias a todas las que estuvieron, las que preguntaron, las que se animaron.\n\nPara las que aÃºn estÃ¡n pensando:\n\n${p} todavÃ­a estÃ¡ abierto â€” pero el precio de lanzamiento es solo hasta ${esc || "que se agoten los cupos"}.\n\nÂ¿QuÃ© necesitas saber para tomar la decisiÃ³n? RespÃ³ndeme aquÃ­. ðŸ’Œ`
       },
-      { dia:"2 – 3 días antes del cierre", label:"⏳ Urgencia media",
-        texto:`Quedan pocos días. ⏰\n\nEl acceso a ${p} al precio de lanzamiento cierra pronto — y no lo repetiré enseguida.\n\nSi quieres ${pr}... hoy es mejor que mañana. Y mañana es mejor que "ya no está disponible".\n\n${esc ? `📌 ${esc}\n` : ""}👉 [Link de compra]\n\n¿Dudas de último momento? Escríbeme. Estoy aquí para responderte. 💌`
+      { dia:"2 â€“ 3 dÃ­as antes del cierre", label:"â³ Urgencia media",
+        texto:`Quedan pocos dÃ­as. â°\n\nEl acceso a ${p} al precio de lanzamiento cierra pronto â€” y no lo repetirÃ© enseguida.\n\nSi quieres ${pr}... hoy es mejor que maÃ±ana. Y maÃ±ana es mejor que "ya no estÃ¡ disponible".\n\n${esc ? `ðŸ“Œ ${esc}\n` : ""}ðŸ‘‰ [Link de compra]\n\nÂ¿Dudas de Ãºltimo momento? EscrÃ­beme. Estoy aquÃ­ para responderte. ðŸ’Œ`
       },
-      { dia:"Últimas 24 horas", label:"🚨 Último aviso",
-        texto:`🚨 Últimas horas.\n\nMañana cierra ${p}.\n\nNo voy a mandarte otro mensaje después de este. Solo quiero que sepas que el espacio todavía está ahí si lo quieres.\n\n${pr}\n\n👉 [Link]\n\nCon cariño,\n[Tu nombre]`
+      { dia:"Ãšltimas 24 horas", label:"ðŸš¨ Ãšltimo aviso",
+        texto:`ðŸš¨ Ãšltimas horas.\n\nMaÃ±ana cierra ${p}.\n\nNo voy a mandarte otro mensaje despuÃ©s de este. Solo quiero que sepas que el espacio todavÃ­a estÃ¡ ahÃ­ si lo quieres.\n\n${pr}\n\nðŸ‘‰ [Link]\n\nCon cariÃ±o,\n[Tu nombre]`
       },
-      { dia:"Al momento del cierre", label:"🔐 Cierre oficial",
-        texto:`Y... cerrado. 🔐\n\n${p} ya no está disponible.\n\nGracias a todas las que confiaron y se animaron. Las veo adentro. 🥹\n\nPara las que no pudieron esta vez — escríbanme aquí y las agrego a la lista de espera para la próxima apertura.\n\nHasta pronto. 💌`
+      { dia:"Al momento del cierre", label:"ðŸ” Cierre oficial",
+        texto:`Y... cerrado. ðŸ”\n\n${p} ya no estÃ¡ disponible.\n\nGracias a todas las que confiaron y se animaron. Las veo adentro. ðŸ¥¹\n\nPara las que no pudieron esta vez â€” escrÃ­banme aquÃ­ y las agrego a la lista de espera para la prÃ³xima apertura.\n\nHasta pronto. ðŸ’Œ`
       },
     ];
 
@@ -3248,9 +2776,9 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
   };
 
   const FASES = [
-    { key:"fase1", label:"📣 Pre-lanzamiento",        sub:"Crea expectativa antes del gran día",      color:"#E67E22", bg:"#FFF5EB" },
-    { key:"fase2", label:"🚀 El día del lanzamiento",  sub:"Conecta, motiva y abre las ventas",        color:"#C4526A", bg:"#FFF0F3" },
-    { key:"fase3", label:"🎯 Post-lanzamiento",        sub:"Genera urgencia y cierra con confianza",   color:"#27AE60", bg:"#EEFAF3" },
+    { key:"fase1", label:"ðŸ“£ Pre-lanzamiento",        sub:"Crea expectativa antes del gran dÃ­a",      color:"#E67E22", bg:"#FFF5EB" },
+    { key:"fase2", label:"ðŸš€ El dÃ­a del lanzamiento",  sub:"Conecta, motiva y abre las ventas",        color:"#C4526A", bg:"#FFF0F3" },
+    { key:"fase3", label:"ðŸŽ¯ Post-lanzamiento",        sub:"Genera urgencia y cierra con confianza",   color:"#27AE60", bg:"#EEFAF3" },
   ];
 
   const updateMensaje = (faseKey, idx, txt) => {
@@ -3264,29 +2792,29 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
   return (
     <div className="studio-tab-content">
 
-      {/* ── FORMULARIO ── */}
+      {/* â”€â”€ FORMULARIO â”€â”€ */}
       {!plan && !thinking && (
         <div className="wp-form-wrap">
           <div className="guion-form-intro">
-            <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>💬</div>
+            <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>ðŸ’¬</div>
             <h2>Plan de Lanzamiento WhatsApp</h2>
-            <p>Cuéntanos de qué trata tu lanzamiento y generaremos 13 mensajes listos para enviar: calentamiento, el gran día y el cierre.</p>
+            <p>CuÃ©ntanos de quÃ© trata tu lanzamiento y generaremos 13 mensajes listos para enviar: calentamiento, el gran dÃ­a y el cierre.</p>
           </div>
 
           <div className={`desc-q-card${form.producto?" filled":""}`}>
-            <div className="desc-q-num">🎁</div>
+            <div className="desc-q-num">ðŸŽ</div>
             <div className="desc-q-body">
-              <label className="desc-q-label">¿Cómo se llama tu producto o servicio?</label>
+              <label className="desc-q-label">Â¿CÃ³mo se llama tu producto o servicio?</label>
               <input className="desc-q-input" autoFocus
-                placeholder="Ej: Mini-curso de ventas, Membresía Mamá CEO, Consultoría VIP..."
+                placeholder="Ej: Mini-curso de ventas, MembresÃ­a MamÃ¡ CEO, ConsultorÃ­a VIP..."
                 value={form.producto} onChange={e => sf("producto", e.target.value)} />
             </div>
           </div>
 
           <div className={`desc-q-card${form.promesa?" filled":""}`}>
-            <div className="desc-q-num">✨</div>
+            <div className="desc-q-num">âœ¨</div>
             <div className="desc-q-body">
-              <label className="desc-q-label">¿Qué resultado o transformación ofrece?</label>
+              <label className="desc-q-label">Â¿QuÃ© resultado o transformaciÃ³n ofrece?</label>
               <input className="desc-q-input"
                 placeholder="Ej: vender sin perseguir clientes, organizar su negocio en 4 semanas..."
                 value={form.promesa} onChange={e => sf("promesa", e.target.value)} />
@@ -3295,14 +2823,14 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
 
           <div className="wp-fecha-hora-row">
             <div className={`desc-q-card${form.fecha?" filled":""}`} style={{flex:1}}>
-              <div className="desc-q-num">📅</div>
+              <div className="desc-q-num">ðŸ“…</div>
               <div className="desc-q-body">
                 <label className="desc-q-label">Fecha del lanzamiento</label>
                 <input className="desc-q-input" placeholder="Ej: 20 de junio" value={form.fecha} onChange={e => sf("fecha", e.target.value)} />
               </div>
             </div>
             <div className={`desc-q-card${form.hora?" filled":""}`} style={{flex:1}}>
-              <div className="desc-q-num">🕐</div>
+              <div className="desc-q-num">ðŸ•</div>
               <div className="desc-q-body">
                 <label className="desc-q-label">Hora</label>
                 <input className="desc-q-input" placeholder="Ej: 8pm hora Colombia" value={form.hora} onChange={e => sf("hora", e.target.value)} />
@@ -3311,7 +2839,7 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
           </div>
 
           <div className="wp-formato-group">
-            <label className="lm-crear-label">¿Cómo lo vas a hacer?</label>
+            <label className="lm-crear-label">Â¿CÃ³mo lo vas a hacer?</label>
             <div className="guion-obj-pills" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px"}}>
               {FORMATOS.map(f => (
                 <button key={f} className={`guion-obj-pill${form.formato===f?" active":""}`}
@@ -3322,14 +2850,14 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
 
           <div className="wp-precio-escasez-row">
             <div className={`desc-q-card${form.precio?" filled":""}`} style={{flex:1}}>
-              <div className="desc-q-num">💰</div>
+              <div className="desc-q-num">ðŸ’°</div>
               <div className="desc-q-body">
-                <label className="desc-q-label">Precio o inversión (opcional)</label>
+                <label className="desc-q-label">Precio o inversiÃ³n (opcional)</label>
                 <input className="desc-q-input" placeholder="Ej: $97 USD, $350.000 COP" value={form.precio} onChange={e => sf("precio", e.target.value)} />
               </div>
             </div>
             <div className={`desc-q-card${form.escasez?" filled":""}`} style={{flex:1}}>
-              <div className="desc-q-num">⏳</div>
+              <div className="desc-q-num">â³</div>
               <div className="desc-q-body">
                 <label className="desc-q-label">Escasez o urgencia (opcional)</label>
                 <input className="desc-q-input" placeholder="Ej: Solo 30 cupos, precio especial 48h" value={form.escasez} onChange={e => sf("escasez", e.target.value)} />
@@ -3338,12 +2866,12 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
           </div>
 
           <button className="mpm-step-btn" onClick={generarPlan} disabled={!form.producto.trim() || !form.promesa.trim()}>
-            Generar plan de lanzamiento ✦
+            Generar plan de lanzamiento âœ¦
           </button>
         </div>
       )}
 
-      {/* ── THINKING ── */}
+      {/* â”€â”€ THINKING â”€â”€ */}
       {thinking && (
         <div className="ideas-thinking">
           <div className="ideas-orb-container">
@@ -3353,16 +2881,16 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
         </div>
       )}
 
-      {/* ── PLAN ── */}
+      {/* â”€â”€ PLAN â”€â”€ */}
       {plan && !thinking && (
         <div className="wp-plan-wrap">
 
           {/* Topbar */}
           <div className="wp-plan-topbar">
-            <button className="mpm-wizard-back-btn" onClick={() => setPlan(null)}>← Editar</button>
-            <button className="mpm-wizard-back-btn" onClick={() => { setPlan(null); setForm(INIT); }}>🔄 Nuevo</button>
+            <button className="mpm-wizard-back-btn" onClick={() => setPlan(null)}>â† Editar</button>
+            <button className="mpm-wizard-back-btn" onClick={() => { setPlan(null); setForm(INIT); }}>ðŸ”„ Nuevo</button>
             <button className="mpm-edit-btn" style={{marginLeft:"auto"}} onClick={() => onSave("lanzamientos", { id: Date.now(), producto: form.producto, fecha: form.fecha, formato: form.formato, fecha_guardado: new Date().toLocaleDateString("es") })}>
-              Guardar 💬
+              Guardar ðŸ’¬
             </button>
           </div>
 
@@ -3370,12 +2898,12 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
           <div className="wp-plan-header">
             <div className="wp-plan-titulo">{form.producto}</div>
             <div className="wp-plan-meta-row">
-              {form.fecha && <span>📅 {form.fecha}</span>}
-              {form.hora  && <span>🕐 {form.hora}</span>}
-              <span>📍 {form.formato}</span>
-              {form.precio && <span>💰 {form.precio}</span>}
+              {form.fecha && <span>ðŸ“… {form.fecha}</span>}
+              {form.hora  && <span>ðŸ• {form.hora}</span>}
+              <span>ðŸ“ {form.formato}</span>
+              {form.precio && <span>ðŸ’° {form.precio}</span>}
             </div>
-            <div className="wp-plan-total">13 mensajes · 3 fases</div>
+            <div className="wp-plan-total">13 mensajes Â· 3 fases</div>
           </div>
 
           {/* Las 3 fases */}
@@ -3396,7 +2924,7 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
                       <span className="wp-dia-badge">{msg.dia}</span>
                       <span className="wp-msg-label">{msg.label}</span>
                       <button className="wp-copy-btn" onClick={() => copiar(msg.texto, `${fase.key}-${i}`)}>
-                        {copiado === `${fase.key}-${i}` ? "✓ Copiado" : "Copiar"}
+                        {copiado === `${fase.key}-${i}` ? "âœ“ Copiado" : "Copiar"}
                       </button>
                     </div>
                     <textarea
@@ -3422,7 +2950,7 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
                     <small>{l.fecha_guardado}</small>
                   </div>
                   <strong style={{fontSize:"13px"}}>{l.producto}</strong>
-                  {l.fecha && <span style={{fontSize:"11px",color:"#9A7878",marginLeft:"7px"}}>· {l.fecha}</span>}
+                  {l.fecha && <span style={{fontSize:"11px",color:"#9A7878",marginLeft:"7px"}}>Â· {l.fecha}</span>}
                   <div style={{marginTop:"6px"}}>
                     <button className="studio-bank-action-copy" style={{color:"#C4526A"}} onClick={() => onDelete?.("lanzamientos", l.id)}>Eliminar</button>
                   </div>
@@ -3437,8 +2965,8 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
   );
 }
 
-// ── STUDIO PRINCIPAL ───────────────────────────────────────────
-// ── REPROPÓSITO ────────────────────────────────────────────────────────────
+// â”€â”€ STUDIO PRINCIPAL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// â”€â”€ REPROPÃ“SITO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function RepropositoTab({ saved, brandProfile = {} }) {
   const [selId,   setSelId]   = useState(null);
@@ -3456,10 +2984,10 @@ function RepropositoTab({ saved, brandProfile = {} }) {
     if (!g) return [];
     return [
       { num:"01", etq:"Portada",    txt: trunc(g.hook) || `Algo sobre ${g.tema} que necesitas escuchar hoy` },
-      { num:"02", etq:"El dolor",   txt: trunc(g.interes) || `Lo que muchas vivimos con ${g.tema} — y que pocas dicen` },
+      { num:"02", etq:"El dolor",   txt: trunc(g.interes) || `Lo que muchas vivimos con ${g.tema} â€” y que pocas dicen` },
       { num:"03", etq:"El cambio",  txt: trunc(g.deseo) || `Hasta que descubres que hay otra forma de verlo` },
       { num:"04", etq:"Resultado",  txt: g.logro ? `Cuando ${g.logro.toLowerCase().replace(/\.$/, "")}` : `Y cuando eso cambia, todo cambia` },
-      { num:"05", etq:"CTA",        txt: trunc(g.ctaTxt) || `Guarda este carrusel — lo vas a querer tener cerca 📌` },
+      { num:"05", etq:"CTA",        txt: trunc(g.ctaTxt) || `Guarda este carrusel â€” lo vas a querer tener cerca ðŸ“Œ` },
     ];
   };
 
@@ -3470,16 +2998,16 @@ function RepropositoTab({ saved, brandProfile = {} }) {
     return {
       asunto: `Algo sobre ${t} que no quiero que se te pase`,
       cuerpo: [
-        `Hola 👋`,
+        `Hola ðŸ‘‹`,
         ``,
         g.hook || `Quiero contarte algo sobre ${t} que creo que te va a resonar.`,
         ``,
         g.interes ? g.interes + `\n` : "",
         g.deseo   ? g.deseo   + `\n` : "",
         g.logro   ? `Cuando ${g.logro.toLowerCase()}, todo empieza a fluir diferente.\n` : "",
-        g.ctaTxt  || `Responde este email si quieres saber más — te leo con gusto.`,
+        g.ctaTxt  || `Responde este email si quieres saber mÃ¡s â€” te leo con gusto.`,
         ``,
-        `Con cariño,`,
+        `Con cariÃ±o,`,
         nombre || `[Tu nombre]`,
       ].filter(l => l !== "").join("\n"),
     };
@@ -3488,15 +3016,15 @@ function RepropositoTab({ saved, brandProfile = {} }) {
   const genWhatsApp = () => {
     if (!g) return [];
     const t = g.tema || "este tema";
-    const dolor = g.dolor ? g.dolor.toLowerCase().replace(/\.$/, "") : `algo no estaba funcionando como querías`;
+    const dolor = g.dolor ? g.dolor.toLowerCase().replace(/\.$/, "") : `algo no estaba funcionando como querÃ­as`;
     const hook = g.hook ? `"${line1(g.hook)}"` : "";
     return [
-      { label: "📣 Pre-publicación — antes de subir el reel",
-        txt: `Hola 💛\n\nHoy publico algo que creo que te va a llegar directo.\n\nEs sobre ${t}.\n\nSi alguna vez has sentido que ${dolor}, este video es para ti.\n\nLo subo en un momento — estate pendiente. 👀` },
-      { label: "🚀 El día que publicas",
-        txt: `¡Ya está en el aire! 🎬\n\nAcabo de publicar un reel sobre ${t}.\n\n${hook}\n\nVe a verlo y cuéntame en comentarios si te resonó algo.\n\n👉 [link de tu perfil]`.replace(/\n\n\n/g, "\n\n") },
-      { label: "🔁 Follow-up al día siguiente",
-        txt: `Ayer publiqué algo sobre ${t} y la respuesta fue hermosa 🤍\n\nSi todavía no lo viste, te lo dejo aquí → [link]\n\nY si ya lo viste: ¿en qué parte te viste reflejada?\n\nTe leo con gusto 💬` },
+      { label: "ðŸ“£ Pre-publicaciÃ³n â€” antes de subir el reel",
+        txt: `Hola ðŸ’›\n\nHoy publico algo que creo que te va a llegar directo.\n\nEs sobre ${t}.\n\nSi alguna vez has sentido que ${dolor}, este video es para ti.\n\nLo subo en un momento â€” estate pendiente. ðŸ‘€` },
+      { label: "ðŸš€ El dÃ­a que publicas",
+        txt: `Â¡Ya estÃ¡ en el aire! ðŸŽ¬\n\nAcabo de publicar un reel sobre ${t}.\n\n${hook}\n\nVe a verlo y cuÃ©ntame en comentarios si te resonÃ³ algo.\n\nðŸ‘‰ [link de tu perfil]`.replace(/\n\n\n/g, "\n\n") },
+      { label: "ðŸ” Follow-up al dÃ­a siguiente",
+        txt: `Ayer publiquÃ© algo sobre ${t} y la respuesta fue hermosa ðŸ¤\n\nSi todavÃ­a no lo viste, te lo dejo aquÃ­ â†’ [link]\n\nY si ya lo viste: Â¿en quÃ© parte te viste reflejada?\n\nTe leo con gusto ðŸ’¬` },
     ];
   };
 
@@ -3504,11 +3032,11 @@ function RepropositoTab({ saved, brandProfile = {} }) {
     if (!g) return [];
     const t = g.tema || "este tema";
     return [
-      { num:"01", tipo:"Pregunta",       txt: g.hook    ? line1(g.hook)    : `¿Sientes que con ${t} algo todavía no está donde quieres?` },
-      { num:"02", tipo:"El dolor",       txt: g.interes ? line1(g.interes) : `Muchas vivimos esto con ${t} — y se siente muy solitario.` },
-      { num:"03", tipo:"La revelación",  txt: g.deseo   ? line1(g.deseo)   : `Hasta que descubres que no es falta de esfuerzo — es falta de sistema.` },
+      { num:"01", tipo:"Pregunta",       txt: g.hook    ? line1(g.hook)    : `Â¿Sientes que con ${t} algo todavÃ­a no estÃ¡ donde quieres?` },
+      { num:"02", tipo:"El dolor",       txt: g.interes ? line1(g.interes) : `Muchas vivimos esto con ${t} â€” y se siente muy solitario.` },
+      { num:"03", tipo:"La revelaciÃ³n",  txt: g.deseo   ? line1(g.deseo)   : `Hasta que descubres que no es falta de esfuerzo â€” es falta de sistema.` },
       { num:"04", tipo:"El resultado",   txt: g.logro   ? `Cuando ${g.logro.toLowerCase()}` : `Y cuando todo empieza a fluir, tu vida cambia de verdad.` },
-      { num:"05", tipo:"CTA",            txt: g.ctaTxt  ? line1(g.ctaTxt)  : `Responde este story si quieres saber más — te cuento todo 💬` },
+      { num:"05", tipo:"CTA",            txt: g.ctaTxt  ? line1(g.ctaTxt)  : `Responde este story si quieres saber mÃ¡s â€” te cuento todo ðŸ’¬` },
     ];
   };
 
@@ -3527,23 +3055,23 @@ function RepropositoTab({ saved, brandProfile = {} }) {
   return (
     <div className="rp-wrap">
       <div className="rp-intro card">
-        <h3 className="rp-intro-title">♻️ Repropósito de contenido</h3>
-        <p className="rp-intro-sub">Elige un guión guardado y conviértelo en 4 formatos distintos — semana de contenido completa con un clic.</p>
+        <h3 className="rp-intro-title">â™»ï¸ RepropÃ³sito de contenido</h3>
+        <p className="rp-intro-sub">Elige un guiÃ³n guardado y conviÃ©rtelo en 4 formatos distintos â€” semana de contenido completa con un clic.</p>
       </div>
 
       {/* Guiones guardados */}
       {guiones.length === 0 ? (
-        <div className="rp-empty">Aún no tienes guiones guardados. Crea uno en el tab Guión y guárdalo para reproponer su contenido aquí.</div>
+        <div className="rp-empty">AÃºn no tienes guiones guardados. Crea uno en el tab GuiÃ³n y guÃ¡rdalo para reproponer su contenido aquÃ­.</div>
       ) : (
         <div className="rp-guiones-grid">
           {guiones.map(gg => (
             <button key={gg.id}
               className={`rp-guion-card ${selId === gg.id ? "rp-guion-card--active" : ""}`}
               onClick={() => setSelId(selId === gg.id ? null : gg.id)}>
-              <span className="rp-guion-obj">{gg.objetivo || "Guión"}</span>
+              <span className="rp-guion-obj">{gg.objetivo || "GuiÃ³n"}</span>
               <span className="rp-guion-tema">{gg.tema}</span>
               <span className="rp-guion-fecha">{gg.fecha}</span>
-              {selId === gg.id && <span className="rp-guion-check">✓ Seleccionado</span>}
+              {selId === gg.id && <span className="rp-guion-check">âœ“ Seleccionado</span>}
             </button>
           ))}
         </div>
@@ -3553,8 +3081,8 @@ function RepropositoTab({ saved, brandProfile = {} }) {
       {g && (
         <>
           <div className="rp-sel-banner">
-            <span>♻️ Reproponiéndolo como: <b>{g.tema}</b></span>
-            <button className="rp-desel" onClick={() => setSelId(null)}>× Cambiar</button>
+            <span>â™»ï¸ ReproponiÃ©ndolo como: <b>{g.tema}</b></span>
+            <button className="rp-desel" onClick={() => setSelId(null)}>Ã— Cambiar</button>
           </div>
 
           <div className="rp-formats-grid">
@@ -3562,10 +3090,10 @@ function RepropositoTab({ saved, brandProfile = {} }) {
             {/* Carrusel */}
             <div className="rp-fcard" style={{"--rpc": FORMAT_COLORS.carrusel.color, "--rpb": FORMAT_COLORS.carrusel.bg}}>
               <div className="rp-fcard-header">
-                <span className="rp-fcard-icon">📱</span>
+                <span className="rp-fcard-icon">ðŸ“±</span>
                 <span className="rp-fcard-title">Carrusel</span>
-                <button className="rp-copy-all" onClick={() => copiar(slides.map((s,i) => `SLIDE ${i+1} — ${s.etq}\n${s.txt}`).join("\n\n---\n\n"), "carrusel")}>
-                  {copiado === "carrusel" ? "✓ Copiado" : "Copiar todo"}
+                <button className="rp-copy-all" onClick={() => copiar(slides.map((s,i) => `SLIDE ${i+1} â€” ${s.etq}\n${s.txt}`).join("\n\n---\n\n"), "carrusel")}>
+                  {copiado === "carrusel" ? "âœ“ Copiado" : "Copiar todo"}
                 </button>
               </div>
               <div className="rp-slides-list">
@@ -3577,7 +3105,7 @@ function RepropositoTab({ saved, brandProfile = {} }) {
                       <p className="rp-slide-txt">{s.txt}</p>
                     </div>
                     <button className="rp-copy-item" onClick={() => copiar(s.txt, `s${s.num}`)}>
-                      {copiado === `s${s.num}` ? "✓" : "📋"}
+                      {copiado === `s${s.num}` ? "âœ“" : "ðŸ“‹"}
                     </button>
                   </div>
                 ))}
@@ -3587,10 +3115,10 @@ function RepropositoTab({ saved, brandProfile = {} }) {
             {/* Email */}
             <div className="rp-fcard" style={{"--rpc": FORMAT_COLORS.email.color, "--rpb": FORMAT_COLORS.email.bg}}>
               <div className="rp-fcard-header">
-                <span className="rp-fcard-icon">📧</span>
+                <span className="rp-fcard-icon">ðŸ“§</span>
                 <span className="rp-fcard-title">Email</span>
                 <button className="rp-copy-all" onClick={() => copiar(`Asunto: ${email.asunto}\n\n${email.cuerpo}`, "email")}>
-                  {copiado === "email" ? "✓ Copiado" : "Copiar todo"}
+                  {copiado === "email" ? "âœ“ Copiado" : "Copiar todo"}
                 </button>
               </div>
               <div className="rp-email-wrap">
@@ -3605,10 +3133,10 @@ function RepropositoTab({ saved, brandProfile = {} }) {
             {/* WhatsApp */}
             <div className="rp-fcard" style={{"--rpc": FORMAT_COLORS.wa.color, "--rpb": FORMAT_COLORS.wa.bg}}>
               <div className="rp-fcard-header">
-                <span className="rp-fcard-icon">💬</span>
+                <span className="rp-fcard-icon">ðŸ’¬</span>
                 <span className="rp-fcard-title">WhatsApp</span>
-                <button className="rp-copy-all" onClick={() => copiar(waMsgs.map(m => `${m.label}\n\n${m.txt}`).join("\n\n━━━━━━━━\n\n"), "wa")}>
-                  {copiado === "wa" ? "✓ Copiado" : "Copiar todo"}
+                <button className="rp-copy-all" onClick={() => copiar(waMsgs.map(m => `${m.label}\n\n${m.txt}`).join("\n\nâ”â”â”â”â”â”â”â”\n\n"), "wa")}>
+                  {copiado === "wa" ? "âœ“ Copiado" : "Copiar todo"}
                 </button>
               </div>
               <div className="rp-wa-list">
@@ -3617,7 +3145,7 @@ function RepropositoTab({ saved, brandProfile = {} }) {
                     <div className="rp-wa-msg-header">
                       <span className="rp-wa-label">{m.label}</span>
                       <button className="rp-copy-item" onClick={() => copiar(m.txt, `wa${i}`)}>
-                        {copiado === `wa${i}` ? "✓" : "📋"}
+                        {copiado === `wa${i}` ? "âœ“" : "ðŸ“‹"}
                       </button>
                     </div>
                     <pre className="rp-wa-txt">{m.txt}</pre>
@@ -3629,10 +3157,10 @@ function RepropositoTab({ saved, brandProfile = {} }) {
             {/* Stories */}
             <div className="rp-fcard" style={{"--rpc": FORMAT_COLORS.stories.color, "--rpb": FORMAT_COLORS.stories.bg}}>
               <div className="rp-fcard-header">
-                <span className="rp-fcard-icon">📸</span>
+                <span className="rp-fcard-icon">ðŸ“¸</span>
                 <span className="rp-fcard-title">Stories</span>
-                <button className="rp-copy-all" onClick={() => copiar(stories.map(s => `Story ${s.num} — ${s.tipo}\n${s.txt}`).join("\n\n---\n\n"), "stories")}>
-                  {copiado === "stories" ? "✓ Copiado" : "Copiar todo"}
+                <button className="rp-copy-all" onClick={() => copiar(stories.map(s => `Story ${s.num} â€” ${s.tipo}\n${s.txt}`).join("\n\n---\n\n"), "stories")}>
+                  {copiado === "stories" ? "âœ“ Copiado" : "Copiar todo"}
                 </button>
               </div>
               <div className="rp-stories-list">
@@ -3644,7 +3172,7 @@ function RepropositoTab({ saved, brandProfile = {} }) {
                       <p className="rp-story-txt">{s.txt}</p>
                     </div>
                     <button className="rp-copy-item" onClick={() => copiar(s.txt, `st${s.num}`)}>
-                      {copiado === `st${s.num}` ? "✓" : "📋"}
+                      {copiado === `st${s.num}` ? "âœ“" : "ðŸ“‹"}
                     </button>
                   </div>
                 ))}
@@ -3658,20 +3186,20 @@ function RepropositoTab({ saved, brandProfile = {} }) {
   );
 }
 
-// ── CARRUSEL ───────────────────────────────────────────────────────────────
+// â”€â”€ CARRUSEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 const CR_ESTRUCTURAS = [
-  { id: "Educativo",   icon: "📚", sub: "Tips y consejos",     color: "#4A90D9", bg: "#EEF5FF" },
-  { id: "Historia",    icon: "💫", sub: "Problema → Solución", color: "#C4526A", bg: "#FFF0F3" },
-  { id: "Comparación", icon: "⚖️",  sub: "Antes vs Después",    color: "#C9A96E", bg: "#faf3e7" },
-  { id: "Proceso",     icon: "🔢", sub: "Paso a paso",         color: "#2f9f70", bg: "#def3e8" },
+  { id: "Educativo",   icon: "ðŸ“š", sub: "Tips y consejos",     color: "#4A90D9", bg: "#EEF5FF" },
+  { id: "Historia",    icon: "ðŸ’«", sub: "Problema â†’ SoluciÃ³n", color: "#C4526A", bg: "#FFF0F3" },
+  { id: "ComparaciÃ³n", icon: "âš–ï¸",  sub: "Antes vs DespuÃ©s",    color: "#C9A96E", bg: "#faf3e7" },
+  { id: "Proceso",     icon: "ðŸ”¢", sub: "Paso a paso",         color: "#2f9f70", bg: "#def3e8" },
 ];
 
 const CR_CONTEXTO_META = {
-  "Educativo":   { label: "¿Cuáles son tus tips o puntos clave? (uno por línea)", placeholder: "Bloquea 2 horas fijas para tu negocio cada día\nAgrupa tareas similares — no mezcles crear con responder\nDi no a lo que no mueve tu negocio hacia adelante\nDelega lo que no necesita tu cerebro\nRevisa tu semana cada domingo en 10 minutos" },
-  "Historia":    { label: "Cuéntanos en 3 líneas: ¿cómo era el antes? → ¿qué cambió? → ¿cómo es el ahora?", placeholder: "Antes me sentía desbordada — todo urgente, sin tiempo para nada\nDescubrí que necesitaba un sistema, no más disciplina\nHoy trabajo con claridad y termino el día sin culpa" },
-  "Comparación": { label: "Escribe 3 situaciones del ANTES (líneas 1-3) y 3 del AHORA (líneas 4-6)", placeholder: "Hacía de todo sin saber qué movía el negocio de verdad\nTrabajas reaccionando, apagando fuegos todo el día\nSentía que nunca era suficiente\nAhora tengo 3 prioridades claras cada semana\nTrabajo en bloques y termino lo que empiezo\nSé exactamente qué hacer cada mañana" },
-  "Proceso":     { label: "¿Cuáles son los pasos de tu proceso? (uno por línea — mínimo 3, máximo 6)", placeholder: "Define qué quieres lograr esta semana con claridad\nBloquea tiempo en tu agenda antes de que lleguen los imprevistos\nAgrupa tareas por tipo de energía — crea en bloque, responde en bloque\nDi no a lo que no esté en tu lista de prioridades\nRevisa cada semana qué funcionó y qué ajustar" },
+  "Educativo":   { label: "Â¿CuÃ¡les son tus tips o puntos clave? (uno por lÃ­nea)", placeholder: "Bloquea 2 horas fijas para tu negocio cada dÃ­a\nAgrupa tareas similares â€” no mezcles crear con responder\nDi no a lo que no mueve tu negocio hacia adelante\nDelega lo que no necesita tu cerebro\nRevisa tu semana cada domingo en 10 minutos" },
+  "Historia":    { label: "CuÃ©ntanos en 3 lÃ­neas: Â¿cÃ³mo era el antes? â†’ Â¿quÃ© cambiÃ³? â†’ Â¿cÃ³mo es el ahora?", placeholder: "Antes me sentÃ­a desbordada â€” todo urgente, sin tiempo para nada\nDescubrÃ­ que necesitaba un sistema, no mÃ¡s disciplina\nHoy trabajo con claridad y termino el dÃ­a sin culpa" },
+  "ComparaciÃ³n": { label: "Escribe 3 situaciones del ANTES (lÃ­neas 1-3) y 3 del AHORA (lÃ­neas 4-6)", placeholder: "HacÃ­a de todo sin saber quÃ© movÃ­a el negocio de verdad\nTrabajas reaccionando, apagando fuegos todo el dÃ­a\nSentÃ­a que nunca era suficiente\nAhora tengo 3 prioridades claras cada semana\nTrabajo en bloques y termino lo que empiezo\nSÃ© exactamente quÃ© hacer cada maÃ±ana" },
+  "Proceso":     { label: "Â¿CuÃ¡les son los pasos de tu proceso? (uno por lÃ­nea â€” mÃ­nimo 3, mÃ¡ximo 6)", placeholder: "Define quÃ© quieres lograr esta semana con claridad\nBloquea tiempo en tu agenda antes de que lleguen los imprevistos\nAgrupa tareas por tipo de energÃ­a â€” crea en bloque, responde en bloque\nDi no a lo que no estÃ© en tu lista de prioridades\nRevisa cada semana quÃ© funcionÃ³ y quÃ© ajustar" },
 };
 
 function buildCarruselSlides(estructura, t, ctx = "") {
@@ -3680,141 +3208,141 @@ function buildCarruselSlides(estructura, t, ctx = "") {
 
   if (estructura === "Educativo") {
     const tips = lines.length >= 3 ? lines : [
-      `El hábito más simple que más impacto tiene en ${cleanT}`,
+      `El hÃ¡bito mÃ¡s simple que mÃ¡s impacto tiene en ${cleanT}`,
       `El error que el 90% comete y que frena todo el proceso`,
-      `Lo que funciona aunque no lo veas en redes — porque nadie lo muestra`,
-      `La verdad incómoda que te libera cuando la aceptas`,
-      `El cambio más pequeño que genera el resultado más grande`,
+      `Lo que funciona aunque no lo veas en redes â€” porque nadie lo muestra`,
+      `La verdad incÃ³moda que te libera cuando la aceptas`,
+      `El cambio mÃ¡s pequeÃ±o que genera el resultado mÃ¡s grande`,
     ];
     return [
-      { id:0, tipo:"portada",   etiqueta:"", principal:`${tips.length} claves sobre ${cleanT}\nque ojalá alguien me hubiera dicho antes`, apoyo:"Desliza para descubrirlas →" },
+      { id:0, tipo:"portada",   etiqueta:"", principal:`${tips.length} claves sobre ${cleanT}\nque ojalÃ¡ alguien me hubiera dicho antes`, apoyo:"Desliza para descubrirlas â†’" },
       ...tips.slice(0, 6).map((tip, i) => ({
         id: i+1, tipo:"contenido", etiqueta:`${String(i+1).padStart(2,"0")}`,
         principal: tip, apoyo: ""
       })),
-      { id: tips.slice(0,6).length+1, tipo:"cta", etiqueta:"", principal:"¿Cuál de estas claves resonó más contigo?", apoyo:"Guarda este carrusel para cuando lo necesites 📌\nComenta el número de tu favorita 👇" },
+      { id: tips.slice(0,6).length+1, tipo:"cta", etiqueta:"", principal:"Â¿CuÃ¡l de estas claves resonÃ³ mÃ¡s contigo?", apoyo:"Guarda este carrusel para cuando lo necesites ðŸ“Œ\nComenta el nÃºmero de tu favorita ðŸ‘‡" },
     ];
   }
 
   if (estructura === "Historia") {
-    const antes   = lines[0] || `Antes de entender ${cleanT}, sentía que algo no estaba funcionando`;
-    const quiebre = lines[1] || `Hasta que encontré una forma diferente de verlo todo`;
+    const antes   = lines[0] || `Antes de entender ${cleanT}, sentÃ­a que algo no estaba funcionando`;
+    const quiebre = lines[1] || `Hasta que encontrÃ© una forma diferente de verlo todo`;
     const ahora   = lines[2] || `Hoy tengo claridad, consistencia y resultados con ${cleanT}`;
     return [
-      { id:0, tipo:"portada",   etiqueta:"",             principal:`Cómo ${cleanT}\ncambió todo para mí\n(y puede cambiarlo para ti)`, apoyo:"Una historia real →" },
+      { id:0, tipo:"portada",   etiqueta:"",             principal:`CÃ³mo ${cleanT}\ncambiÃ³ todo para mÃ­\n(y puede cambiarlo para ti)`, apoyo:"Una historia real â†’" },
       { id:1, tipo:"antes",     etiqueta:"El antes",     principal: antes, apoyo:"Era agotador. Trabajaba mucho y avanzaba poco." },
-      { id:2, tipo:"problema",  etiqueta:"El dolor",     principal:"Lo que más me frustraba era...", apoyo:"Ver que otras lo lograban y preguntarme qué estaba haciendo mal." },
-      { id:3, tipo:"quiebre",   etiqueta:"El quiebre",   principal: quiebre, apoyo:"Fue un momento pequeño. Pero lo cambió todo." },
-      { id:4, tipo:"solucion",  etiqueta:"El cambio",    principal:"Lo que descubrí fue...", apoyo:"No era un secreto grande. Era algo que yo ya sabía pero no había aplicado de verdad." },
-      { id:5, tipo:"resultado", etiqueta:"El resultado", principal: ahora, apoyo:"No fue de un día para otro. Pero cuando empezó a fluir, no lo pude parar." },
-      { id:6, tipo:"cta",       etiqueta:"",             principal:"¿Te identificas con alguna de estas etapas?", apoyo:"Cuéntame en comentarios 💬\no escríbeme por DM — te leo 🤍" },
+      { id:2, tipo:"problema",  etiqueta:"El dolor",     principal:"Lo que mÃ¡s me frustraba era...", apoyo:"Ver que otras lo lograban y preguntarme quÃ© estaba haciendo mal." },
+      { id:3, tipo:"quiebre",   etiqueta:"El quiebre",   principal: quiebre, apoyo:"Fue un momento pequeÃ±o. Pero lo cambiÃ³ todo." },
+      { id:4, tipo:"solucion",  etiqueta:"El cambio",    principal:"Lo que descubrÃ­ fue...", apoyo:"No era un secreto grande. Era algo que yo ya sabÃ­a pero no habÃ­a aplicado de verdad." },
+      { id:5, tipo:"resultado", etiqueta:"El resultado", principal: ahora, apoyo:"No fue de un dÃ­a para otro. Pero cuando empezÃ³ a fluir, no lo pude parar." },
+      { id:6, tipo:"cta",       etiqueta:"",             principal:"Â¿Te identificas con alguna de estas etapas?", apoyo:"CuÃ©ntame en comentarios ðŸ’¬\no escrÃ­beme por DM â€” te leo ðŸ¤" },
     ];
   }
 
-  if (estructura === "Comparación") {
+  if (estructura === "ComparaciÃ³n") {
     const antesDefault = [
-      `Hacía ${cleanT} sin un sistema claro — todo era caótico`,
-      `Creía que necesitaba más tiempo, más energía o más recursos`,
-      `Me comparaba constantemente y sentía que siempre iba atrasada`,
+      `HacÃ­a ${cleanT} sin un sistema claro â€” todo era caÃ³tico`,
+      `CreÃ­a que necesitaba mÃ¡s tiempo, mÃ¡s energÃ­a o mÃ¡s recursos`,
+      `Me comparaba constantemente y sentÃ­a que siempre iba atrasada`,
     ];
     const despuesDefault = [
       `Tengo un proceso claro que repito con consistencia`,
-      `Trabajo con lo que tengo — y genera resultados reales`,
-      `Me enfoco en mi propio camino — y eso lo cambió todo`,
+      `Trabajo con lo que tengo â€” y genera resultados reales`,
+      `Me enfoco en mi propio camino â€” y eso lo cambiÃ³ todo`,
     ];
     const antesItems   = lines.slice(0, 3).length >= 3 ? lines.slice(0, 3) : antesDefault;
     const despuesItems = lines.slice(3, 6).length >= 3 ? lines.slice(3, 6) : despuesDefault;
     return [
-      { id:0, tipo:"portada",  etiqueta:"",           principal:`${cleanT}:\nantes vs. ahora`, apoyo:"Lo que cambió cuando lo hice diferente →" },
-      { id:1, tipo:"antes",    etiqueta:"ANTES ✗",    principal: antesItems[0], apoyo:"Resultado: agotamiento, frustración, sin avance real" },
-      { id:2, tipo:"antes",    etiqueta:"ANTES ✗",    principal: antesItems[1], apoyo:"" },
-      { id:3, tipo:"antes",    etiqueta:"ANTES ✗",    principal: antesItems[2], apoyo:"" },
-      { id:4, tipo:"vs",       etiqueta:"EL CAMBIO",  principal:"Lo que lo transformó todo:", apoyo:"Un cambio en cómo lo veía lo cambió todo." },
-      { id:5, tipo:"despues",  etiqueta:"AHORA ✓",    principal: despuesItems[0], apoyo:"Resultado: claridad, consistencia, resultados reales" },
-      { id:6, tipo:"despues",  etiqueta:"AHORA ✓",    principal: despuesItems[1], apoyo:"" },
-      { id:7, tipo:"despues",  etiqueta:"AHORA ✓",    principal: despuesItems[2], apoyo:"" },
-      { id:8, tipo:"cta",      etiqueta:"",           principal:"¿En cuál lado estás tú hoy?", apoyo:"Comenta ANTES o AHORA 👇\nTe leo en cada comentario" },
+      { id:0, tipo:"portada",  etiqueta:"",           principal:`${cleanT}:\nantes vs. ahora`, apoyo:"Lo que cambiÃ³ cuando lo hice diferente â†’" },
+      { id:1, tipo:"antes",    etiqueta:"ANTES âœ—",    principal: antesItems[0], apoyo:"Resultado: agotamiento, frustraciÃ³n, sin avance real" },
+      { id:2, tipo:"antes",    etiqueta:"ANTES âœ—",    principal: antesItems[1], apoyo:"" },
+      { id:3, tipo:"antes",    etiqueta:"ANTES âœ—",    principal: antesItems[2], apoyo:"" },
+      { id:4, tipo:"vs",       etiqueta:"EL CAMBIO",  principal:"Lo que lo transformÃ³ todo:", apoyo:"Un cambio en cÃ³mo lo veÃ­a lo cambiÃ³ todo." },
+      { id:5, tipo:"despues",  etiqueta:"AHORA âœ“",    principal: despuesItems[0], apoyo:"Resultado: claridad, consistencia, resultados reales" },
+      { id:6, tipo:"despues",  etiqueta:"AHORA âœ“",    principal: despuesItems[1], apoyo:"" },
+      { id:7, tipo:"despues",  etiqueta:"AHORA âœ“",    principal: despuesItems[2], apoyo:"" },
+      { id:8, tipo:"cta",      etiqueta:"",           principal:"Â¿En cuÃ¡l lado estÃ¡s tÃº hoy?", apoyo:"Comenta ANTES o AHORA ðŸ‘‡\nTe leo en cada comentario" },
     ];
   }
 
   // Proceso
   const pasosDefault = [
-    `Define con claridad qué quieres lograr con ${cleanT}`,
+    `Define con claridad quÃ© quieres lograr con ${cleanT}`,
     `Crea un sistema simple que puedas repetir cada semana`,
     `Elimina lo que te frena sin que te des cuenta`,
-    `Ejecuta en bloques — protege tu tiempo como una cita sagrada`,
-    `Revisa, ajusta y vuelve a empezar — la consistencia gana`,
+    `Ejecuta en bloques â€” protege tu tiempo como una cita sagrada`,
+    `Revisa, ajusta y vuelve a empezar â€” la consistencia gana`,
   ];
   const pasos = lines.length >= 3 ? lines.slice(0, 6) : pasosDefault;
   return [
-    { id:0, tipo:"portada",   etiqueta:"",             principal:`Mi proceso para ${cleanT}\nen ${pasos.length} pasos que funcionan`, apoyo:"Desliza y aplícalos →" },
+    { id:0, tipo:"portada",   etiqueta:"",             principal:`Mi proceso para ${cleanT}\nen ${pasos.length} pasos que funcionan`, apoyo:"Desliza y aplÃ­calos â†’" },
     ...pasos.map((paso, i) => ({
       id: i+1, tipo:"paso", etiqueta:`Paso ${String(i+1).padStart(2,"0")}`,
       principal: paso,
-      apoyo: i === 0 ? "Aquí es donde la mayoría se salta — y por eso no llega al final." :
-             i === Math.floor(pasos.length / 2) ? "Este es el paso más difícil. Y el más importante." : ""
+      apoyo: i === 0 ? "AquÃ­ es donde la mayorÃ­a se salta â€” y por eso no llega al final." :
+             i === Math.floor(pasos.length / 2) ? "Este es el paso mÃ¡s difÃ­cil. Y el mÃ¡s importante." : ""
     })),
     { id: pasos.length+1, tipo:"resultado", etiqueta:"El resultado", principal:`Cuando aplicas este proceso...`, apoyo:`Dejas de improvisar y empiezas a tener resultados consistentes con ${cleanT}.` },
-    { id: pasos.length+2, tipo:"cta",       etiqueta:"", principal:"¿En qué paso estás tú ahora?", apoyo:"Comenta el número 👇\nTe doy un tip específico para ese paso" },
+    { id: pasos.length+2, tipo:"cta",       etiqueta:"", principal:"Â¿En quÃ© paso estÃ¡s tÃº ahora?", apoyo:"Comenta el nÃºmero ðŸ‘‡\nTe doy un tip especÃ­fico para ese paso" },
   ];
 }
 
 function getApoyoSuggestions(tipo) {
   const map = {
     contenido: [
-      "Cuando lo apliqué por primera vez, fue un antes y un después.",
-      "El error más común: hacer exactamente lo contrario sin darse cuenta.",
-      "Empiézalo hoy: 5 minutos son suficientes para comenzar.",
+      "Cuando lo apliquÃ© por primera vez, fue un antes y un despuÃ©s.",
+      "El error mÃ¡s comÃºn: hacer exactamente lo contrario sin darse cuenta.",
+      "EmpiÃ©zalo hoy: 5 minutos son suficientes para comenzar.",
     ],
     paso: [
-      "Aquí es donde la mayoría se salta — y por eso no llega al final.",
+      "AquÃ­ es donde la mayorÃ­a se salta â€” y por eso no llega al final.",
       "El error que evita: querer ir al resultado sin pasar por este punto.",
-      "Hazlo ahora: da el primer micro-paso y confírmate que empezaste.",
+      "Hazlo ahora: da el primer micro-paso y confÃ­rmate que empezaste.",
     ],
     antes: [
-      "¿Te suena familiar? Es más común de lo que crees.",
+      "Â¿Te suena familiar? Es mÃ¡s comÃºn de lo que crees.",
       "Lo peor no era el cansancio. Era sentir que eso era normal.",
-      "Si estás aquí ahora: lo que sientes tiene salida. De verdad.",
+      "Si estÃ¡s aquÃ­ ahora: lo que sientes tiene salida. De verdad.",
     ],
     problema: [
-      "Y lo más duro: sentir que era la única a la que le pasaba.",
-      "Eso agota más que el trabajo mismo — la sensación de no avanzar.",
-      "¿Te identificas? Cuéntame en comentarios 👇",
+      "Y lo mÃ¡s duro: sentir que era la Ãºnica a la que le pasaba.",
+      "Eso agota mÃ¡s que el trabajo mismo â€” la sensaciÃ³n de no avanzar.",
+      "Â¿Te identificas? CuÃ©ntame en comentarios ðŸ‘‡",
     ],
     quiebre: [
-      "Fue un momento pequeño. Pero lo cambió todo.",
-      "No lo planeé. Llegó cuando más lo necesitaba.",
-      "Desde ese día, empecé a ver las cosas diferente.",
+      "Fue un momento pequeÃ±o. Pero lo cambiÃ³ todo.",
+      "No lo planeÃ©. LlegÃ³ cuando mÃ¡s lo necesitaba.",
+      "Desde ese dÃ­a, empecÃ© a ver las cosas diferente.",
     ],
     solucion: [
-      "No era complicado. Era solo algo que no había aplicado de verdad.",
-      "Lo había escuchado antes — pero esta vez lo entendí diferente.",
-      "El resultado llegó más rápido de lo que esperaba.",
+      "No era complicado. Era solo algo que no habÃ­a aplicado de verdad.",
+      "Lo habÃ­a escuchado antes â€” pero esta vez lo entendÃ­ diferente.",
+      "El resultado llegÃ³ mÃ¡s rÃ¡pido de lo que esperaba.",
     ],
     resultado: [
-      "No de un día para otro. Pero cuando llegó, fue real y duradero.",
-      "Y lo más valioso: la paz que viene cuando las cosas fluyen.",
-      "Si yo pude desde donde estaba, tú también puedes. En serio.",
+      "No de un dÃ­a para otro. Pero cuando llegÃ³, fue real y duradero.",
+      "Y lo mÃ¡s valioso: la paz que viene cuando las cosas fluyen.",
+      "Si yo pude desde donde estaba, tÃº tambiÃ©n puedes. En serio.",
     ],
     despues: [
-      "Y lo mejor: una vez que lo tienes, ya no quieres volver atrás.",
+      "Y lo mejor: una vez que lo tienes, ya no quieres volver atrÃ¡s.",
       "No fue un gran cambio. Fue consistente y honesto.",
-      "¿Cuánto tardé? Menos de lo que pensaba.",
+      "Â¿CuÃ¡nto tardÃ©? Menos de lo que pensaba.",
     ],
     vs: [
-      "No fue un accidente. Fue una decisión, aunque no lo pareciera.",
-      "Pequeño giro. Gran diferencia.",
-      "Ese 'algo' que cambió lo cambió todo.",
+      "No fue un accidente. Fue una decisiÃ³n, aunque no lo pareciera.",
+      "PequeÃ±o giro. Gran diferencia.",
+      "Ese 'algo' que cambiÃ³ lo cambiÃ³ todo.",
     ],
     portada: [
-      "Esta es mi historia real — sin filtros ni versión perfecta.",
-      "Desliza — hay algo aquí que es exactamente para ti.",
+      "Esta es mi historia real â€” sin filtros ni versiÃ³n perfecta.",
+      "Desliza â€” hay algo aquÃ­ que es exactamente para ti.",
       "Lo que nadie muestra pero muchas vivimos.",
     ],
     cta: [
-      "Te leo en comentarios. Cuéntame tu número favorito.",
-      "No hay respuesta incorrecta — solo quiero saber cómo estás.",
-      "Comparte esto con alguien que lo necesite hoy 🤍",
+      "Te leo en comentarios. CuÃ©ntame tu nÃºmero favorito.",
+      "No hay respuesta incorrecta â€” solo quiero saber cÃ³mo estÃ¡s.",
+      "Comparte esto con alguien que lo necesite hoy ðŸ¤",
     ],
   };
   return map[tipo] || map.contenido;
@@ -3846,7 +3374,7 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
   const copiarTodo = () => {
     if (!slides) return;
     const txt = slides.map((s, i) => {
-      const header = `SLIDE ${i + 1}${s.etiqueta ? ` — ${s.etiqueta}` : s.tipo === "portada" ? " — PORTADA" : s.tipo === "cta" ? " — CTA" : ""}`;
+      const header = `SLIDE ${i + 1}${s.etiqueta ? ` â€” ${s.etiqueta}` : s.tipo === "portada" ? " â€” PORTADA" : s.tipo === "cta" ? " â€” CTA" : ""}`;
       return [header, s.principal, s.apoyo ? `\n${s.apoyo}` : ""].filter(Boolean).join("\n");
     }).join("\n\n---\n\n");
     copiar(txt, "todo");
@@ -3874,7 +3402,7 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
         </div>
         <div className="cr-field">
           <label className="cr-label">Tema del carrusel</label>
-          <input className="cr-input" placeholder="Ej: organizar el tiempo cuando eres mamá y emprendes" value={tema} onChange={e => setTema(e.target.value)} />
+          <input className="cr-input" placeholder="Ej: organizar el tiempo cuando eres mamÃ¡ y emprendes" value={tema} onChange={e => setTema(e.target.value)} />
         </div>
         <div className="cr-field">
           <label className="cr-label">Estructura</label>
@@ -3900,10 +3428,10 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
             onChange={e => setContexto(e.target.value)}
             rows={5}
           />
-          <span className="cr-ctx-hint">Si lo dejas vacío, usamos ejemplos genéricos que puedes editar después.</span>
+          <span className="cr-ctx-hint">Si lo dejas vacÃ­o, usamos ejemplos genÃ©ricos que puedes editar despuÃ©s.</span>
         </div>
         <button className="primary-button" onClick={generar} disabled={thinking || !tema.trim()} style={{marginTop:"4px"}}>
-          {thinking ? "Generando slides..." : "Generar slides 🎴"}
+          {thinking ? "Generando slides..." : "Generar slides ðŸŽ´"}
         </button>
       </div>
 
@@ -3921,18 +3449,18 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
           <div className="cr-result-bar">
             <div className="cr-result-info">
               <span className="cr-result-count">{slides.length} slides</span>
-              <span className="cr-result-sep">·</span>
+              <span className="cr-result-sep">Â·</span>
               <span className="cr-result-tipo">{estructura}</span>
             </div>
             <div className="cr-result-actions">
               <button className="cr-btn cr-btn--secondary" onClick={copiarTodo}>
-                {copiado === "todo" ? "✓ Copiado todo" : "📋 Copiar todo"}
+                {copiado === "todo" ? "âœ“ Copiado todo" : "ðŸ“‹ Copiar todo"}
               </button>
               <button className="cr-btn cr-btn--canva" onClick={() => window.open("https://www.canva.com/create/instagram-posts/", "_blank")}>
-                Diseñar en Canva ↗
+                DiseÃ±ar en Canva â†—
               </button>
               <button className="cr-btn cr-btn--save" onClick={() => onSave("carruseles", { id:Date.now(), tema, estructura, slides, fecha:new Date().toLocaleDateString("es") })}>
-                Guardar 💾
+                Guardar ðŸ’¾
               </button>
             </div>
           </div>
@@ -3968,14 +3496,14 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
                         style={{color: ss.dark ? "rgba(255,255,255,0.82)" : "var(--ink)"}}
                         value={s.apoyo}
                         onChange={e => updateSlide(s.id, "apoyo", e.target.value)}
-                        placeholder="Escribe algo aquí o usa las ideas de abajo..."
+                        placeholder="Escribe algo aquÃ­ o usa las ideas de abajo..."
                         rows={2}
                       />
                       <button
                         className={`cr-apoyo-trigger ${expandedApoyo === s.id ? "cr-apoyo-trigger--open" : ""}`}
                         style={{color: ss.dark ? "rgba(255,255,255,0.65)" : meta.color}}
                         onClick={() => setExpandedApoyo(expandedApoyo === s.id ? null : s.id)}>
-                        💡 Ideas para este texto {expandedApoyo === s.id ? "↑" : "↓"}
+                        ðŸ’¡ Ideas para este texto {expandedApoyo === s.id ? "â†‘" : "â†“"}
                       </button>
                       {expandedApoyo === s.id && (
                         <div className="cr-apoyo-chips">
@@ -3996,7 +3524,7 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
                     <button className="cr-card-copy"
                       style={{color: ss.dark ? "rgba(255,255,255,0.6)" : "var(--muted)"}}
                       onClick={() => copiar([s.principal, s.apoyo].filter(Boolean).join("\n\n"), `s${s.id}`)}>
-                      {copiado === `s${s.id}` ? "✓ Copiado" : "📋 Copiar slide"}
+                      {copiado === `s${s.id}` ? "âœ“ Copiado" : "ðŸ“‹ Copiar slide"}
                     </button>
                   </div>
                 </div>
@@ -4005,27 +3533,27 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
           </div>
 
           <div className="cr-canva-guide">
-            <div className="cr-canva-guide-title">🎨 Cómo pasarlo a Canva en 5 minutos</div>
+            <div className="cr-canva-guide-title">ðŸŽ¨ CÃ³mo pasarlo a Canva en 5 minutos</div>
             <div className="cr-canva-steps">
               <div className="cr-canva-step">
                 <span className="cr-step-num">1</span>
                 <div>
                   <strong>Copia todo el texto</strong>
-                  <p>Haz clic en "📋 Copiar todo" arriba para tener todo el contenido en tu portapapeles.</p>
+                  <p>Haz clic en "ðŸ“‹ Copiar todo" arriba para tener todo el contenido en tu portapapeles.</p>
                 </div>
               </div>
               <div className="cr-canva-step">
                 <span className="cr-step-num">2</span>
                 <div>
                   <strong>Abre Canva y elige tu plantilla</strong>
-                  <p>Busca "carrusel Instagram" o "presentación Instagram" — elige una que tenga entre {slides.length} y {slides.length + 2} slides.</p>
+                  <p>Busca "carrusel Instagram" o "presentaciÃ³n Instagram" â€” elige una que tenga entre {slides.length} y {slides.length + 2} slides.</p>
                 </div>
               </div>
               <div className="cr-canva-step">
                 <span className="cr-step-num">3</span>
                 <div>
                   <strong>Pega el texto slide por slide</strong>
-                  <p>Cada slide tiene un texto principal (título) y un texto de apoyo. Reemplaza el texto de muestra de Canva con el tuyo.</p>
+                  <p>Cada slide tiene un texto principal (tÃ­tulo) y un texto de apoyo. Reemplaza el texto de muestra de Canva con el tuyo.</p>
                 </div>
               </div>
               <div className="cr-canva-step">
@@ -4037,7 +3565,7 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
               </div>
             </div>
             <button className="cr-btn cr-btn--canva cr-canva-open-btn" onClick={() => window.open("https://www.canva.com/create/instagram-posts/", "_blank")}>
-              Abrir Canva ↗
+              Abrir Canva â†—
             </button>
           </div>
         </div>
@@ -4051,11 +3579,11 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
             <div key={c.id} className="cr-saved-row">
               <div className="cr-saved-info">
                 <strong>{c.tema}</strong>
-                <span>{c.estructura} · {c.slides?.length} slides · {c.fecha}</span>
+                <span>{c.estructura} Â· {c.slides?.length} slides Â· {c.fecha}</span>
               </div>
               <div className="cr-saved-btns">
                 <button className="cr-saved-load" onClick={() => { setTema(c.tema); setEstructura(c.estructura); setSlides(c.slides); window.scrollTo({top:0,behavior:"smooth"}); }}>Cargar</button>
-                <button className="cr-saved-del" onClick={() => onDelete("carruseles", c.id)}>✕</button>
+                <button className="cr-saved-del" onClick={() => onDelete("carruseles", c.id)}>âœ•</button>
               </div>
             </div>
           ))}
@@ -4082,28 +3610,28 @@ function BrandProfileForm({ initial = {}, onSave, onCancel, isOnboarding = false
     <form className="bp-form" onSubmit={handleSubmit}>
       {isOnboarding && (
         <div className="bp-onboarding-intro">
-          <span className="bp-intro-icon">✦</span>
-          <h2 className="bp-intro-title">Cuéntame de tu marca</h2>
+          <span className="bp-intro-icon">âœ¦</span>
+          <h2 className="bp-intro-title">CuÃ©ntame de tu marca</h2>
           <p className="bp-intro-sub">Studio usa esto para pre-llenar todos los generadores con tu voz, tu nicho y tu estilo.</p>
         </div>
       )}
 
       <div className="bp-field">
-        <label className="bp-label">¿Qué ofreces? <span className="bp-req">*</span></label>
+        <label className="bp-label">Â¿QuÃ© ofreces? <span className="bp-req">*</span></label>
         <textarea className="bp-textarea" rows={2} required value={form.queOfreces}
           onChange={e => upd("queOfreces", e.target.value)}
-          placeholder="Ej: Coaching de maternidad consciente para mamás emprendedoras" />
+          placeholder="Ej: Coaching de maternidad consciente para mamÃ¡s emprendedoras" />
       </div>
 
       <div className="bp-field">
-        <label className="bp-label">¿A quién ayudas? (cliente ideal)</label>
+        <label className="bp-label">Â¿A quiÃ©n ayudas? (cliente ideal)</label>
         <textarea className="bp-textarea" rows={2} value={form.clienteIdeal}
           onChange={e => upd("clienteIdeal", e.target.value)}
-          placeholder="Ej: Mamás de 28-40 años que quieren crecer sin descuidar su familia" />
+          placeholder="Ej: MamÃ¡s de 28-40 aÃ±os que quieren crecer sin descuidar su familia" />
       </div>
 
       <div className="bp-field">
-        <label className="bp-label">¿Cuál es la transformación que logran contigo? <span className="bp-req">*</span></label>
+        <label className="bp-label">Â¿CuÃ¡l es la transformaciÃ³n que logran contigo? <span className="bp-req">*</span></label>
         <textarea className="bp-textarea" rows={2} required value={form.transformacion}
           onChange={e => upd("transformacion", e.target.value)}
           placeholder="Ej: De agotada y desbordada a organizada, rentable y presente" />
@@ -4111,7 +3639,7 @@ function BrandProfileForm({ initial = {}, onSave, onCancel, isOnboarding = false
 
       <div className="bp-row-2">
         <div className="bp-field">
-          <label className="bp-label">Tono de comunicación</label>
+          <label className="bp-label">Tono de comunicaciÃ³n</label>
           <select className="bp-select" value={form.tono} onChange={e => upd("tono", e.target.value)}>
             <option>Cercano</option><option>Profesional</option><option>Inspirador</option><option>Directo</option>
           </select>
@@ -4131,7 +3659,7 @@ function BrandProfileForm({ initial = {}, onSave, onCancel, isOnboarding = false
 
       <div className="bp-actions">
         <button className="bp-save-btn" type="submit">
-          {isOnboarding ? "Guardar y empezar ✦" : "Guardar perfil"}
+          {isOnboarding ? "Guardar y empezar âœ¦" : "Guardar perfil"}
         </button>
         {onCancel && (
           <button type="button" className="bp-cancel-btn" onClick={onCancel}>
@@ -4156,8 +3684,8 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
 
   useEffect(() => { saveStudio(data); }, [data]);
 
-  const TOAST_LABELS = { mensajes: "Mensaje guardado ✦", ideas: "Idea guardada 💡", leads: "Lead magnet guardado 🎁", hooks: "Hook guardado 🪝", guiones: "Guión guardado 🎬", captions: "Caption guardado", campanias: "Campaña guardada 📧" };
-  const showToast = (tipo) => { setToast(TOAST_LABELS[tipo] || "Guardado ✦"); setTimeout(() => setToast(null), 2500); };
+  const TOAST_LABELS = { mensajes: "Mensaje guardado âœ¦", ideas: "Idea guardada ðŸ’¡", leads: "Lead magnet guardado ðŸŽ", hooks: "Hook guardado ðŸª", guiones: "GuiÃ³n guardado ðŸŽ¬", captions: "Caption guardado", campanias: "CampaÃ±a guardada ðŸ“§" };
+  const showToast = (tipo) => { setToast(TOAST_LABELS[tipo] || "Guardado âœ¦"); setTimeout(() => setToast(null), 2500); };
   const handleSave = (tipo, item) => { setData(prev => ({ ...prev, [tipo]: [...(prev[tipo] || []), item] })); showToast(tipo); };
   const handleDelete = (tipo, id) => setData(prev => ({ ...prev, [tipo]: (prev[tipo] || []).filter(i => i.id !== id) }));
   const handleCrearGuion = (texto) => {
@@ -4174,7 +3702,7 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
 
   const tabProps = { saved: data, onSave: handleSave, onDelete: handleDelete, brandProfile, callGemini, plan, onAiUsed: setAiUsage };
 
-  // Pantalla de bienvenida si no hay perfil y no saltó
+  // Pantalla de bienvenida si no hay perfil y no saltÃ³
   if (!hasBrand && !skippedOnboarding) {
     return (
       <div className="studio-shell">
@@ -4201,7 +3729,7 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
         <span className="studio-title-text">Studio de Contenido</span>
         {callGemini && aiUsage && (
           <span className="studio-ai-counter">
-            ✨ {Math.max(0, aiUsage.limit - aiUsage.used)} de {aiUsage.limit} generaciones restantes
+            âœ¨ {Math.max(0, aiUsage.limit - aiUsage.used)} de {aiUsage.limit} generaciones restantes
           </span>
         )}
         <nav className="studio-tabs-nav">
@@ -4225,18 +3753,18 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
         </div>
       ) : hasBrand ? (
         <div className="studio-brand-strip">
-          <span className="sbs-star">✦</span>
+          <span className="sbs-star">âœ¦</span>
           <span className="sbs-info">
             <b>{brandProfile.queOfreces}</b>
-            <span className="sbs-meta"> · Tono: {brandProfile.tono} · Red: {brandProfile.redPrincipal}</span>
+            <span className="sbs-meta"> Â· Tono: {brandProfile.tono} Â· Red: {brandProfile.redPrincipal}</span>
           </span>
-          <button className="sbs-edit-btn" onClick={() => setEditingBrand(true)}>Editar perfil ✏️</button>
+          <button className="sbs-edit-btn" onClick={() => setEditingBrand(true)}>Editar perfil âœï¸</button>
         </div>
       ) : (
         <div className="studio-brand-strip studio-brand-strip--empty">
-          <span className="sbs-star">💡</span>
+          <span className="sbs-star">ðŸ’¡</span>
           <span>Completa tu <b>Perfil de Marca</b> para que Studio use tu voz en todo</span>
-          <button className="sbs-edit-btn" onClick={() => setEditingBrand(true)}>Completar →</button>
+          <button className="sbs-edit-btn" onClick={() => setEditingBrand(true)}>Completar â†’</button>
         </div>
       )}
 
