@@ -2469,6 +2469,34 @@
 .gn2-obj-pill.active .gn2-obj-pill-label { color: #C4526A; }
 .gn2-obj-pill:hover:not(.active) { border-color: rgba(196,82,106,0.35); background: #FFFBFC; }
 
+/* Selector de formato (IG / YouTube / Podcast) */
+.gn2-formato-pills {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.gn2-formato-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 16px 10px;
+  border-radius: 14px;
+  border: 1.5px solid rgba(147,114,126,0.18);
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  font-family: inherit;
+  text-align: center;
+}
+.gn2-formato-icon  { font-size: 24px; line-height: 1; }
+.gn2-formato-label { font-size: 13px; font-weight: 700; color: #2D1B1B; }
+.gn2-formato-sub   { font-size: 11px; color: #9A7878; }
+.gn2-formato-pill.active { border-color: #C4526A; background: #FFF0F3; }
+.gn2-formato-pill.active .gn2-formato-label { color: #C4526A; }
+.gn2-formato-pill:hover:not(.active) { border-color: rgba(196,82,106,0.35); background: #FFFBFC; }
+@media (max-width: 480px) { .gn2-formato-pills { grid-template-columns: 1fr; } }
+
 /* Fase 2 — cards de preguntas */
 .gn2-fase-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
 .gn2-topic-badge {

@@ -1852,146 +1852,62 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
 
 // ── GUIÓN ──────────────────────────────────────────────────────
 function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
-  // ── Nuevo flujo tipo Claude ──────────────────────────────────
-  const [subTab,   setSubTab]   = useState("guion");
-  const [fase,     setFase]     = useState("tema");   // tema | elegir | generando | resultado
-  const [topic,    setTopic]    = useState(seed || "");
-  const [objetivo, setObjetivo] = useState("Vender");
-  const [sel,      setSel]      = useState({ logro: "", dolor: "", cambio: "", cta: "Guardar el video" });
-  const [custom,   setCustom]   = useState({ logro: false, dolor: false, cambio: false });
-  const [script,   setScript]   = useState(null);    // {hook, interes, deseo, accion, isAI}
-  const [copiado,  setCopiado]  = useState("");
-  const [aiMsg,    setAiMsg]    = useState("");
-  const [c,        setC]        = useState({ red: brandProfile.redPrincipal || "Instagram", tono: brandProfile.tono || "Cercano", tema: "", cta: "", hashtags: true });
-  const [caption,       setCaption]       = useState(null);
-  const [preguntaActual, setPreguntaActual] = useState(0);
+  const [subTab,  setSubTab]  = useState("guion");
+  const [fase,    setFase]    = useState("tema");
+  const [topic,   setTopic]   = useState(seed || "");
+  const [formato, setFormato] = useState("ig");
+  const [script,  setScript]  = useState(null);
+  const [aiMsg,   setAiMsg]   = useState("");
+  const [copiado, setCopiado] = useState("");
+  const [c,       setC]       = useState({ red: brandProfile.redPrincipal || "Instagram", tono: brandProfile.tono || "Cercano", tema: "", cta: "", hashtags: true });
+  const [caption, setCaption] = useState(null);
 
   useEffect(() => { if (seed) { setTopic(seed); onSeedConsumed?.(); } }, []);
 
   const copiar = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2200); };
 
-  // ── Sugestiones inteligentes basadas en el tema ─────────────
-  const getSugestiones = () => {
-    return {
-      logros: [
-        `Aprendí a hacerlo de forma simple y paso a paso, sin necesitar ser experta`,
-        `Pasé de no saber por dónde empezar a tener un sistema que me funciona hoy`,
-        `Descubrí que sí es posible tener resultados reales sin descuidar a mi familia`,
-        `Lo implementé y cambió completamente la forma en que manejo mi negocio`,
-      ],
-      dolores: [
-        `Sentía que era demasiado complicado para mí y que simplemente no era para todas`,
-        `Probé todo y nada funcionaba — estaba agotada y a punto de rendirme`,
-        `Me sentía perdida sin saber por dónde empezar, completamente sola y sin referentes`,
-        `Dudaba si realmente podía lograrlo siendo mamá, emprendedora y sin tiempo`,
-      ],
-      cambios: [
-        `Dejé de buscar la perfección y empecé a hacerlo a mi manera, desde mi realidad`,
-        `Entendí que no necesito hacerlo perfecto — solo necesito ser consistente`,
-        `Encontré un método que se adapta a mi vida real sin sacrificar lo que importa`,
-        `Tomé la decisión de aprender paso a paso, sin presión y sin compararme con nadie`,
-      ],
-    };
-  };
-
-  const CTA_MAP = {
-    "Guardar el video":     `Guarda este video — lo vas a querer cuando lo necesites.`,
-    "Comentar":             `Cuéntame en comentarios: ¿te identificaste con algo? Te leo.`,
-    "Escribirme por DM":    `Si esto te resonó, escríbeme por DM — me encantaría conocer tu historia.`,
-    "Link en mi bio":       `Si quieres el siguiente paso, el link está en mi bio.`,
-    "Compartirlo":          `¿Conoces a alguien que necesita escuchar esto hoy? Compárteselo.`,
-    "Ir a mi página web":   `Si quieres saber más, el link está en la descripción.`,
-  };
-
-  const CTAS = [
-    { k: "Guardar el video",  i: "🔖" },
-    { k: "Comentar",          i: "💬" },
-    { k: "Escribirme por DM", i: "✉️" },
-    { k: "Link en mi bio",    i: "🔗" },
-    { k: "Compartirlo",       i: "🤝" },
+  const FORMATOS = [
+    { k: "ig",      label: "Instagram Reel", sub: "hasta 3 min", icon: "📱" },
+    { k: "youtube", label: "YouTube",         sub: "15-20 min",   icon: "📹" },
+    { k: "podcast", label: "Podcast",         sub: "~60 min",     icon: "🎙️" },
   ];
-  const HOOK_MAP = {
-    "Vender":   `¿Sientes que trabajas duro en tu negocio y algo todavía no está funcionando como quieres?`,
-    "Conectar": `Quiero contarte algo que me costó mucho tiempo entender — y que cambió todo para mí.`,
-    "Educar":   `Hay algo sobre este tema que ojalá alguien me hubiera dicho antes. Hoy te lo comparto.`,
-    "Inspirar": `Hubo un momento en que creí que esto no era para mí. Hasta que pasó algo que lo cambió todo.`,
-  };
+  const FORMATO_LABEL = { ig: "Instagram Reel", youtube: "YouTube · 15-20 min", podcast: "Podcast · 60 min" };
+  const SECTION_COLORS = ["#C9903A", "#C4526A", "#27AE60", "#6366F1", "#E8755A", "#0EA5E9", "#9333EA", "#F59E0B"];
 
-  const buildCaptionFromGuion = (obj = objetivo) => {
-    const hook = HOOK_MAP[obj] || HOOK_MAP["Conectar"];
-    const interes = sel.dolor
-      ? sel.dolor + `\n\nY lo peor es que sentías que las demás lo lograban y tú no. Eso es agotador.`
-      : `A veces el mayor obstáculo no es la estrategia — es lo que cargamos por dentro.`;
-    const deseo = sel.cambio
-      ? sel.cambio + `\n\nY cuando eso pasó, todo empezó a fluir diferente. Eso mismo es posible para ti.`
-      : `Ese lugar donde todo fluye y avanzas con calma existe. Y con la guía correcta, puedes llegar ahí.`;
-    const accion = script?.accion || CTA_MAP[sel.cta] || `Guarda este video — lo vas a querer tener cuando lo necesites.`;
-    return `${hook}\n\n${interes}\n\n${deseo}\n\n👉 ${accion}\n\n#mamáemprendedora #negociodigital #emprendimiento #mamáceo`;
-  };
+  const scriptTexto = script?.secciones?.map(s => `【${s.nombre}】\n${s.guion}`).join("\n\n") || "";
 
   const generar = async () => {
-    if (!sel.logro.trim() || !sel.dolor.trim() || !sel.cambio.trim()) return;
+    if (!topic.trim() || !callGemini) return;
     setFase("generando");
     setAiMsg("");
-    const ctaTexto = CTA_MAP[sel.cta] || sel.cta;
-    if (callGemini) {
-      const res = await callGemini("guion", {
-        objetivo, logro: sel.logro, dolor: sel.dolor, cambio: sel.cambio,
-        queOfreces: topic, nicho: brandProfile.clienteIdeal || "mamás emprendedoras",
-        tono: brandProfile.tono || "Cercano",
-      });
-      if (res?.error === "rate_limit")          { setAiMsg("Muchas solicitudes. Intenta en 1 minuto."); setFase("elegir"); return; }
-      if (res?.error === "limite_alcanzado")    { setAiMsg("Llegaste al límite de generaciones del mes."); setFase("elegir"); return; }
-      if (res?.error === "No autorizada" || res?.error?.includes("autent")) { setAiMsg("Inicia sesión para usar la IA."); setFase("elegir"); return; }
-      if (res?.error)                           { setAiMsg("Algo salió mal. Intenta de nuevo."); setFase("elegir"); return; }
-      onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
-      const r = res.result || {};
-      setScript({
-        hook:    r.hook?.[0]    || sel.logro,
-        interes: r.interes?.[0] || sel.dolor,
-        deseo:   r.deseo?.[0]   || sel.cambio,
-        accion:  r.accion?.[0]  || ctaTexto,
-        isAI: true,
-      });
-    } else {
-      setScript({ hook: sel.logro, interes: sel.dolor, deseo: sel.cambio, accion: ctaTexto, isAI: false });
-    }
+    const res = await callGemini("guion", {
+      tema: topic, formato,
+      queOfreces: brandProfile.queOfreces || "",
+      transformacion: brandProfile.transformacion || "",
+      clienteIdeal: brandProfile.clienteIdeal || "mamás emprendedoras",
+      tono: brandProfile.tono || "Cercano",
+    });
+    if (res?.error === "rate_limit")        { setAiMsg("Muchas solicitudes. Intenta en 1 minuto."); setFase("tema"); return; }
+    if (res?.error === "limite_alcanzado")  { setAiMsg("Llegaste al límite de generaciones del mes."); setFase("tema"); return; }
+    if (res?.error === "No autorizada" || res?.error?.includes("autent")) { setAiMsg("Inicia sesión para usar la IA."); setFase("tema"); return; }
+    if (res?.error)                         { setAiMsg("Algo salió mal. Intenta de nuevo."); setFase("tema"); return; }
+    onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
+    const r = res.result || {};
+    setScript({ titulo: r.titulo || topic, secciones: r.secciones || [] });
     setFase("resultado");
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
   };
 
-  const reset = () => {
-    setFase("tema"); setTopic(""); setObjetivo("Vender");
-    setSel({ logro: "", dolor: "", cambio: "", cta: "Guardar el video" });
-    setCustom({ logro: false, dolor: false, cambio: false });
-    setScript(null); setAiMsg(""); setPreguntaActual(0);
+  const reset = () => { setFase("tema"); setScript(null); setAiMsg(""); };
+
+  const buildCaption = () => {
+    if (!script?.secciones?.length) return "";
+    const hook = script.secciones[0]?.guion?.split(".")[0] || topic;
+    const body = script.secciones[1]?.guion?.slice(0, 250) || "";
+    const cta  = script.secciones[script.secciones.length - 1]?.guion?.split(".")[0] || "";
+    const tags = brandProfile.hashtags || "#mamáemprendedora #negociodigital #emprendimiento #mamáceo";
+    return `${hook}.\n\n${body}\n\n👉 ${cta}.\n\n${tags}`;
   };
-
-  const canContinue = topic.trim().length > 2;
-  const canGenerate = !!(sel.logro.trim() && sel.dolor.trim() && sel.cambio.trim());
-  const sugestiones = getSugestiones();
-
-  const PREGUNTAS_SLIDE = [
-    { num:"01", key:"logro",  pregunta:"¿Cuál es tu mayor logro o aprendizaje con este tema?", hint:"Entre más específica seas, más poderoso el guión", opciones: sugestiones.logros, placeholder:"Cuéntalo con detalle — qué lograste exactamente..." },
-    { num:"02", key:"dolor",  pregunta:"¿Cómo te sentías ANTES de lograr eso?",                 hint:"Aquí conectas con tu audiencia — ellas están donde tú estabas", opciones: sugestiones.dolores, placeholder:"Describe cómo te sentías — honesta y específica..." },
-    { num:"03", key:"cambio", pregunta:"¿Qué cambió o hiciste diferente?",                      hint:"No tiene que ser una estrategia — puede ser una decisión", opciones: sugestiones.cambios, placeholder:"¿Qué hiciste diferente que lo cambió todo?..." },
-    { num:"04", key:"cta",    pregunta:"¿Qué quieres que hagan al terminar el video?",          hint:"Solo una acción — la más importante", opciones: null, placeholder:"" },
-  ];
-  const slideActual    = PREGUNTAS_SLIDE[preguntaActual];
-  const esCTASlide     = slideActual?.key === "cta";
-  const selActualSlide = esCTASlide ? sel.cta : sel[slideActual?.key];
-  const customActualSlide = !esCTASlide && custom[slideActual?.key];
-  const esFinalSlide   = preguntaActual === PREGUNTAS_SLIDE.length - 1;
-
-  const handleElegirOpcion = (key, valor) => {
-    setSel(p => ({ ...p, [key]: valor }));
-    setCustom(p => ({ ...p, [key]: false }));
-    if (!esFinalSlide) setTimeout(() => setPreguntaActual(n => n + 1), 420);
-  };
-
-  const scriptTexto = script
-    ? [script.hook, script.interes, script.deseo, script.accion].filter(Boolean).join("\n\n")
-    : "";
 
   return (
     <div className="studio-tab-content">
@@ -2002,19 +1918,20 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
 
       {subTab === "guion" && (
         <>
-          {/* ── FASE 1: TEMA ──────────────────────── */}
+          {/* ── TEMA + FORMATO ── */}
           {fase === "tema" && (
             <div className="gn2-wrap">
               <div className="gn2-hero">
                 <h2 className="gn2-hero-title">¿Sobre qué es tu video?</h2>
-                <p className="gn2-hero-sub">Escribe el tema y la IA construye el guión completo por ti.</p>
+                <p className="gn2-hero-sub">Elige el formato y la IA escribe el guión completo por ti.</p>
               </div>
+
               <div className="gn2-field">
                 <input className="gn2-input" autoFocus
-                  placeholder="Ej: cobrar sin culpa, plan de contenido, vender con reels..."
+                  placeholder="Ej: cobrar sin culpa, vender con reels, organizar el tiempo..."
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && canContinue && setFase("elegir")}
+                  onKeyDown={e => e.key === "Enter" && topic.trim().length > 2 && generar()}
                 />
                 <div className="ideas-chips" style={{marginTop:"10px"}}>
                   {["cobrar sin culpa","vender por WhatsApp","organizar el tiempo","conseguir clientas","reels que venden","mentalidad de CEO"].map(ej => (
@@ -2022,23 +1939,30 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                   ))}
                 </div>
               </div>
+
               <div className="gn2-field">
-                <label className="gn2-label">¿Cuál es el objetivo?</label>
-                <div className="gn2-obj-grid">
-                  {[{k:"Vender",i:"💰",d:"Llevar a comprar"},{k:"Conectar",i:"💙",d:"Generar confianza"},{k:"Educar",i:"📖",d:"Enseñar algo útil"},{k:"Inspirar",i:"⚡",d:"Motivar a actuar"}].map(o => (
-                    <button key={o.k} className={`gn2-obj-pill${objetivo===o.k?" active":""}`}
-                      onClick={() => setObjetivo(o.k)}>
-                      <span className="gn2-obj-pill-icon">{o.i}</span>
-                      <span className="gn2-obj-pill-label">{o.k}</span>
-                      <span className="gn2-obj-pill-desc">{o.d}</span>
+                <label className="gn2-label">¿Para qué plataforma?</label>
+                <div className="gn2-formato-pills">
+                  {FORMATOS.map(f => (
+                    <button key={f.k}
+                      className={`gn2-formato-pill${formato === f.k ? " active" : ""}`}
+                      onClick={() => setFormato(f.k)}>
+                      <span className="gn2-formato-icon">{f.icon}</span>
+                      <span className="gn2-formato-label">{f.label}</span>
+                      <span className="gn2-formato-sub">{f.sub}</span>
                     </button>
                   ))}
                 </div>
               </div>
-              <button className={`mpm-step-btn${callGemini?" studio-ai-btn":""}`} style={{marginTop:"8px"}}
-                disabled={!canContinue} onClick={() => setFase("elegir")}>
-                {callGemini ? "✨ Continuar" : "Continuar →"}
+
+              {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
+
+              <button className="mpm-step-btn studio-ai-btn"
+                disabled={!topic.trim() || topic.trim().length < 3}
+                onClick={generar}>
+                ✨ Generar guión
               </button>
+
               {saved?.guiones?.length > 0 && (
                 <div className="studio-bank" style={{marginTop:"20px"}}>
                   <h4>Guiones guardados ({saved.guiones.length})</h4>
@@ -2050,11 +1974,6 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                       </div>
                       <strong style={{fontSize:"13px"}}>{g.tema}</strong>
                       <div style={{display:"flex",gap:"6px",marginTop:"8px"}}>
-                        <button className="studio-bank-action-copy" onClick={() => {
-                          setCaption(buildCaptionFromGuion(g.objetivo));
-                          setSubTab("caption");
-                          setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}),50);
-                        }}>📝 Caption</button>
                         <button className="studio-bank-action-copy" style={{color:"#C4526A"}} onClick={() => onDelete?.("guiones", g.id)}>Eliminar</button>
                       </div>
                     </div>
@@ -2064,88 +1983,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
             </div>
           )}
 
-          {/* ── FASE 2: ELEGIR (SLIDES) ──────────── */}
-          {fase === "elegir" && (
-            <div className="gn2-wrap">
-              <div className="gn2-fase-hdr">
-                <button className="mpm-wizard-back-btn" onClick={() => {
-                  if (preguntaActual > 0) setPreguntaActual(n => n - 1);
-                  else setFase("tema");
-                }}>← {preguntaActual > 0 ? "Anterior" : "Cambiar tema"}</button>
-                <span className="gn2-topic-badge">🎬 {topic}</span>
-              </div>
-              {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
-
-              {/* Dots de progreso */}
-              <div className="gn2-dots">
-                {PREGUNTAS_SLIDE.map((_, i) => (
-                  <span key={i}
-                    className={`gn2-dot${i === preguntaActual ? " active" : i < preguntaActual ? " done" : ""}`}
-                    onClick={() => { if (i < preguntaActual) setPreguntaActual(i); }} />
-                ))}
-              </div>
-
-              {/* Tarjeta del slide actual */}
-              <div className="gn2-q-card gn2-q-card--slide" key={preguntaActual}>
-                <div className="gn2-q-num">{slideActual.num}</div>
-                <div className="gn2-q-content">
-                  <div className="gn2-q-title">{slideActual.pregunta}</div>
-                  <div className="gn2-q-hint">{slideActual.hint}</div>
-                  <div className="gn2-options">
-                    {esCTASlide ? (
-                      CTAS.map(op => (
-                        <button key={op.k}
-                          className={`gn2-option${sel.cta === op.k ? " active" : ""}`}
-                          onClick={() => setSel(p => ({...p, cta: op.k}))}>
-                          {op.i} {op.k}
-                        </button>
-                      ))
-                    ) : (
-                      <>
-                        {slideActual.opciones.map((s, i) => (
-                          <button key={i}
-                            className={`gn2-option${selActualSlide === s && !customActualSlide ? " active" : ""}`}
-                            onClick={() => handleElegirOpcion(slideActual.key, s)}>
-                            {s}
-                          </button>
-                        ))}
-                        <button
-                          className={`gn2-option gn2-option--custom${customActualSlide ? " active" : ""}`}
-                          onClick={() => { setCustom(p=>({...p,[slideActual.key]:true})); setSel(p=>({...p,[slideActual.key]:""})); }}>
-                          ✏ Escribir mi propia versión
-                        </button>
-                      </>
-                    )}
-                  </div>
-
-                  {customActualSlide && (
-                    <textarea className="gn2-custom-input" autoFocus rows={3}
-                      placeholder={slideActual.placeholder}
-                      value={sel[slideActual.key]}
-                      onChange={e => setSel(p=>({...p,[slideActual.key]:e.target.value}))} />
-                  )}
-
-                  {/* Botón siguiente solo cuando el usuario escribió versión propia */}
-                  {selActualSlide && !esFinalSlide && customActualSlide && (
-                    <button className="mpm-step-btn" style={{marginTop:"14px"}}
-                      onClick={() => setPreguntaActual(n => n + 1)}>
-                      Siguiente →
-                    </button>
-                  )}
-
-                  {/* Botón generar (último slide) */}
-                  {esFinalSlide && (
-                    <button className={`mpm-step-btn${callGemini?" studio-ai-btn":""}`}
-                      style={{marginTop:"14px"}} disabled={!canGenerate} onClick={generar}>
-                      {callGemini ? "✨ Generar mi guión completo" : "✦ Generar guión"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── GENERANDO ─────────────────────────── */}
+          {/* ── GENERANDO ── */}
           {fase === "generando" && (
             <div className="gn2-wrap">
               <div className="gn2-loading-wrap">
@@ -2158,45 +1996,40 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
             </div>
           )}
 
-          {/* ── FASE 3: RESULTADO ─────────────────── */}
+          {/* ── RESULTADO ── */}
           {fase === "resultado" && script && (
             <div className="gn2-wrap">
               <div className="gn2-resultado-hdr">
-                <button className="mpm-wizard-back-btn" onClick={() => setFase("elegir")}>← Editar</button>
-                <button className="mpm-wizard-back-btn" onClick={reset}>🔄 Nuevo</button>
+                <button className="mpm-wizard-back-btn" onClick={reset}>← Nuevo</button>
                 <button className="mpm-wizard-back-btn" onClick={() => onSave("guiones", {
-                  id: Date.now(), tema: topic, tipo: "Reel (60s)", objetivo,
-                  hook: script.hook, interes: script.interes,
-                  deseo: script.deseo, ctaTxt: script.accion,
-                  fecha: new Date().toLocaleDateString("es"),
+                  id: Date.now(), tema: topic, tipo: FORMATO_LABEL[formato],
+                  formato, scriptTexto, fecha: new Date().toLocaleDateString("es"),
                 })}>💾 Guardar</button>
-                {script.isAI && <span className="studio-ai-badge">✨ IA</span>}
+                <span className="studio-ai-badge">✨ IA</span>
               </div>
 
               <div className="gn2-script-card">
                 <div className="gn2-script-title">
                   <span>🎬</span>
                   <div>
-                    <strong>{topic}</strong>
-                    <span className="gn2-script-obj"> · {objetivo}</span>
+                    <strong>{script.titulo || topic}</strong>
+                    <span className="gn2-script-obj"> · {FORMATO_LABEL[formato]}</span>
                   </div>
                 </div>
 
-                {[
-                  {key:"hook",    label:"01 · HOOK",    sub:"Detiene el scroll · 0–3 seg",            color:"#C9903A"},
-                  {key:"interes", label:"02 · INTERÉS", sub:"Nombra el dolor · 3–15 seg",             color:"#C4526A"},
-                  {key:"deseo",   label:"03 · DESEO",   sub:"Pinta la transformación · 15–45 seg",    color:"#27AE60"},
-                  {key:"accion",  label:"04 · ACCIÓN",  sub:"Una sola instrucción · últimos 10 seg",  color:"#6366F1"},
-                ].map(({key, label, sub, color}) => (
-                  <div key={key} className="gn2-section" style={{"--sc": color}}>
+                {script.secciones?.map((sec, i) => (
+                  <div key={i} className="gn2-section" style={{"--sc": SECTION_COLORS[i % SECTION_COLORS.length]}}>
                     <div className="gn2-section-hdr">
-                      <span className="gn2-section-label" style={{color}}>{label}</span>
-                      <span className="gn2-section-sub">{sub}</span>
+                      <span className="gn2-section-label" style={{color: SECTION_COLORS[i % SECTION_COLORS.length]}}>{sec.nombre}</span>
+                      <span className="gn2-section-sub">{sec.tiempo}</span>
                     </div>
                     <textarea className="gn2-section-text"
-                      value={script[key] || ""}
-                      onChange={e => setScript(p => ({...p, [key]: e.target.value}))}
-                      rows={3}
+                      value={sec.guion || ""}
+                      onChange={e => setScript(p => ({
+                        ...p,
+                        secciones: p.secciones.map((s, j) => j === i ? {...s, guion: e.target.value} : s)
+                      }))}
+                      rows={Math.max(3, Math.ceil((sec.guion?.length || 0) / 80))}
                     />
                   </div>
                 ))}
@@ -2207,7 +2040,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                   </button>
                   <button className="guion-caption-cta-btn" onClick={() => {
                     setC(p => ({...p, tema: topic}));
-                    setCaption(buildCaptionFromGuion());
+                    setCaption(buildCaption());
                     setSubTab("caption");
                     setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}), 50);
                   }}>📝 Caption</button>
@@ -2218,7 +2051,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
         </>
       )}
 
-      {/* ── CAPTION SUB-TAB ──────────────────────── */}
+      {/* ── CAPTION SUB-TAB ── */}
       {subTab === "caption" && (
         <div className="cap-wrap">
           <div className="cap-page-header">
@@ -2253,13 +2086,13 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
               <div className="cap-guiones-grid">
                 {saved.guiones.slice().reverse().slice(0, 6).map(g => (
                   <button key={g.id} className="cap-guion-card" onClick={() => {
-                    setCaption(buildCaptionFromGuion(g.objetivo));
+                    setCaption(g.scriptTexto?.slice(0, 500) || `${g.tema}\n\n[Escribe aquí tu caption]\n\n#mamáemprendedora #negociodigital #mamáceo`);
                     setC(p => ({ ...p, tema: g.tema }));
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}>
-                    <span className="cap-guion-tipo">{g.tipo?.split(" ")[0] || "🎬"}</span>
+                    <span className="cap-guion-tipo">🎬</span>
                     <div className="cap-guion-tema">{g.tema}</div>
-                    <div className="cap-guion-foot"><span>{g.objetivo}</span><span className="cap-crear-lbl">Caption →</span></div>
+                    <div className="cap-guion-foot"><span>{g.tipo || "Guión"}</span><span className="cap-crear-lbl">Caption →</span></div>
                   </button>
                 ))}
               </div>

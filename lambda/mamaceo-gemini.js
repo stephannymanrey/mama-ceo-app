@@ -155,7 +155,7 @@ async function callClaude(prompt) {
     },
     body: JSON.stringify({
       model: CLAUDE_MODEL,
-      max_tokens: 2500,
+      max_tokens: 4096,
       temperature: 0.88,
       messages: [{ role: "user", content: prompt }],
     }),
@@ -172,48 +172,85 @@ function buildPrompt(type, ctx) {
   const tono  = ctx.tono  || "cercano y cálido";
 
   if (type === "guion") {
-    return `Eres guionista de video para mamás emprendedoras en LatAm. Tu trabajo es escribir guiones COMPLETOS, LISTOS PARA GRABAR, que suenen como una conversación real — no como un anuncio ni un texto de ventas.
+    const formato   = ctx.formato || "ig";
+    const tema      = ctx.tema || ctx.queOfreces || "";
+    const queOfrece = ctx.queOfreces || "";
+    const transf    = ctx.transformacion || "";
 
-Contexto del negocio:
-- Lo que ofrece/logra: ${ctx.logro || ctx.queOfreces || ""}
-- Dolor real de su audiencia: ${ctx.dolor || ""}
-- Transformación/resultado: ${ctx.cambio || ""}
-- Objetivo del video: ${ctx.objetivo || "Vender"}
-- Habla a: ${nicho}
-- Tono: ${tono}
+    const base = `Tema del video: "${tema}"
+Negocio: ${queOfrece}
+Transformación que logra con sus clientas: ${transf}
+Habla a: ${nicho}
+Tono: ${tono}
 
-Escribe 3 variantes COMPLETAS del guión. Cada variante tiene 4 partes. Cada parte debe estar COMPLETAMENTE DESARROLLADA — no resúmenes, sino el texto exacto que se va a grabar:
-
-1. hook (1-2 oraciones, ~15 palabras): Arranca desde una situación concreta o momento real que detiene el scroll. Nada de promesas. Nada de preguntas genéricas.
-
-2. interes (4-6 oraciones, ~60 palabras): Describe con precisión el dolor o situación que ella vive. Nombra detalles específicos del día a día. Que sienta "así me pasa exactamente a mí". Todavía SIN solución.
-
-3. deseo (6-9 oraciones, ~100 palabras): Pinta la vida después de trabajar contigo. Escenas reales y concretas — qué hace por la mañana, qué siente cuando cierra una venta, cómo cambia su rutina. Emocional pero creíble. Sin frases vacías.
-
-4. accion (1-2 oraciones, ~20 palabras): Una sola instrucción clara. Sin urgencia falsa ni presión.
-
-Reglas CRÍTICAS:
-- Escribe en primera persona como si ELLA lo estuviera diciendo, en voz alta, natural
+Reglas de escritura CRÍTICAS:
+- Escribe en primera persona como si ELLA lo estuviera diciendo en voz alta, natural
 - Español de LatAm coloquial — como habla una mamá con su mejor amiga
-- PROHIBIDO: "transforma tu vida", "alcanza el éxito", "llegó el momento", "potencial", "empoderar", "journey", "abundancia", "merezco"
-- PROHIBIDO: empezar con "¿Cansada de...?", "Si quieres...", "Llegó el momento de...", "¿Sabías que...?"
-- PROHIBIDO: frases que podrían aplicar a cualquier negocio — sé específica al contexto dado
-- Las 3 variantes deben ser COMPLETAMENTE DIFERENTES en enfoque, emoción y estructura — no la misma idea con otras palabras
-- Sin emojis
+- PROHIBIDO: "transforma tu vida", "alcanza el éxito", "potencial", "empoderar", "journey", "abundancia"
+- PROHIBIDO: empezar con "¿Cansada de...?", "Si quieres...", "Llegó el momento de..."
+- SÍ: situaciones concretas del día a día, emociones nombradas con precisión, momentos reales
+- Sin emojis dentro del guión`;
 
-EJEMPLOS de tono y longitud correctos:
+    if (formato === "ig") {
+      return `Eres guionista de Reels de Instagram para mamás emprendedoras en LatAm.
+Escribe el guión COMPLETO Y LISTO PARA GRABAR de un Reel de máximo 3 minutos.
 
-hook MAL: "¿Lista para transformar tu vida y vivir sin límites?"
-hook BIEN: "Hace seis meses tenía tres clientes y sentía que les estaba fallando a los tres"
+${base}
 
-interes MAL: "Sé que estás cansada de no lograr tus metas"
-interes BIEN: "Te quedas hasta las 11 de la noche respondiendo mensajes, revisas el celular antes de levantarte, aceptas pagos que no alcanza y de todas formas sientes que no estás haciendo suficiente. Llevas meses así y ya no sabes si es el negocio o eres tú."
+Estructura — 4 secciones, cada una completamente desarrollada:
+1. Hook (0-15 seg, 1-2 oraciones): Arranca desde una situación real que detiene el scroll. Sin promesas genéricas.
+2. Interés (15 seg - 1 min, 4-6 oraciones): Nombra el dolor con precisión. Que ella sienta "eso me pasa exactamente". Sin solución aún.
+3. Deseo (1-2 min, 6-8 oraciones): Pinta la vida después. Escenas reales y concretas — su rutina, sus resultados, cómo se siente. Emocional pero creíble.
+4. Llamada a Acción (últimos 30 seg, 1-2 oraciones): Una sola instrucción. Simple y directa.
 
-deseo MAL: "Imagina una vida de libertad y éxito donde logras todo lo que quieres"
-deseo BIEN: "El martes pasado cerré en la mañana, recogí a mi hija a las 2, fuimos a caminar y no revisé el celular hasta las 5. Tenía tres pagos confirmados esperándome. Eso no pasó de un día para otro pero sí pasó, y no tuve que sacrificar a mi familia para lograrlo."
+Responde SOLO JSON válido, sin texto extra:
+{"titulo":"título del video (sin comillas, max 10 palabras)","secciones":[{"nombre":"Hook","tiempo":"0-15 seg","guion":"..."},{"nombre":"Interés","tiempo":"15 seg - 1 min","guion":"..."},{"nombre":"Deseo","tiempo":"1-2 min","guion":"..."},{"nombre":"Llamada a Acción","tiempo":"últimos 30 seg","guion":"..."}]}`;
+    }
 
-Responde SOLO JSON válido, sin texto extra, sin markdown:
-{"hook":["v1","v2","v3"],"interes":["v1","v2","v3"],"deseo":["v1","v2","v3"],"accion":["v1","v2","v3"]}`;
+    if (formato === "youtube") {
+      return `Eres guionista de YouTube para mamás emprendedoras en LatAm.
+Escribe el guión COMPLETO Y LISTO PARA GRABAR de un video de 15 a 20 minutos.
+
+${base}
+
+Estructura — 7 secciones con contenido completamente desarrollado para grabar:
+1. Hook de apertura (0-1 min): Arranca con una situación concreta o historia personal que engancha desde el primer segundo.
+2. Intro y contexto (1-3 min): Preséntate brevemente, explica qué van a aprender y por qué importa para ellas hoy.
+3. Punto principal 1 (3-7 min): Primer insight clave con historia real, ejemplo o caso concreto. Desarrollado con detalle.
+4. Punto principal 2 (7-12 min): Segundo insight con otro ejemplo o historia diferente. Que profundice en el tema.
+5. Punto principal 3 (12-16 min): Tercer insight, el más accionable. Qué puede hacer ella hoy mismo.
+6. Conclusión y síntesis (16-18 min): Resume los 3 puntos en 2-3 oraciones. Qué cambió en ella al entender esto.
+7. CTA y cierre (18-20 min): Una sola instrucción clara. Cierra con algo personal y cercano.
+
+Escribe texto corrido, NO bullet points. Cada sección debe tener mínimo 150 palabras.
+
+Responde SOLO JSON válido, sin texto extra:
+{"titulo":"título del episodio (max 12 palabras, sin comillas)","secciones":[{"nombre":"Hook de apertura","tiempo":"0-1 min","guion":"..."},{"nombre":"Intro y contexto","tiempo":"1-3 min","guion":"..."},{"nombre":"Punto 1","tiempo":"3-7 min","guion":"..."},{"nombre":"Punto 2","tiempo":"7-12 min","guion":"..."},{"nombre":"Punto 3","tiempo":"12-16 min","guion":"..."},{"nombre":"Conclusión","tiempo":"16-18 min","guion":"..."},{"nombre":"CTA y cierre","tiempo":"18-20 min","guion":"..."}]}`;
+    }
+
+    if (formato === "podcast") {
+      return `Eres productora de podcast para mamás emprendedoras en LatAm.
+Escribe el guión COMPLETO de un episodio de podcast de aproximadamente 60 minutos.
+
+${base}
+
+Estructura — 8 segmentos completamente desarrollados con texto listo para hablar:
+1. Apertura y bienvenida (0-3 min): Saludo cálido, presenta el episodio y por qué decidiste grabar esto hoy.
+2. Contexto del tema (3-8 min): Cuenta qué es este tema, por qué importa, y qué error común existe sobre él.
+3. Tu historia con este tema (8-18 min): Una historia personal real y detallada — el antes, el momento de quiebre, el aprendizaje. Honesta.
+4. Profundización 1 (18-28 min): Primer ángulo o subtema importante. Desarrollado con ejemplos, situaciones reales, casos de clientas.
+5. Profundización 2 (28-38 min): Segundo ángulo. Más profundo. Puede incluir preguntas para que ella reflexione.
+6. Profundización 3 (38-48 min): Tercer ángulo o lo más accionable del episodio. Qué puede hacer esta semana.
+7. Reflexión y síntesis (48-55 min): Qué quieres que se lleven. La idea central en 3-4 oraciones.
+8. Cierre y CTA (55-60 min): Despedida cercana, una sola acción concreta, y algo personal para terminar.
+
+Escribe texto corrido, NO bullet points. Cada segmento mínimo 200 palabras. Tono conversacional — como si estuviera hablando en vivo.
+
+Responde SOLO JSON válido, sin texto extra:
+{"titulo":"título del episodio (max 10 palabras)","secciones":[{"nombre":"Apertura","tiempo":"0-3 min","guion":"..."},{"nombre":"Contexto del tema","tiempo":"3-8 min","guion":"..."},{"nombre":"Tu historia","tiempo":"8-18 min","guion":"..."},{"nombre":"Profundización 1","tiempo":"18-28 min","guion":"..."},{"nombre":"Profundización 2","tiempo":"28-38 min","guion":"..."},{"nombre":"Profundización 3","tiempo":"38-48 min","guion":"..."},{"nombre":"Reflexión y síntesis","tiempo":"48-55 min","guion":"..."},{"nombre":"Cierre y CTA","tiempo":"55-60 min","guion":"..."}]}`;
+    }
+
+    return "";
   }
 
   if (type === "hooks") {
