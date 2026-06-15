@@ -58,13 +58,23 @@ export const awsAuth = {
   getSession: async () => {
     try {
       const user = await getCurrentUser();
-      let fullName = user.signInDetails?.loginId || user.username;
-      let email = user.signInDetails?.loginId || '';
+      let fullName = user.username;
+      let email = '';
       try {
-        const attrs = await fetchUserAttributes();
-        fullName = attrs.name || attrs.email || fullName;
-        email = attrs.email || email;
-      } catch {}
+        const session = await fetchAuthSession();
+        const idToken = session.tokens?.idToken?.toString();
+        if (idToken) {
+          const payload = JSON.parse(atob(idToken.split('.')[1]));
+          fullName = payload.name || payload.email || fullName;
+          email = payload.email || '';
+        }
+      } catch {
+        try {
+          const attrs = await fetchUserAttributes();
+          fullName = attrs.name || attrs.email || fullName;
+          email = attrs.email || email;
+        } catch {}
+      }
       return { data: { session: { user: { id: user.userId, email, user_metadata: { full_name: fullName } } } }, error: null };
     } catch {
       return { data: { session: null }, error: null };
