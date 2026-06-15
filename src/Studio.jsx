@@ -2147,10 +2147,13 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
 
           {/* ── GENERANDO ─────────────────────────── */}
           {fase === "generando" && (
-            <div className="gn2-wrap" style={{paddingTop:"48px",textAlign:"center"}}>
-              <div className="ideas-thinking">
-                <div className="ideas-thinking-dots"><span/><span/><span/></div>
-                <p style={{marginTop:"16px",color:"#9A7878",fontSize:"14px"}}>Escribiendo tu guión...</p>
+            <div className="gn2-wrap">
+              <div className="gn2-loading-wrap">
+                <div className="gn2-spinner-ring">
+                  <div className="gn2-spinner-emoji">🎬</div>
+                </div>
+                <p className="gn2-loading-text">Escribiendo tu guión...</p>
+                <p className="gn2-loading-sub">Esto tarda unos segundos ✦</p>
               </div>
             </div>
           )}
