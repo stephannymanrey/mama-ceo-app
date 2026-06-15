@@ -2252,11 +2252,21 @@
   font-size: 13px; font-weight: 700; color: #C4526A;
   background: #FFF0F3; border-radius: 8px; padding: 4px 12px;
 }
+/* Progress dots */
+.gn2-dots { display: flex; gap: 10px; justify-content: center; margin: 6px 0 16px; }
+.gn2-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  background: #E8D5C4; transition: background 0.22s, transform 0.22s;
+}
+.gn2-dot.done { background: #C4526A; opacity: 0.45; cursor: pointer; }
+.gn2-dot.active { background: #C4526A; transform: scale(1.35); }
+
 .gn2-q-card {
   display: flex; gap: 14px; align-items: flex-start;
   background: #fff; border: 1.5px solid rgba(147,114,126,0.15);
   border-radius: 16px; padding: 18px 18px;
 }
+.gn2-q-card--slide { margin-bottom: 4px; }
 .gn2-q-num {
   font-size: 20px; font-weight: 900; color: #C4526A;
   font-family: Georgia, serif; flex-shrink: 0; margin-top: 2px;
