@@ -3914,31 +3914,32 @@ button {
 
 /* Formulario de edición del perfil de marca */
 .bpcard-form {
-  padding: 18px 20px 20px;
+  padding: 20px;
   animation: ck-form-in 0.18s ease;
 }
-.bpcard-form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.bpcard-fields {
+  display: flex;
+  flex-direction: column;
   gap: 14px;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
-.bpcard-form-col { display: flex; flex-direction: column; gap: 5px; }
-.bpcard-form-col--full { grid-column: 1 / -1; }
+.bpcard-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 .bpcard-label {
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--muted);
+  color: #7A6A6A;
 }
 .bpcard-req { color: #C4526A; }
+.bpcard-opt { font-weight: 400; color: #B0A0A0; }
 .bpcard-textarea,
-.bpcard-input,
-.bpcard-select {
-  border: 1px solid var(--line);
-  border-radius: 9px;
-  background: #FAF7F5;
+.bpcard-input {
+  border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 10px;
+  background: #FAFAFA;
   padding: 10px 12px;
   color: var(--ink);
   font: inherit;
@@ -3948,24 +3949,58 @@ button {
   resize: none;
   transition: border-color 0.15s, background 0.15s;
 }
-.bpcard-select { min-height: 42px; padding: 0 12px; resize: none; }
-.bpcard-input  { min-height: 42px; padding: 0 12px; }
+.bpcard-textarea { min-height: 60px; }
+.bpcard-input  { min-height: 42px; }
 .bpcard-textarea:focus,
-.bpcard-input:focus,
-.bpcard-select:focus {
+.bpcard-input:focus {
   outline: none;
-  border-color: #C9A96E;
+  border-color: #C4526A;
   background: #fff;
+}
+.bpcard-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.bpcard-pill {
+  border: 1.5px solid rgba(0,0,0,0.1);
+  background: #fff;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.bpcard-pill.active {
+  border-color: #C4526A;
+  background: rgba(196,82,106,0.08);
+  color: #C4526A;
+}
+.bpcard-pill:hover:not(.active) {
+  border-color: rgba(196,82,106,0.35);
+  color: #C4526A;
 }
 .bpcard-form-footer {
   display: flex;
   gap: 10px;
   align-items: center;
 }
-@media (max-width: 720px) {
-  .bpcard-form-grid { grid-template-columns: 1fr; }
-  .bpcard-form-col--full { grid-column: 1; }
+.brand-save-btn {
+  background: linear-gradient(135deg, #E8755A 0%, #C4526A 100%);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.15s;
 }
+.brand-save-btn:hover { opacity: 0.88; }
 
 /* ── Content Kanban ── */
 
