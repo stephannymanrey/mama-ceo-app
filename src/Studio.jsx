@@ -677,7 +677,8 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
     setAiLoading(false);
     if (res?.error === "rate_limit") { setAiMsg("Muchas solicitudes en este momento. Intenta en 1 minuto."); return; }
     if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
-    if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo."); return; }
+    if (res?.error === "No autorizada" || res?.error?.includes("autent")) { setAiMsg("Inicia sesión para usar la IA."); return; }
+    if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo en unos segundos."); return; }
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
     const aiResult = res.result || {};
     const CAT_KEYS = Object.keys(CATS);
@@ -1973,7 +1974,8 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
     setAiLoading(false);
     if (res?.error === "rate_limit") { setAiMsg("Muchas solicitudes en este momento. Intenta en 1 minuto."); return; }
     if (res?.error === "limite_alcanzado") { setAiMsg("Llegaste al límite de generaciones del mes."); return; }
-    if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo."); return; }
+    if (res?.error === "No autorizada" || res?.error?.includes("autent")) { setAiMsg("Inicia sesión para usar la IA."); return; }
+    if (res?.error) { setAiMsg("Algo salió mal. Intenta de nuevo en unos segundos."); return; }
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
     const aiResult = res.result || {};
     const SCENE_KEYS = ["hook", "interes", "deseo", "accion"];
@@ -1991,6 +1993,11 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
     });
     setEscritura(escrituraIA);
     setFraseIdx({});
+    setVerCompleto(true);
+    setTimeout(() => {
+      const el = document.querySelector(".guion-script-listo");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
   };
 
   const downloadWordGuion = () => {
@@ -2324,7 +2331,53 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                   </div>
                 </div>
 
-                {/* Escenas */}
+                {/* Script completo — visible primero cuando IA genera */}
+                {guion?.isAI && (
+                  <div className={`guion-completo-wrap guion-completo-wrap--ai`} style={{marginBottom: "8px"}}>
+                    <button className="guion-completo-toggle" onClick={() => setVerCompleto(p => !p)}>
+                      <span>✨ Guión completo listo para grabar</span>
+                      <span className="guion-completo-arrow">{verCompleto ? "↑" : "↓"}</span>
+                    </button>
+                    {verCompleto && (
+                      <div className="guion-completo-body">
+                        <div className="guion-script-listo-banner">
+                          <span>🎬</span>
+                          <p>Tu guión está listo. Léelo de corrido, edita lo que suene más a ti, y graba.</p>
+                        </div>
+                        <div className="guion-script-listo">
+                          {guion.escenas.map((esc, i) => (
+                            <div key={i} className="guion-completo-scene" style={{"--sc": esc.color}}>
+                              <div className="guion-completo-scene-hdr">
+                                <span className="guion-completo-num" style={{color: esc.color}}>{esc.num}</span>
+                                <span className="guion-completo-nombre">{esc.nombre}</span>
+                                <span className="guion-completo-sub">— {esc.subtitulo}</span>
+                                <span className="guion-completo-tiempo">⏱ {esc.tiempo}</span>
+                              </div>
+                              <p className="guion-completo-texto">{escritura[i] || esc.frases?.[0] || esc.placeholder}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="guion-completo-actions">
+                          <button className="lm-dl-btn" onClick={() => {
+                            const full = guion.escenas.map((esc, i) =>
+                              `[ ${esc.nombre} — ${esc.tiempo} ]\n${escritura[i] || esc.frases?.[0] || ""}`
+                            ).join("\n\n");
+                            copiar(full, "guion-top");
+                          }}>{copiado === "guion-top" ? "✓ Copiado" : "📋 Copiar guión completo"}</button>
+                          <button className="lm-dl-btn lm-dl-btn--pdf" onClick={downloadPDF}>⬇ Descargar PDF</button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Escenas — personaliza cada sección */}
+                {guion?.isAI && (
+                  <div className="guion-personaliza-hdr">
+                    <span>✦ Personaliza cada sección</span>
+                    <span className="guion-personaliza-sub">Navega entre variantes y ajusta a tu voz</span>
+                  </div>
+                )}
                 <div className="guion-escenas">
                   {guion.escenas.map((esc, i) => (
                     <div key={i} className="guion-escena" style={{"--scene-color": esc.color, "--scene-bg": esc.bgLight}}>
@@ -2426,38 +2479,41 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                   ))}
                 </div>
 
-                {/* Guión completo */}
-                <div className="guion-completo-wrap">
-                  <button className="guion-completo-toggle" onClick={() => setVerCompleto(p => !p)}>
-                    <span>📄 Ver guión completo</span>
-                    <span className="guion-completo-arrow">{verCompleto ? "↑" : "↓"}</span>
-                  </button>
-
-                  {verCompleto && (
-                    <div className="guion-completo-body">
-                      {guion.escenas.map((esc, i) => (
-                        <div key={i} className="guion-completo-scene" style={{"--sc": esc.color}}>
-                          <div className="guion-completo-scene-hdr">
-                            <span className="guion-completo-num" style={{color: esc.color}}>{esc.num}</span>
-                            <span className="guion-completo-nombre">{esc.nombre}</span>
-                            <span className="guion-completo-sub">— {esc.subtitulo}</span>
-                            <span className="guion-completo-tiempo">⏱ {esc.tiempo}</span>
-                          </div>
-                          <p className="guion-completo-texto">{escritura[i] || esc.placeholder}</p>
+                {/* Guión completo — solo visible en modo sin IA (con IA ya aparece arriba) */}
+                {!guion?.isAI && (
+                  <div className="guion-completo-wrap">
+                    <button className="guion-completo-toggle" onClick={() => setVerCompleto(p => !p)}>
+                      <span>📄 Ver guión completo</span>
+                      <span className="guion-completo-arrow">{verCompleto ? "↑" : "↓"}</span>
+                    </button>
+                    {verCompleto && (
+                      <div className="guion-completo-body">
+                        <div className="guion-script-listo">
+                          {guion.escenas.map((esc, i) => (
+                            <div key={i} className="guion-completo-scene" style={{"--sc": esc.color}}>
+                              <div className="guion-completo-scene-hdr">
+                                <span className="guion-completo-num" style={{color: esc.color}}>{esc.num}</span>
+                                <span className="guion-completo-nombre">{esc.nombre}</span>
+                                <span className="guion-completo-sub">— {esc.subtitulo}</span>
+                                <span className="guion-completo-tiempo">⏱ {esc.tiempo}</span>
+                              </div>
+                              <p className="guion-completo-texto">{escritura[i] || esc.placeholder}</p>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                      <div className="guion-completo-actions">
-                        <button className="lm-dl-btn" onClick={() => {
-                          const full = guion.escenas.map((esc, i) =>
-                            `[ ${esc.nombre} — ${esc.tiempo} ]\n${escritura[i] || ""}`
-                          ).join("\n\n");
-                          copiar(full, "guion-completo");
-                        }}>{copiado === "guion-completo" ? "✓ Copiado" : "Copiar todo el texto"}</button>
-                        <button className="lm-dl-btn lm-dl-btn--pdf" onClick={downloadPDF}>⬇ Descargar PDF</button>
+                        <div className="guion-completo-actions">
+                          <button className="lm-dl-btn" onClick={() => {
+                            const full = guion.escenas.map((esc, i) =>
+                              `[ ${esc.nombre} — ${esc.tiempo} ]\n${escritura[i] || ""}`
+                            ).join("\n\n");
+                            copiar(full, "guion-completo");
+                          }}>{copiado === "guion-completo" ? "✓ Copiado" : "📋 Copiar guión completo"}</button>
+                          <button className="lm-dl-btn lm-dl-btn--pdf" onClick={downloadPDF}>⬇ Descargar PDF</button>
+                        </div>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Caption CTA */}
                 <div className="guion-caption-cta">
@@ -3948,9 +4004,41 @@ function CarruselTab({ saved, onSave, onDelete, brandProfile = {} }) {
             })}
           </div>
 
-          <div className="cr-canva-tip">
-            <span>💡</span>
-            <p>Abre Canva → busca una plantilla de carrusel de Instagram → pega el texto de cada slide. <b>Copia todo</b> para tenerlo a mano mientras diseñas.</p>
+          <div className="cr-canva-guide">
+            <div className="cr-canva-guide-title">🎨 Cómo pasarlo a Canva en 5 minutos</div>
+            <div className="cr-canva-steps">
+              <div className="cr-canva-step">
+                <span className="cr-step-num">1</span>
+                <div>
+                  <strong>Copia todo el texto</strong>
+                  <p>Haz clic en "📋 Copiar todo" arriba para tener todo el contenido en tu portapapeles.</p>
+                </div>
+              </div>
+              <div className="cr-canva-step">
+                <span className="cr-step-num">2</span>
+                <div>
+                  <strong>Abre Canva y elige tu plantilla</strong>
+                  <p>Busca "carrusel Instagram" o "presentación Instagram" — elige una que tenga entre {slides.length} y {slides.length + 2} slides.</p>
+                </div>
+              </div>
+              <div className="cr-canva-step">
+                <span className="cr-step-num">3</span>
+                <div>
+                  <strong>Pega el texto slide por slide</strong>
+                  <p>Cada slide tiene un texto principal (título) y un texto de apoyo. Reemplaza el texto de muestra de Canva con el tuyo.</p>
+                </div>
+              </div>
+              <div className="cr-canva-step">
+                <span className="cr-step-num">4</span>
+                <div>
+                  <strong>Ajusta colores y fuentes a tu marca</strong>
+                  <p>Usa tus colores de marca, tu foto o video en la portada, y el mismo estilo en todas las slides.</p>
+                </div>
+              </div>
+            </div>
+            <button className="cr-btn cr-btn--canva cr-canva-open-btn" onClick={() => window.open("https://www.canva.com/create/instagram-posts/", "_blank")}>
+              Abrir Canva ↗
+            </button>
           </div>
         </div>
       )}
