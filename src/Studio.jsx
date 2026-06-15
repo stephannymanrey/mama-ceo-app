@@ -831,7 +831,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
           placeholder="Escribe un tema: ventas, reels, bienestar, organización..."
           value={keyword}
           onChange={e => setKeyword(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && generar()}
+          onKeyDown={e => e.key === "Enter" && (callGemini ? generarConIA() : generar())}
         />
         <button
           className={`ideas-search-btn${callGemini ? " studio-ai-btn" : ""}`}
@@ -1737,7 +1737,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
             placeholder="¿De qué trata tu video? Ej: vender, organizarme, reels, cobrar sin miedo..."
             value={tema}
             onChange={e => setTema(e.target.value)}
-            onKeyDown={e => e.key === "Enter" && generar()}
+            onKeyDown={e => e.key === "Enter" && (callGemini ? generarConIA() : generar())}
           />
           <button
             className={`ideas-search-btn${callGemini ? " studio-ai-btn" : ""}`}
