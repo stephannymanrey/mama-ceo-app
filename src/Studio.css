@@ -2031,23 +2031,74 @@
 .guion-caption-ta:focus { outline: none; border-color: #9B59B6; }
 .guion-caption-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
 
-/* ── CAPTION TAB — redesign ──────────────────────────────── */
+/* ── CAPTION TAB ─────────────────────────────────────────── */
 .cap-wrap { display: flex; flex-direction: column; gap: 20px; padding-top: 4px; }
 
-.cap-auto-card {
-  background: linear-gradient(135deg, #F8F0FF 0%, #FFF5FB 100%);
-  border: 1.5px solid rgba(155,89,182,0.2);
-  border-radius: 16px; padding: 20px;
+/* Page header */
+.cap-page-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 4px 0 8px;
 }
-.cap-auto-hdr { margin-bottom: 14px; }
-.cap-auto-label {
-  font-size: 11px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.8px; color: #9B59B6; margin-bottom: 8px;
+.cap-page-icon { font-size: 28px; line-height: 1; flex-shrink: 0; }
+.cap-page-title { font-size: 18px; font-weight: 800; color: #2D1B1B; margin: 0; }
+.cap-page-sub   { font-size: 12px; color: #9A7878; margin: 2px 0 0; }
+
+/* Result card (rosa, not purple) */
+.cap-result-card {
+  background: linear-gradient(135deg, #FFF5F7 0%, #FFF9F6 100%);
+  border: 1.5px solid rgba(196,82,106,0.2);
+  border-radius: 16px; padding: 18px;
 }
-.cap-video-info { display: flex; flex-direction: column; gap: 3px; }
-.cap-video-tema { font-size: 16px; font-weight: 800; color: #2D1B1B; line-height: 1.3; }
-.cap-video-meta { font-size: 12px; color: #9A7878; }
-.cap-auto-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+.cap-result-hdr {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;
+}
+.cap-result-badge {
+  font-size: 11px; font-weight: 700; color: #C4526A;
+  background: rgba(196,82,106,0.1); padding: 3px 10px; border-radius: 20px;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.cap-result-tema { font-size: 13px; font-weight: 700; color: #2D1B1B; }
+.cap-result-textarea { border-color: rgba(196,82,106,0.2) !important; }
+.cap-result-actions {
+  display: flex; gap: 8px; margin-top: 12px; align-items: center;
+}
+.cap-action-copy {
+  background: #C4526A; color: #fff; border: none;
+  border-radius: 20px; padding: 7px 16px;
+  font-size: 12px; font-weight: 700; cursor: pointer;
+  font-family: inherit; transition: opacity 0.15s;
+}
+.cap-action-copy:hover { opacity: 0.85; }
+.cap-action-save {
+  background: none; border: 1.5px solid rgba(196,82,106,0.3);
+  border-radius: 20px; padding: 6px 14px;
+  font-size: 12px; font-weight: 700; color: #C4526A;
+  cursor: pointer; font-family: inherit; transition: background 0.15s;
+}
+.cap-action-save:hover { background: rgba(196,82,106,0.07); }
+.cap-action-clear {
+  background: none; border: none; color: #9A7878;
+  font-size: 14px; cursor: pointer; margin-left: auto; padding: 4px 8px;
+  transition: color 0.15s;
+}
+.cap-action-clear:hover { color: #C4526A; }
+
+/* Manual form */
+.cap-manual-title {
+  font-size: 12px; font-weight: 700; color: #9A7878;
+  text-transform: uppercase; letter-spacing: 0.6px; margin: 0;
+}
+.cap-field-group { display: flex; flex-direction: column; gap: 7px; }
+.cap-field-label { font-size: 12px; font-weight: 700; color: #2D1B1B; }
+.cap-input {
+  width: 100%; padding: 10px 14px;
+  border: 1.5px solid rgba(196,82,106,0.18);
+  border-radius: 10px; background: #FAFAFA;
+  font-size: 13px; color: #2D1B1B; font-family: inherit;
+  box-sizing: border-box; transition: border-color 0.15s, background 0.15s;
+}
+.cap-input:focus { outline: none; border-color: #C4526A; background: #fff; }
+.cap-input::placeholder { color: #C0A0A0; }
 
 .cap-history-section { }
 .cap-section-label {
@@ -2077,8 +2128,8 @@
 .cap-crear-lbl { font-size: 11px; font-weight: 700; color: #C4526A; }
 
 .cap-manual-card {
-  background: #fff; border: 1.5px solid rgba(0,0,0,0.08);
-  border-radius: 16px; padding: 22px; display: flex; flex-direction: column; gap: 16px;
+  background: #fff; border: 1.5px solid rgba(0,0,0,0.07);
+  border-radius: 16px; padding: 20px; display: flex; flex-direction: column; gap: 14px;
 }
 .cap-pills-group { display: flex; flex-direction: column; gap: 8px; }
 .cap-pills-label { font-size: 12px; font-weight: 700; color: #2D1B1B; }
@@ -2364,7 +2415,14 @@
   background: #fff; border: 1.5px solid rgba(147,114,126,0.15);
   border-radius: 16px; padding: 18px 18px;
 }
-.gn2-q-card--slide { margin-bottom: 4px; }
+.gn2-q-card--slide {
+  margin-bottom: 4px;
+  animation: slideCardIn 0.28s cubic-bezier(0.22,1,0.36,1) both;
+}
+@keyframes slideCardIn {
+  from { opacity: 0; transform: translateX(18px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
 .gn2-q-num {
   font-size: 20px; font-weight: 900; color: #C4526A;
   font-family: Georgia, serif; flex-shrink: 0; margin-top: 2px;

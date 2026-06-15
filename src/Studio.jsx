@@ -2086,7 +2086,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
               </div>
 
               {/* Tarjeta del slide actual */}
-              <div className="gn2-q-card gn2-q-card--slide">
+              <div className="gn2-q-card gn2-q-card--slide" key={preguntaActual}>
                 <div className="gn2-q-num">{slideActual.num}</div>
                 <div className="gn2-q-content">
                   <div className="gn2-q-title">{slideActual.pregunta}</div>
@@ -2125,8 +2125,8 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                       onChange={e => setSel(p=>({...p,[slideActual.key]:e.target.value}))} />
                   )}
 
-                  {/* Botón siguiente (solo slides 1-3 con custom o después de elegir) */}
-                  {selActualSlide && !esFinalSlide && (customActualSlide || true) && (
+                  {/* Botón siguiente solo cuando el usuario escribió versión propia */}
+                  {selActualSlide && !esFinalSlide && customActualSlide && (
                     <button className="mpm-step-btn" style={{marginTop:"14px"}}
                       onClick={() => setPreguntaActual(n => n + 1)}>
                       Siguiente →
@@ -2218,22 +2218,29 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
       {/* ── CAPTION SUB-TAB ──────────────────────── */}
       {subTab === "caption" && (
         <div className="cap-wrap">
-          <div className="guion-form-intro" style={{marginBottom:"4px"}}>
-            <div className="mpm-landing-badge" style={{margin:"0 auto 4px"}}>📝</div>
-            <h2>Captions para Redes</h2>
-            <p>Tu caption se genera con cada guión. Edítalo o crea uno nuevo desde cero.</p>
+          <div className="cap-page-header">
+            <span className="cap-page-icon">📝</span>
+            <div>
+              <h2 className="cap-page-title">Captions para Reels</h2>
+              <p className="cap-page-sub">Genera el texto de tu publicación — listo para copiar y pegar.</p>
+            </div>
           </div>
+
           {caption && (
-            <div className="cap-auto-card">
-              <div className="cap-auto-hdr">
-                <div className="cap-auto-label">📽 Caption generado</div>
-                {topic && <div className="cap-video-info"><span className="cap-video-tema">{topic}</span></div>}
+            <div className="cap-result-card">
+              <div className="cap-result-hdr">
+                <span className="cap-result-badge">✦ Caption listo</span>
+                {topic && <span className="cap-result-tema">{topic}</span>}
               </div>
-              <textarea className="studio-caption-edit" value={caption} onChange={e => setCaption(e.target.value)} rows={10} />
-              <div className="cap-auto-actions">
-                <button className="lm-dl-btn" onClick={() => copiar(caption, "cap-auto")}>{copiado === "cap-auto" ? "✓ Copiado" : "Copiar"}</button>
-                <button className="lm-dl-btn lm-dl-btn--word" onClick={() => onSave("captions", { id: Date.now(), caption, red: c.red, tema: topic || c.tema, fecha: new Date().toLocaleDateString("es") })}>Guardar</button>
-                <button className="lm-dl-btn" onClick={() => setCaption(null)} style={{marginLeft:"auto",color:"#9A7878",border:"none",background:"transparent",boxShadow:"none",padding:"6px 10px"}}>✕ Limpiar</button>
+              <textarea className="studio-caption-edit cap-result-textarea" value={caption} onChange={e => setCaption(e.target.value)} rows={9} />
+              <div className="cap-result-actions">
+                <button className="cap-action-copy" onClick={() => copiar(caption, "cap-auto")}>
+                  {copiado === "cap-auto" ? "✓ Copiado" : "📋 Copiar"}
+                </button>
+                <button className="cap-action-save" onClick={() => onSave("captions", { id: Date.now(), caption, red: c.red, tema: topic || c.tema, fecha: new Date().toLocaleDateString("es") })}>
+                  Guardar
+                </button>
+                <button className="cap-action-clear" onClick={() => setCaption(null)}>✕</button>
               </div>
             </div>
           )}
@@ -2256,41 +2263,41 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
             </div>
           )}
           <div className="cap-manual-card">
-            <div className="cap-section-label">✍ Crear caption desde cero</div>
-            <div className="cap-pills-group">
-              <div className="cap-pills-label">Red social</div>
+            <p className="cap-manual-title">✍ Crear caption desde cero</p>
+
+            <div className="cap-field-group">
+              <label className="cap-field-label">Red social</label>
               <div className="cap-pills-row">
                 {[{k:"Instagram",i:"📸"},{k:"TikTok",i:"🎵"},{k:"YouTube",i:"🎬"},{k:"Facebook",i:"💬"}].map(r => (
                   <button key={r.k} className={`cap-pill${c.red===r.k?" active":""}`} onClick={() => setC(p => ({...p, red: r.k}))}>{r.i} {r.k}</button>
                 ))}
               </div>
             </div>
-            <div className="cap-pills-group">
-              <div className="cap-pills-label">Tono</div>
+
+            <div className="cap-field-group">
+              <label className="cap-field-label">Tono</label>
               <div className="cap-pills-row">
                 {[{k:"Cercano",i:"💙"},{k:"Profesional",i:"💼"},{k:"Emotivo",i:"💫"},{k:"Directo",i:"⚡"},{k:"Divertido",i:"😄"}].map(t => (
                   <button key={t.k} className={`cap-pill${c.tono===t.k?" active":""}`} onClick={() => setC(p => ({...p, tono: t.k}))}>{t.i} {t.k}</button>
                 ))}
               </div>
             </div>
-            <div className={`desc-q-card${c.tema?" filled":""}`}>
-              <div className="desc-q-num">📝</div>
-              <div className="desc-q-body">
-                <label className="desc-q-label">Tema del post</label>
-                <input className="desc-q-input" placeholder="cómo le digo el precio sin miedo..." value={c.tema} onChange={e => setC(p => ({...p, tema: e.target.value}))} />
-              </div>
+
+            <div className="cap-field-group">
+              <label className="cap-field-label">¿De qué trata el video?</label>
+              <input className="cap-input" placeholder="ej: cómo cobré sin miedo por primera vez..." value={c.tema} onChange={e => setC(p => ({...p, tema: e.target.value}))} />
             </div>
-            <div className={`desc-q-card${c.cta?" filled":""}`}>
-              <div className="desc-q-num">👉</div>
-              <div className="desc-q-body">
-                <label className="desc-q-label">CTA — llamada a la acción</label>
-                <input className="desc-q-input" placeholder="Guarda este post / Comenta SÍ / Link en bio" value={c.cta} onChange={e => setC(p => ({...p, cta: e.target.value}))} />
-              </div>
+
+            <div className="cap-field-group">
+              <label className="cap-field-label">CTA — ¿qué quieres que hagan? <span style={{fontWeight:400,color:"#9A7878"}}>(opcional)</span></label>
+              <input className="cap-input" placeholder="Guarda este post / Comenta SÍ / Link en bio" value={c.cta} onChange={e => setC(p => ({...p, cta: e.target.value}))} />
             </div>
+
             <label className="cap-checkbox-row">
               <input type="checkbox" checked={c.hashtags} onChange={e => setC(p => ({...p, hashtags: e.target.checked}))} />
               Incluir hashtags de mamá emprendedora
             </label>
+
             <button className="mpm-step-btn" disabled={!c.tema.trim()} onClick={() => {
               if (!c.tema) return;
               const intros = { "Cercano":`Oye, te cuento algo sobre ${c.tema} 👇`, "Profesional":`Hablemos de ${c.tema}. Esto es lo que necesitas saber:`, "Emotivo":`${c.tema} cambió algo en mí que quiero compartir contigo. 💙`, "Directo":`${c.tema}: aquí van los puntos clave. Sin rodeos.`, "Divertido":`${c.tema}... sí, vamos a hablar de eso 😅👇` };
