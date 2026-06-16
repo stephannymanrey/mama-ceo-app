@@ -2880,82 +2880,56 @@ function WhatsAppTab({ saved, onSave, onDelete, brandProfile = {} }) {
 // ── STUDIO PRINCIPAL ───────────────────────────────────────────
 // ── REPROPÓSITO ────────────────────────────────────────────────────────────
 
-function RepropositoTab({ saved, brandProfile = {} }) {
-  const [selId,   setSelId]   = useState(null);
-  const [copiado, setCopiado] = useState("");
+function RepropositoTab({ saved, brandProfile = {}, callGemini, onAiUsed }) {
+  const [selId,    setSelId]    = useState(null);
+  const [copiado,  setCopiado]  = useState("");
+  const [rpResult, setRpResult] = useState(null);
+  const [rpLoading,setRpLoading]= useState(false);
+  const [rpMsg,    setRpMsg]    = useState("");
 
   const copiar = (txt, key) => { navigator.clipboard.writeText(txt); setCopiado(key); setTimeout(() => setCopiado(""), 2200); };
 
   const guiones = (saved?.guiones || []).slice().reverse();
+
+  const handleSelId = (id) => {
+    setSelId(prev => {
+      if (prev === id) { setRpResult(null); setRpMsg(""); return null; }
+      setRpResult(null); setRpMsg("");
+      return id;
+    });
+  };
+
   const g = guiones.find(x => x.id === selId) || null;
 
-  const line1 = (txt) => (txt || "").split("\n")[0].trim();
-  const trunc = (txt, n = 120) => { const t = line1(txt); return t.length > n ? t.substring(0, n) + "..." : t; };
-
-  const genCarrusel = () => {
-    if (!g) return [];
+  const getScriptTexto = (gg) => {
+    if (gg?.scriptTexto) return gg.scriptTexto;
+    // backward compat: reconstruct from old guion fields
     return [
-      { num:"01", etq:"Portada",    txt: trunc(g.hook) || `Algo sobre ${g.tema} que necesitas escuchar hoy` },
-      { num:"02", etq:"El dolor",   txt: trunc(g.interes) || `Lo que muchas vivimos con ${g.tema} — y que pocas dicen` },
-      { num:"03", etq:"El cambio",  txt: trunc(g.deseo) || `Hasta que descubres que hay otra forma de verlo` },
-      { num:"04", etq:"Resultado",  txt: g.logro ? `Cuando ${g.logro.toLowerCase().replace(/\.$/, "")}` : `Y cuando eso cambia, todo cambia` },
-      { num:"05", etq:"CTA",        txt: trunc(g.ctaTxt) || `Guarda este carrusel — lo vas a querer tener cerca 📌` },
-    ];
+      gg?.hook    && `Hook:\n${gg.hook}`,
+      gg?.interes && `Interés:\n${gg.interes}`,
+      gg?.deseo   && `Deseo:\n${gg.deseo}`,
+      gg?.logro   && `Resultado:\n${gg.logro}`,
+      gg?.ctaTxt  && `Llamada a acción:\n${gg.ctaTxt}`,
+    ].filter(Boolean).join("\n\n");
   };
 
-  const genEmail = () => {
-    if (!g) return { asunto: "", cuerpo: "" };
-    const t = g.tema || "";
-    const nombre = brandProfile?.nombreNegocio || "";
-    return {
-      asunto: `Algo sobre ${t} que no quiero que se te pase`,
-      cuerpo: [
-        `Hola 👋`,
-        ``,
-        g.hook || `Quiero contarte algo sobre ${t} que creo que te va a resonar.`,
-        ``,
-        g.interes ? g.interes + `\n` : "",
-        g.deseo   ? g.deseo   + `\n` : "",
-        g.logro   ? `Cuando ${g.logro.toLowerCase()}, todo empieza a fluir diferente.\n` : "",
-        g.ctaTxt  || `Responde este email si quieres saber más — te leo con gusto.`,
-        ``,
-        `Con cariño,`,
-        nombre || `[Tu nombre]`,
-      ].filter(l => l !== "").join("\n"),
-    };
+  const generarConIA = async () => {
+    if (!g || !callGemini) return;
+    const scriptTexto = getScriptTexto(g);
+    if (!scriptTexto) { setRpMsg("Este guión no tiene contenido para reproponer."); return; }
+    setRpLoading(true); setRpMsg(""); setRpResult(null);
+    const res = await callGemini("reproposito", {
+      scriptTexto,
+      tema:    g.tema || "",
+      formato: g.formato || "ig",
+      nicho:   brandProfile.clienteIdeal || "mamás emprendedoras",
+      tono:    brandProfile.tono         || "Cercano",
+    });
+    setRpLoading(false);
+    if (res?.error) { setRpMsg("Algo salió mal. Intenta de nuevo en unos segundos."); return; }
+    onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
+    setRpResult(res.result || null);
   };
-
-  const genWhatsApp = () => {
-    if (!g) return [];
-    const t = g.tema || "este tema";
-    const dolor = g.dolor ? g.dolor.toLowerCase().replace(/\.$/, "") : `algo no estaba funcionando como querías`;
-    const hook = g.hook ? `"${line1(g.hook)}"` : "";
-    return [
-      { label: "📣 Pre-publicación — antes de subir el reel",
-        txt: `Hola 💛\n\nHoy publico algo que creo que te va a llegar directo.\n\nEs sobre ${t}.\n\nSi alguna vez has sentido que ${dolor}, este video es para ti.\n\nLo subo en un momento — estate pendiente. 👀` },
-      { label: "🚀 El día que publicas",
-        txt: `¡Ya está en el aire! 🎬\n\nAcabo de publicar un reel sobre ${t}.\n\n${hook}\n\nVe a verlo y cuéntame en comentarios si te resonó algo.\n\n👉 [link de tu perfil]`.replace(/\n\n\n/g, "\n\n") },
-      { label: "🔁 Follow-up al día siguiente",
-        txt: `Ayer publiqué algo sobre ${t} y la respuesta fue hermosa 🤍\n\nSi todavía no lo viste, te lo dejo aquí → [link]\n\nY si ya lo viste: ¿en qué parte te viste reflejada?\n\nTe leo con gusto 💬` },
-    ];
-  };
-
-  const genStories = () => {
-    if (!g) return [];
-    const t = g.tema || "este tema";
-    return [
-      { num:"01", tipo:"Pregunta",       txt: g.hook    ? line1(g.hook)    : `¿Sientes que con ${t} algo todavía no está donde quieres?` },
-      { num:"02", tipo:"El dolor",       txt: g.interes ? line1(g.interes) : `Muchas vivimos esto con ${t} — y se siente muy solitario.` },
-      { num:"03", tipo:"La revelación",  txt: g.deseo   ? line1(g.deseo)   : `Hasta que descubres que no es falta de esfuerzo — es falta de sistema.` },
-      { num:"04", tipo:"El resultado",   txt: g.logro   ? `Cuando ${g.logro.toLowerCase()}` : `Y cuando todo empieza a fluir, tu vida cambia de verdad.` },
-      { num:"05", tipo:"CTA",            txt: g.ctaTxt  ? line1(g.ctaTxt)  : `Responde este story si quieres saber más — te cuento todo 💬` },
-    ];
-  };
-
-  const slides  = genCarrusel();
-  const email   = genEmail();
-  const waMsgs  = genWhatsApp();
-  const stories = genStories();
 
   const FORMAT_COLORS = {
     carrusel: { color:"#4A90D9", bg:"#EEF5FF" },
@@ -2964,6 +2938,11 @@ function RepropositoTab({ saved, brandProfile = {} }) {
     stories:  { color:"#C4526A", bg:"#FFF0F3" },
   };
 
+  const slides  = rpResult?.carrusel || [];
+  const email   = rpResult?.email    || { asunto: "", cuerpo: "" };
+  const waMsgs  = rpResult?.whatsapp || [];
+  const stories = rpResult?.stories  || [];
+
   return (
     <div className="rp-wrap">
       <div className="rp-intro">
@@ -2971,7 +2950,7 @@ function RepropositoTab({ saved, brandProfile = {} }) {
           <span className="rp-intro-icon">♻️</span>
           <div>
             <h3 className="rp-intro-title">Repropósito de contenido</h3>
-            <p className="rp-intro-sub">Elige un guión guardado y conviértelo en 4 formatos — semana completa con un clic.</p>
+            <p className="rp-intro-sub">Elige un guión guardado y Claude lo convierte en 4 formatos — semana completa en segundos.</p>
           </div>
         </div>
       </div>
@@ -2988,8 +2967,8 @@ function RepropositoTab({ saved, brandProfile = {} }) {
           {guiones.map(gg => (
             <button key={gg.id}
               className={`rp-guion-card ${selId === gg.id ? "rp-guion-card--active" : ""}`}
-              onClick={() => setSelId(selId === gg.id ? null : gg.id)}>
-              <span className="rp-guion-obj">{gg.objetivo || "Guión"}</span>
+              onClick={() => handleSelId(gg.id)}>
+              <span className="rp-guion-obj">{gg.tipo || gg.objetivo || "Guión"}</span>
               <span className="rp-guion-tema">{gg.tema}</span>
               <span className="rp-guion-fecha">{gg.fecha}</span>
               {selId === gg.id && <span className="rp-guion-check">✓ Seleccionado</span>}
@@ -2998,14 +2977,32 @@ function RepropositoTab({ saved, brandProfile = {} }) {
         </div>
       )}
 
-      {/* Formatos */}
+      {/* Banner + botón IA */}
       {g && (
         <>
           <div className="rp-sel-banner">
-            <span>♻️ Reproponiéndolo como: <b>{g.tema}</b></span>
-            <button className="rp-desel" onClick={() => setSelId(null)}>× Cambiar</button>
+            <span>♻️ Reproponiéndolo: <b>{g.tema}</b></span>
+            <button className="rp-desel" onClick={() => handleSelId(g.id)}>× Cambiar</button>
           </div>
 
+          {!rpResult && !rpLoading && (
+            <div className="rp-ia-cta">
+              <p className="rp-ia-cta-text">Claude va a leer tu guión completo y crear contenido real para cada plataforma — no plantillas.</p>
+              <button className="rp-ia-btn" onClick={generarConIA} disabled={!callGemini}>
+                Reproponer con IA ✦
+              </button>
+              {rpMsg && <p className="rp-ia-error">{rpMsg}</p>}
+            </div>
+          )}
+
+          {rpLoading && (
+            <div className="rp-loading">
+              <div className="rp-loading-spinner" />
+              <p className="rp-loading-txt">Claude está leyendo tu guión y adaptando para 4 formatos...</p>
+            </div>
+          )}
+
+          {rpResult && (
           <div className="rp-formats-grid">
 
             {/* Carrusel */}
@@ -3101,6 +3098,7 @@ function RepropositoTab({ saved, brandProfile = {} }) {
             </div>
 
           </div>
+          )}
         </>
       )}
     </div>
