@@ -145,7 +145,7 @@ function getUserId(event) {
 }
 
 // ─── Claude (Anthropic) ───────────────────────────────────────────────────
-async function callClaude(prompt) {
+async function callClaude(prompt, maxTokens = 4096) {
   const res = await fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: {
@@ -155,7 +155,7 @@ async function callClaude(prompt) {
     },
     body: JSON.stringify({
       model: CLAUDE_MODEL,
-      max_tokens: 4096,
+      max_tokens: maxTokens,
       temperature: 0.88,
       messages: [{ role: "user", content: prompt }],
     }),
@@ -167,9 +167,41 @@ async function callClaude(prompt) {
 }
 
 // ─── Prompts ──────────────────────────────────────────────────────────────
+const DIALECTO = `DIALECTO — MUY IMPORTANTE:
+- Español neutro de LatAm: México, Colombia, Venezuela, Perú — NO Argentina
+- Usa SIEMPRE "tú" (nunca "vos")
+- PROHIBIDO: "che", "boluda", "dale", "re-", "igual" como muletilla, "bárbaro", "copado", "laburo", "posta"
+- SÍ puedes usar: "oye", "mira", "ahorita", "chévere" (con moderación), "linda", "amiga"
+- El registro es cálido y cercano, como DM de WhatsApp entre amigas latinoamericanas`;
+
 function buildPrompt(type, ctx) {
   const nicho = ctx.nicho || ctx.clienteIdeal || "mamás emprendedoras";
   const tono  = ctx.tono  || "cercano y cálido";
+
+  if (type === "guion" && ctx.modo === "refinar") {
+    const formatoLabel = { ig: "Reel de Instagram (máx 3 min)", youtube: "Video de YouTube (15-20 min)", podcast: "Podcast (~60 min)" }[ctx.formato || "ig"] || "video";
+    const guionJSON = JSON.stringify(ctx.guionActual || {}, null, 2);
+    return `Eres guionista refinando el guión de una mamá emprendedora.
+
+${DIALECTO}
+
+Guión actual de ${formatoLabel} sobre "${ctx.tema || ""}":
+${guionJSON}
+
+Instrucción de la usuaria: "${ctx.instruccion || ""}"
+
+Aplica la instrucción. Si afecta una sección específica, solo modifica esa sección y deja las demás exactamente igual. Si es general, aplícala a todo el guión.
+
+Reglas de escritura:
+- Primera persona, como si ELLA lo dijera en voz alta
+- Coloquial pero neutro — NO Argentina
+- Sin emojis dentro del guión
+- PROHIBIDO: "transforma tu vida", "potencial", "empoderar", "journey"
+- Mantén el mismo número de secciones y sus nombres/tiempos originales
+
+Responde SOLO JSON válido con el mismo formato, sin texto extra, sin markdown:
+{"titulo":"...","secciones":[{"nombre":"...","tiempo":"...","guion":"..."}]}`;
+  }
 
   if (type === "guion") {
     const formato   = ctx.formato || "ig";
@@ -183,9 +215,11 @@ Transformación que logra con sus clientas: ${transf}
 Habla a: ${nicho}
 Tono: ${tono}
 
+${DIALECTO}
+
 Reglas de escritura CRÍTICAS:
 - Escribe en primera persona como si ELLA lo estuviera diciendo en voz alta, natural
-- Español de LatAm coloquial — como habla una mamá con su mejor amiga
+- Coloquial pero neutro — como habla una mamá con su mejor amiga en WhatsApp
 - PROHIBIDO: "transforma tu vida", "alcanza el éxito", "potencial", "empoderar", "journey", "abundancia"
 - PROHIBIDO: empezar con "¿Cansada de...?", "Si quieres...", "Llegó el momento de..."
 - SÍ: situaciones concretas del día a día, emociones nombradas con precisión, momentos reales
@@ -259,6 +293,8 @@ El video trata sobre: "${ctx.tema}"
 Audiencia: ${nicho}
 Tono: ${tono}
 
+${DIALECTO}
+
 Escribe 4 hooks para cada estilo. Cada hook debe capturar la EMOCIÓN o SITUACIÓN detrás del tema, no nombrarlo.
 
 Estilos:
@@ -296,6 +332,8 @@ Responde SOLO JSON válido, sin texto extra:
 Tema: "${ctx.keyword}"
 Nicho: ${nicho}
 Tono: ${tono}
+
+${DIALECTO}
 
 Genera 6 ideas para cada formato. Cada idea es un título o ángulo listo para usar:
 
@@ -345,6 +383,8 @@ Crea la estructura completa de un lead magnet tipo "${tipoLabel}" sobre: "${ctx.
 Audiencia: ${nicho}
 Tono: ${tono}
 
+${DIALECTO}
+
 Genera exactamente esto:
 - titulo: Título irresistible que promete una victoria rápida y concreta. Máximo 12 palabras. Sin comillas ni emojis.
 - promesa: Lo que la clienta podrá hacer o sentir al terminar. Máximo 15 palabras. Empieza con verbo: "Aprenderás...", "Podrás...", "Sabrás cómo..."
@@ -358,6 +398,58 @@ Reglas:
 
 Responde SOLO JSON válido, sin texto extra, sin markdown:
 {"titulo":"...","promesa":"...","secciones":["sec1","sec2","sec3","sec4","sec5"]}`;
+  }
+
+  if (type === "reproposito") {
+    const scriptTexto = ctx.scriptTexto || "";
+    const tema        = ctx.tema || "este tema";
+    const formato     = ctx.formato || "ig";
+    const formatoLabel = { ig: "Reel de Instagram", youtube: "Video de YouTube", podcast: "Episodio de Podcast" }[formato] || "Reel";
+
+    return `Eres experta en repurposing de contenido para mamás emprendedoras en LatAm.
+Tienes este guión de ${formatoLabel} sobre "${tema}":
+
+${scriptTexto}
+
+---
+Audiencia: ${nicho}
+Tono: ${tono}
+
+${DIALECTO}
+
+Adapta el mensaje central de este guión en 4 formatos. Mantén la esencia y emoción del guión original, pero reescribe para cada plataforma.
+
+CARRUSEL de Instagram — 5 slides:
+- Slide 01 "Portada": frase de impacto que detiene el scroll (máx 12 palabras)
+- Slide 02 "El dolor": la situación que ella vive (1-2 oraciones cortas)
+- Slide 03 "El insight": la idea clave que cambia la perspectiva (1-2 oraciones)
+- Slide 04 "El resultado": cómo se siente o qué logra con esto (1-2 oraciones)
+- Slide 05 "CTA": qué hacer ahora (1 oración, directa)
+
+EMAIL a lista — asunto + cuerpo:
+- Asunto: máximo 8 palabras, personal y curioso (como mensaje de amiga)
+- Cuerpo: 150-200 palabras, conversacional, termina con una pregunta o una sola acción clara
+
+MENSAJES WhatsApp — 3 momentos:
+- "📣 Pre-publicación": antes de subir el contenido, genera expectativa (máx 60 palabras)
+- "🚀 El día que publicas": anuncia el contenido con link placeholder (máx 60 palabras)
+- "🔁 Follow-up": al día siguiente, genera conversación (máx 60 palabras)
+
+STORIES de Instagram — 5 historias en secuencia:
+- Story 01 "Pregunta": pregunta que la detiene (1 oración)
+- Story 02 "El contexto": situación reconocible (1-2 oraciones)
+- Story 03 "El cambio": el giro o insight (1-2 oraciones)
+- Story 04 "El resultado": cómo se siente después (1 oración)
+- Story 05 "CTA": acción concreta (1 oración)
+
+Reglas de escritura:
+- Español de LatAm, cálido y cercano
+- PROHIBIDO: "transforma tu vida", "alcanza el éxito", "potencial", "empoderar", "journey"
+- Cada formato debe funcionar de forma independiente, sin contexto extra
+- WhatsApp y Stories: máximo 2 oraciones por mensaje, sin bullet points internos
+
+Responde SOLO JSON válido, sin texto extra, sin markdown:
+{"carrusel":[{"num":"01","etq":"Portada","txt":"..."},{"num":"02","etq":"El dolor","txt":"..."},{"num":"03","etq":"El insight","txt":"..."},{"num":"04","etq":"El resultado","txt":"..."},{"num":"05","etq":"CTA","txt":"..."}],"email":{"asunto":"...","cuerpo":"..."},"whatsapp":[{"label":"📣 Pre-publicación","txt":"..."},{"label":"🚀 El día que publicas","txt":"..."},{"label":"🔁 Follow-up","txt":"..."}],"stories":[{"num":"01","tipo":"Pregunta","txt":"..."},{"num":"02","tipo":"El contexto","txt":"..."},{"num":"03","tipo":"El cambio","txt":"..."},{"num":"04","tipo":"El resultado","txt":"..."},{"num":"05","tipo":"CTA","txt":"..."}]}`;
   }
 
   return "";
@@ -377,7 +469,7 @@ export const handler = async (event) => {
 
   const { type, context } = body;
   if (!type || !context) return respond(400, { error: "Faltan campos: type, context" }, event);
-  if (!["guion", "hooks", "ideas", "leadmagnet"].includes(type)) return respond(400, { error: "Tipo no soportado" }, event);
+  if (!["guion", "hooks", "ideas", "leadmagnet", "reproposito"].includes(type)) return respond(400, { error: "Tipo no soportado" }, event);
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
 
   const { plan, usage } = await getUserPlanAndUsage(userId);
@@ -396,9 +488,12 @@ export const handler = async (event) => {
   }
 
   const prompt = buildPrompt(type, context);
+  let maxTokens = 4096;
+  if (type === "guion" && (context.formato === "youtube" || context.formato === "podcast")) maxTokens = 8192;
+  if (type === "reproposito") maxTokens = 8192;
   let rawText;
   try {
-    rawText = await callClaude(prompt);
+    rawText = await callClaude(prompt, maxTokens);
   } catch (err) {
     if (err.message === "rate_limit") {
       return respond(429, { error: "rate_limit" }, event);
