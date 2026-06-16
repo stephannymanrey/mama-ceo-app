@@ -1852,19 +1852,26 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
 
 // ── GUIÓN ──────────────────────────────────────────────────────
 function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
-  const [subTab,  setSubTab]  = useState("guion");
-  const [fase,    setFase]    = useState("tema");
-  const [topic,   setTopic]   = useState(seed || "");
-  const [formato, setFormato] = useState("ig");
-  const [script,  setScript]  = useState(null);
-  const [aiMsg,   setAiMsg]   = useState("");
-  const [copiado, setCopiado] = useState("");
-  const [c,       setC]       = useState({ red: brandProfile.redPrincipal || "Instagram", tono: brandProfile.tono || "Cercano", tema: "", cta: "", hashtags: true });
-  const [caption, setCaption] = useState(null);
+  const [subTab,       setSubTab]       = useState("guion");
+  const [fase,         setFase]         = useState("tema");
+  const [topic,        setTopic]        = useState(seed || "");
+  const [formato,      setFormato]      = useState("ig");
+  const [script,       setScript]       = useState(null);
+  const [aiMsg,        setAiMsg]        = useState("");
+  const [copiado,      setCopiado]      = useState("");
+  const [c,            setC]            = useState({ red: brandProfile.redPrincipal || "Instagram", tono: brandProfile.tono || "Cercano", tema: "", cta: "", hashtags: true });
+  const [caption,      setCaption]      = useState(null);
+  const [openSections, setOpenSections] = useState(new Set([0]));
+  const [chatHistory,  setChatHistory]  = useState([]);
+  const [chatInput,    setChatInput]    = useState("");
+  const [chatLoading,  setChatLoading]  = useState(false);
+  const chatEndRef = React.useRef(null);
 
   useEffect(() => { if (seed) { setTopic(seed); onSeedConsumed?.(); } }, []);
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatHistory, chatLoading]);
 
   const copiar = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2200); };
+  const toggleSection = (i) => setOpenSections(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; });
 
   const FORMATOS = [
     { k: "ig",      label: "Instagram Reel", sub: "hasta 3 min", icon: "📱" },
@@ -1894,11 +1901,40 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
     onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
     const r = res.result || {};
     setScript({ titulo: r.titulo || topic, secciones: r.secciones || [] });
+    setChatHistory([]);
+    setOpenSections(new Set([0]));
     setFase("resultado");
-    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 100);
   };
 
-  const reset = () => { setFase("tema"); setScript(null); setAiMsg(""); };
+  const reset = () => { setFase("tema"); setScript(null); setAiMsg(""); setChatHistory([]); setOpenSections(new Set([0])); };
+
+  const refinar = async (instruccion) => {
+    const msg = (instruccion || chatInput).trim();
+    if (!msg || !callGemini || chatLoading) return;
+    setChatInput("");
+    setChatHistory(prev => [...prev, { role: "user", text: msg }]);
+    setChatLoading(true);
+    const res = await callGemini("guion", {
+      modo: "refinar",
+      instruccion: msg,
+      guionActual: script,
+      tema: topic, formato,
+      queOfreces: brandProfile.queOfreces || "",
+      clienteIdeal: brandProfile.clienteIdeal || "mamás emprendedoras",
+      tono: brandProfile.tono || "Cercano",
+    });
+    setChatLoading(false);
+    if (res?.error) {
+      setChatHistory(prev => [...prev, { role: "claude", text: "Algo salió mal. Intenta de nuevo." }]);
+      return;
+    }
+    onAiUsed?.({ used: res.usage, limit: res.limit, plan: res.plan });
+    const r = res.result || {};
+    if (r.secciones) {
+      setScript({ titulo: r.titulo || script.titulo, secciones: r.secciones });
+      setChatHistory(prev => [...prev, { role: "claude", text: "¡Listo! Actualicé el guión. ¿Algo más que ajustar?" }]);
+    }
+  };
 
   const buildCaption = () => {
     if (!script?.secciones?.length) return "";
@@ -1996,56 +2032,101 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
             </div>
           )}
 
-          {/* ── RESULTADO ── */}
+          {/* ── RESULTADO — Split panel ── */}
           {fase === "resultado" && script && (
-            <div className="gn2-wrap">
-              <div className="gn2-resultado-hdr">
-                <button className="mpm-wizard-back-btn" onClick={reset}>← Nuevo</button>
-                <button className="mpm-wizard-back-btn" onClick={() => onSave("guiones", {
-                  id: Date.now(), tema: topic, tipo: FORMATO_LABEL[formato],
-                  formato, scriptTexto, fecha: new Date().toLocaleDateString("es"),
-                })}>💾 Guardar</button>
-                <span className="studio-ai-badge">✨ IA</span>
-              </div>
+            <div className="gn2-split">
 
-              <div className="gn2-script-card">
-                <div className="gn2-script-title">
-                  <span>🎬</span>
-                  <div>
+              {/* IZQUIERDA: Guión con accordion */}
+              <div className="gn2-split-left">
+                <div className="gn2-resultado-hdr">
+                  <button className="mpm-wizard-back-btn" onClick={reset}>← Nuevo</button>
+                  <div className="gn2-hdr-title">
                     <strong>{script.titulo || topic}</strong>
-                    <span className="gn2-script-obj"> · {FORMATO_LABEL[formato]}</span>
+                    <span className="gn2-script-obj">{FORMATO_LABEL[formato]}</span>
+                  </div>
+                  <div style={{display:"flex",gap:"6px"}}>
+                    <button className="mpm-wizard-back-btn" onClick={() => copiar(scriptTexto, "script")}>
+                      {copiado === "script" ? "✓" : "📋"}
+                    </button>
+                    <button className="mpm-wizard-back-btn" onClick={() => onSave("guiones", {
+                      id: Date.now(), tema: topic, tipo: FORMATO_LABEL[formato],
+                      formato, scriptTexto, fecha: new Date().toLocaleDateString("es"),
+                    })}>💾 Guardar</button>
                   </div>
                 </div>
 
                 {script.secciones?.map((sec, i) => (
-                  <div key={i} className="gn2-section" style={{"--sc": SECTION_COLORS[i % SECTION_COLORS.length]}}>
-                    <div className="gn2-section-hdr">
-                      <span className="gn2-section-label" style={{color: SECTION_COLORS[i % SECTION_COLORS.length]}}>{sec.nombre}</span>
-                      <span className="gn2-section-sub">{sec.tiempo}</span>
-                    </div>
-                    <textarea className="gn2-section-text"
-                      value={sec.guion || ""}
-                      onChange={e => setScript(p => ({
-                        ...p,
-                        secciones: p.secciones.map((s, j) => j === i ? {...s, guion: e.target.value} : s)
-                      }))}
-                      rows={Math.max(3, Math.ceil((sec.guion?.length || 0) / 80))}
-                    />
+                  <div key={i} className="gn2-acc-sec" style={{"--sc": SECTION_COLORS[i % SECTION_COLORS.length]}}>
+                    <button className="gn2-acc-hdr" onClick={() => toggleSection(i)}>
+                      <div className="gn2-acc-hdr-left">
+                        <span className="gn2-acc-label">{sec.nombre}</span>
+                        <span className="gn2-acc-time">{sec.tiempo}</span>
+                      </div>
+                      <span className="gn2-acc-chevron">{openSections.has(i) ? "▲" : "▼"}</span>
+                    </button>
+                    {openSections.has(i) && (
+                      <div className="gn2-acc-body">
+                        <textarea className="gn2-section-text"
+                          value={sec.guion || ""}
+                          onChange={e => setScript(p => ({
+                            ...p,
+                            secciones: p.secciones.map((s, j) => j === i ? {...s, guion: e.target.value} : s)
+                          }))}
+                          rows={Math.max(4, Math.ceil((sec.guion?.length || 0) / 70))}
+                        />
+                      </div>
+                    )}
                   </div>
                 ))}
 
-                <div className="gn2-script-actions">
-                  <button className="lm-dl-btn" style={{flex:1}} onClick={() => copiar(scriptTexto, "script")}>
-                    {copiado === "script" ? "✓ Copiado" : "📋 Copiar guión completo"}
-                  </button>
-                  <button className="guion-caption-cta-btn" onClick={() => {
-                    setC(p => ({...p, tema: topic}));
-                    setCaption(buildCaption());
-                    setSubTab("caption");
-                    setTimeout(() => window.scrollTo({top:0,behavior:"smooth"}), 50);
-                  }}>📝 Caption</button>
+                <button className="guion-caption-cta-btn" style={{marginTop:"4px"}} onClick={() => {
+                  setC(p => ({...p, tema: topic}));
+                  setCaption(buildCaption());
+                  setSubTab("caption");
+                }}>📝 Crear caption para este guión</button>
+              </div>
+
+              {/* DERECHA: Chat para refinar */}
+              <div className="gn2-split-right">
+                <div className="gn2-chat-hdr">
+                  <span className="gn2-chat-hdr-title">✦ Ajustar con Claude</span>
+                  <span className="gn2-chat-hdr-sub">Pide un cambio y edita al instante</span>
+                </div>
+
+                <div className="gn2-chat-msgs">
+                  {chatHistory.length === 0 && (
+                    <p className="gn2-chat-empty">Puedes pedirme cosas como:<br/><em>"El hook no me convence"</em><br/><em>"Hazlo más emotivo"</em><br/><em>"El CTA es muy genérico"</em></p>
+                  )}
+                  {chatHistory.map((msg, i) => (
+                    <div key={i} className={`gn2-chat-msg gn2-chat-msg--${msg.role}`}>{msg.text}</div>
+                  ))}
+                  {chatLoading && (
+                    <div className="gn2-chat-typing">
+                      <span /><span /><span />
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
+                </div>
+
+                <div className="gn2-chat-input-wrap">
+                  <div className="gn2-chat-chips">
+                    {["Hazlo más emotivo", "Acorta el hook", "Tono más informal", "Cambia el CTA", "Más concreto"].map(chip => (
+                      <button key={chip} className="gn2-chat-chip" onClick={() => refinar(chip)} disabled={chatLoading}>{chip}</button>
+                    ))}
+                  </div>
+                  <div className="gn2-chat-form">
+                    <input className="gn2-chat-field"
+                      placeholder='Ej: "el deseo necesita más emoción"'
+                      value={chatInput}
+                      onChange={e => setChatInput(e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && !chatLoading && refinar(chatInput)}
+                      disabled={chatLoading}
+                    />
+                    <button className="gn2-chat-send" onClick={() => refinar(chatInput)} disabled={!chatInput.trim() || chatLoading}>↑</button>
+                  </div>
                 </div>
               </div>
+
             </div>
           )}
         </>
