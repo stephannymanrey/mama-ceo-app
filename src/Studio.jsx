@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import "./Studio.css";
 
 const STUDIO_KEY = "mama-ceo-studio-v1";
@@ -1865,7 +1865,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
   const [chatHistory,  setChatHistory]  = useState([]);
   const [chatInput,    setChatInput]    = useState("");
   const [chatLoading,  setChatLoading]  = useState(false);
-  const chatEndRef = React.useRef(null);
+  const chatEndRef = useRef(null);
 
   useEffect(() => { if (seed) { setTopic(seed); onSeedConsumed?.(); } }, []);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatHistory, chatLoading]);
