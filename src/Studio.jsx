@@ -1933,7 +1933,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
     const r = res.result || {};
     if (r.secciones) {
       setScript({ titulo: r.titulo || script.titulo, secciones: r.secciones });
-      setChatHistory(prev => [...prev, { role: "claude", text: "¡Listo! Actualicé el guión. ¿Algo más que ajustar?" }]);
+      setChatHistory(prev => [...prev, { role: "claude", text: "¡Listo! Actualicé el guión. ¿Algo más que ajustar? 😊" }]);
     }
   };
 
@@ -2101,8 +2101,11 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
               {/* DERECHA: Chat para refinar */}
               <div className="gn2-split-right">
                 <div className="gn2-chat-hdr">
-                  <span className="gn2-chat-hdr-title">✦ Ajustar con Claude</span>
-                  <span className="gn2-chat-hdr-sub">Pide un cambio y edita al instante</span>
+                  <img src="/abi.png" alt="Abi" className="gn2-chat-abi-avatar" />
+                  <div>
+                    <span className="gn2-chat-hdr-title">Pregúntale a Abi ✦</span>
+                    <span className="gn2-chat-hdr-sub">Tu asistente de contenido, lista para ayudarte</span>
+                  </div>
                 </div>
 
                 <div className="gn2-chat-msgs">
@@ -2110,11 +2113,17 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                     <p className="gn2-chat-empty">Puedes pedirme cosas como:<br/><em>"El hook no me convence"</em><br/><em>"Hazlo más emotivo"</em><br/><em>"El CTA es muy genérico"</em></p>
                   )}
                   {chatHistory.map((msg, i) => (
-                    <div key={i} className={`gn2-chat-msg gn2-chat-msg--${msg.role}`}>{msg.text}</div>
+                    <div key={i} className={`gn2-chat-msg-wrap gn2-chat-msg-wrap--${msg.role}`}>
+                      {msg.role === "claude" && <img src="/abi.png" alt="Abi" className="gn2-chat-msg-avatar" />}
+                      <div className={`gn2-chat-msg gn2-chat-msg--${msg.role}`}>{msg.text}</div>
+                    </div>
                   ))}
                   {chatLoading && (
-                    <div className="gn2-chat-typing">
-                      <span /><span /><span />
+                    <div className="gn2-chat-msg-wrap gn2-chat-msg-wrap--claude">
+                      <img src="/abi.png" alt="Abi" className="gn2-chat-msg-avatar" />
+                      <div className="gn2-chat-typing">
+                        <span /><span /><span />
+                      </div>
                     </div>
                   )}
                   <div ref={chatEndRef} />
@@ -3080,9 +3089,12 @@ function RepropositoTab({ saved, brandProfile = {}, callGemini, onAiUsed }) {
 
           {!rpResult && !rpLoading && (
             <div className="rp-ia-cta">
-              <p className="rp-ia-cta-text">Claude va a leer tu guión completo y crear contenido real para cada plataforma — no plantillas.</p>
+              <div className="rp-ia-cta-abi">
+                <img src="/abi.png" alt="Abi" className="rp-ia-abi-img" />
+                <p className="rp-ia-cta-text">Abi va a leer tu guión completo y crear contenido real para cada plataforma — no plantillas.</p>
+              </div>
               <button className="rp-ia-btn" onClick={generarConIA} disabled={!callGemini}>
-                Reproponer con IA ✦
+                Pregúntale a Abi ✦
               </button>
               {rpMsg && <p className="rp-ia-error">{rpMsg}</p>}
             </div>
@@ -3091,7 +3103,7 @@ function RepropositoTab({ saved, brandProfile = {}, callGemini, onAiUsed }) {
           {rpLoading && (
             <div className="rp-loading">
               <div className="rp-loading-spinner" />
-              <p className="rp-loading-txt">Claude está leyendo tu guión y adaptando para 4 formatos...</p>
+              <p className="rp-loading-txt">Abi está leyendo tu guión y adaptando para 4 formatos...</p>
             </div>
           )}
 
