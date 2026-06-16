@@ -1861,10 +1861,11 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
   const [copiado,      setCopiado]      = useState("");
   const [c,            setC]            = useState({ red: brandProfile.redPrincipal || "Instagram", tono: brandProfile.tono || "Cercano", tema: "", cta: "", hashtags: true });
   const [caption,      setCaption]      = useState(null);
-  const [openSections, setOpenSections] = useState(new Set([0]));
-  const [chatHistory,  setChatHistory]  = useState([]);
-  const [chatInput,    setChatInput]    = useState("");
-  const [chatLoading,  setChatLoading]  = useState(false);
+  const [openSections,   setOpenSections]   = useState(new Set([0]));
+  const [chatHistory,    setChatHistory]    = useState([]);
+  const [chatInput,      setChatInput]      = useState("");
+  const [chatLoading,    setChatLoading]    = useState(false);
+  const [captionInline,  setCaptionInline]  = useState(null);
   const chatEndRef = useRef(null);
 
   useEffect(() => { if (seed) { setTopic(seed); onSeedConsumed?.(); } }, []);
@@ -1906,7 +1907,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
     setFase("resultado");
   };
 
-  const reset = () => { setFase("tema"); setScript(null); setAiMsg(""); setChatHistory([]); setOpenSections(new Set([0])); };
+  const reset = () => { setFase("tema"); setScript(null); setAiMsg(""); setChatHistory([]); setOpenSections(new Set([0])); setCaptionInline(null); };
 
   const refinar = async (instruccion) => {
     const msg = (instruccion || chatInput).trim();
@@ -1947,12 +1948,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
 
   return (
     <div className="studio-tab-content">
-      <div className="studio-mode-toggle">
-        <button className={subTab === "guion" ? "active" : ""} onClick={() => setSubTab("guion")}>Guión 🎬</button>
-        <button className={subTab === "caption" ? "active" : ""} onClick={() => setSubTab("caption")}>Caption 📝</button>
-      </div>
-
-      {subTab === "guion" && (
+      {true && (
         <>
           {/* ── TEMA + FORMATO ── */}
           {fase === "tema" && (
@@ -2079,11 +2075,27 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                   </div>
                 ))}
 
-                <button className="guion-caption-cta-btn" style={{marginTop:"4px"}} onClick={() => {
-                  setC(p => ({...p, tema: topic}));
-                  setCaption(buildCaption());
-                  setSubTab("caption");
-                }}>📝 Crear caption para este guión</button>
+                <button className="gn2-save-caption-btn" onClick={() => {
+                  onSave("guiones", { id: Date.now(), tema: topic, tipo: FORMATO_LABEL[formato], formato, scriptTexto, fecha: new Date().toLocaleDateString("es") });
+                  setCaptionInline(buildCaption());
+                }}>
+                  {captionInline ? "✓ Guardado — caption listo abajo" : "💾 Guardar y generar caption"}
+                </button>
+
+                {captionInline && (
+                  <div className="gn2-caption-inline">
+                    <div className="gn2-caption-inline-hdr">
+                      <span className="gn2-caption-inline-title">📝 Caption listo</span>
+                      <div style={{display:"flex",gap:"6px"}}>
+                        <button className="cap-action-copy" onClick={() => copiar(captionInline, "cap-inline")}>
+                          {copiado === "cap-inline" ? "✓ Copiado" : "📋 Copiar"}
+                        </button>
+                        <button className="cap-action-clear" onClick={() => setCaptionInline(null)}>✕</button>
+                      </div>
+                    </div>
+                    <textarea className="gn2-caption-inline-text" value={captionInline} onChange={e => setCaptionInline(e.target.value)} rows={8} />
+                  </div>
+                )}
               </div>
 
               {/* DERECHA: Chat para refinar */}

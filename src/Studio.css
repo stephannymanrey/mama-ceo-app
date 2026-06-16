@@ -2255,6 +2255,33 @@
 .guion-caption-cta-info { flex: 1; min-width: 160px; }
 .guion-caption-cta-title { font-size: 14px; font-weight: 800; color: #2D1B1B; margin-bottom: 3px; }
 .guion-caption-cta-sub { font-size: 12px; color: #8A6A5A; }
+.gn2-save-caption-btn {
+  width: 100%; padding: 13px 20px; margin-top: 4px;
+  background: linear-gradient(135deg, #E8755A 0%, #C4526A 100%);
+  color: #fff; border: none; border-radius: 12px;
+  font-size: 14px; font-weight: 700; font-family: inherit;
+  cursor: pointer; transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 3px 12px rgba(196,82,106,0.25);
+}
+.gn2-save-caption-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+
+.gn2-caption-inline {
+  background: #fff; border: 1.5px solid rgba(196,82,106,0.2);
+  border-radius: 12px; overflow: hidden; margin-top: 4px;
+}
+.gn2-caption-inline-hdr {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: #FFF8F5;
+  border-bottom: 1px solid rgba(196,82,106,0.1);
+}
+.gn2-caption-inline-title { font-size: 12px; font-weight: 800; color: #C4526A; }
+.gn2-caption-inline-text {
+  width: 100%; padding: 12px 14px; border: none; background: transparent;
+  font: inherit; font-size: 13px; color: #2D1B1B; line-height: 1.7;
+  resize: vertical; box-sizing: border-box; min-height: 140px;
+}
+.gn2-caption-inline-text:focus { outline: none; }
+
 .guion-caption-cta-btn {
   padding: 10px 22px;
   background: #2D1B1B; color: #fff;
