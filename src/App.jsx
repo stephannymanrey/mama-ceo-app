@@ -617,6 +617,8 @@ export default function App() {
   const [showContentForm, setShowContentForm] = useState(false);
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
+  const [taskForm, setTaskForm] = useState({ text: "", priority: "Normal", dueDate: "" });
+  const [homeFocusOverride, setHomeFocusOverride] = useState(stored?.homeFocusOverride || null);
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
   const [appointments, setAppointments] = useState(stored?.appointments || []);
   const [apptForm, setApptForm] = useState({ title: "", date: "", time: "", type: "Médico", recurrence: "none" });
@@ -1308,6 +1310,7 @@ export default function App() {
     setUserPlan(state.userPlan || "free");
     setPremiumExpiresAt(state.premiumExpiresAt || null);
     setUserMode(state.userMode || null);
+    setHomeFocusOverride(state.homeFocusOverride || null);
     setAppointments(state.appointments || []);
     setWeekMenu(state.weekMenu || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
     setHomeRoutines(state.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
@@ -1412,7 +1415,8 @@ export default function App() {
       checkInReminderEnabled,
       userPlan,
       premiumExpiresAt,
-      userMode
+      userMode,
+      homeFocusOverride
     };
 
     if (user && awsActive && remoteStorageEnabled) {
@@ -1438,7 +1442,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, checkInReminderTime, checkInReminderEnabled]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, checkInReminderTime, checkInReminderEnabled, homeFocusOverride]);
 
   const expandAppts = (list, limitDays = 90) => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -1568,6 +1572,27 @@ export default function App() {
     setShowContentForm(false);
   };
 
+  const addContentFromIdea = (title, meta = {}) => {
+    if (!title || !title.trim()) return { ok: false, message: "" };
+    if (contentItems.length >= currentLimits.content) {
+      return { ok: false, message: `Llegaste al límite de ${currentLimits.content} contenidos de tu plan.` };
+    }
+    const now = Date.now();
+    setContentItems((current) => [{
+      id: now,
+      title: title.trim(),
+      hook: "",
+      format: meta.format || "Reel",
+      network: meta.network || "Instagram",
+      week: "Semana 1",
+      status: "Pendiente",
+      goal: "Vender",
+      publishDate: "",
+      createdAt: now,
+    }, ...current]);
+    return { ok: true };
+  };
+
   const addGoal = (event) => {
     event.preventDefault();
     const amount = Number(goalForm.amount);
@@ -1590,6 +1615,27 @@ export default function App() {
 
     setHomeTasks((current) => [{ id: Date.now(), title: homeForm.title.trim(), category: homeForm.category, priority: homeForm.priority || "Normal", delegate: homeForm.delegate || "", done: false }, ...current]);
     setHomeForm({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
+  };
+
+  const addTask = (event) => {
+    event.preventDefault();
+    if (!taskForm.text.trim()) return;
+    setTasks((current) => [{ id: Date.now(), text: taskForm.text.trim(), priority: taskForm.priority || "Normal", dueDate: taskForm.dueDate || "", done: false }, ...current]);
+    setTaskForm({ text: "", priority: "Normal", dueDate: "" });
+  };
+  const deleteTask = (taskId) => setTasks((current) => current.filter((task) => task.id !== taskId));
+  const taskUrgencyScore = (t) => {
+    let score = 0;
+    if (t.priority === "Urgente") score += 100;
+    else if (t.priority === "Puede esperar") score -= 20;
+    if (t.dueDate) {
+      const days = Math.floor((timestampFromInputDate(t.dueDate) - Date.now()) / 86400000);
+      if (days < 0) score += 80;
+      else if (days === 0) score += 60;
+      else if (days <= 3) score += 30;
+      else if (days <= 7) score += 10;
+    }
+    return score;
   };
 
   const updateForm = (field, value) => {
@@ -1615,6 +1661,7 @@ export default function App() {
   const updateContentForm = (field, value) => setContentForm((current) => ({ ...current, [field]: value }));
   const updateGoalForm = (field, value) => setGoalForm((current) => ({ ...current, [field]: value }));
   const updateHomeForm = (field, value) => setHomeForm((current) => ({ ...current, [field]: value }));
+  const updateTaskForm = (field, value) => setTaskForm((current) => ({ ...current, [field]: value }));
   const updatePurpose = (field, value) => setPurpose((current) => ({ ...current, [field]: value }));
   const updateBusinessSetting = (field, value) => {
     setBusinessSettings((current) => ({
@@ -1801,7 +1848,7 @@ export default function App() {
   }
 
   if (activeView === "studio") {
-    return <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} />;
+    return <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} onAddToContent={addContentFromIdea} />;
   }
 
   if (!user && awsActive) {
@@ -2679,7 +2726,50 @@ export default function App() {
     const daysSincePublish = lastPublished ? Math.floor((Date.now() - lastPublished.createdAt) / 86400000) : null;
     const urgentHomeTasks = homeTasks.filter((t) => !t.done && t.priority === "Urgente");
     const hasAlerts = urgentLeads.length > 0 || (daysSincePublish !== null && daysSincePublish > 3) || urgentHomeTasks.length > 0;
-    const focusTasks = tasks.filter((t) => !t.done).slice(0, 3);
+    const focusTasks = [...tasks].filter((t) => !t.done).sort((a, b) => taskUrgencyScore(b) - taskUrgencyScore(a)).slice(0, 3);
+
+    // ── Gating por modo / trial ──
+    const trialActive = !!premiumExpiresAt && Date.now() < premiumExpiresAt;
+    const showNegocioPareto = trialActive || !userMode || userMode === "ambas" || userMode === "emprendedora";
+    const showHogarPareto   = trialActive || !userMode || userMode === "ambas" || userMode === "mama";
+
+    // ── Pareto Negocio: 80/20 de ingresos ──
+    const wonClients = clients.filter((c) => c.status === "Venta ganada" && c.amount > 0).sort((a, b) => b.amount - a.amount);
+    const totalWonAmount = wonClients.reduce((s, c) => s + c.amount, 0);
+    let paretoCount = 0, paretoCumulative = 0;
+    for (const c of wonClients) {
+      paretoCumulative += c.amount;
+      paretoCount++;
+      if (paretoCumulative >= totalWonAmount * 0.8) break;
+    }
+    const paretoTopClients = wonClients.slice(0, Math.max(paretoCount, 1));
+    const paretoPct = wonClients.length ? Math.round((paretoTopClients.length / wonClients.length) * 100) : 0;
+    const paretoShareOfIncome = totalWonAmount > 0 ? Math.round((paretoTopClients.reduce((s, c) => s + c.amount, 0) / totalWonAmount) * 100) : 0;
+
+    // ── Hogar: "Tus 3 de hoy" ──
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const pendingHome = homeTasks.filter((t) => !t.done);
+    const homePriorityRank = { "Urgente": 0, "Normal": 1, "Puede esperar": 2 };
+    const sortHomePool = (list) => [...list].sort((a, b) => (homePriorityRank[a.priority || "Normal"] - homePriorityRank[b.priority || "Normal"]) || (a.id - b.id));
+    const autoTop3 = sortHomePool(pendingHome).slice(0, 3);
+    const validOverrideIds = (homeFocusOverride && homeFocusOverride.date === todayISO)
+      ? homeFocusOverride.ids.filter((id) => pendingHome.some((t) => t.id === id))
+      : [];
+    let focusHomeTasks = validOverrideIds.length
+      ? pendingHome.filter((t) => validOverrideIds.includes(t.id))
+      : autoTop3;
+    if (focusHomeTasks.length < 3) {
+      const extra = autoTop3.filter((t) => !focusHomeTasks.some((f) => f.id === t.id));
+      focusHomeTasks = [...focusHomeTasks, ...extra].slice(0, 3);
+    }
+    const isCustomFocus = validOverrideIds.length > 0;
+    const swapHomeFocusTask = (taskId) => {
+      const currentIds = focusHomeTasks.map((t) => t.id);
+      const candidates = sortHomePool(pendingHome.filter((t) => !currentIds.includes(t.id)));
+      if (!candidates.length) return;
+      const newIds = currentIds.map((id) => (id === taskId ? candidates[0].id : id));
+      setHomeFocusOverride({ date: todayISO, ids: newIds });
+    };
 
     return (
       <section className="panel workspace-panel">
@@ -2763,6 +2853,64 @@ export default function App() {
                 <button className="db-alert db-alert--red" onClick={() => setActiveView("home")}>
                   &#x1F3E0; {urgentHomeTasks.length} tarea{urgentHomeTasks.length > 1 ? "s" : ""} urgente{urgentHomeTasks.length > 1 ? "s" : ""} en el hogar &rarr;
                 </button>
+              )}
+            </div>
+          )}
+
+          {/* Pareto 80/20 */}
+          {(showNegocioPareto || showHogarPareto) && (
+            <div className="db-pareto-grid">
+              {showNegocioPareto && (
+                <div className="db-pareto-card">
+                  <div className="db-pareto-head">
+                    <span>&#x1F3AF; Tu 80/20 del negocio</span>
+                  </div>
+                  {wonClients.length < 2 ? (
+                    <p className="db-pareto-empty">Registra al menos 2 ventas ganadas para ver qu&eacute; clientas o servicios concentran tus ingresos.</p>
+                  ) : (
+                    <>
+                      <p className="db-pareto-stat">
+                        El <strong>{paretoPct}%</strong> de tus clientas ({paretoTopClients.length} de {wonClients.length}) generan el <strong>{paretoShareOfIncome}%</strong> de tus ingresos cerrados.
+                      </p>
+                      <div className="db-pareto-list">
+                        {paretoTopClients.slice(0, 5).map((c) => (
+                          <div key={c.id} className="db-pareto-row">
+                            <span className="db-pareto-row-name">{c.name}</span>
+                            <span className="db-pareto-row-amount">{money.format(c.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Ver mis clientas &rarr;</button>
+                    </>
+                  )}
+                </div>
+              )}
+              {showHogarPareto && (
+                <div className="db-pareto-card">
+                  <div className="db-pareto-head">
+                    <span>&#x1F338; Tus 3 de hoy</span>
+                    {isCustomFocus && (
+                      <button type="button" className="db-pareto-reset" onClick={() => setHomeFocusOverride(null)}>Reiniciar</button>
+                    )}
+                  </div>
+                  {homeTasks.length === 0 ? (
+                    <p className="db-pareto-empty">Agrega tus primeras tareas en Mi Hogar y aqu&iacute; te sugerimos solo 3 cada d&iacute;a — el resto puede esperar.</p>
+                  ) : focusHomeTasks.length === 0 ? (
+                    <p className="db-pareto-done">&#x2705; Hiciste tus 3 cosas de hoy. Lo dem&aacute;s puede esperar.</p>
+                  ) : (
+                    <div className="db-pareto-list">
+                      {focusHomeTasks.map((task) => (
+                        <div key={task.id} className="db-focus3-row">
+                          <input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)"}} />
+                          <span className="db-focus3-title">{task.title}</span>
+                          {task.priority === "Urgente" && <span className="db-focus3-tag">Urgente</span>}
+                          <button type="button" className="db-focus3-swap" title="Cambiar por otra tarea" onClick={() => swapHomeFocusTask(task.id)}>&#x1F504;</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button type="button" className="db-pareto-link" onClick={() => setActiveView("home")}>Ver todas mis tareas &rarr;</button>
+                </div>
               )}
             </div>
           )}
@@ -2867,7 +3015,9 @@ export default function App() {
     const salesGoalProgress = salesGoal > 0 ? Math.min(Math.round((wonSalesTotal/salesGoal)*100),100) : 0;
 
     const inp = { border:"1px solid var(--line)", borderRadius:"8px", padding:"8px 12px", fontSize:"14px", fontFamily:"inherit", outline:"none", background:"#fff", width:"100%" };
-    const TABS_BIZ = ["Esta semana", "Historial"];
+    const TABS_BIZ = ["Esta semana", "Tareas", "Historial"];
+    const sortedBizTasks = [...tasks].sort((a, b) => (a.done === b.done ? taskUrgencyScore(b) - taskUrgencyScore(a) : a.done ? 1 : -1));
+    const pendingBizTasksCount = tasks.filter(t => !t.done).length;
 
     return (
       <section className="panel workspace-panel">
@@ -3035,8 +3185,59 @@ export default function App() {
           </>
         )}
 
-        {/* ── HISTORIAL ── */}
+        {/* ── TAREAS ── */}
         {businessTab === 1 && (
+          <>
+            <div className="card" style={{marginBottom:"16px"}}>
+              <h3 style={{margin:"0 0 4px"}}>Nueva acción</h3>
+              <p className="helper-copy" style={{margin:"0 0 12px"}}>Asigna prioridad y fecha límite para saber qué es realmente urgente.</p>
+              <form onSubmit={addTask} style={{display:"grid",gap:"8px",gridTemplateColumns:"1fr",maxWidth:"480px"}}>
+                <input placeholder="¿Qué necesitas hacer?" value={taskForm.text}
+                  onChange={e => updateTaskForm("text", e.target.value)}
+                  style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 12px",font:"inherit",background:"#FAF7F5"}} />
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+                  <select value={taskForm.priority} onChange={e => updateTaskForm("priority", e.target.value)}
+                    style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 10px",font:"inherit",background:"#FAF7F5"}}>
+                    <option>Normal</option><option>Urgente</option><option>Puede esperar</option>
+                  </select>
+                  <input type="date" value={taskForm.dueDate} onChange={e => updateTaskForm("dueDate", e.target.value)}
+                    style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 10px",font:"inherit",background:"#FAF7F5"}} />
+                </div>
+                <button className="primary-button" type="submit" style={{minHeight:"40px"}}>+ Agregar acción</button>
+              </form>
+            </div>
+
+            <div className="card">
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+                <h3 style={{margin:0}}>Tus acciones</h3>
+                <span style={{fontSize:"12px",color:"var(--muted)"}}>{pendingBizTasksCount} pendiente{pendingBizTasksCount===1?"":"s"}</span>
+              </div>
+              {sortedBizTasks.length === 0 && <p className="helper-copy">Agrega tu primera acción de negocio.</p>}
+              {sortedBizTasks.map(task => {
+                const days = task.dueDate ? Math.floor((timestampFromInputDate(task.dueDate) - Date.now()) / 86400000) : null;
+                const dueColor = days === null ? "var(--muted)" : days < 0 ? "#C4526A" : days === 0 ? "#e87b1e" : "var(--muted)";
+                const dueLabel = days === null ? null : days < 0 ? `Vencida hace ${Math.abs(days)}d` : days === 0 ? "Hoy" : days === 1 ? "Mañana" : `En ${days}d`;
+                return (
+                  <div key={task.id} className="home-task-row">
+                    <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--purple)",flexShrink:0}} />
+                    <div style={{flex:1,minWidth:0}}>
+                      <strong style={{fontSize:"14px",textDecoration:task.done?"line-through":"none",color:task.done?"var(--muted)":"var(--ink)"}}>{task.text}</strong>
+                      <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"2px"}}>
+                        {task.priority === "Urgente" && <small style={{color:"var(--purple)",fontWeight:700}}>🔥 Urgente</small>}
+                        {dueLabel && <small style={{color:dueColor,fontWeight:600}}>{dueLabel}</small>}
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => confirmDelete("¿Eliminar esta acción?", () => deleteTask(task.id))}
+                      style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",flexShrink:0}}>×</button>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* ── HISTORIAL ── */}
+        {businessTab === 2 && (
           <>
             <div style={{display:"flex",gap:"10px",marginBottom:"16px",justifyContent:"flex-end"}}>
               <button type="button" onClick={exportMovementsToExcel}

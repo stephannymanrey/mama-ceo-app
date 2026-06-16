@@ -534,7 +534,17 @@ const detectProductType = (text) => {
 };
 
 // ── IDEAS ──────────────────────────────────────────────────────
-function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
+const IDEA_CAT_TO_CONTENT = {
+  vertical:   { format: "Reel",     network: "Instagram" },
+  horizontal: { format: "Episodio", network: "YouTube" },
+  carrusel:   { format: "Carrusel", network: "Instagram" },
+  story:      { format: "Historia", network: "Instagram" },
+  digital:    { format: "Post",     network: "Website" },
+  email:      { format: "Articulo", network: "Email" },
+  whatsapp:   { format: "Post",     network: "WhatsApp" },
+};
+
+function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, callGemini, plan = "free", onAiUsed, onAddToContent }) {
   const [keyword,        setKeyword]        = useState("");
   const [ideas,          setIdeas]          = useState(null);
   const [thinking,       setThinking]       = useState(false);
@@ -542,6 +552,21 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
   const [vistaBlueprint, setVistaBlueprint] = useState(null);
   const [aiLoading,      setAiLoading]      = useState(false);
   const [aiMsg,          setAiMsg]          = useState("");
+  const [agendado,       setAgendado]       = useState("");
+  const [agendaMsg,      setAgendaMsg]      = useState("");
+
+  const agendar = (texto, catKey, key) => {
+    if (!onAddToContent) return;
+    const meta = IDEA_CAT_TO_CONTENT[catKey] || {};
+    const res = onAddToContent(texto, meta);
+    if (res?.ok) {
+      setAgendado(key);
+      setTimeout(() => setAgendado(""), 2200);
+    } else if (res?.message) {
+      setAgendaMsg(res.message);
+      setTimeout(() => setAgendaMsg(""), 3500);
+    }
+  };
 
   const copiar = (text, key) => {
     navigator.clipboard.writeText(text);
@@ -842,6 +867,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
         </button>
       </div>
       {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
+      {agendaMsg && <p className="studio-ai-msg">{agendaMsg}</p>}
 
       {!ideas && !thinking && !aiLoading && (
         <div className="ideas-empty">
@@ -907,18 +933,27 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
                       <span className="ideas-card-cta-label">
                         {catKey === "digital" ? "Ver plan →" : "Crear guión →"}
                       </span>
-                      <button className="ideas-card-bookmark"
-                        title="Guardar idea"
-                        onClick={e => {
-                          e.stopPropagation();
-                          onSave("ideas", {
-                            id: Date.now(), titulo: idea.texto, tipo: cat.label,
-                            plataforma: cat.sub, color: cat.color, keyword: ideas.keyword,
-                            fecha: new Date().toLocaleDateString("es"),
-                          });
-                        }}>
-                        💾
-                      </button>
+                      <div style={{display:"flex",gap:"4px",alignItems:"center"}}>
+                        {onAddToContent && (
+                          <button className="ideas-card-bookmark"
+                            title="Agendar en Mi Contenido"
+                            onClick={e => { e.stopPropagation(); agendar(idea.texto, catKey, idea.id); }}>
+                            {agendado === idea.id ? "✓" : "📅"}
+                          </button>
+                        )}
+                        <button className="ideas-card-bookmark"
+                          title="Guardar idea"
+                          onClick={e => {
+                            e.stopPropagation();
+                            onSave("ideas", {
+                              id: Date.now(), titulo: idea.texto, tipo: cat.label,
+                              plataforma: cat.sub, color: cat.color, keyword: ideas.keyword,
+                              catKey, fecha: new Date().toLocaleDateString("es"),
+                            });
+                          }}>
+                          💾
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -945,6 +980,11 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
                 <button className="studio-bank-action-copy" onClick={() => copiar(idea.titulo, `bank-${idea.id}`)}>
                   {copiado === `bank-${idea.id}` ? "¡Copiado!" : "Copiar"}
                 </button>
+                {onAddToContent && (
+                  <button className="studio-bank-action-copy" onClick={() => agendar(idea.titulo, idea.catKey, `bank-${idea.id}`)}>
+                    {agendado === `bank-${idea.id}` ? "✓ Agendado" : "📅 Agendar"}
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -3701,7 +3741,7 @@ function BrandProfileForm({ initial = {}, onSave, onCancel, isOnboarding = false
   );
 }
 
-export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, callGemini, plan = "free" }) {
+export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, callGemini, plan = "free", onAddToContent }) {
   const [activeTab, setActiveTab] = useState("mensaje");
   const [data, setData] = useState(() => loadStudio());
   const [guionSeed, setGuionSeed] = useState("");
@@ -3732,7 +3772,7 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
     setTimeout(() => setToast(null), 3000);
   };
 
-  const tabProps = { saved: data, onSave: handleSave, onDelete: handleDelete, brandProfile, callGemini, plan, onAiUsed: setAiUsage };
+  const tabProps = { saved: data, onSave: handleSave, onDelete: handleDelete, brandProfile, callGemini, plan, onAiUsed: setAiUsage, onAddToContent };
 
   // Pantalla de bienvenida si no hay perfil y no saltó
   if (!hasBrand && !skippedOnboarding) {
