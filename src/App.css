@@ -187,18 +187,18 @@ button {
 .menu-item {
   position: relative;
   width: 100%;
-  min-height: 42px;
+  min-height: 36px;
   border: 0;
   border-left: 3px solid transparent;
-  border-radius: 12px;
+  border-radius: 10px;
   background: transparent;
   color: var(--ink);
   display: flex;
   align-items: center;
-  gap: 11px;
-  padding: 0 12px 0 11px;
+  gap: 9px;
+  padding: 0 10px 0 9px;
   text-align: left;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: background 160ms ease, border-color 160ms ease, color 160ms ease;
@@ -211,8 +211,8 @@ button {
 }
 
 .menu-icon {
-  width: 24px;
-  font-size: 17px;
+  width: 20px;
+  font-size: 15px;
   line-height: 1;
   flex-shrink: 0;
   display: flex;
@@ -240,8 +240,8 @@ button {
   color: #fff;
   background: linear-gradient(135deg, #C4526A 0%, #a8394f 100%);
   border-left-color: transparent;
-  border-radius: 12px;
-  box-shadow: 0 6px 18px rgba(196, 82, 106, 0.28);
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(196, 82, 106, 0.25);
   font-weight: 700;
 }
 
@@ -947,6 +947,18 @@ button {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
 }
+.mov-row-2 select,
+.mov-row-2 input { width: 100%; box-sizing: border-box; }
+
+.mov-field-label {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+}
 
 .mov-submit-in  { background: #1D9E75 !important; }
 .mov-submit-ex  { background: #C4526A !important; }
@@ -1012,6 +1024,23 @@ button {
   background: #fff;
   padding: 0 12px;
   color: var(--ink);
+}
+
+.check-sm {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.sales-goal-input {
+  width: 120px;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 10px;
+  font: inherit;
 }
 
 .reinvestment-card {
@@ -1615,8 +1644,17 @@ button {
 }
 
 .auth-error {
-  color: #c9385b;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  color: #B91C1C;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  padding: 10px 12px;
   font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
   margin: 0;
 }
 
@@ -4612,10 +4650,40 @@ button {
 
 /* Ojito contraseña */
 .auth-form label { position: relative; }
-.auth-form input[type="text"],
-.auth-form input[type="password"] {
-  padding-right: 44px;
+.auth-pw-field { position: relative; display: flex; align-items: center; }
+.auth-pw-field input { width: 100%; padding-right: 44px; }
+.auth-pw-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 8px;
+  color: var(--muted);
 }
+.auth-pw-toggle:hover { color: var(--purple); }
+
+.auth-pw-requirements {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: -4px 0 4px;
+  padding: 10px 12px;
+  background: #FAF7F5;
+  border-radius: 10px;
+  font-size: 12px;
+}
+.auth-pw-req {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+.auth-pw-req--ok { color: #1D9E75; font-weight: 600; }
 
 /* ── Splash / loading screen ─────────────────────────────── */
 .splash-inner {
@@ -5180,6 +5248,10 @@ button {
   line-height: 1;
   opacity: 0.6;
   transition: opacity 0.15s;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .biz-source-edit-btn:hover { opacity: 1; }

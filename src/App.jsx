@@ -202,7 +202,7 @@ const ALL_MENU_ITEMS = [
   { id: "home",      label: "Mi Hogar",         icon: "🌸" },
   { id: "ceo",       label: "Cómo Estoy",         icon: "🫶" },
   { id: "business",  label: "Mi Negocio",       icon: "💼" },
-  { id: "clients",   label: "Mis Clientas",     icon: "👩‍💼" },
+  { id: "clients",   label: "Mis Clientes",     icon: "👩‍💼" },
   { id: "studio",    label: "Studio ✦",          icon: "🎬" },
   { id: "content",   label: "Mi Contenido",     icon: "📱" },
 ];
@@ -436,7 +436,7 @@ function createBlankUserState(currency = "USD") {
     businessSettings: { ...initialBusinessSettings },
     banks: [...initialBanks],
     annualBudget: normalizeAnnualBudget(initialAnnualBudget),
-    homeBudget: normalizeHomeBudget(cloneList(initialHomeBudget)),
+    homeBudget: [],
     purpose: createInitialPurpose(),
     profileSetup: null,
     groceryList: [],
@@ -561,7 +561,7 @@ export default function App() {
   const [banks, setBanks] = useState(stored?.banks || initialBanks);
   const [newBank, setNewBank] = useState("");
   const [annualBudget, setAnnualBudget] = useState(normalizeAnnualBudget(stored?.annualBudget || initialAnnualBudget));
-  const [homeBudget, setHomeBudget] = useState(normalizeHomeBudget(stored?.homeBudget || initialHomeBudget));
+  const [homeBudget, setHomeBudget] = useState(isNewUser ? [] : normalizeHomeBudget(stored?.homeBudget || initialHomeBudget));
   const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue() });
   const [purpose, setPurpose] = useState(createInitialPurpose(stored?.purpose || {}));
   const [profileSetup, setProfileSetup] = useState(stored?.profileSetup || null);
@@ -621,7 +621,6 @@ export default function App() {
   const [homeFocusOverride, setHomeFocusOverride] = useState(stored?.homeFocusOverride || null);
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
   const [appointments, setAppointments] = useState(stored?.appointments || []);
-  const [apptForm, setApptForm] = useState({ title: "", date: "", time: "", type: "Médico", recurrence: "none" });
   const [weekMenu, setWeekMenu] = useState(stored?.weekMenu || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
   const [homeRoutines, setHomeRoutines] = useState(stored?.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
   const [kidsSchedule, setKidsSchedule] = useState(() => {
@@ -643,7 +642,6 @@ export default function App() {
   const [userMode, setUserMode] = useState(stored?.userMode || null);
   const [presenceForm, setPresenceForm] = useState({ quien: [], queHicieron: "", tiempo: "30 min" });
   const [presenceCelebration, setPresenceCelebration] = useState(false);
-  const [apptError, setApptError] = useState("");
   const [homeTaskError, setHomeTaskError] = useState("");
   const [homeBudgetError, setHomeBudgetError] = useState("");
   const [homeTab, setHomeTab] = useState(0);
@@ -1027,7 +1025,7 @@ export default function App() {
   const familyDaysCount = Object.values(purpose.familyDays || {}).filter(Boolean).length;
   const todayAffirmation = affirmations[new Date().getDate() % affirmations.length];
   const excellenceActions = [
-    topClient ? `Contactar a ${topClient.name}: ${topClient.nextAction || "hacer seguimiento"}.` : "Registrar tu clienta de mayor potencial.",
+    topClient ? `Contactar a ${topClient.name}: ${topClient.nextAction || "hacer seguimiento"}.` : "Registrar tu cliente de mayor potencial.",
     nextContent ? `Mover contenido clave: ${nextContent.title}.` : "Crear una pieza de contenido enfocada en venta.",
     totals.profit >= 0 ? `Separar ${money.format(reinvestmentAmount)} para reinversión antes de gastar.` : "Reducir un gasto no esencial esta semana.",
     pendingHomeTasks[0] ? `Resolver o delegar: ${pendingHomeTasks[0].title}.` : "Proteger un bloque de descanso real."
@@ -1052,7 +1050,9 @@ export default function App() {
     const translations = {
       "Password did not conform with policy: Password not long enough": "La contraseña debe tener al menos 8 caracteres.",
       "Password did not conform with policy: Password must have uppercase characters": "La contraseña debe tener al menos una letra mayúscula.",
+      "Password did not conform with policy: Password must have lowercase characters": "La contraseña debe tener al menos una letra minúscula.",
       "Password did not conform with policy: Password must have numeric characters": "La contraseña debe incluir al menos un número.",
+      "Password did not conform with policy: Password must have symbol characters": "La contraseña debe incluir al menos un símbolo (ej: !@#$%).",
       "User already registered": "El usuario ya está registrado",
       "Password should be at least 6 characters": "La contraseña debe tener al menos 8 caracteres",
       "Unable to validate email address: invalid format": "Formato de correo electrónico inválido",
@@ -1069,6 +1069,14 @@ export default function App() {
     return translations[message] || message;
   };
 
+  const getPasswordChecks = (pw) => [
+    { key: "len",   label: "Mínimo 8 caracteres",        ok: pw.length >= 8 },
+    { key: "upper", label: "Una letra mayúscula",         ok: /[A-Z]/.test(pw) },
+    { key: "lower", label: "Una letra minúscula",         ok: /[a-z]/.test(pw) },
+    { key: "num",   label: "Un número",                   ok: /[0-9]/.test(pw) },
+    { key: "sym",   label: "Un símbolo (ej: !@#$%)",      ok: /[^A-Za-z0-9]/.test(pw) },
+  ];
+
   const handleAuthSubmit = async (event) => {
     event.preventDefault();
     setAuthError("");
@@ -1081,12 +1089,13 @@ export default function App() {
     }
     
     if (authMode === "signup") {
-      if (authPassword !== authPasswordConfirm) {
-        setAuthError("Las contraseñas no coinciden.");
+      const failedChecks = getPasswordChecks(authPassword).filter((c) => !c.ok);
+      if (failedChecks.length > 0) {
+        setAuthError(`Tu contraseña necesita: ${failedChecks.map((c) => c.label.toLowerCase()).join(", ")}.`);
         return;
       }
-      if (authPassword.length < 8) {
-        setAuthError("La contraseña debe tener al menos 8 caracteres.");
+      if (authPassword !== authPasswordConfirm) {
+        setAuthError("Las contraseñas no coinciden.");
         return;
       }
     }
@@ -1373,6 +1382,8 @@ export default function App() {
     if (isRestoringRemote) return; // wait for cloud data before deciding
     const hasDismissed = window.localStorage.getItem('profile-modal-done');
     if (!profileSetup && !hasDismissed) {
+      const knownName = user?.user_metadata?.full_name || user?.user_metadata?.name || authName;
+      if (knownName) setProfileForm((c) => ({ ...c, name: c.name || knownName }));
       setShowProfileModal(true);
       window.localStorage.setItem('profile-modal-done', 'true');
     }
@@ -1514,7 +1525,7 @@ export default function App() {
     event.preventDefault();
     const amount = Number(clientForm.amount);
     const errs = {};
-    if (!clientForm.name.trim())    errs.name    = "Escribe el nombre de la clienta";
+    if (!clientForm.name.trim())    errs.name    = "Escribe el nombre del cliente";
     if (!clientForm.service.trim()) errs.service = "Escribe el servicio o producto";
     if (!amount || amount <= 0)     errs.amount  = "Ingresa un monto mayor a 0";
     if (Object.keys(errs).length) { setClientFormErrors(errs); return; }
@@ -1870,7 +1881,7 @@ export default function App() {
                 Código de verificación
                 <input type="text" placeholder="000000" value={confirmCode} onChange={(e) => setConfirmCode(e.target.value.replace(/[^0-9]/g, ''))} required maxLength={6} style={{letterSpacing:"4px",fontSize:"20px",textAlign:"center"}} autoFocus />
               </label>
-              {authError && <p className="auth-error">{authError}</p>}
+              {authError && <p className="auth-error"><span>⚠️</span><span>{authError}</span></p>}
               <button type="submit" className="auth-button" disabled={authLoading}>Verificar</button>
               <button type="button" className="auth-switch" onClick={() => { setConfirmMode(false); setConfirmCode(""); setAuthError(""); }}>← Volver</button>
             </form>
@@ -1884,9 +1895,21 @@ export default function App() {
               </label>
               <label>
                 Nueva contraseña
-                <input type="password" value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required minLength={8} />
+                <div className="auth-pw-field">
+                  <input type={showAuthPassword?"text":"password"} value={resetNewPassword} onChange={(e) => setResetNewPassword(e.target.value)} required minLength={8} />
+                  <button type="button" className="auth-pw-toggle" tabIndex={-1} onClick={() => setShowAuthPassword(v => !v)} title={showAuthPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
+                    {showAuthPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
               </label>
-              {authError && <p className="auth-error">{authError}</p>}
+              {resetNewPassword && (
+                <div className="auth-pw-requirements">
+                  {getPasswordChecks(resetNewPassword).map((c) => (
+                    <span key={c.key} className={`auth-pw-req${c.ok ? " auth-pw-req--ok" : ""}`}>{c.ok ? "✓" : "○"} {c.label}</span>
+                  ))}
+                </div>
+              )}
+              {authError && <p className="auth-error"><span>⚠️</span><span>{authError}</span></p>}
               <button type="submit" className="auth-button" disabled={authLoading}>Actualizar</button>
               <button type="button" className="auth-switch" onClick={() => { setResetPassword(false); setAuthError(""); }}>← Volver</button>
             </form>
@@ -1904,15 +1927,32 @@ export default function App() {
               </label>
               <label>
                 Contraseña
-                <input type={showAuthPassword?"text":"password"} value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={8} />
+                <div className="auth-pw-field">
+                  <input type={showAuthPassword?"text":"password"} value={authPassword} onChange={(event) => setAuthPassword(event.target.value)} required minLength={8} />
+                  <button type="button" className="auth-pw-toggle" tabIndex={-1} onClick={() => setShowAuthPassword(v => !v)} title={showAuthPassword ? "Ocultar contraseña" : "Mostrar contraseña"}>
+                    {showAuthPassword ? "🙈" : "👁️"}
+                  </button>
+                </div>
               </label>
+              {authMode === "signup" && authPassword && (
+                <div className="auth-pw-requirements">
+                  {getPasswordChecks(authPassword).map((c) => (
+                    <span key={c.key} className={`auth-pw-req${c.ok ? " auth-pw-req--ok" : ""}`}>{c.ok ? "✓" : "○"} {c.label}</span>
+                  ))}
+                </div>
+              )}
               {authMode === "signup" && (
                 <label>
                   Confirmar contraseña
-                  <input type="password" value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={8} />
+                  <div className="auth-pw-field">
+                    <input type={showAuthPasswordConfirm?"text":"password"} value={authPasswordConfirm} onChange={(event) => setAuthPasswordConfirm(event.target.value)} required minLength={8} />
+                    <button type="button" className="auth-pw-toggle" tabIndex={-1} onClick={() => setShowAuthPasswordConfirm(v => !v)} title={showAuthPasswordConfirm ? "Ocultar contraseña" : "Mostrar contraseña"}>
+                      {showAuthPasswordConfirm ? "🙈" : "👁️"}
+                    </button>
+                  </div>
                 </label>
               )}
-              {authError && <p className="auth-error">{authError}</p>}
+              {authError && <p className="auth-error"><span>⚠️</span><span>{authError}</span></p>}
               <button type="submit" className="auth-button" disabled={authLoading}>
                 {authLoading ? "Procesando..." : (authMode === "login" ? "Entrar" : "Registrarme")}
               </button>
@@ -1957,7 +1997,7 @@ export default function App() {
           <div style={{display:"grid",gap:"14px"}}>
             {[
               { mode: "mama",        icon: "🌸", title: "Solo quiero organizarme",        desc: "Hogar, familia, bienestar y tiempo para mí. Sin funciones de negocio." },
-              { mode: "emprendedora",icon: "💼", title: "Tengo un negocio o quiero emprender", desc: "Clientas, finanzas, Studio de contenido y todo para hacer crecer mi negocio." },
+              { mode: "emprendedora",icon: "💼", title: "Tengo un negocio o quiero emprender", desc: "Clientes, finanzas, Studio de contenido y todo para hacer crecer mi negocio." },
               { mode: "ambas",       icon: "✨", title: "Las dos cosas",                   desc: "Quiero un hogar organizado Y construir mi negocio al mismo tiempo." },
             ].map(({ mode, icon, title, desc }) => (
               <button key={mode} onClick={() => selectUserMode(mode)}
@@ -2122,7 +2162,7 @@ export default function App() {
                   </label>
                   <label>
                     Meta de ingresos mensual
-                    <input type="number" min="0" placeholder="Ej: 3000" value={profileForm.monthlyGoalSetup} onChange={(e) => setProfileForm((c) => ({ ...c, monthlyGoalSetup: e.target.value }))} required={userMode !== "mama"} />
+                    <MoneyAmountInput placeholder="Ej: 3000" value={profileForm.monthlyGoalSetup} onChange={(v) => setProfileForm((c) => ({ ...c, monthlyGoalSetup: v }))} required={userMode !== "mama"} />
                   </label>
                   <label>
                     Tu mayor reto ahora mismo
@@ -2674,7 +2714,7 @@ export default function App() {
         const perks = {
           "Emprendedora": [
             "💰 Ingresos y gastos de tu negocio, al día",
-            "👥 Pipeline de clientas: sabe quién está lista para comprar",
+            "👥 Pipeline de clientes: sabe quién está lista para comprar",
             "🤖 Hasta 60 publicaciones al mes creadas con IA",
             "📅 Agenda de citas de tu negocio integrada",
           ],
@@ -2798,7 +2838,7 @@ export default function App() {
             )}
             {focusTasks.map((task) => (
               <label key={task.id} className="db-task-row">
-                <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--purple)"}} />
+                <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--purple)"}} />
                 <span>{task.text}</span>
               </label>
             ))}
@@ -2866,11 +2906,11 @@ export default function App() {
                     <span>&#x1F3AF; Tu 80/20 del negocio</span>
                   </div>
                   {wonClients.length < 2 ? (
-                    <p className="db-pareto-empty">Registra al menos 2 ventas ganadas para ver qu&eacute; clientas o servicios concentran tus ingresos.</p>
+                    <p className="db-pareto-empty">Registra al menos 2 ventas ganadas para ver qu&eacute; clientes o servicios concentran tus ingresos.</p>
                   ) : (
                     <>
                       <p className="db-pareto-stat">
-                        El <strong>{paretoPct}%</strong> de tus clientas ({paretoTopClients.length} de {wonClients.length}) generan el <strong>{paretoShareOfIncome}%</strong> de tus ingresos cerrados.
+                        El <strong>{paretoPct}%</strong> de tus clientes ({paretoTopClients.length} de {wonClients.length}) generan el <strong>{paretoShareOfIncome}%</strong> de tus ingresos cerrados.
                       </p>
                       <div className="db-pareto-list">
                         {paretoTopClients.slice(0, 5).map((c) => (
@@ -2880,7 +2920,7 @@ export default function App() {
                           </div>
                         ))}
                       </div>
-                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Ver mis clientas &rarr;</button>
+                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Ver mis clientes &rarr;</button>
                     </>
                   )}
                 </div>
@@ -2901,7 +2941,7 @@ export default function App() {
                     <div className="db-pareto-list">
                       {focusHomeTasks.map((task) => (
                         <div key={task.id} className="db-focus3-row">
-                          <input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)"}} />
+                          <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)"}} />
                           <span className="db-focus3-title">{task.title}</span>
                           {task.priority === "Urgente" && <span className="db-focus3-tag">Urgente</span>}
                           <button type="button" className="db-focus3-swap" title="Cambiar por otra tarea" onClick={() => swapHomeFocusTask(task.id)}>&#x1F504;</button>
@@ -3002,7 +3042,7 @@ export default function App() {
     if (bestDay) autoInsights.push(`Mejor día esta semana: ${bestDay[0]} con ${money.format(bestDay[1])}.`);
     const srcCounts = clients.reduce((acc,c) => { const s = c.source||"Sin fuente"; acc[s]=(acc[s]||0)+1; return acc; }, {});
     const topSrc = Object.entries(srcCounts).sort((a,b)=>b[1]-a[1])[0];
-    if (topSrc) autoInsights.push(`Tu fuente top de clientas: ${topSrc[0]} (${topSrc[1]} ${topSrc[1]===1?"clienta":"clientas"}).`);
+    if (topSrc) autoInsights.push(`Tu fuente top de clientes: ${topSrc[0]} (${topSrc[1]} ${topSrc[1]===1?"cliente":"clientes"}).`);
 
     // Fuentes de ingreso simplificadas
     const incomeBySource = incomeSources.map(src => {
@@ -3098,7 +3138,9 @@ export default function App() {
                         <span className="biz-source-amount">{money.format(src.actual)}</span>
                         <button type="button" className="biz-source-edit-btn"
                           onClick={() => setEditingSourceId(isEditing ? null : src.id)}
-                          title="Editar meta">✏️</button>
+                          title="Editar meta">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                        </button>
                         <button type="button" className="biz-source-del-btn"
                           onClick={() => confirmDelete("¿Eliminar esta fuente?", () => setIncomeSources(c => c.filter(s => s.id !== src.id)))}>×</button>
                       </div>
@@ -3112,15 +3154,15 @@ export default function App() {
                     {isEditing ? (
                       <div className="biz-source-edit-row">
                         <span className="biz-source-edit-label">Meta mensual:</span>
-                        <input type="number" min="0" className="biz-source-edit-input"
-                          defaultValue={src.monthlyGoal}
-                          onBlur={e => { setIncomeSources(c => c.map(s => s.id === src.id ? {...s, monthlyGoal: Number(e.target.value)} : s)); setEditingSourceId(null); }}
+                        <input type="text" inputMode="decimal" className="biz-source-edit-input"
+                          defaultValue={src.monthlyGoal ? Number(src.monthlyGoal).toLocaleString("en-US") : ""}
+                          onBlur={e => { const num = Number(e.target.value.replace(/[^0-9.]/g, "")) || 0; setIncomeSources(c => c.map(s => s.id === src.id ? {...s, monthlyGoal: num} : s)); setEditingSourceId(null); }}
                           onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingSourceId(null); }}
                           autoFocus />
                         <span className="biz-source-edit-hint">↵ para guardar</span>
                       </div>
                     ) : (
-                      <p className="biz-source-goal-text">Meta: {src.monthlyGoal > 0 ? money.format(src.monthlyGoal) : <span style={{color:"var(--muted)"}}>sin meta — toca ✏️ para agregar</span>}</p>
+                      <p className="biz-source-goal-text">Meta: {src.monthlyGoal > 0 ? money.format(src.monthlyGoal) : <span style={{color:"var(--muted)"}}>sin meta — toca editar para agregar</span>}</p>
                     )}
                   </div>
                 );
@@ -3137,8 +3179,8 @@ export default function App() {
                 }}>
                   <input className="biz-add-source-input" placeholder="Nombre de la fuente (ej: Servicios 1:1)"
                     value={incomeSourceForm.name} onChange={e => setIncomeSourceForm(c => ({...c, name: e.target.value}))} autoFocus />
-                  <input type="number" min="0" className="biz-add-source-input" placeholder="Meta mensual (opcional)"
-                    value={incomeSourceForm.monthlyGoal} onChange={e => setIncomeSourceForm(c => ({...c, monthlyGoal: e.target.value}))} />
+                  <MoneyAmountInput className="biz-add-source-input" placeholder="Meta mensual (opcional)"
+                    value={incomeSourceForm.monthlyGoal} onChange={v => setIncomeSourceForm(c => ({...c, monthlyGoal: v}))} />
                   <div className="biz-add-source-btns">
                     <button className="primary-button" type="submit">Guardar fuente</button>
                     <button type="button" className="ck-cancel-btn" onClick={() => { setShowAddSource(false); setIncomeSourceForm({ name: "", monthlyGoal: "" }); }}>Cancelar</button>
@@ -3219,7 +3261,7 @@ export default function App() {
                 const dueLabel = days === null ? null : days < 0 ? `Vencida hace ${Math.abs(days)}d` : days === 0 ? "Hoy" : days === 1 ? "Mañana" : `En ${days}d`;
                 return (
                   <div key={task.id} className="home-task-row">
-                    <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--purple)",flexShrink:0}} />
+                    <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--purple)",flexShrink:0}} />
                     <div style={{flex:1,minWidth:0}}>
                       <strong style={{fontSize:"14px",textDecoration:task.done?"line-through":"none",color:task.done?"var(--muted)":"var(--ink)"}}>{task.text}</strong>
                       <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"2px"}}>
@@ -3346,7 +3388,7 @@ export default function App() {
           <div className="cl-kpi cl-kpi-divider">
             <span>Ventas cerradas</span>
             <strong style={{color:"#1D9E75"}}>{money.format(wonSalesTotal)}</strong>
-            <small>{paidClients.length} clientas</small>
+            <small>{paidClients.length} clientes</small>
           </div>
         </div>
 
@@ -3384,7 +3426,7 @@ export default function App() {
             )}
             {urgentSubscriptions.length > 0 && (
               <div className="alert-banner alert-red">
-                <strong>{urgentSubscriptions.length} clienta{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong>{" "}
+                <strong>{urgentSubscriptions.length} cliente{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong>{" "}
                 {urgentSubscriptions.slice(0,3).map(c=>c.name).join(", ")}{urgentSubscriptions.length > 3 ? ` y ${urgentSubscriptions.length-3} más` : ""}
               </div>
             )}
@@ -3396,10 +3438,10 @@ export default function App() {
 
           {/* Formulario simplificado */}
           <form className="card clients-form-card" onSubmit={addClient}>
-            <h3>Nueva clienta</h3>
+            <h3>Nuevo cliente</h3>
             {clients.length >= currentLimits.clients && (
               <div className="plan-limit-banner">
-                ⚠️ Llegaste al límite de <strong>{currentLimits.clients} clientas</strong> de tu plan.{" "}
+                ⚠️ Llegaste al límite de <strong>{currentLimits.clients} clientes</strong> de tu plan.{" "}
                 <button type="button" className="plan-limit-link" onClick={() => setActiveView("pricing")}>Ver planes →</button>
               </div>
             )}
@@ -3415,9 +3457,12 @@ export default function App() {
             {clientFormErrors.service && <span className="field-error">{clientFormErrors.service}</span>}
 
             {/* Monto */}
-            <input placeholder="Monto *" type="number" min="0" value={clientForm.amount} onChange={(e) => updateClientForm("amount", e.target.value)}
+            <MoneyAmountInput placeholder="Monto *" value={clientForm.amount} onChange={(v) => updateClientForm("amount", v)}
               className={clientFormErrors.amount ? "input-error" : ""} />
             {clientFormErrors.amount && <span className="field-error">{clientFormErrors.amount}</span>}
+
+            {/* Teléfono — visible por defecto para que el botón de WhatsApp funcione */}
+            <input placeholder="Teléfono WhatsApp (ej: 573001234567)" value={clientForm.phone} onChange={(e) => updateClientForm("phone", e.target.value)} />
 
             {/* Estado — chips visuales */}
             <div>
@@ -3435,12 +3480,11 @@ export default function App() {
 
             {/* Más detalles — colapsable */}
             <button type="button" className="cl-details-toggle" onClick={() => setShowClientDetails(v => !v)}>
-              {showClientDetails ? "▲ Menos detalles" : "▼ Agregar detalles (teléfono, fuente, acción)"}
+              {showClientDetails ? "▲ Menos detalles" : "▼ Agregar detalles (fuente, próxima acción)"}
             </button>
 
             {showClientDetails && (
               <>
-                <input placeholder="Teléfono (ej: 573001234567)" value={clientForm.phone} onChange={(e) => updateClientForm("phone", e.target.value)} />
                 <input placeholder="Próxima acción (opcional)" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} />
                 <select value={clientForm.source} onChange={(e) => updateClientForm("source", e.target.value)}>
                   <option value="">¿De dónde llegó?</option>
@@ -3456,7 +3500,7 @@ export default function App() {
               </>
             )}
 
-            <button className="primary-button" type="submit">Guardar clienta</button>
+            <button className="primary-button" type="submit">Guardar cliente</button>
           </form>
 
           {/* Pipeline — solo 3 columnas (sin "Venta ganada") */}
@@ -3497,13 +3541,13 @@ export default function App() {
                             <button type="button" key={s} onClick={() => moveClientStatus(client.id, s)}>{stageEmoji[s]} {s.replace("Lead ","")}</button>
                           ))}
                           <button type="button" className="cl-close-btn" onClick={() => moveClientStatus(client.id, "Venta ganada")}>✓ Cerré</button>
-                          <button type="button" className="delete-btn" onClick={() => confirmDelete("¿Eliminar esta clienta?", () => setClients(c => c.filter(cl => cl.id !== client.id)))}>×</button>
+                          <button type="button" className="delete-btn" onClick={() => confirmDelete("¿Eliminar este cliente?", () => setClients(c => c.filter(cl => cl.id !== client.id)))}>×</button>
                         </div>
                       </div>
                     );
                   })}
                   {filteredClients(stage).length === 0 && (
-                    <p className="cl-empty-col">Sin clientas aquí</p>
+                    <p className="cl-empty-col">Sin clientes aquí</p>
                   )}
                 </div>
               ))}
@@ -3511,10 +3555,10 @@ export default function App() {
           </div>
         </div>
 
-        {/* Clientas que ya pagaron */}
+        {/* Clientes que ya pagaron */}
         <div className="paid-clients-section card">
           <div className="section-title compact-title">
-            <h2>Clientas que ya pagaron</h2>
+            <h2>Clientes que ya pagaron</h2>
             <p>Cuida la relación, fomenta la recompra y los referidos.</p>
           </div>
           {paidClients.length === 0 && <p className="helper-copy">Tus ventas cerradas aparecerán aquí.</p>}
@@ -3789,15 +3833,6 @@ export default function App() {
       const details = appt.recurrence && appt.recurrence !== "none" ? encodeURIComponent(`Recordatorio: ${RECURRENCE_LABELS[appt.recurrence]}`) : "";
       window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${dates}${details?"&details="+details:""}`, "_blank");
     };
-    const submitAppt = e => {
-      e.preventDefault();
-      if (!apptForm.title.trim() && !apptForm.date) { setApptError("Escribe un título y elige la fecha para agregar la cita."); return; }
-      if (!apptForm.title.trim()) { setApptError("Escribe el título de la cita — ¿qué es?"); return; }
-      if (!apptForm.date) { setApptError("Elige la fecha de la cita."); return; }
-      setApptError("");
-      setAppointments(c => [...c, { id:Date.now(), ...apptForm, title:apptForm.title.trim() }]);
-      setApptForm(f => ({ ...f, title:"", date:"", time:"" }));
-    };
     const addQuickNote    = e => { e.preventDefault(); if (!quickNoteInput.trim()) return; setQuickNotes(c => [...c, { id:Date.now(), text:quickNoteInput.trim() }]); setQuickNoteInput(""); };
     const STARTER_TASKS   = [
       { title:"Organizar cajones de la cocina", category:"Hogar / Limpieza" },
@@ -3997,36 +4032,10 @@ export default function App() {
                   </span>
                 )}
               </div>
-              <form onSubmit={submitAppt} className="appt-form" style={{marginBottom:appointments.length?"14px":0}}>
-                {/* Tipo — chips visuales */}
-                <div className="appt-type-chips">
-                  {Object.entries(TYPE_ICONS).map(([t, icon]) => (
-                    <button type="button" key={t}
-                      className={`appt-chip${apptForm.type === t ? " active" : ""}`}
-                      onClick={() => setApptForm(f => ({...f, type: t}))}>
-                      {icon} {t}
-                    </button>
-                  ))}
-                </div>
-                {/* Título */}
-                <input placeholder="¿Qué tienes? Ej: Pediatra, Reunión colegio..."
-                  value={apptForm.title} onChange={e => setApptForm(f => ({...f,title:e.target.value}))}
-                  className="appt-title-input" />
-                {/* Fecha + Hora */}
-                <div className="appt-date-row">
-                  <input type="date" value={apptForm.date} onChange={e => setApptForm(f => ({...f,date:e.target.value}))}
-                    className="appt-field" />
-                  <input type="time" value={apptForm.time} onChange={e => setApptForm(f => ({...f,time:e.target.value}))}
-                    className="appt-field appt-time" />
-                </div>
-                {/* Repetición */}
-                <select value={apptForm.recurrence} onChange={e => setApptForm(f => ({...f,recurrence:e.target.value}))}
-                  className="appt-field">
-                  {Object.entries(RECURRENCE_LABELS).map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-                </select>
-                <button type="submit" className="appt-submit">+ Agregar cita</button>
-                {apptError && <p style={{margin:"4px 0 0",fontSize:"13px",color:"#C4526A",fontWeight:600}}>{apptError}</p>}
-              </form>
+              <button type="button" className="appt-submit" style={{marginBottom:appointments.length?"14px":0}}
+                onClick={() => { setCalendarNewAppt({ title: "", type: "Médico", time: "", recurrence: "none" }); setCalendarAddDate(null); setShowCalendar(true); }}>
+                📅 Agregar cita en el calendario
+              </button>
               {upcomingAppts.length > 0 ? (
                 <div style={{display:"grid",gap:"8px"}}>
                   {upcomingAppts.map(appt => <ApptRow key={appt.id} appt={appt} />)}
@@ -4055,7 +4064,7 @@ export default function App() {
               </div>
 
               <div className="card" style={{padding:"20px"}}>
-                <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Actividades de los hijos 🎒</h3>
+                <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Actividades de tus hijos 🎒</h3>
                 <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>¿Quién va dónde? Escribe todas las actividades del día en una línea.</p>
                 <div style={{display:"grid",gap:"7px"}}>
                   {DAY_LABELS.map(([key, name]) => (
@@ -4206,10 +4215,10 @@ export default function App() {
                   <div style={{display:"grid",gap:"6px",marginTop:"8px"}}>
                     {groceryList.map(item => (
                       <label key={item.id} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 10px",border:"1px solid var(--line)",borderRadius:"8px",background:item.done?"rgba(47,159,112,0.06)":"#fff"}}>
-                        <input type="checkbox" checked={item.done} onChange={() => setGroceryList(c => c.map(g => g.id===item.id?{...g,done:!g.done}:g))} style={{accentColor:"var(--green)"}} />
+                        <input type="checkbox" className="check-sm" checked={item.done} onChange={() => setGroceryList(c => c.map(g => g.id===item.id?{...g,done:!g.done}:g))} style={{accentColor:"var(--green)"}} />
                         <span style={{flex:1,fontSize:"14px",textDecoration:item.done?"line-through":"none",color:item.done?"var(--muted)":"var(--ink)"}}>{item.text}</span>
                         <button type="button" onClick={() => setGroceryList(c => c.filter(g => g.id!==item.id))}
-                          style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",lineHeight:1}}>x</button>
+                          style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",lineHeight:1}}>×</button>
                       </label>
                     ))}
                     {groceryList.length===0 && <p className="helper-copy">Tu lista está vacía.</p>}
@@ -4234,7 +4243,7 @@ export default function App() {
                         <p style={{fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.5px",color:priority==="Urgente"?"var(--purple)":"var(--muted)",margin:"0 0 6px"}}>{priority}</p>
                         {tasks.map(task => (
                           <div key={task.id} className="home-task-row">
-                            <input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)",flexShrink:0}} />
+                            <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)",flexShrink:0}} />
                             <div style={{flex:1,minWidth:0}}>
                               <strong style={{fontSize:"14px",textDecoration:task.done?"line-through":"none",color:task.done?"var(--muted)":"var(--ink)"}}>{task.title}</strong>
                               <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"2px"}}>
@@ -4243,7 +4252,7 @@ export default function App() {
                               </div>
                             </div>
                             <button type="button" onClick={() => confirmDelete("Eliminar?",() => setHomeTasks(c => c.filter(t => t.id!==task.id)))}
-                              style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",flexShrink:0}}>x</button>
+                              style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",flexShrink:0}}>×</button>
                           </div>
                         ))}
                       </div>
@@ -4291,8 +4300,8 @@ export default function App() {
               <select value={homeBudgetForm.type} onChange={e => setHomeBudgetForm(c => ({...c,type:e.target.value}))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
               <input placeholder="Descripción" value={homeBudgetForm.description}
                 onChange={e => { setHomeBudgetForm(c => ({...c,description:e.target.value})); if (homeBudgetError) setHomeBudgetError(""); }} />
-              <input type="number" min="0" placeholder="Monto" value={homeBudgetForm.amount}
-                onChange={e => { setHomeBudgetForm(c => ({...c,amount:e.target.value})); if (homeBudgetError) setHomeBudgetError(""); }} />
+              <MoneyAmountInput placeholder="Monto" value={homeBudgetForm.amount}
+                onChange={v => { setHomeBudgetForm(c => ({...c,amount:v})); if (homeBudgetError) setHomeBudgetError(""); }} />
               <input type="date" value={homeBudgetForm.dueDate} onChange={e => setHomeBudgetForm(c => ({...c,dueDate:e.target.value}))} />
               <button className="primary-button" type="submit">Agregar</button>
             </form>
@@ -4758,6 +4767,11 @@ export default function App() {
       <section className="panel workspace-panel">
         {header}
         <div style={wrap}>
+          <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"-4px" }}>
+            <button type="button" onClick={() => goBack(0)} style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"13px", fontWeight:600, padding:"4px 0" }}>
+              Saltar por hoy ✕
+            </button>
+          </div>
           <StepBar current={checkInStep} />
           <div style={slideStyle}>
 
@@ -4860,8 +4874,8 @@ export default function App() {
         {/* Monto — campo héroe */}
         <div className={`mov-amount-wrap${formErrors.amount ? " input-error" : ""}${isIncome ? " mov-amount-in" : " mov-amount-ex"}`}>
           <span className="mov-curr">{currency === "EUR" ? "€" : "$"}</span>
-          <input className="mov-amount-input" placeholder="0.00" type="number" min="0" step="any"
-            value={form.amount} onChange={(e) => updateForm("amount", e.target.value)} />
+          <MoneyAmountInput className="mov-amount-input" placeholder="0.00"
+            value={form.amount} onChange={(v) => updateForm("amount", v)} />
         </div>
         {formErrors.amount && <span className="field-error">{formErrors.amount}</span>}
 
@@ -4873,16 +4887,22 @@ export default function App() {
 
         {/* Clasificación + banco */}
         <div className="mov-row-2">
-          <select value={form.classification} onChange={(e) => updateForm("classification", e.target.value)}>
-            {isIncome ? (
-              <><option>Servicios</option><option>Productos</option><option>Otros ingresos</option></>
-            ) : (
-              <><option>Gasto fijo</option><option>Gasto variable</option><option>Inversión de negocio</option></>
-            )}
-          </select>
-          <select value={form.bank} onChange={(e) => updateForm("bank", e.target.value)}>
-            {banks.map((b) => <option key={b}>{b}</option>)}
-          </select>
+          <div>
+            <label className="mov-field-label">{isIncome ? "Tipo de ingreso" : "Tipo de gasto"}</label>
+            <select value={form.classification} onChange={(e) => updateForm("classification", e.target.value)}>
+              {isIncome ? (
+                <><option>Servicios</option><option>Productos</option><option>Otros ingresos</option></>
+              ) : (
+                <><option>Gasto fijo</option><option>Gasto variable</option><option>Inversión de negocio</option></>
+              )}
+            </select>
+          </div>
+          <div>
+            <label className="mov-field-label">Cuenta</label>
+            <select value={form.bank} onChange={(e) => updateForm("bank", e.target.value)}>
+              {banks.map((b) => <option key={b}>{b}</option>)}
+            </select>
+          </div>
         </div>
 
         {/* Categoría + fecha */}
@@ -4938,7 +4958,7 @@ export default function App() {
           <input type="range" min="0" max="50" value={reinvestmentPercent} onChange={(event) => updateBusinessSetting("reinvestmentPercent", event.target.value)} />
         </label>
         <input className="percent-input" type="number" min="0" max="100" value={reinvestmentPercent} onChange={(event) => updateBusinessSetting("reinvestmentPercent", event.target.value)} />
-        <p className="helper-copy">Usa esta reserva primero en marketing medible: anuncios, contenido que vende, email list o herramientas que traen clientas. No la mezcles con gustos personales del día.</p>
+        <p className="helper-copy">Usa esta reserva primero en marketing medible: anuncios, contenido que vende, email list o herramientas que traen clientes. No la mezcles con gustos personales del día.</p>
       </div>
     );
   }
@@ -4947,12 +4967,12 @@ export default function App() {
     return (
       <div className="card summary-card">
         <h3>Resumen desde tus pestañas</h3>
-        <div className="summary-row"><span>Clientas</span><strong>{followUpClients.length}</strong><small>requieren seguimiento</small></div>
+        <div className="summary-row"><span>Clientes</span><strong>{followUpClients.length}</strong><small>requieren seguimiento</small></div>
         <div className="summary-row"><span>Contenido</span><strong>{contentItems.length - publishedContent}</strong><small>piezas por mover</small></div>
         <div className="summary-row"><span>Hogar</span><strong>{pendingHomeTasks.length}</strong><small>pendientes visibles</small></div>
         <div className="summary-row"><span>Mejor ingreso</span><strong>{topIncomeSource?.category || "Sin datos"}</strong><small>{topIncomeSource?.description || "Registra ventas"}</small></div>
         <div className="summary-row"><span>ánimo</span><strong>{purpose.mood}</strong><small>La semana pasada te sentiste así. Esta semana puede ser más liviana.</small></div>
-        <div className="summary-row"><span>Ventas cerradas</span><strong>{money.format(wonSalesTotal)}</strong><small>Registradas en clientas ganadas</small></div>
+        <div className="summary-row"><span>Ventas cerradas</span><strong>{money.format(wonSalesTotal)}</strong><small>Registradas en clientes ganadas</small></div>
         <div className="summary-row"><span>Presupuesto hogar</span><strong>{money.format(homeAvailable)}</strong><small>Disponible despuás de gastos y deudas</small></div>
       </div>
     );
@@ -5208,9 +5228,9 @@ export default function App() {
             </div>
             <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
               <span style={{fontSize:"13px",color:"var(--muted)"}}>Meta:</span>
-              <input type="number" min="0" value={salesGoal || ""} placeholder={money.format(monthlyGoal)}
-                onChange={(e) => setSalesGoal(Number(e.target.value))}
-                style={{width:"120px",minHeight:"36px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 10px",font:"inherit"}} />
+              <MoneyAmountInput value={salesGoal || ""} placeholder={money.format(monthlyGoal)}
+                onChange={(v) => setSalesGoal(Number(v) || 0)}
+                className="sales-goal-input" />
             </div>
           </div>
           <Progress value={salesGoalProgress} tone="green" />
@@ -5239,7 +5259,7 @@ export default function App() {
                 </>
               );
             })()}
-            <div className="purpose-stat"><span>Ventas cerradas</span><strong>{totalWon} clientas</strong></div>
+            <div className="purpose-stat"><span>Ventas cerradas</span><strong>{totalWon} clientes</strong></div>
             <div className="purpose-stat"><span>Tasa de conversión</span><strong>{conversionRate}%</strong></div>
             <div className="purpose-stat"><span>Leads calientes ahora</span><strong>{hotLeads}</strong></div>
             <div className="purpose-stat"><span>Contactos realizados</span><strong style={{color:"var(--green)"}}>{contactsThisWeek} esta semana</strong></div>
@@ -5296,7 +5316,7 @@ export default function App() {
 
           {/* Fuentes de origen */}
           <div className="card purpose-block purpose-block-wide">
-            <h3>📊 ¿De dónde vienen tus clientas?</h3>
+            <h3>📊 ¿De dónde vienen tus clientes?</h3>
             <p className="helper-copy">Invierte tu tiempo donde más resultado produce.</p>
             <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"10px",marginTop:"8px"}}>
               {Object.entries(sourceCounts).sort((a,b) => b[1]-a[1]).map(([src, count]) => (
@@ -5307,7 +5327,7 @@ export default function App() {
                   <small style={{color:"var(--muted)"}}>{Math.round((count/totalLeads)*100)}%</small>
                 </div>
               ))}
-              {Object.keys(sourceCounts).length === 0 && <p className="helper-copy">Agrega clientas con fuente de origen para ver este análisis.</p>}
+              {Object.keys(sourceCounts).length === 0 && <p className="helper-copy">Agrega clientes con fuente de origen para ver este análisis.</p>}
             </div>
           </div>
         </div>
@@ -5336,9 +5356,9 @@ export default function App() {
         features: [
           "Todo lo del plan Mamá incluido",
           "Ingresos y gastos del negocio — siempre al día",
-          "Pipeline de clientas: sabes quién está lista para comprar",
+          "Pipeline de clientes: sabes quién está lista para comprar",
           "Meta de ventas mensual con seguimiento en tiempo real",
-          "Descubre de dónde vienen tus clientas más rentables",
+          "Descubre de dónde vienen tus clientes más rentables",
           "Planificación de contenido para redes sin improvisar",
           "Hasta 60 publicaciones al mes creadas con IA en minutos",
           "Agenda de citas de tu negocio integrada con el hogar",
@@ -5700,6 +5720,26 @@ function MetricCard({ title, value, change, tone }) {
 
 function DataRow({ title, meta, value, onDelete }) {
   return <div className="data-row"><div><strong>{title}</strong><small>{meta}</small></div><b>{value}</b><button type="button" onClick={onDelete}>Eliminar</button></div>;
+}
+
+function MoneyAmountInput({ value, onChange, className, placeholder, min, autoFocus, required, onBlur }) {
+  const display = value === "" || value === undefined || value === null || Number.isNaN(Number(value))
+    ? (value ?? "")
+    : Number(value).toLocaleString("en-US", { maximumFractionDigits: 2 });
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      className={className}
+      placeholder={placeholder}
+      value={display}
+      min={min}
+      autoFocus={autoFocus}
+      required={required}
+      onChange={(e) => onChange(e.target.value.replace(/[^0-9.]/g, ""))}
+      onBlur={onBlur}
+    />
+  );
 }
 
 function Progress({ value, tone }) {
