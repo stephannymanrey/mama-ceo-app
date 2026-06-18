@@ -2408,7 +2408,7 @@ export default function App() {
           <div>
             <p className="view-label">{activeLabel}</p>
             <h1>{clockNow.getHours() < 12 ? "Buenos días" : clockNow.getHours() < 19 ? "Buenas tardes" : "Buenas noches"}, {(profileSetup?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mamá").split(" ")[0]}</h1>
-            <p>Enfocada · Organizada · Imparable</p>
+            <p>Enfocada · Organizada · en Calma</p>
           </div>
           <div className="profile-area">
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
