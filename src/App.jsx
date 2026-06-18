@@ -2472,6 +2472,9 @@ export default function App() {
         {activeView === "terminos" && renderTerminos()}
         {activeView === "privacidad" && renderPrivacidad()}
 
+        {/* Backdrop — oscurece el fondo cuando el hub de herramientas está abierto */}
+        <div className={`tools-fab-backdrop${toolsFabOpen ? " tools-fab-backdrop--open" : ""}`} onClick={() => setToolsFabOpen(false)} />
+
         {/* Pomodoro — FAB fijo + panel */}
         {(function() {
           const _total = pomodoroMode === "work" ? pomodoroWorkDuration * 60 : pomodoroBreakDuration * 60;
@@ -2540,17 +2543,20 @@ export default function App() {
                 </div>
               )}
               {/* FAB icono */}
-              <button
-                className={`pomo-fab tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}${pomodoroRunning ? " pomo-fab--active" : ""}${pomodoroOpen ? " pomo-fab--open" : ""}`}
-                style={{ bottom: "196px" }}
-                onClick={() => setPomodoroOpen(v => !v)}
-                title="Temporizador de foco"
-                tabIndex={toolsFabOpen ? 0 : -1}
-              >
-                <span className="pomo-fab-ico">&#x23F1;</span>
-                {pomodoroRunning && <span className="pomo-fab-time">{_mm}:{_ss}</span>}
-                {!pomodoroRunning && pomodoroBlocks > 0 && <span className="pomo-fab-stars">&#x2B50;{pomodoroBlocks}</span>}
-              </button>
+              <div className={`tools-fab-row tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}`} style={{ position: "fixed", bottom: "196px", right: "28px", zIndex: 1400 }}>
+                <span className="tools-fab-tag">Temporizador</span>
+                <button
+                  className={`pomo-fab${pomodoroRunning ? " pomo-fab--active" : ""}${pomodoroOpen ? " pomo-fab--open" : ""}`}
+                  style={{ position: "static" }}
+                  onClick={() => setPomodoroOpen(v => !v)}
+                  title="Temporizador de foco"
+                  tabIndex={toolsFabOpen ? 0 : -1}
+                >
+                  <span className="pomo-fab-ico">&#x23F1;</span>
+                  {pomodoroRunning && <span className="pomo-fab-time">{_mm}:{_ss}</span>}
+                  {!pomodoroRunning && pomodoroBlocks > 0 && <span className="pomo-fab-stars">&#x2B50;{pomodoroBlocks}</span>}
+                </button>
+              </div>
             </>
           );
         }())}
@@ -2560,14 +2566,17 @@ export default function App() {
           return (
             <div className={`cal-fab-wrapper tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}`} style={{ bottom: "140px", right: "28px" }}>
               <div className="cal-morning-tip">Agenda tus eventos de hoy aquí</div>
-              <button type="button"
-                onClick={() => { setShowCalendar(true); setCalMorningDismissed(true); }}
-                className={`cal-fab${showMorningPrompt ? " cal-fab--morning" : ""}`}
-                title="Ver calendario"
-                tabIndex={toolsFabOpen ? 0 : -1}>
-                📅
-                {showMorningPrompt && <span className="cal-fab-dot" />}
-              </button>
+              <div className="tools-fab-row">
+                <span className="tools-fab-tag">Calendario</span>
+                <button type="button"
+                  onClick={() => { setShowCalendar(true); setCalMorningDismissed(true); }}
+                  className={`cal-fab${showMorningPrompt ? " cal-fab--morning" : ""}`}
+                  title="Ver calendario"
+                  tabIndex={toolsFabOpen ? 0 : -1}>
+                  📅
+                  {showMorningPrompt && <span className="cal-fab-dot" />}
+                </button>
+              </div>
             </div>
           );
         })()}

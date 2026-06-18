@@ -6787,6 +6787,20 @@ button {
 }
 
 /* ── Tools hub — colapsa timer/calendario/plan en un solo boton ── */
+.tools-fab-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 16, 20, 0.22);
+  backdrop-filter: blur(2px);
+  z-index: 1250;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+}
+.tools-fab-backdrop--open {
+  opacity: 1;
+  pointer-events: auto;
+}
 .tools-fab-item {
   opacity: 0;
   transform: scale(0.4) translateY(14px);
@@ -6797,6 +6811,39 @@ button {
   opacity: 1;
   transform: scale(1) translateY(0);
   pointer-events: auto;
+}
+.tools-fab-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tools-fab-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink);
+  background: #fff;
+  padding: 7px 13px;
+  border-radius: 20px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  white-space: nowrap;
+}
+/* Refuerzo visual cuando el hub está abierto — que no se confundan con el fondo */
+.tools-fab-item--open .cal-fab {
+  opacity: 1 !important;
+  animation: none !important;
+  box-shadow: 0 6px 18px rgba(196, 82, 106, 0.45) !important;
+  border: 2px solid #fff;
+}
+.tools-fab-item--open .pomo-fab {
+  box-shadow: 0 6px 20px rgba(111, 73, 196, 0.35);
+  border-color: var(--purple);
+  background: #fff;
+}
+.upgrade-fab.tools-fab-item--open {
+  background: #fff;
+  box-shadow: 0 6px 20px rgba(196, 82, 106, 0.35);
+  border-color: rgba(196, 82, 106, 0.45);
 }
 .tools-hub-fab {
   position: fixed;
@@ -6822,5 +6869,5 @@ button {
 .tools-hub-fab--open { background: #fff; color: #C4526A; }
 @media (max-width: 480px) {
   .tools-hub-fab { right: 16px; }
-  .tools-fab-item.upgrade-fab, .tools-fab-item.cal-fab-wrapper, .tools-fab-item.pomo-fab { right: 16px; }
+  .tools-fab-item.upgrade-fab, .tools-fab-item.cal-fab-wrapper, .tools-fab-row { right: 16px; }
 }
