@@ -2939,9 +2939,6 @@ export default function App() {
                   <div key={a.id} className="db-today-appt-row">
                     {a.time && <span className="db-today-appt-time">{a.time}</span>}
                     <span className="db-today-appt-name">{a.title}</span>
-                    <span className={`db-today-appt-badge${TRABAJO_TYPES.has(a.type) ? " db-today-appt-badge--work" : ""}`}>
-                      {TRABAJO_TYPES.has(a.type) ? "Trabajo" : "Hogar"}
-                    </span>
                   </div>
                 )) : <p className="db-today-nil">Sin citas hoy</p>}
               </div>
