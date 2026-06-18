@@ -2004,7 +2004,7 @@ export default function App() {
             </form>
           )}
           <footer className="auth-footer">
-            Una mamá con propósito · 2026 UMP S.A.S
+            Hecho por Una mamá con propósito® · Todos los derechos reservados UMP S.A.S 2026
           </footer>
         </div>
       </div>
@@ -2700,8 +2700,7 @@ export default function App() {
         })()}
 
         <footer className="app-footer">
-          <span>© 2026 UMP S.A.S • Todos los derechos reservados</span>
-          <span>Hecho por Una mamá con propósito…</span>
+          <span>Hecho por Una mamá con propósito® · Todos los derechos reservados UMP S.A.S 2026</span>
           <span>
             <a href="#" onClick={(e) => { e.preventDefault(); setActiveView('terminos'); }} style={{color:"inherit",textDecoration:"underline",cursor:"pointer"}}>Términos</a>
             {" • "}
@@ -2864,9 +2863,14 @@ export default function App() {
 
           {/* Hero */}
           <div className="db-hero">
-            <div className="db-date-row">
-              <p className="db-date" style={{textTransform:"capitalize"}}>{todayStr}</p>
-              <p className="db-time">{timeStr}</p>
+            <div className="db-hero-left">
+              <p className="db-greeting">
+                {clockNow.getHours() < 12 ? "Buenos días" : clockNow.getHours() < 19 ? "Buenas tardes" : "Buenas noches"}, <strong>{(profileSetup?.name || "Mamá").split(" ")[0]}</strong>
+              </p>
+              <div className="db-date-row">
+                <p className="db-date">{todayStr}</p>
+                <p className="db-time">{timeStr}</p>
+              </div>
             </div>
             <p className="db-affirmation">&ldquo;{todayAffirmation}&rdquo;</p>
           </div>
@@ -2922,10 +2926,10 @@ export default function App() {
                 <strong>{monthWeekInfo.current} de {monthWeekInfo.total}</strong>
                 <small>{monthWeekInfo.month}</small>
               </div>
-              <div className="db-week-stats">
-                <div><span>Ingresos</span><strong>{money.format(totals.income)}</strong></div>
-                <div><span>Gastos</span><strong>{money.format(totals.expenses)}</strong></div>
-              </div>
+              <p className="db-week-balance" style={{color: totals.profit >= 0 ? "var(--green)" : "var(--pink)"}}>
+                {totals.profit >= 0 ? "+" : ""}{money.format(totals.profit)}
+              </p>
+              <span className="db-week-balance-label">balance del mes</span>
             </div>
           </div>
 
@@ -2959,7 +2963,10 @@ export default function App() {
                     <span>&#x1F3AF; Tu 80/20 del negocio</span>
                   </div>
                   {wonClients.length < 2 ? (
-                    <p className="db-pareto-empty">Registra al menos 2 ventas ganadas para ver qu&eacute; clientes o servicios concentran tus ingresos.</p>
+                    <div className="db-pareto-empty-state">
+                      <p className="db-pareto-empty">Registra al menos 2 ventas para ver qué clientes concentran el 80% de tus ingresos.</p>
+                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Agregar clientes →</button>
+                    </div>
                   ) : (
                     <>
                       <p className="db-pareto-stat">
@@ -2987,7 +2994,10 @@ export default function App() {
                     )}
                   </div>
                   {homeTasks.length === 0 ? (
-                    <p className="db-pareto-empty">Agrega tus primeras tareas en Mi Hogar y aqu&iacute; te sugerimos solo 3 cada d&iacute;a — el resto puede esperar.</p>
+                    <div className="db-pareto-empty-state">
+                      <p className="db-pareto-empty">Agrega tareas de hogar y cada día te sugeriremos solo 3 — el resto puede esperar.</p>
+                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("home")}>Agregar primera tarea →</button>
+                    </div>
                   ) : focusHomeTasks.length === 0 ? (
                     <p className="db-pareto-done">&#x2705; Hiciste tus 3 cosas de hoy. Lo dem&aacute;s puede esperar.</p>
                   ) : (

@@ -1672,6 +1672,7 @@ button {
   gap: 8px;
   padding-bottom: 18px;
   border-bottom: 1px solid rgba(180, 160, 140, 0.14);
+  text-align: center;
 }
 .auth-trial-badge {
   display: inline-block;
@@ -1683,6 +1684,7 @@ button {
   padding: 4px 10px;
   border-radius: 20px;
   width: fit-content;
+  margin: 0 auto;
   letter-spacing: 0.3px;
 }
 .auth-form-title {
@@ -4833,6 +4835,11 @@ button {
 }
 
 /* Hero greeting */
+.db-hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .db-hero {
   display: flex;
   justify-content: space-between;
@@ -4863,6 +4870,7 @@ button {
   font-size: 13px;
   color: var(--muted);
   margin: 0;
+  text-transform: capitalize;
 }
 .db-time {
   font-size: 28px;
@@ -4948,23 +4956,22 @@ button {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
+  gap: 8px;
   min-width: 160px;
 }
-.db-week-stats {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+.db-week-balance {
+  font-size: 15px;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1;
 }
-.db-week-stats > div {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
+.db-week-balance-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
 }
-.db-week-stats > div span { color: var(--muted); }
-.db-week-stats > div strong { font-size: 13px; font-weight: 700; }
 
 /* Alerts */
 .db-alerts {
@@ -5155,6 +5162,7 @@ button {
   line-height: 1.5;
   margin: 0 0 12px;
 }
+.db-pareto-empty-state { display: grid; gap: 10px; }
 .db-pareto-empty, .db-pareto-done {
   font-size: 13px;
   color: var(--muted);

@@ -506,7 +506,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             <span>·</span>
             <button className="landing-link-btn" onClick={onPrivacidad}>Política de Privacidad</button>
           </div>
-          <p className="landing-footer-copy">© 2026 UMP S.A.S · hola@umpacademy.co</p>
+          <p className="landing-footer-copy">Hecho por Una mamá con propósito® · Todos los derechos reservados UMP S.A.S 2026</p>
         </div>
       </footer>
 
