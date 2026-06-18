@@ -2836,6 +2836,12 @@ export default function App() {
     const paretoPct = wonClients.length ? Math.round((paretoTopClients.length / wonClients.length) * 100) : 0;
     const paretoShareOfIncome = totalWonAmount > 0 ? Math.round((paretoTopClients.reduce((s, c) => s + c.amount, 0) / totalWonAmount) * 100) : 0;
 
+    // ── Top servicios/productos: movements agrupados por clasificación ──
+    const incomeByClassification = movements
+      .filter(m => m.type === "income" && m.classification)
+      .reduce((acc, m) => { acc[m.classification] = (acc[m.classification] || 0) + m.amount; return acc; }, {});
+    const topServices = Object.entries(incomeByClassification).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
     // ── Citas de hoy en el calendario ──
     // Usar fecha local (no UTC) para evitar desfase de timezone
     const _tn = new Date();
@@ -2885,12 +2891,6 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="db-wrap">
-
-          {/* Hero */}
-          <div className="db-hero">
-            <p className="db-date">{todayStr}</p>
-            <p className="db-affirmation">&ldquo;{todayAffirmation}&rdquo;</p>
-          </div>
 
           {/* ── Panel de Hoy ── */}
           <div className="db-today-panel">
@@ -3003,71 +3003,84 @@ export default function App() {
             </div>
           )}
 
-          {/* 80/20 del negocio */}
+          {/* Lo que sostiene tu negocio: clientes + servicios */}
           {showNegocioPareto && (
-            <div className="db-pareto-card">
-              <div className="db-pareto-head">
-                <span>🎯 Tu 80/20 del negocio</span>
+            <div className="db-sustain-card">
+              <div className="db-sustain-head">
+                <span className="db-sustain-title">Lo que sostiene tu negocio</span>
+                <button type="button" className="db-pareto-link" onClick={() => setActiveView("business")}>Ver negocio →</button>
               </div>
-              {wonClients.length < 2 ? (
-                <div className="db-pareto-empty-state">
-                  <p className="db-pareto-empty">Registra al menos 2 ventas para ver qué clientes concentran el 80% de tus ingresos.</p>
-                  <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Agregar clientes →</button>
+              <div className="db-sustain-grid">
+
+                {/* Top clientes */}
+                <div className="db-sustain-col">
+                  <p className="db-sustain-col-label">Clientes que más aportan</p>
+                  {wonClients.length === 0 ? (
+                    <div className="db-pareto-empty-state">
+                      <p className="db-pareto-empty">Sin ventas cerradas aún. Registra clientes para ver quién sostiene tu negocio.</p>
+                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Agregar clientes →</button>
+                    </div>
+                  ) : (
+                    <>
+                      {wonClients.length >= 2 && (
+                        <p className="db-sustain-stat">{paretoTopClients.length} cliente{paretoTopClients.length > 1 ? "s" : ""} generan el <strong>{paretoShareOfIncome}%</strong> de tus ingresos</p>
+                      )}
+                      {wonClients.slice(0, 5).map(c => (
+                        <div key={c.id} className="db-sustain-row">
+                          <span className="db-sustain-row-name">{c.name}</span>
+                          <span className="db-sustain-row-val">{money.format(c.amount)}</span>
+                        </div>
+                      ))}
+                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Ver clientes →</button>
+                    </>
+                  )}
                 </div>
-              ) : (
-                <>
-                  <p className="db-pareto-stat">
-                    El <strong>{paretoPct}%</strong> de tus clientes ({paretoTopClients.length} de {wonClients.length}) generan el <strong>{paretoShareOfIncome}%</strong> de tus ingresos cerrados.
-                  </p>
-                  <div className="db-pareto-list">
-                    {paretoTopClients.slice(0, 5).map((c) => (
-                      <div key={c.id} className="db-pareto-row">
-                        <span className="db-pareto-row-name">{c.name}</span>
-                        <span className="db-pareto-row-amount">{money.format(c.amount)}</span>
+
+                {/* Top servicios/productos */}
+                <div className="db-sustain-col">
+                  <p className="db-sustain-col-label">Servicios / productos top</p>
+                  {topServices.length === 0 ? (
+                    <div className="db-pareto-empty-state">
+                      <p className="db-pareto-empty">Registra ingresos clasificados para ver qué ofrece mejores resultados.</p>
+                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("business")}>Ir a finanzas →</button>
+                    </div>
+                  ) : (
+                    topServices.map(([name, amount]) => (
+                      <div key={name} className="db-sustain-row">
+                        <span className="db-sustain-row-name">{name}</span>
+                        <span className="db-sustain-row-val">{money.format(amount)}</span>
                       </div>
-                    ))}
-                  </div>
-                  <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Ver mis clientes →</button>
-                </>
-              )}
+                    ))
+                  )}
+                </div>
+
+              </div>
             </div>
           )}
 
-          {/* Acceso r&#xE1;pido */}
-          <div className="db-quick-grid">
-            <button className="db-quick-card" onClick={() => setActiveView("business")}>
-              <span className="db-quick-icon">&#x1F4B0;</span>
-              <span>Negocio</span>
-              <span className="db-quick-val">{money.format(totals.income)}</span>
-            </button>
-            <button className="db-quick-card" onClick={() => setActiveView("clients")}>
-              <span className="db-quick-icon">&#x1F469;&#x200D;&#x1F4BC;</span>
-              <span>Clientes</span>
-              <span className="db-quick-val">{clients.filter((c) => c.status === "Lead caliente").length} leads</span>
-            </button>
-            <button className="db-quick-card" onClick={() => setActiveView("content")}>
-              <span className="db-quick-icon">&#x1F4F1;</span>
-              <span>Contenido</span>
-              <span className="db-quick-val">{contentItems.filter((i) => i.status !== "Publicado").length} por publicar</span>
-            </button>
-            <button className="db-quick-card" onClick={() => setActiveView("home")}>
-              <span className="db-quick-icon">&#x1F338;</span>
-              <span>Hogar</span>
-              <span className="db-quick-val">{homeTasks.filter((t) => !t.done).length} pendientes</span>
-            </button>
-          </div>
-
-          {/* Studio CTA */}
-          <button className="db-studio-cta" onClick={() => setActiveView("studio")}>
-            <div className="db-studio-left">
-              <span className="db-studio-star">&#x2726;</span>
-              <div>
-                <p className="db-studio-title">Mi Studio</p>
-                <p className="db-studio-sub">Guiones, contenido y marca</p>
-              </div>
+          {/* Studio — insight motivacional */}
+          <div className="db-studio-insight">
+            <div className="db-studio-insight-icon">✦</div>
+            <div className="db-studio-insight-body">
+              <p className="db-studio-insight-title">Mi Studio de Contenido</p>
+              <p className="db-studio-insight-msg">
+                {daysSincePublish === null
+                  ? "Las mamás CEO que publican contenido consistente atraen más clientes sin salir a buscarlos."
+                  : daysSincePublish === 0
+                  ? "¡Publicaste hoy! La consistencia construye audiencias — y las audiencias construyen ventas."
+                  : daysSincePublish <= 3
+                  ? `Último contenido hace ${daysSincePublish} día${daysSincePublish > 1 ? "s" : ""}. Cada pieza que publicas trabaja para ti 24/7.`
+                  : `Llevas ${daysSincePublish} días sin publicar. Tu próxima pieza puede ser tu próxima venta.`
+                }
+              </p>
             </div>
-            <span className="db-studio-arrow">&#x2192;</span>
-          </button>
+            <div className="db-studio-insight-right">
+              {contentItems.length > 0 && (
+                <p className="db-studio-insight-stat">{contentItems.filter(i => i.status !== "Publicado").length} <span>en proceso</span></p>
+              )}
+              <button type="button" className="db-studio-insight-btn" onClick={() => setActiveView("studio")}>Abrir Studio →</button>
+            </div>
+          </div>
 
         </div>
       </section>
