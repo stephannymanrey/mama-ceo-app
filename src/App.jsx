@@ -3099,23 +3099,30 @@ export default function App() {
 
             {/* Menú de hoy strip */}
             {(()=>{const tm=weekMenu[["D","L","M","X","J","V","S"][new Date().getDay()]]; const hasMenu=tm&&(typeof tm==="string"?tm:Object.values(tm).some(Boolean)); const d=tm&&(typeof tm==="string"?{almuerzo:tm}:tm)||{};
+              const MEALS=[["desayuno","🌅","Desayuno"],["almuerzo","🍽️","Almuerzo"],["cena","🌙","Cena"],["snack","🍎","Snack"]];
               return (
-                <div style={{marginTop:"10px",padding:"10px 14px",background:"linear-gradient(135deg,rgba(196,82,106,0.06),rgba(196,82,106,0.02))",borderRadius:"12px",border:"1px solid rgba(196,82,106,0.12)",display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap"}}>
-                  <span style={{fontSize:"16px",flexShrink:0}}>🍽️</span>
+                <div className="db-menu-strip">
+                  <div className="db-menu-strip-head">
+                    <span className="db-menu-strip-title">🍽️ Hoy comerás</span>
+                    <button type="button" className="db-menu-strip-cta" onClick={()=>setActiveView("home")}>
+                      {hasMenu?"Ver menú →":"Planear con Abi →"}
+                    </button>
+                  </div>
                   {hasMenu?(
-                    <div style={{flex:1,minWidth:0,display:"flex",gap:"12px",flexWrap:"wrap"}}>
-                      {d.desayuno&&<span style={{fontSize:"12px",color:"var(--muted)"}}><strong style={{color:"var(--ink)"}}>🌅</strong> {d.desayuno}</span>}
-                      {d.almuerzo&&<span style={{fontSize:"12px",color:"var(--muted)"}}><strong style={{color:"var(--ink)"}}>🍽️</strong> {d.almuerzo}</span>}
-                      {d.cena&&<span style={{fontSize:"12px",color:"var(--muted)"}}><strong style={{color:"var(--ink)"}}>🌙</strong> {d.cena}</span>}
-                      {d.snack&&<span style={{fontSize:"12px",color:"var(--muted)"}}><strong style={{color:"var(--ink)"}}>🍎</strong> {d.snack}</span>}
+                    <div className="db-menu-items">
+                      {MEALS.filter(([key])=>d[key]).map(([key,ico,label])=>(
+                        <div key={key} className="db-menu-item">
+                          <span className="db-menu-item-ico">{ico}</span>
+                          <div className="db-menu-item-text">
+                            <span className="db-menu-item-label">{label}</span>
+                            <span className="db-menu-item-val">{d[key]}</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   ):(
-                    <span style={{flex:1,fontSize:"12px",color:"var(--muted)",fontStyle:"italic"}}>Menú de hoy sin planear — Abi puede ayudarte</span>
+                    <p className="db-menu-empty">Aún no planeas qué comer hoy — Abi te ayuda en segundos.</p>
                   )}
-                  <button type="button" onClick={()=>setActiveView("home")}
-                    style={{fontSize:"11px",fontWeight:700,color:"#C4526A",background:"rgba(196,82,106,0.1)",border:"none",borderRadius:"8px",padding:"4px 10px",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>
-                    {hasMenu?"Ver menú →":"Planear →"}
-                  </button>
                 </div>
               );
             })()}
