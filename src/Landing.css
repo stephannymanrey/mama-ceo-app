@@ -3,9 +3,9 @@
 :root {
   --l-brand: #C4526A;
   --l-brand-dark: #a83f57;
-  --l-gold: #C9A227;
-  --l-gold-hover: #A8891C;
-  --l-gold-light: #FBF6E3;
+  --l-gold: #F0C84A;
+  --l-gold-hover: #D4A830;
+  --l-gold-light: #FEF9E7;
   --l-bg: #FDF9F6;
   --l-bg-alt: #fff;
   --l-border: #eee5de;
@@ -314,8 +314,8 @@
 
 /* ── STATS BAR ── */
 .landing-stats-bar {
-  background: #1a1a1a;
-  padding: 24px 0;
+  background: linear-gradient(135deg, #C4526A 0%, #E8725C 60%, #F0A458 100%);
+  padding: 26px 0;
 }
 .landing-stats-inner {
   display: flex;
@@ -340,13 +340,13 @@
 }
 .lstat-label {
   font-size: 12px;
-  color: rgba(255,255,255,0.65);
-  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+  font-weight: 600;
 }
 .lstat-divider {
   width: 1px;
   height: 36px;
-  background: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.3);
 }
 
 /* ── PARA QUIÉN ── */
@@ -462,7 +462,7 @@
   align-items: center;
   gap: 8px;
 }
-.ltoggle-btn.active { background: var(--l-gold); color: #fff; }
+.ltoggle-btn.active { background: var(--l-gold); color: #1a1a1a; }
 .ltoggle-save {
   background: #10B981;
   color: #fff;
