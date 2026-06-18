@@ -6785,3 +6785,42 @@ button {
 @media (max-width: 420px) {
   .db-menu-items { grid-template-columns: 1fr; }
 }
+
+/* ── Tools hub — colapsa timer/calendario/plan en un solo boton ── */
+.tools-fab-item {
+  opacity: 0;
+  transform: scale(0.4) translateY(14px);
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.tools-fab-item--open {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  pointer-events: auto;
+}
+.tools-hub-fab {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 1500;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(196, 82, 106, 0.25);
+  background: linear-gradient(135deg, #C4526A, #a33a52);
+  color: #fff;
+  font-size: 19px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(196, 82, 106, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow 200ms ease, transform 200ms ease, background 200ms ease;
+}
+.tools-hub-fab:hover { box-shadow: 0 8px 24px rgba(196, 82, 106, 0.4); transform: translateY(-2px); }
+.tools-hub-fab--open { background: #fff; color: #C4526A; }
+@media (max-width: 480px) {
+  .tools-hub-fab { right: 16px; }
+  .tools-fab-item.upgrade-fab, .tools-fab-item.cal-fab-wrapper, .tools-fab-item.pomo-fab { right: 16px; }
+}

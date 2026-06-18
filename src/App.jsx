@@ -687,6 +687,7 @@ export default function App() {
   const [reminderEnabled, setReminderEnabled] = useState(stored?.reminderEnabled !== false);
   const [checkInReminderEnabled, setCheckInReminderEnabled] = useState(stored?.checkInReminderEnabled || false);
   const [checkInReminderTime, setCheckInReminderTime] = useState(stored?.checkInReminderTime || "08:00");
+  const [toolsFabOpen, setToolsFabOpen] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [calendarAddDate, setCalendarAddDate] = useState(null);
@@ -2484,9 +2485,9 @@ export default function App() {
           return (
             <>
               {/* Panel — abre hacia arriba */}
-              {pomodoroOpen && (
+              {pomodoroOpen && toolsFabOpen && (
                 <div className={`pomo-panel${pomodoroRunning && pomodoroMode === "work" ? " pomo-panel--focus" : pomodoroMode === "break" ? " pomo-panel--break" : ""}`}
-                  style={{ bottom: "212px" }}>
+                  style={{ bottom: "256px" }}>
                   <div className="pomo-panel-head">
                     <span className="pomo-label">{pomodoroMode === "break" ? "Descanso" : "Temporizador de foco"}</span>
                     <button className="pomo-tog" onClick={() => setPomodoroOpen(false)}>&#x00D7;</button>
@@ -2540,10 +2541,11 @@ export default function App() {
               )}
               {/* FAB icono */}
               <button
-                className={`pomo-fab${pomodoroRunning ? " pomo-fab--active" : ""}${pomodoroOpen ? " pomo-fab--open" : ""}`}
-                style={{ bottom: "152px" }}
+                className={`pomo-fab tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}${pomodoroRunning ? " pomo-fab--active" : ""}${pomodoroOpen ? " pomo-fab--open" : ""}`}
+                style={{ bottom: "196px" }}
                 onClick={() => setPomodoroOpen(v => !v)}
                 title="Temporizador de foco"
+                tabIndex={toolsFabOpen ? 0 : -1}
               >
                 <span className="pomo-fab-ico">&#x23F1;</span>
                 {pomodoroRunning && <span className="pomo-fab-time">{_mm}:{_ss}</span>}
@@ -2556,12 +2558,13 @@ export default function App() {
         {(() => {
           const showMorningPrompt = !calMorningDismissed && clockNow.getHours() >= 6 && clockNow.getHours() < 12;
           return (
-            <div className="cal-fab-wrapper">
+            <div className={`cal-fab-wrapper tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}`} style={{ bottom: "140px", right: "28px" }}>
               <div className="cal-morning-tip">Agenda tus eventos de hoy aquí</div>
               <button type="button"
                 onClick={() => { setShowCalendar(true); setCalMorningDismissed(true); }}
                 className={`cal-fab${showMorningPrompt ? " cal-fab--morning" : ""}`}
-                title="Ver calendario">
+                title="Ver calendario"
+                tabIndex={toolsFabOpen ? 0 : -1}>
                 📅
                 {showMorningPrompt && <span className="cal-fab-dot" />}
               </button>
@@ -2569,13 +2572,24 @@ export default function App() {
           );
         })()}
 
-        {/* Plan FAB — abajo del todo */}
+        {/* Plan FAB */}
         <button
-          className="upgrade-fab"
+          className={`upgrade-fab tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}`}
+          style={{ bottom: "84px", ...(effectivePlan !== "free" ? { background: "var(--purple)", color: "#fff", border: "none" } : {}) }}
           onClick={() => setActiveView("pricing")}
-          style={effectivePlan !== "free" ? { background: "var(--purple)", color: "#fff", border: "none" } : {}}
+          tabIndex={toolsFabOpen ? 0 : -1}
         >
           {effectivePlan === "free" ? "⭐ Upgrade" : "👑 Mi Plan"}
+        </button>
+
+        {/* Tools hub — abre/cierra los 3 widgets */}
+        <button
+          type="button"
+          className={`tools-hub-fab${toolsFabOpen ? " tools-hub-fab--open" : ""}`}
+          onClick={() => setToolsFabOpen(v => !v)}
+          title={toolsFabOpen ? "Cerrar herramientas" : "Más herramientas"}
+        >
+          {toolsFabOpen ? "✕" : "⋮"}
         </button>
 
         {/* Calendar overlay */}
