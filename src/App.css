@@ -6332,3 +6332,248 @@ button {
   .home-today-grid { grid-template-columns: 1fr; }
   .home-tab-btn { font-size: 12px; padding: 8px 0; }
 }
+
+/* ── Con mi familia ── */
+.fam-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 22px;
+}
+.fam-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.fam-card-title { margin: 0 0 3px; font-size: 17px; font-weight: 800; color: var(--ink); }
+.fam-card-sub   { margin: 0; font-size: 13px; color: var(--muted); }
+.fam-moments-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pink);
+  background: rgba(212, 104, 122, 0.1);
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.fam-config-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 10px;
+  padding: 7px 13px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--muted);
+  font-family: inherit;
+  font-weight: 600;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.fam-config-btn--active {
+  background: rgba(196, 82, 106, 0.07);
+  border-color: rgba(196, 82, 106, 0.3);
+  color: var(--pink);
+}
+
+/* Config panel */
+.fam-config-panel {
+  margin-bottom: 18px;
+  padding: 16px;
+  background: #FAF7F5;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+}
+.fam-config-title {
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+.fam-roles-list  { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.fam-role-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 10px 7px 12px;
+  background: #fff;
+  border-radius: 20px;
+  border: 1px solid var(--line);
+  font-size: 13px;
+  font-weight: 600;
+}
+.fam-role-delete {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.08);
+  color: #888;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+  transition: background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+.fam-role-delete:hover { background: rgba(196, 82, 106, 0.18); color: var(--pink); }
+.fam-add-roles { display: flex; flex-wrap: wrap; gap: 6px; }
+.fam-add-btn {
+  padding: 6px 13px;
+  border-radius: 20px;
+  border: 1.5px dashed var(--line);
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.fam-add-btn:hover { border-color: var(--pink); color: var(--pink); }
+
+/* Stats */
+.fam-stats-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+.fam-stat-card {
+  flex: 1 1 100px;
+  padding: 12px 10px;
+  background: rgba(196, 82, 106, 0.04);
+  border-radius: 12px;
+  border: 1px solid rgba(196, 82, 106, 0.12);
+  text-align: center;
+}
+.fam-stat-card--done {
+  background: rgba(47, 159, 112, 0.06);
+  border-color: rgba(47, 159, 112, 0.2);
+}
+.fam-stat-emoji { font-size: 20px; margin-bottom: 3px; }
+.fam-stat-role  { font-size: 10px; font-weight: 700; color: var(--muted); margin-bottom: 3px; }
+.fam-stat-hrs   { font-size: 18px; font-weight: 800; color: var(--ink); }
+.fam-stat-card--done .fam-stat-hrs   { color: var(--green); }
+.fam-stat-bar   { margin: 5px 0 2px; height: 4px; background: rgba(0,0,0,0.08); border-radius: 2px; overflow: hidden; }
+.fam-stat-fill  { height: 100%; border-radius: 2px; transition: width 0.5s; }
+.fam-stat-label { font-size: 10px; color: var(--muted); font-weight: 600; }
+.fam-stat-card--done .fam-stat-label { color: var(--green); }
+
+/* Celebration */
+.fam-celebration {
+  padding: 28px 20px;
+  background: linear-gradient(135deg, rgba(212,104,122,0.08), rgba(47,159,112,0.08));
+  border-radius: 16px;
+  text-align: center;
+  border: 2px solid rgba(212, 104, 122, 0.2);
+}
+
+/* Form */
+.fam-form { display: grid; gap: 16px; }
+.fam-form-label { margin: 0 0 9px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.fam-quien-row  { display: flex; flex-wrap: wrap; gap: 8px; }
+.fam-quien-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 2px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  transition: all 0.15s;
+}
+.fam-quien-btn--active {
+  border-color: var(--pink);
+  background: rgba(212, 104, 122, 0.07);
+  font-weight: 700;
+}
+.fam-quien-emoji { font-size: 17px; }
+.fam-quien-role  { font-size: 13px; }
+.fam-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+  resize: none;
+  box-sizing: border-box;
+  background: #faf7f5;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.fam-textarea:focus { border-color: rgba(196, 82, 106, 0.4); }
+.fam-tiempo-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.fam-tiempo-btn {
+  padding: 9px 16px;
+  border-radius: 10px;
+  border: 2px solid var(--line);
+  background: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  transition: all 0.15s;
+}
+.fam-tiempo-btn--active {
+  border-color: var(--purple);
+  background: rgba(107, 70, 193, 0.08);
+  color: var(--purple);
+}
+.fam-save-btn {
+  padding: 14px;
+  background: var(--pink);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  transition: opacity 0.2s, transform 0.1s;
+}
+.fam-save-btn:disabled { opacity: 0.42; cursor: not-allowed; }
+.fam-save-btn:not(:disabled):active { transform: scale(0.98); }
+
+/* Week log */
+.fam-week-log   { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+.fam-week-title {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+}
+.fam-week-items { display: grid; gap: 7px; }
+.fam-week-item  {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 13px;
+  background: rgba(212, 104, 122, 0.04);
+  border-radius: 11px;
+  border: 1px solid rgba(212, 104, 122, 0.1);
+}
+.fam-week-meta  { margin: 0 0 2px; font-size: 13px; font-weight: 600; color: var(--ink); }
+.fam-week-desc  { margin: 0; font-size: 12px; color: var(--muted); }
+.fam-week-5 {
+  margin-top: 10px;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(212,104,122,0.08), rgba(47,159,112,0.06));
+  border-radius: 12px;
+  text-align: center;
+}

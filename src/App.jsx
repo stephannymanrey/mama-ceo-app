@@ -4149,37 +4149,45 @@ export default function App() {
           <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
 
             {/* Con mi familia — PRIORITY */}
-            <div className="card" style={{padding:"22px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"16px",gap:"12px",flexWrap:"wrap"}}>
+            <div className="fam-card">
+              {/* Header */}
+              <div className="fam-card-header">
                 <div>
-                  <h3 style={{margin:"0 0 2px",fontSize:"17px"}}>Con mi familia 💛</h3>
-                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Presencia real — no perfecta.</p>
+                  <h3 className="fam-card-title">Con mi familia 💛</h3>
+                  <p className="fam-card-sub">Presencia real — no perfecta.</p>
                 </div>
                 <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
-                  {thisWeekMoments.length>0&&<span style={{fontSize:"12px",fontWeight:700,color:"var(--pink)",background:"rgba(212,104,122,0.1)",padding:"3px 10px",borderRadius:"20px",whiteSpace:"nowrap"}}>{thisWeekMoments.length} momento{thisWeekMoments.length>1?"s":""} esta semana</span>}
-                  <button type="button" onClick={()=>setShowFamilyConfig(v=>!v)}
-                    style={{border:"1px solid var(--line)",background:showFamilyConfig?"rgba(196,82,106,0.08)":"#fff",borderRadius:"8px",padding:"5px 10px",cursor:"pointer",fontSize:"12px",color:"var(--muted)",fontFamily:"inherit",fontWeight:600}}>
-                    {showFamilyConfig?"Listo ✓":"⚙️ Mi familia"}
+                  {thisWeekMoments.length>0&&<span className="fam-moments-badge">{thisWeekMoments.length} momento{thisWeekMoments.length>1?"s":""}</span>}
+                  <button type="button" className={`fam-config-btn${showFamilyConfig?" fam-config-btn--active":""}`}
+                    onClick={()=>setShowFamilyConfig(v=>!v)}>
+                    {showFamilyConfig?"✓ Listo":"✏️ Editar familia"}
                   </button>
                 </div>
               </div>
 
-              {showFamilyConfig && (
-                <div style={{marginBottom:"16px",padding:"14px",background:"#FAF7F5",borderRadius:"12px",border:"1px solid var(--line)"}}>
-                  <p style={{margin:"0 0 10px",fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--muted)"}}>Roles de tu familia (sin nombres)</p>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"10px"}}>
+              {/* Config panel */}
+              {showFamilyConfig&&(
+                <div className="fam-config-panel">
+                  <p className="fam-config-title">Tu familia (sin nombres — solo roles)</p>
+                  <div className="fam-roles-list">
                     {activeFamilyMembers.map(m=>(
-                      <div key={m.id} style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 10px",background:"#fff",borderRadius:"20px",border:"1px solid var(--line)",fontSize:"13px"}}>
-                        <span>{m.emoji}</span><span style={{fontWeight:600}}>{m.role}</span>
-                        <button type="button" onClick={()=>setFamilyMembers(c=>c.filter(x=>x.id!==m.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",lineHeight:1,padding:"0 0 0 2px"}}>×</button>
+                      <div key={m.id} className="fam-role-chip">
+                        <span>{m.emoji}</span>
+                        <span>{m.role}</span>
+                        <button type="button" className="fam-role-delete"
+                          onClick={()=>{
+                            const base=familyMembers.length?familyMembers:DEFAULT_ROLES;
+                            setFamilyMembers(base.filter(x=>x.id!==m.id));
+                          }}
+                          title={`Quitar ${m.role}`}>×</button>
                       </div>
                     ))}
                   </div>
-                  <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-                    {[["👧","Hija"],["👦","Hijo"],["💑","Pareja"],["👵","Abuela"],["👴","Abuelo"],["🐾","Mascota"],["👶","Bebé"]].map(([emoji,role])=>(
+                  <div className="fam-add-roles">
+                    {[["👧","Hija"],["👦","Hijo"],["💑","Pareja"],["👵","Abuela"],["👴","Abuelo"],["🐾","Mascota"],["👶","Bebé"],["👨‍👩‍👦","Familia"]].map(([emoji,role])=>(
                       activeFamilyMembers.some(m=>m.role===role)?null:
-                      <button key={role} type="button" onClick={()=>setFamilyMembers(c=>[...c,{id:Date.now()+Math.random(),role,emoji}])}
-                        style={{padding:"5px 12px",borderRadius:"20px",border:"1px dashed var(--line)",background:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",color:"var(--muted)"}}>
+                      <button key={role} type="button" className="fam-add-btn"
+                        onClick={()=>setFamilyMembers(c=>[...(c.length?c:DEFAULT_ROLES),{id:Date.now()+Math.random(),role,emoji}])}>
                         + {emoji} {role}
                       </button>
                     ))}
@@ -4187,85 +4195,91 @@ export default function App() {
                 </div>
               )}
 
+              {/* Stats row */}
               {Object.keys(minutesByRole).length>0&&(
-                <div style={{marginBottom:"16px",display:"flex",gap:"10px",flexWrap:"wrap"}}>
+                <div className="fam-stats-row">
                   {activeFamilyMembers.filter(m=>minutesByRole[m.role]).map(m=>{
                     const mins=minutesByRole[m.role]||0; const hrs=(mins/60).toFixed(1); const goalMins=120; const pct=Math.min(100,Math.round((mins/goalMins)*100));
                     return (
-                      <div key={m.id} style={{flex:"1 1 110px",padding:"12px",background:pct>=100?"rgba(47,159,112,0.06)":"rgba(196,82,106,0.04)",borderRadius:"12px",border:`1px solid ${pct>=100?"rgba(47,159,112,0.2)":"rgba(196,82,106,0.12)"}`,textAlign:"center"}}>
-                        <div style={{fontSize:"20px",marginBottom:"3px"}}>{m.emoji}</div>
-                        <div style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",marginBottom:"3px"}}>{m.role}</div>
-                        <div style={{fontSize:"18px",fontWeight:800,color:pct>=100?"var(--green)":"var(--ink)"}}>{hrs}h</div>
-                        <div style={{margin:"5px 0 2px",height:"4px",background:"rgba(0,0,0,0.08)",borderRadius:"2px",overflow:"hidden"}}>
-                          <div style={{height:"100%",width:`${pct}%`,background:pct>=100?"var(--green)":"#C4526A",borderRadius:"2px",transition:"width 0.5s"}}></div>
-                        </div>
-                        <div style={{fontSize:"10px",color:pct>=100?"var(--green)":"var(--muted)",fontWeight:600}}>{pct>=100?"Meta ✓":`${Math.round((goalMins-mins)/60)}h más`}</div>
+                      <div key={m.id} className={`fam-stat-card${pct>=100?" fam-stat-card--done":""}`}>
+                        <div className="fam-stat-emoji">{m.emoji}</div>
+                        <div className="fam-stat-role">{m.role}</div>
+                        <div className="fam-stat-hrs">{hrs}h</div>
+                        <div className="fam-stat-bar"><div className="fam-stat-fill" style={{width:`${pct}%`,background:pct>=100?"var(--green)":"#C4526A"}}></div></div>
+                        <div className="fam-stat-label">{pct>=100?"Meta ✓":`${Math.round((goalMins-mins)/60)}h más`}</div>
                       </div>
                     );
                   })}
                 </div>
               )}
 
+              {/* Celebration or form */}
               {presenceCelebration?(
-                <div style={{padding:"20px",background:"linear-gradient(135deg,rgba(212,104,122,0.08),rgba(47,159,112,0.08))",borderRadius:"14px",textAlign:"center",border:"2px solid rgba(212,104,122,0.2)"}}>
-                  <p style={{fontSize:"24px",margin:"0 0 6px"}}>🌸</p>
+                <div className="fam-celebration">
+                  <p style={{fontSize:"28px",margin:"0 0 6px"}}>🌸</p>
                   <p style={{margin:0,fontWeight:700,fontSize:"15px",color:"var(--ink)"}}>{victoryMsg}</p>
                 </div>
               ):(
-                <div style={{display:"grid",gap:"12px"}}>
+                <div className="fam-form">
                   <div>
-                    <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Con quién estuviste hoy?</p>
-                    <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                    <p className="fam-form-label">¿Con quién estuviste hoy?</p>
+                    <div className="fam-quien-row">
                       {activeFamilyMembers.map(m=>(
-                        <button key={m.id} type="button" onClick={()=>toggleQuien(m.role)}
-                          style={{display:"flex",alignItems:"center",gap:"6px",padding:"7px 14px",borderRadius:"20px",border:`2px solid ${presenceForm.quien.includes(m.role)?"var(--pink)":"var(--line)"}`,background:presenceForm.quien.includes(m.role)?"rgba(212,104,122,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:presenceForm.quien.includes(m.role)?700:400,transition:"all 0.15s"}}>
-                          {m.emoji} {m.role}
+                        <button key={m.id} type="button"
+                          className={`fam-quien-btn${presenceForm.quien.includes(m.role)?" fam-quien-btn--active":""}`}
+                          onClick={()=>toggleQuien(m.role)}>
+                          <span className="fam-quien-emoji">{m.emoji}</span>
+                          <span className="fam-quien-role">{m.role}</span>
                         </button>
                       ))}
                     </div>
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",alignItems:"start"}}>
-                    <div>
-                      <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Qué hicieron? <span style={{fontWeight:400,color:"var(--muted)"}}>(opcional)</span></p>
-                      <textarea value={presenceForm.queHicieron} onChange={e=>setPresenceForm(f=>({...f,queHicieron:e.target.value}))}
-                        placeholder="Ej: Leímos un cuento, cocinamos juntos..."
-                        style={{width:"100%",minHeight:"54px",padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",resize:"none",boxSizing:"border-box",background:"#faf7f5",outline:"none"}}/>
-                    </div>
-                    <div>
-                      <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>Tiempo</p>
-                      <div style={{display:"flex",flexDirection:"column",gap:"5px"}}>
-                        {["15 min","30 min","1 hora","Más"].map(t=>(
-                          <button key={t} type="button" onClick={()=>setPresenceForm(f=>({...f,tiempo:t==="Más"?"Más de 1 hora":t}))}
-                            style={{padding:"6px 10px",borderRadius:"8px",border:`2px solid ${presenceForm.tiempo===(t==="Más"?"Más de 1 hora":t)?"var(--purple)":"var(--line)"}`,background:presenceForm.tiempo===(t==="Más"?"Más de 1 hora":t)?"rgba(107,70,193,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:600,whiteSpace:"nowrap"}}>
-                            {t}
-                          </button>
-                        ))}
-                      </div>
+
+                  <div>
+                    <p className="fam-form-label">¿Qué hicieron? <span style={{fontWeight:400,color:"var(--muted)"}}>(opcional)</span></p>
+                    <textarea className="fam-textarea" value={presenceForm.queHicieron}
+                      onChange={e=>setPresenceForm(f=>({...f,queHicieron:e.target.value}))}
+                      placeholder="Ej: Leímos un cuento, cocinamos juntos..."/>
+                  </div>
+
+                  <div>
+                    <p className="fam-form-label">¿Cuánto tiempo?</p>
+                    <div className="fam-tiempo-row">
+                      {["15 min","30 min","1 hora","Más de 1 hora"].map(t=>(
+                        <button key={t} type="button"
+                          className={`fam-tiempo-btn${presenceForm.tiempo===t?" fam-tiempo-btn--active":""}`}
+                          onClick={()=>setPresenceForm(f=>({...f,tiempo:t}))}>
+                          {t}
+                        </button>
+                      ))}
                     </div>
                   </div>
-                  <button type="button" onClick={savePresence} disabled={!presenceForm.quien.length&&!presenceForm.queHicieron.trim()}
-                    style={{padding:"12px",background:"var(--pink)",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700,opacity:(!presenceForm.quien.length&&!presenceForm.queHicieron.trim())?0.5:1,transition:"opacity 0.2s"}}>
+
+                  <button type="button" className="fam-save-btn"
+                    disabled={!presenceForm.quien.length&&!presenceForm.queHicieron.trim()}
+                    onClick={savePresence}>
                     Guardar este momento 💛
                   </button>
                 </div>
               )}
 
+              {/* This week log */}
               {thisWeekMoments.length>0&&!presenceCelebration&&(
-                <div style={{marginTop:"16px",borderTop:"1px solid var(--line)",paddingTop:"14px"}}>
-                  <p style={{margin:"0 0 8px",fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--muted)"}}>Esta semana</p>
-                  <div style={{display:"grid",gap:"6px"}}>
+                <div className="fam-week-log">
+                  <p className="fam-week-title">Esta semana</p>
+                  <div className="fam-week-items">
                     {thisWeekMoments.slice(-4).reverse().map(m=>(
-                      <div key={m.id} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"9px 12px",background:"rgba(212,104,122,0.04)",borderRadius:"10px",border:"1px solid rgba(212,104,122,0.1)"}}>
+                      <div key={m.id} className="fam-week-item">
                         <span style={{fontSize:"16px",flexShrink:0}}>💛</span>
                         <div style={{flex:1,minWidth:0}}>
-                          <p style={{margin:"0 0 1px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>{m.quien.join(" · ")} — {m.tiempo}</p>
-                          {m.queHicieron&&<p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>{m.queHicieron}</p>}
+                          <p className="fam-week-meta">{m.quien.join(" · ")} — {m.tiempo}</p>
+                          {m.queHicieron&&<p className="fam-week-desc">{m.queHicieron}</p>}
                         </div>
                       </div>
                     ))}
                   </div>
                   {thisWeekMoments.length>=5&&(
-                    <div style={{marginTop:"10px",padding:"12px 16px",background:"linear-gradient(135deg,rgba(212,104,122,0.08),rgba(47,159,112,0.06))",borderRadius:"12px",textAlign:"center"}}>
+                    <div className="fam-week-5">
                       <p style={{margin:0,fontWeight:700,fontSize:"14px",color:"var(--ink)"}}>🏆 5 momentos esta semana — eso es presencia real.</p>
                     </div>
                   )}
