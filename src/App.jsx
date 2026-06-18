@@ -2565,7 +2565,6 @@ export default function App() {
           const showMorningPrompt = !calMorningDismissed && clockNow.getHours() >= 6 && clockNow.getHours() < 12;
           return (
             <div className={`cal-fab-wrapper tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}`} style={{ bottom: "140px", right: "28px" }}>
-              <div className="cal-morning-tip">Agenda tus eventos de hoy aquí</div>
               <div className="tools-fab-row">
                 <span className="tools-fab-tag">Calendario</span>
                 <button type="button"
@@ -2588,18 +2587,21 @@ export default function App() {
           onClick={() => setActiveView("pricing")}
           tabIndex={toolsFabOpen ? 0 : -1}
         >
-          {effectivePlan === "free" ? "⭐ Upgrade" : "👑 Mi Plan"}
+          🚀 Upgrade
         </button>
 
         {/* Tools hub — abre/cierra los 3 widgets */}
-        <button
-          type="button"
-          className={`tools-hub-fab${toolsFabOpen ? " tools-hub-fab--open" : ""}`}
-          onClick={() => setToolsFabOpen(v => !v)}
-          title={toolsFabOpen ? "Cerrar herramientas" : "Más herramientas"}
-        >
-          {toolsFabOpen ? "✕" : "⋮"}
-        </button>
+        <div className="tools-hub-wrap">
+          {!toolsFabOpen && <span className="tools-hub-orbit-ring" />}
+          <button
+            type="button"
+            className={`tools-hub-fab${toolsFabOpen ? " tools-hub-fab--open" : ""}`}
+            onClick={() => setToolsFabOpen(v => !v)}
+            title={toolsFabOpen ? "Cerrar herramientas" : "Más herramientas"}
+          >
+            {toolsFabOpen ? "✕" : "⋮"}
+          </button>
+        </div>
 
         {/* Calendar overlay */}
         {showCalendar && (() => {

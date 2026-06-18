@@ -6164,25 +6164,6 @@ button {
   align-items: flex-end;
   gap: 6px;
 }
-.cal-morning-tip {
-  background: #fff;
-  border: 1px solid rgba(196,82,106,0.22);
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--ink);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-  white-space: nowrap;
-  opacity: 0;
-  transform: translateY(4px);
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-.cal-fab-wrapper:hover .cal-morning-tip {
-  opacity: 1;
-  transform: translateY(0);
-}
 .cal-fab {
   width: 36px;
   height: 36px;
@@ -6845,29 +6826,70 @@ button {
   box-shadow: 0 6px 20px rgba(196, 82, 106, 0.35);
   border-color: rgba(196, 82, 106, 0.45);
 }
-.tools-hub-fab {
+.tools-hub-wrap {
   position: fixed;
   bottom: 28px;
   right: 28px;
   z-index: 1500;
   width: 48px;
   height: 48px;
+}
+.tools-hub-fab {
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  border: 1px solid rgba(196, 82, 106, 0.25);
-  background: linear-gradient(135deg, #C4526A, #a33a52);
-  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: linear-gradient(135deg, #F9DE7E, #F0C84A 55%, #D9A91E);
+  color: #6b4f0c;
   font-size: 19px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
-  box-shadow: 0 4px 16px rgba(196, 82, 106, 0.3);
+  box-shadow: 0 4px 18px rgba(240, 200, 74, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: box-shadow 200ms ease, transform 200ms ease, background 200ms ease;
+  animation: tools-hub-glow 9s ease-in-out infinite;
 }
-.tools-hub-fab:hover { box-shadow: 0 8px 24px rgba(196, 82, 106, 0.4); transform: translateY(-2px); }
-.tools-hub-fab--open { background: #fff; color: #C4526A; }
+.tools-hub-fab:hover { box-shadow: 0 8px 26px rgba(240, 200, 74, 0.7); transform: translateY(-2px); }
+.tools-hub-fab--open {
+  background: #fff;
+  color: #C4526A;
+  border-color: rgba(196, 82, 106, 0.25);
+  box-shadow: 0 4px 16px rgba(196, 82, 106, 0.3);
+  animation: none;
+}
+@keyframes tools-hub-glow {
+  0%, 55%  { box-shadow: 0 4px 18px rgba(240, 200, 74, 0.45); }
+  72%      { box-shadow: 0 4px 26px rgba(240, 200, 74, 0.9), 0 0 0 7px rgba(240, 200, 74, 0.22); }
+  100%     { box-shadow: 0 4px 18px rgba(240, 200, 74, 0.45); }
+}
+.tools-hub-orbit-ring {
+  position: absolute;
+  inset: -7px;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: tools-hub-orbit-spin 9s linear infinite;
+}
+.tools-hub-orbit-ring::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translateX(-50%);
+  box-shadow: 0 0 9px 3px rgba(255, 255, 255, 0.85);
+}
+@keyframes tools-hub-orbit-spin {
+  0%, 55%  { transform: rotate(0deg); opacity: 0; }
+  58%      { opacity: 1; }
+  90%      { transform: rotate(720deg); opacity: 1; }
+  100%     { transform: rotate(720deg); opacity: 0; }
+}
 @media (max-width: 480px) {
-  .tools-hub-fab { right: 16px; }
+  .tools-hub-wrap { right: 16px; }
   .tools-fab-item.upgrade-fab, .tools-fab-item.cal-fab-wrapper, .tools-fab-row { right: 16px; }
 }
