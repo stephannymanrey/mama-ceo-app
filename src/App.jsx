@@ -682,6 +682,8 @@ export default function App() {
   const [calendarNewAppt, setCalendarNewAppt] = useState({ title: "", type: "Médico", time: "", recurrence: "none" });
   const [calTab, setCalTab] = useState("all");
   const [calMorningDismissed, setCalMorningDismissed] = useState(false);
+  const [calendarEditAppt, setCalendarEditAppt] = useState(null);
+  const [calToast, setCalToast] = useState(null);
   const [checkInStep, setCheckInStep] = useState(0);
   const [checkInResp, setCheckInResp] = useState({ dia: "", pensando: "", postergando: "", treinta: "", emocional: 5, social: 5, proyectos: 5 });
   const [checkInAnimating, setCheckInAnimating] = useState(false);
@@ -2596,19 +2598,37 @@ export default function App() {
           const isMobile = window.innerWidth < 700;
           const inp = {border:"1px solid var(--line)",borderRadius:"10px",padding:"10px 12px",fontSize:"14px",fontFamily:"inherit",outline:"none",width:"100%",boxSizing:"border-box",background:"#fff"};
 
+          const STANDARD_TYPES = new Set(["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños","Reunión","Trabajo","Otro"]);
+          const showToast = (msg) => { setCalToast(msg); setTimeout(() => setCalToast(null), 2800); };
+
           const saveCalendarAppt = () => {
             if (!calendarNewAppt.title.trim()) return;
-            setAppointments(prev => [...prev, { id: Date.now(), title: calendarNewAppt.title.trim(), date: calendarAddDate, time: calendarNewAppt.time, type: calendarNewAppt.type, recurrence: calendarNewAppt.recurrence || "none" }]);
+            const typeVal = calendarNewAppt.type === "Otro" && calendarNewAppt.customType?.trim()
+              ? calendarNewAppt.customType.trim() : calendarNewAppt.type;
+            setAppointments(prev => [...prev, { id: Date.now(), title: calendarNewAppt.title.trim(), date: calendarAddDate, time: calendarNewAppt.time, type: typeVal, recurrence: calendarNewAppt.recurrence || "none" }]);
             setCalendarAddDate(null);
-            setCalendarNewAppt({ title: "", type: defaultType, time: "", recurrence: "none" });
+            setCalendarNewAppt({ title: "", type: defaultType, time: "", recurrence: "none", customType: "" });
+            showToast("¡Listo! Evento guardado ✓");
           };
 
-          const openInGCal = (a) => {
-            const t = encodeURIComponent(a.title);
-            const d = a.date.replace(/-/g,"");
-            const ts = a.time ? `T${a.time.replace(":","") }00` : "";
-            const dates = ts ? `${d}${ts}/${d}${ts}` : `${d}/${d}`;
-            window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${dates}`, "_blank");
+          const saveCalendarEdit = () => {
+            if (!calendarEditAppt?.title.trim()) return;
+            const typeVal = calendarEditAppt.type === "Otro" && calendarEditAppt.customType?.trim()
+              ? calendarEditAppt.customType.trim() : calendarEditAppt.type;
+            setAppointments(prev => prev.map(a => a.id === calendarEditAppt.id ? { ...calendarEditAppt, type: typeVal } : a));
+            setCalendarEditAppt(null);
+            showToast("¡Cambios guardados ✓");
+          };
+
+          const deleteCalAppt = (id) => {
+            setAppointments(prev => prev.filter(a => a.id !== id));
+            setCalendarEditAppt(null);
+            showToast("Evento eliminado");
+          };
+
+          const openEdit = (a) => {
+            const isStd = STANDARD_TYPES.has(a.type);
+            setCalendarEditAppt({ ...a, type: isStd ? a.type : "Otro", customType: isStd ? "" : a.type });
           };
 
           return (
@@ -2680,8 +2700,8 @@ export default function App() {
                             <span style={{fontSize:"13px",fontWeight:isToday||isSelected?800:500,color:isSelected?"#C4526A":isToday?"#A0722A":"var(--ink)",alignSelf:"center",lineHeight:1.3}}>{dayNum}</span>
                             {dayAppts.slice(0,3).map((a,ai) => (
                               <div key={ai} className="_cal-chip"
-                                onClick={e => { e.stopPropagation(); openInGCal(a); }}
-                                title={`Abrir en Google Calendar: ${a.title}`}
+                                onClick={e => { e.stopPropagation(); openEdit(a); }}
+                                title={`Editar: ${a.title}`}
                                 style={{fontSize:"9px",fontWeight:700,color:"#fff",background:TYPE_COLORS[a.type]||"#6B7280",borderRadius:"3px",padding:"2px 3px",overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",lineHeight:1.4,cursor:"pointer",transition:"opacity 0.1s"}}>
                                 {a.time && <span style={{opacity:0.9}}>{a.time} </span>}{a.title}
                               </div>
@@ -2695,7 +2715,7 @@ export default function App() {
 
                   {/* Legend */}
                   <div style={{padding:"6px 12px",borderTop:"1px solid var(--line)",display:"flex",gap:"6px",flexWrap:"wrap",justifyContent:"center",alignItems:"center",flexShrink:0,paddingBottom:"max(8px,env(safe-area-inset-bottom))"}}>
-                    <span style={{fontSize:"10px",color:"var(--muted)",width:"100%",textAlign:"center"}}>Toca un día para agregar · Toca un evento para abrirlo en Google Calendar</span>
+                    <span style={{fontSize:"10px",color:"var(--muted)",width:"100%",textAlign:"center"}}>Toca un día para agregar · Toca un evento para editarlo</span>
                     {Object.entries(TYPE_COLORS).filter(([t])=>t!=="Cita").map(([type,color]) => (
                       <span key={type} style={{display:"flex",alignItems:"center",gap:"3px",fontSize:"10px",color:"var(--muted)"}}>
                         <span style={{width:"8px",height:"8px",borderRadius:"2px",background:color,flexShrink:0,display:"inline-block"}}></span>{type}
@@ -2704,54 +2724,136 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Mini add-event modal — floats centered over calendar */}
+                {/* Add event modal */}
                 {calendarAddDate && (
                   <div className="_cal-back" onClick={e => { if(e.target===e.currentTarget) setCalendarAddDate(null); }}
-                    style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.18)",zIndex:10}}>
-                    <div className="_cal-mini"
-                      style={{background:"#fff",borderRadius:"20px",padding:"24px",width:"min(360px,92vw)",boxShadow:"0 24px 64px rgba(0,0,0,0.18)",display:"flex",flexDirection:"column",gap:"12px"}}>
-
-                      {/* Mini header */}
-                      <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+                    style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.22)",zIndex:10}}>
+                    <div className="_cal-mini" style={{background:"#fff",borderRadius:"20px",width:"min(380px,92vw)",boxShadow:"0 24px 64px rgba(0,0,0,0.2)",overflow:"hidden"}}>
+                      <div style={{background:"linear-gradient(135deg,#C4526A,#a33a54)",padding:"18px 20px 16px",color:"#fff",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"8px"}}>
                         <div>
-                          <p style={{margin:"0 0 2px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.6px"}}>Nueva cita</p>
-                          <p style={{margin:0,fontSize:"16px",fontWeight:800,color:"var(--ink)",textTransform:"capitalize"}}>
+                          <p style={{margin:"0 0 3px",fontSize:"11px",fontWeight:700,opacity:0.8,textTransform:"uppercase",letterSpacing:"0.8px"}}>Nuevo evento</p>
+                          <p style={{margin:0,fontSize:"16px",fontWeight:800,textTransform:"capitalize",lineHeight:1.2}}>
                             {new Date(calendarAddDate+"T00:00:00").toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"long"})}
                           </p>
                         </div>
                         <button type="button" onClick={() => setCalendarAddDate(null)}
-                          style={{border:"none",background:"var(--line)",borderRadius:"8px",width:"30px",height:"30px",cursor:"pointer",fontSize:"15px",color:"var(--muted)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,marginLeft:"8px"}}>✕</button>
+                          style={{border:"none",background:"rgba(255,255,255,0.22)",borderRadius:"8px",width:"30px",height:"30px",cursor:"pointer",fontSize:"15px",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
                       </div>
-
-                      {/* Title */}
-                      <input autoFocus placeholder="Título de la cita" value={calendarNewAppt.title}
-                        onChange={e => setCalendarNewAppt(p => ({...p, title:e.target.value}))}
-                        onKeyDown={e => e.key==="Enter" && saveCalendarAppt()}
-                        style={{...inp}} />
-
-                      {/* Type + Time */}
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 110px",gap:"8px"}}>
-                        <select value={calendarNewAppt.type} onChange={e => setCalendarNewAppt(p => ({...p, type:e.target.value}))} style={{...inp}}>
-                          {CAL_TYPES.map(t => <option key={t}>{t}</option>)}
-                        </select>
-                        <input type="time" value={calendarNewAppt.time}
-                          onChange={e => setCalendarNewAppt(p => ({...p, time:e.target.value}))}
-                          style={{...inp}} />
-                      </div>
-
-                      {/* Recurrence */}
-                      <select value={calendarNewAppt.recurrence} onChange={e => setCalendarNewAppt(p => ({...p, recurrence:e.target.value}))} style={{...inp}}>
-                        {REC_OPTS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-                      </select>
-
-                      {/* Actions */}
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginTop:"4px"}}>
-                        <button type="button" onClick={() => setCalendarAddDate(null)}
-                          style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"10px",padding:"10px",fontSize:"14px",fontWeight:600,cursor:"pointer",color:"var(--ink)"}}>Cancelar</button>
-                        <button type="button" onClick={saveCalendarAppt}
-                          style={{border:"none",background:"#C4526A",borderRadius:"10px",padding:"10px",fontSize:"14px",fontWeight:700,cursor:"pointer",color:"#fff"}}>Guardar</button>
+                      <div style={{padding:"18px 20px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                        <input autoFocus placeholder="¿Qué tienes ese día?" value={calendarNewAppt.title}
+                          onChange={e => setCalendarNewAppt(p => ({...p, title:e.target.value}))}
+                          onKeyDown={e => e.key==="Enter" && saveCalendarAppt()}
+                          style={{...inp,fontWeight:500}} />
+                        <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px",alignItems:"start"}}>
+                          <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+                            <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Tipo</label>
+                            <select value={calendarNewAppt.type} onChange={e => setCalendarNewAppt(p => ({...p, type:e.target.value, customType:""}))} style={{...inp}}>
+                              <optgroup label="🏠 Hogar">
+                                {["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños"].map(t => <option key={t}>{t}</option>)}
+                              </optgroup>
+                              <optgroup label="💼 Trabajo">
+                                {["Reunión","Trabajo"].map(t => <option key={t}>{t}</option>)}
+                              </optgroup>
+                              <option value="Otro">✏️ Otro…</option>
+                            </select>
+                            {calendarNewAppt.type === "Otro" && (
+                              <input placeholder="¿Qué tipo de evento?" value={calendarNewAppt.customType||""}
+                                onChange={e => setCalendarNewAppt(p => ({...p, customType:e.target.value}))}
+                                style={{...inp,fontSize:"13px"}} />
+                            )}
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+                            <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Hora</label>
+                            <input type="time" value={calendarNewAppt.time}
+                              onChange={e => setCalendarNewAppt(p => ({...p, time:e.target.value}))}
+                              style={{...inp,width:"108px"}} />
+                          </div>
+                        </div>
+                        <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+                          <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Repetición</label>
+                          <select value={calendarNewAppt.recurrence} onChange={e => setCalendarNewAppt(p => ({...p, recurrence:e.target.value}))} style={{...inp}}>
+                            {REC_OPTS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                          </select>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginTop:"2px"}}>
+                          <button type="button" onClick={() => setCalendarAddDate(null)}
+                            style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"12px",padding:"11px",fontSize:"14px",fontWeight:600,cursor:"pointer",color:"var(--ink)"}}>Cancelar</button>
+                          <button type="button" onClick={saveCalendarAppt}
+                            style={{border:"none",background:"#C4526A",borderRadius:"12px",padding:"11px",fontSize:"14px",fontWeight:700,cursor:"pointer",color:"#fff"}}>Guardar evento</button>
+                        </div>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {/* Edit event modal */}
+                {calendarEditAppt && (
+                  <div className="_cal-back" onClick={e => { if(e.target===e.currentTarget) setCalendarEditAppt(null); }}
+                    style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.22)",zIndex:10}}>
+                    <div className="_cal-mini" style={{background:"#fff",borderRadius:"20px",width:"min(380px,92vw)",boxShadow:"0 24px 64px rgba(0,0,0,0.2)",overflow:"hidden"}}>
+                      <div style={{background:"linear-gradient(135deg,#4B5563,#374151)",padding:"18px 20px 16px",color:"#fff",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"8px"}}>
+                        <div>
+                          <p style={{margin:"0 0 3px",fontSize:"11px",fontWeight:700,opacity:0.8,textTransform:"uppercase",letterSpacing:"0.8px"}}>Editar evento</p>
+                          <p style={{margin:0,fontSize:"16px",fontWeight:800,textTransform:"capitalize",lineHeight:1.2}}>
+                            {new Date(calendarEditAppt.date+"T00:00:00").toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"long"})}
+                          </p>
+                        </div>
+                        <button type="button" onClick={() => setCalendarEditAppt(null)}
+                          style={{border:"none",background:"rgba(255,255,255,0.22)",borderRadius:"8px",width:"30px",height:"30px",cursor:"pointer",fontSize:"15px",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+                      </div>
+                      <div style={{padding:"18px 20px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                        <input autoFocus placeholder="¿Qué tienes ese día?" value={calendarEditAppt.title}
+                          onChange={e => setCalendarEditAppt(p => ({...p, title:e.target.value}))}
+                          onKeyDown={e => e.key==="Enter" && saveCalendarEdit()}
+                          style={{...inp,fontWeight:500}} />
+                        <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px",alignItems:"start"}}>
+                          <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+                            <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Tipo</label>
+                            <select value={calendarEditAppt.type} onChange={e => setCalendarEditAppt(p => ({...p, type:e.target.value, customType:""}))} style={{...inp}}>
+                              <optgroup label="🏠 Hogar">
+                                {["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños"].map(t => <option key={t}>{t}</option>)}
+                              </optgroup>
+                              <optgroup label="💼 Trabajo">
+                                {["Reunión","Trabajo"].map(t => <option key={t}>{t}</option>)}
+                              </optgroup>
+                              <option value="Otro">✏️ Otro…</option>
+                            </select>
+                            {calendarEditAppt.type === "Otro" && (
+                              <input placeholder="¿Qué tipo de evento?" value={calendarEditAppt.customType||""}
+                                onChange={e => setCalendarEditAppt(p => ({...p, customType:e.target.value}))}
+                                style={{...inp,fontSize:"13px"}} />
+                            )}
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+                            <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Hora</label>
+                            <input type="time" value={calendarEditAppt.time||""}
+                              onChange={e => setCalendarEditAppt(p => ({...p, time:e.target.value}))}
+                              style={{...inp,width:"108px"}} />
+                          </div>
+                        </div>
+                        <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+                          <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Repetición</label>
+                          <select value={calendarEditAppt.recurrence||"none"} onChange={e => setCalendarEditAppt(p => ({...p, recurrence:e.target.value}))} style={{...inp}}>
+                            {REC_OPTS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                          </select>
+                        </div>
+                        <div style={{display:"grid",gridTemplateColumns:"auto 1fr 1fr",gap:"8px",marginTop:"2px"}}>
+                          <button type="button" onClick={() => deleteCalAppt(calendarEditAppt.id)}
+                            style={{border:"1px solid #FECACA",background:"#FEF2F2",borderRadius:"12px",padding:"11px 14px",fontSize:"16px",cursor:"pointer"}} title="Eliminar evento">🗑</button>
+                          <button type="button" onClick={() => setCalendarEditAppt(null)}
+                            style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"12px",padding:"11px",fontSize:"14px",fontWeight:600,cursor:"pointer",color:"var(--ink)"}}>Cancelar</button>
+                          <button type="button" onClick={saveCalendarEdit}
+                            style={{border:"none",background:"#C4526A",borderRadius:"12px",padding:"11px",fontSize:"14px",fontWeight:700,cursor:"pointer",color:"#fff"}}>Guardar</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Toast notification */}
+                {calToast && (
+                  <div style={{position:"absolute",bottom:"20px",left:"50%",transform:"translateX(-50%)",background:"#1C1C1E",color:"#fff",borderRadius:"24px",padding:"11px 22px",fontSize:"13px",fontWeight:600,zIndex:20,whiteSpace:"nowrap",boxShadow:"0 8px 32px rgba(0,0,0,0.3)",display:"flex",alignItems:"center",gap:"8px",animation:"_calFade 0.25s ease",pointerEvents:"none"}}>
+                    {calToast}
                   </div>
                 )}
               </div>
