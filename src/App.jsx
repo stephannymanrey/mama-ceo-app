@@ -2540,19 +2540,14 @@ export default function App() {
           );
         }())}
         {/* Calendar FAB */}
-        {/* Calendario FAB — segundo desde abajo */}
         {(() => {
           const showMorningPrompt = !calMorningDismissed && clockNow.getHours() >= 6 && clockNow.getHours() < 12;
           return (
-            <div style={{position:"fixed",bottom:"92px",right:"28px",zIndex:1300,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"8px"}}>
-              {showMorningPrompt && (
-                <div className="cal-morning-tip">
-                  Agenda tus eventos<br/>de hoy aquí
-                </div>
-              )}
+            <div className="cal-fab-wrapper">
+              <div className="cal-morning-tip">Agenda tus eventos de hoy aquí</div>
               <button type="button"
                 onClick={() => { setShowCalendar(true); setCalMorningDismissed(true); }}
-                className={`cal-fab${showMorningPrompt ? " cal-fab--pulse" : ""}`}
+                className={`cal-fab${showMorningPrompt ? " cal-fab--morning" : ""}`}
                 title="Ver calendario">
                 📅
                 {showMorningPrompt && <span className="cal-fab-dot" />}
