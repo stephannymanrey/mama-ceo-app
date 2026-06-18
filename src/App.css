@@ -6152,3 +6152,67 @@ button {
 .pomo-party-title { font-size: 14px; font-weight: 700; color: var(--ink); margin: 0 0 4px; }
 .pomo-party-sub { font-size: 12px; color: var(--muted); margin: 0 0 8px; }
 .pomo-party-stars { font-size: 18px; margin: 0; }
+
+/* ── Calendar FAB ── */
+.cal-fab {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: var(--l-brand);
+  color: #fff;
+  font-size: 22px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 14px rgba(196,82,106,0.35);
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.cal-fab:hover { transform: scale(1.08); box-shadow: 0 6px 18px rgba(196,82,106,0.45); }
+.cal-fab--pulse { animation: cal-fab-pulse 1.8s ease-in-out infinite; }
+@keyframes cal-fab-pulse {
+  0%,100% { box-shadow: 0 4px 14px rgba(196,82,106,0.35); }
+  50%      { box-shadow: 0 0 0 10px rgba(196,82,106,0.15), 0 4px 14px rgba(196,82,106,0.35); }
+}
+.cal-fab-dot {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 10px;
+  height: 10px;
+  background: #F0C84A;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+.cal-morning-tip {
+  background: #fff;
+  border: 1px solid rgba(196,82,106,0.25);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.4;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── Dashboard Agenda event badges ── */
+.db-today-appt-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 20px;
+  background: #F0F9F4;
+  color: #2E7D52;
+  flex-shrink: 0;
+}
+.db-today-appt-badge--work {
+  background: #EEF2FF;
+  color: #4338CA;
+}

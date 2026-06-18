@@ -680,6 +680,8 @@ export default function App() {
   const [calendarMonth, setCalendarMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [calendarAddDate, setCalendarAddDate] = useState(null);
   const [calendarNewAppt, setCalendarNewAppt] = useState({ title: "", type: "Médico", time: "", recurrence: "none" });
+  const [calTab, setCalTab] = useState("all");
+  const [calMorningDismissed, setCalMorningDismissed] = useState(false);
   const [checkInStep, setCheckInStep] = useState(0);
   const [checkInResp, setCheckInResp] = useState({ dia: "", pensando: "", postergando: "", treinta: "", emocional: 5, social: 5, proyectos: 5 });
   const [checkInAnimating, setCheckInAnimating] = useState(false);
@@ -2537,11 +2539,25 @@ export default function App() {
         }())}
         {/* Calendar FAB */}
         {/* Calendario FAB — segundo desde abajo */}
-        <button type="button" onClick={() => setShowCalendar(true)}
-          style={{position:"fixed",bottom:"92px",right:"28px",zIndex:1300,width:"52px",height:"52px",borderRadius:"50%",background:"#fff",border:"2px solid #C4526A",color:"#C4526A",fontSize:"22px",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",boxShadow:"0 2px 12px rgba(0,0,0,0.12)",lineHeight:1}}
-          title="Ver calendario">
-          📅
-        </button>
+        {(() => {
+          const showMorningPrompt = !calMorningDismissed && clockNow.getHours() >= 6 && clockNow.getHours() < 12;
+          return (
+            <div style={{position:"fixed",bottom:"92px",right:"28px",zIndex:1300,display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"8px"}}>
+              {showMorningPrompt && (
+                <div className="cal-morning-tip">
+                  Agenda tus eventos<br/>de hoy aquí
+                </div>
+              )}
+              <button type="button"
+                onClick={() => { setShowCalendar(true); setCalMorningDismissed(true); }}
+                className={`cal-fab${showMorningPrompt ? " cal-fab--pulse" : ""}`}
+                title="Ver calendario">
+                📅
+                {showMorningPrompt && <span className="cal-fab-dot" />}
+              </button>
+            </div>
+          );
+        })()}
 
         {/* Plan FAB — abajo del todo */}
         <button
@@ -2564,11 +2580,18 @@ export default function App() {
           const totalCells  = Math.ceil((startOffset + lastDay.getDate()) / 7) * 7;
           const t0 = new Date(year, month, 1);
           const tEnd = new Date(year, month+1, 0); tEnd.setHours(23,59,59,999);
-          const monthAppts = expandAppts(appointments, 400).filter(a => { const d = new Date(a.date+"T00:00:00"); return d >= t0 && d <= tEnd; });
+          const CAL_TRABAJO = new Set(["Trabajo", "Reunión"]);
+          const CAL_TYPES_HOGAR   = ["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños","Otro"];
+          const CAL_TYPES_TRABAJO = ["Reunión","Trabajo"];
+          const allMonthAppts = expandAppts(appointments, 400).filter(a => { const d = new Date(a.date+"T00:00:00"); return d >= t0 && d <= tEnd; });
+          const monthAppts = calTab === "hogar"   ? allMonthAppts.filter(a => !CAL_TRABAJO.has(a.type))
+                           : calTab === "trabajo" ? allMonthAppts.filter(a =>  CAL_TRABAJO.has(a.type))
+                           : allMonthAppts;
           const apptsByDay = {};
           monthAppts.forEach(a => { const d = new Date(a.date+"T00:00:00").getDate(); if (!apptsByDay[d]) apptsByDay[d] = []; apptsByDay[d].push(a); });
           const TYPE_COLORS = { "Médico":"#C4526A","Cita":"#C4526A","Colegio":"#6B46C1","Dentista":"#e87b1e","Extracurricular":"#059669","Iglesia":"#7C3AED","Reunión":"#1D9E75","Trabajo":"#0EA5E9","Pago":"#2563EB","Cumpleaños":"#D97706","Otro":"#6B7280" };
-          const CAL_TYPES = ["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Reunión","Trabajo","Pago","Cumpleaños","Otro"];
+          const CAL_TYPES = calTab === "hogar" ? CAL_TYPES_HOGAR : calTab === "trabajo" ? CAL_TYPES_TRABAJO : ["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Reunión","Trabajo","Pago","Cumpleaños","Otro"];
+          const defaultType = calTab === "trabajo" ? "Reunión" : "Médico";
           const REC_OPTS = [["none","No se repite"],["weekly","Cada semana"],["monthly","Cada mes"],["yearly","Cada año"]];
           const isMobile = window.innerWidth < 700;
           const inp = {border:"1px solid var(--line)",borderRadius:"10px",padding:"10px 12px",fontSize:"14px",fontFamily:"inherit",outline:"none",width:"100%",boxSizing:"border-box",background:"#fff"};
@@ -2577,7 +2600,7 @@ export default function App() {
             if (!calendarNewAppt.title.trim()) return;
             setAppointments(prev => [...prev, { id: Date.now(), title: calendarNewAppt.title.trim(), date: calendarAddDate, time: calendarNewAppt.time, type: calendarNewAppt.type, recurrence: calendarNewAppt.recurrence || "none" }]);
             setCalendarAddDate(null);
-            setCalendarNewAppt({ title: "", type: "Médico", time: "", recurrence: "none" });
+            setCalendarNewAppt({ title: "", type: defaultType, time: "", recurrence: "none" });
           };
 
           const openInGCal = (a) => {
@@ -2622,6 +2645,18 @@ export default function App() {
                       style={{border:"none",background:"var(--line)",borderRadius:"10px",width:"38px",height:"38px",cursor:"pointer",fontSize:"16px",color:"var(--ink)",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontWeight:700}}>✕</button>
                   </div>
 
+                  {/* Tab bar: Todos / Hogar / Trabajo */}
+                  <div style={{display:"flex",gap:"4px",padding:"8px 14px 0",flexShrink:0,borderBottom:"1px solid var(--line)"}}>
+                    {[["all","Todos"],["hogar","🏠 Hogar"],["trabajo","💼 Trabajo"]].map(([id,label]) => (
+                      <button key={id} type="button" onClick={() => { setCalTab(id); setCalendarAddDate(null); }}
+                        style={{padding:"7px 14px",borderRadius:"8px 8px 0 0",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:calTab===id?700:500,
+                          background:calTab===id?"#fff":"transparent",color:calTab===id?"var(--ink)":"var(--muted)",
+                          borderBottom:calTab===id?"2px solid #C4526A":"2px solid transparent",transition:"all 0.15s"}}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+
                   {/* Day labels — single letters to avoid Sunday clip */}
                   <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",padding:"8px 4px 2px",flexShrink:0}}>
                     {["L","M","X","J","V","S","D"].map(d => (
@@ -2639,7 +2674,7 @@ export default function App() {
                       const isSelected = !!dateStr && dateStr === calendarAddDate;
                       const dayAppts = isThisMonth ? (apptsByDay[dayNum] || []) : [];
                       return (
-                        <div key={i} className={isThisMonth?"_cal-day":""} onClick={() => isThisMonth && setCalendarAddDate(isSelected?null:dateStr)}
+                        <div key={i} className={isThisMonth?"_cal-day":""} onClick={() => { if (!isThisMonth) return; setCalendarAddDate(isSelected?null:dateStr); if (!isSelected) setCalendarNewAppt(p => ({...p, type: defaultType})); }}
                           style={{borderRadius:"8px",padding:"4px 3px",background:isSelected?"rgba(196,82,106,0.11)":isToday?"#FEF3E0":"transparent",border:isSelected?"2px solid #C4526A":"2px solid transparent",display:"flex",flexDirection:"column",gap:"2px",overflow:"hidden",cursor:isThisMonth?"pointer":"default",transition:"all 0.12s"}}>
                           {isThisMonth && (<>
                             <span style={{fontSize:"13px",fontWeight:isToday||isSelected?800:500,color:isSelected?"#C4526A":isToday?"#A0722A":"var(--ink)",alignSelf:"center",lineHeight:1.3}}>{dayNum}</span>
@@ -2904,6 +2939,9 @@ export default function App() {
                   <div key={a.id} className="db-today-appt-row">
                     {a.time && <span className="db-today-appt-time">{a.time}</span>}
                     <span className="db-today-appt-name">{a.title}</span>
+                    <span className={`db-today-appt-badge${TRABAJO_TYPES.has(a.type) ? " db-today-appt-badge--work" : ""}`}>
+                      {TRABAJO_TYPES.has(a.type) ? "Trabajo" : "Hogar"}
+                    </span>
                   </div>
                 )) : <p className="db-today-nil">Sin citas hoy</p>}
               </div>
@@ -2940,7 +2978,7 @@ export default function App() {
                         {focusTasks.map(task => (
                           <div key={task.id} className="db-today-task-row">
                             <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--green)"}} />
-                            <span className={`db-today-task-title${task.done ? " db-today-task--done" : ""}`}>{task.title}</span>
+                            <span className={`db-today-task-title${task.done ? " db-today-task--done" : ""}`}>{task.text}</span>
                             {task.priority === "Urgente" && <span className="db-today-urgente">Urgente</span>}
                           </div>
                         ))}
