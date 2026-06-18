@@ -3,6 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { awsAuth, getAwsAuthToken, isAwsConfigured, confirmAwsResetPassword, onGoogleRedirectCallback } from "./lib/awsClient";
 import Logo from "./Logo";
 import Studio from "./Studio";
+import Landing from "./Landing";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -572,6 +573,7 @@ export default function App() {
   const [editingBrand, setEditingBrand] = useState(false);
   const [brandForm, setBrandForm] = useState(stored?.brandProfile || { ...initialBrandProfile });
   const [user, setUser] = useState(null);
+  const [preAuthView, setPreAuthView] = useState("landing");
   const [authMode, setAuthMode] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
   const [authName, setAuthName] = useState("");
@@ -1863,6 +1865,25 @@ export default function App() {
   }
 
   if (!user && awsActive) {
+    if (preAuthView === "landing") {
+      return (
+        <Landing
+          onLogin={() => { setAuthMode("login"); setPreAuthView("auth"); }}
+          onSignup={() => { setAuthMode("signup"); setPreAuthView("auth"); }}
+          onTerminos={() => setPreAuthView("terminos")}
+          onPrivacidad={() => setPreAuthView("privacidad")}
+          prices={PLAN_PRICES}
+          hotmartLinks={HOTMART_LINKS}
+          hotmartLinksYear={HOTMART_LINKS_YEAR}
+        />
+      );
+    }
+    if (preAuthView === "terminos") {
+      return renderTerminos(() => setPreAuthView("landing"));
+    }
+    if (preAuthView === "privacidad") {
+      return renderPrivacidad(() => setPreAuthView("landing"));
+    }
     return (
       <div className="auth-shell">
         <div className="auth-card">
@@ -1978,7 +1999,8 @@ export default function App() {
             </form>
           )}
           <footer className="auth-footer">
-            Una mamá con propósito | 2026 UMP S.A.S
+            <button type="button" onClick={() => setPreAuthView("landing")} style={{background:"none",border:"none",color:"var(--muted)",cursor:"pointer",fontSize:"13px",marginBottom:"8px",textDecoration:"underline"}}>← Volver al inicio</button>
+            <br />Una mamá con propósito | 2026 UMP S.A.S
           </footer>
         </div>
       </div>
@@ -5793,12 +5815,12 @@ function LineChart({ movements }) {
 
 
 
-  function renderTerminos() {
+  function renderTerminos(onBack = null) {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Términos y Condiciones</h2>
-          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>? Volver</button>
+          <button type="button" onClick={() => onBack ? onBack() : setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Volver</button>
         </div>
         <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
           <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 5 de junio de 2026</p>
@@ -5853,12 +5875,12 @@ function LineChart({ movements }) {
     );
   }
 
-  function renderPrivacidad() {
+  function renderPrivacidad(onBack = null) {
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Política de Privacidad</h2>
-          <button type="button" onClick={() => setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>? Volver</button>
+          <button type="button" onClick={() => onBack ? onBack() : setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Volver</button>
         </div>
         <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
           <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 5 de junio de 2026</p>
