@@ -648,7 +648,11 @@ export default function App() {
   const [homeFocusOverride, setHomeFocusOverride] = useState(stored?.homeFocusOverride || null);
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
   const [appointments, setAppointments] = useState(stored?.appointments || []);
-  const [weekMenu, setWeekMenu] = useState(stored?.weekMenu || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
+  const [weekMenu, setWeekMenu] = useState(() => {
+    const wm = stored?.weekMenu;
+    const mg = v => !v ? {desayuno:"",almuerzo:"",cena:"",snack:""} : typeof v==="string" ? {desayuno:"",almuerzo:v,cena:"",snack:""} : {desayuno:"",almuerzo:"",cena:"",snack:"",...v};
+    return {L:mg(wm?.L),M:mg(wm?.M),X:mg(wm?.X),J:mg(wm?.J),V:mg(wm?.V),S:mg(wm?.S),D:mg(wm?.D)};
+  });
   const [homeRoutines, setHomeRoutines] = useState(stored?.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
   const [kidsSchedule, setKidsSchedule] = useState(() => {
     const raw = stored?.kidsSchedule || {};
@@ -1359,7 +1363,7 @@ export default function App() {
     setUserMode(state.userMode || null);
     setHomeFocusOverride(state.homeFocusOverride || null);
     setAppointments(state.appointments || []);
-    setWeekMenu(state.weekMenu || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
+    setWeekMenu((() => { const wm=state.weekMenu; const mg=v=>!v?{desayuno:"",almuerzo:"",cena:"",snack:""}:typeof v==="string"?{desayuno:"",almuerzo:v,cena:"",snack:""}:{desayuno:"",almuerzo:"",cena:"",snack:"",...v}; return {L:mg(wm?.L),M:mg(wm?.M),X:mg(wm?.X),J:mg(wm?.J),V:mg(wm?.V),S:mg(wm?.S),D:mg(wm?.D)}; })());
     setHomeRoutines(state.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
     setKidsSchedule(() => {
       const raw = state.kidsSchedule || {};
@@ -3092,6 +3096,29 @@ export default function App() {
               )}
 
             </div>
+
+            {/* Menú de hoy strip */}
+            {(()=>{const tm=weekMenu[["D","L","M","X","J","V","S"][new Date().getDay()]]; const hasMenu=tm&&(typeof tm==="string"?tm:Object.values(tm).some(Boolean)); const d=tm&&(typeof tm==="string"?{almuerzo:tm}:tm)||{};
+              return (
+                <div style={{marginTop:"10px",padding:"10px 14px",background:"linear-gradient(135deg,rgba(196,82,106,0.06),rgba(196,82,106,0.02))",borderRadius:"12px",border:"1px solid rgba(196,82,106,0.12)",display:"flex",alignItems:"center",gap:"10px",flexWrap:"wrap"}}>
+                  <span style={{fontSize:"16px",flexShrink:0}}>🍽️</span>
+                  {hasMenu?(
+                    <div style={{flex:1,minWidth:0,display:"flex",gap:"12px",flexWrap:"wrap"}}>
+                      {d.desayuno&&<span style={{fontSize:"12px",color:"var(--muted)"}}><strong style={{color:"var(--ink)"}}>🌅</strong> {d.desayuno}</span>}
+                      {d.almuerzo&&<span style={{fontSize:"12px",color:"var(--muted)"}}><strong style={{color:"var(--ink)"}}>🍽️</strong> {d.almuerzo}</span>}
+                      {d.cena&&<span style={{fontSize:"12px",color:"var(--muted)"}}><strong style={{color:"var(--ink)"}}>🌙</strong> {d.cena}</span>}
+                      {d.snack&&<span style={{fontSize:"12px",color:"var(--muted)"}}><strong style={{color:"var(--ink)"}}>🍎</strong> {d.snack}</span>}
+                    </div>
+                  ):(
+                    <span style={{flex:1,fontSize:"12px",color:"var(--muted)",fontStyle:"italic"}}>Menú de hoy sin planear — Abi puede ayudarte</span>
+                  )}
+                  <button type="button" onClick={()=>setActiveView("home")}
+                    style={{fontSize:"11px",fontWeight:700,color:"#C4526A",background:"rgba(196,82,106,0.1)",border:"none",borderRadius:"8px",padding:"4px 10px",cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",flexShrink:0}}>
+                    {hasMenu?"Ver menú →":"Planear →"}
+                  </button>
+                </div>
+              );
+            })()}
           </div>
 
           {/* Meta del mes + Semana */}
@@ -4024,117 +4051,107 @@ export default function App() {
     const pendingCount  = homeTasks.filter(t => !t.done).length;
     const TABS = ["Hoy","Semana","Tareas","Mis Finanzas"];
 
-    // ── Abi menu database — por país y dieta ──
+    // ── Abi menu database — por país y dieta, 4 comidas por día ──
+    const MD=(d,a,c,s)=>({desayuno:d,almuerzo:a,cena:c,snack:s});
     const ABI_MENU_DB = {
       colombia:{
         normal:[
-          {L:"Arroz con pollo y ensalada verde",M:"Pasta boloñesa con pan",X:"Sopa de lentejas y aguacate",J:"Pescado al horno con papas",V:"Pollo a la plancha con fríjoles",S:"Bandeja paisa",D:"Sancocho de gallina"},
-          {L:"Fríjoles con arroz y chicharrón",M:"Carne asada con yuca y ensalada",X:"Crema de tomate con quesadillas",J:"Arroz con atún y vegetales",V:"Sudado de pollo con papas",S:"Chuletas con arroz y ensalada",D:"Estofado de res con verduras"},
-          {L:"Arroz con huevo y plátano maduro",M:"Sopa de guineo con pollo",X:"Pasta al pesto con pollo",J:"Lentejas con arroz y aguacate",V:"Pollo guisado con papas",S:"Pizza casera con ensalada",D:"Caldo de costilla"},
+          {L:MD("Arepa con huevo y café","Arroz con pollo y ensalada verde","Sopa de lentejas","Fruta picada"),M:MD("Avena con fruta","Pasta boloñesa con pan","Huevos revueltos con plátano","Yogur natural"),X:MD("Changua con pan","Sopa de lentejas y aguacate","Arroz con atún","Nueces y banano"),J:MD("Huevos fritos con arepa","Pescado al horno con papas","Crema de verduras","Mango con limón"),V:MD("Chocolate con pandebono","Pollo a la plancha con fríjoles","Mazamorra con leche","Maní tostado"),S:MD("Calentado con café","Bandeja paisa","Sancocho ligero","Helado de paila"),D:MD("Changua especial","Sancocho de gallina","Fríjoles con arroz","Brevas con arequipe")},
+          {L:MD("Tostadas con queso y jugo","Fríjoles con arroz y chicharrón","Sopa de pasta","Fruta de temporada"),M:MD("Huevos perico con arepa","Carne asada con yuca y ensalada","Crema de tomate","Galletas con queso"),X:MD("Avena caliente con pan","Arroz con atún y vegetales","Huevos tibios con pan","Manzana"),J:MD("Arepas con mantequilla","Sudado de pollo con papas","Sopa de fideos","Chontaduro"),V:MD("Granola con leche","Chuletas con arroz y ensalada","Arroz con huevo","Bocadillo con queso"),S:MD("Changua con almojábanas","Arroz con pollo guisado","Lentejas rápidas","Fruta de temporada"),D:MD("Huevos con arepa y café","Estofado de res con verduras","Caldo de costilla","Arequipe con galletas")},
         ],
         vegetariano:[
-          {L:"Arroz con vegetales salteados",M:"Pasta primavera con queso",X:"Sopa de verduras con pan",J:"Lentejas con arroz y plátano",V:"Quesadillas de espinaca y champiñones",S:"Pizza de vegetales",D:"Crema de zapallo con ensalada"},
-          {L:"Tofu con arroz integral",M:"Pasta con pesto y tomates",X:"Crema de brócoli con pan",J:"Garbanzos guisados con arroz",V:"Burrito de frijoles y aguacate",S:"Crepes de vegetales",D:"Sopa de calabaza"},
+          {L:MD("Avena con fruta","Arroz con vegetales salteados","Sopa de verduras","Galletas integrales"),M:MD("Tostadas con queso","Pasta primavera con queso","Crema de brócoli","Fruta"),X:MD("Jugo con pan","Sopa de verduras con pan","Huevos revueltos","Yogur"),J:MD("Granola con leche","Lentejas con arroz y plátano","Ensalada con queso","Maní"),V:MD("Avena con banano","Quesadillas de espinaca","Arroz con verduras","Fruta"),S:MD("Tostadas con aguacate","Pizza de vegetales","Sopa de tomate","Galletas"),D:MD("Huevos benedictinos","Crema de zapallo con ensalada","Pasta al pesto","Yogur con granola")},
         ],
         economico:[
-          {L:"Fríjoles con arroz y plátano",M:"Sopa de pasta con pollo",X:"Revuelto de huevos con papa",J:"Arroz con atún y ensalada",V:"Lentejas con arroz y aguacate",S:"Estofado económico de pollo",D:"Sancocho de papa"},
-          {L:"Arroz con huevo y ensalada",M:"Sopa de verduras",X:"Fríjoles con arroz",J:"Pasta con salsa de tomate",V:"Pollo económico con arroz",S:"Mazorca con pollo asado",D:"Caldo de papa con costilla"},
+          {L:MD("Arepa con café","Fríjoles con arroz y plátano","Sopa de papa","Fruta"),M:MD("Huevos con pan","Sopa de pasta con pollo","Arroz con huevo","Galletas"),X:MD("Avena","Revuelto de huevos con papa","Fríjoles","Banano"),J:MD("Pan con mantequilla","Arroz con atún","Sopa de fideos","Maní"),V:MD("Chocolate con pan","Lentejas con aguacate","Arroz con pollo","Fruta"),S:MD("Calentado","Estofado económico","Sopa de arroz","Galletas"),D:MD("Changua","Sancocho de papa","Fríjoles","Fruta de temporada")},
         ],
       },
       mexico:{
         normal:[
-          {L:"Tacos de pollo con salsa verde",M:"Enchiladas rojas con crema",X:"Sopa de lima yucateca",J:"Chile relleno con arroz rojo",V:"Quesadillas con guacamole",S:"Pozole rojo con tostadas",D:"Tamales de pollo con atole"},
-          {L:"Arroz rojo con frijoles y quesadillas",M:"Milanesa a la mexicana",X:"Sopa de tortilla con crema",J:"Pollo en mole verde",V:"Tostadas de tinga de pollo",S:"Carnitas con tortillas y salsa",D:"Caldo tlalpeño con pollo"},
+          {L:MD("Chilaquiles con crema y queso","Tacos de pollo con salsa verde","Sopa de lima yucateca","Fruta picada"),M:MD("Tamales con atole","Enchiladas rojas con crema","Caldo de pollo","Elote con chile"),X:MD("Pan dulce con café","Chile relleno con arroz rojo","Sopa de fideo","Mango"),J:MD("Huevos rancheros con frijoles","Pollo en mole verde","Crema de verduras","Jícama con limón"),V:MD("Quesadillas con frijoles","Tostadas de tinga de pollo","Sopa de tortilla","Fruta"),S:MD("Enfrijoladas con queso","Pozole rojo con tostadas","Tamales refritos","Cacahuates"),D:MD("Huevos a la mexicana","Caldo tlalpeño con pollo","Frijoles de olla","Fruta de temporada")},
         ],
         vegetariano:[
-          {L:"Tacos de nopales con queso",M:"Enchiladas verdes de queso",X:"Sopa de fideos seco",J:"Quesadillas de champiñones",V:"Chiles rellenos de queso",S:"Tostadas de frijoles con aguacate",D:"Tamales de rajas con queso"},
+          {L:MD("Avena con fruta y miel","Tacos de nopales con queso","Sopa de fideo seco","Jícama"),M:MD("Pan dulce con café de olla","Enchiladas verdes de queso","Crema de chayote","Fruta"),X:MD("Tostadas con frijoles","Quesadillas de champiñones","Sopa de verduras","Pepino con limón"),J:MD("Huevos divorciados","Chiles rellenos de queso","Crema de calabaza","Maní"),V:MD("Fruta con granola","Tostadas de frijoles con aguacate","Sopa de lentejas","Fruta"),S:MD("Molletes con queso","Tamales de rajas con queso","Elote hervido","Cacahuates"),D:MD("Atole con pan","Arroz con rajas","Frijoles con queso","Fruta")},
         ],
         economico:[
-          {L:"Frijoles de olla con tortillas",M:"Arroz rojo con huevo frito",X:"Sopa de verduras con chile",J:"Quesadillas de frijoles",V:"Huevos a la mexicana con frijoles",S:"Arroz con leche de coco",D:"Caldo de verduras con tortillas"},
+          {L:MD("Tortillas con frijoles","Arroz rojo con frijoles","Sopa de pasta","Fruta"),M:MD("Pan con mantequilla","Quesadillas de frijoles","Sopa de verduras","Pepino"),X:MD("Avena","Huevos a la mexicana","Arroz rojo","Fruta"),J:MD("Tortillas con huevo","Sopa de verduras con chile","Frijoles","Limón con sal"),V:MD("Chilaquiles simples","Arroz con leche de coco","Sopa de fideos","Fruta"),S:MD("Pan con crema","Carnitas básicas con tortillas","Caldo de frijoles","Fruta"),D:MD("Atole de maíz","Caldo de pollo con verduras","Frijoles de olla","Fruta")},
         ],
       },
       argentina:{
         normal:[
-          {L:"Milanesa napolitana con papas fritas",M:"Tallarines con estofado de carne",X:"Locro norteño con pan",J:"Empanadas de carne al horno",V:"Pollo al horno con ensalada mixta",S:"Asado con chimichurri",D:"Puchero de verduras y carne"},
-          {L:"Revuelto de papas con chorizo",M:"Fideos con tuco casero",X:"Sopa de cebolla gratinada",J:"Albóndigas en salsa roja",V:"Milanesa de pollo con ensalada",S:"Pizza casera napolitana",D:"Carbonada criolla"},
+          {L:MD("Tostadas con mermelada y mate","Milanesa napolitana con papas","Sopa de verduras","Fruta"),M:MD("Medialunas con café","Tallarines con estofado de carne","Ensalada mixta","Alfajor"),X:MD("Tostadas con queso y mate","Locro norteño con pan","Sopa de cebolla","Fruta"),J:MD("Huevos revueltos con pan","Empanadas de carne al horno","Crema de verduras","Nueces"),V:MD("Yogur con granola","Pollo al horno con ensalada","Fideos con manteca","Fruta"),S:MD("Huevos con pan y mate","Asado con chimichurri","Ensalada rusa","Fruta"),D:MD("Facturas con mate","Puchero de verduras y carne","Sopa de pollo","Dulce de leche con galletitas")},
         ],
         vegetariano:[
-          {L:"Milanesa de soja con papas",M:"Fideos con salsa de tomates",X:"Tarta de verduras al horno",J:"Ensalada de lentejas con queso",V:"Tortilla española de papas",S:"Pizza de mozzarella y albahaca",D:"Berenjenas a la parmesana"},
+          {L:MD("Tostadas con palta y mate","Milanesa de soja con papas","Sopa de verduras","Fruta"),M:MD("Medialunas con café","Fideos con salsa de tomates","Ensalada caprese","Alfajor vegano"),X:MD("Granola con leche","Tarta de verduras al horno","Crema de zapallo","Fruta"),J:MD("Huevos revueltos con pan","Ensalada de lentejas con queso","Sopa fría de tomate","Nueces"),V:MD("Yogur con frutas","Tortilla española de papas","Fideos con pesto","Fruta"),S:MD("Tostadas con queso","Pizza de mozzarella y albahaca","Ensalada mixta","Fruta"),D:MD("Mate con bizcochos","Berenjenas a la parmesana","Sopa de lentejas","Fruta")},
         ],
         economico:[
-          {L:"Guiso de lentejas con pan",M:"Fideos con manteca y queso",X:"Sopa de verduras",J:"Arroz con papas",V:"Tortilla de papa y cebolla",S:"Revuelto de huevos con verduras",D:"Polenta con tuco de tomate"},
+          {L:MD("Pan con mantequilla y mate","Guiso de lentejas con pan","Sopa de verduras","Fruta"),M:MD("Tostadas con azúcar","Fideos con manteca y queso","Ensalada simple","Galletas"),X:MD("Avena con leche","Sopa de verduras","Arroz con papas","Fruta"),J:MD("Huevos duros con pan","Arroz con papas","Caldo de pollo","Fruta"),V:MD("Pan con mermelada","Tortilla de papa y cebolla","Sopa de lentejas","Galletas"),S:MD("Mate con pan","Revuelto de huevos con verduras","Fideos simples","Fruta"),D:MD("Tostadas con mate","Polenta con tuco de tomate","Sopa de pan","Fruta")},
         ],
       },
       peru:{
         normal:[
-          {L:"Lomo saltado con arroz y papas",M:"Ají de gallina con arroz",X:"Causa limeña de atún",J:"Seco de pollo con frejoles",V:"Tallarín saltado de pollo",S:"Ceviche de pescado con choclo",D:"Estofado de pollo con arroz"},
-          {L:"Quinua guisada con pollo",M:"Papa a la huancaína",X:"Sopa de quinua con verduras",J:"Pollo a la brasa con papas",V:"Tacu tacu con bistec apanado",S:"Anticuchos con papas doradas",D:"Caldo de gallina peruano"},
+          {L:MD("Pan con mantequilla y café","Lomo saltado con arroz y papas","Sopa de menestrón","Fruta de temporada"),M:MD("Quinua con leche y canela","Ají de gallina con arroz","Caldo de gallina","Mazamorra morada"),X:MD("Pan con queso y café","Causa limeña de atún","Sopa de quinua","Fruta"),J:MD("Huevos revueltos con pan","Seco de pollo con frejoles","Crema de verduras","Choclo"),V:MD("Avena con leche","Tallarín saltado de pollo","Sopa de pollo","Fruta"),S:MD("Pan con jamón y jugo","Ceviche de pescado con choclo","Anticuchos","Mazamorra"),D:MD("Chicha morada con pan","Caldo de gallina peruano","Arroz con leche","Fruta")},
         ],
         vegetariano:[
-          {L:"Quinua guisada con verduras",M:"Causa de papa con palta",X:"Sopa de fideos con huevo",J:"Tacu tacu de frejoles",V:"Papa rellena vegetariana",S:"Arroz con leche y canela",D:"Crema de zapallo con pan"},
+          {L:MD("Quinua con leche","Tacu tacu de frejoles","Sopa de verduras","Fruta"),M:MD("Pan con palta","Causa de papa con palta","Crema de zapallo","Choclo"),X:MD("Avena","Sopa de fideos con huevo","Arroz con frejoles","Fruta"),J:MD("Tostadas con queso","Ensalada de quinua","Sopa de verduras","Maní"),V:MD("Granola","Papa rellena vegetariana","Caldo de verduras","Fruta"),S:MD("Pan con mantequilla","Arroz con leche y canela","Sopa de lentejas","Canchita"),D:MD("Chicha de quinua","Crema de zapallo con pan","Tacu tacu básico","Fruta")},
         ],
         economico:[
-          {L:"Arroz con frejoles y plátano",M:"Sopa de verduras con fideos",X:"Tallarín verde con papas",J:"Revuelto de huevos con papas",V:"Guiso de arroz amarillo",S:"Pan con palta y huevo",D:"Caldo de verduras"},
+          {L:MD("Pan con café","Arroz con frejoles y plátano","Sopa de verduras","Fruta"),M:MD("Avena","Sopa de verduras con fideos","Arroz blanco","Banano"),X:MD("Pan con queso","Tallarín verde con papas","Caldo simple","Fruta"),J:MD("Huevos hervidos","Revuelto de huevos con papas","Frejoles","Fruta"),V:MD("Avena con azúcar","Guiso de arroz amarillo","Sopa de papa","Fruta"),S:MD("Pan con mermelada","Pan con palta y huevo","Sopa de verduras","Fruta"),D:MD("Arroz con leche","Caldo de verduras","Arroz simple","Fruta")},
         ],
       },
       venezuela:{
         normal:[
-          {L:"Pabellón criollo con tajadas",M:"Pollo guisado con arroz blanco",X:"Sopa de pollo venezolana",J:"Caraotas negras fritas con arroz",V:"Asado negro con papas",S:"Hallacas con ensalada",D:"Hervido de res con verduras"},
-          {L:"Arepas rellenas de perico",M:"Arroz con pollo venezolano",X:"Pasta a la marinara",J:"Bistec encebollado con arroz",V:"Carne mechada con caraotas",S:"Tequeños con ensalada verde",D:"Sancocho de gallina"},
+          {L:MD("Arepas con perico","Pabellón criollo con tajadas","Sopa de pollo venezolana","Fruta"),M:MD("Cachitos con café","Pollo guisado con arroz blanco","Caraotas negras","Papelón con limón"),X:MD("Pan de jamón con jugo","Arroz con pollo venezolano","Sopa de verduras","Fruta"),J:MD("Tequeños con café","Bistec encebollado con arroz","Caldo de pollo","Cambur"),V:MD("Arepas con queso blanco","Carne mechada con caraotas","Sopa de pasta","Fruta"),S:MD("Cachapas con queso","Hallacas con ensalada","Pernil con arroz","Bienmesabe"),D:MD("Arepas dominicales","Hervido de res con verduras","Sancocho","Fruta")},
         ],
         vegetariano:[
-          {L:"Arepas de queso con ensalada",M:"Caraotas negras con arroz",X:"Sopa de verduras con yuca",J:"Bollitos de maíz con queso",V:"Pasta con queso crema y tomates",S:"Cachapas con queso de mano",D:"Arroz con vegetales salteados"},
+          {L:MD("Arepas de queso","Caraotas negras con arroz","Sopa de verduras","Fruta"),M:MD("Pan de queso con café","Bollitos de maíz con queso","Crema de auyama","Cambur"),X:MD("Tostadas con margarina","Sopa de verduras con yuca","Arroz blanco","Fruta"),J:MD("Cachapas simples","Pasta con queso crema y tomates","Sopa de lentejas","Nueces"),V:MD("Avena","Arroz con vegetales","Caraotas","Fruta"),S:MD("Cachapas con queso de mano","Pastelitos de queso","Sopa de auyama","Fruta"),D:MD("Hallaquitas de maíz","Arroz con vegetales salteados","Caraotas con plátano","Fruta")},
         ],
         economico:[
-          {L:"Arroz con caraotas y plátano",M:"Sopa de pasta con pollo",X:"Arepas con queso",J:"Pasta con salsa de tomate",V:"Caraotas con tajadas",S:"Arroz con huevo frito",D:"Sopa de verduras con arepa"},
+          {L:MD("Arepa con café","Arroz con caraotas y plátano","Sopa de pasta","Fruta"),M:MD("Pan con margarina","Sopa de pasta con pollo","Caraotas","Cambur"),X:MD("Avena","Arepas con queso","Arroz blanco","Fruta"),J:MD("Arepa con queso","Pasta con salsa de tomate","Caraotas","Fruta"),V:MD("Pan con margarina","Caraotas con tajadas","Sopa de verduras","Fruta"),S:MD("Cachapas simples","Arroz con huevo frito","Sopa básica","Fruta"),D:MD("Arepa con mantequilla","Sopa de verduras con arepa","Caraotas","Fruta")},
         ],
       },
       chile:{
         normal:[
-          {L:"Cazuela de vacuno con zapallo",M:"Porotos con rienda",X:"Pastel de choclo",J:"Empanadas de pino al horno",V:"Chorrillana con huevo frito",S:"Asado al palo con pebre",D:"Caldo de vacuno con papas"},
-          {L:"Pollo arvejado con arroz",M:"Charquicán de vacuno",X:"Sopa de mariscos",J:"Tallarines con salsa de carne",V:"Milanesa con puré de papas",S:"Pizza al estilo chileno",D:"Estofado de pollo con verduras"},
+          {L:MD("Tostadas con palta y café","Cazuela de vacuno con zapallo","Sopa de verduras","Fruta"),M:MD("Pan con mantequilla y té","Porotos con rienda","Ensalada chilena","Fruta"),X:MD("Huevos revueltos con pan","Pastel de choclo","Sopa de pollo","Fruta"),J:MD("Yogur con granola","Empanadas de pino al horno","Crema de verduras","Nueces"),V:MD("Avena con leche","Chorrillana con huevo","Sopa de fideos","Fruta"),S:MD("Pancakes con miel","Asado al palo con pebre","Ensalada mixta","Fruta"),D:MD("Huevos con pan y café","Caldo de vacuno con papas","Sopa de lentejas","Fruta")},
         ],
         vegetariano:[
-          {L:"Porotos con rienda sin carne",M:"Cazuela de verduras",X:"Pastel de choclo vegetariano",J:"Ensalada chilena con pan amasado",V:"Tarta de espinaca y queso",S:"Pizza napolitana",D:"Sopa de verduras con pan"},
+          {L:MD("Tostadas con palta","Porotos con rienda sin carne","Sopa de verduras","Fruta"),M:MD("Yogur con granola","Cazuela de verduras","Ensalada chilena","Nueces"),X:MD("Pan con queso","Pastel de choclo vegetariano","Crema de zapallo","Fruta"),J:MD("Avena","Ensalada chilena con pan amasado","Sopa de lentejas","Fruta"),V:MD("Tostadas con mermelada","Tarta de espinaca y queso","Sopa de fideos","Fruta"),S:MD("Huevos revueltos","Pizza napolitana","Ensalada mixta","Fruta"),D:MD("Pan con mantequilla","Sopa de verduras con pan","Arroz con verduras","Fruta")},
         ],
         economico:[
-          {L:"Arroz graneado con huevo frito",M:"Porotos granados",X:"Sopa de pollo con fideos",J:"Guiso de arroz con verduras",V:"Revuelto de papas y cebolla",S:"Pan con palta",D:"Caldo de pollo con fideos"},
+          {L:MD("Pan con mantequilla","Arroz graneado con huevo frito","Sopa de pollo","Fruta"),M:MD("Avena con azúcar","Porotos granados","Ensalada","Fruta"),X:MD("Tostadas","Sopa de pollo con fideos","Arroz con verduras","Fruta"),J:MD("Pan con huevo","Guiso de arroz con verduras","Sopa simple","Fruta"),V:MD("Avena","Revuelto de papas y cebolla","Arroz con huevo","Fruta"),S:MD("Pan con palta","Pan con palta","Sopa de verduras","Fruta"),D:MD("Huevos con pan","Caldo de pollo con fideos","Arroz blanco","Fruta")},
         ],
       },
       espana:{
         normal:[
-          {L:"Paella valenciana",M:"Cocido madrileño",X:"Gazpacho andaluz con jamón",J:"Tortilla española con pan",V:"Merluza al horno con papas",S:"Pulpo a la gallega con cachelos",D:"Caldo gallego"},
-          {L:"Arroz con pollo al estilo español",M:"Lentejas estofadas con chorizo",X:"Sopa de ajo castellana",J:"Bacalao al pil pil",V:"Croquetas de jamón con ensalada",S:"Fideuà con alioli",D:"Rabo de toro estofado"},
+          {L:MD("Tostadas con aceite y jamón","Paella valenciana","Gazpacho andaluz","Fruta"),M:MD("Churros con chocolate","Cocido madrileño","Sopa de ajo castellana","Fruta"),X:MD("Pan con tomate y aceite","Tortilla española con pan","Crema de verduras","Fruta"),J:MD("Huevos con pan","Merluza al horno con papas","Sopa de pescado","Fruta"),V:MD("Yogur con miel","Croquetas de jamón con ensalada","Caldo de pollo","Fruta"),S:MD("Tostadas con mantequilla","Pulpo a la gallega con cachelos","Gazpacho","Fruta"),D:MD("Pan con aceite y café","Caldo gallego","Empanada gallega","Fruta")},
         ],
         vegetariano:[
-          {L:"Pisto manchego con huevo",M:"Gazpacho con tostadas",X:"Tortilla española de patatas",J:"Lentejas estofadas con pimentón",V:"Berenjenas rellenas de verduras",S:"Pizza española de verduras",D:"Crema de verduras asadas"},
+          {L:MD("Tostadas con tomate y aceite","Pisto manchego con huevo","Gazpacho","Fruta"),M:MD("Magdalenas con café","Gazpacho con tostadas","Crema de verduras","Fruta"),X:MD("Pan con aceite","Tortilla española de patatas","Sopa fría de tomate","Fruta"),J:MD("Yogur con granola","Lentejas estofadas con pimentón","Crema de calabacín","Fruta"),V:MD("Tostadas con mermelada","Berenjenas rellenas de verduras","Sopa de verduras","Fruta"),S:MD("Cereales con leche","Pizza española de verduras","Ensalada mixta","Fruta"),D:MD("Pan con aceite y tomate","Crema de verduras asadas","Huevos al plato","Fruta")},
         ],
         economico:[
-          {L:"Lentejas estofadas con pan",M:"Sopa de ajo castellana",X:"Arroz a la cubana con tomate",J:"Tortilla de patatas y cebolla",V:"Pasta con tomate y orégano",S:"Pan con tomate y aceite",D:"Caldo de verduras con pan"},
+          {L:MD("Pan con aceite","Lentejas estofadas con pan","Sopa de verduras","Fruta"),M:MD("Tostadas con mantequilla","Sopa de ajo castellana","Arroz a la cubana","Fruta"),X:MD("Pan con tomate","Arroz a la cubana con tomate","Sopa de fideos","Fruta"),J:MD("Cereales","Tortilla de patatas y cebolla","Caldo de pollo","Fruta"),V:MD("Pan con mermelada","Pasta con tomate y orégano","Ensalada","Fruta"),S:MD("Tostadas","Pan con tomate y aceite","Sopa de lentejas","Fruta"),D:MD("Leche con galletas","Caldo de verduras con pan","Arroz blanco","Fruta")},
         ],
       },
       brasil:{
         normal:[
-          {L:"Feijoada con arroz y farofa",M:"Frango grelhado com arroz e feijão",X:"Caldo verde com pão",J:"Moqueca de peixe com arroz",V:"Churrasco de frango com mandioca",S:"Picanha com arroz e farofa",D:"Cozido brasileiro"},
-          {L:"Arroz com feijão e bife",M:"Macarrão com molho à bolonhesa",X:"Sopa de legumes",J:"Frango ao forno com batatas",V:"Bolinho de carne com arroz",S:"Pizza brasileira com calabresa",D:"Estrogonofe de frango"},
+          {L:MD("Pão de queijo com café","Feijoada com arroz e farofa","Caldo verde","Fruta"),M:MD("Tapioca com queijo","Frango grelhado com arroz e feijão","Sopa de legumes","Açaí"),X:MD("Bolo de banana com café","Macarrão à bolonhesa","Arroz com feijão","Fruta"),J:MD("Iogurte com granola","Moqueca de peixe com arroz","Sopa de cenoura","Fruta"),V:MD("Pão com manteiga","Churrasco de frango com mandioca","Feijão tropeiro","Fruta"),S:MD("Vitamina de fruta","Picanha com arroz e farofa","Caldinho de feijão","Fruta"),D:MD("Cuscuz com ovo","Cozido brasileiro","Sopa de galinha","Fruta")},
         ],
         vegetariano:[
-          {L:"Arroz com feijão e salada",M:"Macarrão com molho de tomate",X:"Sopa de mandioca com verduras",J:"Quibe de aveia assado",V:"Empadão de legumes",S:"Pizza margherita",D:"Creme de abóbora"},
+          {L:MD("Tapioca com queijo","Arroz com feijão e salada","Sopa de legumes","Fruta"),M:MD("Pão de queijo com café","Macarrão com molho de tomate","Creme de abóbora","Fruta"),X:MD("Aveia com fruta","Sopa de mandioca com verduras","Arroz com feijão","Fruta"),J:MD("Iogurte com granola","Quibe de aveia assado","Sopa de cenoura","Fruta"),V:MD("Vitamina verde","Empadão de legumes","Feijão simples","Fruta"),S:MD("Cuscuz com queijo","Pizza margherita","Sopa de tomate","Fruta"),D:MD("Açaí com granola","Creme de abóbora","Arroz integral","Fruta")},
         ],
         economico:[
-          {L:"Arroz com feijão e ovo frito",M:"Macarrão simples com tomate",X:"Sopa de legumes barata",J:"Farofa com banana",V:"Frango com batata cozida",S:"Tapioca com queijo",D:"Caldo de feijão com pão"},
+          {L:MD("Pão com manteiga","Arroz com feijão e ovo frito","Sopa de legumes","Fruta"),M:MD("Tapioca simples","Macarrão simples com tomate","Feijão","Banana"),X:MD("Aveia com leite","Sopa de legumes","Arroz com ovo","Fruta"),J:MD("Pão com ovo","Farofa com banana","Caldo de feijão","Fruta"),V:MD("Cuscuz","Frango com batata cozida","Feijão simples","Fruta"),S:MD("Pão com margarina","Tapioca com queijo","Sopa de macarrão","Fruta"),D:MD("Mingau de aveia","Caldo de feijão com pão","Arroz simples","Fruta")},
         ],
       },
       internacional:{
         normal:[
-          {L:"Pollo al curry con arroz basmati",M:"Pasta carbonara italiana",X:"Ramen de pollo japonés",J:"Bowl mediterráneo con hummus",V:"Salmón a la plancha con ensalada",S:"Paella de mariscos",D:"Estofado de res al vino tinto"},
-          {L:"Pad Thai de pollo",M:"Hamburguesas caseras con ensalada",X:"Sopa thai de coco",J:"Tacos mexicanos con guacamole",V:"Salmón teriyaki con arroz",S:"Pizza margherita",D:"Pollo asado al limón con vegetales"},
+          {L:MD("Smoothie bowl con granola","Pollo al curry con arroz basmati","Ramen de pollo japonés","Fruta"),M:MD("Tostadas con aguacate y huevo","Pasta carbonara italiana","Bowl mediterráneo con hummus","Nueces"),X:MD("Yogur griego con fruta","Salmón a la plancha con ensalada","Sopa thai de coco","Fruta"),J:MD("Granola con leche","Bowl mediterráneo con hummus","Pollo tikka masala","Fruta"),V:MD("Huevos benedictinos","Tacos mexicanos con guacamole","Sopa de tomate","Galletas"),S:MD("Pancakes con miel","Paella de mariscos","Pollo teriyaki con arroz","Fruta"),D:MD("Tostadas francesas","Estofado de res al vino tinto","Sopa de cebolla","Fruta")},
         ],
         vegetariano:[
-          {L:"Buddha bowl de quinua",M:"Pasta al pesto con tomates",X:"Curry de garbanzos indio",J:"Falafel con pita y tzatziki",V:"Bowl de tofu teriyaki con arroz",S:"Pizza de vegetales",D:"Sopa de lentejas rojas"},
+          {L:MD("Smoothie verde con pan","Buddha bowl de quinua","Sopa de lentejas rojas","Fruta"),M:MD("Tostadas con pesto","Pasta al pesto con tomates","Crema de zanahoria","Nueces"),X:MD("Yogur con semillas","Curry de garbanzos indio","Sopa de miso","Fruta"),J:MD("Avena con fruta","Falafel con pita y tzatziki","Bowl de verduras asadas","Hummus con zanahoria"),V:MD("Granola con leche","Bowl de tofu teriyaki","Sopa de tomate","Fruta"),S:MD("Tostadas con aguacate","Pizza de vegetales","Ensalada mediterránea","Fruta"),D:MD("Pancakes de avena","Sopa de lentejas rojas","Dal de lentejas","Fruta")},
         ],
         economico:[
-          {L:"Arroz frito con huevo estilo asiático",M:"Pasta con salsa de tomate",X:"Sopa de verduras",J:"Lentejas con arroz y especias",V:"Quesadillas de frijoles",S:"Arroz con vegetales salteados",D:"Caldo vegetal con pan"},
+          {L:MD("Pan con huevo","Arroz frito con huevo estilo asiático","Sopa de verduras","Fruta"),M:MD("Avena","Pasta con salsa de tomate","Lentejas","Banana"),X:MD("Tostadas con mermelada","Sopa de verduras","Arroz con huevo","Fruta"),J:MD("Pan con mantequilla","Lentejas con arroz y especias","Caldo de verduras","Fruta"),V:MD("Cereales","Quesadillas de frijoles","Sopa de fideos","Fruta"),S:MD("Tostadas","Arroz con vegetales salteados","Sopa simple","Fruta"),D:MD("Avena caliente","Caldo vegetal con pan","Arroz blanco","Fruta")},
         ],
       },
     };
@@ -4146,16 +4163,21 @@ export default function App() {
 
     // ── Grocery from menu ──
     const INGREDIENT_HINTS = [
-      [/pollo/i,"Pollo (kg)"],[/pasta/i,"Pasta (500g)"],[/arroz/i,"Arroz (kg)"],
-      [/lentejas/i,"Lentejas (500g)"],[/pescado/i,"Pescado (500g)"],[/carne|res/i,"Carne de res (500g)"],
-      [/fríjoles|frijoles/i,"Fríjoles (500g)"],[/huevo/i,"Huevos (12 und)"],[/atún/i,"Atún en lata"],
-      [/papa/i,"Papas (kg)"],[/tomate/i,"Tomates (kg)"],[/aguacate/i,"Aguacates"],
-      [/plátano/i,"Plátanos"],[/queso/i,"Queso (250g)"],[/pan/i,"Pan"],[/yuca/i,"Yuca (kg)"],
+      [/pollo/i,"Pollo (kg)"],[/pasta|macarr/i,"Pasta (500g)"],[/arroz/i,"Arroz (kg)"],
+      [/lentejas/i,"Lentejas (500g)"],[/pescado|salmón/i,"Pescado (500g)"],[/carne|res|bife|lomo/i,"Carne de res (500g)"],
+      [/fríjoles|frijoles|feijão|caraotas|frejoles/i,"Fríjoles (500g)"],[/huevo|huevos|ovo|perico/i,"Huevos (12 und)"],[/atún/i,"Atún en lata"],
+      [/papa|papas|patata|batata/i,"Papas (kg)"],[/tomate/i,"Tomates (kg)"],[/aguacate|palta|abacate/i,"Aguacates"],
+      [/plátano|banana|banano|cambur/i,"Plátanos"],[/queso|queijo/i,"Queso (250g)"],[/pan|pão|arepa|tortilla|tostada/i,"Pan"],
+      [/yuca|mandioca/i,"Yuca (kg)"],[/quinua|quinoa/i,"Quinua (500g)"],[/leche|leite/i,"Leche (lt)"],[/fruta/i,"Frutas variadas"],
     ];
     const suggestedGrocery = (() => {
       const found = new Set();
-      Object.values(weekMenu).forEach(meal => { if (!meal) return; INGREDIENT_HINTS.forEach(([rx,item]) => { if (rx.test(meal)) found.add(item); }); });
-      found.add("Aceite de cocina"); found.add("Sal y condimentos"); found.add("Frutas frescas");
+      Object.values(weekMenu).forEach(dayMenu => {
+        if (!dayMenu) return;
+        const meals = typeof dayMenu==="string" ? [dayMenu] : Object.values(dayMenu).filter(Boolean);
+        meals.forEach(meal => INGREDIENT_HINTS.forEach(([rx,item]) => { if (rx.test(meal)) found.add(item); }));
+      });
+      found.add("Aceite de cocina"); found.add("Sal y condimentos");
       return [...found];
     })();
     const addSuggestedToList = () => {
@@ -4224,12 +4246,18 @@ export default function App() {
                 <span className="home-today-card-ai-badge">✨ IA</span>
               </div>
               <p className="home-today-card-label" style={{color:"rgba(255,255,255,0.75)"}}>Menú de hoy</p>
-              {weekMenu[todayDay]
-                ? <p className="home-today-card-val" style={{color:"#fff"}}>{weekMenu[todayDay]}</p>
-                : <p className="home-today-card-empty" style={{color:"rgba(255,255,255,0.7)"}}>Sin planear aún</p>
-              }
+              {(()=>{const tm=weekMenu[todayDay]; const hasMenu=tm&&(typeof tm==="string"?tm:Object.values(tm).some(Boolean));
+                if(!hasMenu) return <p className="home-today-card-empty" style={{color:"rgba(255,255,255,0.65)"}}>Sin planear aún</p>;
+                const d=typeof tm==="string"?{almuerzo:tm}:tm;
+                return <div style={{display:"flex",flexDirection:"column",gap:"3px"}}>
+                  {d.desayuno&&<p style={{margin:0,fontSize:"11px",color:"rgba(255,255,255,0.8)"}}><span style={{opacity:0.7}}>🌅</span> {d.desayuno}</p>}
+                  {d.almuerzo&&<p style={{margin:0,fontSize:"13px",fontWeight:700,color:"#fff"}}><span style={{opacity:0.8}}>🍽️</span> {d.almuerzo}</p>}
+                  {d.cena&&<p style={{margin:0,fontSize:"11px",color:"rgba(255,255,255,0.8)"}}><span style={{opacity:0.7}}>🌙</span> {d.cena}</p>}
+                  {d.snack&&<p style={{margin:0,fontSize:"11px",color:"rgba(255,255,255,0.75)"}}><span style={{opacity:0.7}}>🍎</span> {d.snack}</p>}
+                </div>;
+              })()}
               <button type="button" className="home-today-card-menu-cta" onClick={() => setShowMenuModal(true)}>
-                {weekMenu[todayDay] ? "Cambiar menú" : "Planear con Abi"}
+                {weekMenu[todayDay]&&Object.values(typeof weekMenu[todayDay]==="string"?{a:weekMenu[todayDay]}:weekMenu[todayDay]).some(Boolean) ? "Cambiar menú" : <><span className="abi-avatar">A</span> Planear con Abi</>}
               </button>
             </div>
             <div className="home-today-card">
@@ -4406,17 +4434,33 @@ export default function App() {
                 </div>
                 <button type="button" onClick={()=>setShowMenuModal(true)}
                   style={{padding:"7px 14px",background:"rgba(196,82,106,0.09)",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700,color:"#C4526A",whiteSpace:"nowrap"}}>
-                  ✨ Planear con Abi
+                  <span className="abi-avatar">A</span> Planear con Abi
                 </button>
               </div>
-              <div style={{display:"grid",gap:"6px"}}>
-                {DAY_LABELS.map(([key,name])=>(
-                  <div key={key} style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                    <span style={{width:"28px",height:"28px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
-                    <input value={weekMenu[key]||""} onChange={e=>setWeekMenu(m=>({...m,[key]:e.target.value}))} placeholder={todayDay===key?"¿Qué cocinas hoy?":name+"..."}
-                      style={{flex:1,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5",outline:"none"}}/>
-                  </div>
-                ))}
+              <div style={{display:"grid",gap:"8px"}}>
+                {DAY_LABELS.map(([key,name])=>{
+                  const dm=weekMenu[key]||{}; const isToday=todayDay===key;
+                  const upd=(field,val)=>setWeekMenu(m=>({...m,[key]:{...(typeof m[key]==="string"?{almuerzo:m[key]}:m[key]||{}),desayuno:"",almuerzo:"",cena:"",snack:"",...(typeof m[key]==="string"?{almuerzo:m[key]}:m[key]||{}),[field]:val}}));
+                  return (
+                    <div key={key} style={{padding:"10px 12px",borderRadius:"12px",border:`1px solid ${isToday?"rgba(196,82,106,0.35)":"var(--line)"}`,background:isToday?"#fdf5f7":"#faf7f5"}}>
+                      <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px"}}>
+                        <span style={{width:"26px",height:"26px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:isToday?"#C4526A":"var(--line)",color:isToday?"#fff":"var(--muted)"}}>{key}</span>
+                        <span style={{fontSize:"12px",fontWeight:700,color:isToday?"#C4526A":"var(--muted)"}}>{name}{isToday?" — Hoy":""}</span>
+                      </div>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"5px"}}>
+                        {[["desayuno","🌅","Desayuno"],["almuerzo","🍽️","Almuerzo"],["cena","🌙","Cena"],["snack","🍎","Snack"]].map(([field,ico,label])=>(
+                          <div key={field}>
+                            <p style={{margin:"0 0 3px",fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.3px"}}>{ico} {label}</p>
+                            <input value={(typeof dm==="string"&&field==="almuerzo"?dm:typeof dm==="object"?dm[field]||"":"")}
+                              onChange={e=>upd(field,e.target.value)}
+                              placeholder={`${name}...`}
+                              style={{width:"100%",padding:"6px 8px",font:"inherit",fontSize:"12px",borderRadius:"7px",border:"1px solid rgba(0,0,0,0.1)",background:"#fff",outline:"none",boxSizing:"border-box"}}/>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -4543,7 +4587,7 @@ export default function App() {
                   <h3 style={{margin:"0 0 2px",fontSize:"15px"}}>Lista de mercado 🛒</h3>
                   <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Del menú + lo que necesites agregar.</p>
                 </div>
-                {Object.values(weekMenu).some(v=>v)&&(
+                {Object.values(weekMenu).some(v=>v&&(typeof v==="string"?v:Object.values(v).some(Boolean)))&&(
                   <button type="button" onClick={addSuggestedToList}
                     style={{padding:"6px 12px",background:"rgba(14,165,233,0.08)",border:"1px solid rgba(14,165,233,0.25)",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700,color:"#0EA5E9",whiteSpace:"nowrap"}}>
                     ✨ Importar del menú
@@ -4813,9 +4857,12 @@ export default function App() {
           <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}} onClick={e=>e.target===e.currentTarget&&(setShowMenuModal(false),setAbiMenuSuggestion(null))}>
             <div style={{background:"#fff",borderRadius:"20px",width:"min(500px,100%)",maxHeight:"88vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 80px rgba(0,0,0,0.22)"}}>
               <div style={{background:"linear-gradient(135deg,#C4526A,#a33a54)",padding:"20px 22px",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexShrink:0}}>
-                <div>
-                  <p style={{margin:"0 0 2px",fontSize:"11px",fontWeight:700,opacity:0.8,letterSpacing:"0.8px",textTransform:"uppercase"}}>✨ Abi — Asistente de menú</p>
-                  <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Planea tu menú semanal</p>
+                <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+                  <div className="abi-avatar-lg">A</div>
+                  <div>
+                    <p style={{margin:"0 0 2px",fontSize:"11px",fontWeight:700,opacity:0.8,letterSpacing:"0.8px",textTransform:"uppercase"}}>Asistente de menú</p>
+                    <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Hola, soy Abi 👋</p>
+                  </div>
                 </div>
                 <button type="button" onClick={()=>{setShowMenuModal(false);setAbiMenuSuggestion(null);}} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"8px",width:"30px",height:"30px",cursor:"pointer",color:"#fff",fontSize:"15px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
               </div>
@@ -4877,14 +4924,29 @@ export default function App() {
                   </div>
                 ):(
                   <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
-                    {(()=>{const PAIS_LABELS={colombia:"🇨🇴 Colombia",mexico:"🇲🇽 México",argentina:"🇦🇷 Argentina",peru:"🇵🇪 Perú",venezuela:"🇻🇪 Venezuela",chile:"🇨🇱 Chile",brasil:"🇧🇷 Brasil",espana:"🇪🇸 España",internacional:"🌎 Internacional"};return(<p style={{margin:"0 0 4px",fontSize:"14px",color:"var(--ink)"}}>Menú <strong>{PAIS_LABELS[abiMenuPrefs.pais]||""}</strong> — puedes editar cualquier día antes de guardarlo.</p>);})()}
-                    {DAY_LABELS.map(([key,name])=>(
-                      <div key={key} style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                        <span style={{width:"28px",height:"28px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
-                        <input value={abiMenuSuggestion[key]||""} onChange={e=>setAbiMenuSuggestion(p=>({...p,[key]:e.target.value}))}
-                          style={{flex:1,padding:"8px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none"}}/>
-                      </div>
-                    ))}
+                    {(()=>{const PAIS_LABELS={colombia:"🇨🇴 Colombia",mexico:"🇲🇽 México",argentina:"🇦🇷 Argentina",peru:"🇵🇪 Perú",venezuela:"🇻🇪 Venezuela",chile:"🇨🇱 Chile",brasil:"🇧🇷 Brasil",espana:"🇪🇸 España",internacional:"🌎 Internacional"};return(<p style={{margin:"0 0 4px",fontSize:"14px",color:"var(--ink)"}}>Menú <strong>{PAIS_LABELS[abiMenuPrefs.pais]||""}</strong> — edita lo que necesites antes de guardar.</p>);})()}
+                    {DAY_LABELS.map(([key,name])=>{
+                      const dm=abiMenuSuggestion[key]||{}; const isToday=todayDay===key;
+                      const upd=(field,val)=>setAbiMenuSuggestion(p=>({...p,[key]:{...(p[key]||{}),[field]:val}}));
+                      return (
+                        <div key={key} style={{padding:"10px 12px",borderRadius:"12px",border:`1px solid ${isToday?"rgba(196,82,106,0.35)":"var(--line)"}`,background:isToday?"#fdf5f7":"#faf7f5"}}>
+                          <div style={{display:"flex",alignItems:"center",gap:"7px",marginBottom:"7px"}}>
+                            <span style={{width:"24px",height:"24px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:isToday?"#C4526A":"#e0d9d1",color:isToday?"#fff":"var(--muted)"}}>{key}</span>
+                            <span style={{fontSize:"11px",fontWeight:700,color:isToday?"#C4526A":"var(--muted)"}}>{name}{isToday?" — Hoy":""}</span>
+                          </div>
+                          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
+                            {[["desayuno","🌅","Desayuno"],["almuerzo","🍽️","Almuerzo"],["cena","🌙","Cena"],["snack","🍎","Snack"]].map(([field,ico,label])=>(
+                              <div key={field}>
+                                <p style={{margin:"0 0 2px",fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.3px"}}>{ico} {label}</p>
+                                <input value={typeof dm==="string"&&field==="almuerzo"?dm:typeof dm==="object"?dm[field]||"":""}
+                                  onChange={e=>upd(field,e.target.value)} placeholder={`${name}...`}
+                                  style={{width:"100%",padding:"6px 8px",font:"inherit",fontSize:"12px",borderRadius:"7px",border:"1px solid rgba(0,0,0,0.1)",background:"#fff",outline:"none",boxSizing:"border-box"}}/>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginTop:"6px"}}>
                       <button type="button" onClick={()=>setAbiMenuSuggestion(generateAbiMenu())}
                         style={{padding:"11px",background:"#fff",color:"var(--ink)",border:"1px solid var(--line)",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:600}}>
