@@ -673,7 +673,7 @@ export default function App() {
   const [homeBudgetError, setHomeBudgetError] = useState("");
   const [homeTab, setHomeTab] = useState(0);
   const [showMenuModal, setShowMenuModal] = useState(false);
-  const [abiMenuPrefs, setAbiMenuPrefs] = useState({ personas: "4", dieta: "normal" });
+  const [abiMenuPrefs, setAbiMenuPrefs] = useState({ personas: "4", dieta: "normal", pais: "colombia" });
   const [abiMenuSuggestion, setAbiMenuSuggestion] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [familyMembers, setFamilyMembers] = useState(stored?.familyMembers || []);
@@ -4022,23 +4022,125 @@ export default function App() {
     const pendingCount  = homeTasks.filter(t => !t.done).length;
     const TABS = ["Hoy","Semana","Tareas","Mis Finanzas"];
 
-    // ── Abi menu database ──
+    // ── Abi menu database — por país y dieta ──
     const ABI_MENU_DB = {
-      normal:[
-        {L:"Arroz con pollo y ensalada verde",M:"Pasta boloñesa con pan",X:"Sopa de lentejas y aguacate",J:"Pescado al horno con papas",V:"Pollo a la plancha con fríjoles",S:"Bandeja paisa",D:"Sancocho de gallina"},
-        {L:"Fríjoles con arroz y chicharrón",M:"Carne asada con yuca y ensalada",X:"Crema de tomate con quesadillas",J:"Arroz con atún y vegetales",V:"Sudado de pollo con papas",S:"Chuletas con arroz y ensalada",D:"Estofado de res con verduras"},
-        {L:"Arroz con huevo y plátano maduro",M:"Sopa de guineo con pollo",X:"Pasta al pesto con pollo",J:"Lentejas con arroz y aguacate",V:"Pollo guisado con papas",S:"Pizza casera con ensalada",D:"Caldo de costilla"},
-      ],
-      vegetariano:[
-        {L:"Arroz con vegetales salteados",M:"Pasta primavera con queso",X:"Sopa de verduras con pan",J:"Lentejas con arroz y plátano",V:"Quesadillas de espinaca y champiñones",S:"Pizza de vegetales",D:"Crema de zapallo con ensalada"},
-        {L:"Tofu con arroz integral",M:"Pasta con pesto y tomates",X:"Crema de brócoli con pan",J:"Garbanzos guisados con arroz",V:"Burrito de frijoles y aguacate",S:"Crepes de vegetales",D:"Sopa de calabaza"},
-      ],
-      economico:[
-        {L:"Fríjoles con arroz y plátano",M:"Sopa de pasta con pollo",X:"Revuelto de huevos con papa",J:"Arroz con atún y ensalada",V:"Lentejas con arroz y aguacate",S:"Estofado económico de pollo",D:"Sancocho de papa"},
-        {L:"Arroz con huevo y ensalada",M:"Sopa de verduras",X:"Fríjoles con arroz",J:"Pasta con salsa de tomate",V:"Pollo económico con arroz",S:"Mazorca con pollo asado",D:"Caldo de papa con costilla"},
-      ],
+      colombia:{
+        normal:[
+          {L:"Arroz con pollo y ensalada verde",M:"Pasta boloñesa con pan",X:"Sopa de lentejas y aguacate",J:"Pescado al horno con papas",V:"Pollo a la plancha con fríjoles",S:"Bandeja paisa",D:"Sancocho de gallina"},
+          {L:"Fríjoles con arroz y chicharrón",M:"Carne asada con yuca y ensalada",X:"Crema de tomate con quesadillas",J:"Arroz con atún y vegetales",V:"Sudado de pollo con papas",S:"Chuletas con arroz y ensalada",D:"Estofado de res con verduras"},
+          {L:"Arroz con huevo y plátano maduro",M:"Sopa de guineo con pollo",X:"Pasta al pesto con pollo",J:"Lentejas con arroz y aguacate",V:"Pollo guisado con papas",S:"Pizza casera con ensalada",D:"Caldo de costilla"},
+        ],
+        vegetariano:[
+          {L:"Arroz con vegetales salteados",M:"Pasta primavera con queso",X:"Sopa de verduras con pan",J:"Lentejas con arroz y plátano",V:"Quesadillas de espinaca y champiñones",S:"Pizza de vegetales",D:"Crema de zapallo con ensalada"},
+          {L:"Tofu con arroz integral",M:"Pasta con pesto y tomates",X:"Crema de brócoli con pan",J:"Garbanzos guisados con arroz",V:"Burrito de frijoles y aguacate",S:"Crepes de vegetales",D:"Sopa de calabaza"},
+        ],
+        economico:[
+          {L:"Fríjoles con arroz y plátano",M:"Sopa de pasta con pollo",X:"Revuelto de huevos con papa",J:"Arroz con atún y ensalada",V:"Lentejas con arroz y aguacate",S:"Estofado económico de pollo",D:"Sancocho de papa"},
+          {L:"Arroz con huevo y ensalada",M:"Sopa de verduras",X:"Fríjoles con arroz",J:"Pasta con salsa de tomate",V:"Pollo económico con arroz",S:"Mazorca con pollo asado",D:"Caldo de papa con costilla"},
+        ],
+      },
+      mexico:{
+        normal:[
+          {L:"Tacos de pollo con salsa verde",M:"Enchiladas rojas con crema",X:"Sopa de lima yucateca",J:"Chile relleno con arroz rojo",V:"Quesadillas con guacamole",S:"Pozole rojo con tostadas",D:"Tamales de pollo con atole"},
+          {L:"Arroz rojo con frijoles y quesadillas",M:"Milanesa a la mexicana",X:"Sopa de tortilla con crema",J:"Pollo en mole verde",V:"Tostadas de tinga de pollo",S:"Carnitas con tortillas y salsa",D:"Caldo tlalpeño con pollo"},
+        ],
+        vegetariano:[
+          {L:"Tacos de nopales con queso",M:"Enchiladas verdes de queso",X:"Sopa de fideos seco",J:"Quesadillas de champiñones",V:"Chiles rellenos de queso",S:"Tostadas de frijoles con aguacate",D:"Tamales de rajas con queso"},
+        ],
+        economico:[
+          {L:"Frijoles de olla con tortillas",M:"Arroz rojo con huevo frito",X:"Sopa de verduras con chile",J:"Quesadillas de frijoles",V:"Huevos a la mexicana con frijoles",S:"Arroz con leche de coco",D:"Caldo de verduras con tortillas"},
+        ],
+      },
+      argentina:{
+        normal:[
+          {L:"Milanesa napolitana con papas fritas",M:"Tallarines con estofado de carne",X:"Locro norteño con pan",J:"Empanadas de carne al horno",V:"Pollo al horno con ensalada mixta",S:"Asado con chimichurri",D:"Puchero de verduras y carne"},
+          {L:"Revuelto de papas con chorizo",M:"Fideos con tuco casero",X:"Sopa de cebolla gratinada",J:"Albóndigas en salsa roja",V:"Milanesa de pollo con ensalada",S:"Pizza casera napolitana",D:"Carbonada criolla"},
+        ],
+        vegetariano:[
+          {L:"Milanesa de soja con papas",M:"Fideos con salsa de tomates",X:"Tarta de verduras al horno",J:"Ensalada de lentejas con queso",V:"Tortilla española de papas",S:"Pizza de mozzarella y albahaca",D:"Berenjenas a la parmesana"},
+        ],
+        economico:[
+          {L:"Guiso de lentejas con pan",M:"Fideos con manteca y queso",X:"Sopa de verduras",J:"Arroz con papas",V:"Tortilla de papa y cebolla",S:"Revuelto de huevos con verduras",D:"Polenta con tuco de tomate"},
+        ],
+      },
+      peru:{
+        normal:[
+          {L:"Lomo saltado con arroz y papas",M:"Ají de gallina con arroz",X:"Causa limeña de atún",J:"Seco de pollo con frejoles",V:"Tallarín saltado de pollo",S:"Ceviche de pescado con choclo",D:"Estofado de pollo con arroz"},
+          {L:"Quinua guisada con pollo",M:"Papa a la huancaína",X:"Sopa de quinua con verduras",J:"Pollo a la brasa con papas",V:"Tacu tacu con bistec apanado",S:"Anticuchos con papas doradas",D:"Caldo de gallina peruano"},
+        ],
+        vegetariano:[
+          {L:"Quinua guisada con verduras",M:"Causa de papa con palta",X:"Sopa de fideos con huevo",J:"Tacu tacu de frejoles",V:"Papa rellena vegetariana",S:"Arroz con leche y canela",D:"Crema de zapallo con pan"},
+        ],
+        economico:[
+          {L:"Arroz con frejoles y plátano",M:"Sopa de verduras con fideos",X:"Tallarín verde con papas",J:"Revuelto de huevos con papas",V:"Guiso de arroz amarillo",S:"Pan con palta y huevo",D:"Caldo de verduras"},
+        ],
+      },
+      venezuela:{
+        normal:[
+          {L:"Pabellón criollo con tajadas",M:"Pollo guisado con arroz blanco",X:"Sopa de pollo venezolana",J:"Caraotas negras fritas con arroz",V:"Asado negro con papas",S:"Hallacas con ensalada",D:"Hervido de res con verduras"},
+          {L:"Arepas rellenas de perico",M:"Arroz con pollo venezolano",X:"Pasta a la marinara",J:"Bistec encebollado con arroz",V:"Carne mechada con caraotas",S:"Tequeños con ensalada verde",D:"Sancocho de gallina"},
+        ],
+        vegetariano:[
+          {L:"Arepas de queso con ensalada",M:"Caraotas negras con arroz",X:"Sopa de verduras con yuca",J:"Bollitos de maíz con queso",V:"Pasta con queso crema y tomates",S:"Cachapas con queso de mano",D:"Arroz con vegetales salteados"},
+        ],
+        economico:[
+          {L:"Arroz con caraotas y plátano",M:"Sopa de pasta con pollo",X:"Arepas con queso",J:"Pasta con salsa de tomate",V:"Caraotas con tajadas",S:"Arroz con huevo frito",D:"Sopa de verduras con arepa"},
+        ],
+      },
+      chile:{
+        normal:[
+          {L:"Cazuela de vacuno con zapallo",M:"Porotos con rienda",X:"Pastel de choclo",J:"Empanadas de pino al horno",V:"Chorrillana con huevo frito",S:"Asado al palo con pebre",D:"Caldo de vacuno con papas"},
+          {L:"Pollo arvejado con arroz",M:"Charquicán de vacuno",X:"Sopa de mariscos",J:"Tallarines con salsa de carne",V:"Milanesa con puré de papas",S:"Pizza al estilo chileno",D:"Estofado de pollo con verduras"},
+        ],
+        vegetariano:[
+          {L:"Porotos con rienda sin carne",M:"Cazuela de verduras",X:"Pastel de choclo vegetariano",J:"Ensalada chilena con pan amasado",V:"Tarta de espinaca y queso",S:"Pizza napolitana",D:"Sopa de verduras con pan"},
+        ],
+        economico:[
+          {L:"Arroz graneado con huevo frito",M:"Porotos granados",X:"Sopa de pollo con fideos",J:"Guiso de arroz con verduras",V:"Revuelto de papas y cebolla",S:"Pan con palta",D:"Caldo de pollo con fideos"},
+        ],
+      },
+      espana:{
+        normal:[
+          {L:"Paella valenciana",M:"Cocido madrileño",X:"Gazpacho andaluz con jamón",J:"Tortilla española con pan",V:"Merluza al horno con papas",S:"Pulpo a la gallega con cachelos",D:"Caldo gallego"},
+          {L:"Arroz con pollo al estilo español",M:"Lentejas estofadas con chorizo",X:"Sopa de ajo castellana",J:"Bacalao al pil pil",V:"Croquetas de jamón con ensalada",S:"Fideuà con alioli",D:"Rabo de toro estofado"},
+        ],
+        vegetariano:[
+          {L:"Pisto manchego con huevo",M:"Gazpacho con tostadas",X:"Tortilla española de patatas",J:"Lentejas estofadas con pimentón",V:"Berenjenas rellenas de verduras",S:"Pizza española de verduras",D:"Crema de verduras asadas"},
+        ],
+        economico:[
+          {L:"Lentejas estofadas con pan",M:"Sopa de ajo castellana",X:"Arroz a la cubana con tomate",J:"Tortilla de patatas y cebolla",V:"Pasta con tomate y orégano",S:"Pan con tomate y aceite",D:"Caldo de verduras con pan"},
+        ],
+      },
+      brasil:{
+        normal:[
+          {L:"Feijoada con arroz y farofa",M:"Frango grelhado com arroz e feijão",X:"Caldo verde com pão",J:"Moqueca de peixe com arroz",V:"Churrasco de frango com mandioca",S:"Picanha com arroz e farofa",D:"Cozido brasileiro"},
+          {L:"Arroz com feijão e bife",M:"Macarrão com molho à bolonhesa",X:"Sopa de legumes",J:"Frango ao forno com batatas",V:"Bolinho de carne com arroz",S:"Pizza brasileira com calabresa",D:"Estrogonofe de frango"},
+        ],
+        vegetariano:[
+          {L:"Arroz com feijão e salada",M:"Macarrão com molho de tomate",X:"Sopa de mandioca com verduras",J:"Quibe de aveia assado",V:"Empadão de legumes",S:"Pizza margherita",D:"Creme de abóbora"},
+        ],
+        economico:[
+          {L:"Arroz com feijão e ovo frito",M:"Macarrão simples com tomate",X:"Sopa de legumes barata",J:"Farofa com banana",V:"Frango com batata cozida",S:"Tapioca com queijo",D:"Caldo de feijão com pão"},
+        ],
+      },
+      internacional:{
+        normal:[
+          {L:"Pollo al curry con arroz basmati",M:"Pasta carbonara italiana",X:"Ramen de pollo japonés",J:"Bowl mediterráneo con hummus",V:"Salmón a la plancha con ensalada",S:"Paella de mariscos",D:"Estofado de res al vino tinto"},
+          {L:"Pad Thai de pollo",M:"Hamburguesas caseras con ensalada",X:"Sopa thai de coco",J:"Tacos mexicanos con guacamole",V:"Salmón teriyaki con arroz",S:"Pizza margherita",D:"Pollo asado al limón con vegetales"},
+        ],
+        vegetariano:[
+          {L:"Buddha bowl de quinua",M:"Pasta al pesto con tomates",X:"Curry de garbanzos indio",J:"Falafel con pita y tzatziki",V:"Bowl de tofu teriyaki con arroz",S:"Pizza de vegetales",D:"Sopa de lentejas rojas"},
+        ],
+        economico:[
+          {L:"Arroz frito con huevo estilo asiático",M:"Pasta con salsa de tomate",X:"Sopa de verduras",J:"Lentejas con arroz y especias",V:"Quesadillas de frijoles",S:"Arroz con vegetales salteados",D:"Caldo vegetal con pan"},
+        ],
+      },
     };
-    const generateAbiMenu = () => { const pool = ABI_MENU_DB[abiMenuPrefs.dieta]||ABI_MENU_DB.normal; return pool[Math.floor(Math.random()*pool.length)]; };
+    const generateAbiMenu = () => {
+      const countryDB = ABI_MENU_DB[abiMenuPrefs.pais] || ABI_MENU_DB.colombia;
+      const pool = countryDB[abiMenuPrefs.dieta] || countryDB.normal;
+      return pool[Math.floor(Math.random()*pool.length)];
+    };
 
     // ── Grocery from menu ──
     const INGREDIENT_HINTS = [
@@ -4599,8 +4701,31 @@ export default function App() {
               </div>
               <div style={{padding:"20px 22px",overflowY:"auto",flex:1}}>
                 {!abiMenuSuggestion?(
-                  <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
-                    <p style={{margin:0,fontSize:"14px",color:"var(--ink)",lineHeight:1.5}}>Cuéntame un poco y te ayudo a planear una semana de comidas balanceadas para tu familia.</p>
+                  <div style={{display:"flex",flexDirection:"column",gap:"18px"}}>
+                    <p style={{margin:0,fontSize:"14px",color:"var(--ink)",lineHeight:1.5}}>Cuéntame un poco y te sugiero un menú típico de tu país, adaptado a tu familia.</p>
+
+                    <div>
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"10px"}}>¿De dónde son tus recetas?</label>
+                      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"7px"}}>
+                        {[
+                          ["colombia","🇨🇴","Colombia"],
+                          ["mexico","🇲🇽","México"],
+                          ["argentina","🇦🇷","Argentina"],
+                          ["peru","🇵🇪","Perú"],
+                          ["venezuela","🇻🇪","Venezuela"],
+                          ["chile","🇨🇱","Chile"],
+                          ["brasil","🇧🇷","Brasil"],
+                          ["espana","🇪🇸","España"],
+                          ["internacional","🌎","Internacional"],
+                        ].map(([key,flag,name])=>(
+                          <button key={key} type="button" onClick={()=>setAbiMenuPrefs(p=>({...p,pais:key}))}
+                            style={{padding:"9px 6px",borderRadius:"10px",border:`2px solid ${abiMenuPrefs.pais===key?"#C4526A":"var(--line)"}`,background:abiMenuPrefs.pais===key?"rgba(196,82,106,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:abiMenuPrefs.pais===key?700:400,display:"flex",alignItems:"center",justifyContent:"center",gap:"5px",transition:"all 0.15s"}}>
+                            <span style={{fontSize:"16px"}}>{flag}</span>{name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
                     <div>
                       <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"8px"}}>¿Cuántas personas?</label>
                       <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
@@ -4612,6 +4737,7 @@ export default function App() {
                         ))}
                       </div>
                     </div>
+
                     <div>
                       <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"8px"}}>Preferencia alimentaria</label>
                       <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
@@ -4623,14 +4749,15 @@ export default function App() {
                         ))}
                       </div>
                     </div>
+
                     <button type="button" onClick={()=>setAbiMenuSuggestion(generateAbiMenu())}
-                      style={{marginTop:"4px",padding:"13px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>
+                      style={{marginTop:"2px",padding:"13px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>
                       ✨ Generar mi menú
                     </button>
                   </div>
                 ):(
                   <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
-                    <p style={{margin:"0 0 4px",fontSize:"14px",color:"var(--ink)"}}>Aquí está tu menú. Puedes editar cualquier día antes de guardarlo.</p>
+                    {(()=>{const PAIS_LABELS={colombia:"🇨🇴 Colombia",mexico:"🇲🇽 México",argentina:"🇦🇷 Argentina",peru:"🇵🇪 Perú",venezuela:"🇻🇪 Venezuela",chile:"🇨🇱 Chile",brasil:"🇧🇷 Brasil",espana:"🇪🇸 España",internacional:"🌎 Internacional"};return(<p style={{margin:"0 0 4px",fontSize:"14px",color:"var(--ink)"}}>Menú <strong>{PAIS_LABELS[abiMenuPrefs.pais]||""}</strong> — puedes editar cualquier día antes de guardarlo.</p>);})()}
                     {DAY_LABELS.map(([key,name])=>(
                       <div key={key} style={{display:"flex",alignItems:"center",gap:"10px"}}>
                         <span style={{width:"28px",height:"28px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
