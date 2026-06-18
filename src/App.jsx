@@ -2396,19 +2396,19 @@ export default function App() {
         <header className="topbar">
           <div>
             <p className="view-label">{activeLabel}</p>
-            <h1>Hola {profileSetup?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mamá CEO"} 👋</h1>
-            <p>Enfocada • Organizada • Imparable</p>
+            <h1>{clockNow.getHours() < 12 ? "Buenos días" : clockNow.getHours() < 19 ? "Buenas tardes" : "Buenas noches"}, {(profileSetup?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mamá").split(" ")[0]}</h1>
+            <p>Enfocada · Organizada · Imparable</p>
           </div>
           <div className="profile-area">
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
             {(!awsActive || !remoteStorageEnabled) && !isSyncing && <div className="status-chip" title="Tus datos se guardan en este dispositivo">Solo en este dispositivo</div>}
-            <button className="profile-edit-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
+            <button className="profile-avatar-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
               <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
-              <span className="profile-edit-name">{profileSetup?.name || "Mi perfil"}</span>
-              <span className="profile-edit-icon">✏️</span>
             </button>
             {awsActive && user && (
-              <button className="signout-button" onClick={signOut}>Salir</button>
+              <button className="signout-icon-btn" onClick={signOut} title="Cerrar sesión">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+              </button>
             )}
           </div>
         </header>
@@ -2888,46 +2888,70 @@ export default function App() {
 
           {/* Hero */}
           <div className="db-hero">
-            <div className="db-hero-left">
-              <p className="db-greeting">
-                {clockNow.getHours() < 12 ? "Buenos días" : clockNow.getHours() < 19 ? "Buenas tardes" : "Buenas noches"}, <strong>{(profileSetup?.name || "Mamá").split(" ")[0]}</strong>
-              </p>
-              <div className="db-date-row">
-                <p className="db-date">{todayStr}</p>
-                <p className="db-time">{timeStr}</p>
-              </div>
-            </div>
+            <p className="db-date">{todayStr}</p>
             <p className="db-affirmation">&ldquo;{todayAffirmation}&rdquo;</p>
           </div>
 
-          {/* Agenda de hoy — citas del calendario */}
-          {hasTodayCal && (
-            <div className="db-agenda-card">
-              <div className="db-agenda-header">📅 Tu agenda de hoy</div>
-              {todayHogar.length > 0 && (
-                <div className="db-agenda-group">
-                  <div className="db-agenda-group-label">🏠 Hogar</div>
-                  {todayHogar.map(a => (
-                    <div key={a.id} className="db-agenda-row">
-                      <span className="db-agenda-title">{a.title}</span>
-                      {a.time && <span className="db-agenda-time">{a.time}</span>}
-                    </div>
-                  ))}
+          {/* ── Panel de Hoy ── */}
+          <div className="db-today-panel">
+            <p className="db-today-heading">Tu día de hoy</p>
+            <div className={`db-today-grid${userMode === "mama" || userMode === "emprendedora" ? " db-today-grid--2col" : ""}`}>
+
+              {/* Agenda */}
+              <div className="db-today-col">
+                <p className="db-today-label">📅 Agenda</p>
+                {hasTodayCal ? todayCalAppts.map(a => (
+                  <div key={a.id} className="db-today-appt-row">
+                    {a.time && <span className="db-today-appt-time">{a.time}</span>}
+                    <span className="db-today-appt-name">{a.title}</span>
+                  </div>
+                )) : <p className="db-today-nil">Sin citas hoy</p>}
+              </div>
+
+              {/* Hogar */}
+              {userMode !== "emprendedora" && (
+                <div className="db-today-col">
+                  <div className="db-today-col-head">
+                    <p className="db-today-label">🌸 Hogar</p>
+                    {isCustomFocus && <button type="button" className="db-today-reset-btn" onClick={() => setHomeFocusOverride(null)} title="Reiniciar">↺</button>}
+                  </div>
+                  {homeTasks.length === 0
+                    ? <button type="button" className="db-today-cta-link" onClick={() => setActiveView("home")}>Agregar primera tarea →</button>
+                    : focusHomeTasks.length === 0
+                    ? <p className="db-today-done">✅ ¡Hiciste las 3 del hogar!</p>
+                    : focusHomeTasks.map(task => (
+                        <div key={task.id} className="db-today-task-row">
+                          <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)"}} />
+                          <span className={`db-today-task-title${task.done ? " db-today-task--done" : ""}`}>{task.title}</span>
+                          <button type="button" className="db-today-swap-btn" onClick={() => swapHomeFocusTask(task.id)} title="Cambiar">↻</button>
+                        </div>
+                      ))
+                  }
                 </div>
               )}
-              {todayTrabajo.length > 0 && (
-                <div className="db-agenda-group">
-                  <div className="db-agenda-group-label">💼 Trabajo</div>
-                  {todayTrabajo.map(a => (
-                    <div key={a.id} className="db-agenda-row">
-                      <span className="db-agenda-title">{a.title}</span>
-                      {a.time && <span className="db-agenda-time">{a.time}</span>}
-                    </div>
-                  ))}
+
+              {/* Negocio */}
+              {userMode !== "mama" && (
+                <div className="db-today-col">
+                  <p className="db-today-label">💼 Negocio</p>
+                  {focusTasks.length === 0
+                    ? <button type="button" className="db-today-cta-link" onClick={() => setActiveView("business")}>Agregar tarea de negocio →</button>
+                    : <>
+                        {focusTasks.map(task => (
+                          <div key={task.id} className="db-today-task-row">
+                            <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--green)"}} />
+                            <span className={`db-today-task-title${task.done ? " db-today-task--done" : ""}`}>{task.title}</span>
+                            {task.priority === "Urgente" && <span className="db-today-urgente">Urgente</span>}
+                          </div>
+                        ))}
+                        <button type="button" className="db-today-see-more" onClick={() => setActiveView("business")}>Ver negocio →</button>
+                      </>
+                  }
                 </div>
               )}
+
             </div>
-          )}
+          </div>
 
           {/* Meta del mes + Semana */}
           <div className="db-meta-row">
@@ -2979,66 +3003,32 @@ export default function App() {
             </div>
           )}
 
-          {/* Pareto 80/20 */}
-          {(showNegocioPareto || showHogarPareto) && (
-            <div className="db-pareto-grid">
-              {showNegocioPareto && (
-                <div className="db-pareto-card">
-                  <div className="db-pareto-head">
-                    <span>&#x1F3AF; Tu 80/20 del negocio</span>
-                  </div>
-                  {wonClients.length < 2 ? (
-                    <div className="db-pareto-empty-state">
-                      <p className="db-pareto-empty">Registra al menos 2 ventas para ver qué clientes concentran el 80% de tus ingresos.</p>
-                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Agregar clientes →</button>
-                    </div>
-                  ) : (
-                    <>
-                      <p className="db-pareto-stat">
-                        El <strong>{paretoPct}%</strong> de tus clientes ({paretoTopClients.length} de {wonClients.length}) generan el <strong>{paretoShareOfIncome}%</strong> de tus ingresos cerrados.
-                      </p>
-                      <div className="db-pareto-list">
-                        {paretoTopClients.slice(0, 5).map((c) => (
-                          <div key={c.id} className="db-pareto-row">
-                            <span className="db-pareto-row-name">{c.name}</span>
-                            <span className="db-pareto-row-amount">{money.format(c.amount)}</span>
-                          </div>
-                        ))}
+          {/* 80/20 del negocio */}
+          {showNegocioPareto && (
+            <div className="db-pareto-card">
+              <div className="db-pareto-head">
+                <span>🎯 Tu 80/20 del negocio</span>
+              </div>
+              {wonClients.length < 2 ? (
+                <div className="db-pareto-empty-state">
+                  <p className="db-pareto-empty">Registra al menos 2 ventas para ver qué clientes concentran el 80% de tus ingresos.</p>
+                  <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Agregar clientes →</button>
+                </div>
+              ) : (
+                <>
+                  <p className="db-pareto-stat">
+                    El <strong>{paretoPct}%</strong> de tus clientes ({paretoTopClients.length} de {wonClients.length}) generan el <strong>{paretoShareOfIncome}%</strong> de tus ingresos cerrados.
+                  </p>
+                  <div className="db-pareto-list">
+                    {paretoTopClients.slice(0, 5).map((c) => (
+                      <div key={c.id} className="db-pareto-row">
+                        <span className="db-pareto-row-name">{c.name}</span>
+                        <span className="db-pareto-row-amount">{money.format(c.amount)}</span>
                       </div>
-                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Ver mis clientes &rarr;</button>
-                    </>
-                  )}
-                </div>
-              )}
-              {showHogarPareto && (
-                <div className="db-pareto-card">
-                  <div className="db-pareto-head">
-                    <span>&#x1F338; Tus 3 de hoy</span>
-                    {isCustomFocus && (
-                      <button type="button" className="db-pareto-reset" onClick={() => setHomeFocusOverride(null)}>Reiniciar</button>
-                    )}
+                    ))}
                   </div>
-                  {homeTasks.length === 0 ? (
-                    <div className="db-pareto-empty-state">
-                      <p className="db-pareto-empty">Agrega tareas de hogar y cada día te sugeriremos solo 3 — el resto puede esperar.</p>
-                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("home")}>Agregar primera tarea →</button>
-                    </div>
-                  ) : focusHomeTasks.length === 0 ? (
-                    <p className="db-pareto-done">&#x2705; Hiciste tus 3 cosas de hoy. Lo dem&aacute;s puede esperar.</p>
-                  ) : (
-                    <div className="db-pareto-list">
-                      {focusHomeTasks.map((task) => (
-                        <div key={task.id} className="db-focus3-row">
-                          <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)"}} />
-                          <span className="db-focus3-title">{task.title}</span>
-                          {task.priority === "Urgente" && <span className="db-focus3-tag">Urgente</span>}
-                          <button type="button" className="db-focus3-swap" title="Cambiar por otra tarea" onClick={() => swapHomeFocusTask(task.id)}>&#x1F504;</button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  <button type="button" className="db-pareto-link" onClick={() => setActiveView("home")}>Ver todas mis tareas &rarr;</button>
-                </div>
+                  <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Ver mis clientes →</button>
+                </>
               )}
             </div>
           )}
