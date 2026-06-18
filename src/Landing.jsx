@@ -76,6 +76,7 @@ const FAQS = [
 export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, prices, hotmartLinks, hotmartLinksYear }) {
   const [isYearly, setIsYearly] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
+  const [imgError, setImgError] = useState(false);
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
@@ -85,7 +86,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
       {/* ── NAVBAR ── */}
       <nav className="landing-nav">
         <div className="landing-nav-inner">
-          <Logo width={160} />
+          <Logo width={150} />
           <div className="landing-nav-actions">
             <button className="lbtn-ghost" onClick={onLogin}>Iniciar sesión</button>
             <button className="lbtn-primary" onClick={onSignup}>Prueba gratis</button>
@@ -115,36 +116,94 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           </div>
           <p className="landing-hero-trust">Sin tarjeta de crédito · Cancela cuando quieras · Datos seguros</p>
         </div>
+
+        {/* VISUAL HERO
+            Cuando tengas una captura real del dashboard, reemplaza todo el bloque
+            .lhv-mockup por:
+              <img src="./screenshot-hero.png" alt="Dashboard Mamá CEO" className="lhv-screenshot" />
+            y guarda la imagen en public/screenshot-hero.png
+        */}
         <div className="landing-hero-visual">
-          <div className="lhv-card">
-            <div className="lhv-header">
-              <span className="lhv-dot pink" /><span className="lhv-dot yellow" /><span className="lhv-dot green" />
-              <span className="lhv-title">Dashboard Mamá CEO</span>
-            </div>
-            <div className="lhv-stats">
-              <div className="lhv-stat">
-                <span className="lhv-stat-label">💰 Ventas este mes</span>
-                <span className="lhv-stat-val">$4.200.000</span>
+          {!imgError ? (
+            <img
+              src="./screenshot-hero.png"
+              alt="Dashboard Mamá CEO"
+              className="lhv-screenshot"
+              onError={() => setImgError(true)}
+            />
+          ) : (
+            <div className="lhv-mockup">
+              <div className="lhv-phone-bar">
+                <span className="lhv-dot pink" />
+                <span className="lhv-dot yellow" />
+                <span className="lhv-dot green" />
+                <span className="lhv-phone-title">Mamá CEO</span>
               </div>
-              <div className="lhv-stat">
-                <span className="lhv-stat-label">🤝 Clientes activos</span>
-                <span className="lhv-stat-val">12</span>
+              <div className="lhv-section-label">Dashboard</div>
+              <div className="lhv-stats">
+                <div className="lhv-stat">
+                  <span className="lhv-stat-ico">💰</span>
+                  <div>
+                    <div className="lhv-stat-label">Ventas este mes</div>
+                    <div className="lhv-stat-val">$4.200.000</div>
+                  </div>
+                </div>
+                <div className="lhv-stat">
+                  <span className="lhv-stat-ico">🤝</span>
+                  <div>
+                    <div className="lhv-stat-label">Clientes activos</div>
+                    <div className="lhv-stat-val">12</div>
+                  </div>
+                </div>
+                <div className="lhv-stat">
+                  <span className="lhv-stat-ico">🎯</span>
+                  <div>
+                    <div className="lhv-stat-label">Meta del mes</div>
+                    <div className="lhv-stat-val">84%</div>
+                  </div>
+                </div>
               </div>
-              <div className="lhv-stat">
-                <span className="lhv-stat-label">✅ Tus 3 de hoy</span>
-                <span className="lhv-stat-val">1/3</span>
+              <div className="lhv-pareto">
+                <span className="lhv-pareto-ico">📊</span>
+                <span>3 clientes generan el <strong>80%</strong> de tus ingresos</span>
+              </div>
+              <div className="lhv-tus3-label">Tus 3 de hoy</div>
+              <div className="lhv-tasks">
+                <div className="lhv-task done">✓ Enviar propuesta a Carolina</div>
+                <div className="lhv-task">○ Publicar Reel de ventas</div>
+                <div className="lhv-task">○ Revisar presupuesto semanal</div>
               </div>
             </div>
-            <div className="lhv-pareto">
-              🎯 Pareto: 3 clientes = 80% de tus ingresos
+          )}
+        </div>
+      </section>
+
+      {/* ── STATS BAR ── */}
+      <div className="landing-stats-bar">
+        <div className="landing-container">
+          <div className="landing-stats-inner">
+            <div className="lstat-item">
+              <span className="lstat-num">6</span>
+              <span className="lstat-label">herramientas en 1 app</span>
             </div>
-            <div className="lhv-pills">
-              <span className="lhv-pill">📅 Cita dentista 4pm</span>
-              <span className="lhv-pill">🛒 Hacer mercado</span>
+            <div className="lstat-divider" />
+            <div className="lstat-item">
+              <span className="lstat-num">14</span>
+              <span className="lstat-label">días gratis sin límites</span>
+            </div>
+            <div className="lstat-divider" />
+            <div className="lstat-item">
+              <span className="lstat-num">3</span>
+              <span className="lstat-label">planes para cada etapa</span>
+            </div>
+            <div className="lstat-divider" />
+            <div className="lstat-item">
+              <span className="lstat-num">📱</span>
+              <span className="lstat-label">funciona como app nativa</span>
             </div>
           </div>
         </div>
-      </section>
+      </div>
 
       {/* ── PARA QUIÉN ── */}
       <section className="landing-section landing-forwhom">
@@ -179,21 +238,9 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             <div className="landing-feat-label">Para tu negocio 💼</div>
             <div className="landing-feat-grid">
               {[
-                {
-                  icon: "💰",
-                  title: "Finanzas claras",
-                  desc: "Registra ingresos y gastos, sigue tus metas de venta y entiende el flujo de tu negocio de un vistazo.",
-                },
-                {
-                  icon: "🤝",
-                  title: "Pipeline de clientes",
-                  desc: "Sabe exactamente quién está lista para comprar, quién está tibia y a quién debes contactar hoy.",
-                },
-                {
-                  icon: "✍️",
-                  title: "Studio de contenido IA",
-                  desc: "Genera guiones para Reels, YouTube, Podcast, posts y correos con IA en segundos. Sin bloqueo creativo.",
-                },
+                { icon: "💰", title: "Finanzas claras", desc: "Registra ingresos y gastos, sigue tus metas de venta y entiende el flujo de tu negocio de un vistazo." },
+                { icon: "🤝", title: "Pipeline de clientes", desc: "Sabe exactamente quién está lista para comprar, quién está tibia y a quién debes contactar hoy." },
+                { icon: "✍️", title: "Studio de contenido IA", desc: "Genera guiones para Reels, YouTube, Podcast, posts y correos con IA en segundos. Sin bloqueo creativo." },
               ].map((f, i) => (
                 <div key={i} className="landing-feat-card">
                   <span className="landing-feat-icon">{f.icon}</span>
@@ -208,21 +255,9 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             <div className="landing-feat-label">Para tu hogar 🏠</div>
             <div className="landing-feat-grid">
               {[
-                {
-                  icon: "🛒",
-                  title: "Organización del hogar",
-                  desc: "Lista de compras, tareas del hogar y presupuesto familiar todo en un solo panel claro.",
-                },
-                {
-                  icon: "📅",
-                  title: "Calendario familiar",
-                  desc: "Citas médicas, actividades de tus hijos, recordatorios — todo organizado para que no se te escape nada.",
-                },
-                {
-                  icon: "🌿",
-                  title: "Tu bienestar",
-                  desc: "Check-in emocional diario, temporizador Pomodoro y seguimiento de tus metas personales.",
-                },
+                { icon: "🛒", title: "Organización del hogar", desc: "Lista de compras, tareas del hogar y presupuesto familiar todo en un solo panel claro." },
+                { icon: "📅", title: "Calendario familiar", desc: "Citas médicas, actividades de tus hijos, recordatorios — todo organizado para que no se te escape nada." },
+                { icon: "🌿", title: "Tu bienestar", desc: "Check-in emocional diario, temporizador Pomodoro y seguimiento de tus metas personales." },
               ].map((f, i) => (
                 <div key={i} className="landing-feat-card">
                   <span className="landing-feat-icon">{f.icon}</span>
@@ -239,7 +274,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
       <section className="landing-section landing-transform">
         <div className="landing-container">
           <h2 className="landing-h2">Lo que cambia cuando usas Mamá CEO</h2>
-          <p className="landing-section-sub">Resultados reales que experimentan las mamás emprendedoras que toman el control.</p>
+          <p className="landing-section-sub">Deja de improvisar cada día. Con Mamá CEO tienes claridad, enfoque y control.</p>
           <div className="landing-transform-grid">
             {[
               { before: "No sabes cuánto ganaste este mes", after: "Ves tus ingresos, gastos y meta en tiempo real" },
@@ -272,16 +307,10 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           <p className="landing-section-sub">Empieza con 14 días gratis. Sin tarjeta de crédito. Cancela cuando quieras.</p>
 
           <div className="landing-toggle">
-            <button
-              className={`ltoggle-btn${!isYearly ? " active" : ""}`}
-              onClick={() => setIsYearly(false)}
-            >
+            <button className={`ltoggle-btn${!isYearly ? " active" : ""}`} onClick={() => setIsYearly(false)}>
               Mensual
             </button>
-            <button
-              className={`ltoggle-btn${isYearly ? " active" : ""}`}
-              onClick={() => setIsYearly(true)}
-            >
+            <button className={`ltoggle-btn${isYearly ? " active" : ""}`} onClick={() => setIsYearly(true)}>
               Anual <span className="ltoggle-save">2 meses gratis</span>
             </button>
           </div>
@@ -290,8 +319,8 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             {PLANS.map((plan) => {
               const p = prices[plan.id];
               const priceLabel = isYearly ? p.copYear : p.cop;
-              const usdLabel = isYearly ? p.usdYear : p.usd;
-              const link = isYearly ? hotmartLinksYear[plan.id] : hotmartLinks[plan.id];
+              const usdLabel   = isYearly ? p.usdYear : p.usd;
+              const link       = isYearly ? hotmartLinksYear[plan.id] : hotmartLinks[plan.id];
               return (
                 <div key={plan.id} className={`landing-plan-card${plan.highlight ? " landing-plan-featured" : ""}`}>
                   {plan.highlight && <div className="landing-plan-badge">⭐ Más popular</div>}
@@ -307,10 +336,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
                   </div>
                   <ul className="landing-plan-features">
                     {plan.features.map((f, i) => (
-                      <li key={i}>
-                        <span className="lplan-check">✓</span>
-                        {f}
-                      </li>
+                      <li key={i}><span className="lplan-check">✓</span>{f}</li>
                     ))}
                   </ul>
                   <button
@@ -327,9 +353,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
 
           <p className="landing-pricing-note">
             ¿Prefieres explorar primero?{" "}
-            <button className="landing-link-btn" onClick={onSignup}>
-              Crea tu cuenta gratuita aquí
-            </button>{" "}
+            <button className="landing-link-btn" onClick={onSignup}>Crea tu cuenta gratuita aquí</button>{" "}
             y accede a todos los planes desde la app.
           </p>
         </div>
@@ -342,10 +366,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           <div className="landing-faq-list">
             {FAQS.map((faq, i) => (
               <div key={i} className={`landing-faq-item${openFaq === i ? " open" : ""}`}>
-                <button
-                  className="landing-faq-q"
-                  onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                >
+                <button className="landing-faq-q" onClick={() => setOpenFaq(openFaq === i ? null : i)}>
                   <span>{faq.q}</span>
                   <span className="landing-faq-icon">{openFaq === i ? "−" : "+"}</span>
                 </button>
@@ -356,12 +377,74 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
         </div>
       </section>
 
+      {/* ── INSTALA EN TU CELULAR ── */}
+      <section className="landing-section landing-pwa">
+        <div className="landing-container">
+          <h2 className="landing-h2">Llévala en tu celular</h2>
+          <p className="landing-section-sub">
+            Instálala como app directamente desde tu navegador — sin pasar por ninguna tienda. Es gratis y queda en tu pantalla de inicio.
+          </p>
+          <div className="landing-pwa-grid">
+            <div className="landing-pwa-card">
+              <div className="lpwa-os-icon">🍎</div>
+              <h3 className="lpwa-title">iPhone — Safari</h3>
+              <p className="lpwa-warning">⚠️ Debe ser Safari. No funciona desde Chrome en iPhone.</p>
+              <ol className="lpwa-steps">
+                <li>
+                  <span className="lpwa-num">1</span>
+                  <span>Abre Mamá CEO App en <strong>Safari</strong></span>
+                </li>
+                <li>
+                  <span className="lpwa-num">2</span>
+                  <span>Toca el ícono <strong>Compartir</strong> en la barra inferior <em>(cuadrado con flecha ↑)</em></span>
+                </li>
+                <li>
+                  <span className="lpwa-num">3</span>
+                  <span>Desplázate y selecciona <strong>"Agregar a pantalla de inicio"</strong></span>
+                </li>
+                <li>
+                  <span className="lpwa-num">4</span>
+                  <span>Toca <strong>"Agregar"</strong> — ¡ya la tienes!</span>
+                </li>
+              </ol>
+            </div>
+
+            <div className="landing-pwa-card">
+              <div className="lpwa-os-icon">🤖</div>
+              <h3 className="lpwa-title">Android — Chrome</h3>
+              <p className="lpwa-warning">💡 Chrome puede mostrarte un banner automático para instalar.</p>
+              <ol className="lpwa-steps">
+                <li>
+                  <span className="lpwa-num">1</span>
+                  <span>Abre Mamá CEO App en <strong>Chrome</strong></span>
+                </li>
+                <li>
+                  <span className="lpwa-num">2</span>
+                  <span>Toca los <strong>3 puntos ⋮</strong> en la esquina superior derecha</span>
+                </li>
+                <li>
+                  <span className="lpwa-num">3</span>
+                  <span>Selecciona <strong>"Agregar a pantalla de inicio"</strong></span>
+                </li>
+                <li>
+                  <span className="lpwa-num">4</span>
+                  <span>Confirma — ¡ya la tienes!</span>
+                </li>
+              </ol>
+            </div>
+          </div>
+          <div className="lpwa-footer-note">
+            Una vez instalada se abre directamente como app — sin necesidad de abrir el navegador cada vez. ✨
+          </div>
+        </div>
+      </section>
+
       {/* ── FINAL CTA ── */}
       <section className="landing-final-cta">
-        <div className="landing-container">
+        <div className="landing-container landing-final-cta-inner">
           <h2>¿Lista para ser la CEO de tu vida?</h2>
           <p>Únete hoy y empieza a organizar tu negocio y tu hogar — gratis por 14 días.</p>
-          <button className="lbtn-hero" onClick={onSignup}>
+          <button className="lbtn-cta-white" onClick={onSignup}>
             Crear cuenta gratis — 14 días
           </button>
           <p className="landing-cta-note">Sin tarjeta de crédito · Cancela cuando quieras</p>
