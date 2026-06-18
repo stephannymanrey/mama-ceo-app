@@ -672,6 +672,12 @@ export default function App() {
   const [homeTaskError, setHomeTaskError] = useState("");
   const [homeBudgetError, setHomeBudgetError] = useState("");
   const [homeTab, setHomeTab] = useState(0);
+  const [showMenuModal, setShowMenuModal] = useState(false);
+  const [abiMenuPrefs, setAbiMenuPrefs] = useState({ personas: "4", dieta: "normal" });
+  const [abiMenuSuggestion, setAbiMenuSuggestion] = useState(null);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState(stored?.familyMembers || []);
+  const [showFamilyConfig, setShowFamilyConfig] = useState(false);
   const [reminderTime, setReminderTime] = useState(stored?.reminderTime || "08:00");
   const [reminderEnabled, setReminderEnabled] = useState(stored?.reminderEnabled !== false);
   const [checkInReminderEnabled, setCheckInReminderEnabled] = useState(stored?.checkInReminderEnabled || false);
@@ -1458,7 +1464,8 @@ export default function App() {
       userPlan,
       premiumExpiresAt,
       userMode,
-      homeFocusOverride
+      homeFocusOverride,
+      familyMembers
     };
 
     if (user && awsActive && remoteStorageEnabled) {
@@ -4009,548 +4016,674 @@ export default function App() {
     );
   }
   function renderHome() {
-    const homeProgress    = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
-    const mentalLoad      = homeTasks.filter(t => !t.done).length;
-    const mentalLoadLevel = mentalLoad >= 8 ? "alta" : mentalLoad >= 4 ? "media" : "baja";
-    const mentalLoadColor = mentalLoad >= 8 ? "var(--purple)" : mentalLoad >= 4 ? "var(--orange)" : "var(--green)";
-    const delegatedTasks  = homeTasks.filter(t => t.delegate && t.delegate.trim() !== "");
-    const urgentTasks     = homeTasks.filter(t => !t.done && t.priority === "Urgente");
-    const todayDay        = ["D","L","M","X","J","V","S"][new Date().getDay()];
-    const today0          = new Date(); today0.setHours(0,0,0,0);
-    const DAY_LABELS      = [["L","Lunes"],["M","Martes"],["X","Miércoles"],["J","Jueves"],["V","Viernes"],["S","Sábado"],["D","Domingo"]];
-    const TYPE_ICONS      = { "Médico":"🩺","Cita":"📋","Colegio":"🎒","Dentista":"🦷","Extracurricular":"⚽","Iglesia":"🙏","Reunión":"🤝","Trabajo":"💼","Pago":"💳","Cumpleaños":"🎂","Otro":"📌" };
-    const RECURRENCE_LABELS = { "none":"No se repite","weekly":"Cada semana","monthly":"Cada mes","yearly":"Cada año" };
-    const daysLabel       = d => d === 0 ? "Hoy" : d === 1 ? "Mañana" : `En ${d}d`;
-    const daysColor       = d => d === 0 ? "#C4526A" : d <= 3 ? "#e87b1e" : "#1D9E75";
+    const todayDay   = ["D","L","M","X","J","V","S"][new Date().getDay()];
+    const DAY_LABELS = [["L","Lunes"],["M","Martes"],["X","Miércoles"],["J","Jueves"],["V","Viernes"],["S","Sábado"],["D","Domingo"]];
+    const homeProgress  = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
+    const pendingCount  = homeTasks.filter(t => !t.done).length;
+    const TABS = ["Hoy","Semana","Tareas","Mis Finanzas"];
 
-    // For the list view: each recurring event shows only its NEXT occurrence
-    const listAppts = (() => {
-      const seen = new Set();
-      const result = [];
-      for (const appt of appointments) {
-        if (!appt.recurrence || appt.recurrence === "none") {
-          result.push(appt);
-        } else {
-          if (seen.has(appt.id)) continue;
-          seen.add(appt.id);
-          let curr = new Date(appt.date + "T00:00:00");
-          while (curr < today0) {
-            if (appt.recurrence === "weekly")  curr.setDate(curr.getDate() + 7);
-            else if (appt.recurrence === "monthly") curr.setMonth(curr.getMonth() + 1);
-            else if (appt.recurrence === "yearly")  curr.setFullYear(curr.getFullYear() + 1);
-            else break;
-          }
-          result.push({ ...appt, date: curr.toISOString().slice(0,10), _origId: appt.id });
-        }
-      }
-      return result;
-    })();
-    const withDiff      = listAppts.map(a => ({ ...a, diff: Math.round((new Date(a.date+"T00:00:00") - today0) / 86400000) }));
-    const upcomingAppts = withDiff.filter(a => a.diff >= 0).sort((a,b) => a.diff - b.diff);
-
-    const addToGCal = appt => {
-      const t = encodeURIComponent(appt.title);
-      const d = appt.date.replace(/-/g,"");
-      const timeStr = appt.time ? `T${appt.time.replace(":","") }00` : "";
-      const dates = timeStr ? `${d}${timeStr}/${d}${timeStr}` : `${d}/${d}`;
-      const details = appt.recurrence && appt.recurrence !== "none" ? encodeURIComponent(`Recordatorio: ${RECURRENCE_LABELS[appt.recurrence]}`) : "";
-      window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${dates}${details?"&details="+details:""}`, "_blank");
+    // ── Abi menu database ──
+    const ABI_MENU_DB = {
+      normal:[
+        {L:"Arroz con pollo y ensalada verde",M:"Pasta boloñesa con pan",X:"Sopa de lentejas y aguacate",J:"Pescado al horno con papas",V:"Pollo a la plancha con fríjoles",S:"Bandeja paisa",D:"Sancocho de gallina"},
+        {L:"Fríjoles con arroz y chicharrón",M:"Carne asada con yuca y ensalada",X:"Crema de tomate con quesadillas",J:"Arroz con atún y vegetales",V:"Sudado de pollo con papas",S:"Chuletas con arroz y ensalada",D:"Estofado de res con verduras"},
+        {L:"Arroz con huevo y plátano maduro",M:"Sopa de guineo con pollo",X:"Pasta al pesto con pollo",J:"Lentejas con arroz y aguacate",V:"Pollo guisado con papas",S:"Pizza casera con ensalada",D:"Caldo de costilla"},
+      ],
+      vegetariano:[
+        {L:"Arroz con vegetales salteados",M:"Pasta primavera con queso",X:"Sopa de verduras con pan",J:"Lentejas con arroz y plátano",V:"Quesadillas de espinaca y champiñones",S:"Pizza de vegetales",D:"Crema de zapallo con ensalada"},
+        {L:"Tofu con arroz integral",M:"Pasta con pesto y tomates",X:"Crema de brócoli con pan",J:"Garbanzos guisados con arroz",V:"Burrito de frijoles y aguacate",S:"Crepes de vegetales",D:"Sopa de calabaza"},
+      ],
+      economico:[
+        {L:"Fríjoles con arroz y plátano",M:"Sopa de pasta con pollo",X:"Revuelto de huevos con papa",J:"Arroz con atún y ensalada",V:"Lentejas con arroz y aguacate",S:"Estofado económico de pollo",D:"Sancocho de papa"},
+        {L:"Arroz con huevo y ensalada",M:"Sopa de verduras",X:"Fríjoles con arroz",J:"Pasta con salsa de tomate",V:"Pollo económico con arroz",S:"Mazorca con pollo asado",D:"Caldo de papa con costilla"},
+      ],
     };
-    const addQuickNote    = e => { e.preventDefault(); if (!quickNoteInput.trim()) return; setQuickNotes(c => [...c, { id:Date.now(), text:quickNoteInput.trim() }]); setQuickNoteInput(""); };
-    const STARTER_TASKS   = [
-      { title:"Organizar cajones de la cocina", category:"Hogar / Limpieza" },
-      { title:"Lista de mercado de la semana",  category:"Compras" },
-      { title:"Agendar cita médica pendiente",  category:"Salud" },
-      { title:"Revisar tareas del colegio",     category:"Colegio / Ninos" },
-      { title:"30 minutos solo para mí",        category:"Bienestar" },
+    const generateAbiMenu = () => { const pool = ABI_MENU_DB[abiMenuPrefs.dieta]||ABI_MENU_DB.normal; return pool[Math.floor(Math.random()*pool.length)]; };
+
+    // ── Grocery from menu ──
+    const INGREDIENT_HINTS = [
+      [/pollo/i,"Pollo (kg)"],[/pasta/i,"Pasta (500g)"],[/arroz/i,"Arroz (kg)"],
+      [/lentejas/i,"Lentejas (500g)"],[/pescado/i,"Pescado (500g)"],[/carne|res/i,"Carne de res (500g)"],
+      [/fríjoles|frijoles/i,"Fríjoles (500g)"],[/huevo/i,"Huevos (12 und)"],[/atún/i,"Atún en lata"],
+      [/papa/i,"Papas (kg)"],[/tomate/i,"Tomates (kg)"],[/aguacate/i,"Aguacates"],
+      [/plátano/i,"Plátanos"],[/queso/i,"Queso (250g)"],[/pan/i,"Pan"],[/yuca/i,"Yuca (kg)"],
     ];
-    const thisWeekMoments = (purpose.presenceMoments||[]).filter(m => {
-      const d = new Date(m.date); const now = new Date();
-      const monday = new Date(now); monday.setDate(now.getDate()-(now.getDay()===0?6:now.getDay()-1)); monday.setHours(0,0,0,0);
-      return d >= monday;
-    });
-    const QUIEN_OPTS  = [["👧","Hijo/a"],["💑","Pareja"],["👵","Padres/familia"],["👯","Amigas"]];
-    const toggleQuien = label => setPresenceForm(f => ({ ...f, quien: f.quien.includes(label) ? f.quien.filter(q=>q!==label) : [...f.quien, label] }));
+    const suggestedGrocery = (() => {
+      const found = new Set();
+      Object.values(weekMenu).forEach(meal => { if (!meal) return; INGREDIENT_HINTS.forEach(([rx,item]) => { if (rx.test(meal)) found.add(item); }); });
+      found.add("Aceite de cocina"); found.add("Sal y condimentos"); found.add("Frutas frescas");
+      return [...found];
+    })();
+    const addSuggestedToList = () => {
+      const existing = groceryList.map(g => g.text);
+      const newItems = suggestedGrocery.filter(s => !existing.includes(s)).map(text => ({id:Date.now()+Math.random(),text,done:false,fromMenu:true}));
+      if (newItems.length) setGroceryList(c => [...c,...newItems]);
+    };
+
+    // ── Family presence this week ──
+    const parseMinutes = t => t==="15 min"?15:t==="30 min"?30:t==="1 hora"?60:t?.includes("Más")?90:30;
+    const monday = (() => { const n=new Date(); n.setDate(n.getDate()-(n.getDay()===0?6:n.getDay()-1)); n.setHours(0,0,0,0); return n; })();
+    const thisWeekMoments = (purpose.presenceMoments||[]).filter(m => new Date(m.date) >= monday);
+    const minutesByRole = {};
+    thisWeekMoments.forEach(m => { const mins=parseMinutes(m.tiempo); (m.quien||[]).forEach(role => { minutesByRole[role]=(minutesByRole[role]||0)+mins; }); });
+    const DEFAULT_ROLES = [{id:"r1",role:"Hijo/a",emoji:"👧"},{id:"r2",role:"Pareja",emoji:"💑"},{id:"r3",role:"Padres",emoji:"👵"},{id:"r4",role:"Amiga",emoji:"👯"}];
+    const activeFamilyMembers = familyMembers.length ? familyMembers : DEFAULT_ROLES;
+    const toggleQuien = label => setPresenceForm(f => ({...f, quien: f.quien.includes(label)?f.quien.filter(q=>q!==label):[...f.quien,label]}));
     const savePresence = () => {
       if (!presenceForm.quien.length && !presenceForm.queHicieron.trim()) return;
-      const moment = { id:Date.now(), date:new Date().toISOString(), quien:presenceForm.quien, queHicieron:presenceForm.queHicieron, tiempo:presenceForm.tiempo };
-      updatePurpose("presenceMoments", [...(purpose.presenceMoments||[]), moment]);
-      setPresenceForm({ quien:[], queHicieron:"", tiempo:"30 min" });
-      setPresenceCelebration(true);
-      setTimeout(() => setPresenceCelebration(false), 4000);
+      updatePurpose("presenceMoments",[...(purpose.presenceMoments||[]),{id:Date.now(),date:new Date().toISOString(),quien:presenceForm.quien,queHicieron:presenceForm.queHicieron,tiempo:presenceForm.tiempo}]);
+      setPresenceForm({quien:[],queHicieron:"",tiempo:"30 min"});
+      setPresenceCelebration(true); setTimeout(()=>setPresenceCelebration(false),4000);
     };
     const VICTORY_MSGS = ["Ese momento cuenta para siempre. 🌸","Estar presente es el regalo más grande. 💛","No lo olvidarán. Ni tú. ✨","Eso es lo que importa de verdad. 💕","Una mamá presente no necesita ser perfecta. 🌿"];
-    const victoryMsg   = VICTORY_MSGS[Math.floor(Date.now()/1000) % VICTORY_MSGS.length];
-    const TABS         = ["Hoy","Semana","Tareas","Presupuesto"];
+    const victoryMsg = VICTORY_MSGS[Math.floor(Date.now()/1000)%VICTORY_MSGS.length];
 
-    const ApptRow = ({ appt }) => (
-      <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 12px", border:`1px solid ${appt.diff===0?"rgba(196,82,106,0.3)":appt.diff<=1?"rgba(232,123,30,0.25)":"var(--line)"}`, borderRadius:"10px", background:appt.diff===0?"#fdf5f7":appt.diff<=1?"#fef8f0":"#fff" }}>
-        <span style={{ fontSize:"20px", flexShrink:0 }}>{TYPE_ICONS[appt.type]||"📌"}</span>
-        <div style={{ flex:1, minWidth:0 }}>
-          <p style={{ margin:"0 0 2px", fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{appt.title}</p>
-          <p style={{ margin:0, fontSize:"12px", color:"var(--muted)" }}>
-            {appt.type} · {new Date(appt.date+"T00:00:00").toLocaleDateString("es-CO",{ weekday:"short", day:"numeric", month:"short" })}
-            {appt.time && <span style={{fontWeight:700}}> · {appt.time}</span>}
-            {appt.recurrence && appt.recurrence!=="none" && <span style={{color:"var(--purple)",fontWeight:700}}> · {RECURRENCE_LABELS[appt.recurrence]}</span>}
-          </p>
-        </div>
-        <span style={{ fontSize:"11px", fontWeight:800, color:daysColor(appt.diff), background:`${daysColor(appt.diff)}18`, padding:"3px 8px", borderRadius:"12px", flexShrink:0, whiteSpace:"nowrap" }}>{daysLabel(appt.diff)}</span>
-        <button type="button" onClick={() => addToGCal(appt)} title="Google Calendar" style={{ border:"none", background:"none", cursor:"pointer", fontSize:"16px", flexShrink:0, padding:"2px", lineHeight:1 }}>📆</button>
-        <button type="button" onClick={() => setAppointments(c => c.filter(a => a.id===(appt._origId||appt.id)))} style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"18px", flexShrink:0, lineHeight:1 }}>×</button>
-      </div>
-    );
+    // ── Finance analysis ──
+    const homeBudgetByType = {};
+    homeBudget.forEach(item => { homeBudgetByType[item.type]=(homeBudgetByType[item.type]||0)+item.amount; });
+    const financeRecs = [];
+    if (homeAvailable < 0) financeRecs.push({icon:"🚨",text:"Tus gastos superan tus ingresos. Identifica un gasto variable que puedas reducir esta semana."});
+    else if (homeBudgetTotals.savings===0&&homeBudgetTotals.income>0) financeRecs.push({icon:"💡",text:"Aún no tienes ahorro registrado. Separa un monto fijo al inicio del mes, aunque sea pequeño."});
+    if (homeBudgetTotals.income>0&&(homeSpent/homeBudgetTotals.income)>0.9) financeRecs.push({icon:"⚠️",text:"Estás gastando más del 90% de tus ingresos. Busca reducir al menos un gasto hormiga."});
+    if (financeRecs.length===0&&homeAvailable>0) financeRecs.push({icon:"✅",text:"Tus finanzas del hogar están equilibradas. Considera aumentar tu porcentaje de ahorro un 5%."});
+
+    // ── Task categories ──
+    const CAT_CONFIG = [
+      {key:"Rutina",emoji:"🧹",color:"#6B46C1",bg:"#F5F0FC"},
+      {key:"Compras",emoji:"🛒",color:"#0EA5E9",bg:"#F0F9FF"},
+      {key:"Colegio / Ninos",emoji:"🎒",color:"#D97706",bg:"#FFFBEB"},
+      {key:"Salud",emoji:"💊",color:"#DC2626",bg:"#FEF2F2"},
+      {key:"Hogar / Limpieza",emoji:"🏠",color:"#059669",bg:"#F0FDF4"},
+      {key:"Bienestar",emoji:"💆",color:"#C4526A",bg:"#FDF2F5"},
+    ];
 
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Mi Hogar 🌸</h2>
-          <p>{homeTasks.length === 0 ? "Empieza con una sola cosa hoy — no tienes que hacerlo todo" : `${completedHomeTasks} de ${homeTasks.length} tareas listas`}</p>
-        </div>
-
-        {/* KPIs — siempre visibles */}
-        <div className="home-kpi-row">
-          <div className="client-kpi">
-            <span>Carga mental</span>
-            <strong style={{color:mentalLoadColor}}>{mentalLoadLevel}</strong>
-            <small>{mentalLoad} pendientes</small>
-          </div>
-          <div className="client-kpi">
-            <span>Próximas citas</span>
-            <strong style={{color:upcomingAppts.length?"var(--orange)":"var(--green)"}}>{upcomingAppts.length}</strong>
-            <small>{upcomingAppts.length ? upcomingAppts[0]?.title?.slice(0,20) : "sin citas"}</small>
-          </div>
-          <div className="client-kpi">
-            <span>Dinero familiar</span>
-            <strong style={{fontSize:"14px",color:"var(--green)"}}>{money.format(homeAvailable)}</strong>
-            <small>disponible</small>
-          </div>
+          <p>{pendingCount===0 ? "Todo al día — gran trabajo hoy 🌟" : `${pendingCount} pendiente${pendingCount>1?"s":""} · ${homeProgress}% completado`}</p>
         </div>
 
         {/* Tab nav */}
-        <div style={{display:"flex",gap:"4px",background:"var(--line)",padding:"4px",borderRadius:"12px",marginBottom:"20px"}}>
-          {TABS.map((label, i) => (
-            <button key={i} type="button" onClick={() => setHomeTab(i)} style={{
-              flex:1, padding:"9px 0", borderRadius:"8px", border:"none",
-              background: homeTab===i ? "#fff" : "transparent",
-              cursor:"pointer", fontFamily:"inherit", fontSize:"13px",
-              fontWeight: homeTab===i ? 700 : 400,
-              color: homeTab===i ? "var(--ink)" : "var(--muted)",
-              boxShadow: homeTab===i ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
-              transition:"all 0.15s ease",
-            }}>{label}</button>
+        <div className="home-tab-nav">
+          {TABS.map((label,i) => (
+            <button key={i} type="button" onClick={() => setHomeTab(i)} className={`home-tab-btn${homeTab===i?" home-tab-btn--active":""}`}>{label}</button>
           ))}
         </div>
 
         {/* ── TAB 0: HOY ── */}
         {homeTab === 0 && (
-          <div>
-            {/* Citas próximas — prominente */}
-            <div className="card" style={{padding:"20px",marginBottom:"14px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
-                <div>
-                  <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Citas y recordatorios 📅</h3>
-                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Lo que viene próximamente.</p>
-                </div>
-                <button type="button" onClick={() => setHomeTab(1)}
-                  style={{fontSize:"12px",color:"#C4526A",background:"rgba(196,82,106,0.08)",border:"none",borderRadius:"8px",padding:"5px 12px",cursor:"pointer",fontFamily:"inherit",fontWeight:700}}>
-                  + Agregar
-                </button>
-              </div>
-              {upcomingAppts.length === 0 ? (
-                <div style={{textAlign:"center",padding:"16px 0"}}>
-                  <p style={{margin:"0 0 10px",fontSize:"13px",color:"var(--muted)"}}>Sin citas próximas.</p>
-                  <button type="button" onClick={() => setHomeTab(1)} style={{padding:"8px 20px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>
-                    Agregar cita
-                  </button>
-                </div>
-              ) : (
-                <div style={{display:"grid",gap:"8px"}}>
-                  {upcomingAppts.slice(0,4).map(appt => <ApptRow key={appt.id} appt={appt} />)}
-                  {upcomingAppts.length > 4 && (
-                    <button type="button" onClick={() => setHomeTab(1)} style={{padding:"8px",background:"var(--line)",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",color:"var(--muted)"}}>
-                      Ver {upcomingAppts.length-4} más →
-                    </button>
-                  )}
-                </div>
-              )}
+          <div className="home-today-grid">
+            <div className="home-today-card">
+              <span className="home-today-card-ico">🍽️</span>
+              <p className="home-today-card-label">Menú de hoy</p>
+              {weekMenu[todayDay] ? <p className="home-today-card-val">{weekMenu[todayDay]}</p> : <p className="home-today-card-empty">Sin planear aún</p>}
+              <button type="button" className="home-today-card-btn" onClick={() => setShowMenuModal(true)}>
+                {weekMenu[todayDay] ? "Cambiar →" : "Planear con Abi →"}
+              </button>
             </div>
-
-            {/* Menú + Rutina + Actividades hijos de hoy */}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))",gap:"12px",marginBottom:"14px"}}>
-              <div className="card" style={{padding:"16px"}}>
-                <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"1px",color:"var(--muted)"}}>Menú de hoy</p>
-                {weekMenu[todayDay] ? (
-                  <p style={{margin:0,fontSize:"15px",fontWeight:700,color:"var(--ink)",lineHeight:1.3}}>{weekMenu[todayDay]}</p>
-                ) : (
-                  <p style={{margin:"0 0 6px",fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin planear</p>
-                )}
-                <button type="button" onClick={() => setHomeTab(1)} style={{marginTop:"8px",fontSize:"12px",color:"var(--pink)",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600,display:"block"}}>
-                  {weekMenu[todayDay] ? "Ver semana →" : "Planear →"}
-                </button>
-              </div>
-              <div className="card" style={{padding:"16px"}}>
-                <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"1px",color:"var(--muted)"}}>Rutina de hoy</p>
-                {homeRoutines[todayDay] ? (
-                  <p style={{margin:0,fontSize:"15px",fontWeight:700,color:"var(--purple)",lineHeight:1.3}}>{homeRoutines[todayDay]}</p>
-                ) : (
-                  <p style={{margin:"0 0 6px",fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin rutina</p>
-                )}
-                <button type="button" onClick={() => setHomeTab(2)} style={{marginTop:"8px",fontSize:"12px",color:"var(--purple)",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600,display:"block"}}>
-                  {homeRoutines[todayDay] ? "Ver tareas →" : "Definir →"}
-                </button>
-              </div>
-              <div className="card" style={{padding:"16px"}}>
-                <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"1px",color:"var(--muted)"}}>Hijos hoy</p>
-                {kidsSchedule[todayDay]?.act ? (
-                  <div>
-                    <p style={{margin:"0 0 2px",fontSize:"15px",fontWeight:700,color:"#1D9E75",lineHeight:1.3}}>{kidsSchedule[todayDay].act}</p>
-                    {kidsSchedule[todayDay].time && <p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{kidsSchedule[todayDay].time}</p>}
-                  </div>
-                ) : (
-                  <p style={{margin:"0 0 6px",fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin actividades</p>
-                )}
-                <button type="button" onClick={() => setHomeTab(1)} style={{marginTop:"8px",fontSize:"12px",color:"#1D9E75",background:"none",border:"none",cursor:"pointer",fontFamily:"inherit",padding:0,fontWeight:600,display:"block"}}>
-                  {kidsSchedule[todayDay] ? "Ver semana →" : "Agregar →"}
-                </button>
-              </div>
+            <div className="home-today-card">
+              <span className="home-today-card-ico">🧹</span>
+              <p className="home-today-card-label">Rutina de hoy</p>
+              {homeRoutines[todayDay] ? <p className="home-today-card-val" style={{color:"var(--purple)"}}>{homeRoutines[todayDay]}</p> : <p className="home-today-card-empty">Sin rutina definida</p>}
+              <button type="button" className="home-today-card-btn" style={{color:"var(--purple)"}} onClick={() => setHomeTab(2)}>
+                {homeRoutines[todayDay] ? "Ver tareas →" : "Definir →"}
+              </button>
             </div>
-
-            {/* Notas rápidas */}
-            <div className="card" style={{padding:"18px 20px"}}>
-              <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Notas rápidas 📝</h3>
-              <p style={{margin:"0 0 12px",fontSize:"13px",color:"var(--muted)"}}>Cosas que no quieres olvidar.</p>
-              <form onSubmit={addQuickNote} style={{display:"flex",gap:"8px",marginBottom:quickNotes.length?"12px":0}}>
-                <input placeholder="Anota algo rápido..." value={quickNoteInput} onChange={e => setQuickNoteInput(e.target.value)}
-                  style={{flex:1,padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5"}} />
-                <button type="submit" style={{padding:"9px 16px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>+</button>
-              </form>
-              {quickNotes.length > 0 && (
-                <div style={{display:"grid",gap:"6px"}}>
-                  {[...quickNotes].reverse().slice(0,6).map(note => (
-                    <div key={note.id} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"8px 12px",background:"#fffcf0",border:"1px solid #ede8d0",borderRadius:"8px"}}>
-                      <span style={{flex:1,fontSize:"13px",color:"var(--ink)",lineHeight:1.45}}>{note.text}</span>
-                      <button type="button" onClick={() => setQuickNotes(c => c.filter(n => n.id!==note.id))}
-                        style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",flexShrink:0,lineHeight:1}}>×</button>
-                    </div>
-                  ))}
-                </div>
-              )}
+            <div className="home-today-card">
+              <span className="home-today-card-ico">🎒</span>
+              <p className="home-today-card-label">Hijos hoy</p>
+              {kidsSchedule[todayDay]?.act
+                ? <><p className="home-today-card-val" style={{color:"#1D9E75"}}>{kidsSchedule[todayDay].act}</p>{kidsSchedule[todayDay].time&&<p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{kidsSchedule[todayDay].time}</p>}</>
+                : <p className="home-today-card-empty">Sin actividades</p>
+              }
+              <button type="button" className="home-today-card-btn" style={{color:"#1D9E75"}} onClick={() => setHomeTab(1)}>
+                {kidsSchedule[todayDay]?.act ? "Ver semana →" : "Agregar →"}
+              </button>
             </div>
           </div>
         )}
 
         {/* ── TAB 1: SEMANA ── */}
         {homeTab === 1 && (
-          <div>
-            {/* Citas — gestión completa */}
-            <div className="card" style={{padding:"20px",marginBottom:"14px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+          <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
+
+            {/* Con mi familia — PRIORITY */}
+            <div className="card" style={{padding:"22px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"16px",gap:"12px",flexWrap:"wrap"}}>
                 <div>
-                  <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Citas importantes 📅</h3>
-                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Médicos, colegios, pagos — todo en un lugar.</p>
+                  <h3 style={{margin:"0 0 2px",fontSize:"17px"}}>Con mi familia 💛</h3>
+                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Presencia real — no perfecta.</p>
                 </div>
-                {upcomingAppts.length > 0 && (
-                  <span style={{fontSize:"12px",fontWeight:700,color:"#C4526A",background:"rgba(196,82,106,0.1)",padding:"3px 10px",borderRadius:"20px",flexShrink:0}}>
-                    {upcomingAppts.length} próxima{upcomingAppts.length>1?"s":""}
-                  </span>
-                )}
+                <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
+                  {thisWeekMoments.length>0&&<span style={{fontSize:"12px",fontWeight:700,color:"var(--pink)",background:"rgba(212,104,122,0.1)",padding:"3px 10px",borderRadius:"20px",whiteSpace:"nowrap"}}>{thisWeekMoments.length} momento{thisWeekMoments.length>1?"s":""} esta semana</span>}
+                  <button type="button" onClick={()=>setShowFamilyConfig(v=>!v)}
+                    style={{border:"1px solid var(--line)",background:showFamilyConfig?"rgba(196,82,106,0.08)":"#fff",borderRadius:"8px",padding:"5px 10px",cursor:"pointer",fontSize:"12px",color:"var(--muted)",fontFamily:"inherit",fontWeight:600}}>
+                    {showFamilyConfig?"Listo ✓":"⚙️ Mi familia"}
+                  </button>
+                </div>
               </div>
-              <button type="button" className="appt-submit" style={{marginBottom:appointments.length?"14px":0}}
-                onClick={() => { setCalendarNewAppt({ title: "", type: "Médico", time: "", recurrence: "none" }); setCalendarAddDate(null); setShowCalendar(true); }}>
-                📅 Agregar cita en el calendario
-              </button>
-              {upcomingAppts.length > 0 ? (
-                <div style={{display:"grid",gap:"8px"}}>
-                  {upcomingAppts.map(appt => <ApptRow key={appt.id} appt={appt} />)}
+
+              {showFamilyConfig && (
+                <div style={{marginBottom:"16px",padding:"14px",background:"#FAF7F5",borderRadius:"12px",border:"1px solid var(--line)"}}>
+                  <p style={{margin:"0 0 10px",fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--muted)"}}>Roles de tu familia (sin nombres)</p>
+                  <div style={{display:"flex",flexWrap:"wrap",gap:"8px",marginBottom:"10px"}}>
+                    {activeFamilyMembers.map(m=>(
+                      <div key={m.id} style={{display:"flex",alignItems:"center",gap:"6px",padding:"6px 10px",background:"#fff",borderRadius:"20px",border:"1px solid var(--line)",fontSize:"13px"}}>
+                        <span>{m.emoji}</span><span style={{fontWeight:600}}>{m.role}</span>
+                        <button type="button" onClick={()=>setFamilyMembers(c=>c.filter(x=>x.id!==m.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",lineHeight:1,padding:"0 0 0 2px"}}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                    {[["👧","Hija"],["👦","Hijo"],["💑","Pareja"],["👵","Abuela"],["👴","Abuelo"],["🐾","Mascota"],["👶","Bebé"]].map(([emoji,role])=>(
+                      activeFamilyMembers.some(m=>m.role===role)?null:
+                      <button key={role} type="button" onClick={()=>setFamilyMembers(c=>[...c,{id:Date.now()+Math.random(),role,emoji}])}
+                        style={{padding:"5px 12px",borderRadius:"20px",border:"1px dashed var(--line)",background:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",color:"var(--muted)"}}>
+                        + {emoji} {role}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              ) : (
-                <p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin citas próximas. Agrega una arriba.</p>
               )}
-            </div>
 
-            {/* Menú semanal + Actividades */}
-            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fit,minmax(280px,1fr))",gap:"14px",marginBottom:"14px"}}>
-
-              <div className="card" style={{padding:"20px"}}>
-                <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Menú de la semana 🍽️</h3>
-                <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Saber qué cocinar elimina la decisión diaria.</p>
-                <div style={{display:"grid",gap:"7px"}}>
-                  {DAY_LABELS.map(([key, name]) => (
-                    <div key={key} style={{display:"flex",alignItems:"center",gap:"10px"}}>
-                      <span style={{width:"30px",height:"30px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
-                      <input value={weekMenu[key]} onChange={e => setWeekMenu(m => ({...m,[key]:e.target.value}))}
-                        placeholder={todayDay===key?"¿Qué cocinas hoy?":name+"..."}
-                        style={{flex:1,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5"}} />
-                    </div>
-                  ))}
+              {Object.keys(minutesByRole).length>0&&(
+                <div style={{marginBottom:"16px",display:"flex",gap:"10px",flexWrap:"wrap"}}>
+                  {activeFamilyMembers.filter(m=>minutesByRole[m.role]).map(m=>{
+                    const mins=minutesByRole[m.role]||0; const hrs=(mins/60).toFixed(1); const goalMins=120; const pct=Math.min(100,Math.round((mins/goalMins)*100));
+                    return (
+                      <div key={m.id} style={{flex:"1 1 110px",padding:"12px",background:pct>=100?"rgba(47,159,112,0.06)":"rgba(196,82,106,0.04)",borderRadius:"12px",border:`1px solid ${pct>=100?"rgba(47,159,112,0.2)":"rgba(196,82,106,0.12)"}`,textAlign:"center"}}>
+                        <div style={{fontSize:"20px",marginBottom:"3px"}}>{m.emoji}</div>
+                        <div style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",marginBottom:"3px"}}>{m.role}</div>
+                        <div style={{fontSize:"18px",fontWeight:800,color:pct>=100?"var(--green)":"var(--ink)"}}>{hrs}h</div>
+                        <div style={{margin:"5px 0 2px",height:"4px",background:"rgba(0,0,0,0.08)",borderRadius:"2px",overflow:"hidden"}}>
+                          <div style={{height:"100%",width:`${pct}%`,background:pct>=100?"var(--green)":"#C4526A",borderRadius:"2px",transition:"width 0.5s"}}></div>
+                        </div>
+                        <div style={{fontSize:"10px",color:pct>=100?"var(--green)":"var(--muted)",fontWeight:600}}>{pct>=100?"Meta ✓":`${Math.round((goalMins-mins)/60)}h más`}</div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
+              )}
 
-              <div className="card" style={{padding:"20px"}}>
-                <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Actividades de tus hijos 🎒</h3>
-                <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>¿Quién va dónde? Escribe todas las actividades del día en una línea.</p>
-                <div style={{display:"grid",gap:"7px"}}>
-                  {DAY_LABELS.map(([key, name]) => (
-                    <div key={key} style={{display:"flex",alignItems:"center",gap:"8px"}}>
-                      <span style={{width:"30px",height:"30px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"11px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
-                      <input value={kidsSchedule[key]?.act||""} onChange={e => setKidsSchedule(s => ({...s,[key]:{...s[key],act:e.target.value}}))}
-                        placeholder={todayDay===key?"Ej: Karate, Natación...":name+"..."}
-                        style={{flex:2,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5",minWidth:0}} />
-                      <input type="time" value={kidsSchedule[key]?.time||""} onChange={e => setKidsSchedule(s => ({...s,[key]:{...s[key],time:e.target.value}}))}
-                        style={{flex:1,padding:"7px 8px",font:"inherit",fontSize:"12px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5",minWidth:0}} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Con mi familia hoy */}
-            <div className="card" style={{padding:"20px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
-                <h3 style={{margin:0}}>Con mi familia hoy 💛</h3>
-                {thisWeekMoments.length > 0 && (
-                  <span style={{fontSize:"12px",fontWeight:700,color:"var(--pink)",background:"rgba(212,104,122,0.1)",padding:"3px 10px",borderRadius:"20px"}}>
-                    {thisWeekMoments.length} momento{thisWeekMoments.length>1?"s":""} esta semana
-                  </span>
-                )}
-              </div>
-              <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>No mides el tiempo — mides la intención. ¿Con quién estuviste hoy?</p>
-              {presenceCelebration ? (
+              {presenceCelebration?(
                 <div style={{padding:"20px",background:"linear-gradient(135deg,rgba(212,104,122,0.08),rgba(47,159,112,0.08))",borderRadius:"14px",textAlign:"center",border:"2px solid rgba(212,104,122,0.2)"}}>
                   <p style={{fontSize:"24px",margin:"0 0 6px"}}>🌸</p>
                   <p style={{margin:0,fontWeight:700,fontSize:"15px",color:"var(--ink)"}}>{victoryMsg}</p>
                 </div>
-              ) : (
-                <div style={{display:"grid",gap:"14px"}}>
+              ):(
+                <div style={{display:"grid",gap:"12px"}}>
                   <div>
-                    <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Con quién?</p>
+                    <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Con quién estuviste hoy?</p>
                     <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-                      {QUIEN_OPTS.map(([icon,label]) => (
-                        <button key={label} type="button" onClick={() => toggleQuien(label)}
-                          style={{display:"flex",alignItems:"center",gap:"6px",padding:"7px 14px",borderRadius:"20px",border:`2px solid ${presenceForm.quien.includes(label)?"var(--pink)":"var(--line)"}`,background:presenceForm.quien.includes(label)?"rgba(212,104,122,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:presenceForm.quien.includes(label)?700:400}}>
-                          {icon} {label}
+                      {activeFamilyMembers.map(m=>(
+                        <button key={m.id} type="button" onClick={()=>toggleQuien(m.role)}
+                          style={{display:"flex",alignItems:"center",gap:"6px",padding:"7px 14px",borderRadius:"20px",border:`2px solid ${presenceForm.quien.includes(m.role)?"var(--pink)":"var(--line)"}`,background:presenceForm.quien.includes(m.role)?"rgba(212,104,122,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:presenceForm.quien.includes(m.role)?700:400,transition:"all 0.15s"}}>
+                          {m.emoji} {m.role}
                         </button>
                       ))}
                     </div>
                   </div>
-                  <div>
-                    <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Qué hicieron?</p>
-                    <textarea value={presenceForm.queHicieron} onChange={e => setPresenceForm(f=>({...f,queHicieron:e.target.value}))}
-                      placeholder="Ej: Leímos un cuento antes de dormir. Cocinamos juntos..."
-                      style={{width:"100%",minHeight:"64px",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",resize:"none",boxSizing:"border-box",background:"#faf7f5"}} />
-                  </div>
-                  <div>
-                    <p style={{margin:"0 0 8px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Cuánto tiempo?</p>
-                    <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
-                      {["15 min","30 min","1 hora","Más de 1 hora"].map(t => (
-                        <button key={t} type="button" onClick={() => setPresenceForm(f=>({...f,tiempo:t}))}
-                          style={{padding:"7px 14px",borderRadius:"20px",border:`2px solid ${presenceForm.tiempo===t?"var(--purple)":"var(--line)"}`,background:presenceForm.tiempo===t?"rgba(107,70,193,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:presenceForm.tiempo===t?700:400}}>
-                          {t}
-                        </button>
-                      ))}
+                  <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",alignItems:"start"}}>
+                    <div>
+                      <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>¿Qué hicieron? <span style={{fontWeight:400,color:"var(--muted)"}}>(opcional)</span></p>
+                      <textarea value={presenceForm.queHicieron} onChange={e=>setPresenceForm(f=>({...f,queHicieron:e.target.value}))}
+                        placeholder="Ej: Leímos un cuento, cocinamos juntos..."
+                        style={{width:"100%",minHeight:"54px",padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",resize:"none",boxSizing:"border-box",background:"#faf7f5",outline:"none"}}/>
+                    </div>
+                    <div>
+                      <p style={{margin:"0 0 6px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>Tiempo</p>
+                      <div style={{display:"flex",flexDirection:"column",gap:"5px"}}>
+                        {["15 min","30 min","1 hora","Más"].map(t=>(
+                          <button key={t} type="button" onClick={()=>setPresenceForm(f=>({...f,tiempo:t==="Más"?"Más de 1 hora":t}))}
+                            style={{padding:"6px 10px",borderRadius:"8px",border:`2px solid ${presenceForm.tiempo===(t==="Más"?"Más de 1 hora":t)?"var(--purple)":"var(--line)"}`,background:presenceForm.tiempo===(t==="Más"?"Más de 1 hora":t)?"rgba(107,70,193,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:600,whiteSpace:"nowrap"}}>
+                            {t}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   <button type="button" onClick={savePresence} disabled={!presenceForm.quien.length&&!presenceForm.queHicieron.trim()}
-                    style={{padding:"12px",background:"var(--pink)",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700,opacity:(!presenceForm.quien.length&&!presenceForm.queHicieron.trim())?0.5:1}}>
-                    Guardar este momento 🌸
+                    style={{padding:"12px",background:"var(--pink)",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700,opacity:(!presenceForm.quien.length&&!presenceForm.queHicieron.trim())?0.5:1,transition:"opacity 0.2s"}}>
+                    Guardar este momento 💛
                   </button>
                 </div>
               )}
-              {thisWeekMoments.length > 0 && (
+
+              {thisWeekMoments.length>0&&!presenceCelebration&&(
                 <div style={{marginTop:"16px",borderTop:"1px solid var(--line)",paddingTop:"14px"}}>
-                  <p style={{margin:"0 0 10px",fontSize:"12px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--muted)"}}>Esta semana</p>
-                  <div style={{display:"grid",gap:"8px"}}>
-                    {thisWeekMoments.slice(-5).reverse().map(m => (
-                      <div key={m.id} style={{display:"flex",alignItems:"flex-start",gap:"10px",padding:"10px 12px",background:"rgba(212,104,122,0.04)",borderRadius:"10px",border:"1px solid rgba(212,104,122,0.12)"}}>
-                        <span style={{fontSize:"18px",flexShrink:0}}>💛</span>
+                  <p style={{margin:"0 0 8px",fontSize:"11px",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.5px",color:"var(--muted)"}}>Esta semana</p>
+                  <div style={{display:"grid",gap:"6px"}}>
+                    {thisWeekMoments.slice(-4).reverse().map(m=>(
+                      <div key={m.id} style={{display:"flex",alignItems:"flex-start",gap:"8px",padding:"9px 12px",background:"rgba(212,104,122,0.04)",borderRadius:"10px",border:"1px solid rgba(212,104,122,0.1)"}}>
+                        <span style={{fontSize:"16px",flexShrink:0}}>💛</span>
                         <div style={{flex:1,minWidth:0}}>
-                          <p style={{margin:"0 0 2px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>{m.quien.join(" · ")} — {m.tiempo}</p>
-                          {m.queHicieron && <p style={{margin:0,fontSize:"12px",color:"var(--muted)",whiteSpace:"pre-wrap"}}>{m.queHicieron}</p>}
+                          <p style={{margin:"0 0 1px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>{m.quien.join(" · ")} — {m.tiempo}</p>
+                          {m.queHicieron&&<p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>{m.queHicieron}</p>}
                         </div>
                       </div>
                     ))}
                   </div>
-                  {thisWeekMoments.length >= 5 && (
-                    <div style={{marginTop:"12px",padding:"12px 16px",background:"linear-gradient(135deg,rgba(212,104,122,0.08),rgba(47,159,112,0.06))",borderRadius:"12px",textAlign:"center"}}>
+                  {thisWeekMoments.length>=5&&(
+                    <div style={{marginTop:"10px",padding:"12px 16px",background:"linear-gradient(135deg,rgba(212,104,122,0.08),rgba(47,159,112,0.06))",borderRadius:"12px",textAlign:"center"}}>
                       <p style={{margin:0,fontWeight:700,fontSize:"14px",color:"var(--ink)"}}>🏆 5 momentos esta semana — eso es presencia real.</p>
                     </div>
                   )}
                 </div>
               )}
             </div>
+
+            {/* Menú semanal */}
+            <div className="card" style={{padding:"20px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px",flexWrap:"wrap",gap:"8px"}}>
+                <div>
+                  <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Menú de la semana 🍽️</h3>
+                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Saber qué cocinar elimina la decisión diaria.</p>
+                </div>
+                <button type="button" onClick={()=>setShowMenuModal(true)}
+                  style={{padding:"7px 14px",background:"rgba(196,82,106,0.09)",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700,color:"#C4526A",whiteSpace:"nowrap"}}>
+                  ✨ Planear con Abi
+                </button>
+              </div>
+              <div style={{display:"grid",gap:"6px"}}>
+                {DAY_LABELS.map(([key,name])=>(
+                  <div key={key} style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                    <span style={{width:"28px",height:"28px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
+                    <input value={weekMenu[key]||""} onChange={e=>setWeekMenu(m=>({...m,[key]:e.target.value}))} placeholder={todayDay===key?"¿Qué cocinas hoy?":name+"..."}
+                      style={{flex:1,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5",outline:"none"}}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Hijos esta semana */}
+            <div className="card" style={{padding:"20px"}}>
+              <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Hijos esta semana 🎒</h3>
+              <p style={{margin:"0 0 12px",fontSize:"13px",color:"var(--muted)"}}>Actividades y horarios — un día a la vez.</p>
+              <div style={{display:"grid",gap:"6px"}}>
+                {DAY_LABELS.map(([key,name])=>(
+                  <div key={key} style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                    <span style={{width:"28px",height:"28px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
+                    <input value={kidsSchedule[key]?.act||""} onChange={e=>setKidsSchedule(s=>({...s,[key]:{...s[key],act:e.target.value}}))} placeholder={todayDay===key?"Actividad de hoy...":name+"..."}
+                      style={{flex:2,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5",minWidth:0,outline:"none"}}/>
+                    <input type="time" value={kidsSchedule[key]?.time||""} onChange={e=>setKidsSchedule(s=>({...s,[key]:{...s[key],time:e.target.value}}))}
+                      style={{flex:"0 0 88px",padding:"7px 8px",font:"inherit",fontSize:"12px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5",outline:"none"}}/>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
         {/* ── TAB 2: TAREAS ── */}
         {homeTab === 2 && (
-          <div>
-            {mentalLoad >= 8 && (
-              <div className="alert-banner alert-red" style={{marginBottom:"14px"}}>
-                Tu carga mental está alta. Elige 3 tareas para hoy y deja el resto para después.
+          <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
+
+            {/* Progress + add button */}
+            <div className="card" style={{padding:"16px 20px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
+                <p style={{margin:0,fontSize:"14px",fontWeight:700,color:"var(--ink)"}}>Tareas del hogar</p>
+                <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                  <span style={{fontSize:"13px",fontWeight:700,color:homeProgress===100?"var(--green)":"var(--ink)"}}>{homeProgress}%</span>
+                  <button type="button" onClick={()=>setShowTaskModal(true)} style={{background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",padding:"7px 16px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>+ Nueva</button>
+                </div>
+              </div>
+              <div style={{height:"7px",background:"rgba(0,0,0,0.07)",borderRadius:"4px",overflow:"hidden"}}>
+                <div style={{height:"100%",width:`${homeProgress}%`,background:homeProgress===100?"var(--green)":"#C4526A",borderRadius:"4px",transition:"width 0.5s ease"}}></div>
+              </div>
+              <p style={{margin:"5px 0 0",fontSize:"12px",color:"var(--muted)"}}>{completedHomeTasks} de {homeTasks.length} completadas</p>
+            </div>
+
+            {/* Category cards */}
+            {homeTasks.length>0&&(
+              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(148px,1fr))",gap:"10px"}}>
+                {CAT_CONFIG.map(cat=>{
+                  const catTasks=homeTasks.filter(t=>t.category===cat.key); const catDone=catTasks.filter(t=>t.done).length;
+                  if(!catTasks.length) return null;
+                  return (
+                    <div key={cat.key} style={{padding:"14px",background:cat.bg,borderRadius:"12px",border:`1px solid ${cat.color}22`}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
+                        <span style={{fontSize:"20px"}}>{cat.emoji}</span>
+                        <span style={{fontSize:"10px",fontWeight:700,color:cat.color,background:`${cat.color}18`,padding:"2px 7px",borderRadius:"12px"}}>{catDone}/{catTasks.length}</span>
+                      </div>
+                      <p style={{margin:"0 0 8px",fontSize:"11px",fontWeight:700,color:"var(--ink)"}}>{cat.key}</p>
+                      {catTasks.slice(0,3).map(task=>(
+                        <label key={task.id} style={{display:"flex",alignItems:"center",gap:"5px",marginBottom:"4px",cursor:"pointer"}}>
+                          <input type="checkbox" checked={task.done} onChange={()=>toggleHomeTask(task.id)} style={{accentColor:cat.color,width:"13px",height:"13px",flexShrink:0}}/>
+                          <span style={{fontSize:"12px",color:task.done?"var(--muted)":"var(--ink)",textDecoration:task.done?"line-through":"none",lineHeight:1.3}}>{task.title}</span>
+                        </label>
+                      ))}
+                      {catTasks.length>3&&<p style={{margin:"3px 0 0",fontSize:"11px",color:"var(--muted)"}}>+{catTasks.length-3} más</p>}
+                    </div>
+                  );
+                })}
               </div>
             )}
-            {urgentTasks.length > 0 && (
-              <div className="alert-banner alert-orange" style={{marginBottom:"14px"}}>
-                {urgentTasks.length} urgente{urgentTasks.length>1?"s":""}: {urgentTasks.map(t => t.title).join(", ")}
+
+            {/* Full list by priority */}
+            {homeTasks.length>0&&(
+              <div className="card" style={{padding:"18px 20px"}}>
+                <h3 style={{margin:"0 0 12px",fontSize:"15px"}}>Todos los pendientes</h3>
+                {["Urgente","Normal","Puede esperar"].map(priority=>{
+                  const tasks=homeTasks.filter(t=>(t.priority||"Normal")===priority); if(!tasks.length) return null;
+                  return (
+                    <div key={priority} style={{marginBottom:"12px"}}>
+                      <p style={{fontSize:"10px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.6px",color:priority==="Urgente"?"#DC2626":"var(--muted)",margin:"0 0 6px"}}>
+                        {priority==="Urgente"&&"🔴 "}{priority}
+                      </p>
+                      {tasks.map(task=>(
+                        <div key={task.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",background:"#fff",border:"1px solid var(--line)",marginBottom:"4px"}}>
+                          <input type="checkbox" checked={task.done} onChange={()=>toggleHomeTask(task.id)} style={{accentColor:"var(--green)",width:"14px",height:"14px",flexShrink:0,cursor:"pointer"}}/>
+                          <div style={{flex:1,minWidth:0}}>
+                            <span style={{fontSize:"13px",fontWeight:600,color:task.done?"var(--muted)":"var(--ink)",textDecoration:task.done?"line-through":"none"}}>{task.title}</span>
+                            <span style={{marginLeft:"7px",fontSize:"11px",color:"var(--muted)"}}>{task.category}</span>
+                            {task.delegate&&<span style={{marginLeft:"6px",fontSize:"11px",color:"#C4526A",fontWeight:600}}>→ {task.delegate}</span>}
+                          </div>
+                          <button type="button" onClick={()=>setHomeTasks(c=>c.filter(t=>t.id!==task.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"15px",lineHeight:1,padding:"2px 4px",flexShrink:0}}>×</button>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
             )}
-            {homeTasks.length === 0 && (
-              <div className="card" style={{marginBottom:"16px",background:"linear-gradient(135deg,#fdf9f6,#fef4f0)",border:"2px dashed #e8d5c4",padding:"24px"}}>
-                <h3 style={{margin:"0 0 6px",fontSize:"16px"}}>¿Por dónde empiezo? 🌱</h3>
-                <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Elige una tarea o escribe la tuya. Una sola ya cuenta.</p>
-                <div style={{display:"grid",gap:"8px"}}>
-                  {STARTER_TASKS.map(t => (
-                    <button key={t.title} type="button"
-                      onClick={() => setHomeTasks(c => [...c, {id:Date.now()+Math.random(),title:t.title,category:t.category,priority:"Normal",delegate:"",done:false,createdAt:new Date().toISOString()}])}
-                      style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",border:"1px solid var(--line)",borderRadius:"10px",background:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",textAlign:"left",color:"var(--ink)"}}>
-                      <span style={{fontSize:"18px"}}>{t.category==="Bienestar"?"💆":t.category==="Compras"?"🛒":t.category==="Salud"?"💊":t.category==="Colegio / Ninos"?"🎒":"🧹"}</span>
-                      {t.title}
-                    </button>
+
+            {homeTasks.length===0&&(
+              <div className="card" style={{padding:"28px",textAlign:"center",background:"linear-gradient(135deg,#fdf9f6,#fef4f0)",border:"2px dashed #e8d5c4"}}>
+                <p style={{fontSize:"32px",margin:"0 0 10px"}}>🌱</p>
+                <h3 style={{margin:"0 0 6px",fontSize:"16px"}}>Tu lista está vacía</h3>
+                <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Agrega tu primera tarea del hogar.</p>
+                <button type="button" onClick={()=>setShowTaskModal(true)} style={{padding:"10px 24px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700}}>+ Agregar tarea</button>
+              </div>
+            )}
+
+            {/* Rutinas del hogar */}
+            <div className="card" style={{padding:"18px 20px"}}>
+              <h3 style={{margin:"0 0 2px",fontSize:"15px"}}>Rutinas del hogar 🧹</h3>
+              <p style={{margin:"0 0 10px",fontSize:"13px",color:"var(--muted)"}}>Qué toca hacer cada día.</p>
+              <div style={{display:"grid",gap:"5px"}}>
+                {DAY_LABELS.map(([key,name])=>(
+                  <div key={key} style={{display:"flex",alignItems:"center",gap:"8px"}}>
+                    <span style={{width:"26px",height:"26px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===key?"var(--purple)":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
+                    <input value={homeRoutines[key]||""} onChange={e=>setHomeRoutines(r=>({...r,[key]:e.target.value}))} placeholder={`${name}...`}
+                      style={{flex:1,padding:"6px 10px",font:"inherit",fontSize:"13px",borderRadius:"7px",border:`1px solid ${todayDay===key?"rgba(107,70,193,0.3)":"var(--line)"}`,background:todayDay===key?"#f5f0fc":"#faf7f5",outline:"none"}}/>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Lista de mercado */}
+            <div className="card" style={{padding:"18px 20px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px",flexWrap:"wrap",gap:"8px"}}>
+                <div>
+                  <h3 style={{margin:"0 0 2px",fontSize:"15px"}}>Lista de mercado 🛒</h3>
+                  <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Del menú + lo que necesites agregar.</p>
+                </div>
+                {Object.values(weekMenu).some(v=>v)&&(
+                  <button type="button" onClick={addSuggestedToList}
+                    style={{padding:"6px 12px",background:"rgba(14,165,233,0.08)",border:"1px solid rgba(14,165,233,0.25)",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700,color:"#0EA5E9",whiteSpace:"nowrap"}}>
+                    ✨ Importar del menú
+                  </button>
+                )}
+              </div>
+              <form onSubmit={e=>{e.preventDefault();if(!groceryForm.trim())return;setGroceryList(c=>[...c,{id:Date.now(),text:groceryForm.trim(),done:false}]);setGroceryForm("");}} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px",marginBottom:"10px"}}>
+                <input placeholder="Agregar item..." value={groceryForm} onChange={e=>setGroceryForm(e.target.value)}
+                  style={{padding:"8px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#FAF7F5",outline:"none"}}/>
+                <button type="submit" style={{padding:"8px 14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontSize:"15px",fontWeight:700}}>+</button>
+              </form>
+              {groceryList.length===0
+                ?<p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Lista vacía — agrega items o importa del menú.</p>
+                :<div style={{display:"grid",gap:"4px",maxHeight:"260px",overflowY:"auto"}}>
+                  {groceryList.map(item=>(
+                    <label key={item.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"6px 10px",border:"1px solid var(--line)",borderRadius:"7px",background:item.done?"rgba(47,159,112,0.04)":"#fff",cursor:"pointer"}}>
+                      <input type="checkbox" checked={item.done} onChange={()=>setGroceryList(c=>c.map(g=>g.id===item.id?{...g,done:!g.done}:g))} style={{accentColor:"var(--green)",width:"13px",height:"13px",flexShrink:0}}/>
+                      <span style={{flex:1,fontSize:"13px",textDecoration:item.done?"line-through":"none",color:item.done?"var(--muted)":"var(--ink)"}}>{item.text}</span>
+                      {item.fromMenu&&<span style={{fontSize:"9px",color:"#0EA5E9",fontWeight:700,background:"rgba(14,165,233,0.1)",padding:"1px 5px",borderRadius:"4px"}}>MENÚ</span>}
+                      <button type="button" onClick={()=>setGroceryList(c=>c.filter(g=>g.id!==item.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",lineHeight:1,padding:"0 2px"}}>×</button>
+                    </label>
+                  ))}
+                </div>
+              }
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 3: MIS FINANZAS ── */}
+        {homeTab === 3 && (
+          <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
+              <div className="card" style={{padding:"16px",textAlign:"center"}}>
+                <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Gano</p>
+                <p style={{margin:"0 0 2px",fontSize:"20px",fontWeight:800,color:"var(--green)"}}>{money.format(homeBudgetTotals.income)}</p>
+                <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>este mes</p>
+              </div>
+              <div className="card" style={{padding:"16px",textAlign:"center"}}>
+                <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Gasto</p>
+                <p style={{margin:"0 0 2px",fontSize:"20px",fontWeight:800,color:homeSpent>homeBudgetTotals.income?"#DC2626":"var(--ink)"}}>{money.format(homeSpent)}</p>
+                <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>{homeBudgetTotals.income>0?Math.round((homeSpent/homeBudgetTotals.income)*100):0}% de ingresos</p>
+              </div>
+              <div className="card" style={{padding:"16px",textAlign:"center"}}>
+                <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Me queda</p>
+                <p style={{margin:"0 0 2px",fontSize:"20px",fontWeight:800,color:homeAvailable>=0?"var(--green)":"#DC2626"}}>{money.format(homeAvailable)}</p>
+                <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>disponible</p>
+              </div>
+            </div>
+
+            {homeBudgetTotals.income>0&&(
+              <div className="card" style={{padding:"14px 18px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}>
+                  <span style={{fontSize:"12px",fontWeight:600,color:"var(--muted)"}}>Gastado vs ingresos</span>
+                  <span style={{fontSize:"12px",fontWeight:700,color:homeSpent>homeBudgetTotals.income?"#DC2626":"var(--ink)"}}>{Math.round((homeSpent/homeBudgetTotals.income)*100)}%</span>
+                </div>
+                <div style={{height:"9px",background:"rgba(0,0,0,0.07)",borderRadius:"5px",overflow:"hidden"}}>
+                  <div style={{height:"100%",width:`${Math.min(100,(homeSpent/homeBudgetTotals.income)*100)}%`,background:homeSpent>homeBudgetTotals.income*0.9?"#DC2626":homeSpent>homeBudgetTotals.income*0.7?"#D97706":"var(--green)",borderRadius:"5px",transition:"width 0.5s"}}></div>
+                </div>
+              </div>
+            )}
+
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1.4fr",gap:"14px"}}>
+              <div className="card" style={{padding:"18px"}}>
+                <h3 style={{margin:"0 0 14px",fontSize:"15px"}}>Registrar movimiento</h3>
+                <form onSubmit={addHomeBudgetItem} style={{display:"flex",flexDirection:"column",gap:"9px"}}>
+                  <select value={homeBudgetForm.type} onChange={e=>setHomeBudgetForm(c=>({...c,type:e.target.value}))}
+                    style={{padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none"}}>
+                    <option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option>
+                  </select>
+                  <input placeholder="Descripción" value={homeBudgetForm.description}
+                    onChange={e=>{setHomeBudgetForm(c=>({...c,description:e.target.value}));if(homeBudgetError)setHomeBudgetError("");}}
+                    style={{padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none"}}/>
+                  <MoneyAmountInput placeholder="Monto" value={homeBudgetForm.amount}
+                    onChange={v=>{setHomeBudgetForm(c=>({...c,amount:v}));if(homeBudgetError)setHomeBudgetError("");}}/>
+                  <input type="date" value={homeBudgetForm.dueDate} onChange={e=>setHomeBudgetForm(c=>({...c,dueDate:e.target.value}))}
+                    style={{padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none"}}/>
+                  {homeBudgetError&&<p style={{margin:0,fontSize:"12px",color:"#C4526A",fontWeight:600}}>{homeBudgetError}</p>}
+                  <button type="submit" style={{padding:"10px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"9px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700}}>Guardar</button>
+                </form>
+              </div>
+              <div className="card" style={{padding:"18px"}}>
+                <h3 style={{margin:"0 0 12px",fontSize:"15px"}}>Mis movimientos</h3>
+                {homeBudget.length===0
+                  ?<p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin registros aún.</p>
+                  :<div style={{display:"flex",flexDirection:"column",gap:"5px",maxHeight:"280px",overflowY:"auto"}}>
+                    {[...homeBudget].reverse().map(item=>(
+                      <div key={item.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:item.type==="Ingreso"?"rgba(47,159,112,0.05)":item.type==="Ahorro"?"rgba(37,99,235,0.05)":"rgba(220,38,38,0.03)",border:"1px solid var(--line)"}}>
+                        <div style={{flex:1,minWidth:0}}>
+                          <p style={{margin:"0 0 1px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>{item.description}</p>
+                          <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>{item.type} · {formatShortDate(item.dueDate||item.createdAt)}</p>
+                        </div>
+                        <span style={{fontSize:"13px",fontWeight:700,color:item.type==="Ingreso"?"var(--green)":item.type==="Ahorro"?"#2563EB":"var(--ink)",flexShrink:0}}>{item.type==="Ingreso"?"+":"-"}{money.format(item.amount)}</span>
+                        <button type="button" onClick={()=>setHomeBudget(c=>c.filter(r=>r.id!==item.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",lineHeight:1,padding:"0 2px"}}>×</button>
+                      </div>
+                    ))}
+                  </div>
+                }
+              </div>
+            </div>
+
+            {homeBudget.length>0&&(
+              <div className="card" style={{padding:"18px 20px"}}>
+                <h3 style={{margin:"0 0 14px",fontSize:"15px"}}>📊 Análisis de mis finanzas</h3>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px",marginBottom:"14px"}}>
+                  <div>
+                    <p style={{margin:"0 0 8px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>En qué gasto más</p>
+                    {Object.entries(homeBudgetByType).filter(([t])=>t!=="Ingreso"&&t!=="Ahorro").sort((a,b)=>b[1]-a[1]).map(([type,amt])=>{
+                      const pct=homeBudgetTotals.income>0?Math.round((amt/homeBudgetTotals.income)*100):0;
+                      return (
+                        <div key={type} style={{marginBottom:"6px"}}>
+                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:"2px"}}>
+                            <span style={{fontSize:"12px",color:"var(--ink)"}}>{type}</span>
+                            <span style={{fontSize:"12px",fontWeight:700}}>{pct}%</span>
+                          </div>
+                          <div style={{height:"5px",background:"rgba(0,0,0,0.07)",borderRadius:"3px",overflow:"hidden"}}>
+                            <div style={{height:"100%",width:`${pct}%`,background:"#C4526A",borderRadius:"3px"}}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                    <div style={{padding:"10px 12px",background:"rgba(47,159,112,0.06)",borderRadius:"8px",border:"1px solid rgba(47,159,112,0.15)"}}>
+                      <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>Ingresos totales</p>
+                      <p style={{margin:"2px 0 0",fontSize:"16px",fontWeight:800,color:"var(--green)"}}>{money.format(homeBudgetTotals.income)}</p>
+                    </div>
+                    <div style={{padding:"10px 12px",background:"rgba(37,99,235,0.05)",borderRadius:"8px",border:"1px solid rgba(37,99,235,0.12)"}}>
+                      <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>Ahorro registrado</p>
+                      <p style={{margin:"2px 0 0",fontSize:"16px",fontWeight:800,color:"#2563EB"}}>{money.format(homeBudgetTotals.savings)}</p>
+                    </div>
+                    {biggestHomeLeak[0]&&(
+                      <div style={{padding:"10px 12px",background:"rgba(220,38,38,0.04)",borderRadius:"8px",border:"1px solid rgba(220,38,38,0.1)"}}>
+                        <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>Mayor salida</p>
+                        <p style={{margin:"2px 0 0",fontSize:"13px",fontWeight:700,color:"#DC2626"}}>{biggestHomeLeak[0]} — {money.format(biggestHomeLeak[1])}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div style={{borderTop:"1px solid var(--line)",paddingTop:"12px"}}>
+                  <p style={{margin:"0 0 8px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>💡 Recomendaciones</p>
+                  {financeRecs.map((rec,i)=>(
+                    <div key={i} style={{display:"flex",gap:"10px",alignItems:"flex-start",padding:"10px 12px",background:"rgba(196,82,106,0.03)",borderRadius:"8px",border:"1px solid rgba(196,82,106,0.1)",marginBottom:"6px"}}>
+                      <span style={{fontSize:"18px",flexShrink:0}}>{rec.icon}</span>
+                      <p style={{margin:0,fontSize:"13px",color:"var(--ink)",lineHeight:1.4}}>{rec.text}</p>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
-            <div className="home-main-layout">
-              <div className="home-left-col">
-                <form className="card home-form-card" onSubmit={addHomeTask}>
-                  <h3>Nueva tarea</h3>
-                  <input placeholder="Tarea del hogar" value={homeForm.title}
-                    onChange={e => { updateHomeForm("title",e.target.value); if (homeTaskError) setHomeTaskError(""); }} />
-                  <select value={homeForm.category} onChange={e => updateHomeForm("category",e.target.value)}>
-                    <option>Rutina</option><option>Compras</option><option>Colegio / Ninos</option>
-                    <option>Salud</option><option>Hogar / Limpieza</option><option>Bienestar</option><option>Calendario</option>
-                  </select>
-                  <select value={homeForm.priority} onChange={e => updateHomeForm("priority",e.target.value)}>
-                    <option>Normal</option><option>Urgente</option><option>Puede esperar</option>
-                  </select>
-                  <input placeholder="Delegar a... (opcional)" value={homeForm.delegate} onChange={e => updateHomeForm("delegate",e.target.value)} />
-                  {homeTaskError && <p style={{margin:"0 0 4px",fontSize:"13px",color:"#C4526A",fontWeight:600}}>{homeTaskError}</p>}
-                  <button className="primary-button" type="submit">Guardar tarea</button>
-                </form>
-                <div className="card home-form-card" style={{marginTop:"0"}}>
-                  <h3>Lista de mercado</h3>
-                  <p className="helper-copy">Agrega lo que necesitas comprar esta semana.</p>
-                  <form onSubmit={e => { e.preventDefault(); if (!groceryForm.trim()) return; setGroceryList(c => [...c,{id:Date.now(),text:groceryForm.trim(),done:false}]); setGroceryForm(""); }} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px"}}>
-                    <input placeholder="Ej: Leche, pan, frutas..." value={groceryForm} onChange={e => setGroceryForm(e.target.value)}
-                      style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 12px",font:"inherit",background:"#FAF7F5"}} />
-                    <button className="primary-button" type="submit" style={{minHeight:"40px",padding:"0 14px"}}>+</button>
-                  </form>
-                  <div style={{display:"grid",gap:"6px",marginTop:"8px"}}>
-                    {groceryList.map(item => (
-                      <label key={item.id} style={{display:"flex",alignItems:"center",gap:"10px",padding:"8px 10px",border:"1px solid var(--line)",borderRadius:"8px",background:item.done?"rgba(47,159,112,0.06)":"#fff"}}>
-                        <input type="checkbox" className="check-sm" checked={item.done} onChange={() => setGroceryList(c => c.map(g => g.id===item.id?{...g,done:!g.done}:g))} style={{accentColor:"var(--green)"}} />
-                        <span style={{flex:1,fontSize:"14px",textDecoration:item.done?"line-through":"none",color:item.done?"var(--muted)":"var(--ink)"}}>{item.text}</span>
-                        <button type="button" onClick={() => setGroceryList(c => c.filter(g => g.id!==item.id))}
-                          style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",lineHeight:1}}>×</button>
-                      </label>
-                    ))}
-                    {groceryList.length===0 && <p className="helper-copy">Tu lista está vacía.</p>}
-                  </div>
+          </div>
+        )}
+
+        {/* ── Modal: Abi Menú ── */}
+        {showMenuModal&&(
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}} onClick={e=>e.target===e.currentTarget&&(setShowMenuModal(false),setAbiMenuSuggestion(null))}>
+            <div style={{background:"#fff",borderRadius:"20px",width:"min(500px,100%)",maxHeight:"88vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 80px rgba(0,0,0,0.22)"}}>
+              <div style={{background:"linear-gradient(135deg,#C4526A,#a33a54)",padding:"20px 22px",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexShrink:0}}>
+                <div>
+                  <p style={{margin:"0 0 2px",fontSize:"11px",fontWeight:700,opacity:0.8,letterSpacing:"0.8px",textTransform:"uppercase"}}>✨ Abi — Asistente de menú</p>
+                  <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Planea tu menú semanal</p>
                 </div>
+                <button type="button" onClick={()=>{setShowMenuModal(false);setAbiMenuSuggestion(null);}} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"8px",width:"30px",height:"30px",cursor:"pointer",color:"#fff",fontSize:"15px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
               </div>
-              <div className="home-right-col">
-                <div className="card">
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                    <h3 style={{margin:0}}>Rutinas y pendientes</h3>
-                    <div style={{display:"flex",gap:"6px",alignItems:"center"}}>
-                      <Progress value={homeProgress} tone="green" />
-                      <b style={{fontSize:"13px",minWidth:"36px",textAlign:"right"}}>{homeProgress}%</b>
-                    </div>
-                  </div>
-                  {homeTasks.length===0 && <p className="helper-copy">Agrega tu primera tarea del hogar.</p>}
-                  {["Urgente","Normal","Puede esperar"].map(priority => {
-                    const tasks = homeTasks.filter(t => (t.priority||"Normal")===priority);
-                    if (!tasks.length) return null;
-                    return (
-                      <div key={priority} style={{marginBottom:"12px"}}>
-                        <p style={{fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.5px",color:priority==="Urgente"?"var(--purple)":"var(--muted)",margin:"0 0 6px"}}>{priority}</p>
-                        {tasks.map(task => (
-                          <div key={task.id} className="home-task-row">
-                            <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)",flexShrink:0}} />
-                            <div style={{flex:1,minWidth:0}}>
-                              <strong style={{fontSize:"14px",textDecoration:task.done?"line-through":"none",color:task.done?"var(--muted)":"var(--ink)"}}>{task.title}</strong>
-                              <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"2px"}}>
-                                <small style={{color:"var(--muted)"}}>{task.category}</small>
-                                {task.delegate && <small style={{color:"var(--pink)",fontWeight:700}}>Delegar a: {task.delegate}</small>}
-                              </div>
-                            </div>
-                            <button type="button" onClick={() => confirmDelete("Eliminar?",() => setHomeTasks(c => c.filter(t => t.id!==task.id)))}
-                              style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",flexShrink:0}}>×</button>
-                          </div>
+              <div style={{padding:"20px 22px",overflowY:"auto",flex:1}}>
+                {!abiMenuSuggestion?(
+                  <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
+                    <p style={{margin:0,fontSize:"14px",color:"var(--ink)",lineHeight:1.5}}>Cuéntame un poco y te ayudo a planear una semana de comidas balanceadas para tu familia.</p>
+                    <div>
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"8px"}}>¿Cuántas personas?</label>
+                      <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                        {["2","3","4","5","6+"].map(n=>(
+                          <button key={n} type="button" onClick={()=>setAbiMenuPrefs(p=>({...p,personas:n}))}
+                            style={{padding:"8px 18px",borderRadius:"20px",border:`2px solid ${abiMenuPrefs.personas===n?"#C4526A":"var(--line)"}`,background:abiMenuPrefs.personas===n?"rgba(196,82,106,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:abiMenuPrefs.personas===n?700:400}}>
+                            {n}
+                          </button>
                         ))}
                       </div>
-                    );
-                  })}
-                  {delegatedTasks.length>0 && (
-                    <div style={{marginTop:"12px",padding:"10px 12px",background:"var(--pink-soft)",borderRadius:"10px"}}>
-                      <p style={{margin:"0 0 6px",fontSize:"12px",fontWeight:800,color:"var(--purple)"}}>DELEGADAS ({delegatedTasks.length})</p>
-                      {delegatedTasks.map(t => <p key={t.id} style={{margin:"2px 0",fontSize:"13px",color:"var(--ink)"}}>{t.title} - {t.delegate}</p>)}
                     </div>
-                  )}
-                </div>
-                <div className="card home-budget-card" style={{marginTop:"0"}}>
-                  <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Rutinas del hogar 🧹</h3>
-                  <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Qué toca hacer cada día para que el hogar funcione.</p>
-                  {homeRoutines[todayDay] && (
-                    <div style={{marginBottom:"12px",padding:"9px 14px",background:"rgba(107,70,193,0.07)",borderRadius:"10px",border:"1px solid rgba(107,70,193,0.18)"}}>
-                      <p style={{margin:0,fontSize:"13px",color:"var(--purple)",fontWeight:700}}>Hoy toca: {homeRoutines[todayDay]}</p>
+                    <div>
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"8px"}}>Preferencia alimentaria</label>
+                      <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                        {[["normal","🍖 Normal"],["vegetariano","🥦 Vegetariano"],["economico","💰 Económico"]].map(([key,label])=>(
+                          <button key={key} type="button" onClick={()=>setAbiMenuPrefs(p=>({...p,dieta:key}))}
+                            style={{padding:"8px 16px",borderRadius:"20px",border:`2px solid ${abiMenuPrefs.dieta===key?"#C4526A":"var(--line)"}`,background:abiMenuPrefs.dieta===key?"rgba(196,82,106,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:abiMenuPrefs.dieta===key?700:400}}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  )}
-                  <div style={{display:"grid",gap:"6px"}}>
-                    {DAY_LABELS.map(([key,name]) => (
-                      <div key={key} style={{display:"flex",alignItems:"center",gap:"9px"}}>
-                        <span style={{width:"28px",height:"28px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===key?"var(--purple)":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
-                        <input value={homeRoutines[key]} onChange={e => setHomeRoutines(r => ({...r,[key]:e.target.value}))}
-                          placeholder={`${name}...`}
-                          style={{flex:1,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"7px",border:`1px solid ${todayDay===key?"rgba(107,70,193,0.3)":"var(--line)"}`,background:todayDay===key?"#f5f0fc":"#faf7f5"}} />
+                    <button type="button" onClick={()=>setAbiMenuSuggestion(generateAbiMenu())}
+                      style={{marginTop:"4px",padding:"13px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>
+                      ✨ Generar mi menú
+                    </button>
+                  </div>
+                ):(
+                  <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+                    <p style={{margin:"0 0 4px",fontSize:"14px",color:"var(--ink)"}}>Aquí está tu menú. Puedes editar cualquier día antes de guardarlo.</p>
+                    {DAY_LABELS.map(([key,name])=>(
+                      <div key={key} style={{display:"flex",alignItems:"center",gap:"10px"}}>
+                        <span style={{width:"28px",height:"28px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
+                        <input value={abiMenuSuggestion[key]||""} onChange={e=>setAbiMenuSuggestion(p=>({...p,[key]:e.target.value}))}
+                          style={{flex:1,padding:"8px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none"}}/>
                       </div>
                     ))}
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginTop:"6px"}}>
+                      <button type="button" onClick={()=>setAbiMenuSuggestion(generateAbiMenu())}
+                        style={{padding:"11px",background:"#fff",color:"var(--ink)",border:"1px solid var(--line)",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:600}}>
+                        🔄 Otra sugerencia
+                      </button>
+                      <button type="button" onClick={()=>{setWeekMenu(abiMenuSuggestion);setAbiMenuSuggestion(null);setShowMenuModal(false);}}
+                        style={{padding:"11px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>
+                        ✓ Usar este menú
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
         )}
 
-        {/* ── TAB 3: PRESUPUESTO ── */}
-        {homeTab === 3 && (
-          <div className="home-budget-card card">
-            <div className="budget-head">
-              <div><h3>Presupuesto del hogar 💰</h3><p>Ingresos, gastos y dinero disponible para la familia.</p></div>
-              <div className="budget-total"><span>Disponible</span><strong>{money.format(homeAvailable)}</strong></div>
-            </div>
-            <form className="home-budget-form" onSubmit={addHomeBudgetItem}>
-              <select value={homeBudgetForm.type} onChange={e => setHomeBudgetForm(c => ({...c,type:e.target.value}))}><option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option></select>
-              <input placeholder="Descripción" value={homeBudgetForm.description}
-                onChange={e => { setHomeBudgetForm(c => ({...c,description:e.target.value})); if (homeBudgetError) setHomeBudgetError(""); }} />
-              <MoneyAmountInput placeholder="Monto" value={homeBudgetForm.amount}
-                onChange={v => { setHomeBudgetForm(c => ({...c,amount:v})); if (homeBudgetError) setHomeBudgetError(""); }} />
-              <input type="date" value={homeBudgetForm.dueDate} onChange={e => setHomeBudgetForm(c => ({...c,dueDate:e.target.value}))} />
-              <button className="primary-button" type="submit">Agregar</button>
-            </form>
-            {homeBudgetError && <p style={{margin:"4px 0 12px",fontSize:"13px",color:"#C4526A",fontWeight:600,paddingLeft:"2px"}}>{homeBudgetError}</p>}
-            <div className="home-money-insights">
-              <article><span>Ganando</span><strong>{money.format(homeBudgetTotals.income)}</strong></article>
-              <article><span>Gastando</span><strong>{money.format(homeSpent)}</strong></article>
-              <article><span>Mayor fuga</span><strong>{biggestHomeLeak[0]}</strong><small>{money.format(biggestHomeLeak[1])}</small></article>
-              <article><span>Ahorro</span><strong>{money.format(homeBudgetTotals.savings)}</strong></article>
-            </div>
-            <div className="money-track">
-              <span style={{width:`${Math.min(100,homeBudgetTotals.income?(homeSpent/homeBudgetTotals.income)*100:0)}%`}}></span>
-              <small>Gastado vs ingresos del hogar</small>
-            </div>
-            <div className="budget-list">
-              {homeBudget.map(item => (
-                <div className="home-budget-row" key={item.id}>
-                  <div>
-                    <strong>{item.description}</strong>
-                    <small>{item.type} • pago: {formatShortDate(item.dueDate||item.createdAt)}</small>
-                  </div>
-                  <input type="date" value={inputDateFromValue(item.dueDate||item.createdAt)} onChange={e => updateHomeBudgetDate(item.id,e.target.value)} aria-label={`Fecha de pago de ${item.description}`} />
-                  <b>{money.format(item.amount)}</b>
-                  <button className="row-delete" type="button" onClick={() => setHomeBudget(c => c.filter(r => r.id!==item.id))}>×</button>
+        {/* ── Modal: Nueva Tarea ── */}
+        {showTaskModal&&(
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}} onClick={e=>e.target===e.currentTarget&&(setShowTaskModal(false),setHomeTaskError(""))}>
+            <div style={{background:"#fff",borderRadius:"20px",width:"min(420px,100%)",boxShadow:"0 24px 80px rgba(0,0,0,0.22)",overflow:"hidden"}}>
+              <div style={{background:"linear-gradient(135deg,#6B46C1,#553c9a)",padding:"18px 22px 16px",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <p style={{margin:0,fontSize:"17px",fontWeight:800}}>Nueva tarea del hogar</p>
+                <button type="button" onClick={()=>{setShowTaskModal(false);setHomeTaskError("");}} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"8px",width:"30px",height:"30px",cursor:"pointer",color:"#fff",fontSize:"15px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+              </div>
+              <form onSubmit={e=>{addHomeTask(e);if(!homeTaskError)setShowTaskModal(false);}} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                <div>
+                  <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"5px"}}>Tarea</label>
+                  <input autoFocus placeholder="¿Qué hay que hacer?" value={homeForm.title}
+                    onChange={e=>{updateHomeForm("title",e.target.value);if(homeTaskError)setHomeTaskError("");}}
+                    style={{width:"100%",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:"9px",font:"inherit",fontSize:"14px",background:"#faf7f5",boxSizing:"border-box",outline:"none"}}/>
+                  {homeTaskError&&<p style={{margin:"4px 0 0",fontSize:"12px",color:"#C4526A",fontWeight:600}}>{homeTaskError}</p>}
                 </div>
-              ))}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                  <div>
+                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"5px"}}>Categoría</label>
+                    <select value={homeForm.category} onChange={e=>updateHomeForm("category",e.target.value)}
+                      style={{width:"100%",padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"9px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none"}}>
+                      <option>Rutina</option><option>Compras</option><option>Colegio / Ninos</option><option>Salud</option><option>Hogar / Limpieza</option><option>Bienestar</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"5px"}}>Prioridad</label>
+                    <div style={{display:"flex",gap:"4px"}}>
+                      {[["Urgente","🔴"],["Normal","🟡"],["Puede esperar","🟢"]].map(([p,ico])=>(
+                        <button key={p} type="button" onClick={()=>updateHomeForm("priority",p)}
+                          style={{flex:1,padding:"8px 4px",borderRadius:"8px",border:`2px solid ${homeForm.priority===p?"#C4526A":"var(--line)"}`,background:homeForm.priority===p?"rgba(196,82,106,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"10px",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"}}>
+                          <span>{ico}</span><span style={{color:homeForm.priority===p?"#C4526A":"var(--muted)",textAlign:"center"}}>{p==="Puede esperar"?"Espera":p}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"5px"}}>Delegar a <span style={{fontWeight:400,textTransform:"none"}}>(opcional)</span></label>
+                  <input placeholder="Ej: Esposo, María..." value={homeForm.delegate} onChange={e=>updateHomeForm("delegate",e.target.value)}
+                    style={{width:"100%",padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"9px",font:"inherit",fontSize:"13px",background:"#faf7f5",boxSizing:"border-box",outline:"none"}}/>
+                </div>
+                <button type="submit" style={{padding:"12px",background:"#6B46C1",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700,marginTop:"2px"}}>Guardar tarea</button>
+              </form>
             </div>
           </div>
         )}
