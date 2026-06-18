@@ -5738,8 +5738,8 @@ button {
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #fff;
-  border: 1px solid var(--line);
+  background: linear-gradient(135deg, #FDF0EC 0%, #FBF5F0 100%);
+  border: 1px solid rgba(232, 114, 92, 0.2);
   border-radius: 16px;
   padding: 18px 22px;
 }
