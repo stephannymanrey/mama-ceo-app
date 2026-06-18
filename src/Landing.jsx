@@ -61,7 +61,7 @@ const FAQS = [
   },
   {
     q: "¿Mis datos están seguros?",
-    a: "Absolutamente. Usamos AWS con cifrado y autenticación segura, y tus datos nunca se comparten con terceros. Cumplimos con la Ley 1581 de 2012 de protección de datos de Colombia.",
+    a: "Absolutamente. Tus datos se almacenan con cifrado y autenticación segura, y nunca se comparten con terceros. Cumplimos con la Ley 1581 de 2012 de protección de datos de Colombia.",
   },
   {
     q: "¿Funciona para cualquier tipo de negocio?",
@@ -77,8 +77,23 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
   const [isYearly, setIsYearly] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [imgError, setImgError] = useState(false);
+  const [urlCopied, setUrlCopied] = useState(false);
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  const isIOS      = /iPad|iPhone|iPod/.test(ua);
+  const isAndroid  = /Android/.test(ua);
+  const isChromeIOS = isIOS && /CriOS/.test(ua);
+  const isSafariIOS = isIOS && !isChromeIOS;
+  const isMobileKnown = isIOS || isAndroid;
+
+  const copyLink = () => {
+    navigator.clipboard?.writeText(window.location.href).then(() => {
+      setUrlCopied(true);
+      setTimeout(() => setUrlCopied(false), 3000);
+    });
+  };
 
   return (
     <div className="landing">
@@ -377,64 +392,94 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
         </div>
       </section>
 
-      {/* ── INSTALA EN TU CELULAR ── */}
+      {/* ── TENLA SIEMPRE A MANO ── */}
       <section className="landing-section landing-pwa">
         <div className="landing-container">
-          <h2 className="landing-h2">Llévala en tu celular</h2>
+          <span className="landing-badge">📲 Sin descargas · Sin tienda de apps</span>
+          <h2 className="landing-h2" style={{marginTop:"12px"}}>Tenla siempre a mano</h2>
           <p className="landing-section-sub">
-            Instálala como app directamente desde tu navegador — sin pasar por ninguna tienda. Es gratis y queda en tu pantalla de inicio.
+            Agrégala a tu pantalla de inicio en segundos y ábrela como cualquier app — sin buscar en el navegador cada vez.
           </p>
-          <div className="landing-pwa-grid">
-            <div className="landing-pwa-card">
-              <div className="lpwa-os-icon">🍎</div>
-              <h3 className="lpwa-title">iPhone — Safari</h3>
-              <p className="lpwa-warning">⚠️ Debe ser Safari. No funciona desde Chrome en iPhone.</p>
-              <ol className="lpwa-steps">
-                <li>
-                  <span className="lpwa-num">1</span>
-                  <span>Abre Mamá CEO App en <strong>Safari</strong></span>
-                </li>
-                <li>
-                  <span className="lpwa-num">2</span>
-                  <span>Toca el ícono <strong>Compartir</strong> en la barra inferior <em>(cuadrado con flecha ↑)</em></span>
-                </li>
-                <li>
-                  <span className="lpwa-num">3</span>
-                  <span>Desplázate y selecciona <strong>"Agregar a pantalla de inicio"</strong></span>
-                </li>
-                <li>
-                  <span className="lpwa-num">4</span>
-                  <span>Toca <strong>"Agregar"</strong> — ¡ya la tienes!</span>
-                </li>
-              </ol>
-            </div>
 
-            <div className="landing-pwa-card">
-              <div className="lpwa-os-icon">🤖</div>
-              <h3 className="lpwa-title">Android — Chrome</h3>
-              <p className="lpwa-warning">💡 Chrome puede mostrarte un banner automático para instalar.</p>
-              <ol className="lpwa-steps">
-                <li>
-                  <span className="lpwa-num">1</span>
-                  <span>Abre Mamá CEO App en <strong>Chrome</strong></span>
-                </li>
-                <li>
-                  <span className="lpwa-num">2</span>
-                  <span>Toca los <strong>3 puntos ⋮</strong> en la esquina superior derecha</span>
-                </li>
-                <li>
-                  <span className="lpwa-num">3</span>
-                  <span>Selecciona <strong>"Agregar a pantalla de inicio"</strong></span>
-                </li>
-                <li>
-                  <span className="lpwa-num">4</span>
-                  <span>Confirma — ¡ya la tienes!</span>
-                </li>
-              </ol>
+          {/* iOS + Safari → solo tarjeta iPhone */}
+          {isSafariIOS && (
+            <div className="landing-pwa-card lpwa-solo">
+              <div className="lpwa-detected">¡Estás en iPhone! Aquí te explicamos cómo hacerlo 👇</div>
+              <div className="lpwa-steps-visual">
+                {[
+                  { n:"1", icon:"⬆️", text: <span>Toca el ícono de <strong>Compartir</strong> en la barra inferior de Safari <em>(el cuadrado con flechita)</em></span> },
+                  { n:"2", icon:"➕", text: <span>Selecciona <strong>"Agregar a pantalla de inicio"</strong></span> },
+                  { n:"3", icon:"✅", text: <span>Toca <strong>"Agregar"</strong> — ¡listo! Ya aparece en tu pantalla</span> },
+                ].map(s => (
+                  <div key={s.n} className="lpwa-vstep">
+                    <span className="lpwa-num">{s.n}</span>
+                    <span className="lpwa-vstep-ico">{s.icon}</span>
+                    <span className="lpwa-vstep-txt">{s.text}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* iOS + Chrome → pide abrir en Safari */}
+          {isChromeIOS && (
+            <div className="landing-pwa-card lpwa-solo">
+              <div className="lpwa-detected">Estás en iPhone 🍎</div>
+              <p className="lpwa-chrome-msg">Para agregarla a tu pantalla de inicio, necesitas abrirla en <strong>Safari</strong>. Copia el enlace y pégalo allí:</p>
+              <button className="lpwa-copy-btn" onClick={copyLink}>
+                {urlCopied ? "✅ Enlace copiado" : "📋 Copiar enlace para Safari"}
+              </button>
+            </div>
+          )}
+
+          {/* Android → solo tarjeta Android */}
+          {isAndroid && (
+            <div className="landing-pwa-card lpwa-solo">
+              <div className="lpwa-detected">¡Estás en Android! Aquí te explicamos cómo hacerlo 👇</div>
+              <div className="lpwa-steps-visual">
+                {[
+                  { n:"1", icon:"⋮", text: <span>Toca los <strong>3 puntos</strong> en la esquina superior derecha de Chrome</span> },
+                  { n:"2", icon:"➕", text: <span>Selecciona <strong>"Agregar a pantalla de inicio"</strong></span> },
+                  { n:"3", icon:"✅", text: <span>Confirma — ¡ya aparece en tu pantalla!</span> },
+                ].map(s => (
+                  <div key={s.n} className="lpwa-vstep">
+                    <span className="lpwa-num">{s.n}</span>
+                    <span className="lpwa-vstep-ico">{s.icon}</span>
+                    <span className="lpwa-vstep-txt">{s.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Desktop → muestra las dos opciones */}
+          {!isMobileKnown && (
+            <div className="landing-pwa-grid">
+              <div className="landing-pwa-card">
+                <div className="lpwa-os-icon">🍎</div>
+                <h3 className="lpwa-title">En iPhone</h3>
+                <p className="lpwa-sub-note">Ábrela en Safari (no Chrome)</p>
+                <ol className="lpwa-steps">
+                  <li><span className="lpwa-num">1</span><span>Toca el ícono <strong>Compartir ⬆️</strong> en la barra de Safari</span></li>
+                  <li><span className="lpwa-num">2</span><span>Selecciona <strong>"Agregar a pantalla de inicio"</strong></span></li>
+                  <li><span className="lpwa-num">3</span><span>Toca <strong>Agregar</strong> — ¡lista!</span></li>
+                </ol>
+              </div>
+              <div className="landing-pwa-card">
+                <div className="lpwa-os-icon">🤖</div>
+                <h3 className="lpwa-title">En Android</h3>
+                <p className="lpwa-sub-note">Ábrela en Chrome</p>
+                <ol className="lpwa-steps">
+                  <li><span className="lpwa-num">1</span><span>Toca los <strong>3 puntos ⋮</strong> arriba a la derecha</span></li>
+                  <li><span className="lpwa-num">2</span><span>Selecciona <strong>"Agregar a pantalla de inicio"</strong></span></li>
+                  <li><span className="lpwa-num">3</span><span>Confirma — ¡lista!</span></li>
+                </ol>
+              </div>
+            </div>
+          )}
+
           <div className="lpwa-footer-note">
-            Una vez instalada se abre directamente como app — sin necesidad de abrir el navegador cada vez. ✨
+            Se abre directamente — como si la hubieras descargado de la tienda. Sin buscar, sin navegador. ✨
           </div>
         </div>
       </section>

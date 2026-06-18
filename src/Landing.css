@@ -3,8 +3,9 @@
 :root {
   --l-brand: #C4526A;
   --l-brand-dark: #a83f57;
-  --l-plum: #2C1631;
-  --l-plum-hover: #3e2249;
+  --l-gold: #C9A227;
+  --l-gold-hover: #A8891C;
+  --l-gold-light: #FBF6E3;
   --l-bg: #FDF9F6;
   --l-bg-alt: #fff;
   --l-border: #eee5de;
@@ -57,31 +58,31 @@
 }
 .lbtn-primary:hover { background: var(--l-brand-dark); transform: translateY(-1px); }
 
-/* Hero main CTA — plum oscuro, no rosa */
+/* Hero main CTA — dorado */
 .lbtn-hero {
-  background: var(--l-plum);
-  color: #fff;
+  background: var(--l-gold);
+  color: #1a1a1a;
   border: none;
   border-radius: 30px;
   padding: 16px 36px;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   transition: background 0.15s, transform 0.12s, box-shadow 0.12s;
-  box-shadow: 0 4px 20px rgba(44, 22, 49, 0.3);
+  box-shadow: 0 4px 20px rgba(201, 162, 39, 0.4);
   white-space: nowrap;
 }
 .lbtn-hero:hover {
-  background: var(--l-plum-hover);
+  background: var(--l-gold-hover);
   transform: translateY(-2px);
-  box-shadow: 0 7px 28px rgba(44, 22, 49, 0.38);
+  box-shadow: 0 7px 28px rgba(201, 162, 39, 0.5);
 }
 
 /* Hero secondary "Ver planes" */
 .lbtn-outline {
   background: transparent;
-  color: var(--l-plum);
-  border: 2px solid var(--l-plum);
+  color: var(--l-gold);
+  border: 2px solid var(--l-gold);
   border-radius: 30px;
   padding: 14px 28px;
   font-size: 15px;
@@ -90,22 +91,22 @@
   transition: background 0.15s;
   white-space: nowrap;
 }
-.lbtn-outline:hover { background: rgba(44,22,49,0.06); }
+.lbtn-outline:hover { background: var(--l-gold-light); }
 
-/* Final CTA banner button (white on pink bg) */
+/* Final CTA banner button — dorado sobre fondo rosa */
 .lbtn-cta-white {
-  background: #fff;
-  color: var(--l-brand);
+  background: var(--l-gold);
+  color: #1a1a1a;
   border: none;
   border-radius: 30px;
   padding: 16px 36px;
   font-size: 17px;
-  font-weight: 700;
+  font-weight: 800;
   cursor: pointer;
   transition: background 0.15s, transform 0.12s;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2);
 }
-.lbtn-cta-white:hover { background: #fdeef1; transform: translateY(-2px); }
+.lbtn-cta-white:hover { background: var(--l-gold-hover); transform: translateY(-2px); }
 
 /* Text link button */
 .landing-link-btn {
@@ -313,7 +314,7 @@
 
 /* ── STATS BAR ── */
 .landing-stats-bar {
-  background: var(--l-plum);
+  background: #1a1a1a;
   padding: 24px 0;
 }
 .landing-stats-inner {
@@ -461,7 +462,7 @@
   align-items: center;
   gap: 8px;
 }
-.ltoggle-btn.active { background: var(--l-plum); color: #fff; }
+.ltoggle-btn.active { background: var(--l-gold); color: #fff; }
 .ltoggle-save {
   background: #10B981;
   color: #fff;
@@ -538,12 +539,12 @@
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
-  border: 2px solid var(--l-plum);
+  border: 2px solid var(--l-gold);
   background: transparent;
-  color: var(--l-plum);
+  color: var(--l-gold);
   transition: all 0.15s;
 }
-.landing-plan-btn:hover { background: rgba(44,22,49,0.06); }
+.landing-plan-btn:hover { background: var(--l-gold-light); }
 .landing-plan-btn.featured { background: var(--l-brand); color: #fff; border-color: var(--l-brand); }
 .landing-plan-btn.featured:hover { background: var(--l-brand-dark); border-color: var(--l-brand-dark); }
 .landing-plan-trial { text-align: center; font-size: 12px; color: #888; margin: 8px 0 0; }
@@ -580,34 +581,86 @@
 .landing-faq-a { padding: 0 20px 17px; font-size: 14px; line-height: 1.7; color: #555; margin: 0; }
 
 /* ── PWA SECTION ── */
-.landing-pwa { background: var(--l-bg); }
+.landing-pwa { background: var(--l-bg); text-align: center; }
+.landing-pwa .landing-badge { margin-bottom: 0; }
 .landing-pwa-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 24px;
+  text-align: left;
 }
 .landing-pwa-card {
   background: var(--l-bg-alt);
   border-radius: 20px;
   border: 1.5px solid var(--l-border);
   padding: 28px 26px;
+  text-align: left;
 }
-.lpwa-os-icon { font-size: 40px; margin-bottom: 12px; display: block; }
+.lpwa-solo {
+  max-width: 540px;
+  margin: 0 auto;
+}
+.lpwa-detected {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--l-text);
+  background: var(--l-gold-light);
+  border: 1.5px solid var(--l-gold);
+  border-radius: 12px;
+  padding: 10px 16px;
+  margin-bottom: 20px;
+}
+.lpwa-steps-visual {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lpwa-vstep {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  background: #fafafa;
+  border: 1px solid var(--l-border);
+  border-radius: 12px;
+}
+.lpwa-vstep-ico {
+  font-size: 24px;
+  flex-shrink: 0;
+  width: 32px;
+  text-align: center;
+}
+.lpwa-vstep-txt { font-size: 14px; color: #444; line-height: 1.5; }
+.lpwa-chrome-msg {
+  font-size: 14px;
+  color: #444;
+  line-height: 1.6;
+  margin: 0 0 16px;
+}
+.lpwa-copy-btn {
+  background: var(--l-gold);
+  color: #1a1a1a;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 24px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  width: 100%;
+}
+.lpwa-copy-btn:hover { background: var(--l-gold-hover); }
+.lpwa-os-icon { font-size: 36px; margin-bottom: 10px; display: block; }
 .lpwa-title {
   font-size: 18px;
   font-weight: 800;
-  margin: 0 0 10px;
+  margin: 0 0 4px;
   color: var(--l-text);
 }
-.lpwa-warning {
-  font-size: 12.5px;
+.lpwa-sub-note {
+  font-size: 12px;
   color: #888;
-  margin: 0 0 18px;
-  background: #fafafa;
-  border: 1px solid var(--l-border);
-  border-radius: 8px;
-  padding: 8px 12px;
-  line-height: 1.5;
+  margin: 0 0 16px;
 }
 .lpwa-steps {
   list-style: none;
@@ -615,7 +668,7 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 .lpwa-steps li {
   display: flex;
@@ -626,8 +679,8 @@
   line-height: 1.5;
 }
 .lpwa-num {
-  background: var(--l-plum);
-  color: #fff;
+  background: var(--l-gold);
+  color: #1a1a1a;
   width: 22px;
   height: 22px;
   border-radius: 50%;
@@ -635,15 +688,14 @@
   align-items: center;
   justify-content: center;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 900;
   flex-shrink: 0;
-  margin-top: 1px;
+  margin-top: 2px;
 }
 .lpwa-footer-note {
   text-align: center;
   margin-top: 28px;
   font-size: 14px;
-  color: var(--l-muted);
   background: #F9E8EC;
   border-radius: 12px;
   padding: 14px 20px;
