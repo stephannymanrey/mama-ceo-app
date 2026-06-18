@@ -4216,12 +4216,18 @@ export default function App() {
         {/* ── TAB 0: HOY ── */}
         {homeTab === 0 && (
           <div className="home-today-grid">
-            <div className="home-today-card">
-              <span className="home-today-card-ico">🍽️</span>
-              <p className="home-today-card-label">Menú de hoy</p>
-              {weekMenu[todayDay] ? <p className="home-today-card-val">{weekMenu[todayDay]}</p> : <p className="home-today-card-empty">Sin planear aún</p>}
-              <button type="button" className="home-today-card-btn" onClick={() => setShowMenuModal(true)}>
-                {weekMenu[todayDay] ? "Cambiar →" : "Planear con Abi →"}
+            <div className="home-today-card home-today-card--menu">
+              <div className="home-today-card-menu-top">
+                <span className="home-today-card-ico">🍽️</span>
+                <span className="home-today-card-ai-badge">✨ IA</span>
+              </div>
+              <p className="home-today-card-label" style={{color:"rgba(255,255,255,0.75)"}}>Menú de hoy</p>
+              {weekMenu[todayDay]
+                ? <p className="home-today-card-val" style={{color:"#fff"}}>{weekMenu[todayDay]}</p>
+                : <p className="home-today-card-empty" style={{color:"rgba(255,255,255,0.7)"}}>Sin planear aún</p>
+              }
+              <button type="button" className="home-today-card-menu-cta" onClick={() => setShowMenuModal(true)}>
+                {weekMenu[todayDay] ? "Cambiar menú" : "Planear con Abi"}
               </button>
             </div>
             <div className="home-today-card">

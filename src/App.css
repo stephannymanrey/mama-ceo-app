@@ -6328,6 +6328,59 @@ button {
   font-weight: 600;
   text-align: left;
 }
+
+/* ── Menú card — featured ── */
+.home-today-card--menu {
+  background: linear-gradient(140deg, #C4526A 0%, #9e3a52 100%);
+  border-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+.home-today-card--menu::before {
+  content: "";
+  position: absolute;
+  top: -28px;
+  right: -28px;
+  width: 90px;
+  height: 90px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 50%;
+}
+.home-today-card-menu-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.home-today-card-ai-badge {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.22);
+  padding: 3px 8px;
+  border-radius: 20px;
+  white-space: nowrap;
+  backdrop-filter: blur(4px);
+}
+.home-today-card-menu-cta {
+  margin-top: auto;
+  padding: 9px 14px;
+  background: #fff;
+  color: #C4526A;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.home-today-card-menu-cta:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
 @media (max-width: 700px) {
   .home-today-grid { grid-template-columns: 1fr; }
   .home-tab-btn { font-size: 12px; padding: 8px 0; }
