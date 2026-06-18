@@ -2809,10 +2809,13 @@ export default function App() {
     const paretoShareOfIncome = totalWonAmount > 0 ? Math.round((paretoTopClients.reduce((s, c) => s + c.amount, 0) / totalWonAmount) * 100) : 0;
 
     // ── Citas de hoy en el calendario ──
-    const todayISO = new Date().toISOString().slice(0, 10);
+    // Usar fecha local (no UTC) para evitar desfase de timezone
+    const _tn = new Date();
+    const todayISO = `${_tn.getFullYear()}-${String(_tn.getMonth()+1).padStart(2,"0")}-${String(_tn.getDate()).padStart(2,"0")}`;
     const isTodayAppt = (appt) => {
+      if (!appt.date) return false;
       const orig = new Date(appt.date + "T00:00:00");
-      const tod  = new Date(todayISO + "T00:00:00");
+      const tod  = new Date(todayISO  + "T00:00:00");
       if (orig > tod) return false;
       if (!appt.recurrence || appt.recurrence === "none") return appt.date === todayISO;
       if (appt.recurrence === "weekly")  return Math.round((tod - orig) / 86400000) % 7 === 0;
@@ -2873,7 +2876,6 @@ export default function App() {
                   <div className="db-agenda-group-label">🏠 Hogar</div>
                   {todayHogar.map(a => (
                     <div key={a.id} className="db-agenda-row">
-                      <span className="db-agenda-ico">{APPT_ICONS[a.type] || "📌"}</span>
                       <span className="db-agenda-title">{a.title}</span>
                       {a.time && <span className="db-agenda-time">{a.time}</span>}
                     </div>
@@ -2885,7 +2887,6 @@ export default function App() {
                   <div className="db-agenda-group-label">💼 Trabajo</div>
                   {todayTrabajo.map(a => (
                     <div key={a.id} className="db-agenda-row">
-                      <span className="db-agenda-ico">{APPT_ICONS[a.type] || "📌"}</span>
                       <span className="db-agenda-title">{a.title}</span>
                       {a.time && <span className="db-agenda-time">{a.time}</span>}
                     </div>
@@ -2894,29 +2895,6 @@ export default function App() {
               )}
             </div>
           )}
-
-          {/* Acciones de hoy — primero */}
-          <div className="db-focus-card">
-            <div className="db-focus-header">
-              <span>&#x1F3AF; Acciones de hoy</span>
-              <span className="db-focus-sub">{completedTasks} de {tasks.length} completadas</span>
-            </div>
-            {tasks.length === 0 && (
-              <p style={{fontSize:"13px",color:"var(--muted)",margin:"8px 0 0"}}>Sin tareas a&uacute;n &mdash; &iquest;qu&eacute; har&aacute;s hoy para acercarte a tu meta?</p>
-            )}
-            {tasks.length > 0 && focusTasks.length === 0 && (
-              <p style={{fontSize:"13px",color:"var(--green)",fontWeight:600,margin:"8px 0 0"}}>&#x2705; Todas tus tareas completadas hoy</p>
-            )}
-            {focusTasks.map((task) => (
-              <label key={task.id} className="db-task-row">
-                <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--purple)"}} />
-                <span>{task.text}</span>
-              </label>
-            ))}
-            {tasks.filter((t) => !t.done).length > 3 && (
-              <p style={{fontSize:"12px",color:"var(--muted)",margin:"8px 0 0"}}>+{tasks.filter((t) => !t.done).length - 3} m&aacute;s pendientes</p>
-            )}
-          </div>
 
           {/* Meta del mes + Semana */}
           <div className="db-meta-row">
