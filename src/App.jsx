@@ -2538,8 +2538,8 @@ export default function App() {
           const monthAppts = expandAppts(appointments, 400).filter(a => { const d = new Date(a.date+"T00:00:00"); return d >= t0 && d <= tEnd; });
           const apptsByDay = {};
           monthAppts.forEach(a => { const d = new Date(a.date+"T00:00:00").getDate(); if (!apptsByDay[d]) apptsByDay[d] = []; apptsByDay[d].push(a); });
-          const TYPE_COLORS = { "Médico":"#C4526A","Cita":"#C4526A","Colegio":"#6B46C1","Dentista":"#e87b1e","Extracurricular":"#059669","Iglesia":"#7C3AED","Reunión":"#1D9E75","Pago":"#2563EB","Cumpleaños":"#D97706","Otro":"#6B7280" };
-          const CAL_TYPES = ["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Reunión","Pago","Cumpleaños","Otro"];
+          const TYPE_COLORS = { "Médico":"#C4526A","Cita":"#C4526A","Colegio":"#6B46C1","Dentista":"#e87b1e","Extracurricular":"#059669","Iglesia":"#7C3AED","Reunión":"#1D9E75","Trabajo":"#0EA5E9","Pago":"#2563EB","Cumpleaños":"#D97706","Otro":"#6B7280" };
+          const CAL_TYPES = ["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Reunión","Trabajo","Pago","Cumpleaños","Otro"];
           const REC_OPTS = [["none","No se repite"],["weekly","Cada semana"],["monthly","Cada mes"],["yearly","Cada año"]];
           const isMobile = window.innerWidth < 700;
           const inp = {border:"1px solid var(--line)",borderRadius:"10px",padding:"10px 12px",fontSize:"14px",fontFamily:"inherit",outline:"none",width:"100%",boxSizing:"border-box",background:"#fff"};
@@ -2808,8 +2808,26 @@ export default function App() {
     const paretoPct = wonClients.length ? Math.round((paretoTopClients.length / wonClients.length) * 100) : 0;
     const paretoShareOfIncome = totalWonAmount > 0 ? Math.round((paretoTopClients.reduce((s, c) => s + c.amount, 0) / totalWonAmount) * 100) : 0;
 
-    // ── Hogar: "Tus 3 de hoy" ──
+    // ── Citas de hoy en el calendario ──
     const todayISO = new Date().toISOString().slice(0, 10);
+    const isTodayAppt = (appt) => {
+      const orig = new Date(appt.date + "T00:00:00");
+      const tod  = new Date(todayISO + "T00:00:00");
+      if (orig > tod) return false;
+      if (!appt.recurrence || appt.recurrence === "none") return appt.date === todayISO;
+      if (appt.recurrence === "weekly")  return Math.round((tod - orig) / 86400000) % 7 === 0;
+      if (appt.recurrence === "monthly") return orig.getDate() === tod.getDate();
+      if (appt.recurrence === "yearly")  return orig.getDate() === tod.getDate() && orig.getMonth() === tod.getMonth();
+      return false;
+    };
+    const TRABAJO_TYPES = new Set(["Trabajo", "Reunión"]);
+    const APPT_ICONS = { "Médico":"🩺","Cita":"📋","Colegio":"🎒","Dentista":"🦷","Extracurricular":"⚽","Iglesia":"🙏","Reunión":"🤝","Trabajo":"💼","Pago":"💳","Cumpleaños":"🎂","Otro":"📌" };
+    const todayCalAppts = appointments.filter(isTodayAppt).sort((a, b) => (a.time || "").localeCompare(b.time || ""));
+    const todayHogar    = todayCalAppts.filter(a => !TRABAJO_TYPES.has(a.type));
+    const todayTrabajo  = todayCalAppts.filter(a =>  TRABAJO_TYPES.has(a.type));
+    const hasTodayCal   = todayCalAppts.length > 0;
+
+    // ── Hogar: "Tus 3 de hoy" ──
     const pendingHome = homeTasks.filter((t) => !t.done);
     const homePriorityRank = { "Urgente": 0, "Normal": 1, "Puede esperar": 2 };
     const sortHomePool = (list) => [...list].sort((a, b) => (homePriorityRank[a.priority || "Normal"] - homePriorityRank[b.priority || "Normal"]) || (a.id - b.id));
@@ -2845,6 +2863,37 @@ export default function App() {
             </div>
             <p className="db-affirmation">&ldquo;{todayAffirmation}&rdquo;</p>
           </div>
+
+          {/* Agenda de hoy — citas del calendario */}
+          {hasTodayCal && (
+            <div className="db-agenda-card">
+              <div className="db-agenda-header">📅 Tu agenda de hoy</div>
+              {todayHogar.length > 0 && (
+                <div className="db-agenda-group">
+                  <div className="db-agenda-group-label">🏠 Hogar</div>
+                  {todayHogar.map(a => (
+                    <div key={a.id} className="db-agenda-row">
+                      <span className="db-agenda-ico">{APPT_ICONS[a.type] || "📌"}</span>
+                      <span className="db-agenda-title">{a.title}</span>
+                      {a.time && <span className="db-agenda-time">{a.time}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {todayTrabajo.length > 0 && (
+                <div className="db-agenda-group">
+                  <div className="db-agenda-group-label">💼 Trabajo</div>
+                  {todayTrabajo.map(a => (
+                    <div key={a.id} className="db-agenda-row">
+                      <span className="db-agenda-ico">{APPT_ICONS[a.type] || "📌"}</span>
+                      <span className="db-agenda-title">{a.title}</span>
+                      {a.time && <span className="db-agenda-time">{a.time}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Acciones de hoy — primero */}
           <div className="db-focus-card">
@@ -3817,7 +3866,7 @@ export default function App() {
     const todayDay        = ["D","L","M","X","J","V","S"][new Date().getDay()];
     const today0          = new Date(); today0.setHours(0,0,0,0);
     const DAY_LABELS      = [["L","Lunes"],["M","Martes"],["X","Miércoles"],["J","Jueves"],["V","Viernes"],["S","Sábado"],["D","Domingo"]];
-    const TYPE_ICONS      = { "Médico":"🩺","Cita":"📋","Colegio":"🎒","Dentista":"🦷","Extracurricular":"⚽","Iglesia":"🙏","Reunión":"🤝","Pago":"💳","Cumpleaños":"🎂","Otro":"📌" };
+    const TYPE_ICONS      = { "Médico":"🩺","Cita":"📋","Colegio":"🎒","Dentista":"🦷","Extracurricular":"⚽","Iglesia":"🙏","Reunión":"🤝","Trabajo":"💼","Pago":"💳","Cumpleaños":"🎂","Otro":"📌" };
     const RECURRENCE_LABELS = { "none":"No se repite","weekly":"Cada semana","monthly":"Cada mes","yearly":"Cada año" };
     const daysLabel       = d => d === 0 ? "Hoy" : d === 1 ? "Mañana" : `En ${d}d`;
     const daysColor       = d => d === 0 ? "#C4526A" : d <= 3 ? "#e87b1e" : "#1D9E75";
