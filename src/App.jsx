@@ -671,6 +671,7 @@ export default function App() {
   const [presenceCelebration, setPresenceCelebration] = useState(false);
   const [homeTaskError, setHomeTaskError] = useState("");
   const [homeBudgetError, setHomeBudgetError] = useState("");
+  const [showBudgetModal, setShowBudgetModal] = useState(false);
   const [homeTab, setHomeTab] = useState(0);
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [abiMenuPrefs, setAbiMenuPrefs] = useState({ personas: "4", dieta: "normal", pais: "colombia" });
@@ -1798,6 +1799,7 @@ export default function App() {
     const dueDate = homeBudgetForm.dueDate || getTodayInputValue();
     setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount, dueDate, createdAt: timestampFromInputDate(dueDate) }, ...current]);
     setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue() });
+    setShowBudgetModal(false);
   };
   const updateHomeBudgetDate = (itemId, dueDate) => {
     setHomeBudget((current) => current.map((item) => item.id === itemId ? { ...item, dueDate, createdAt: timestampFromInputDate(dueDate) } : item));
@@ -4603,44 +4605,104 @@ export default function App() {
               </div>
             )}
 
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1.4fr",gap:"14px"}}>
-              <div className="card" style={{padding:"18px"}}>
-                <h3 style={{margin:"0 0 14px",fontSize:"15px"}}>Registrar movimiento</h3>
-                <form onSubmit={addHomeBudgetItem} style={{display:"flex",flexDirection:"column",gap:"9px"}}>
-                  <select value={homeBudgetForm.type} onChange={e=>setHomeBudgetForm(c=>({...c,type:e.target.value}))}
-                    style={{padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none"}}>
-                    <option>Ingreso</option><option>Gasto fijo</option><option>Gasto variable</option><option>Gasto hormiga</option><option>Deuda</option><option>Ahorro</option>
-                  </select>
-                  <input placeholder="Descripción" value={homeBudgetForm.description}
-                    onChange={e=>{setHomeBudgetForm(c=>({...c,description:e.target.value}));if(homeBudgetError)setHomeBudgetError("");}}
-                    style={{padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none"}}/>
-                  <MoneyAmountInput placeholder="Monto" value={homeBudgetForm.amount}
-                    onChange={v=>{setHomeBudgetForm(c=>({...c,amount:v}));if(homeBudgetError)setHomeBudgetError("");}}/>
-                  <input type="date" value={homeBudgetForm.dueDate} onChange={e=>setHomeBudgetForm(c=>({...c,dueDate:e.target.value}))}
-                    style={{padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none"}}/>
-                  {homeBudgetError&&<p style={{margin:0,fontSize:"12px",color:"#C4526A",fontWeight:600}}>{homeBudgetError}</p>}
-                  <button type="submit" style={{padding:"10px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"9px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700}}>Guardar</button>
-                </form>
+            {/* Movements list full-width + add button */}
+            <div className="card" style={{padding:"18px 20px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+                <h3 style={{margin:0,fontSize:"15px"}}>Mis movimientos</h3>
+                <button type="button" className="fin-add-btn" onClick={()=>{setHomeBudgetError("");setShowBudgetModal(true);}}>
+                  + Registrar
+                </button>
               </div>
-              <div className="card" style={{padding:"18px"}}>
-                <h3 style={{margin:"0 0 12px",fontSize:"15px"}}>Mis movimientos</h3>
-                {homeBudget.length===0
-                  ?<p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Sin registros aún.</p>
-                  :<div style={{display:"flex",flexDirection:"column",gap:"5px",maxHeight:"280px",overflowY:"auto"}}>
-                    {[...homeBudget].reverse().map(item=>(
-                      <div key={item.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"8px 10px",borderRadius:"8px",background:item.type==="Ingreso"?"rgba(47,159,112,0.05)":item.type==="Ahorro"?"rgba(37,99,235,0.05)":"rgba(220,38,38,0.03)",border:"1px solid var(--line)"}}>
+              {homeBudget.length===0?(
+                <div style={{textAlign:"center",padding:"24px 16px"}}>
+                  <p style={{fontSize:"28px",margin:"0 0 8px"}}>💸</p>
+                  <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Aún no hay movimientos. Empieza registrando un ingreso.</p>
+                  <button type="button" className="fin-add-btn" onClick={()=>{setHomeBudgetError("");setShowBudgetModal(true);}}>+ Registrar movimiento</button>
+                </div>
+              ):(
+                <div style={{display:"flex",flexDirection:"column",gap:"5px",maxHeight:"340px",overflowY:"auto"}}>
+                  {[...homeBudget].sort((a,b)=>new Date(b.dueDate||b.createdAt)-new Date(a.dueDate||a.createdAt)).map(item=>{
+                    const TYPE_ICONS={"Ingreso":"💰","Gasto fijo":"🏠","Gasto variable":"🛍️","Gasto hormiga":"☕","Deuda":"📋","Ahorro":"🐷"};
+                    return (
+                      <div key={item.id} style={{display:"flex",alignItems:"center",gap:"10px",padding:"9px 12px",borderRadius:"10px",background:item.type==="Ingreso"?"rgba(47,159,112,0.05)":item.type==="Ahorro"?"rgba(37,99,235,0.05)":"rgba(220,38,38,0.025)",border:"1px solid var(--line)"}}>
+                        <span style={{fontSize:"18px",flexShrink:0}}>{TYPE_ICONS[item.type]||"💳"}</span>
                         <div style={{flex:1,minWidth:0}}>
-                          <p style={{margin:"0 0 1px",fontSize:"13px",fontWeight:600,color:"var(--ink)"}}>{item.description}</p>
+                          <p style={{margin:"0 0 1px",fontSize:"13px",fontWeight:600,color:"var(--ink)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.description}</p>
                           <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>{item.type} · {formatShortDate(item.dueDate||item.createdAt)}</p>
                         </div>
-                        <span style={{fontSize:"13px",fontWeight:700,color:item.type==="Ingreso"?"var(--green)":item.type==="Ahorro"?"#2563EB":"var(--ink)",flexShrink:0}}>{item.type==="Ingreso"?"+":"-"}{money.format(item.amount)}</span>
-                        <button type="button" onClick={()=>setHomeBudget(c=>c.filter(r=>r.id!==item.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",lineHeight:1,padding:"0 2px"}}>×</button>
+                        <span style={{fontSize:"14px",fontWeight:700,color:item.type==="Ingreso"?"var(--green)":item.type==="Ahorro"?"#2563EB":"#DC2626",flexShrink:0,whiteSpace:"nowrap"}}>{item.type==="Ingreso"?"+":"-"}{money.format(item.amount)}</span>
+                        <button type="button" onClick={()=>setHomeBudget(c=>c.filter(r=>r.id!==item.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",lineHeight:1,padding:"0 2px",flexShrink:0}}>×</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Weekly analysis */}
+            {homeBudget.length>0&&(()=>{
+              const weeks=[{label:"Sem 1 (1-7)",from:1,to:7},{label:"Sem 2 (8-14)",from:8,to:14},{label:"Sem 3 (15-21)",from:15,to:21},{label:"Sem 4 (22+)",from:22,to:31}];
+              const nowMonth=new Date().getMonth(); const nowYear=new Date().getFullYear();
+              const weekData=weeks.map(w=>{
+                const items=homeBudget.filter(item=>{
+                  const d=new Date(item.dueDate||item.createdAt);
+                  return d.getMonth()===nowMonth&&d.getFullYear()===nowYear&&d.getDate()>=w.from&&d.getDate()<=w.to;
+                });
+                const income=items.filter(i=>i.type==="Ingreso").reduce((s,i)=>s+i.amount,0);
+                const expense=items.filter(i=>i.type!=="Ingreso"&&i.type!=="Ahorro").reduce((s,i)=>s+i.amount,0);
+                return {...w,income,expense,total:income+expense};
+              }).filter(w=>w.total>0);
+              if(!weekData.length) return null;
+              const maxIncome=Math.max(...weekData.map(w=>w.income),1);
+              const maxExpense=Math.max(...weekData.map(w=>w.expense),1);
+              const bestIncomeWeek=weekData.reduce((a,b)=>b.income>a.income?b:a,weekData[0]);
+              const worstExpenseWeek=weekData.reduce((a,b)=>b.expense>a.expense?b:a,weekData[0]);
+              return (
+                <div className="card" style={{padding:"18px 20px"}}>
+                  <h3 style={{margin:"0 0 4px",fontSize:"15px"}}>📅 Por semana este mes</h3>
+                  <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Cuándo entra y cuándo sale el dinero.</p>
+                  <div style={{display:"grid",gap:"10px"}}>
+                    {weekData.map(w=>(
+                      <div key={w.label}>
+                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
+                          <span style={{fontSize:"12px",fontWeight:700,color:"var(--ink)"}}>{w.label}</span>
+                          <span style={{fontSize:"11px",color:"var(--muted)"}}>
+                            {w.income>0&&<span style={{color:"var(--green)",fontWeight:700}}>+{money.format(w.income)} </span>}
+                            {w.expense>0&&<span style={{color:"#DC2626",fontWeight:700}}>-{money.format(w.expense)}</span>}
+                          </span>
+                        </div>
+                        {w.income>0&&(
+                          <div style={{height:"6px",background:"rgba(0,0,0,0.06)",borderRadius:"3px",overflow:"hidden",marginBottom:"3px"}}>
+                            <div style={{height:"100%",width:`${Math.round((w.income/maxIncome)*100)}%`,background:"var(--green)",borderRadius:"3px",transition:"width 0.5s"}}></div>
+                          </div>
+                        )}
+                        {w.expense>0&&(
+                          <div style={{height:"6px",background:"rgba(0,0,0,0.06)",borderRadius:"3px",overflow:"hidden"}}>
+                            <div style={{height:"100%",width:`${Math.round((w.expense/maxExpense)*100)}%`,background:"#C4526A",borderRadius:"3px",transition:"width 0.5s"}}></div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
-                }
-              </div>
-            </div>
+                  {weekData.length>1&&(
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginTop:"14px"}}>
+                      {bestIncomeWeek.income>0&&(
+                        <div style={{padding:"10px 12px",background:"rgba(47,159,112,0.06)",borderRadius:"10px",border:"1px solid rgba(47,159,112,0.15)"}}>
+                          <p style={{margin:"0 0 2px",fontSize:"11px",color:"var(--muted)"}}>📈 Más ingresos</p>
+                          <p style={{margin:0,fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>{bestIncomeWeek.label}</p>
+                        </div>
+                      )}
+                      {worstExpenseWeek.expense>0&&(
+                        <div style={{padding:"10px 12px",background:"rgba(220,38,38,0.04)",borderRadius:"10px",border:"1px solid rgba(220,38,38,0.1)"}}>
+                          <p style={{margin:"0 0 2px",fontSize:"11px",color:"var(--muted)"}}>📉 Más gastos</p>
+                          <p style={{margin:0,fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>{worstExpenseWeek.label}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {homeBudget.length>0&&(
               <div className="card" style={{padding:"18px 20px"}}>
@@ -4691,6 +4753,58 @@ export default function App() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Modal: Registrar movimiento ── */}
+        {showBudgetModal&&(
+          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0"}}
+            onClick={e=>e.target===e.currentTarget&&(setShowBudgetModal(false),setHomeBudgetError(""))}>
+            <div style={{background:"#fff",borderRadius:"24px 24px 0 0",width:"min(520px,100%)",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)",animation:"slideUp 0.25s ease"}}>
+              <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"24px 24px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div>
+                  <p style={{margin:"0 0 2px",fontSize:"11px",fontWeight:700,opacity:0.8,letterSpacing:"0.8px",textTransform:"uppercase"}}>Mis Finanzas</p>
+                  <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Registrar movimiento</p>
+                </div>
+                <button type="button" onClick={()=>{setShowBudgetModal(false);setHomeBudgetError("");}}
+                  style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+              </div>
+              <form onSubmit={addHomeBudgetItem} style={{padding:"22px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                <div>
+                  <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Tipo</label>
+                  <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"7px"}}>
+                    {[["Ingreso","💰"],["Gasto fijo","🏠"],["Gasto variable","🛍️"],["Gasto hormiga","☕"],["Deuda","📋"],["Ahorro","🐷"]].map(([t,ico])=>(
+                      <button key={t} type="button" onClick={()=>setHomeBudgetForm(c=>({...c,type:t}))}
+                        style={{padding:"9px 6px",borderRadius:"10px",border:`2px solid ${homeBudgetForm.type===t?"#C4526A":"var(--line)"}`,background:homeBudgetForm.type===t?"rgba(196,82,106,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:homeBudgetForm.type===t?700:400,display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",transition:"all 0.15s"}}>
+                        <span style={{fontSize:"16px"}}>{ico}</span>{t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Descripción</label>
+                  <input placeholder="Ej: Pago del arriendo, Mercado semanal..." value={homeBudgetForm.description}
+                    onChange={e=>{setHomeBudgetForm(c=>({...c,description:e.target.value}));if(homeBudgetError)setHomeBudgetError("");}}
+                    style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                  <div>
+                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Monto</label>
+                    <MoneyAmountInput placeholder="$ 0" value={homeBudgetForm.amount}
+                      onChange={v=>{setHomeBudgetForm(c=>({...c,amount:v}));if(homeBudgetError)setHomeBudgetError("");}}/>
+                  </div>
+                  <div>
+                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Fecha</label>
+                    <input type="date" value={homeBudgetForm.dueDate} onChange={e=>setHomeBudgetForm(c=>({...c,dueDate:e.target.value}))}
+                      style={{width:"100%",padding:"11px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
+                  </div>
+                </div>
+                {homeBudgetError&&<p style={{margin:0,fontSize:"12px",color:"#C4526A",fontWeight:600}}>{homeBudgetError}</p>}
+                <button type="submit" style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>
+                  Guardar movimiento
+                </button>
+              </form>
+            </div>
           </div>
         )}
 

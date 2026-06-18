@@ -6630,3 +6630,38 @@ button {
   border-radius: 12px;
   text-align: center;
 }
+
+/* ── Finanzas — add button ── */
+.fin-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, #C4526A, #a33a52);
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 4px 14px rgba(196, 82, 106, 0.38);
+  animation: fin-btn-pulse 3s ease-in-out infinite;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.fin-add-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(196, 82, 106, 0.5);
+  animation: none;
+}
+.fin-add-btn:active { transform: scale(0.97); }
+@keyframes fin-btn-pulse {
+  0%, 100% { box-shadow: 0 4px 14px rgba(196, 82, 106, 0.38); }
+  50%       { box-shadow: 0 4px 22px rgba(196, 82, 106, 0.6), 0 0 0 6px rgba(196, 82, 106, 0.1); }
+}
+
+/* ── Budget modal slide-up ── */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
