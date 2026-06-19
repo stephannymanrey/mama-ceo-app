@@ -38,6 +38,18 @@ const initialMovements = [
   { id: 6, type: "expense", description: "Diseno de contenido", category: "Servicios", classification: "Gasto variable", amount: 1200, bank: "Nequi" }
 ];
 
+// ── Duraciones estimadas (minutos) — usadas para calcular carga del día ──
+const HOME_CATEGORY_DURATION = { "Rutina": 15, "Compras": 45, "Colegio / Ninos": 30, "Salud": 45, "Hogar / Limpieza": 30, "Bienestar": 20 };
+const DEFAULT_HOME_DURATION = 25;
+const APPT_TYPE_DURATION = { "Médico": 45, "Cita": 30, "Colegio": 30, "Dentista": 45, "Extracurricular": 60, "Iglesia": 90, "Pago": 15, "Cumpleaños": 120, "Reunión": 60, "Trabajo": 60 };
+const DEFAULT_APPT_DURATION = 30;
+const APPT_HOME_TYPES = new Set(["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños"]);
+const DEFAULT_BIZ_TASK_DURATION = 30;
+const AWAKE_MINUTES_PER_DAY = 16 * 60;
+const homeTaskEstDuration = (t) => t.duration || HOME_CATEGORY_DURATION[t.category] || DEFAULT_HOME_DURATION;
+const apptEstDuration = (a) => a.duration || APPT_TYPE_DURATION[a.type] || DEFAULT_APPT_DURATION;
+const bizTaskEstDuration = (t) => t.duration || DEFAULT_BIZ_TASK_DURATION;
+
 const PRIORITY_MIGRATION = { "Urgente": "Importante", "Puede esperar": "Sin afán" };
 const migratePriorityList = (list) => (list || []).map(item => item.priority && PRIORITY_MIGRATION[item.priority] ? { ...item, priority: PRIORITY_MIGRATION[item.priority] } : item);
 
@@ -229,13 +241,12 @@ const promesas = [
 const ALL_MENU_ITEMS = [
   { id: "dashboard", label: "Inicio",          icon: "🏠" },
   { id: "home",      label: "Mi Hogar",         icon: "🌸" },
-  { id: "ceo",       label: "Cómo Estoy",         icon: "🫶" },
   { id: "business",  label: "Mi Negocio",       icon: "💼" },
   { id: "clients",   label: "Mis Clientes",     icon: "👩‍💼" },
   { id: "studio",    label: "Studio ✦",          icon: "🎬" },
   { id: "content",   label: "Mi Contenido",     icon: "📱" },
 ];
-const MENU_MAMA        = ["dashboard", "home", "ceo"];
+const MENU_MAMA        = ["dashboard", "home"];
 const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio", "content"];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
@@ -374,11 +385,9 @@ const initialPurposeState = {
   weekTestimony: "",
   passionLevel: 3,
   visionClarity: "",
-  checkIn: { date: "", energia: "", intencion: "", paraHoy: "" },
   sueno: "",
   tiempoParaMi: 0,
   presenceMoments: [],
-  checkInHistory: [],
 };
 
 function cloneList(items) {
@@ -648,8 +657,8 @@ export default function App() {
   const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Pendiente", goal: "Vender", publishDate: "" });
   const [showContentForm, setShowContentForm] = useState(false);
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
-  const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "", frequency: "Rutina", customFrequency: "" });
-  const [taskForm, setTaskForm] = useState({ text: "", priority: "Normal", dueDate: "" });
+  const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "", frequency: "Rutina", customFrequency: "", duration: "" });
+  const [taskForm, setTaskForm] = useState({ text: "", priority: "Normal", dueDate: "", duration: "" });
   const [homeFocusOverride, setHomeFocusOverride] = useState(stored?.homeFocusOverride || null);
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
   const [appointments, setAppointments] = useState(stored?.appointments || []);
@@ -691,21 +700,15 @@ export default function App() {
   const [showFamilyConfig, setShowFamilyConfig] = useState(false);
   const [reminderTime, setReminderTime] = useState(stored?.reminderTime || "08:00");
   const [reminderEnabled, setReminderEnabled] = useState(stored?.reminderEnabled !== false);
-  const [checkInReminderEnabled, setCheckInReminderEnabled] = useState(stored?.checkInReminderEnabled || false);
-  const [checkInReminderTime, setCheckInReminderTime] = useState(stored?.checkInReminderTime || "08:00");
   const [toolsFabOpen, setToolsFabOpen] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [calendarAddDate, setCalendarAddDate] = useState(null);
-  const [calendarNewAppt, setCalendarNewAppt] = useState({ title: "", type: "Médico", time: "", recurrence: "none" });
+  const [calendarNewAppt, setCalendarNewAppt] = useState({ title: "", type: "Médico", time: "", recurrence: "none", duration: "" });
   const [calTab, setCalTab] = useState("all");
   const [calMorningDismissed, setCalMorningDismissed] = useState(false);
   const [calendarEditAppt, setCalendarEditAppt] = useState(null);
   const [calToast, setCalToast] = useState(null);
-  const [checkInStep, setCheckInStep] = useState(0);
-  const [checkInResp, setCheckInResp] = useState({ dia: "", pensando: "", postergando: "", treinta: "", emocional: 5, social: 5, proyectos: 5 });
-  const [checkInAnimating, setCheckInAnimating] = useState(false);
-  const [checkInDirFwd, setCheckInDirFwd] = useState(true);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState("");
   const [betaCode, setBetaCode] = useState("");
@@ -856,23 +859,6 @@ export default function App() {
     }, delay);
     return () => clearTimeout(timer);
   }, [reminderEnabled, reminderTime, appointments]);
-
-  useEffect(() => {
-    if (!checkInReminderEnabled || !checkInReminderTime) return;
-    const [h, m] = checkInReminderTime.split(":").map(Number);
-    const now = new Date(); const target = new Date();
-    target.setHours(h, m, 0, 0);
-    const ms = target - now;
-    if (ms < -300000) return; // more than 5 min past → skip today
-    const delay = Math.max(0, ms);
-    const timer = setTimeout(() => {
-      playChime();
-      if (Notification.permission === "granted") {
-        new Notification("MamaCEO 💛 — Check-in del día", { body: "¿Cómo estás hoy? 3 minutos solo para ti.", icon: "/logo.png" });
-      }
-    }, delay);
-    return () => clearTimeout(timer);
-  }, [checkInReminderEnabled, checkInReminderTime]);
 
   // Detectar redirect de Mercado Pago después de que usuaria aprueba suscripción
   useEffect(() => {
@@ -1384,8 +1370,6 @@ export default function App() {
     setQuickNotes(state.quickNotes || []);
     if (state.reminderTime) setReminderTime(state.reminderTime);
     if (state.reminderEnabled !== undefined) setReminderEnabled(state.reminderEnabled);
-    if (state.checkInReminderTime) setCheckInReminderTime(state.checkInReminderTime);
-    if (state.checkInReminderEnabled !== undefined) setCheckInReminderEnabled(state.checkInReminderEnabled);
   };
 
   useEffect(() => {
@@ -1471,8 +1455,6 @@ export default function App() {
       quickNotes,
       reminderTime,
       reminderEnabled,
-      checkInReminderTime,
-      checkInReminderEnabled,
       userPlan,
       premiumExpiresAt,
       userMode,
@@ -1503,7 +1485,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, checkInReminderTime, checkInReminderEnabled, homeFocusOverride]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride]);
 
   const expandAppts = (list, limitDays = 90) => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -1675,15 +1657,17 @@ export default function App() {
     }
 
     const frequency = homeForm.frequency === "Otro" ? (homeForm.customFrequency.trim() || "Otro") : homeForm.frequency;
-    setHomeTasks((current) => [{ id: Date.now(), title: homeForm.title.trim(), category: homeForm.category, priority: homeForm.priority || "Normal", delegate: homeForm.delegate || "", frequency, done: false }, ...current]);
-    setHomeForm({ title: "", category: "Rutina", priority: "Normal", delegate: "", frequency: "Rutina", customFrequency: "" });
+    const duration = Number(homeForm.duration) || HOME_CATEGORY_DURATION[homeForm.category] || DEFAULT_HOME_DURATION;
+    setHomeTasks((current) => [{ id: Date.now(), title: homeForm.title.trim(), category: homeForm.category, priority: homeForm.priority || "Normal", delegate: homeForm.delegate || "", frequency, duration, done: false }, ...current]);
+    setHomeForm({ title: "", category: "Rutina", priority: "Normal", delegate: "", frequency: "Rutina", customFrequency: "", duration: "" });
   };
 
   const addTask = (event) => {
     event.preventDefault();
     if (!taskForm.text.trim()) return;
-    setTasks((current) => [{ id: Date.now(), text: taskForm.text.trim(), priority: taskForm.priority || "Normal", dueDate: taskForm.dueDate || "", done: false }, ...current]);
-    setTaskForm({ text: "", priority: "Normal", dueDate: "" });
+    const duration = Number(taskForm.duration) || DEFAULT_BIZ_TASK_DURATION;
+    setTasks((current) => [{ id: Date.now(), text: taskForm.text.trim(), priority: taskForm.priority || "Normal", dueDate: taskForm.dueDate || "", duration, done: false }, ...current]);
+    setTaskForm({ text: "", priority: "Normal", dueDate: "", duration: "" });
   };
   const deleteTask = (taskId) => setTasks((current) => current.filter((task) => task.id !== taskId));
   const taskUrgencyScore = (t) => {
@@ -2522,7 +2506,6 @@ export default function App() {
         {activeView === "clients" && renderClients()}
         {activeView === "content" && renderContent()}
         {activeView === "home" && renderHome()}
-        {activeView === "ceo" && renderCeo()}
         {/* report tab merged into business */}
         {activeView === "pricing" && renderPricing()}
         {activeView === "terminos" && renderTerminos()}
@@ -2694,9 +2677,10 @@ export default function App() {
             if (!calendarNewAppt.title.trim()) return;
             const typeVal = calendarNewAppt.type === "Otro" && calendarNewAppt.customType?.trim()
               ? calendarNewAppt.customType.trim() : calendarNewAppt.type;
-            setAppointments(prev => [...prev, { id: Date.now(), title: calendarNewAppt.title.trim(), date: calendarAddDate, time: calendarNewAppt.time, type: typeVal, recurrence: calendarNewAppt.recurrence || "none" }]);
+            const durationVal = Number(calendarNewAppt.duration) || APPT_TYPE_DURATION[typeVal] || DEFAULT_APPT_DURATION;
+            setAppointments(prev => [...prev, { id: Date.now(), title: calendarNewAppt.title.trim(), date: calendarAddDate, time: calendarNewAppt.time, type: typeVal, recurrence: calendarNewAppt.recurrence || "none", duration: durationVal }]);
             setCalendarAddDate(null);
-            setCalendarNewAppt({ title: "", type: defaultType, time: "", recurrence: "none", customType: "" });
+            setCalendarNewAppt({ title: "", type: defaultType, time: "", recurrence: "none", customType: "", duration: "" });
             showToast("¡Listo! Evento guardado ✓");
           };
 
@@ -2704,7 +2688,8 @@ export default function App() {
             if (!calendarEditAppt?.title.trim()) return;
             const typeVal = calendarEditAppt.type === "Otro" && calendarEditAppt.customType?.trim()
               ? calendarEditAppt.customType.trim() : calendarEditAppt.type;
-            setAppointments(prev => prev.map(a => a.id === calendarEditAppt.id ? { ...calendarEditAppt, type: typeVal } : a));
+            const durationVal = Number(calendarEditAppt.duration) || APPT_TYPE_DURATION[typeVal] || DEFAULT_APPT_DURATION;
+            setAppointments(prev => prev.map(a => a.id === calendarEditAppt.id ? { ...calendarEditAppt, type: typeVal, duration: durationVal } : a));
             setCalendarEditAppt(null);
             showToast("¡Cambios guardados ✓");
           };
@@ -2858,11 +2843,20 @@ export default function App() {
                               style={{...inp,width:"108px"}} />
                           </div>
                         </div>
-                        <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
-                          <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Repetición</label>
-                          <select value={calendarNewAppt.recurrence} onChange={e => setCalendarNewAppt(p => ({...p, recurrence:e.target.value}))} style={{...inp}}>
-                            {REC_OPTS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-                          </select>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+                          <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+                            <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Repetición</label>
+                            <select value={calendarNewAppt.recurrence} onChange={e => setCalendarNewAppt(p => ({...p, recurrence:e.target.value}))} style={{...inp}}>
+                              {REC_OPTS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                            </select>
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+                            <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Duración (min)</label>
+                            <input type="number" min="0" step="5"
+                              placeholder={`Auto: ${APPT_TYPE_DURATION[calendarNewAppt.type]||DEFAULT_APPT_DURATION}`}
+                              value={calendarNewAppt.duration} onChange={e => setCalendarNewAppt(p => ({...p, duration:e.target.value}))}
+                              style={{...inp}} />
+                          </div>
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginTop:"2px"}}>
                           <button type="button" onClick={() => setCalendarAddDate(null)}
@@ -2920,11 +2914,20 @@ export default function App() {
                               style={{...inp,width:"108px"}} />
                           </div>
                         </div>
-                        <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
-                          <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Repetición</label>
-                          <select value={calendarEditAppt.recurrence||"none"} onChange={e => setCalendarEditAppt(p => ({...p, recurrence:e.target.value}))} style={{...inp}}>
-                            {REC_OPTS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
-                          </select>
+                        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
+                          <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+                            <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Repetición</label>
+                            <select value={calendarEditAppt.recurrence||"none"} onChange={e => setCalendarEditAppt(p => ({...p, recurrence:e.target.value}))} style={{...inp}}>
+                              {REC_OPTS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}
+                            </select>
+                          </div>
+                          <div style={{display:"flex",flexDirection:"column",gap:"4px"}}>
+                            <label style={{fontSize:"10px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Duración (min)</label>
+                            <input type="number" min="0" step="5"
+                              placeholder={`Auto: ${APPT_TYPE_DURATION[calendarEditAppt.type]||DEFAULT_APPT_DURATION}`}
+                              value={calendarEditAppt.duration||""} onChange={e => setCalendarEditAppt(p => ({...p, duration:e.target.value}))}
+                              style={{...inp}} />
+                          </div>
                         </div>
                         <div style={{display:"grid",gridTemplateColumns:"auto 1fr 1fr",gap:"8px",marginTop:"2px"}}>
                           <button type="button" onClick={() => deleteCalAppt(calendarEditAppt.id)}
@@ -3090,6 +3093,29 @@ export default function App() {
     const todayTrabajo  = todayCalAppts.filter(a =>  TRABAJO_TYPES.has(a.type));
     const hasTodayCal   = todayCalAppts.length > 0;
 
+    // ── Carga del día: minutos estimados (sin pedirte nada extra) ──
+    const trackWork = userMode !== "mama";
+    const trackHome = userMode !== "emprendedora";
+    const pendingHomeAll = homeTasks.filter(t => !t.done);
+    const pendingBizAll = tasks.filter(t => !t.done);
+    const homeTaskMinutes = pendingHomeAll.reduce((s,t)=>s+homeTaskEstDuration(t),0);
+    const bizTaskMinutes = pendingBizAll.reduce((s,t)=>s+bizTaskEstDuration(t),0);
+    const todayHogarMinutes = todayHogar.reduce((s,a)=>s+apptEstDuration(a),0);
+    const todayTrabajoMinutes = todayTrabajo.reduce((s,a)=>s+apptEstDuration(a),0);
+    const totalHomeMinutes = trackHome ? homeTaskMinutes + todayHogarMinutes : 0;
+    const totalWorkMinutes = trackWork ? bizTaskMinutes + todayTrabajoMinutes : 0;
+    const totalLoadMinutes = totalHomeMinutes + totalWorkMinutes;
+    const freeMinutes = Math.max(0, AWAKE_MINUTES_PER_DAY - totalLoadMinutes);
+    const loadPct = Math.min(100, Math.round((totalLoadMinutes / AWAKE_MINUTES_PER_DAY) * 100));
+    const dayState = loadPct < 30
+      ? { label: "Libre", emoji: "🌿", color: "#1D9E75", bg: "rgba(29,158,117,0.07)", msg: "Tienes el día despejado. Aprovecha para agendar algo pendiente o simplemente disfrutar." }
+      : loadPct < 60
+      ? { label: "Equilibrada", emoji: "😊", color: "#C9A96E", bg: "rgba(201,169,110,0.08)", msg: "Tienes una carga razonable hoy. Vas bien." }
+      : loadPct < 85
+      ? { label: "Ocupada", emoji: "💪", color: "#e87b1e", bg: "rgba(232,123,30,0.08)", msg: "Hoy requiere enfoque, pero es manejable. Prueba el temporizador Pomodoro para avanzar sin agobiarte." }
+      : { label: "Saturada", emoji: "😮‍💨", color: "#C4526A", bg: "rgba(196,82,106,0.08)", msg: "Tu día está muy cargado. Considera delegar algo o mover lo que pueda esperar a otro día." };
+    const fmtHrs = (mins) => { const h=Math.floor(mins/60); const m=Math.round(mins%60); if (h<=0) return `${m}m`; return m>0 ? `${h}h ${m}m` : `${h}h`; };
+
     // ── Hogar: "Tus 3 de hoy" ──
     const pendingHome = homeTasks.filter((t) => !t.done);
     const homePriorityRank = { "Importante": 0, "Normal": 1, "Sin afán": 2 };
@@ -3117,6 +3143,43 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="db-wrap">
+
+          {/* ── Carga del día ── */}
+          <div className="db-load-grid">
+            <div className="db-load-card" style={{background:dayState.bg}}>
+              <span className="db-load-card-ico">{dayState.emoji}</span>
+              <p className="db-load-card-label">Hoy estás</p>
+              <p className="db-load-card-val" style={{color:dayState.color}}>{dayState.label}</p>
+              <p className="db-load-card-msg">{dayState.msg}</p>
+            </div>
+            {trackWork && (
+              <div className="db-load-card">
+                <span className="db-load-card-ico">💼</span>
+                <p className="db-load-card-label">Negocio</p>
+                <p className="db-load-card-val">{fmtHrs(totalWorkMinutes)}</p>
+                <p className="db-load-card-msg">{pendingBizAll.length+todayTrabajo.length===0?"Nada pendiente hoy":`para cumplir con lo de hoy`}</p>
+              </div>
+            )}
+            {trackHome && (
+              <div className="db-load-card">
+                <span className="db-load-card-ico">🏠</span>
+                <p className="db-load-card-label">Hogar</p>
+                <p className="db-load-card-val">{fmtHrs(totalHomeMinutes)}</p>
+                <p className="db-load-card-msg">{pendingHomeAll.length+todayHogar.length===0?"Nada pendiente hoy":`para cumplir con lo de hoy`}</p>
+              </div>
+            )}
+            <div className="db-load-card db-load-card--free">
+              <span className="db-load-card-ico">🌸</span>
+              <p className="db-load-card-label">Tiempo libre</p>
+              <p className="db-load-card-val" style={{color:"#1D9E75"}}>{fmtHrs(freeMinutes)}</p>
+              <p className="db-load-card-msg">para tu familia o para ti</p>
+              {loadPct>=60&&(
+                <button type="button" className="db-load-pomo-btn" onClick={()=>{setToolsFabOpen(true);setPomodoroOpen(true);}}>
+                  ⏱️ Probar Pomodoro
+                </button>
+              )}
+            </div>
+          </div>
 
           {/* ── Panel de Hoy ── */}
           <div className="db-today-panel">
@@ -3592,6 +3655,9 @@ export default function App() {
                   <input type="date" value={taskForm.dueDate} onChange={e => updateTaskForm("dueDate", e.target.value)}
                     style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 10px",font:"inherit",background:"#FAF7F5"}} />
                 </div>
+                <input type="number" min="0" step="5" placeholder={`Duración estimada en min (auto: ${DEFAULT_BIZ_TASK_DURATION})`}
+                  value={taskForm.duration} onChange={e => updateTaskForm("duration", e.target.value)}
+                  style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 12px",font:"inherit",background:"#FAF7F5"}} />
                 <button className="primary-button" type="submit" style={{minHeight:"40px"}}>+ Agregar acción</button>
               </form>
             </div>
@@ -5064,6 +5130,13 @@ export default function App() {
                 </div>
 
                 <div>
+                  <label className="app-form-label">Duración estimada <span style={{fontWeight:400,textTransform:"none"}}>(minutos, opcional)</span></label>
+                  <input type="number" min="0" step="5" placeholder={`Auto: ${HOME_CATEGORY_DURATION[homeForm.category]||DEFAULT_HOME_DURATION} min`}
+                    value={homeForm.duration} onChange={e=>updateHomeForm("duration",e.target.value)}
+                    className="app-form-input"/>
+                </div>
+
+                <div>
                   <label className="app-form-label">Delegar a <span style={{fontWeight:400,textTransform:"none"}}>(opcional)</span></label>
                   <input placeholder="Ej: Esposo, María..." value={homeForm.delegate} onChange={e=>updateHomeForm("delegate",e.target.value)}
                     className="app-form-input"/>
@@ -5130,525 +5203,6 @@ export default function App() {
             </div>
           </div>
         )}
-      </section>
-    );
-  }
-  function renderCeo() {
-    const todayStr    = new Date().toISOString().slice(0, 10);
-    const history     = purpose.checkInHistory || [];
-    const todayEntry  = history.find(c => c.date === todayStr);
-    const showResults = checkInStep === 6 || (checkInStep === 0 && !!todayEntry);
-    const displayResp = showResults ? (todayEntry || checkInResp) : checkInResp;
-
-    const AFFIRMATIONS = {
-      "Con energía y lista":       { word: "Imparable",   phrase: "Esa energía que sientes hoy es tuya — no fue suerte. La construiste tú, con cada decisión que tomaste." },
-      "Tranquila pero cansada":    { word: "Valiente",    phrase: "El cansancio que sientes no es debilidad — es evidencia de todo lo que has cargado con amor. Eres más fuerte de lo que crees." },
-      "Con mucho en la cabeza":    { word: "Capaz",       phrase: "La mente ocupada es señal de una mujer que piensa, que siente, que no se rinde. Respira. Tú puedes con esto." },
-      "Abrumada":                  { word: "Suficiente",  phrase: "Hoy, exactamente como eres, eres suficiente. No tienes que resolverlo todo hoy. Solo este momento. Y en este momento, estás bien." },
-      "Agradecida aunque ocupada": { word: "Sabia",       phrase: "Reconocer la gratitud en medio del caos es un regalo. Esa sabiduría que tienes es lo que te diferencia." },
-    };
-
-    const THIRTY_SUGG = {
-      "Descansar sin hacer nada":        "Agenda 30 minutos el miércoles en la tarde — apaga el teléfono, acuéstate, no hagas nada. Ese descanso no es pereza: es combustible.",
-      "Leer o escuchar algo inspirador": "Pon en tu calendario 30 minutos cualquier mañana esta semana — antes de que el día te consuma. Un podcast, un capítulo, algo que te alimente.",
-      "Moverme o hacer ejercicio":       "Esta semana, 30 minutos de movimiento para ti. No para verte bien — para sentirte bien. Ponlo en tu calendario como reunión importante.",
-      "Trabajar en mi negocio":          "Agenda una hora contigo misma esta semana para avanzar en lo que llevas posponiendo. Cierra la puerta. Apaga las notificaciones. Es tu hora.",
-      "Estar en silencio y orar":        "Agenda 30 minutos de silencio esta semana. Puede ser temprano en la mañana o cuando los niños duerman. Ese tiempo contigo misma es lo que te recarga.",
-      "honestamente no sé":             "Está bien no saber. Esta semana, regálate 30 minutos sin agenda — sin saber qué harás con ellos. A veces el alma necesita espacio para descubrir qué necesita.",
-    };
-
-    const levelLabel = (val) => {
-      if (val >= 8) return { text: "Muy bien 🌟", color: "#1D9E75" };
-      if (val >= 6) return { text: "Bien 😊",     color: "#1D9E75" };
-      if (val >= 4) return { text: "Regular 😐",  color: "#C9A96E" };
-      return               { text: "Difícil 😔",  color: "#C4526A" };
-    };
-
-    const getHabits = (resp) => {
-      if (!resp) return [];
-      const { dia = "", emocional = 5, social = 5, proyectos = 5 } = resp;
-      const stressed = emocional <= 5 || social <= 4 || proyectos <= 4 || dia === "Abrumada" || dia === "Con mucho en la cabeza";
-      if (!stressed) return [];
-      const pool = [];
-      if (emocional <= 5 || dia === "Abrumada") {
-        pool.push({ icon: "💧", title: "Agua antes que el caos", desc: "2 vasos apenas te despiertes — antes del café y el teléfono. La deshidratación sube el cortisol más de lo que imaginas." });
-        pool.push({ icon: "🌬️", title: "3 respiraciones antes de reaccionar", desc: "Cuando sientas que vas a explotar — pausa. Inhala 4 seg, exhala 6. Eso activa el nervio vago y te regresa a ti en segundos." });
-      }
-      if (dia === "Abrumada" || dia === "Con mucho en la cabeza" || emocional <= 5) {
-        pool.push({ icon: "📵", title: "Sin pantallas los primeros 30 min", desc: "El teléfono en la mañana activa la mente en modo reactivo antes de que hayas decidido cómo quieres estar. Esos 30 min son tuyos." });
-      }
-      if (proyectos <= 4 || dia === "Con mucho en la cabeza") {
-        pool.push({ icon: "🌅", title: "Levántate 20 min antes que todos", desc: "No para hacer más — para llegar al día siendo tú, no como respuesta a lo que los demás necesitan de ti desde el primer segundo." });
-      }
-      if (emocional <= 4 || social <= 4) {
-        pool.push({ icon: "🚶", title: "5 min de movimiento antes del mediodía", desc: "Caminar, estirarte, bailar una canción. El movimiento resetea el sistema nervioso más rápido que cualquier otra cosa." });
-        pool.push({ icon: "🌙", title: "Teléfono fuera del cuarto al dormir", desc: "La luz azul bloquea la melatonina. Una noche de mejor sueño vale más que una hora extra de scroll." });
-      }
-      const seen = new Set();
-      return pool.filter(h => { if (seen.has(h.title)) return false; seen.add(h.title); return true; }).slice(0, 3);
-    };
-
-    const aff    = AFFIRMATIONS[displayResp?.dia] || AFFIRMATIONS["Abrumada"];
-    const sugg   = THIRTY_SUGG[displayResp?.treinta] || THIRTY_SUGG["honestamente no sé"];
-    const habits = getHabits(displayResp);
-
-    const slideStyle = {
-      opacity:    checkInAnimating ? 0 : 1,
-      transform:  checkInAnimating ? (checkInDirFwd ? "translateX(22px)" : "translateX(-22px)") : "translateX(0)",
-      transition: "opacity 0.22s ease, transform 0.22s ease",
-    };
-
-    const goNext = (n) => { setCheckInDirFwd(true);  setCheckInAnimating(true); setTimeout(() => { setCheckInStep(n); setCheckInAnimating(false); }, 220); };
-    const goBack = (n) => { setCheckInDirFwd(false); setCheckInAnimating(true); setTimeout(() => { setCheckInStep(n); setCheckInAnimating(false); }, 220); };
-    const finish = () => {
-      const entry = { ...checkInResp, date: todayStr };
-      updatePurpose("checkInHistory", [...history.filter(c => c.date !== todayStr), entry]);
-      goNext(6);
-    };
-    const restart = () => {
-      setCheckInResp({ dia: "", pensando: "", postergando: "", treinta: "", emocional: 5, social: 5, proyectos: 5 });
-      setCheckInDirFwd(true);
-      setCheckInAnimating(true);
-      setTimeout(() => { setCheckInStep(1); setCheckInAnimating(false); }, 220);
-    };
-
-    const StepBar = ({ current }) => (
-      <div style={{ marginBottom: "28px" }}>
-        <div style={{ height: "3px", background: "var(--line)", borderRadius: "2px", overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${(current / 5) * 100}%`, background: "#C4526A", borderRadius: "2px", transition: "width 0.35s ease" }} />
-        </div>
-        <p style={{ margin: "7px 0 0", fontSize: "12px", color: "var(--muted)", textAlign: "right" }}>Paso {current} de 5</p>
-      </div>
-    );
-
-    const ChipSelect = ({ options, value, onChange }) => (
-      <div style={{ display: "flex", flexWrap: "wrap", gap: "9px", marginTop: "16px" }}>
-        {options.map(opt => (
-          <button key={opt} type="button" onClick={() => onChange(opt)} style={{
-            display: "flex", alignItems: "center", gap: "6px",
-            padding: "10px 16px", borderRadius: "24px",
-            border: `2px solid ${value === opt ? "#C4526A" : "var(--line)"}`,
-            background: value === opt ? "rgba(196,82,106,0.09)" : "#fff",
-            cursor: "pointer", fontFamily: "inherit", fontSize: "14px",
-            fontWeight: value === opt ? 700 : 400, color: "var(--ink)",
-            transition: "all 0.15s ease",
-          }}>
-            {value === opt && <span style={{ fontSize: "11px", color: "#C4526A", lineHeight: 1 }}>✓</span>}
-            {opt}
-          </button>
-        ))}
-      </div>
-    );
-
-    const wrap    = { maxWidth: "560px", margin: "0 auto" };
-    const divider = <div style={{ height: "1px", background: "var(--line)" }} />;
-    const btnNext = { flex: 2, padding: "13px", background: "#C4526A", color: "#fff", border: "none", borderRadius: "12px", cursor: "pointer", fontFamily: "inherit", fontSize: "15px", fontWeight: 700 };
-    const btnBack = { flex: 1, padding: "13px", background: "#fff", color: "var(--ink)", border: "1.5px solid var(--line)", borderRadius: "12px", cursor: "pointer", fontFamily: "inherit", fontSize: "15px", fontWeight: 600 };
-
-    const header = (
-      <div className="section-title">
-        <h2>¿Cómo estás hoy? 🫶</h2>
-        <p>Tu espacio diario. Aquí ves cómo has estado y los hábitos que te recomendamos para cuidarte mejor.</p>
-      </div>
-    );
-
-    /* ── RESULTADOS ── */
-    if (showResults) {
-      const recentHistory = history.slice(-8).reverse();
-      return (
-        <section className="panel workspace-panel">
-          {header}
-          <div style={wrap}>
-
-            {/* Tarjeta unificada */}
-            <div className="card" style={{ padding: 0, marginBottom: "14px", overflow: "hidden" }}>
-
-              {/* Afirmación */}
-              <div style={{ background: "#FBEAF0", padding: "24px" }}>
-                <p style={{ margin: "0 0 2px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#C4526A" }}>Hoy eres</p>
-                <h2 style={{ margin: "0 0 10px", fontSize: "30px", color: "#C4526A", fontWeight: 800 }}>{aff.word}</h2>
-                <p style={{ margin: "0 0 14px", fontSize: "15px", lineHeight: 1.6, color: "#6f2f4b" }}>{aff.phrase}</p>
-                <p style={{ margin: 0, fontSize: "13px", fontStyle: "italic", color: "#a0476b", lineHeight: 1.6 }}>Eres valiente. Eres esforzada. Eres fuerte. Puedes ser y hacer todo lo que te propongas.</p>
-              </div>
-
-              <div style={{ height: "1px", background: "#ede0e6" }} />
-
-              {/* 30 minutos */}
-              <div style={{ padding: "22px 24px" }}>
-                <p style={{ margin: "0 0 5px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)" }}>Tu 30 minutos de esta semana</p>
-                <p style={{ margin: "0 0 14px", fontSize: "14px", lineHeight: 1.6, color: "var(--ink)" }}>{sugg}</p>
-                <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-                  <button onClick={() => {
-                      const title = encodeURIComponent("Mis 30 minutos — Para Mí");
-                      const details = encodeURIComponent(sugg);
-                      window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&details=${details}`, "_blank");
-                    }} style={{ padding: "11px 20px", background: "#C4526A", color: "#fff", border: "none", borderRadius: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
-                    📆 Google Calendar
-                  </button>
-                  <button onClick={() => {
-                      const today = new Date().toISOString().slice(0,10);
-                      setCalendarNewAppt({ title: "Mis 30 minutos — Para Mí", type: "Personal", time: "", recurrence: "none" });
-                      setCalendarAddDate(today);
-                      setShowCalendar(true);
-                    }} style={{ padding: "11px 20px", background: "#fff", color: "#C4526A", border: "2px solid #C4526A", borderRadius: "10px", cursor: "pointer", fontFamily: "inherit", fontSize: "13px", fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
-                    🗓 Calendario MamaCEO
-                  </button>
-                </div>
-              </div>
-
-              {divider}
-
-              {/* 3 dimensiones */}
-              <div style={{ padding: "22px 24px" }}>
-                <p style={{ margin: "0 0 16px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)" }}>Cómo te sentiste hoy</p>
-                {[["💛","Energía emocional",displayResp?.emocional||5],["🤝","Vida social",displayResp?.social||5],["⚡","Proyectos personales",displayResp?.proyectos||5]].map(([emoji,label,val],i,arr) => {
-                  const lv = levelLabel(val);
-                  return (
-                    <div key={label} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", background:"#FAF7F5", borderRadius:"12px", marginBottom: i < arr.length - 1 ? "8px" : 0 }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:"8px" }}>
-                        <span style={{ fontSize:"18px" }}>{emoji}</span>
-                        <span style={{ fontSize:"14px", fontWeight:600, color:"var(--ink)" }}>{label}</span>
-                      </div>
-                      <span style={{ fontSize:"14px", fontWeight:800, color:lv.color }}>{lv.text}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Hábitos — solo si hay señales de alerta */}
-              {habits.length > 0 && (
-                <>
-                  {divider}
-                  <div style={{ padding: "22px 24px", background: "#fdf8f5" }}>
-                    <p style={{ margin: "0 0 3px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "#a05a20" }}>Tu sistema nervioso necesita esto</p>
-                    <p style={{ margin: "0 0 16px", fontSize: "13px", color: "var(--muted)" }}>Hábitos simples que regulan cómo te sientes por dentro.</p>
-                    <div style={{ display: "grid", gap: "14px" }}>
-                      {habits.map((h, i) => (
-                        <div key={i} style={{ display: "flex", gap: "12px", alignItems: "flex-start" }}>
-                          <span style={{ fontSize: "20px", lineHeight: 1, paddingTop: "1px", flexShrink: 0 }}>{h.icon}</span>
-                          <div>
-                            <p style={{ margin: "0 0 3px", fontSize: "14px", fontWeight: 700, color: "var(--ink)" }}>{h.title}</p>
-                            <p style={{ margin: 0, fontSize: "13px", color: "var(--muted)", lineHeight: 1.5 }}>{h.desc}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {/* Historial emocional */}
-              {recentHistory.length > 1 && (
-                <>
-                  {divider}
-                  <div style={{ padding: "18px 24px" }}>
-                    <p style={{ margin: "0 0 12px", fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "1px", color: "var(--muted)" }}>Tu estado emocional — historial</p>
-                    <div style={{ display: "flex", alignItems: "flex-end", gap: "6px", height: "48px" }}>
-                      {recentHistory.slice(0, 8).reverse().map((c, i) => (
-                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-                          <div style={{
-                            width: "100%", borderRadius: "3px",
-                            height: `${Math.max(5, (c.emocional || 5) * 4)}px`,
-                            background: (c.emocional||5) >= 7 ? "#1D9E75" : (c.emocional||5) >= 4 ? "#D4537E" : "#7F77DD",
-                            transition: "height 0.4s ease",
-                          }} />
-                          <span style={{ fontSize: "9px", color: "var(--muted)" }}>{(c.date||"").slice(5)}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
-
-            <button type="button" onClick={restart} style={{ width: "100%", padding: "13px", background: "var(--line)", color: "var(--ink)", border: "none", borderRadius: "12px", cursor: "pointer", fontFamily: "inherit", fontSize: "15px", fontWeight: 700 }}>
-              Hacer otro check-in
-            </button>
-          </div>
-        </section>
-      );
-    }
-
-    /* ── BIENVENIDA ── */
-    if (checkInStep === 0) {
-      const streak = (() => {
-        let count = 0;
-        const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - 1);
-        while (history.find(c => c.date === d.toISOString().slice(0,10))) { count++; d.setDate(d.getDate() - 1); }
-        return count;
-      })();
-      const lastEntry = [...history].filter(c => c.date !== todayStr).sort((a,b) => b.date.localeCompare(a.date))[0];
-      const lastHabits = lastEntry ? getHabits(lastEntry) : [];
-
-      // Historial mensual
-      const now = new Date();
-      const mY = now.getFullYear(), mM = now.getMonth();
-      const mFirst = new Date(mY, mM, 1), mLast = new Date(mY, mM+1, 0);
-      const mOffset = (mFirst.getDay() + 6) % 7;
-      const MNAMES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-      const monthMap = {};
-      history.forEach(c => {
-        if (c.date?.startsWith(`${mY}-${String(mM+1).padStart(2,"0")}`)) monthMap[parseInt(c.date.slice(8))] = c;
-      });
-      const moodColor = e => { const v = e?.emocional||5; return v>=7?"#1D9E75":v>=4?"#D4537E":"#7F77DD"; };
-      const mEntries = Object.values(monthMap);
-      const mAvg = mEntries.length ? Math.round(mEntries.reduce((s,e)=>s+(e.emocional||5),0)/mEntries.length*10)/10 : null;
-      const isMobile = window.innerWidth < 700;
-
-      return (
-        <section className="panel workspace-panel">
-          {header}
-          <div style={{ display:"grid", gridTemplateColumns:isMobile?"1fr":"1fr 1fr", gap:"24px", alignItems:"start" }}>
-
-            {/* ── COLUMNA IZQUIERDA ── */}
-            <div>
-              {streak > 0 && (
-                <div style={{ display:"flex", alignItems:"center", gap:"14px", background:"#FFFBEB", border:"1px solid rgba(202,138,4,0.25)", borderRadius:"16px", padding:"14px 18px", marginBottom:"16px" }}>
-                  <span style={{ fontSize:"32px", lineHeight:1 }}>🔥</span>
-                  <div>
-                    <p style={{ margin:"0 0 2px", fontSize:"18px", fontWeight:800, color:"#92400e" }}>{streak} {streak===1?"día":"días"} seguidos</p>
-                    <p style={{ margin:0, fontSize:"13px", color:"#b45309" }}>Haz el de hoy y la racha llega a {streak+1}</p>
-                  </div>
-                </div>
-              )}
-
-              {lastEntry && (
-                <div style={{ background:"#fff", border:"1px solid var(--line)", borderRadius:"16px", padding:"16px 18px", marginBottom:"20px" }}>
-                  <p style={{ margin:"0 0 10px", fontSize:"11px", fontWeight:700, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.5px" }}>
-                    Último check-in · {new Date(lastEntry.date+"T00:00:00").toLocaleDateString("es-CO",{weekday:"long",day:"numeric",month:"short"})}
-                  </p>
-                  {lastEntry.dia && <p style={{ margin:"0 0 10px", fontSize:"15px", fontWeight:700, color:"var(--ink)" }}>{lastEntry.dia}</p>}
-                  <div style={{ display:"flex", gap:"6px", flexWrap:"wrap", marginBottom: lastHabits.length ? "12px" : 0 }}>
-                    {[["💛","Energía",lastEntry.emocional||5],["🤝","Conexión",lastEntry.social||5],["⚡","Proyectos",lastEntry.proyectos||5]].map(([emoji,label,val]) => {
-                      const lv = levelLabel(val);
-                      return (
-                        <div key={label} style={{ display:"flex", alignItems:"center", gap:"4px", padding:"4px 10px", background:"#FAF7F5", borderRadius:"20px", border:`1px solid ${lv.color}40` }}>
-                          <span style={{ fontSize:"13px" }}>{emoji}</span>
-                          <span style={{ fontSize:"12px", color:"var(--muted)" }}>{label}:</span>
-                          <span style={{ fontSize:"12px", fontWeight:700, color:lv.color }}>{lv.text}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  {lastHabits.length > 0 && (
-                    <div style={{ borderTop:"1px solid var(--line)", paddingTop:"10px" }}>
-                      <p style={{ margin:"0 0 6px", fontSize:"11px", fontWeight:700, color:"var(--muted)", textTransform:"uppercase", letterSpacing:"0.4px" }}>Lo que te sugerimos ese día</p>
-                      {lastHabits.slice(0,2).map((h,i) => (
-                        <div key={i} style={{ display:"flex", gap:"8px", alignItems:"center", marginBottom:"4px" }}>
-                          <span style={{ fontSize:"15px", lineHeight:1 }}>{h.icon}</span>
-                          <span style={{ fontSize:"13px", color:"var(--ink)", fontWeight:600 }}>{h.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div style={{ textAlign:"center", padding:"4px 0 20px" }}>
-                {!lastEntry && <span style={{ fontSize:"44px", display:"block", marginBottom:"12px" }}>🌸</span>}
-                <h3 style={{ margin:"0 0 6px", fontSize:"21px", color:"var(--ink)", fontWeight:800 }}>
-                  {streak > 0 ? `¡Vas por el día ${streak+1}!` : "¿Lista para tu check-in de hoy?"}
-                </h3>
-                <p style={{ margin:"0 0 22px", color:"var(--muted)", fontSize:"14px", lineHeight:1.6 }}>5 preguntas · 3 minutos · Solo para ti</p>
-                <button onClick={() => goNext(1)} style={{ padding:"14px 48px", background:"#C4526A", color:"#fff", border:"none", borderRadius:"12px", cursor:"pointer", fontFamily:"inherit", fontSize:"16px", fontWeight:700 }}>
-                  Empezar ✨
-                </button>
-              </div>
-
-              <div style={{ display:"flex", gap:"8px", justifyContent:"center", alignItems:"flex-end", paddingTop:"4px" }}>
-                {Array.from({length:7}).map((_,i) => {
-                  const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-(6-i));
-                  const ds = d.toISOString().slice(0,10);
-                  const done = !!history.find(c => c.date===ds);
-                  const isT = ds===todayStr;
-                  return (
-                    <div key={i} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"5px" }}>
-                      <div style={{ width:"30px", height:"30px", borderRadius:"50%", background:done?"#C4526A":"var(--line)", border:isT&&!done?"2px solid #C4526A":"none", display:"flex", alignItems:"center", justifyContent:"center", transition:"background 0.2s" }}>
-                        {done && <span style={{ color:"#fff", fontSize:"13px", fontWeight:700 }}>✓</span>}
-                        {isT && !done && <span style={{ width:"8px", height:"8px", borderRadius:"50%", background:"#C4526A", display:"block" }} />}
-                      </div>
-                      <span style={{ fontSize:"10px", color:isT?"#C4526A":"var(--muted)", fontWeight:isT?700:400 }}>
-                        {d.toLocaleDateString("es-CO",{weekday:"short"}).slice(0,2).toUpperCase()}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div style={{ borderTop:"1px solid var(--line)", marginTop:"24px", paddingTop:"16px", display:"flex", alignItems:"center", gap:"10px", flexWrap:"wrap" }}>
-                <span style={{ fontSize:"13px", color:"var(--muted)", flex:1, minWidth:"120px" }}>🔔 Recordatorio diario</span>
-                <button type="button"
-                  onClick={() => { if (!checkInReminderEnabled && Notification.permission==="default") Notification.requestPermission(); setCheckInReminderEnabled(v=>!v); }}
-                  style={{ padding:"6px 14px", borderRadius:"20px", border:`2px solid ${checkInReminderEnabled?"#C4526A":"var(--line)"}`, background:checkInReminderEnabled?"rgba(196,82,106,0.09)":"#fff", cursor:"pointer", fontFamily:"inherit", fontSize:"12px", fontWeight:700, color:checkInReminderEnabled?"#C4526A":"var(--muted)", flexShrink:0 }}>
-                  {checkInReminderEnabled?"Activo ✓":"Activar"}
-                </button>
-                {checkInReminderEnabled && (
-                  <input type="time" value={checkInReminderTime} onChange={e=>setCheckInReminderTime(e.target.value)}
-                    style={{ border:"1px solid var(--line)", borderRadius:"8px", padding:"6px 10px", fontSize:"14px", fontFamily:"inherit", outline:"none", background:"#fff" }} />
-                )}
-              </div>
-            </div>
-
-            {/* ── COLUMNA DERECHA: historial mensual ── */}
-            <div style={{ background:"#fff", border:"1px solid var(--line)", borderRadius:"20px", padding:"20px" }}>
-              <p style={{ margin:"0 0 4px", fontSize:"13px", fontWeight:800, color:"var(--ink)" }}>{MNAMES[mM]} {mY}</p>
-              <p style={{ margin:"0 0 16px", fontSize:"11px", color:"var(--muted)" }}>Tu estado emocional día a día</p>
-
-              {/* Cabecera días */}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:"3px", marginBottom:"4px" }}>
-                {["L","M","X","J","V","S","D"].map(d => (
-                  <div key={d} style={{ textAlign:"center", fontSize:"10px", fontWeight:700, color:"var(--muted)" }}>{d}</div>
-                ))}
-              </div>
-
-              {/* Grid días */}
-              <div style={{ display:"grid", gridTemplateColumns:"repeat(7,1fr)", gap:"4px" }}>
-                {Array.from({length:mOffset}).map((_,i) => <div key={`e${i}`} />)}
-                {Array.from({length:mLast.getDate()}).map((_,i) => {
-                  const day = i+1;
-                  const entry = monthMap[day];
-                  const isToday = day===now.getDate();
-                  const color = entry ? moodColor(entry) : null;
-                  return (
-                    <div key={day}
-                      title={entry ? `${entry.dia||""} · Emocional ${entry.emocional}/10` : isToday?"Hoy":undefined}
-                      style={{ aspectRatio:"1", borderRadius:"50%", background:color||(isToday?"rgba(196,82,106,0.1)":"var(--line)"), border:isToday&&!color?"2px solid #C4526A":"none", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"9px", fontWeight:700, color:color?"#fff":isToday?"#C4526A":"var(--muted)", cursor:entry?"default":"default", transition:"transform 0.1s" }}>
-                      {day}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Leyenda */}
-              <div style={{ display:"flex", gap:"10px", marginTop:"16px", flexWrap:"wrap" }}>
-                {[["#1D9E75","Bien (7-10)"],["#D4537E","Regular (4-6)"],["#7F77DD","Difícil (1-3)"]].map(([color,label]) => (
-                  <div key={label} style={{ display:"flex", alignItems:"center", gap:"5px" }}>
-                    <div style={{ width:"10px", height:"10px", borderRadius:"50%", background:color, flexShrink:0 }} />
-                    <span style={{ fontSize:"10px", color:"var(--muted)" }}>{label}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Stats del mes */}
-              {mEntries.length > 0 && (
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"8px", marginTop:"16px", paddingTop:"14px", borderTop:"1px solid var(--line)", textAlign:"center" }}>
-                  <div>
-                    <p style={{ margin:"0 0 2px", fontSize:"22px", fontWeight:800, color:"var(--ink)" }}>{mEntries.length}</p>
-                    <p style={{ margin:0, fontSize:"10px", color:"var(--muted)", lineHeight:1.3 }}>momentos<br/>para ti</p>
-                  </div>
-                  <div>
-                    <p style={{ margin:"0 0 2px", fontSize:"22px", fontWeight:800, color:"#1D9E75" }}>{mEntries.filter(e=>(e.emocional||5)>=7).length}</p>
-                    <p style={{ margin:0, fontSize:"10px", color:"var(--muted)", lineHeight:1.3 }}>días que<br/>fluyeron bien</p>
-                  </div>
-                  <div>
-                    <p style={{ margin:"0 0 2px", fontSize:"16px", fontWeight:800, color:levelLabel(mAvg||5).color }}>{levelLabel(mAvg||5).text}</p>
-                    <p style={{ margin:0, fontSize:"10px", color:"var(--muted)", lineHeight:1.3 }}>cómo vas<br/>este mes</p>
-                  </div>
-                </div>
-              )}
-
-              {mEntries.length === 0 && (
-                <p style={{ margin:"16px 0 0", fontSize:"12px", color:"var(--muted)", textAlign:"center", lineHeight:1.5 }}>
-                  Aún no hay check-ins este mes.<br/>¡Empieza hoy! 🌸
-                </p>
-              )}
-            </div>
-
-          </div>
-        </section>
-      );
-    }
-
-    /* ── PASOS 1–5 ── */
-    const canNext = !(checkInStep === 1 && !checkInResp.dia) && !(checkInStep === 4 && !checkInResp.treinta);
-
-    return (
-      <section className="panel workspace-panel">
-        {header}
-        <div style={wrap}>
-          <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"-4px" }}>
-            <button type="button" onClick={() => goBack(0)} style={{ border:"none", background:"none", color:"var(--muted)", cursor:"pointer", fontSize:"13px", fontWeight:600, padding:"4px 0" }}>
-              Saltar por hoy ✕
-            </button>
-          </div>
-          <StepBar current={checkInStep} />
-          <div style={slideStyle}>
-
-            {checkInStep === 1 && (
-              <div>
-                <h3 style={{ fontSize: "20px", margin: "0 0 6px", color: "var(--ink)", fontWeight: 800 }}>¿Cómo empezó tu día hoy?</h3>
-                <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)" }}>Sin juicio. Solo dinos cómo llegaste aquí.</p>
-                <ChipSelect options={["Con energía y lista","Tranquila pero cansada","Con mucho en la cabeza","Abrumada","Agradecida aunque ocupada"]} value={checkInResp.dia} onChange={v => setCheckInResp(r => ({ ...r, dia:v }))} />
-              </div>
-            )}
-
-            {checkInStep === 2 && (
-              <div>
-                <h3 style={{ fontSize: "20px", margin: "0 0 6px", color: "var(--ink)", fontWeight: 800 }}>¿Qué estás pensando en este momento?</h3>
-                <p style={{ margin: "0 0 14px", fontSize: "14px", color: "var(--muted)" }}>No lo sobrepienses, desahogate. Esto es solo tuyo.</p>
-                <textarea value={checkInResp.pensando} onChange={e => setCheckInResp(r => ({ ...r, pensando:e.target.value }))}
-                  placeholder="Lo que está en tu mente ahora mismo..."
-                  style={{ width:"100%", minHeight:"120px", padding:"14px", border:"1.5px solid var(--line)", borderRadius:"12px", font:"inherit", fontSize:"14px", resize:"vertical", boxSizing:"border-box", background:"#faf7f5", lineHeight:1.6 }} />
-              </div>
-            )}
-
-            {checkInStep === 3 && (
-              <div>
-                <h3 style={{ fontSize: "20px", margin: "0 0 6px", color: "var(--ink)", fontWeight: 800 }}>¿Qué llevas días o semanas posponiendo?</h3>
-                <p style={{ margin: "0 0 14px", fontSize: "14px", color: "var(--muted)" }}>Eso que sientes cuando cierras los ojos y sabes que está pendiente.</p>
-                <textarea value={checkInResp.postergando} onChange={e => setCheckInResp(r => ({ ...r, postergando:e.target.value }))}
-                  placeholder="Eso que sabes que necesitas hacer pero sigues aplazando..."
-                  style={{ width:"100%", minHeight:"120px", padding:"14px", border:"1.5px solid var(--line)", borderRadius:"12px", font:"inherit", fontSize:"14px", resize:"vertical", boxSizing:"border-box", background:"#faf7f5", lineHeight:1.6 }} />
-              </div>
-            )}
-
-            {checkInStep === 4 && (
-              <div>
-                <h3 style={{ fontSize: "20px", margin: "0 0 6px", color: "var(--ink)", fontWeight: 800 }}>Si esta semana tuvieras 30 minutos solo para ti, ¿en qué los usarías?</h3>
-                <p style={{ margin: 0, fontSize: "14px", color: "var(--muted)" }}>Sin culpa. ¿Qué necesitas tú?</p>
-                <ChipSelect options={["Descansar sin hacer nada","Leer o escuchar algo inspirador","Moverme o hacer ejercicio","Trabajar en mi negocio","Estar en silencio y orar","honestamente no sé"]} value={checkInResp.treinta} onChange={v => setCheckInResp(r => ({ ...r, treinta:v }))} />
-              </div>
-            )}
-
-            {checkInStep === 5 && (
-              <div>
-                <h3 style={{ fontSize: "20px", margin: "0 0 6px", color: "var(--ink)", fontWeight: 800 }}>Por último — ¿cómo está tu vida en estas tres áreas?</h3>
-                <p style={{ margin: "0 0 22px", fontSize: "14px", color: "var(--muted)" }}>Del 1 al 10. Sin presión.</p>
-                {[["Estado emocional","#D4537E","emocional"],["Vida social","#1D9E75","social"],["Proyectos personales","#7F77DD","proyectos"]].map(([label,color,key]) => (
-                  <div key={key} style={{ marginBottom: "20px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                      <span style={{ fontSize: "14px", fontWeight: 600, color: "var(--ink)" }}>{label}</span>
-                      <strong style={{ fontSize: "16px", color }}>{checkInResp[key]}</strong>
-                    </div>
-                    <input type="range" min="1" max="10" value={checkInResp[key]}
-                      onChange={e => setCheckInResp(r => ({ ...r, [key]:Number(e.target.value) }))}
-                      style={{ width: "100%", accentColor: color }} />
-                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: "2px" }}>
-                      <span style={{ fontSize: "11px", color: "var(--muted)" }}>1 — Muy bajo</span>
-                      <span style={{ fontSize: "11px", color: "var(--muted)" }}>10 — Excelente</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {!canNext && (
-            <p style={{ marginTop:"16px", marginBottom:0, textAlign:"center", fontSize:"13px", color:"#C4526A", fontWeight:600 }}>
-              Selecciona una opción para continuar ↑
-            </p>
-          )}
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "12px", gap: "12px" }}>
-            {checkInStep > 1
-              ? <button onClick={() => goBack(checkInStep - 1)} style={btnBack}>← Atrás</button>
-              : <div style={{ flex: 1 }} />
-            }
-            {checkInStep < 5
-              ? <button onClick={() => goNext(checkInStep + 1)} disabled={!canNext} style={{ ...btnNext, opacity: canNext ? 1 : 0.45 }}>Siguiente →</button>
-              : <button onClick={finish} style={btnNext}>Ver mi resultado ✨</button>
-            }
-          </div>
-        </div>
       </section>
     );
   }
