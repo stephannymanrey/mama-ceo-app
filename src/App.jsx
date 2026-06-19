@@ -595,6 +595,7 @@ export default function App() {
   const [incomeSourceForm, setIncomeSourceForm] = useState({ name: "", monthlyGoal: "" });
   const [editingSourceId, setEditingSourceId] = useState(null);
   const [showAddSource, setShowAddSource] = useState(false);
+  const [showBizDetail, setShowBizDetail] = useState(false);
   const [maternalTasks, setMaternalTasks] = useState(stored?.maternalTasks || initialHomeMaternalTasks);
   const [wellnessTasks, setWellnessTasks] = useState(stored?.wellnessTasks || initialHomeWellnessTasks);
   const [maternalForm, setMaternalForm] = useState("");
@@ -3417,11 +3418,14 @@ export default function App() {
   function renderBusiness() {
     const brandComplete = !!(brandProfile.queOfreces && brandProfile.transformacion);
 
-    // Salud del mes
+    // Salud del mes — un solo numero + una frase humana + una accion
     const healthColor = totals.profit >= 0 && monthlyProgress >= 75 ? "#1D9E75"
       : totals.profit >= 0 || monthlyProgress >= 50 ? "#e87b1e" : "#C4526A";
-    const healthLabel = totals.profit >= 0 && monthlyProgress >= 75 ? "Negocio saludable 💚"
-      : totals.profit >= 0 || monthlyProgress >= 50 ? "Atención requerida ⚠️" : "Alerta financiera 🚨";
+    const heroStatus = totals.profit >= 0 && monthlyProgress >= 75
+      ? { emoji: "💚", msg: "Vas muy bien este mes. Sigue así.", actionLabel: null }
+      : totals.profit >= 0
+      ? { emoji: "⚠️", msg: "Vas en positivo, pero aún no llegas a tu meta del mes.", actionLabel: "Ver detalle" }
+      : { emoji: "🚨", msg: "Este mes vas en números rojos. Vale la pena revisar en qué se está yendo el dinero.", actionLabel: "Ver gastos" };
 
     // Semana actual vs anterior
     const weekBounds = (offset) => {
@@ -3442,12 +3446,25 @@ export default function App() {
     const twWon     = clients.filter(c => c.status === "Venta ganada" && inWeek({date: c.updatedAt || c.lastContact || c.createdAt}, thisWeek)).length;
     const twContacts = Object.values(contactLog).filter(e => { const ts = timestampFromInputDate(e.date); return ts >= thisWeek.start && ts <= thisWeek.end; }).length;
 
-    // Alertas urgentes
-    const alerts = [];
-    if (twIncome < weeklyGoal * 0.5) alerts.push({ tone: "red",    msg: `Ingresos de la semana por debajo del 50% de tu meta (${money.format(twIncome)} de ${money.format(weeklyGoal)})` });
-    if (twContacts < 3)              alerts.push({ tone: "orange", msg: `Solo ${twContacts} contactos esta semana. Apunta a 5+ para mantener el pipeline activo.` });
+    // Racha de registro — días consecutivos con al menos un movimiento
+    const streakDays = (() => {
+      const datesWithMovs = new Set(movements.map(m => inputDateFromValue(m.date || m.createdAt)));
+      let count = 0;
+      const d = new Date(); d.setHours(0,0,0,0);
+      while (datesWithMovs.has(d.toISOString().slice(0,10))) { count++; d.setDate(d.getDate()-1); }
+      return count;
+    })();
+
+    // Buenas noticias primero, lo que necesita atención después — siempre con accion
     const hotLeads = clients.filter(c => c.status === "Lead caliente").length;
-    if (hotLeads >= 3)               alerts.push({ tone: "green",  msg: `🔥 Tienes ${hotLeads} leads calientes esperando seguimiento.`, action: "clients" });
+    const goodNews = [];
+    if (streakDays >= 3)             goodNews.push({ msg: `🔥 Llevas ${streakDays} días seguidos registrando — gran constancia.` });
+    if (hotLeads >= 3)               goodNews.push({ msg: `✨ Tienes ${hotLeads} leads calientes esperando seguimiento.`, action: "clients", actionLabel: "Ir a Clientes →" });
+    if (twChange !== null && twChange >= 0) goodNews.push({ msg: `📈 Esta semana vendiste ${twChange}% más que la anterior.` });
+
+    const attention = [];
+    if (twIncome < weeklyGoal * 0.5) attention.push({ tone: "red",    msg: `Ingresos de la semana por debajo del 50% de tu meta (${money.format(twIncome)} de ${money.format(weeklyGoal)})` });
+    if (twContacts < 3)              attention.push({ tone: "orange", msg: `Solo ${twContacts} contactos esta semana. Apunta a 5+ para mantener el pipeline activo.` });
 
     // Insights automáticos
     const autoInsights = [];
@@ -3462,24 +3479,21 @@ export default function App() {
     const topSrc = Object.entries(srcCounts).sort((a,b)=>b[1]-a[1])[0];
     if (topSrc) autoInsights.push(`Tu fuente top de clientes: ${topSrc[0]} (${topSrc[1]} ${topSrc[1]===1?"cliente":"clientes"}).`);
 
-    // Fuentes de ingreso simplificadas — conectadas via category (antes desconectado por classification)
+    // Fuentes de ingreso — conectadas via category, con meta sugerida si no hay una puesta
     const incomeBySource = incomeSources.map(src => {
-      const actual = movements.filter(m => m.type==="income" && m.category===src.name).reduce((s,m)=>s+m.amount,0);
-      const progress = src.monthlyGoal > 0 ? Math.min(Math.round((actual/src.monthlyGoal)*100),100) : 0;
-      return { ...src, actual, progress };
+      const srcMovs = movements.filter(m => m.type==="income" && m.category===src.name);
+      const actual = srcMovs.reduce((s,m)=>s+m.amount,0);
+      let goal = src.monthlyGoal, isAutoGoal = false;
+      if (!goal) {
+        const monthsSeen = new Set(srcMovs.map(m => (m.date||"").slice(0,7))).size;
+        if (monthsSeen > 0) { goal = Math.round(actual / monthsSeen); isAutoGoal = true; }
+      }
+      const progress = goal > 0 ? Math.min(Math.round((actual/goal)*100),100) : 0;
+      return { ...src, actual, progress, goal, isAutoGoal };
     });
 
     // Meta de ventas
     const salesGoalProgress = salesGoal > 0 ? Math.min(Math.round((wonSalesTotal/salesGoal)*100),100) : 0;
-
-    // Racha de registro — días consecutivos con al menos un movimiento
-    const streakDays = (() => {
-      const datesWithMovs = new Set(movements.map(m => inputDateFromValue(m.date || m.createdAt)));
-      let count = 0;
-      const d = new Date(); d.setHours(0,0,0,0);
-      while (datesWithMovs.has(d.toISOString().slice(0,10))) { count++; d.setDate(d.getDate()-1); }
-      return count;
-    })();
 
     // Gastos por categoría — "En qué se va el dinero"
     const expensesByCategory = {};
@@ -3495,7 +3509,7 @@ export default function App() {
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Mi Negocio 💼</h2>
-          <p style={{color:healthColor,fontWeight:700}}>{healthLabel}</p>
+          <p>Tu negocio, en una sola mirada.</p>
         </div>
 
         {/* Sub-tab nav */}
@@ -3516,30 +3530,25 @@ export default function App() {
         {/* ── ESTA SEMANA ── */}
         {businessTab === 0 && (
           <>
-            {/* 1. Resumen del mes — compacto, lo más importante primero */}
-            <div className="biz-month-summary">
-              <div className="biz-month-stat">
-                <span className="biz-stat-label">Entradas del mes</span>
-                <strong className="biz-stat-val biz-stat-green">{money.format(totals.income)}</strong>
-                {(salesGoal > 0 || monthlyGoal > 0) && (
-                  <div className="biz-meta-mini">
-                    <div className="biz-meta-bar">
-                      <div className="biz-meta-fill" style={{width:`${salesGoalProgress}%`}} />
-                    </div>
-                    <span className="biz-meta-pct">{salesGoalProgress}% de tu meta</span>
-                  </div>
+            {/* 1. Hero — un solo numero, una frase, una accion */}
+            <div className="biz-hero">
+              <div className="biz-hero-top">
+                <span className="biz-hero-label">Lo que vas ganando</span>
+                <strong className="biz-hero-val" style={{color:healthColor}}>{money.format(totals.profit)}</strong>
+              </div>
+              {(salesGoal > 0 || monthlyGoal > 0) && (
+                <div className="biz-meta-mini" style={{margin:"6px 0 10px"}}>
+                  <div className="biz-meta-bar"><div className="biz-meta-fill" style={{width:`${salesGoalProgress}%`}} /></div>
+                  <span className="biz-meta-pct">{salesGoalProgress}% de tu meta</span>
+                </div>
+              )}
+              <div className="biz-hero-status">
+                <span>{heroStatus.emoji} {heroStatus.msg}</span>
+                {heroStatus.actionLabel && (
+                  <button type="button" className="biz-hero-action" onClick={() => setShowBizDetail(true)}>{heroStatus.actionLabel} →</button>
                 )}
               </div>
-              <div className="biz-month-divider" />
-              <div className="biz-month-stat">
-                <span className="biz-stat-label">Salidas del mes</span>
-                <strong className="biz-stat-val" style={{color:"#C4526A"}}>{money.format(totals.expenses)}</strong>
-              </div>
-              <div className="biz-month-divider" />
-              <div className="biz-month-stat">
-                <span className="biz-stat-label">Lo que ganaste</span>
-                <strong className="biz-stat-val" style={{color:totals.profit>=0?"#1D9E75":"#C4526A"}}>{money.format(totals.profit)}</strong>
-              </div>
+              <p className="biz-hero-sub">Entradas {money.format(totals.income)} · Salidas {money.format(totals.expenses)}</p>
             </div>
 
             {/* 2. Registrar — botón, el form vive en popup */}
@@ -3552,7 +3561,29 @@ export default function App() {
               )}
             </div>
 
-            {/* 3. Mis fuentes de ingreso — rediseñadas */}
+            {/* 3. Buenas noticias primero, atención después */}
+            {(goodNews.length > 0 || attention.length > 0) && (
+              <div style={{display:"grid",gap:"8px",marginBottom:"16px"}}>
+                {goodNews.map((a, i) => (
+                  <div key={`g${i}`} className="biz-news-row biz-news-row--good">
+                    <span>{a.msg}</span>
+                    {a.action && <button type="button" onClick={() => setActiveView(a.action)} className="biz-news-action">{a.actionLabel}</button>}
+                  </div>
+                ))}
+                {attention.map((a, i) => (
+                  <div key={`a${i}`} className={`biz-news-row biz-news-row--${a.tone}`}>
+                    <span>{a.msg}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 4. Detalle — colapsado por defecto para no saturar */}
+            <button type="button" className="biz-detail-toggle" onClick={() => setShowBizDetail(v => !v)}>
+              {showBizDetail ? "Ocultar detalle ▴" : "Ver más detalle ▾"}
+            </button>
+            {showBizDetail && (
+              <>
             <div className="biz-sources-card">
               <div className="biz-sources-head">
                 <div>
@@ -3593,14 +3624,18 @@ export default function App() {
                       <div className="biz-source-edit-row">
                         <span className="biz-source-edit-label">Meta mensual:</span>
                         <input type="text" inputMode="decimal" className="biz-source-edit-input"
-                          defaultValue={src.monthlyGoal ? Number(src.monthlyGoal).toLocaleString("en-US") : ""}
+                          defaultValue={src.goal ? Number(src.goal).toLocaleString("en-US") : ""}
                           onBlur={e => { const num = Number(e.target.value.replace(/[^0-9.]/g, "")) || 0; setIncomeSources(c => c.map(s => s.id === src.id ? {...s, monthlyGoal: num} : s)); setEditingSourceId(null); }}
                           onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingSourceId(null); }}
                           autoFocus />
                         <span className="biz-source-edit-hint">↵ para guardar</span>
                       </div>
                     ) : (
-                      <p className="biz-source-goal-text">Meta: {src.monthlyGoal > 0 ? money.format(src.monthlyGoal) : <span style={{color:"var(--muted)"}}>sin meta — toca editar para agregar</span>}</p>
+                      <p className="biz-source-goal-text">
+                        {src.goal > 0
+                          ? <>Meta{src.isAutoGoal ? " sugerida" : ""}: {money.format(src.goal)}{src.isAutoGoal && <span style={{color:"var(--muted)",fontWeight:400}}> (promedio tuyo — toca editar para fijarla)</span>}</>
+                          : <span style={{color:"var(--muted)"}}>Aún sin historial — registra para ver una meta sugerida</span>}
+                      </p>
                     )}
                   </div>
                 );
@@ -3671,25 +3706,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* 5. Alertas — al final, no al inicio */}
-            {alerts.length > 0 && (
-              <div style={{display:"grid",gap:"8px",marginTop:"4px"}}>
-                {alerts.map((a, i) => (
-                  <div key={i} style={{padding:"12px 16px",borderRadius:"10px",fontSize:"13px",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px",flexWrap:"wrap",
-                    background:a.tone==="red"?"#fdf2f2":a.tone==="orange"?"#fff8f0":"#f0fdf7",
-                    color:a.tone==="red"?"#b91c1c":a.tone==="orange"?"#c2410c":"#065f46",
-                    border:`1px solid ${a.tone==="red"?"rgba(185,28,28,0.2)":a.tone==="orange"?"rgba(194,65,12,0.2)":"rgba(6,95,70,0.2)"}`}}>
-                    <span>{a.msg}</span>
-                    {a.action && (
-                      <button type="button" onClick={() => setActiveView(a.action)}
-                        style={{flexShrink:0,padding:"5px 12px",borderRadius:"20px",border:"none",background:"rgba(0,0,0,0.08)",color:"inherit",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700,whiteSpace:"nowrap"}}>
-                        Ir a Clientes →
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
 
             {/* 6. Preview de Tareas — conecta sin saltar de pestaña */}
             <div className="biz-preview-card">
@@ -3728,6 +3744,8 @@ export default function App() {
                 ))
               )}
             </div>
+              </>
+            )}
           </>
         )}
 
