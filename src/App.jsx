@@ -38,6 +38,9 @@ const initialMovements = [
   { id: 6, type: "expense", description: "Diseno de contenido", category: "Servicios", classification: "Gasto variable", amount: 1200, bank: "Nequi" }
 ];
 
+const PRIORITY_MIGRATION = { "Urgente": "Importante", "Puede esperar": "Sin afán" };
+const migratePriorityList = (list) => (list || []).map(item => item.priority && PRIORITY_MIGRATION[item.priority] ? { ...item, priority: PRIORITY_MIGRATION[item.priority] } : item);
+
 const initialTasks = [
   { id: 1, text: "Cerrar 2 ventas principales", done: true },
   { id: 2, text: "Contactar 5 leads clientes", done: true },
@@ -335,6 +338,7 @@ function loadState() {
 
 const initialProfileForm = {
   name: "",
+  photo: "",
   businessName: "",
   businessType: "Servicios 1:1",
   stage: "Creciendo",
@@ -568,11 +572,11 @@ export default function App() {
   const [currency, setCurrency] = useState(stored?.currency || "USD");
   const isNewUser = !stored;
   const [movements, setMovements] = useState(isNewUser ? [] : normalizeMovements(stored?.movements || initialMovements));
-  const [tasks, setTasks] = useState(isNewUser ? [] : (stored?.tasks || initialTasks));
+  const [tasks, setTasks] = useState(isNewUser ? [] : migratePriorityList(stored?.tasks || initialTasks));
   const [clients, setClients] = useState(isNewUser ? [] : normalizeClients(stored?.clients || initialClients));
   const [contentItems, setContentItems] = useState(isNewUser ? [] : (stored?.contentItems || initialContent));
   const [goals, setGoals] = useState(isNewUser ? [] : (stored?.goals || initialGoals));
-  const [homeTasks, setHomeTasks] = useState(isNewUser ? [] : (stored?.homeTasks || initialHomeTasks));
+  const [homeTasks, setHomeTasks] = useState(isNewUser ? [] : migratePriorityList(stored?.homeTasks || initialHomeTasks));
   const [systemTasks, setSystemTasks] = useState(stored?.systemTasks || initialSystemTasks);
   const [systemSlide, setSystemSlide] = useState(0);
   const [newSystemTask, setNewSystemTask] = useState("");
@@ -594,6 +598,7 @@ export default function App() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileForm, setProfileForm] = useState({ ...initialProfileForm });
+  const [profilePhotoError, setProfilePhotoError] = useState("");
   const [brandProfile, setBrandProfile] = useState(stored?.brandProfile || { ...initialBrandProfile });
   const [editingBrand, setEditingBrand] = useState(false);
   const [brandForm, setBrandForm] = useState(stored?.brandProfile || { ...initialBrandProfile });
@@ -643,7 +648,7 @@ export default function App() {
   const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Pendiente", goal: "Vender", publishDate: "" });
   const [showContentForm, setShowContentForm] = useState(false);
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
-  const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
+  const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "", frequency: "Rutina", customFrequency: "" });
   const [taskForm, setTaskForm] = useState({ text: "", priority: "Normal", dueDate: "" });
   const [homeFocusOverride, setHomeFocusOverride] = useState(stored?.homeFocusOverride || null);
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
@@ -681,6 +686,7 @@ export default function App() {
   const [abiMenuPrefs, setAbiMenuPrefs] = useState({ personas: "4", dieta: "normal", pais: "colombia" });
   const [abiMenuSuggestion, setAbiMenuSuggestion] = useState(null);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showFamilyTimeModal, setShowFamilyTimeModal] = useState(false);
   const [familyMembers, setFamilyMembers] = useState(stored?.familyMembers || []);
   const [showFamilyConfig, setShowFamilyConfig] = useState(false);
   const [reminderTime, setReminderTime] = useState(stored?.reminderTime || "08:00");
@@ -1337,11 +1343,11 @@ export default function App() {
     setActiveView(state.activeView || "dashboard");
     setCurrency(state.currency || "USD");
     setMovements(normalizeMovements(state.movements || []));
-    setTasks(state.tasks || []);
+    setTasks(migratePriorityList(state.tasks || []));
     setClients(normalizeClients(state.clients || []));
     setContentItems(state.contentItems || []);
     setGoals(state.goals || []);
-    setHomeTasks(state.homeTasks || []);
+    setHomeTasks(migratePriorityList(state.homeTasks || []));
     setSystemTasks(state.systemTasks || cloneList(initialSystemTasks));
     setMaternalTasks(state.maternalTasks || cloneList(initialHomeMaternalTasks));
     setWellnessTasks(state.wellnessTasks || cloneList(initialHomeWellnessTasks));
@@ -1668,8 +1674,9 @@ export default function App() {
       return;
     }
 
-    setHomeTasks((current) => [{ id: Date.now(), title: homeForm.title.trim(), category: homeForm.category, priority: homeForm.priority || "Normal", delegate: homeForm.delegate || "", done: false }, ...current]);
-    setHomeForm({ title: "", category: "Rutina", priority: "Normal", delegate: "" });
+    const frequency = homeForm.frequency === "Otro" ? (homeForm.customFrequency.trim() || "Otro") : homeForm.frequency;
+    setHomeTasks((current) => [{ id: Date.now(), title: homeForm.title.trim(), category: homeForm.category, priority: homeForm.priority || "Normal", delegate: homeForm.delegate || "", frequency, done: false }, ...current]);
+    setHomeForm({ title: "", category: "Rutina", priority: "Normal", delegate: "", frequency: "Rutina", customFrequency: "" });
   };
 
   const addTask = (event) => {
@@ -1681,8 +1688,8 @@ export default function App() {
   const deleteTask = (taskId) => setTasks((current) => current.filter((task) => task.id !== taskId));
   const taskUrgencyScore = (t) => {
     let score = 0;
-    if (t.priority === "Urgente") score += 100;
-    else if (t.priority === "Puede esperar") score -= 20;
+    if (t.priority === "Importante") score += 100;
+    else if (t.priority === "Sin afán") score -= 20;
     if (t.dueDate) {
       const days = Math.floor((timestampFromInputDate(t.dueDate) - Date.now()) / 86400000);
       if (days < 0) score += 80;
@@ -1854,6 +1861,31 @@ export default function App() {
     }));
   };
 
+  const handleProfilePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setProfilePhotoError("Selecciona un archivo de imagen."); return; }
+    if (file.size > 8 * 1024 * 1024) { setProfilePhotoError("La imagen es muy pesada (máx. 8MB)."); return; }
+    setProfilePhotoError("");
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const size = 240;
+        const canvas = document.createElement("canvas");
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        const scale = Math.max(size / img.width, size / img.height);
+        const sw = size / scale, sh = size / scale;
+        const sx = (img.width - sw) / 2, sy = (img.height - sh) / 2;
+        ctx.drawImage(img, sx, sy, sw, sh, 0, 0, size, size);
+        setProfileForm((c) => ({ ...c, photo: canvas.toDataURL("image/jpeg", 0.85) }));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  };
   const saveProfile = (e) => {
     e.preventDefault();
     const monthly = Math.max(0, Number(profileForm.monthlyGoalSetup) || 0);
@@ -2171,6 +2203,27 @@ export default function App() {
               <p>{profileSetup ? "Actualiza tu información cuando quieras." : "Configuremos tu perfil para que la app trabaje para ti desde el primer día."}</p>
             </div>
             <form className="profile-modal-form" onSubmit={saveProfile}>
+              <div className="profile-photo-row">
+                <div className="profile-photo-preview">
+                  {profileForm.photo
+                    ? <img src={profileForm.photo} alt="Foto de perfil" />
+                    : <span>{profileForm.name ? profileForm.name.charAt(0).toUpperCase() : "M"}</span>
+                  }
+                </div>
+                <div>
+                  <input type="file" accept="image/*" id="profilePhotoInput" style={{display:"none"}} onChange={handleProfilePhotoChange} />
+                  <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                    <button type="button" className="profile-photo-btn" onClick={() => document.getElementById('profilePhotoInput').click()}>
+                      {profileForm.photo ? "Cambiar foto" : "📷 Agregar foto"}
+                    </button>
+                    {profileForm.photo && (
+                      <button type="button" className="profile-photo-remove" onClick={() => setProfileForm(c => ({ ...c, photo: "" }))}>Quitar</button>
+                    )}
+                  </div>
+                  {profilePhotoError && <p style={{margin:"6px 0 0",fontSize:"12px",color:"#C4526A",fontWeight:600}}>{profilePhotoError}</p>}
+                </div>
+              </div>
+
               <label>
                 ¿Cómo te llamamos?
                 <input placeholder="Tu nombre" value={profileForm.name} onChange={(e) => setProfileForm((c) => ({ ...c, name: e.target.value }))} required />
@@ -2421,7 +2474,10 @@ export default function App() {
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
             {(!awsActive || !remoteStorageEnabled) && !isSyncing && <div className="status-chip" title="Tus datos se guardan en este dispositivo">Solo en este dispositivo</div>}
             <button className="profile-avatar-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
-              <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
+              {profileSetup?.photo
+                ? <img className="profile-edit-avatar profile-edit-avatar--photo" src={profileSetup.photo} alt="" />
+                : <span className="profile-edit-avatar">{profileSetup?.name ? profileSetup.name.charAt(0).toUpperCase() : "M"}</span>
+              }
             </button>
             {awsActive && user && (
               <button className="signout-icon-btn" onClick={signOut} title="Cerrar sesión">
@@ -2984,7 +3040,7 @@ export default function App() {
     const urgentLeads = clients.filter((c) => c.status === "Lead caliente");
     const lastPublished = contentItems.filter((i) => i.status === "Publicado" && i.createdAt).sort((a, b) => b.createdAt - a.createdAt)[0];
     const daysSincePublish = lastPublished ? Math.floor((Date.now() - lastPublished.createdAt) / 86400000) : null;
-    const urgentHomeTasks = homeTasks.filter((t) => !t.done && t.priority === "Urgente");
+    const urgentHomeTasks = homeTasks.filter((t) => !t.done && t.priority === "Importante");
     const hasAlerts = urgentLeads.length > 0 || (daysSincePublish !== null && daysSincePublish > 3) || urgentHomeTasks.length > 0;
     const focusTasks = [...tasks].filter((t) => !t.done).sort((a, b) => taskUrgencyScore(b) - taskUrgencyScore(a)).slice(0, 3);
 
@@ -3036,7 +3092,7 @@ export default function App() {
 
     // ── Hogar: "Tus 3 de hoy" ──
     const pendingHome = homeTasks.filter((t) => !t.done);
-    const homePriorityRank = { "Urgente": 0, "Normal": 1, "Puede esperar": 2 };
+    const homePriorityRank = { "Importante": 0, "Normal": 1, "Sin afán": 2 };
     const sortHomePool = (list) => [...list].sort((a, b) => (homePriorityRank[a.priority || "Normal"] - homePriorityRank[b.priority || "Normal"]) || (a.id - b.id));
     const autoTop3 = sortHomePool(pendingHome).slice(0, 3);
     const validOverrideIds = (homeFocusOverride && homeFocusOverride.date === todayISO)
@@ -3111,7 +3167,7 @@ export default function App() {
                           <div key={task.id} className="db-today-task-row">
                             <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--green)"}} />
                             <span className={`db-today-task-title${task.done ? " db-today-task--done" : ""}`}>{task.text}</span>
-                            {task.priority === "Urgente" && <span className="db-today-urgente">Urgente</span>}
+                            {task.priority === "Importante" && <span className="db-today-urgente">Importante</span>}
                           </div>
                         ))}
                         <button type="button" className="db-today-see-more" onClick={() => setActiveView("business")}>Ver negocio →</button>
@@ -3523,7 +3579,7 @@ export default function App() {
           <>
             <div className="card" style={{marginBottom:"16px"}}>
               <h3 style={{margin:"0 0 4px"}}>Nueva acción</h3>
-              <p className="helper-copy" style={{margin:"0 0 12px"}}>Asigna prioridad y fecha límite para saber qué es realmente urgente.</p>
+              <p className="helper-copy" style={{margin:"0 0 12px"}}>Asigna prioridad y fecha límite para saber qué es realmente importante.</p>
               <form onSubmit={addTask} style={{display:"grid",gap:"8px",gridTemplateColumns:"1fr",maxWidth:"480px"}}>
                 <input placeholder="¿Qué necesitas hacer?" value={taskForm.text}
                   onChange={e => updateTaskForm("text", e.target.value)}
@@ -3531,7 +3587,7 @@ export default function App() {
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
                   <select value={taskForm.priority} onChange={e => updateTaskForm("priority", e.target.value)}
                     style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 10px",font:"inherit",background:"#FAF7F5"}}>
-                    <option>Normal</option><option>Urgente</option><option>Puede esperar</option>
+                    <option>Normal</option><option>Importante</option><option>Sin afán</option>
                   </select>
                   <input type="date" value={taskForm.dueDate} onChange={e => updateTaskForm("dueDate", e.target.value)}
                     style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 10px",font:"inherit",background:"#FAF7F5"}} />
@@ -3556,7 +3612,7 @@ export default function App() {
                     <div style={{flex:1,minWidth:0}}>
                       <strong style={{fontSize:"14px",textDecoration:task.done?"line-through":"none",color:task.done?"var(--muted)":"var(--ink)"}}>{task.text}</strong>
                       <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"2px"}}>
-                        {task.priority === "Urgente" && <small style={{color:"var(--purple)",fontWeight:700}}>🔥 Urgente</small>}
+                        {task.priority === "Importante" && <small style={{color:"#C4526A",fontWeight:700}}>⭐ Importante</small>}
                         {dueLabel && <small style={{color:dueColor,fontWeight:600}}>{dueLabel}</small>}
                       </div>
                     </div>
@@ -4224,6 +4280,7 @@ export default function App() {
     const thisWeekMoments = (purpose.presenceMoments||[]).filter(m => new Date(m.date) >= monday);
     const minutesByRole = {};
     thisWeekMoments.forEach(m => { const mins=parseMinutes(m.tiempo); (m.quien||[]).forEach(role => { minutesByRole[role]=(minutesByRole[role]||0)+mins; }); });
+    const topFamilyRole = Object.keys(minutesByRole).length ? Object.entries(minutesByRole).sort((a,b)=>b[1]-a[1])[0][0] : null;
     const DEFAULT_ROLES = [{id:"r1",role:"Hijo/a",emoji:"👧"},{id:"r2",role:"Pareja",emoji:"💑"},{id:"r3",role:"Padres",emoji:"👵"},{id:"r4",role:"Amiga",emoji:"👯"}];
     const activeFamilyMembers = familyMembers.length ? familyMembers : DEFAULT_ROLES;
     const toggleQuien = label => setPresenceForm(f => ({...f, quien: f.quien.includes(label)?f.quien.filter(q=>q!==label):[...f.quien,label]}));
@@ -4365,95 +4422,48 @@ export default function App() {
                 </div>
               )}
 
-              {/* Stats row */}
-              {Object.keys(minutesByRole).length>0&&(
-                <div className="fam-stats-row">
-                  {activeFamilyMembers.filter(m=>minutesByRole[m.role]).map(m=>{
-                    const mins=minutesByRole[m.role]||0; const hrs=(mins/60).toFixed(1); const goalMins=120; const pct=Math.min(100,Math.round((mins/goalMins)*100));
-                    return (
-                      <div key={m.id} className={`fam-stat-card${pct>=100?" fam-stat-card--done":""}`}>
-                        <div className="fam-stat-emoji">{m.emoji}</div>
-                        <div className="fam-stat-role">{m.role}</div>
-                        <div className="fam-stat-hrs">{hrs}h</div>
-                        <div className="fam-stat-bar"><div className="fam-stat-fill" style={{width:`${pct}%`,background:pct>=100?"var(--green)":"#C4526A"}}></div></div>
-                        <div className="fam-stat-label">{pct>=100?"Meta ✓":`${Math.round((goalMins-mins)/60)}h más`}</div>
+              {/* Tarjetas por miembro con gráfica circular */}
+              <div className="fam-member-grid">
+                {activeFamilyMembers.map(m=>{
+                  const mins=minutesByRole[m.role]||0; const hrs=(mins/60).toFixed(1); const goalMins=120;
+                  const pct=Math.min(100,Math.round((mins/goalMins)*100));
+                  const isTop = topFamilyRole && m.role===topFamilyRole && mins>0;
+                  const R=26; const circ=2*Math.PI*R;
+                  const lastMoment=[...thisWeekMoments].reverse().find(mo=>mo.quien.includes(m.role));
+                  return (
+                    <div key={m.id} className={`fam-member-card${isTop?" fam-member-card--top":""}`}>
+                      {isTop && <span className="fam-member-top-badge">👑 Más tiempo</span>}
+                      <div className="fam-member-ring-wrap">
+                        <svg viewBox="0 0 60 60" className="fam-member-ring-svg">
+                          <circle cx="30" cy="30" r={R} className="fam-member-ring-bg" />
+                          <circle cx="30" cy="30" r={R} className="fam-member-ring-fg"
+                            strokeDasharray={circ} strokeDashoffset={circ*(1-pct/100)}
+                            style={{stroke:pct>=100?"var(--green)":"#C4526A"}}
+                            transform="rotate(-90 30 30)" />
+                        </svg>
+                        <span className="fam-member-ring-emoji">{m.emoji}</span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                      <p className="fam-member-role">{m.role}</p>
+                      <p className="fam-member-hrs">{hrs}h <span className="fam-member-hrs-sub">esta semana</span></p>
+                      {lastMoment
+                        ? <p className="fam-member-last">{lastMoment.queHicieron || lastMoment.tiempo}</p>
+                        : <p className="fam-member-last fam-member-last--empty">Sin momentos aún</p>
+                      }
+                    </div>
+                  );
+                })}
+              </div>
 
-              {/* Celebration or form */}
+              {/* Celebration o botón para agregar */}
               {presenceCelebration?(
                 <div className="fam-celebration">
                   <p style={{fontSize:"28px",margin:"0 0 6px"}}>🌸</p>
                   <p style={{margin:0,fontWeight:700,fontSize:"15px",color:"var(--ink)"}}>{victoryMsg}</p>
                 </div>
               ):(
-                <div className="fam-form">
-                  <div>
-                    <p className="fam-form-label">¿Con quién estuviste hoy?</p>
-                    <div className="fam-quien-row">
-                      {activeFamilyMembers.map(m=>(
-                        <button key={m.id} type="button"
-                          className={`fam-quien-btn${presenceForm.quien.includes(m.role)?" fam-quien-btn--active":""}`}
-                          onClick={()=>toggleQuien(m.role)}>
-                          <span className="fam-quien-emoji">{m.emoji}</span>
-                          <span className="fam-quien-role">{m.role}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <p className="fam-form-label">¿Qué hicieron? <span style={{fontWeight:400,color:"var(--muted)"}}>(opcional)</span></p>
-                    <textarea className="fam-textarea" value={presenceForm.queHicieron}
-                      onChange={e=>setPresenceForm(f=>({...f,queHicieron:e.target.value}))}
-                      placeholder="Ej: Leímos un cuento, cocinamos juntos..."/>
-                  </div>
-
-                  <div>
-                    <p className="fam-form-label">¿Cuánto tiempo?</p>
-                    <div className="fam-tiempo-row">
-                      {["15 min","30 min","1 hora","Más de 1 hora"].map(t=>(
-                        <button key={t} type="button"
-                          className={`fam-tiempo-btn${presenceForm.tiempo===t?" fam-tiempo-btn--active":""}`}
-                          onClick={()=>setPresenceForm(f=>({...f,tiempo:t}))}>
-                          {t}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <button type="button" className="fam-save-btn"
-                    disabled={!presenceForm.quien.length&&!presenceForm.queHicieron.trim()}
-                    onClick={savePresence}>
-                    Guardar este momento 💛
-                  </button>
-                </div>
-              )}
-
-              {/* This week log */}
-              {thisWeekMoments.length>0&&!presenceCelebration&&(
-                <div className="fam-week-log">
-                  <p className="fam-week-title">Esta semana</p>
-                  <div className="fam-week-items">
-                    {thisWeekMoments.slice(-4).reverse().map(m=>(
-                      <div key={m.id} className="fam-week-item">
-                        <span style={{fontSize:"16px",flexShrink:0}}>💛</span>
-                        <div style={{flex:1,minWidth:0}}>
-                          <p className="fam-week-meta">{m.quien.join(" · ")} — {m.tiempo}</p>
-                          {m.queHicieron&&<p className="fam-week-desc">{m.queHicieron}</p>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  {thisWeekMoments.length>=5&&(
-                    <div className="fam-week-5">
-                      <p style={{margin:0,fontWeight:700,fontSize:"14px",color:"var(--ink)"}}>🏆 5 momentos esta semana — eso es presencia real.</p>
-                    </div>
-                  )}
-                </div>
+                <button type="button" className="fam-add-time-btn" onClick={()=>setShowFamilyTimeModal(true)}>
+                  💛 Agregar tiempo en familia
+                </button>
               )}
             </div>
 
@@ -4498,7 +4508,7 @@ export default function App() {
 
             {/* Hijos esta semana */}
             <div className="card" style={{padding:"20px"}}>
-              <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Hijos esta semana 🎒</h3>
+              <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Actividades de tus hijos esta semana 🎒</h3>
               <p style={{margin:"0 0 12px",fontSize:"13px",color:"var(--muted)"}}>Actividades y horarios — un día a la vez.</p>
               <div style={{display:"grid",gap:"6px"}}>
                 {DAY_LABELS.map(([key,name])=>(
@@ -4564,12 +4574,12 @@ export default function App() {
             {homeTasks.length>0&&(
               <div className="card" style={{padding:"18px 20px"}}>
                 <h3 style={{margin:"0 0 12px",fontSize:"15px"}}>Todos los pendientes</h3>
-                {["Urgente","Normal","Puede esperar"].map(priority=>{
+                {["Importante","Normal","Sin afán"].map(priority=>{
                   const tasks=homeTasks.filter(t=>(t.priority||"Normal")===priority); if(!tasks.length) return null;
                   return (
                     <div key={priority} style={{marginBottom:"12px"}}>
-                      <p style={{fontSize:"10px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.6px",color:priority==="Urgente"?"#DC2626":"var(--muted)",margin:"0 0 6px"}}>
-                        {priority==="Urgente"&&"🔴 "}{priority}
+                      <p style={{fontSize:"10px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.6px",color:priority==="Importante"?"#C4526A":"var(--muted)",margin:"0 0 6px"}}>
+                        {priority==="Importante"&&"⭐ "}{priority}
                       </p>
                       {tasks.map(task=>(
                         <div key={task.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",background:"#fff",border:"1px solid var(--line)",marginBottom:"4px"}}>
@@ -4577,6 +4587,7 @@ export default function App() {
                           <div style={{flex:1,minWidth:0}}>
                             <span style={{fontSize:"13px",fontWeight:600,color:task.done?"var(--muted)":"var(--ink)",textDecoration:task.done?"line-through":"none"}}>{task.title}</span>
                             <span style={{marginLeft:"7px",fontSize:"11px",color:"var(--muted)"}}>{task.category}</span>
+                            {task.frequency&&<span style={{marginLeft:"6px",fontSize:"11px",color:"var(--muted)"}}>· {task.frequency}</span>}
                             {task.delegate&&<span style={{marginLeft:"6px",fontSize:"11px",color:"#C4526A",fontWeight:600}}>→ {task.delegate}</span>}
                           </div>
                           <button type="button" onClick={()=>setHomeTasks(c=>c.filter(t=>t.id!==task.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"15px",lineHeight:1,padding:"2px 4px",flexShrink:0}}>×</button>
@@ -4998,47 +5009,124 @@ export default function App() {
 
         {/* ── Modal: Nueva Tarea ── */}
         {showTaskModal&&(
-          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}} onClick={e=>e.target===e.currentTarget&&(setShowTaskModal(false),setHomeTaskError(""))}>
-            <div style={{background:"#fff",borderRadius:"20px",width:"min(420px,100%)",boxShadow:"0 24px 80px rgba(0,0,0,0.22)",overflow:"hidden"}}>
-              <div style={{background:"linear-gradient(135deg,#6B46C1,#553c9a)",padding:"18px 22px 16px",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                <p style={{margin:0,fontSize:"17px",fontWeight:800}}>Nueva tarea del hogar</p>
-                <button type="button" onClick={()=>{setShowTaskModal(false);setHomeTaskError("");}} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"8px",width:"30px",height:"30px",cursor:"pointer",color:"#fff",fontSize:"15px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
-              </div>
-              <form onSubmit={e=>{addHomeTask(e);if(!homeTaskError)setShowTaskModal(false);}} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"12px"}}>
+          <div className="app-modal-backdrop" onClick={e=>e.target===e.currentTarget&&(setShowTaskModal(false),setHomeTaskError(""))}>
+            <div className="app-modal-card" style={{width:"min(440px,100%)"}}>
+              <div className="app-modal-head">
                 <div>
-                  <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"5px"}}>Tarea</label>
+                  <p className="app-modal-head-eyebrow">Mi Hogar</p>
+                  <p className="app-modal-head-title">Nueva tarea</p>
+                </div>
+                <button type="button" className="app-modal-close" onClick={()=>{setShowTaskModal(false);setHomeTaskError("");}}>✕</button>
+              </div>
+              <form onSubmit={e=>{addHomeTask(e);if(!homeTaskError)setShowTaskModal(false);}} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"14px"}}>
+                <div>
+                  <label className="app-form-label">Tarea</label>
                   <input autoFocus placeholder="¿Qué hay que hacer?" value={homeForm.title}
                     onChange={e=>{updateHomeForm("title",e.target.value);if(homeTaskError)setHomeTaskError("");}}
-                    style={{width:"100%",padding:"10px 12px",border:"1px solid var(--line)",borderRadius:"9px",font:"inherit",fontSize:"14px",background:"#faf7f5",boxSizing:"border-box",outline:"none"}}/>
+                    className="app-form-input"/>
                   {homeTaskError&&<p style={{margin:"4px 0 0",fontSize:"12px",color:"#C4526A",fontWeight:600}}>{homeTaskError}</p>}
                 </div>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
-                  <div>
-                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"5px"}}>Categoría</label>
-                    <select value={homeForm.category} onChange={e=>updateHomeForm("category",e.target.value)}
-                      style={{width:"100%",padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"9px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none"}}>
-                      <option>Rutina</option><option>Compras</option><option>Colegio / Ninos</option><option>Salud</option><option>Hogar / Limpieza</option><option>Bienestar</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"5px"}}>Prioridad</label>
-                    <div style={{display:"flex",gap:"4px"}}>
-                      {[["Urgente","🔴"],["Normal","🟡"],["Puede esperar","🟢"]].map(([p,ico])=>(
-                        <button key={p} type="button" onClick={()=>updateHomeForm("priority",p)}
-                          style={{flex:1,padding:"8px 4px",borderRadius:"8px",border:`2px solid ${homeForm.priority===p?"#C4526A":"var(--line)"}`,background:homeForm.priority===p?"rgba(196,82,106,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"10px",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:"2px"}}>
-                          <span>{ico}</span><span style={{color:homeForm.priority===p?"#C4526A":"var(--muted)",textAlign:"center"}}>{p==="Puede esperar"?"Espera":p}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+
                 <div>
-                  <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"5px"}}>Delegar a <span style={{fontWeight:400,textTransform:"none"}}>(opcional)</span></label>
-                  <input placeholder="Ej: Esposo, María..." value={homeForm.delegate} onChange={e=>updateHomeForm("delegate",e.target.value)}
-                    style={{width:"100%",padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"9px",font:"inherit",fontSize:"13px",background:"#faf7f5",boxSizing:"border-box",outline:"none"}}/>
+                  <label className="app-form-label">Categoría</label>
+                  <select value={homeForm.category} onChange={e=>updateHomeForm("category",e.target.value)} className="app-form-input">
+                    <option>Rutina</option><option>Compras</option><option>Colegio / Ninos</option><option>Salud</option><option>Hogar / Limpieza</option><option>Bienestar</option>
+                  </select>
                 </div>
-                <button type="submit" style={{padding:"12px",background:"#6B46C1",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700,marginTop:"2px"}}>Guardar tarea</button>
+
+                <div>
+                  <label className="app-form-label">¿Con qué frecuencia?</label>
+                  <div className="app-pill-row">
+                    {["Rutina","Semanal","Mensual","Anual","Otro"].map(f=>(
+                      <button key={f} type="button" onClick={()=>updateHomeForm("frequency",f)}
+                        className={`app-pill-btn${homeForm.frequency===f?" app-pill-btn--active":""}`}>
+                        {f}
+                      </button>
+                    ))}
+                  </div>
+                  {homeForm.frequency==="Otro"&&(
+                    <input placeholder="¿Cada cuánto? Ej: Cada 2 días" value={homeForm.customFrequency}
+                      onChange={e=>updateHomeForm("customFrequency",e.target.value)}
+                      className="app-form-input" style={{marginTop:"8px"}}/>
+                  )}
+                </div>
+
+                <div>
+                  <label className="app-form-label">Prioridad</label>
+                  <div style={{display:"flex",gap:"6px"}}>
+                    {[["Importante","⭐","#C4526A"],["Normal","🟡","#D97706"],["Sin afán","🌿","#1D9E75"]].map(([p,ico,color])=>(
+                      <button key={p} type="button" onClick={()=>updateHomeForm("priority",p)}
+                        style={{flex:1,padding:"9px 4px",borderRadius:"10px",border:`2px solid ${homeForm.priority===p?color:"var(--line)"}`,background:homeForm.priority===p?`${color}14`:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"11px",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",transition:"all 0.15s"}}>
+                        <span>{ico}</span><span style={{color:homeForm.priority===p?color:"var(--muted)",textAlign:"center"}}>{p}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="app-form-label">Delegar a <span style={{fontWeight:400,textTransform:"none"}}>(opcional)</span></label>
+                  <input placeholder="Ej: Esposo, María..." value={homeForm.delegate} onChange={e=>updateHomeForm("delegate",e.target.value)}
+                    className="app-form-input"/>
+                </div>
+
+                <button type="submit" className="app-modal-submit">Guardar tarea</button>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── Modal: Agregar tiempo en familia ── */}
+        {showFamilyTimeModal&&(
+          <div className="app-modal-backdrop" onClick={e=>e.target===e.currentTarget&&setShowFamilyTimeModal(false)}>
+            <div className="app-modal-card" style={{width:"min(460px,100%)"}}>
+              <div className="app-modal-head">
+                <div>
+                  <p className="app-modal-head-eyebrow">Con mi familia</p>
+                  <p className="app-modal-head-title">Agregar un momento 💛</p>
+                </div>
+                <button type="button" className="app-modal-close" onClick={()=>setShowFamilyTimeModal(false)}>✕</button>
+              </div>
+              <div style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"16px"}}>
+                <div>
+                  <p className="fam-form-label">¿Con quién estuviste hoy?</p>
+                  <div className="fam-quien-row">
+                    {activeFamilyMembers.map(m=>(
+                      <button key={m.id} type="button"
+                        className={`fam-quien-btn${presenceForm.quien.includes(m.role)?" fam-quien-btn--active":""}`}
+                        onClick={()=>toggleQuien(m.role)}>
+                        <span className="fam-quien-emoji">{m.emoji}</span>
+                        <span className="fam-quien-role">{m.role}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="fam-form-label">¿Qué hicieron? <span style={{fontWeight:400,color:"var(--muted)"}}>(opcional)</span></p>
+                  <textarea className="fam-textarea" value={presenceForm.queHicieron}
+                    onChange={e=>setPresenceForm(f=>({...f,queHicieron:e.target.value}))}
+                    placeholder="Ej: Leímos un cuento, cocinamos juntos..."/>
+                </div>
+
+                <div>
+                  <p className="fam-form-label">¿Cuánto tiempo?</p>
+                  <div className="fam-tiempo-row">
+                    {["15 min","30 min","1 hora","Más de 1 hora"].map(t=>(
+                      <button key={t} type="button"
+                        className={`fam-tiempo-btn${presenceForm.tiempo===t?" fam-tiempo-btn--active":""}`}
+                        onClick={()=>setPresenceForm(f=>({...f,tiempo:t}))}>
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button type="button" className="app-modal-submit"
+                  disabled={!presenceForm.quien.length&&!presenceForm.queHicieron.trim()}
+                  onClick={()=>{savePresence();setShowFamilyTimeModal(false);}}>
+                  Guardar este momento 💛
+                </button>
+              </div>
             </div>
           </div>
         )}
