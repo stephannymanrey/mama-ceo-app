@@ -3690,6 +3690,44 @@ export default function App() {
                 ))}
               </div>
             )}
+
+            {/* 6. Preview de Tareas — conecta sin saltar de pestaña */}
+            <div className="biz-preview-card">
+              <div className="biz-preview-head">
+                <p className="biz-preview-title">📌 Tus tareas más urgentes</p>
+                <button type="button" className="biz-preview-link" onClick={() => setBusinessTab(1)}>Ver todas →</button>
+              </div>
+              {sortedBizTasks.filter(t => !t.done).length === 0 ? (
+                <p className="helper-copy" style={{margin:0}}>No tienes tareas pendientes. 🎉</p>
+              ) : (
+                sortedBizTasks.filter(t => !t.done).slice(0,3).map(task => (
+                  <div key={task.id} className="biz-preview-row">
+                    <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--purple)",flexShrink:0}} />
+                    <span style={{flex:1,minWidth:0,fontSize:"13px",color:"var(--ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.text}</span>
+                    {task.priority === "Importante" && <small style={{color:"#C4526A",fontWeight:700,flexShrink:0}}>⭐</small>}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* 7. Preview de Historial — conecta sin saltar de pestaña */}
+            <div className="biz-preview-card">
+              <div className="biz-preview-head">
+                <p className="biz-preview-title">🧾 Tus últimos movimientos</p>
+                <button type="button" className="biz-preview-link" onClick={() => setBusinessTab(2)}>Ver historial completo →</button>
+              </div>
+              {sortedMovements.length === 0 ? (
+                <p className="helper-copy" style={{margin:0}}>Aún no has registrado movimientos.</p>
+              ) : (
+                sortedMovements.slice(0,3).map(m => (
+                  <div key={m.id} className="biz-preview-row">
+                    <span className={m.type} style={{fontWeight:800,flexShrink:0}}>{m.type==="income"?"+":"-"}</span>
+                    <span style={{flex:1,minWidth:0,fontSize:"13px",color:"var(--ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.description}</span>
+                    <b style={{fontSize:"13px",flexShrink:0}}>{money.format(m.amount)}</b>
+                  </div>
+                ))
+              )}
+            </div>
           </>
         )}
 

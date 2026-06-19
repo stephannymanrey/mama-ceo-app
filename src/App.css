@@ -5532,6 +5532,43 @@ button {
   border-radius: 20px;
 }
 
+/* Previews de Tareas / Historial en Resumen */
+.biz-preview-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+  margin-top: 12px;
+}
+.biz-preview-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+.biz-preview-title { margin: 0; font-size: 14px; font-weight: 700; color: var(--ink); }
+.biz-preview-link {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  color: #C4526A;
+  padding: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.biz-preview-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+}
+.biz-preview-row:first-of-type { border-top: none; }
+
 /* Fuentes de ingreso */
 .biz-sources-card {
   background: #fff;
