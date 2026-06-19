@@ -606,7 +606,7 @@ export default function App() {
   const [incomeSourceForm, setIncomeSourceForm] = useState({ name: "", monthlyGoal: "" });
   const [editingSourceId, setEditingSourceId] = useState(null);
   const [showAddSource, setShowAddSource] = useState(false);
-  const [showBizDetail, setShowBizDetail] = useState(false);
+  const [bizHistoryLimit, setBizHistoryLimit] = useState(8);
   const [maternalTasks, setMaternalTasks] = useState(stored?.maternalTasks || initialHomeMaternalTasks);
   const [wellnessTasks, setWellnessTasks] = useState(stored?.wellnessTasks || initialHomeWellnessTasks);
   const [maternalForm, setMaternalForm] = useState("");
@@ -3435,10 +3435,10 @@ export default function App() {
     const healthColor = totals.profit >= 0 && monthlyProgress >= 75 ? "#1D9E75"
       : totals.profit >= 0 || monthlyProgress >= 50 ? "#e87b1e" : "#C4526A";
     const heroStatus = totals.profit >= 0 && monthlyProgress >= 75
-      ? { emoji: "💚", msg: "Vas muy bien este mes. Sigue así.", actionLabel: null }
+      ? { emoji: "💚", msg: "Vas muy bien este mes. Sigue así." }
       : totals.profit >= 0
-      ? { emoji: "⚠️", msg: "Vas en positivo, pero aún no llegas a tu meta del mes.", actionLabel: "Ver detalle" }
-      : { emoji: "🚨", msg: "Este mes vas en números rojos. Vale la pena revisar en qué se está yendo el dinero.", actionLabel: "Ver gastos" };
+      ? { emoji: "⚠️", msg: "Vas en positivo, pero aún no llegas a tu meta del mes." }
+      : { emoji: "🚨", msg: "Este mes vas en números rojos. Vale la pena revisar en qué se está yendo el dinero." };
 
     // Semana actual vs anterior
     const weekBounds = (offset) => {
@@ -3513,10 +3513,37 @@ export default function App() {
     movements.filter(m => m.type==="expense").forEach(m => { const c=m.category||"Sin categoría"; expensesByCategory[c]=(expensesByCategory[c]||0)+m.amount; });
     const topExpenseCategories = Object.entries(expensesByCategory).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
+    // Top / bottom fuente de ingreso — el servicio que mas y el que menos genera
+    const rankedSources = incomeBySource.filter(s => s.actual > 0).sort((a,b) => b.actual - a.actual);
+    const topSource = rankedSources[0] || null;
+    const bottomSource = rankedSources.length > 1 ? rankedSources[rankedSources.length - 1] : null;
+
     const inp = { border:"1px solid var(--line)", borderRadius:"8px", padding:"8px 12px", fontSize:"14px", fontFamily:"inherit", outline:"none", background:"#fff", width:"100%" };
-    const TABS_BIZ = ["Esta semana", "Tareas", "Historial"];
+    const TABS_BIZ = ["Hoy", "Semana", "Tareas", "Revenue"];
     const sortedBizTasks = [...tasks].sort((a, b) => (a.done === b.done ? taskUrgencyScore(b) - taskUrgencyScore(a) : a.done ? 1 : -1));
     const pendingBizTasksCount = tasks.filter(t => !t.done).length;
+
+    // ── Hoy: tareas de hoy, agenda de hoy, ingreso de hoy ──
+    const _tnBiz = new Date();
+    const todayISOBiz = `${_tnBiz.getFullYear()}-${String(_tnBiz.getMonth()+1).padStart(2,"0")}-${String(_tnBiz.getDate()).padStart(2,"0")}`;
+    const todayBizTasks = sortedBizTasks.filter(t => !t.done && t.dueDate === todayISOBiz);
+    const overdueBizTasks = sortedBizTasks.filter(t => !t.done && t.dueDate && t.dueDate < todayISOBiz);
+    const TRABAJO_TYPES_BIZ = new Set(["Trabajo", "Reunión"]);
+    const isTodayApptBiz = (appt) => {
+      if (!appt.date) return false;
+      const orig = new Date(appt.date + "T00:00:00");
+      const tod  = new Date(todayISOBiz + "T00:00:00");
+      if (orig > tod) return false;
+      if (!appt.recurrence || appt.recurrence === "none") return appt.date === todayISOBiz;
+      if (appt.recurrence === "weekly")  return Math.round((tod - orig) / 86400000) % 7 === 0;
+      if (appt.recurrence === "monthly") return orig.getDate() === tod.getDate();
+      if (appt.recurrence === "yearly")  return orig.getDate() === tod.getDate() && orig.getMonth() === tod.getMonth();
+      return false;
+    };
+    const todayBizAppts = appointments.filter(a => TRABAJO_TYPES_BIZ.has(a.type) && isTodayApptBiz(a)).sort((a,b) => (a.time||"").localeCompare(b.time||""));
+    const todayMovs = movements.filter(m => inputDateFromValue(m.date || m.createdAt) === todayISOBiz);
+    const todayIncome = todayMovs.filter(m => m.type==="income").reduce((s,m)=>s+m.amount,0);
+    const todayExpense = todayMovs.filter(m => m.type==="expense").reduce((s,m)=>s+m.amount,0);
 
     return (
       <section className="panel workspace-panel">
@@ -3540,41 +3567,60 @@ export default function App() {
           ))}
         </div>
 
-        {/* ── ESTA SEMANA ── */}
+        {/* ── HOY ── */}
         {businessTab === 0 && (
           <>
-            {/* 1. Hero — un solo numero, una frase, una accion */}
-            <div className="biz-hero">
-              <div className="biz-hero-top">
-                <span className="biz-hero-label">Lo que vas ganando</span>
-                <strong className="biz-hero-val" style={{color:healthColor}}>{money.format(totals.profit)}</strong>
-              </div>
-              {(salesGoal > 0 || monthlyGoal > 0) && (
-                <div className="biz-meta-mini" style={{margin:"6px 0 10px"}}>
-                  <div className="biz-meta-bar"><div className="biz-meta-fill" style={{width:`${salesGoalProgress}%`}} /></div>
-                  <span className="biz-meta-pct">{salesGoalProgress}% de tu meta</span>
-                </div>
-              )}
-              <div className="biz-hero-status">
-                <span>{heroStatus.emoji} {heroStatus.msg}</span>
-                {heroStatus.actionLabel && (
-                  <button type="button" className="biz-hero-action" onClick={() => setShowBizDetail(true)}>{heroStatus.actionLabel} →</button>
+            <div className="home-today-grid">
+              <div className="home-today-card">
+                <span className="home-today-card-ico">📋</span>
+                <p className="home-today-card-label">Tareas de hoy</p>
+                {(todayBizTasks.length + overdueBizTasks.length) === 0 ? (
+                  <p className="home-today-card-empty">Sin tareas para hoy</p>
+                ) : (
+                  <div style={{display:"grid",gap:"4px"}}>
+                    {[...overdueBizTasks, ...todayBizTasks].slice(0,4).map(task => (
+                      <label key={task.id} style={{display:"flex",alignItems:"center",gap:"6px",cursor:"pointer"}}>
+                        <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"#1D9E75",flexShrink:0}} />
+                        <span style={{fontSize:"13px",color:"var(--ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.text}</span>
+                      </label>
+                    ))}
+                  </div>
                 )}
+                <button type="button" className="home-today-card-btn" style={{color:"#1D9E75"}} onClick={() => setBusinessTab(2)}>Ver tareas →</button>
               </div>
-              <p className="biz-hero-sub">Entradas {money.format(totals.income)} · Salidas {money.format(totals.expenses)}</p>
-            </div>
 
-            {/* 2. Registrar — botón, el form vive en popup */}
-            <div className="biz-register-row">
-              <button type="button" className="fin-add-btn" onClick={() => setShowMovementModal(true)}>
-                + Registrar movimiento
-              </button>
-              {streakDays > 0 && (
-                <span className="biz-streak-badge">🔥 {streakDays} día{streakDays>1?"s":""} seguidos registrando</span>
-              )}
-            </div>
+              <div className="home-today-card">
+                <span className="home-today-card-ico">📅</span>
+                <p className="home-today-card-label">Agenda de hoy</p>
+                {todayBizAppts.length === 0 ? (
+                  <p className="home-today-card-empty">Sin reuniones hoy</p>
+                ) : (
+                  <div style={{display:"grid",gap:"4px"}}>
+                    {todayBizAppts.slice(0,4).map(a => (
+                      <p key={a.id} style={{margin:0,fontSize:"13px",color:"var(--ink)"}}>{a.time && <strong>{a.time} · </strong>}{a.title}</p>
+                    ))}
+                  </div>
+                )}
+                <button type="button" className="home-today-card-btn" style={{color:"#0EA5E9"}} onClick={() => setShowCalendar(true)}>Ver calendario →</button>
+              </div>
 
-            {/* 3. Buenas noticias primero, atención después */}
+              <div className="home-today-card home-today-card--menu">
+                <div className="home-today-card-menu-top">
+                  <span className="home-today-card-ico">💰</span>
+                </div>
+                <p className="home-today-card-label" style={{color:"rgba(255,255,255,0.75)"}}>Ingreso de hoy</p>
+                <p className="home-today-card-val" style={{color:"#fff"}}>{money.format(todayIncome)}</p>
+                {todayExpense > 0 && <p style={{margin:0,fontSize:"12px",color:"rgba(255,255,255,0.75)"}}>Gastos hoy: {money.format(todayExpense)}</p>}
+                <button type="button" className="home-today-card-menu-cta" onClick={() => setShowMovementModal(true)}>+ Registrar movimiento</button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── SEMANA ── */}
+        {businessTab === 1 && (
+          <>
+            {/* Buenas noticias primero, atención después */}
             {(goodNews.length > 0 || attention.length > 0) && (
               <div style={{display:"grid",gap:"8px",marginBottom:"16px"}}>
                 {goodNews.map((a, i) => (
@@ -3591,117 +3637,7 @@ export default function App() {
               </div>
             )}
 
-            {/* 4. Detalle — colapsado por defecto para no saturar */}
-            <button type="button" className="biz-detail-toggle" onClick={() => setShowBizDetail(v => !v)}>
-              {showBizDetail ? "Ocultar detalle ▴" : "Ver más detalle ▾"}
-            </button>
-            {showBizDetail && (
-              <>
-            <div className="biz-sources-card">
-              <div className="biz-sources-head">
-                <div>
-                  <p className="biz-sources-title">Mis fuentes de ingreso</p>
-                  <p className="biz-sources-sub">¿Cuánto llevo por cada una este mes?</p>
-                </div>
-              </div>
-
-              {incomeBySource.length === 0 && (
-                <p style={{fontSize:"13px",color:"var(--muted)",margin:"8px 0 14px"}}>Agrega tus fuentes para ver el progreso de cada una.</p>
-              )}
-
-              {incomeBySource.map(src => {
-                const barColor = src.progress >= 75 ? "#1D9E75" : src.progress >= 25 ? "#e87b1e" : "#C4526A";
-                const isEditing = editingSourceId === src.id;
-                return (
-                  <div key={src.id} className="biz-source-row">
-                    <div className="biz-source-top">
-                      <span className="biz-source-name">{src.name}</span>
-                      <div className="biz-source-actions">
-                        <span className="biz-source-amount">{money.format(src.actual)}</span>
-                        <button type="button" className="biz-source-edit-btn"
-                          onClick={() => setEditingSourceId(isEditing ? null : src.id)}
-                          title="Editar meta">
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-                        </button>
-                        <button type="button" className="biz-source-del-btn"
-                          onClick={() => confirmDelete("¿Eliminar esta fuente?", () => setIncomeSources(c => c.filter(s => s.id !== src.id)))}>×</button>
-                      </div>
-                    </div>
-                    <div className="biz-source-bar-wrap">
-                      <div className="biz-source-bar">
-                        <div className="biz-source-fill" style={{width:`${src.progress}%`, background:barColor}} />
-                      </div>
-                      <span className="biz-source-pct" style={{color:barColor}}>{src.progress}%</span>
-                    </div>
-                    {isEditing ? (
-                      <div className="biz-source-edit-row">
-                        <span className="biz-source-edit-label">Meta mensual:</span>
-                        <input type="text" inputMode="decimal" className="biz-source-edit-input"
-                          defaultValue={src.goal ? Number(src.goal).toLocaleString("en-US") : ""}
-                          onBlur={e => { const num = Number(e.target.value.replace(/[^0-9.]/g, "")) || 0; setIncomeSources(c => c.map(s => s.id === src.id ? {...s, monthlyGoal: num} : s)); setEditingSourceId(null); }}
-                          onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingSourceId(null); }}
-                          autoFocus />
-                        <span className="biz-source-edit-hint">↵ para guardar</span>
-                      </div>
-                    ) : (
-                      <p className="biz-source-goal-text">
-                        {src.goal > 0
-                          ? <>Meta{src.isAutoGoal ? " sugerida" : ""}: {money.format(src.goal)}{src.isAutoGoal && <span style={{color:"var(--muted)",fontWeight:400}}> (promedio tuyo — toca editar para fijarla)</span>}</>
-                          : <span style={{color:"var(--muted)"}}>Aún sin historial — registra para ver una meta sugerida</span>}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-
-              {/* Añadir fuente */}
-              {showAddSource ? (
-                <form className="biz-add-source-form" onSubmit={e => {
-                  e.preventDefault();
-                  if (!incomeSourceForm.name.trim()) return;
-                  setIncomeSources(c => [...c, { id: Date.now(), name: incomeSourceForm.name.trim(), monthlyGoal: Number(incomeSourceForm.monthlyGoal) || 0, color: "purple", platform: "Transferencia bancaria" }]);
-                  setIncomeSourceForm({ name: "", monthlyGoal: "" });
-                  setShowAddSource(false);
-                }}>
-                  <input className="biz-add-source-input" placeholder="Nombre de la fuente (ej: Servicios 1:1)"
-                    value={incomeSourceForm.name} onChange={e => setIncomeSourceForm(c => ({...c, name: e.target.value}))} autoFocus />
-                  <MoneyAmountInput className="biz-add-source-input" placeholder="Meta mensual (opcional)"
-                    value={incomeSourceForm.monthlyGoal} onChange={v => setIncomeSourceForm(c => ({...c, monthlyGoal: v}))} />
-                  <div className="biz-add-source-btns">
-                    <button className="primary-button" type="submit">Guardar fuente</button>
-                    <button type="button" className="ck-cancel-btn" onClick={() => { setShowAddSource(false); setIncomeSourceForm({ name: "", monthlyGoal: "" }); }}>Cancelar</button>
-                  </div>
-                </form>
-              ) : (
-                <button type="button" className="biz-add-source-btn" onClick={() => setShowAddSource(true)}>
-                  + Añadir fuente de ingreso
-                </button>
-              )}
-            </div>
-
-            {/* 3b. En qué se va el dinero */}
-            {topExpenseCategories.length > 0 && (
-              <div className="biz-sources-card">
-                <p className="biz-sources-title">En qué se va el dinero</p>
-                <p className="biz-sources-sub" style={{marginBottom:"14px"}}>Tus gastos del negocio por categoría.</p>
-                {topExpenseCategories.map(([cat, amt]) => {
-                  const pct = totals.expenses > 0 ? Math.round((amt/totals.expenses)*100) : 0;
-                  return (
-                    <div key={cat} style={{marginBottom:"10px"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
-                        <span style={{fontSize:"13px",color:"var(--ink)"}}>{cat}</span>
-                        <span style={{fontSize:"13px",fontWeight:700,color:"var(--muted)"}}>{money.format(amt)} · {pct}%</span>
-                      </div>
-                      <div className="biz-source-bar">
-                        <div className="biz-source-fill" style={{width:`${pct}%`,background:"#C4526A"}} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* 4. Esta semana — resumen compacto */}
+            {/* Esta semana — resumen compacto */}
             <div className="biz-week-summary">
               <p className="biz-week-title">Esta semana</p>
               <div className="biz-week-row">
@@ -3718,52 +3654,11 @@ export default function App() {
                 ))}
               </div>
             </div>
-
-
-            {/* 6. Preview de Tareas — conecta sin saltar de pestaña */}
-            <div className="biz-preview-card">
-              <div className="biz-preview-head">
-                <p className="biz-preview-title">📌 Tus tareas más urgentes</p>
-                <button type="button" className="biz-preview-link" onClick={() => setBusinessTab(1)}>Ver todas →</button>
-              </div>
-              {sortedBizTasks.filter(t => !t.done).length === 0 ? (
-                <p className="helper-copy" style={{margin:0}}>No tienes tareas pendientes. 🎉</p>
-              ) : (
-                sortedBizTasks.filter(t => !t.done).slice(0,3).map(task => (
-                  <div key={task.id} className="biz-preview-row">
-                    <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--purple)",flexShrink:0}} />
-                    <span style={{flex:1,minWidth:0,fontSize:"13px",color:"var(--ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.text}</span>
-                    {task.priority === "Importante" && <small style={{color:"#C4526A",fontWeight:700,flexShrink:0}}>⭐</small>}
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* 7. Preview de Historial — conecta sin saltar de pestaña */}
-            <div className="biz-preview-card">
-              <div className="biz-preview-head">
-                <p className="biz-preview-title">🧾 Tus últimos movimientos</p>
-                <button type="button" className="biz-preview-link" onClick={() => setBusinessTab(2)}>Ver historial completo →</button>
-              </div>
-              {sortedMovements.length === 0 ? (
-                <p className="helper-copy" style={{margin:0}}>Aún no has registrado movimientos.</p>
-              ) : (
-                sortedMovements.slice(0,3).map(m => (
-                  <div key={m.id} className="biz-preview-row">
-                    <span className={m.type} style={{fontWeight:800,flexShrink:0}}>{m.type==="income"?"+":"-"}</span>
-                    <span style={{flex:1,minWidth:0,fontSize:"13px",color:"var(--ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{m.description}</span>
-                    <b style={{fontSize:"13px",flexShrink:0}}>{money.format(m.amount)}</b>
-                  </div>
-                ))
-              )}
-            </div>
-              </>
-            )}
           </>
         )}
 
         {/* ── TAREAS ── */}
-        {businessTab === 1 && (
+        {businessTab === 2 && (
           <>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexWrap:"wrap",gap:"8px"}}>
               <div>
@@ -3870,23 +3765,171 @@ export default function App() {
           </>
         )}
 
-        {/* ── HISTORIAL ── */}
-        {businessTab === 2 && (
+        {/* ── REVENUE ── */}
+        {businessTab === 3 && (
           <>
-            <div style={{display:"flex",gap:"10px",marginBottom:"16px",justifyContent:"flex-end"}}>
-              <button type="button" onClick={exportMovementsToExcel}
-                style={{padding:"8px 18px",border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>
-                📊 Excel
-              </button>
-              <button type="button" onClick={exportMovementsToPdf}
-                style={{padding:"8px 18px",border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>
-                📄 PDF
-              </button>
+            {/* Top / bottom servicio o producto */}
+            {(topSource || bottomSource) && (
+              <div className="biz-rank-grid">
+                {topSource && (
+                  <div className="biz-rank-card biz-rank-card--top">
+                    <p className="biz-rank-label">🏆 Tu top</p>
+                    <p className="biz-rank-name">{topSource.name}</p>
+                    <p className="biz-rank-val">{money.format(topSource.actual)}</p>
+                  </div>
+                )}
+                {bottomSource && (
+                  <div className="biz-rank-card biz-rank-card--bottom">
+                    <p className="biz-rank-label">📉 El que menos genera</p>
+                    <p className="biz-rank-name">{bottomSource.name}</p>
+                    <p className="biz-rank-val">{money.format(bottomSource.actual)}</p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Hero — un solo numero, una frase, una accion */}
+            <div className="biz-hero">
+              <div className="biz-hero-top">
+                <span className="biz-hero-label">Lo que vas ganando</span>
+                <strong className="biz-hero-val" style={{color:healthColor}}>{money.format(totals.profit)}</strong>
+              </div>
+              {(salesGoal > 0 || monthlyGoal > 0) && (
+                <div className="biz-meta-mini" style={{margin:"6px 0 10px"}}>
+                  <div className="biz-meta-bar"><div className="biz-meta-fill" style={{width:`${salesGoalProgress}%`}} /></div>
+                  <span className="biz-meta-pct">{salesGoalProgress}% de tu meta</span>
+                </div>
+              )}
+              <div className="biz-hero-status">
+                <span>{heroStatus.emoji} {heroStatus.msg}</span>
+              </div>
+              <p className="biz-hero-sub">Entradas {money.format(totals.income)} · Salidas {money.format(totals.expenses)}</p>
             </div>
-            <div className="card movement-card">
-              <h3 style={{marginBottom:"14px"}}>Todos los movimientos</h3>
+
+            {/* Registrar — botón, el form vive en popup */}
+            <div className="biz-register-row">
+              <button type="button" className="fin-add-btn" onClick={() => setShowMovementModal(true)}>+ Registrar movimiento</button>
+              {streakDays > 0 && (
+                <span className="biz-streak-badge">🔥 {streakDays} día{streakDays>1?"s":""} seguidos registrando</span>
+              )}
+            </div>
+
+            {/* Mis fuentes de ingreso */}
+            <div className="biz-sources-card">
+              <div className="biz-sources-head">
+                <div>
+                  <p className="biz-sources-title">Mis fuentes de ingreso</p>
+                  <p className="biz-sources-sub">¿Cuánto llevo por cada una este mes?</p>
+                </div>
+              </div>
+
+              {incomeBySource.length === 0 && (
+                <p style={{fontSize:"13px",color:"var(--muted)",margin:"8px 0 14px"}}>Agrega tus fuentes para ver el progreso de cada una.</p>
+              )}
+
+              {incomeBySource.map(src => {
+                const barColor = src.progress >= 75 ? "#1D9E75" : src.progress >= 25 ? "#e87b1e" : "#C4526A";
+                const isEditing = editingSourceId === src.id;
+                return (
+                  <div key={src.id} className="biz-source-row">
+                    <div className="biz-source-top">
+                      <span className="biz-source-name">{src.name}</span>
+                      <div className="biz-source-actions">
+                        <span className="biz-source-amount">{money.format(src.actual)}</span>
+                        <button type="button" className="biz-source-edit-btn"
+                          onClick={() => setEditingSourceId(isEditing ? null : src.id)}
+                          title="Editar meta">
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+                        </button>
+                        <button type="button" className="biz-source-del-btn"
+                          onClick={() => confirmDelete("¿Eliminar esta fuente?", () => setIncomeSources(c => c.filter(s => s.id !== src.id)))}>×</button>
+                      </div>
+                    </div>
+                    <div className="biz-source-bar-wrap">
+                      <div className="biz-source-bar">
+                        <div className="biz-source-fill" style={{width:`${src.progress}%`, background:barColor}} />
+                      </div>
+                      <span className="biz-source-pct" style={{color:barColor}}>{src.progress}%</span>
+                    </div>
+                    {isEditing ? (
+                      <div className="biz-source-edit-row">
+                        <span className="biz-source-edit-label">Meta mensual:</span>
+                        <input type="text" inputMode="decimal" className="biz-source-edit-input"
+                          defaultValue={src.goal ? Number(src.goal).toLocaleString("en-US") : ""}
+                          onBlur={e => { const num = Number(e.target.value.replace(/[^0-9.]/g, "")) || 0; setIncomeSources(c => c.map(s => s.id === src.id ? {...s, monthlyGoal: num} : s)); setEditingSourceId(null); }}
+                          onKeyDown={e => { if (e.key === "Enter") e.target.blur(); if (e.key === "Escape") setEditingSourceId(null); }}
+                          autoFocus />
+                        <span className="biz-source-edit-hint">↵ para guardar</span>
+                      </div>
+                    ) : (
+                      <p className="biz-source-goal-text">
+                        {src.goal > 0
+                          ? <>Meta{src.isAutoGoal ? " sugerida" : ""}: {money.format(src.goal)}{src.isAutoGoal && <span style={{color:"var(--muted)",fontWeight:400}}> (promedio tuyo — toca editar para fijarla)</span>}</>
+                          : <span style={{color:"var(--muted)"}}>Aún sin historial — registra para ver una meta sugerida</span>}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Añadir fuente */}
+              {showAddSource ? (
+                <form className="biz-add-source-form" onSubmit={e => {
+                  e.preventDefault();
+                  if (!incomeSourceForm.name.trim()) return;
+                  setIncomeSources(c => [...c, { id: Date.now(), name: incomeSourceForm.name.trim(), monthlyGoal: Number(incomeSourceForm.monthlyGoal) || 0, color: "purple", platform: "Transferencia bancaria" }]);
+                  setIncomeSourceForm({ name: "", monthlyGoal: "" });
+                  setShowAddSource(false);
+                }}>
+                  <input className="biz-add-source-input" placeholder="Nombre de la fuente (ej: Servicios 1:1)"
+                    value={incomeSourceForm.name} onChange={e => setIncomeSourceForm(c => ({...c, name: e.target.value}))} autoFocus />
+                  <MoneyAmountInput className="biz-add-source-input" placeholder="Meta mensual (opcional)"
+                    value={incomeSourceForm.monthlyGoal} onChange={v => setIncomeSourceForm(c => ({...c, monthlyGoal: v}))} />
+                  <div className="biz-add-source-btns">
+                    <button className="primary-button" type="submit">Guardar fuente</button>
+                    <button type="button" className="ck-cancel-btn" onClick={() => { setShowAddSource(false); setIncomeSourceForm({ name: "", monthlyGoal: "" }); }}>Cancelar</button>
+                  </div>
+                </form>
+              ) : (
+                <button type="button" className="biz-add-source-btn" onClick={() => setShowAddSource(true)}>+ Añadir fuente de ingreso</button>
+              )}
+            </div>
+
+            {/* En qué se va el dinero */}
+            {topExpenseCategories.length > 0 && (
+              <div className="biz-sources-card">
+                <p className="biz-sources-title">En qué se va el dinero</p>
+                <p className="biz-sources-sub" style={{marginBottom:"14px"}}>Tus gastos del negocio por categoría.</p>
+                {topExpenseCategories.map(([cat, amt]) => {
+                  const pct = totals.expenses > 0 ? Math.round((amt/totals.expenses)*100) : 0;
+                  return (
+                    <div key={cat} style={{marginBottom:"10px"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
+                        <span style={{fontSize:"13px",color:"var(--ink)"}}>{cat}</span>
+                        <span style={{fontSize:"13px",fontWeight:700,color:"var(--muted)"}}>{money.format(amt)} · {pct}%</span>
+                      </div>
+                      <div className="biz-source-bar">
+                        <div className="biz-source-fill" style={{width:`${pct}%`,background:"#C4526A"}} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Historial — contraido, no infinito */}
+            <div className="card movement-card" style={{marginTop:"16px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px",flexWrap:"wrap",gap:"8px"}}>
+                <h3 style={{margin:0}}>Tus movimientos</h3>
+                <div style={{display:"flex",gap:"8px"}}>
+                  <button type="button" onClick={exportMovementsToExcel}
+                    style={{padding:"6px 14px",border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700}}>📊 Excel</button>
+                  <button type="button" onClick={exportMovementsToPdf}
+                    style={{padding:"6px 14px",border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700}}>📄 PDF</button>
+                </div>
+              </div>
               {sortedMovements.length === 0 && <p style={{color:"var(--muted)",fontSize:"14px"}}>Sin movimientos registrados aún.</p>}
-              {sortedMovements.map(m => (
+              {sortedMovements.slice(0, bizHistoryLimit).map(m => (
                 <div className="movement-row" key={m.id}>
                   <span className={m.type}>{m.type==="income"?"+":"-"}</span>
                   <div>
@@ -3901,6 +3944,11 @@ export default function App() {
                     onClick={()=>confirmDelete("¿Eliminar este movimiento?",()=>setMovements(c=>c.filter(i=>i.id!==m.id)))}>×</button>
                 </div>
               ))}
+              {sortedMovements.length > bizHistoryLimit && (
+                <button type="button" className="biz-detail-toggle" style={{marginTop:"10px"}} onClick={() => setBizHistoryLimit(l => l + 10)}>
+                  Ver más movimientos ▾ ({sortedMovements.length - bizHistoryLimit} más)
+                </button>
+              )}
             </div>
           </>
         )}

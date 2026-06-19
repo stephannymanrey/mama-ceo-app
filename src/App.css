@@ -5442,6 +5442,25 @@ button {
 /* ── Mi Negocio Rediseño ── */
 
 /* Resumen del mes */
+/* Top / bottom servicio o producto — Revenue */
+.biz-rank-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.biz-rank-card {
+  border-radius: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+}
+.biz-rank-card--top    { background: rgba(29, 158, 117, 0.06); border-color: rgba(29, 158, 117, 0.2); }
+.biz-rank-card--bottom { background: rgba(196, 82, 106, 0.05); border-color: rgba(196, 82, 106, 0.15); }
+.biz-rank-label { margin: 0 0 4px; font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.4px; }
+.biz-rank-name  { margin: 0 0 2px; font-size: 14px; font-weight: 700; color: var(--ink); }
+.biz-rank-val   { margin: 0; font-size: 18px; font-weight: 800; color: var(--ink); }
+.biz-rank-card--top .biz-rank-val { color: #1D9E75; }
+
 /* Hero — un solo numero, una frase, una accion */
 .biz-hero {
   background: #fff;
@@ -5619,43 +5638,6 @@ button {
   background: rgba(255, 255, 255, 0.6);
   border-radius: 8px;
 }
-
-/* Previews de Tareas / Historial en Resumen */
-.biz-preview-card {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 16px 18px;
-  margin-top: 12px;
-}
-.biz-preview-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-  gap: 8px;
-}
-.biz-preview-title { margin: 0; font-size: 14px; font-weight: 700; color: var(--ink); }
-.biz-preview-link {
-  border: none;
-  background: none;
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 700;
-  color: #C4526A;
-  padding: 0;
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-.biz-preview-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 7px 0;
-  border-top: 1px solid var(--line);
-}
-.biz-preview-row:first-of-type { border-top: none; }
 
 /* Fuentes de ingreso */
 .biz-sources-card {
