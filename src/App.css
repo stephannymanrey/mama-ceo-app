@@ -5515,6 +5515,23 @@ button {
   margin-top: 2px;
 }
 
+/* Registrar movimiento + racha */
+.biz-register-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+}
+.biz-streak-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #C4526A;
+  background: rgba(196, 82, 106, 0.08);
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
 /* Fuentes de ingreso */
 .biz-sources-card {
   background: #fff;

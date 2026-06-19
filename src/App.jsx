@@ -50,6 +50,8 @@ const homeTaskEstDuration = (t) => t.duration || HOME_CATEGORY_DURATION[t.catego
 const apptEstDuration = (a) => a.duration || APPT_TYPE_DURATION[a.type] || DEFAULT_APPT_DURATION;
 const bizTaskEstDuration = (t) => t.duration || DEFAULT_BIZ_TASK_DURATION;
 
+const EXPENSE_CATEGORIES = ["Marketing y publicidad", "Herramientas y software", "Insumos o materiales", "Transporte", "Pago a colaboradores", "Impuestos"];
+
 const PRIORITY_MIGRATION = { "Urgente": "Importante", "Puede esperar": "Sin afán" };
 const migratePriorityList = (list) => (list || []).map(item => item.priority && PRIORITY_MIGRATION[item.priority] ? { ...item, priority: PRIORITY_MIGRATION[item.priority] } : item);
 
@@ -644,7 +646,8 @@ export default function App() {
     ...(stored?.businessSettings || {})
   });
 
-  const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", amount: "", bank: banks[0] || "", date: getTodayInputValue() });
+  const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", categoryOther: "", amount: "", bank: banks[0] || "", date: getTodayInputValue() });
+  const [showMovementModal, setShowMovementModal] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue() });
   const [clientFormErrors, setClientFormErrors] = useState({});
@@ -1516,9 +1519,10 @@ export default function App() {
   const addMovement = (event) => {
     event.preventDefault();
     const amount = Number(form.amount);
+    const resolvedCategory = form.category === "Otro" ? form.categoryOther.trim() : form.category;
     const errs = {};
     if (!form.description.trim()) errs.description = "Escribe una descripción";
-    if (!form.category.trim())    errs.category    = "Escribe la categoría";
+    if (!resolvedCategory)        errs.category    = "Selecciona o escribe la categoría";
     if (!amount || amount <= 0)   errs.amount      = "Ingresa un monto mayor a 0";
     if (Object.keys(errs).length) { setFormErrors(errs); return; }
     setFormErrors({});
@@ -1529,14 +1533,14 @@ export default function App() {
       setShowUpgradeModal(true);
       return;
     }
-    
+
     const movementDate = form.date || getTodayInputValue();
     setMovements((current) => [{
       id: Date.now(),
       type: form.type,
       classification: form.classification,
       description: form.description.trim(),
-      category: form.category.trim(),
+      category: resolvedCategory,
       amount,
       bank: form.bank || banks[0] || "",
       date: movementDate,
@@ -1547,10 +1551,12 @@ export default function App() {
       classification: form.classification,
       description: "",
       category: "",
+      categoryOther: "",
       amount: "",
       bank: form.bank || banks[0] || "",
       date: getTodayInputValue()
     });
+    setShowMovementModal(false);
   };
 
   const addClient = (event) => {
@@ -1691,7 +1697,9 @@ export default function App() {
   const updateMovementType = (type) => setForm((current) => ({
     ...current,
     type,
-    classification: type === "income" ? "Servicios" : "Gasto fijo"
+    classification: type === "income" ? "Servicios" : "Gasto fijo",
+    category: "",
+    categoryOther: ""
   }));
   const updateMovementDate = (movementId, date) => {
     setMovements((current) => current.map((movement) => movement.id === movementId ? {
@@ -3439,7 +3447,7 @@ export default function App() {
     if (twIncome < weeklyGoal * 0.5) alerts.push({ tone: "red",    msg: `Ingresos de la semana por debajo del 50% de tu meta (${money.format(twIncome)} de ${money.format(weeklyGoal)})` });
     if (twContacts < 3)              alerts.push({ tone: "orange", msg: `Solo ${twContacts} contactos esta semana. Apunta a 5+ para mantener el pipeline activo.` });
     const hotLeads = clients.filter(c => c.status === "Lead caliente").length;
-    if (hotLeads >= 3)               alerts.push({ tone: "green",  msg: `Tienes ${hotLeads} leads calientes. ¡Momento de cerrar ventas!` });
+    if (hotLeads >= 3)               alerts.push({ tone: "green",  msg: `🔥 Tienes ${hotLeads} leads calientes esperando seguimiento.`, action: "clients" });
 
     // Insights automáticos
     const autoInsights = [];
@@ -3454,15 +3462,29 @@ export default function App() {
     const topSrc = Object.entries(srcCounts).sort((a,b)=>b[1]-a[1])[0];
     if (topSrc) autoInsights.push(`Tu fuente top de clientes: ${topSrc[0]} (${topSrc[1]} ${topSrc[1]===1?"cliente":"clientes"}).`);
 
-    // Fuentes de ingreso simplificadas
+    // Fuentes de ingreso simplificadas — conectadas via category (antes desconectado por classification)
     const incomeBySource = incomeSources.map(src => {
-      const actual = movements.filter(m => m.type==="income" && m.classification===src.name).reduce((s,m)=>s+m.amount,0);
+      const actual = movements.filter(m => m.type==="income" && m.category===src.name).reduce((s,m)=>s+m.amount,0);
       const progress = src.monthlyGoal > 0 ? Math.min(Math.round((actual/src.monthlyGoal)*100),100) : 0;
       return { ...src, actual, progress };
     });
 
     // Meta de ventas
     const salesGoalProgress = salesGoal > 0 ? Math.min(Math.round((wonSalesTotal/salesGoal)*100),100) : 0;
+
+    // Racha de registro — días consecutivos con al menos un movimiento
+    const streakDays = (() => {
+      const datesWithMovs = new Set(movements.map(m => inputDateFromValue(m.date || m.createdAt)));
+      let count = 0;
+      const d = new Date(); d.setHours(0,0,0,0);
+      while (datesWithMovs.has(d.toISOString().slice(0,10))) { count++; d.setDate(d.getDate()-1); }
+      return count;
+    })();
+
+    // Gastos por categoría — "En qué se va el dinero"
+    const expensesByCategory = {};
+    movements.filter(m => m.type==="expense").forEach(m => { const c=m.category||"Sin categoría"; expensesByCategory[c]=(expensesByCategory[c]||0)+m.amount; });
+    const topExpenseCategories = Object.entries(expensesByCategory).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
     const inp = { border:"1px solid var(--line)", borderRadius:"8px", padding:"8px 12px", fontSize:"14px", fontFamily:"inherit", outline:"none", background:"#fff", width:"100%" };
     const TABS_BIZ = ["Esta semana", "Tareas", "Historial"];
@@ -3517,12 +3539,18 @@ export default function App() {
               <div className="biz-month-stat">
                 <span className="biz-stat-label">Lo que ganaste</span>
                 <strong className="biz-stat-val" style={{color:totals.profit>=0?"#1D9E75":"#C4526A"}}>{money.format(totals.profit)}</strong>
-                <span className="biz-health-badge" style={{color:healthColor}}>{healthLabel}</span>
               </div>
             </div>
 
-            {/* 2. Registrar — acción primero */}
-            {MovementForm()}
+            {/* 2. Registrar — botón, el form vive en popup */}
+            <div className="biz-register-row">
+              <button type="button" className="fin-add-btn" onClick={() => setShowMovementModal(true)}>
+                + Registrar movimiento
+              </button>
+              {streakDays > 0 && (
+                <span className="biz-streak-badge">🔥 {streakDays} día{streakDays>1?"s":""} seguidos registrando</span>
+              )}
+            </div>
 
             {/* 3. Mis fuentes de ingreso — rediseñadas */}
             <div className="biz-sources-card">
@@ -3603,6 +3631,28 @@ export default function App() {
               )}
             </div>
 
+            {/* 3b. En qué se va el dinero */}
+            {topExpenseCategories.length > 0 && (
+              <div className="biz-sources-card">
+                <p className="biz-sources-title">En qué se va el dinero</p>
+                <p className="biz-sources-sub" style={{marginBottom:"14px"}}>Tus gastos del negocio por categoría.</p>
+                {topExpenseCategories.map(([cat, amt]) => {
+                  const pct = totals.expenses > 0 ? Math.round((amt/totals.expenses)*100) : 0;
+                  return (
+                    <div key={cat} style={{marginBottom:"10px"}}>
+                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
+                        <span style={{fontSize:"13px",color:"var(--ink)"}}>{cat}</span>
+                        <span style={{fontSize:"13px",fontWeight:700,color:"var(--muted)"}}>{money.format(amt)} · {pct}%</span>
+                      </div>
+                      <div className="biz-source-bar">
+                        <div className="biz-source-fill" style={{width:`${pct}%`,background:"#C4526A"}} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
             {/* 4. Esta semana — resumen compacto */}
             <div className="biz-week-summary">
               <p className="biz-week-title">Esta semana</p>
@@ -3625,11 +3675,17 @@ export default function App() {
             {alerts.length > 0 && (
               <div style={{display:"grid",gap:"8px",marginTop:"4px"}}>
                 {alerts.map((a, i) => (
-                  <div key={i} style={{padding:"12px 16px",borderRadius:"10px",fontSize:"13px",fontWeight:600,
+                  <div key={i} style={{padding:"12px 16px",borderRadius:"10px",fontSize:"13px",fontWeight:600,display:"flex",alignItems:"center",justifyContent:"space-between",gap:"10px",flexWrap:"wrap",
                     background:a.tone==="red"?"#fdf2f2":a.tone==="orange"?"#fff8f0":"#f0fdf7",
                     color:a.tone==="red"?"#b91c1c":a.tone==="orange"?"#c2410c":"#065f46",
                     border:`1px solid ${a.tone==="red"?"rgba(185,28,28,0.2)":a.tone==="orange"?"rgba(194,65,12,0.2)":"rgba(6,95,70,0.2)"}`}}>
-                    {a.msg}
+                    <span>{a.msg}</span>
+                    {a.action && (
+                      <button type="button" onClick={() => setActiveView(a.action)}
+                        style={{flexShrink:0,padding:"5px 12px",borderRadius:"20px",border:"none",background:"rgba(0,0,0,0.08)",color:"inherit",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700,whiteSpace:"nowrap"}}>
+                        Ir a Clientes →
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>
@@ -3724,6 +3780,24 @@ export default function App() {
               ))}
             </div>
           </>
+        )}
+
+        {/* ── Modal: Registrar movimiento ── */}
+        {showMovementModal && (
+          <div className="app-modal-backdrop" onClick={e => e.target===e.currentTarget && setShowMovementModal(false)}>
+            <div className="app-modal-card" style={{width:"min(460px,100%)"}}>
+              <div className="app-modal-head">
+                <div>
+                  <p className="app-modal-head-eyebrow">Mi Negocio</p>
+                  <p className="app-modal-head-title">Registrar movimiento</p>
+                </div>
+                <button type="button" className="app-modal-close" onClick={() => setShowMovementModal(false)}>✕</button>
+              </div>
+              <div style={{padding:"4px 0"}}>
+                {MovementForm()}
+              </div>
+            </div>
+          </div>
         )}
       </section>
     );
@@ -5209,6 +5283,7 @@ export default function App() {
 
   function MovementForm() {
     const isIncome = form.type === "income";
+    const categoryOptions = isIncome ? incomeSources.map(s => s.name) : EXPENSE_CATEGORIES;
     return (
       <form className="card mov-form" onSubmit={addMovement}>
         {movements.length >= currentLimits.movements && (
@@ -5258,13 +5333,29 @@ export default function App() {
           </div>
         </div>
 
-        {/* Categoría + fecha */}
+        {/* Categoría (conectada a fuentes de ingreso) + fecha */}
         <div className="mov-row-2">
-          <input placeholder="Categoría (ej: Mentoría)"
-            value={form.category} onChange={(e) => updateForm("category", e.target.value)}
-            className={formErrors.category ? "input-error" : ""} />
-          <input type="date" value={form.date} onChange={(e) => updateForm("date", e.target.value)} />
+          <div>
+            <label className="mov-field-label">{isIncome ? "Fuente de ingreso" : "Categoría del gasto"}</label>
+            <select value={form.category} onChange={(e) => updateForm("category", e.target.value)}
+              className={formErrors.category ? "input-error" : ""}>
+              <option value="" disabled>Selecciona...</option>
+              {categoryOptions.map(c => <option key={c}>{c}</option>)}
+              <option value="Otro">Otro…</option>
+            </select>
+          </div>
+          <div>
+            <label className="mov-field-label">Fecha</label>
+            <input type="date" value={form.date} onChange={(e) => updateForm("date", e.target.value)} />
+          </div>
         </div>
+        {form.category === "Otro" && (
+          <input placeholder={isIncome ? "¿De dónde vino este ingreso?" : "¿En qué se fue este gasto?"}
+            value={form.categoryOther} onChange={(e) => updateForm("categoryOther", e.target.value)} />
+        )}
+        {isIncome && categoryOptions.length === 0 && (
+          <p className="helper-copy" style={{margin:0}}>Aún no tienes fuentes de ingreso configuradas — usa "Otro" o agrega una abajo en "Mis fuentes de ingreso".</p>
+        )}
         {formErrors.category && <span className="field-error">{formErrors.category}</span>}
 
         <button className={`primary-button mov-submit${isIncome ? " mov-submit-in" : " mov-submit-ex"}`} type="submit">
