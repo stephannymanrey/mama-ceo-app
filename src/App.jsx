@@ -52,6 +52,17 @@ const bizTaskEstDuration = (t) => t.duration || DEFAULT_BIZ_TASK_DURATION;
 
 const EXPENSE_CATEGORIES = ["Marketing y publicidad", "Herramientas y software", "Insumos o materiales", "Transporte", "Pago a colaboradores", "Impuestos"];
 
+// Áreas de un negocio que una emprendedora que arranca sola debe atender
+const BIZ_CAT_CONFIG = [
+  { key: "Ventas y clientes",       emoji: "🤝", color: "#1D9E75", bg: "#F0FDF7" },
+  { key: "Marketing y contenido",   emoji: "📣", color: "#0EA5E9", bg: "#F0F9FF" },
+  { key: "Contabilidad y finanzas", emoji: "💰", color: "#C4526A", bg: "#FDF2F5" },
+  { key: "Operación y servicio",    emoji: "⚙️", color: "#D97706", bg: "#FFFBEB" },
+  { key: "Administrativo y legal",  emoji: "📋", color: "#6B46C1", bg: "#F5F0FC" },
+  { key: "Otro",                    emoji: "🌱", color: "#6B7280", bg: "#F5F5F5" },
+];
+const BIZ_TASK_CATEGORIES = BIZ_CAT_CONFIG.map(c => c.key);
+
 const PRIORITY_MIGRATION = { "Urgente": "Importante", "Puede esperar": "Sin afán" };
 const migratePriorityList = (list) => (list || []).map(item => item.priority && PRIORITY_MIGRATION[item.priority] ? { ...item, priority: PRIORITY_MIGRATION[item.priority] } : item);
 
@@ -662,7 +673,8 @@ export default function App() {
   const [showContentForm, setShowContentForm] = useState(false);
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "", frequency: "Rutina", customFrequency: "", duration: "" });
-  const [taskForm, setTaskForm] = useState({ text: "", priority: "Normal", dueDate: "", duration: "" });
+  const [taskForm, setTaskForm] = useState({ text: "", category: "Ventas y clientes", priority: "Normal", dueDate: "", duration: "" });
+  const [showBizTaskModal, setShowBizTaskModal] = useState(false);
   const [homeFocusOverride, setHomeFocusOverride] = useState(stored?.homeFocusOverride || null);
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
   const [appointments, setAppointments] = useState(stored?.appointments || []);
@@ -1673,8 +1685,9 @@ export default function App() {
     event.preventDefault();
     if (!taskForm.text.trim()) return;
     const duration = Number(taskForm.duration) || DEFAULT_BIZ_TASK_DURATION;
-    setTasks((current) => [{ id: Date.now(), text: taskForm.text.trim(), priority: taskForm.priority || "Normal", dueDate: taskForm.dueDate || "", duration, done: false }, ...current]);
-    setTaskForm({ text: "", priority: "Normal", dueDate: "", duration: "" });
+    setTasks((current) => [{ id: Date.now(), text: taskForm.text.trim(), category: taskForm.category || "Otro", priority: taskForm.priority || "Normal", dueDate: taskForm.dueDate || "", duration, done: false }, ...current]);
+    setTaskForm({ text: "", category: "Ventas y clientes", priority: "Normal", dueDate: "", duration: "" });
+    setShowBizTaskModal(false);
   };
   const deleteTask = (taskId) => setTasks((current) => current.filter((task) => task.id !== taskId));
   const taskUrgencyScore = (t) => {
@@ -3752,54 +3765,108 @@ export default function App() {
         {/* ── TAREAS ── */}
         {businessTab === 1 && (
           <>
-            <div className="card" style={{marginBottom:"16px"}}>
-              <h3 style={{margin:"0 0 4px"}}>Nueva acción</h3>
-              <p className="helper-copy" style={{margin:"0 0 12px"}}>Asigna prioridad y fecha límite para saber qué es realmente importante.</p>
-              <form onSubmit={addTask} style={{display:"grid",gap:"8px",gridTemplateColumns:"1fr",maxWidth:"480px"}}>
-                <input placeholder="¿Qué necesitas hacer?" value={taskForm.text}
-                  onChange={e => updateTaskForm("text", e.target.value)}
-                  style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 12px",font:"inherit",background:"#FAF7F5"}} />
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px"}}>
-                  <select value={taskForm.priority} onChange={e => updateTaskForm("priority", e.target.value)}
-                    style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 10px",font:"inherit",background:"#FAF7F5"}}>
-                    <option>Normal</option><option>Importante</option><option>Sin afán</option>
-                  </select>
-                  <input type="date" value={taskForm.dueDate} onChange={e => updateTaskForm("dueDate", e.target.value)}
-                    style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 10px",font:"inherit",background:"#FAF7F5"}} />
-                </div>
-                <input type="number" min="0" step="5" placeholder={`Duración estimada en min (auto: ${DEFAULT_BIZ_TASK_DURATION})`}
-                  value={taskForm.duration} onChange={e => updateTaskForm("duration", e.target.value)}
-                  style={{minHeight:"40px",border:"1px solid var(--line)",borderRadius:"8px",padding:"0 12px",font:"inherit",background:"#FAF7F5"}} />
-                <button className="primary-button" type="submit" style={{minHeight:"40px"}}>+ Agregar acción</button>
-              </form>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexWrap:"wrap",gap:"8px"}}>
+              <div>
+                <h3 style={{margin:"0 0 2px"}}>Tareas por área</h3>
+                <p className="helper-copy" style={{margin:0}}>Las áreas que toda emprendedora que arranca sola debe atender.</p>
+              </div>
+              <button type="button" className="fin-add-btn" onClick={() => setShowBizTaskModal(true)}>+ Nueva tarea</button>
             </div>
 
-            <div className="card">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                <h3 style={{margin:0}}>Tus acciones</h3>
-                <span style={{fontSize:"12px",color:"var(--muted)"}}>{pendingBizTasksCount} pendiente{pendingBizTasksCount===1?"":"s"}</span>
+            {pendingBizTasksCount === 0 ? (
+              <div className="card" style={{padding:"28px",textAlign:"center",background:"linear-gradient(135deg,#fdf9f6,#fef4f0)",border:"2px dashed #e8d5c4"}}>
+                <p style={{fontSize:"32px",margin:"0 0 10px"}}>🌱</p>
+                <h3 style={{margin:"0 0 6px",fontSize:"16px"}}>Sin tareas pendientes</h3>
+                <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Agrega tu primera tarea por área de tu negocio.</p>
+                <button type="button" className="fin-add-btn" onClick={() => setShowBizTaskModal(true)}>+ Nueva tarea</button>
               </div>
-              {sortedBizTasks.length === 0 && <p className="helper-copy">Agrega tu primera acción de negocio.</p>}
-              {sortedBizTasks.map(task => {
-                const days = task.dueDate ? Math.floor((timestampFromInputDate(task.dueDate) - Date.now()) / 86400000) : null;
-                const dueColor = days === null ? "var(--muted)" : days < 0 ? "#C4526A" : days === 0 ? "#e87b1e" : "var(--muted)";
-                const dueLabel = days === null ? null : days < 0 ? `Vencida hace ${Math.abs(days)}d` : days === 0 ? "Hoy" : days === 1 ? "Mañana" : `En ${days}d`;
-                return (
-                  <div key={task.id} className="home-task-row">
-                    <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"var(--purple)",flexShrink:0}} />
-                    <div style={{flex:1,minWidth:0}}>
-                      <strong style={{fontSize:"14px",textDecoration:task.done?"line-through":"none",color:task.done?"var(--muted)":"var(--ink)"}}>{task.text}</strong>
-                      <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"2px"}}>
-                        {task.priority === "Importante" && <small style={{color:"#C4526A",fontWeight:700}}>⭐ Importante</small>}
-                        {dueLabel && <small style={{color:dueColor,fontWeight:600}}>{dueLabel}</small>}
+            ) : (
+              <div className="biz-task-area-grid">
+                {BIZ_CAT_CONFIG.map(cat => {
+                  const catTasks = sortedBizTasks.filter(t => (t.category || "Otro") === cat.key);
+                  if (!catTasks.length) return null;
+                  const catDone = catTasks.filter(t => t.done).length;
+                  return (
+                    <div key={cat.key} className="biz-task-area-card" style={{background:cat.bg, borderColor:`${cat.color}26`}}>
+                      <div className="biz-task-area-head">
+                        <span style={{fontSize:"20px"}}>{cat.emoji}</span>
+                        <span className="biz-task-area-count" style={{color:cat.color, background:`${cat.color}1c`}}>{catDone}/{catTasks.length}</span>
+                      </div>
+                      <p className="biz-task-area-title">{cat.key}</p>
+                      <div style={{display:"grid",gap:"4px"}}>
+                        {catTasks.map(task => {
+                          const days = task.dueDate ? Math.floor((timestampFromInputDate(task.dueDate) - Date.now()) / 86400000) : null;
+                          const dueColor = days === null ? "var(--muted)" : days < 0 ? "#C4526A" : days === 0 ? "#e87b1e" : "var(--muted)";
+                          const dueLabel = days === null ? null : days < 0 ? `Vencida ${Math.abs(days)}d` : days === 0 ? "Hoy" : days === 1 ? "Mañana" : `En ${days}d`;
+                          return (
+                            <div key={task.id} className="biz-task-area-row">
+                              <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:cat.color, flexShrink:0}} />
+                              <div style={{flex:1, minWidth:0}}>
+                                <span style={{fontSize:"13px", fontWeight:600, color:task.done?"var(--muted)":"var(--ink)", textDecoration:task.done?"line-through":"none"}}>{task.text}</span>
+                                <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+                                  {task.priority === "Importante" && <small style={{color:"#C4526A",fontWeight:700}}>⭐</small>}
+                                  {dueLabel && <small style={{color:dueColor,fontWeight:600}}>{dueLabel}</small>}
+                                </div>
+                              </div>
+                              <button type="button" onClick={() => confirmDelete("¿Eliminar esta tarea?", () => deleteTask(task.id))}
+                                style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"15px",flexShrink:0,padding:"0 2px"}}>×</button>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                    <button type="button" onClick={() => confirmDelete("¿Eliminar esta acción?", () => deleteTask(task.id))}
-                      style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",flexShrink:0}}>×</button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* ── Modal: Nueva tarea ── */}
+            {showBizTaskModal && (
+              <div className="app-modal-backdrop" onClick={e => e.target===e.currentTarget && setShowBizTaskModal(false)}>
+                <div className="app-modal-card" style={{width:"min(440px,100%)"}}>
+                  <div className="app-modal-head">
+                    <div>
+                      <p className="app-modal-head-eyebrow">Mi Negocio</p>
+                      <p className="app-modal-head-title">Nueva tarea</p>
+                    </div>
+                    <button type="button" className="app-modal-close" onClick={() => setShowBizTaskModal(false)}>✕</button>
                   </div>
-                );
-              })}
-            </div>
+                  <form onSubmit={addTask} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"14px"}}>
+                    <div>
+                      <label className="app-form-label">Tarea</label>
+                      <input autoFocus placeholder="¿Qué necesitas hacer?" value={taskForm.text}
+                        onChange={e => updateTaskForm("text", e.target.value)}
+                        className="app-form-input" />
+                    </div>
+                    <div>
+                      <label className="app-form-label">Área</label>
+                      <select value={taskForm.category} onChange={e => updateTaskForm("category", e.target.value)} className="app-form-input">
+                        {BIZ_CAT_CONFIG.map(c => <option key={c.key} value={c.key}>{c.emoji} {c.key}</option>)}
+                      </select>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                      <div>
+                        <label className="app-form-label">Prioridad</label>
+                        <select value={taskForm.priority} onChange={e => updateTaskForm("priority", e.target.value)} className="app-form-input">
+                          <option>Normal</option><option>Importante</option><option>Sin afán</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="app-form-label">Fecha límite</label>
+                        <input type="date" value={taskForm.dueDate} onChange={e => updateTaskForm("dueDate", e.target.value)} className="app-form-input" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="app-form-label">Duración estimada <span style={{fontWeight:400,textTransform:"none"}}>(min, opcional)</span></label>
+                      <input type="number" min="0" step="5" placeholder={`Auto: ${DEFAULT_BIZ_TASK_DURATION} min`}
+                        value={taskForm.duration} onChange={e => updateTaskForm("duration", e.target.value)}
+                        className="app-form-input" />
+                    </div>
+                    <button type="submit" className="app-modal-submit">Guardar tarea</button>
+                  </form>
+                </div>
+              </div>
+            )}
           </>
         )}
 

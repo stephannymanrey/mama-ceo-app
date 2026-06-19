@@ -5582,6 +5582,44 @@ button {
   border-radius: 20px;
 }
 
+/* Tareas por area — Mi Negocio */
+.biz-task-area-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+.biz-task-area-card {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px;
+}
+.biz-task-area-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+.biz-task-area-count {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+.biz-task-area-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.biz-task-area-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 8px;
+}
+
 /* Previews de Tareas / Historial en Resumen */
 .biz-preview-card {
   background: #fff;
