@@ -3709,18 +3709,27 @@
 
 .bp-onboarding-intro {
   text-align: center;
-  padding: 8px 0 16px;
+  padding: 12px 0 20px;
+  position: relative;
 }
 
 .bp-intro-icon {
-  font-size: 32px;
-  color: #C9903A;
+  font-size: 38px;
+  background: linear-gradient(135deg, #C4526A, #C9903A);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   display: block;
   margin-bottom: 10px;
+  animation: bp-icon-glow 3s ease-in-out infinite;
+}
+@keyframes bp-icon-glow {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.12) rotate(8deg); }
 }
 
 .bp-intro-title {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 800;
   color: #2A1A1A;
   margin: 0 0 6px;
@@ -3738,13 +3747,30 @@
   gap: 6px;
 }
 
+.bp-field--card {
+  background: var(--bp-accent-bg, #fff);
+  border: 1px solid rgba(180,160,140,0.25);
+  border: 1px solid color-mix(in srgb, var(--bp-accent, #C9903A) 25%, transparent);
+  border-radius: 14px;
+  padding: 14px 16px;
+  transition: box-shadow 0.15s, transform 0.15s;
+}
+.bp-field--card:hover { box-shadow: 0 4px 14px rgba(0,0,0,0.06); }
+.bp-field--card .bp-textarea { background: rgba(255,255,255,0.75); }
+.bp-field--card .bp-textarea:focus { border-color: var(--bp-accent, #C9903A); }
+
 .bp-label {
   font-size: 12px;
   font-weight: 700;
   color: #8a7f7a;
   text-transform: uppercase;
   letter-spacing: 0.4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
+.bp-label-ico { font-size: 15px; }
+.bp-label-soft { font-weight: 400; text-transform: none; letter-spacing: 0; }
 
 .bp-req { color: #C4526A; }
 
@@ -3760,12 +3786,12 @@
   font-size: 14px;
   font-family: inherit;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .bp-textarea:focus,
 .bp-input:focus,
-.bp-select:focus { border-color: #C9903A; }
+.bp-select:focus { border-color: #C9903A; box-shadow: 0 0 0 3px rgba(201,144,58,0.12); }
 
 .bp-textarea { resize: vertical; min-height: 64px; }
 .bp-select   { min-height: 42px; }
@@ -3776,6 +3802,29 @@
   gap: 12px;
 }
 
+.bp-chip-row { display: flex; gap: 6px; flex-wrap: wrap; }
+.bp-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 13px;
+  border-radius: 20px;
+  border: 1.5px solid rgba(180,160,140,0.3);
+  background: #fff;
+  color: #6b5d52;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.bp-chip.active {
+  border-color: #C9903A;
+  background: linear-gradient(135deg, #C9903A, #C4526A);
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(201,144,58,0.3);
+}
+
 .bp-actions {
   display: flex;
   gap: 10px;
@@ -3784,19 +3833,21 @@
 
 .bp-save-btn {
   flex: 1;
-  min-height: 44px;
+  min-height: 48px;
   border: none;
-  border-radius: 10px;
-  background: #C9903A;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #C9903A, #C4526A);
   color: #fff;
   font-size: 15px;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
-  transition: opacity 0.15s;
+  transition: transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 14px rgba(196,82,106,0.3);
 }
 
-.bp-save-btn:hover { opacity: 0.88; }
+.bp-save-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(196,82,106,0.4); }
+.bp-save-btn:active { transform: scale(0.98); }
 
 .bp-cancel-btn {
   border: none;

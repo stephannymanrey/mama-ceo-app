@@ -2264,6 +2264,17 @@ export default function App() {
                 <input placeholder="Tu nombre" value={profileForm.name} onChange={(e) => setProfileForm((c) => ({ ...c, name: e.target.value }))} required />
               </label>
 
+              <label>
+                ¿En qué moneda quieres usar la app?
+                <select value={currency} onChange={(e) => setCurrency(e.target.value)}>
+                  <option value="USD">USD — Dólar</option>
+                  <option value="COP">COP — Peso colombiano</option>
+                  <option value="MXN">MXN — Peso mexicano</option>
+                  <option value="EUR">EUR — Euro</option>
+                </select>
+                {!profileSetup && <small style={{display:"block",marginTop:"4px",color:"var(--muted)",fontSize:"12px"}}>Todas tus cifras se mostrarán en esta moneda — elígela con calma, no convertimos montos si la cambias después.</small>}
+              </label>
+
               {/* Tipo de cuenta — arriba para que controle los campos siguientes */}
               {profileSetup && (
                 <div style={{padding:"14px",background:"#faf7f5",borderRadius:"12px",border:"1px solid var(--line)"}}>
@@ -2481,17 +2492,6 @@ export default function App() {
           })}
         </nav>
 
-        {userMode !== "mama" && (
-          <div className="currency-box">
-            <label>Moneda base</label>
-            <select value={currency} onChange={(event) => setCurrency(event.target.value)}>
-              <option>USD</option>
-              <option>COP</option>
-              <option>MXN</option>
-              <option>EUR</option>
-            </select>
-          </div>
-        )}
 
         <div className="quote-card">
           <p>{promesas[(new Date().getDate() - 1) % promesas.length]}</p>

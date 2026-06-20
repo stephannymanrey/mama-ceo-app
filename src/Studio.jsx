@@ -3686,8 +3686,11 @@ function BrandProfileForm({ initial = {}, onSave, onCancel, isOnboarding = false
     onSave(form);
   };
 
+  const TONO_OPTS = [["Cercano","💛"],["Profesional","🎩"],["Inspirador","🌟"],["Directo","⚡"]];
+  const RED_OPTS  = [["Instagram","✦"],["TikTok","♪"],["YouTube","▶"],["Spotify","🎵"]];
+
   return (
-    <form className="bp-form" onSubmit={handleSubmit}>
+    <form className="bp-form bp-form--creative" onSubmit={handleSubmit}>
       {isOnboarding && (
         <div className="bp-onboarding-intro">
           <span className="bp-intro-icon">✦</span>
@@ -3696,22 +3699,22 @@ function BrandProfileForm({ initial = {}, onSave, onCancel, isOnboarding = false
         </div>
       )}
 
-      <div className="bp-field">
-        <label className="bp-label">¿Qué ofreces? <span className="bp-req">*</span></label>
+      <div className="bp-field bp-field--card" style={{"--bp-accent":"#C4526A","--bp-accent-bg":"#FDF0F2"}}>
+        <label className="bp-label"><span className="bp-label-ico">🎯</span> ¿Qué ofreces? <span className="bp-req">*</span></label>
         <textarea className="bp-textarea" rows={2} required value={form.queOfreces}
           onChange={e => upd("queOfreces", e.target.value)}
           placeholder="Ej: Coaching de maternidad consciente para mamás emprendedoras" />
       </div>
 
-      <div className="bp-field">
-        <label className="bp-label">¿A quién ayudas? (cliente ideal)</label>
+      <div className="bp-field bp-field--card" style={{"--bp-accent":"#0EA5E9","--bp-accent-bg":"#EEF8FF"}}>
+        <label className="bp-label"><span className="bp-label-ico">👥</span> ¿A quién ayudas? <span className="bp-label-soft">(cliente ideal)</span></label>
         <textarea className="bp-textarea" rows={2} value={form.clienteIdeal}
           onChange={e => upd("clienteIdeal", e.target.value)}
           placeholder="Ej: Mamás de 28-40 años que quieren crecer sin descuidar su familia" />
       </div>
 
-      <div className="bp-field">
-        <label className="bp-label">¿Cuál es la transformación que logran contigo? <span className="bp-req">*</span></label>
+      <div className="bp-field bp-field--card" style={{"--bp-accent":"#1D9E75","--bp-accent-bg":"#EAFBF2"}}>
+        <label className="bp-label"><span className="bp-label-ico">🌟</span> ¿Cuál es la transformación que logran contigo? <span className="bp-req">*</span></label>
         <textarea className="bp-textarea" rows={2} required value={form.transformacion}
           onChange={e => upd("transformacion", e.target.value)}
           placeholder="Ej: De agotada y desbordada a organizada, rentable y presente" />
@@ -3720,26 +3723,34 @@ function BrandProfileForm({ initial = {}, onSave, onCancel, isOnboarding = false
       <div className="bp-row-2">
         <div className="bp-field">
           <label className="bp-label">Tono de comunicación</label>
-          <select className="bp-select" value={form.tono} onChange={e => upd("tono", e.target.value)}>
-            <option>Cercano</option><option>Profesional</option><option>Inspirador</option><option>Directo</option>
-          </select>
+          <div className="bp-chip-row">
+            {TONO_OPTS.map(([t, ico]) => (
+              <button type="button" key={t} className={`bp-chip${form.tono === t ? " active" : ""}`} onClick={() => upd("tono", t)}>
+                <span>{ico}</span> {t}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="bp-field">
           <label className="bp-label">Red principal</label>
-          <select className="bp-select" value={form.redPrincipal} onChange={e => upd("redPrincipal", e.target.value)}>
-            <option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Spotify</option>
-          </select>
+          <div className="bp-chip-row">
+            {RED_OPTS.map(([r, ico]) => (
+              <button type="button" key={r} className={`bp-chip${form.redPrincipal === r ? " active" : ""}`} onClick={() => upd("redPrincipal", r)}>
+                <span>{ico}</span> {r}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
       <div className="bp-field">
-        <label className="bp-label">Hashtags (opcional)</label>
+        <label className="bp-label"><span className="bp-label-ico">🏷️</span> Hashtags <span className="bp-label-soft">(opcional)</span></label>
         <input className="bp-input" value={form.hashtags} onChange={e => upd("hashtags", e.target.value)} placeholder="#mamaceo #emprendedora" />
       </div>
 
       <div className="bp-actions">
         <button className="bp-save-btn" type="submit">
-          {isOnboarding ? "Guardar y empezar ✦" : "Guardar perfil"}
+          ✦ {isOnboarding ? "Guardar y empezar" : "Guardar perfil"}
         </button>
         {onCancel && (
           <button type="button" className="bp-cancel-btn" onClick={onCancel}>
