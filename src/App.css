@@ -894,7 +894,7 @@ button {
 
 .mov-tab-ex.active {
   background: #fff;
-  color: #C4526A;
+  color: #DC2626;
   box-shadow: 0 1px 4px rgba(0,0,0,0.10);
 }
 
@@ -911,7 +911,7 @@ button {
 
 .mov-amount-wrap:focus-within { border-color: var(--purple); background: #fff; }
 .mov-amount-in:focus-within   { border-color: #1D9E75; }
-.mov-amount-ex:focus-within   { border-color: #C4526A; }
+.mov-amount-ex:focus-within   { border-color: #DC2626; }
 
 .mov-curr {
   font-size: 22px;
@@ -961,7 +961,7 @@ button {
 }
 
 .mov-submit-in  { background: #1D9E75 !important; }
-.mov-submit-ex  { background: #C4526A !important; }
+.mov-submit-ex  { background: #DC2626 !important; }
 
 .settings-card,
 .reinvestment-card,
@@ -1260,8 +1260,8 @@ button {
 }
 
 .movement-row .expense {
-  background: var(--pink-soft);
-  color: var(--pink);
+  background: rgba(220, 38, 38, 0.08);
+  color: #DC2626;
 }
 
 .movement-row strong,
@@ -6509,6 +6509,24 @@ button {
   white-space: nowrap;
   backdrop-filter: blur(4px);
 }
+.home-today-card--revenue {
+  background: linear-gradient(140deg, #1D9E75 0%, #156b50 100%);
+  border-color: transparent;
+  position: relative;
+  overflow: hidden;
+}
+.home-today-card--revenue::before {
+  content: "";
+  position: absolute;
+  top: -28px;
+  right: -28px;
+  width: 90px;
+  height: 90px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 50%;
+}
+.home-today-card--revenue .home-today-card-menu-cta { color: #1D9E75; }
+
 .home-today-card-menu-cta {
   margin-top: auto;
   padding: 9px 14px;

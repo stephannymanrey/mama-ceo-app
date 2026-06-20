@@ -3545,6 +3545,32 @@ export default function App() {
     const todayIncome = todayMovs.filter(m => m.type==="income").reduce((s,m)=>s+m.amount,0);
     const todayExpense = todayMovs.filter(m => m.type==="expense").reduce((s,m)=>s+m.amount,0);
 
+    // ── Semana: tareas + reuniones por área, solo la semana actual (no tareas a >30 días) ──
+    const APPT_TYPE_TO_BIZ_CAT = { "Reunión": "Ventas y clientes", "Trabajo": "Operación y servicio" };
+    const apptInWeek = (a, week) => {
+      if (!a.date) return false;
+      const orig = new Date(a.date + "T00:00:00");
+      for (let t = week.start; t <= week.end; t += 86400000) {
+        const d = new Date(t);
+        if (orig > d) continue;
+        if ((!a.recurrence || a.recurrence === "none") && a.date === inputDateFromValue(t)) return true;
+        if (a.recurrence === "weekly" && Math.round((d - orig) / 86400000) % 7 === 0) return true;
+        if (a.recurrence === "monthly" && orig.getDate() === d.getDate()) return true;
+        if (a.recurrence === "yearly" && orig.getDate() === d.getDate() && orig.getMonth() === d.getMonth()) return true;
+      }
+      return false;
+    };
+    const weekApptsByCat = {};
+    appointments.filter(a => APPT_TYPE_TO_BIZ_CAT[a.type] && apptInWeek(a, thisWeek)).forEach(a => {
+      const cat = APPT_TYPE_TO_BIZ_CAT[a.type];
+      (weekApptsByCat[cat] = weekApptsByCat[cat] || []).push(a);
+    });
+    const weekTasksByCat = {};
+    tasks.filter(t => !t.done && t.dueDate && timestampFromInputDate(t.dueDate) >= thisWeek.start && timestampFromInputDate(t.dueDate) <= thisWeek.end).forEach(t => {
+      const cat = t.category || "Otro";
+      (weekTasksByCat[cat] = weekTasksByCat[cat] || []).push(t);
+    });
+
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
@@ -3604,7 +3630,7 @@ export default function App() {
                 <button type="button" className="home-today-card-btn" style={{color:"#0EA5E9"}} onClick={() => setShowCalendar(true)}>Ver calendario →</button>
               </div>
 
-              <div className="home-today-card home-today-card--menu">
+              <div className="home-today-card home-today-card--revenue">
                 <div className="home-today-card-menu-top">
                   <span className="home-today-card-ico">💰</span>
                 </div>
@@ -3654,6 +3680,47 @@ export default function App() {
                 ))}
               </div>
             </div>
+
+            {/* Tu semana por área — tareas con fecha esta semana + reuniones del calendario */}
+            {(() => {
+              const cats = BIZ_CAT_CONFIG.filter(cat => (weekTasksByCat[cat.key]?.length || 0) + (weekApptsByCat[cat.key]?.length || 0) > 0);
+              if (!cats.length) return null;
+              return (
+                <div style={{marginTop:"16px"}}>
+                  <p className="biz-week-title" style={{marginBottom:"10px"}}>Tu semana por área</p>
+                  <div className="biz-task-area-grid">
+                    {cats.map(cat => {
+                      const catTasks = weekTasksByCat[cat.key] || [];
+                      const catAppts = weekApptsByCat[cat.key] || [];
+                      return (
+                        <div key={cat.key} className="biz-task-area-card" style={{background:cat.bg, borderColor:`${cat.color}26`}}>
+                          <div className="biz-task-area-head">
+                            <span style={{fontSize:"20px"}}>{cat.emoji}</span>
+                            <span className="biz-task-area-count" style={{color:cat.color, background:`${cat.color}1c`}}>{catTasks.length + catAppts.length}</span>
+                          </div>
+                          <p className="biz-task-area-title">{cat.key}</p>
+                          <div style={{display:"grid",gap:"4px"}}>
+                            {catAppts.map(a => (
+                              <div key={`a${a.id}`} className="biz-task-area-row">
+                                <span style={{fontSize:"13px",flexShrink:0}}>📅</span>
+                                <span style={{flex:1,minWidth:0,fontSize:"13px",color:"var(--ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.title}</span>
+                                {a.time && <small style={{color:"var(--muted)",flexShrink:0}}>{a.time}</small>}
+                              </div>
+                            ))}
+                            {catTasks.map(t => (
+                              <div key={`t${t.id}`} className="biz-task-area-row">
+                                <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)} style={{accentColor:cat.color, flexShrink:0}} />
+                                <span style={{flex:1,minWidth:0,fontSize:"13px",color:"var(--ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.text}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </>
         )}
 
@@ -3909,7 +3976,7 @@ export default function App() {
                         <span style={{fontSize:"13px",fontWeight:700,color:"var(--muted)"}}>{money.format(amt)} · {pct}%</span>
                       </div>
                       <div className="biz-source-bar">
-                        <div className="biz-source-fill" style={{width:`${pct}%`,background:"#C4526A"}} />
+                        <div className="biz-source-fill" style={{width:`${pct}%`,background:"#DC2626"}} />
                       </div>
                     </div>
                   );
