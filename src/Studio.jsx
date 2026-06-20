@@ -10,6 +10,7 @@ function saveStudio(data) {
 }
 
 const TABS = [
+  { id: "contenido",   icon: "📋", label: "Mi Contenido" },
   { id: "mensaje",     icon: "✦",  label: "Mensaje"      },
   { id: "ideas",       icon: "💡", label: "Ideas"         },
   { id: "lead",        icon: "🎁", label: "Lead Magnet"   },
@@ -1891,7 +1892,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
 }
 
 // ── GUIÓN ──────────────────────────────────────────────────────
-function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {}, callGemini, plan = "free", onAiUsed }) {
+function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {}, callGemini, plan = "free", onAiUsed, onAddToContent }) {
   const [subTab,       setSubTab]       = useState("guion");
   const [fase,         setFase]         = useState("tema");
   const [topic,        setTopic]        = useState(seed || "");
@@ -1920,9 +1921,17 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
     { k: "podcast", label: "Podcast",         sub: "~60 min",     icon: "🎙️" },
   ];
   const FORMATO_LABEL = { ig: "Instagram Reel", youtube: "YouTube · 15-20 min", podcast: "Podcast · 60 min" };
+  const FORMATO_TO_CONTENT = { ig: { format: "Reel", network: "Instagram" }, youtube: { format: "Episodio", network: "YouTube" }, podcast: { format: "Episodio", network: "Spotify" } };
   const SECTION_COLORS = ["#C9903A", "#C4526A", "#27AE60", "#6366F1", "#E8755A", "#0EA5E9", "#9333EA", "#F59E0B"];
 
   const scriptTexto = script?.secciones?.map(s => `【${s.nombre}】\n${s.guion}`).join("\n\n") || "";
+
+  // Guarda el guión Y lo manda al tablero de Mi Contenido en "Por grabar"
+  const enviarAGuionContenido = () => {
+    if (!onAddToContent) return;
+    const meta = { ...(FORMATO_TO_CONTENT[formato] || {}), guion: scriptTexto, status: "Por grabar" };
+    onAddToContent(script?.titulo || topic, meta);
+  };
 
   const generar = async () => {
     if (!topic.trim() || !callGemini) return;
@@ -2084,10 +2093,10 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                     <button className="mpm-wizard-back-btn" onClick={() => copiar(scriptTexto, "script")}>
                       {copiado === "script" ? "✓" : "📋"}
                     </button>
-                    <button className="mpm-wizard-back-btn" onClick={() => onSave("guiones", {
+                    <button className="mpm-wizard-back-btn" onClick={() => { onSave("guiones", {
                       id: Date.now(), tema: topic, tipo: FORMATO_LABEL[formato],
                       formato, scriptTexto, fecha: new Date().toLocaleDateString("es"),
-                    })}>💾 Guardar</button>
+                    }); enviarAGuionContenido(); }}>💾 Guardar</button>
                   </div>
                 </div>
 
@@ -2117,6 +2126,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
 
                 <button className="gn2-save-caption-btn" onClick={() => {
                   onSave("guiones", { id: Date.now(), tema: topic, tipo: FORMATO_LABEL[formato], formato, scriptTexto, fecha: new Date().toLocaleDateString("es") });
+                  enviarAGuionContenido();
                   setCaptionInline(buildCaption());
                 }}>
                   {captionInline ? "✓ Guardado — caption listo abajo" : "💾 Guardar y generar caption"}
@@ -3741,8 +3751,8 @@ function BrandProfileForm({ initial = {}, onSave, onCancel, isOnboarding = false
   );
 }
 
-export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, callGemini, plan = "free", onAddToContent }) {
-  const [activeTab, setActiveTab] = useState("mensaje");
+export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, callGemini, plan = "free", onAddToContent, contentBoard }) {
+  const [activeTab, setActiveTab] = useState("contenido");
   const [data, setData] = useState(() => loadStudio());
   const [guionSeed, setGuionSeed] = useState("");
   const [toast, setToast] = useState(null);
@@ -3835,6 +3845,7 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
       ) : null}
 
       <main className="studio-main">
+        {activeTab === "contenido" && contentBoard}
         {activeTab === "mensaje"  && <MensajeTab    {...tabProps} />}
         {activeTab === "ideas"    && <IdeasTab      {...tabProps} onCrearGuion={handleCrearGuion} />}
         {activeTab === "lead"     && <LeadMagnetTab {...tabProps} />}

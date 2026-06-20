@@ -257,10 +257,9 @@ const ALL_MENU_ITEMS = [
   { id: "business",  label: "Mi Negocio",       icon: "💼" },
   { id: "clients",   label: "Mis Clientes",     icon: "👩‍💼" },
   { id: "studio",    label: "Studio ✦",          icon: "🎬" },
-  { id: "content",   label: "Mi Contenido",     icon: "📱" },
 ];
 const MENU_MAMA        = ["dashboard", "home"];
-const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio", "content"];
+const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio"];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 function getWeekDays() {
@@ -673,8 +672,10 @@ export default function App() {
   const [showClientFormModal, setShowClientFormModal] = useState(false);
   const [editingClientId, setEditingClientId] = useState(null);
   const [weekBlocks, setWeekBlocks] = useState(stored?.weekBlocks || {});
-  const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Pendiente", goal: "Vender", publishDate: "" });
+  const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Idea", goal: "Vender", publishDate: "", responsable: "" });
   const [showContentForm, setShowContentForm] = useState(false);
+  const [editingContentId, setEditingContentId] = useState(null);
+  const [contentDragOverCol, setContentDragOverCol] = useState(null);
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "", frequency: "Rutina", customFrequency: "", duration: "" });
   const [taskForm, setTaskForm] = useState({ text: "", category: "Ventas y clientes", priority: "Normal", dueDate: "", duration: "" });
@@ -1637,7 +1638,7 @@ export default function App() {
       hook: contentForm.hook.trim(), 
       createdAt: now 
     }, ...current]);
-    setContentForm({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Por hacer", goal: "Vender", publishDate: "" });
+    setContentForm({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Idea", goal: "Vender", publishDate: "", responsable: "" });
     setShowContentForm(false);
   };
 
@@ -1647,6 +1648,7 @@ export default function App() {
       return { ok: false, message: `Llegaste al límite de ${currentLimits.content} contenidos de tu plan.` };
     }
     const now = Date.now();
+    const guion = meta.guion || "";
     setContentItems((current) => [{
       id: now,
       title: title.trim(),
@@ -1654,9 +1656,12 @@ export default function App() {
       format: meta.format || "Reel",
       network: meta.network || "Instagram",
       week: "Semana 1",
-      status: "Pendiente",
+      status: meta.status || (guion.trim() ? "Por grabar" : "Idea"),
       goal: "Vender",
       publishDate: "",
+      guion,
+      keywords: meta.keywords || "",
+      responsable: meta.responsable || "",
       createdAt: now,
     }, ...current]);
     return { ok: true };
@@ -1842,20 +1847,31 @@ export default function App() {
   const updateContentStatus = (contentId, status) => {
     setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, status } : item));
   };
-  // Migrate old 6-status items to new 3-status scheme on first render
+  // Migrate legacy status schemes (6-status y 3-status) al flujo actual de 5 columnas
   const migrateContentStatus = (s) => {
-    if (s === "Por hacer" || s === "Guion hecho") return "Pendiente";
-    if (s === "Grabacion" || s === "Edicion" || s === "Programado") return "En proceso";
-    return s; // "Publicado" unchanged
+    if (s === "Por hacer" || s === "Guion hecho" || s === "Pendiente") return "Idea";
+    if (s === "Grabacion" || s === "En proceso") return "Por grabar";
+    if (s === "Edicion") return "Por editar";
+    if (s === "Programado") return "Por publicar";
+    return s; // "Publicado" y los nuevos estados quedan igual
   };
   // Run migration once when contentItems load with legacy statuses
   useEffect(() => {
-    const LEGACY = new Set(["Por hacer","Guion hecho","Grabacion","Edicion","Programado"]);
+    const LEGACY = new Set(["Por hacer","Guion hecho","Pendiente","Grabacion","En proceso","Edicion","Programado"]);
     if (contentItems.some(i => LEGACY.has(i.status))) {
       setContentItems(c => c.map(i => LEGACY.has(i.status) ? { ...i, status: migrateContentStatus(i.status) } : i));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  const updateContentField = (contentId, field, value) => {
+    setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, [field]: value } : item));
+  };
+  // Si se escribe un guión en una pieza que aún es Idea, avanza sola a "Por grabar"
+  const updateContentGuion = (contentId, value) => {
+    setContentItems((current) => current.map((item) => item.id === contentId
+      ? { ...item, guion: value, status: (item.status === "Idea" && value.trim()) ? "Por grabar" : item.status }
+      : item));
+  };
   const updateClientNotes = (clientId, notes) => {
     setClients((current) => current.map((client) => client.id === clientId ? { ...client, notes, updatedAt: Date.now() } : client));
   };
@@ -1955,7 +1971,7 @@ export default function App() {
   }
 
   if (activeView === "studio") {
-    return <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} onAddToContent={addContentFromIdea} />;
+    return <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} onAddToContent={addContentFromIdea} contentBoard={renderContent()} />;
   }
 
   if (!user && awsActive) {
@@ -2448,7 +2464,7 @@ export default function App() {
         <nav className={`main-menu ${mobileMenuOpen ? "mobile-open" : ""}`} aria-label="Navegacion principal">
           {menu.map((item) => {
             const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
-            const itemPlan = ["business","clients","studio","content"].includes(item.id) ? "emprendedora" : "free";
+            const itemPlan = ["business","clients","studio"].includes(item.id) ? "emprendedora" : "free";
             const locked = (planOrder[effectivePlan] ?? 0) < (planOrder[itemPlan] ?? 0);
             return (
               <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id}
@@ -2539,7 +2555,6 @@ export default function App() {
         {activeView === "dashboard" && renderDashboard()}
         {activeView === "business" && renderBusiness()}
         {activeView === "clients" && renderClients()}
-        {activeView === "content" && renderContent()}
         {activeView === "home" && renderHome()}
         {/* report tab merged into business */}
         {activeView === "pricing" && renderPricing()}
@@ -3001,7 +3016,7 @@ export default function App() {
         <nav className="mobile-bottom-nav">
           {menu.slice(0, 5).map((item) => {
             const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
-            const itemPlan = ["business","clients","studio","content"].includes(item.id) ? "emprendedora" : "free";
+            const itemPlan = ["business","clients","studio"].includes(item.id) ? "emprendedora" : "free";
             const locked = (planOrder[effectivePlan] ?? 0) < (planOrder[itemPlan] ?? 0);
             return (
               <button key={item.id} className={`mobile-bottom-nav-item${activeView === item.id ? " active" : ""}`}
@@ -3345,7 +3360,7 @@ export default function App() {
                 </button>
               )}
               {daysSincePublish !== null && daysSincePublish > 3 && (
-                <button className="db-alert db-alert--orange" onClick={() => setActiveView("content")}>
+                <button className="db-alert db-alert--orange" onClick={() => setActiveView("studio")}>
                   &#x1F4F1; {daysSincePublish} d&iacute;as sin publicar &mdash; crea algo hoy &rarr;
                 </button>
               )}
@@ -4561,31 +4576,33 @@ export default function App() {
     const topNetwork = Object.entries(byNetwork).sort((a, b) => b[1] - a[1])[0];
     const lastPublished = contentItems.filter((i) => i.status === "Publicado" && i.createdAt).sort((a, b) => b.createdAt - a.createdAt)[0];
     const daysSincePublish = lastPublished ? Math.floor((Date.now() - lastPublished.createdAt) / 86400000) : null;
-    const oldPending = contentItems.filter((i) => i.status === "Pendiente" && i.createdAt && Math.floor((Date.now() - i.createdAt) / 86400000) > 7);
+    const oldIdeas = contentItems.filter((i) => i.status === "Idea" && i.createdAt && Math.floor((Date.now() - i.createdAt) / 86400000) > 7);
 
-    const goalMeta = {
-      "Vender":     { color: "#2f9f70", dot: "#2f9f70" },
-      "Educar":     { color: "#C9A96E", dot: "#C9A96E" },
-      "Conectar":   { color: "#E8836E", dot: "#E8836E" },
-      "Entretener": { color: "#8a7f7a", dot: "#8a7f7a" },
-    };
     const formatIcon  = { "Reel":"🎬","Historia":"📸","Post":"🖼️","Carrusel":"📱","Foto":"📷","Articulo":"✍️","Episodio":"🎙️" };
     const networkIcon = { "Instagram":"✦","TikTok":"♪","YouTube":"▶","Spotify":"🎵","Website":"🌐" };
-    const statusMeta  = {
-      "Pendiente":  { dot: "#C4526A",  label: "Pendiente" },
-      "En proceso": { dot: "#E8836E",  label: "En proceso" },
-      "Publicado":  { dot: "#2f9f70",  label: "Publicado" },
-    };
 
+    // Columnas tipo semáforo: gris (idea) → rojo → naranja → azul → verde (publicado)
     const COLUMNAS = [
-      { status: "Pendiente",  label: "Pendiente",   icon: "📋", color: "#C4526A", bg: "#FFF0F3",  hint: "Ideas y piezas por crear" },
-      { status: "En proceso", label: "En proceso",  icon: "⚙️",  color: "#E8836E", bg: "#FDF0EC",  hint: "Grabando, editando o programado" },
-      { status: "Publicado",  label: "Publicado",   icon: "✅", color: "#2f9f70", bg: "#def3e8",  hint: "Ya salió al mundo" },
+      { status: "Idea",         label: "Ideas",        icon: "💡", color: "#8a7f7a", bg: "#F4F1F8", next: "Por grabar",   nextLabel: "Listo para grabar →" },
+      { status: "Por grabar",   label: "Por grabar",   icon: "🎥", color: "#C4526A", bg: "#FDF0F2", next: "Por editar",   nextLabel: "✅ Grabado →" },
+      { status: "Por editar",   label: "Por editar",   icon: "✂️", color: "#D97706", bg: "#FFF6E9", next: "Por publicar", nextLabel: "✅ Editado →" },
+      { status: "Por publicar", label: "Por publicar", icon: "📤", color: "#0EA5E9", bg: "#EEF8FF", next: "Publicado",    nextLabel: "🚀 Publicar" },
+      { status: "Publicado",    label: "Publicado",    icon: "✅", color: "#1D9E75", bg: "#EAFBF2", next: null,           nextLabel: null },
     ];
+    const colByStatus = Object.fromEntries(COLUMNAS.map(c => [c.status, c]));
 
     const filteredItems = contentFilter
       ? contentItems.filter((i) => i.network === contentFilter)
       : contentItems;
+
+    const editingItem = editingContentId ? contentItems.find(i => i.id === editingContentId) : null;
+
+    const handleDropOnCol = (e, status) => {
+      e.preventDefault();
+      setContentDragOverCol(null);
+      const id = Number(e.dataTransfer.getData("text/plain"));
+      if (id) updateContentStatus(id, status);
+    };
 
     return (
       <section className="panel workspace-panel">
@@ -4615,9 +4632,9 @@ export default function App() {
             <small>piezas listas</small>
           </div>
           <div className="ck-kpi">
-            <span className="ck-kpi-label">En proceso</span>
-            <strong className="ck-kpi-val" style={{color:"#E8836E"}}>{contentItems.filter(i=>i.status==="En proceso").length}</strong>
-            <small>en producción</small>
+            <span className="ck-kpi-label">En producción</span>
+            <strong className="ck-kpi-val" style={{color:"#D97706"}}>{contentItems.filter(i=>i.status==="Por grabar"||i.status==="Por editar"||i.status==="Por publicar").length}</strong>
+            <small>en camino</small>
           </div>
           <div className="ck-kpi">
             <span className="ck-kpi-label">Red top</span>
@@ -4634,16 +4651,16 @@ export default function App() {
         </div>
 
         {/* Alertas */}
-        {(publishedContent >= 3 || (daysSincePublish !== null && daysSincePublish > 3) || contentItems.length === 0 || oldPending.length > 0) && (
+        {(publishedContent >= 3 || (daysSincePublish !== null && daysSincePublish > 3) || contentItems.length === 0 || oldIdeas.length > 0) && (
           <div className="ck-alerts">
             {publishedContent >= 3 && <div className="ck-alert ck-alert--green">Excelente consistencia — llevas {publishedContent} piezas publicadas. Sigue así.</div>}
             {daysSincePublish !== null && daysSincePublish > 3 && <div className="ck-alert ck-alert--orange">Llevas {daysSincePublish} días sin publicar. Una pieza simple hoy vale más que la perfección mañana.</div>}
-            {contentItems.length === 0 && <div className="ck-alert ck-alert--orange">Aún no tienes contenido registrado. Empieza con una pieza simple que venda.</div>}
-            {oldPending.length > 0 && <div className="ck-alert ck-alert--red">Tienes {oldPending.length} pieza{oldPending.length > 1 ? "s" : ""} pendiente{oldPending.length > 1 ? "s" : ""} por más de 7 días. Muévelas o elimínalas.</div>}
+            {contentItems.length === 0 && <div className="ck-alert ck-alert--orange">Aún no tienes contenido registrado. Empieza con una idea simple que venda.</div>}
+            {oldIdeas.length > 0 && <div className="ck-alert ck-alert--red">Tienes {oldIdeas.length} idea{oldIdeas.length > 1 ? "s" : ""} esperando guión por más de 7 días. Muévela o elimínala.</div>}
           </div>
         )}
 
-        {/* Formulario */}
+        {/* Formulario rápido — el detalle (guión, keywords, responsable) se llena al abrir la tarjeta */}
         {showContentForm && (
           <form className="ck-form card" onSubmit={addContent}>
             <div className="ck-form-grid">
@@ -4679,10 +4696,8 @@ export default function App() {
                 <input className="ck-input" type="date" value={contentForm.publishDate} onChange={(e) => updateContentForm("publishDate", e.target.value)} />
               </div>
               <div className="ck-form-col">
-                <label className="ck-label">Estado</label>
-                <select className="ck-input" value={contentForm.status} onChange={(e) => updateContentForm("status", e.target.value)}>
-                  <option>Pendiente</option><option>En proceso</option><option>Publicado</option>
-                </select>
+                <label className="ck-label">Responsable <span style={{fontWeight:400,textTransform:"none"}}>(opcional)</span></label>
+                <input className="ck-input" placeholder="¿Quién se encarga?" value={contentForm.responsable} onChange={(e) => updateContentForm("responsable", e.target.value)} />
               </div>
             </div>
             <div className="ck-form-footer">
@@ -4692,50 +4707,53 @@ export default function App() {
           </form>
         )}
 
-        {/* Kanban — 3 columnas */}
-        <div className="ck-kanban">
+        {/* Kanban — 5 columnas tipo semáforo, con drag & drop */}
+        <div className="ck-kanban ck-kanban--5col">
           {COLUMNAS.map((col) => {
             const colItems = filteredItems.filter((i) => i.status === col.status);
             return (
-              <div className="ck-col" key={col.status}>
+              <div className={`ck-col${contentDragOverCol === col.status ? " ck-col--over" : ""}`} key={col.status}
+                onDragOver={(e) => { e.preventDefault(); setContentDragOverCol(col.status); }}
+                onDragLeave={() => setContentDragOverCol((c) => c === col.status ? null : c)}
+                onDrop={(e) => handleDropOnCol(e, col.status)}>
                 <div className="ck-col-header" style={{"--col-color": col.color, "--col-bg": col.bg}}>
                   <span className="ck-col-icon">{col.icon}</span>
                   <span className="ck-col-label">{col.label}</span>
                   <span className="ck-col-count">{colItems.length}</span>
                 </div>
                 <div className="ck-col-body">
-                  {colItems.length === 0 && <div className="ck-empty">{col.hint}</div>}
+                  {colItems.length === 0 && <div className="ck-empty">Arrastra una tarjeta aquí</div>}
                   {colItems.map((item) => {
-                    const gm = goalMeta[item.goal] || goalMeta["Entretener"];
-                    const sm = statusMeta[item.status] || statusMeta["Pendiente"];
                     const fi = formatIcon[item.format] || "🎬";
                     const ni = networkIcon[item.network] || "✦";
+                    const isIdea = item.status === "Idea";
                     return (
-                      <div className="ck-card" key={item.id} style={{"--card-accent": gm.color}}>
+                      <div className={`ck-card${isIdea ? " ck-card--idea" : ""}`} key={item.id}
+                        style={isIdea ? {} : {background: col.bg, borderColor: `${col.color}30`}}
+                        draggable
+                        onDragStart={(e) => e.dataTransfer.setData("text/plain", String(item.id))}
+                        onClick={() => setEditingContentId(item.id)}>
                         <div className="ck-card-top">
                           <div className="ck-card-badges">
                             <span className="ck-badge ck-badge--format">{fi} {item.format}</span>
                             <span className="ck-badge ck-badge--network">{ni} {item.network}</span>
                           </div>
-                          <button type="button" className="ck-card-del" onClick={() => confirmDelete("¿Eliminar esta pieza?", () => setContentItems((c) => c.filter((ci) => ci.id !== item.id)))}>✕</button>
+                          <button type="button" className="ck-card-del" onClick={(e) => { e.stopPropagation(); confirmDelete("¿Eliminar esta pieza?", () => setContentItems((c) => c.filter((ci) => ci.id !== item.id))); }}>✕</button>
                         </div>
                         <div className="ck-card-body">
-                          <div className="ck-card-goal" style={{color: gm.color}}>
-                            <span className="ck-goal-dot" style={{background: gm.dot}}></span>
-                            {item.goal}
-                          </div>
                           <p className="ck-card-title">{item.title}</p>
                           {item.hook && <p className="ck-card-hook">"{item.hook}"</p>}
+                          {item.responsable && <span className="ck-card-resp">👤 {item.responsable}</span>}
                         </div>
                         <div className="ck-card-footer">
-                          <div className="ck-status-wrap">
-                            <span className="ck-status-dot" style={{background: sm.dot}}></span>
-                            <select className="ck-status-select" value={item.status} onChange={(e) => updateContentStatus(item.id, e.target.value)}>
-                              <option>Pendiente</option><option>En proceso</option><option>Publicado</option>
-                            </select>
-                          </div>
                           {item.publishDate && (
                             <span className="ck-card-date">📅 {new Date(item.publishDate + "T00:00:00").toLocaleDateString("es", {day:"numeric",month:"short"})}</span>
+                          )}
+                          {col.next && (
+                            <button type="button" className="ck-card-advance" style={{color: col.color, background: `${col.color}14`}}
+                              onClick={(e) => { e.stopPropagation(); updateContentStatus(item.id, col.next); }}>
+                              {col.nextLabel}
+                            </button>
                           )}
                         </div>
                       </div>
@@ -4746,6 +4764,89 @@ export default function App() {
             );
           })}
         </div>
+
+        {/* ── Modal detalle — estilo Notion ── */}
+        {editingItem && (
+          <div className="app-modal-backdrop" onClick={e => e.target===e.currentTarget && setEditingContentId(null)}>
+            <div className="app-modal-card" style={{width:"min(560px,100%)"}}>
+              <div className="app-modal-head" style={{background: `linear-gradient(135deg, ${colByStatus[editingItem.status]?.color || "#C4526A"}, ${colByStatus[editingItem.status]?.color || "#C4526A"}cc)`}}>
+                <div>
+                  <p className="app-modal-head-eyebrow">{colByStatus[editingItem.status]?.icon} {colByStatus[editingItem.status]?.label || editingItem.status}</p>
+                  <p className="app-modal-head-title">{editingItem.title || "Sin título"}</p>
+                </div>
+                <button type="button" className="app-modal-close" onClick={() => setEditingContentId(null)}>✕</button>
+              </div>
+              <div style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"14px",maxHeight:"70vh",overflowY:"auto"}}>
+                <div>
+                  <label className="app-form-label">Tema</label>
+                  <input className="app-form-input" value={editingItem.title} onChange={(e) => updateContentField(editingItem.id, "title", e.target.value)} />
+                </div>
+
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                  <div>
+                    <label className="app-form-label">Tipo de contenido</label>
+                    <select className="app-form-input" value={editingItem.format} onChange={(e) => updateContentField(editingItem.id, "format", e.target.value)}>
+                      <option>Reel</option><option>Historia</option><option>Post</option><option>Carrusel</option><option>Foto</option><option>Articulo</option><option>Episodio</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="app-form-label">Red</label>
+                    <select className="app-form-input" value={editingItem.network} onChange={(e) => updateContentField(editingItem.id, "network", e.target.value)}>
+                      <option>Instagram</option><option>TikTok</option><option>YouTube</option><option>Spotify</option><option>Website</option><option>Otra</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                  <div>
+                    <label className="app-form-label">Fecha de publicación</label>
+                    <input type="date" className="app-form-input" value={editingItem.publishDate || ""} onChange={(e) => updateContentField(editingItem.id, "publishDate", e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="app-form-label">Responsable</label>
+                    <input className="app-form-input" placeholder="¿Quién se encarga?" value={editingItem.responsable || ""} onChange={(e) => updateContentField(editingItem.id, "responsable", e.target.value)} />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="app-form-label">Palabras clave <span style={{fontWeight:400,textTransform:"none"}}>(separadas por coma)</span></label>
+                  <input className="app-form-input" placeholder="Ej: finanzas, mamás, organización" value={editingItem.keywords || ""} onChange={(e) => updateContentField(editingItem.id, "keywords", e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="app-form-label">Hook <span style={{fontWeight:400,textTransform:"none"}}>(opcional)</span></label>
+                  <input className="app-form-input" placeholder="La frase que engancha en los primeros 3 segundos" value={editingItem.hook || ""} onChange={(e) => updateContentField(editingItem.id, "hook", e.target.value)} />
+                </div>
+
+                <div>
+                  <label className="app-form-label">Guión <span style={{fontWeight:400,textTransform:"none"}}>— si lo escribes, pasa sola a "Por grabar"</span></label>
+                  <textarea className="app-form-input" placeholder="Escribe o pega aquí el guión completo..." value={editingItem.guion || ""}
+                    onChange={(e) => updateContentGuion(editingItem.id, e.target.value)}
+                    style={{minHeight:"140px",resize:"vertical"}} />
+                </div>
+
+                <div>
+                  <label className="app-form-label">Estado</label>
+                  <div className="cl-status-chips">
+                    {COLUMNAS.map(c => (
+                      <button type="button" key={c.status}
+                        className={`cl-status-chip${editingItem.status === c.status ? " active" : ""}`}
+                        style={editingItem.status === c.status ? {borderColor: c.color, background: `${c.color}18`, color: c.color} : {}}
+                        onClick={() => updateContentStatus(editingItem.id, c.status)}>
+                        {c.icon} {c.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button type="button" onClick={() => { confirmDelete("¿Eliminar esta pieza?", () => setContentItems((c) => c.filter((ci) => ci.id !== editingItem.id))); setEditingContentId(null); }}
+                  style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"12px",fontWeight:600,padding:"4px 0"}}>
+                  Eliminar pieza
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </section>
     );
