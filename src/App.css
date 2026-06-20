@@ -3242,7 +3242,6 @@ button {
 }
 
 /* ── Sistema de alertas de clientes ── */
-.client-alerts { display:grid; gap:8px; margin-bottom:14px; }
 .alert-banner { padding:12px 16px; border-radius:12px; font-size:14px; line-height:1.5; }
 .alert-orange { background:#fff3e0; border:1px solid #f0a500; color:#7a4a00; }
 .alert-red { background:var(--pink-soft); border:1px solid var(--pink); color:#8a1a2e; }
@@ -3742,6 +3741,99 @@ button {
   border-radius: 16px;
   margin-bottom: 16px;
   overflow: hidden;
+}
+
+/* ── Semana: a quién contactar + proyección ── */
+.cl-week-action-card {
+  background: linear-gradient(135deg, #C4526A, #a33a52);
+  border-radius: 18px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.cl-week-action-label {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  opacity: 0.85;
+}
+.cl-week-action-count-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.cl-week-action-count { font-size: 42px; font-weight: 800; line-height: 1; }
+.cl-week-action-sub { font-size: 14px; opacity: 0.85; }
+.cl-week-projection {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 14px;
+  padding: 12px 16px;
+  text-align: right;
+  max-width: 260px;
+}
+.cl-week-projection p { margin: 0 0 4px; font-size: 12px; line-height: 1.4; opacity: 0.95; }
+.cl-week-projection strong { font-size: 18px; display: block; }
+.cl-week-projection span { font-size: 12px; opacity: 0.85; }
+
+/* ── Calculadora de meta ── */
+.cl-goal-calc-card {
+  background: #fff;
+  border: 1.5px dashed rgba(196, 82, 106, 0.35);
+  border-radius: 16px;
+  padding: 20px 22px;
+  margin-bottom: 16px;
+}
+.cl-goal-calc-title { margin: 0 0 2px; font-size: 15px; font-weight: 800; color: var(--ink); }
+.cl-goal-calc-sub { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
+.cl-goal-calc-input { max-width: 240px; }
+.cl-goal-calc-result {
+  margin-top: 14px;
+  padding: 14px 16px;
+  background: rgba(196, 82, 106, 0.06);
+  border-radius: 12px;
+}
+.cl-goal-calc-result p { margin: 0 0 6px; font-size: 13px; color: var(--ink); line-height: 1.5; }
+.cl-goal-calc-result p:last-child { margin-bottom: 0; }
+.cl-goal-calc-result strong { color: #C4526A; }
+
+/* ── Tarjetas a quién contactar ── */
+.cl-contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+.cl-contact-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+.cl-contact-card--red    { border-left-color: #C4526A; }
+.cl-contact-card--yellow { border-left-color: #e87b1e; }
+.cl-contact-card--green  { border-left-color: #1D9E75; }
+.cl-contact-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.cl-contact-card-top strong {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .cl-kpi {

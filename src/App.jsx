@@ -669,6 +669,7 @@ export default function App() {
   const [clientSearch, setClientSearch] = useState("");
   const [showClientDetails, setShowClientDetails] = useState(false);
   const [clientsTab, setClientsTab] = useState(0);
+  const [clientGoalInput, setClientGoalInput] = useState("");
   const [showClientFormModal, setShowClientFormModal] = useState(false);
   const [editingClientId, setEditingClientId] = useState(null);
   const [weekBlocks, setWeekBlocks] = useState(stored?.weekBlocks || {});
@@ -4091,6 +4092,21 @@ export default function App() {
     const avgTicket = paidClients.length > 0 ? Math.round(wonSalesTotal / paidClients.length) : 0;
     const TABS_CLIENTS = ["Hoy", "Semana", "Tareas", "Clientes ganados"];
 
+    // ── A quién contactar esta semana + proyección ──
+    const toContactClients = [...urgentClients, ...urgentSubscriptions].sort((a, b) => {
+      const order = { red: 0, yellow: 1, green: 2 };
+      return (order[getAlert(a)] ?? 2) - (order[getAlert(b)] ?? 2);
+    });
+    const projectedSales = conversionRate > 0 ? Math.round(toContactClients.length * (conversionRate / 100)) : 0;
+    const projectedRevenue = projectedSales * avgTicket;
+
+    // ── Calculadora: ¿cuántos contactos necesito para vender $X? ──
+    const goalAmount = Number(clientGoalInput) || 0;
+    const goalSalesNeeded = goalAmount > 0 && avgTicket > 0 ? Math.ceil(goalAmount / avgTicket) : 0;
+    const goalContactsNeeded = goalSalesNeeded > 0
+      ? (conversionRate > 0 ? Math.ceil(goalSalesNeeded / (conversionRate / 100)) : goalSalesNeeded)
+      : 0;
+
     const waMsg = (client) => {
       const msgs = {
         "Lead frio": `Hola ${client.name}! Noo queria dejar nuestra conversacion en el aire. Aqui estoy para retomarla cuando sea un buen momento para ti. Sigues interesada en ${client.service}?`,
@@ -4164,22 +4180,6 @@ export default function App() {
               </div>
             )}
 
-            {(urgentClients.length > 0 || urgentSubscriptions.length > 0) && (
-              <div className="client-alerts">
-                {urgentClients.length > 0 && (
-                  <div className="alert-banner alert-orange">
-                    <strong>{urgentClients.length} lead{urgentClients.length > 1 ? "s" : ""} sin contacto:</strong>{" "}
-                    {urgentClients.slice(0,3).map(c=>c.name).join(", ")}{urgentClients.length > 3 ? ` y ${urgentClients.length-3} más` : ""} — actúa hoy.
-                  </div>
-                )}
-                {urgentSubscriptions.length > 0 && (
-                  <div className="alert-banner alert-red">
-                    <strong>{urgentSubscriptions.length} cliente{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong>{" "}
-                    {urgentSubscriptions.slice(0,3).map(c=>c.name).join(", ")}{urgentSubscriptions.length > 3 ? ` y ${urgentSubscriptions.length-3} más` : ""}
-                  </div>
-                )}
-              </div>
-            )}
           </>
         )}
 
@@ -4220,6 +4220,68 @@ export default function App() {
                 ))}
               </div>
             </div>
+
+            {/* Cuántos contactar + proyección de cierre */}
+            <div className="cl-week-action-card">
+              <div className="cl-week-action-main">
+                <p className="cl-week-action-label">Esta semana debes contactar a</p>
+                <div className="cl-week-action-count-row">
+                  <strong className="cl-week-action-count">{toContactClients.length}</strong>
+                  <span className="cl-week-action-sub">cliente{toContactClients.length !== 1 ? "s" : ""}</span>
+                </div>
+              </div>
+              {toContactClients.length > 0 && (
+                <div className="cl-week-projection">
+                  <p>Si los contactas, con tu conversión histórica del <strong>{conversionRate}%</strong> podrías cerrar</p>
+                  <strong>~{projectedSales} venta{projectedSales !== 1 ? "s" : ""}</strong>
+                  <span>≈ {money.format(projectedRevenue)}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Calculadora de meta */}
+            <div className="cl-goal-calc-card">
+              <p className="cl-goal-calc-title">🎯 ¿Cuánto quieres vender?</p>
+              <p className="cl-goal-calc-sub">Te decimos cuántos leads necesitas contactar para lograrlo.</p>
+              <MoneyAmountInput placeholder="Ej: 1.000.000" value={clientGoalInput} onChange={setClientGoalInput} className="cl-goal-calc-input" />
+              {goalSalesNeeded > 0 && (
+                <div className="cl-goal-calc-result">
+                  <p>Con tu ticket promedio de <strong>{money.format(avgTicket)}</strong> necesitas cerrar <strong>{goalSalesNeeded}</strong> venta{goalSalesNeeded !== 1 ? "s" : ""}.</p>
+                  <p>Para lograrlo, contacta a unos <strong>{goalContactsNeeded}</strong> lead{goalContactsNeeded !== 1 ? "s" : ""} {conversionRate > 0 ? `(con tu conversión actual del ${conversionRate}%)` : ""}.</p>
+                </div>
+              )}
+            </div>
+
+            {/* Tarjetas — a quién contactar */}
+            {toContactClients.length > 0 && (
+              <div style={{marginTop:"18px"}}>
+                <p className="biz-week-title" style={{marginBottom:"10px"}}>A quién contactar</p>
+                <div className="cl-contact-grid">
+                  {toContactClients.map(client => {
+                    const alert = getAlert(client);
+                    const days = daysSince(client.lastContact);
+                    const daysColor = days > 7 ? "#C4526A" : days > 3 ? "#e87b1e" : "#1D9E75";
+                    return (
+                      <div key={client.id} className={`cl-contact-card cl-contact-card--${alert}`}>
+                        <div className="cl-contact-card-top">
+                          <strong>{client.name}</strong>
+                          <span className="cl-amount-chip">{money.format(client.amount)}</span>
+                        </div>
+                        <p className="cl-service-text">{client.service}</p>
+                        <span className="cl-days-badge" style={{color:daysColor,background:daysColor+"18"}}>
+                          {client.lastContact ? `Hace ${days} día${days !== 1 ? "s" : ""}` : "Sin contacto"}
+                        </span>
+                        {client.nextAction && <p className="cl-next-action">→ {client.nextAction}</p>}
+                        <div className="cl-card-actions">
+                          <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>✓ Contacté</button>
+                          <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-wa-btn">WA</a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </>
         )}
 
