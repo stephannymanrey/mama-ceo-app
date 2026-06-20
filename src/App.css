@@ -2358,6 +2358,48 @@ button {
   padding: 14px;
   display: grid;
   gap: 10px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.paid-client-card:hover {
+  box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+  border-color: rgba(196,82,106,0.3);
+}
+
+.cl-pending-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+.cl-pending-badge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #DC2626;
+}
+.cl-pending-badge.done {
+  background: rgba(29, 158, 117, 0.1);
+  color: #1D9E75;
+}
+.cl-edit-hint {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--pink);
+}
+.cl-pending-toggle {
+  padding: 8px 14px;
+  border-radius: 20px;
+  border: 2px solid rgba(220, 38, 38, 0.25);
+  background: rgba(220, 38, 38, 0.06);
+  color: #DC2626;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.15s;
+}
+.cl-pending-toggle.done {
+  border-color: rgba(29, 158, 117, 0.3);
+  background: rgba(29, 158, 117, 0.08);
+  color: #1D9E75;
 }
 
 .paid-client-card strong,

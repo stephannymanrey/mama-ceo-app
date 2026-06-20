@@ -668,6 +668,9 @@ export default function App() {
   const [contactLog, setContactLog] = useState(stored?.contactLog || {});
   const [clientSearch, setClientSearch] = useState("");
   const [showClientDetails, setShowClientDetails] = useState(false);
+  const [clientsTab, setClientsTab] = useState(0);
+  const [showClientFormModal, setShowClientFormModal] = useState(false);
+  const [editingClientId, setEditingClientId] = useState(null);
   const [weekBlocks, setWeekBlocks] = useState(stored?.weekBlocks || {});
   const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Pendiente", goal: "Vender", publishDate: "" });
   const [showContentForm, setShowContentForm] = useState(false);
@@ -1601,12 +1604,15 @@ export default function App() {
       nextAction: clientForm.nextAction.trim() || "Hacer seguimiento", 
       lastContact: contactTimestamp,
       lastContactDate: contactDate,
-      source: clientForm.source === "Otra" ? clientForm.customSource.trim() || "Otra" : clientForm.source, 
-      phone: clientForm.phone.trim(), 
+      source: clientForm.source === "Otra" ? clientForm.customSource.trim() || "Otra" : clientForm.source,
+      phone: clientForm.phone.trim(),
+      facturaEnviada: false,
+      contratoEnviado: false,
       createdAt: now,
       updatedAt: now
     }, ...current]);
     setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue() });
+    setShowClientFormModal(false);
   };
 
   const addContent = (event) => {
@@ -1851,6 +1857,12 @@ export default function App() {
   }, []);
   const updateClientNotes = (clientId, notes) => {
     setClients((current) => current.map((client) => client.id === clientId ? { ...client, notes, updatedAt: Date.now() } : client));
+  };
+  const toggleClientFlag = (clientId, field) => {
+    setClients((current) => current.map((client) => client.id === clientId ? { ...client, [field]: !client[field] } : client));
+  };
+  const updateClientField = (clientId, field, value) => {
+    setClients((current) => current.map((client) => client.id === clientId ? { ...client, [field]: value } : client));
   };
   const updateClientLastContact = (clientId, date) => {
     setClients((current) => current.map((client) => client.id === clientId ? {
@@ -4073,6 +4085,12 @@ export default function App() {
     const defaultSources = ["Instagram", "Referido", "Contenido / Reel", "WhatsApp", "TikTok", "Email", "Otra"];
     const filteredClients = (stage) => clients.filter((c) => c.status === stage && (clientSearch === "" || c.name.toLowerCase().includes(clientSearch.toLowerCase())));
 
+    // ── Pulso semanal ──
+    const newLeadsThisWeek = clients.filter((c) => (c.createdAt || 0) >= weekStart).length;
+    const wonThisWeek = clients.filter((c) => c.status === "Venta ganada" && (c.updatedAt || 0) >= weekStart).length;
+    const avgTicket = paidClients.length > 0 ? Math.round(wonSalesTotal / paidClients.length) : 0;
+    const TABS_CLIENTS = ["Hoy", "Semana", "Tareas", "Clientes ganados"];
+
     const waMsg = (client) => {
       const msgs = {
         "Lead frio": `Hola ${client.name}! Noo queria dejar nuestra conversacion en el aire. Aqui estoy para retomarla cuando sea un buen momento para ti. Sigues interesada en ${client.service}?`,
@@ -4091,227 +4109,387 @@ export default function App() {
     const pipelineStages = stages.filter(s => s !== "Venta ganada");
     const stageEmoji = { "Lead frio": "🧊", "Lead tibio": "🌡️", "Lead caliente": "🔥" };
 
+    const editingClient = editingClientId ? clients.find(c => c.id === editingClientId) : null;
+
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
-          <h2>Clientes</h2>
+          <h2>Mis Clientes 👩‍💼</h2>
           <p>{activeClients} activas · {money.format(wonSalesTotal)} cerrados</p>
         </div>
 
-        {/* 3 KPIs clave */}
-        <div className="cl-kpi-row">
-          <div className="cl-kpi">
-            <span>En proceso</span>
-            <strong>{activeClients}</strong>
-            <small>{money.format(pipelineTotal)} potencial</small>
-          </div>
-          <div className="cl-kpi cl-kpi-divider">
-            <span>Conversión</span>
-            <strong>{conversionRate}%</strong>
-            <small>{totalWon} cerradas de {totalLeads}</small>
-          </div>
-          <div className="cl-kpi cl-kpi-divider">
-            <span>Ventas cerradas</span>
-            <strong style={{color:"#1D9E75"}}>{money.format(wonSalesTotal)}</strong>
-            <small>{paidClients.length} clientes</small>
-          </div>
+        {/* Sub-tab nav */}
+        <div style={{display:"flex",gap:"4px",background:"var(--line)",padding:"4px",borderRadius:"12px",marginBottom:"20px"}}>
+          {TABS_CLIENTS.map((label,i) => (
+            <button key={i} type="button" onClick={() => setClientsTab(i)} style={{
+              flex:1, padding:"9px 0", borderRadius:"8px", border:"none",
+              background: clientsTab===i ? "#fff" : "transparent",
+              cursor:"pointer", fontFamily:"inherit", fontSize:"13px",
+              fontWeight: clientsTab===i ? 700 : 400,
+              color: clientsTab===i ? "var(--ink)" : "var(--muted)",
+              boxShadow: clientsTab===i ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+              transition:"all 0.15s ease",
+            }}>{label}</button>
+          ))}
         </div>
 
-        {/* Acción del día */}
-        {priorityClient && (
-          <div className="action-day-banner">
-            <div className="action-day-left">
-              <span className="action-day-label">Acción del día</span>
-              <strong>{priorityClient.name}</strong>
-              <span>{priorityClient.status} · {money.format(priorityClient.amount)} · hace {daysSince(priorityClient.lastContact)} días sin contacto</span>
-              <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"8px"}}>
-                <button type="button" className="contact-today-btn" style={{width:"auto",padding:"0 14px"}} onClick={() => logContact(priorityClient.id, priorityClient.name)}>✓ Contacté hoy</button>
-                <a href={waLink(priorityClient)} target="_blank" rel="noreferrer" className="cl-wa-btn">WhatsApp</a>
+        {/* ── HOY ── */}
+        {clientsTab === 0 && (
+          <>
+            {priorityClient ? (
+              <div className="action-day-banner">
+                <div className="action-day-left">
+                  <span className="action-day-label">Acción del día</span>
+                  <strong>{priorityClient.name}</strong>
+                  <span>{priorityClient.status} · {money.format(priorityClient.amount)} · hace {daysSince(priorityClient.lastContact)} días sin contacto</span>
+                  <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"8px"}}>
+                    <button type="button" className="contact-today-btn" style={{width:"auto",padding:"0 14px"}} onClick={() => logContact(priorityClient.id, priorityClient.name)}>✓ Contacté hoy</button>
+                    <a href={waLink(priorityClient)} target="_blank" rel="noreferrer" className="cl-wa-btn">WhatsApp</a>
+                  </div>
+                </div>
+                <div className="action-day-right">
+                  <p>{priorityClient.nextAction || "Hacer seguimiento"}</p>
+                  <div style={{marginTop:"8px",textAlign:"center"}}>
+                    <strong style={{fontSize:"28px",color:"var(--green)",display:"block",lineHeight:1}}>{contactsThisWeek}</strong>
+                    <small style={{color:"var(--muted)",fontSize:"11px",textTransform:"uppercase",fontWeight:800}}>contactos esta semana</small>
+                    <small style={{color:"var(--green)",fontSize:"11px",fontWeight:700}}>{contactsThisWeek >= 5 ? "¡Excelente ritmo!" : contactsThisWeek >= 3 ? "Buen avance" : "Meta: 5 esta semana"}</small>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div className="action-day-right">
-              <p>{priorityClient.nextAction || "Hacer seguimiento"}</p>
-              <div style={{marginTop:"8px",textAlign:"center"}}>
-                <strong style={{fontSize:"28px",color:"var(--green)",display:"block",lineHeight:1}}>{contactsThisWeek}</strong>
-                <small style={{color:"var(--muted)",fontSize:"11px",textTransform:"uppercase",fontWeight:800}}>contactos esta semana</small>
-                <small style={{color:"var(--green)",fontSize:"11px",fontWeight:700}}>{contactsThisWeek >= 5 ? "¡Excelente ritmo!" : contactsThisWeek >= 3 ? "Buen avance" : "Meta: 5 esta semana"}</small>
+            ) : (
+              <div className="card" style={{padding:"28px",textAlign:"center",background:"linear-gradient(135deg,#fdf9f6,#fef4f0)",border:"2px dashed #e8d5c4"}}>
+                <p style={{fontSize:"32px",margin:"0 0 10px"}}>🌱</p>
+                <h3 style={{margin:"0 0 6px",fontSize:"16px"}}>Sin leads activos por ahora</h3>
+                <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Agrega tu primer cliente en la pestaña Tareas.</p>
               </div>
-            </div>
-          </div>
+            )}
+
+            {(urgentClients.length > 0 || urgentSubscriptions.length > 0) && (
+              <div className="client-alerts">
+                {urgentClients.length > 0 && (
+                  <div className="alert-banner alert-orange">
+                    <strong>{urgentClients.length} lead{urgentClients.length > 1 ? "s" : ""} sin contacto:</strong>{" "}
+                    {urgentClients.slice(0,3).map(c=>c.name).join(", ")}{urgentClients.length > 3 ? ` y ${urgentClients.length-3} más` : ""} — actúa hoy.
+                  </div>
+                )}
+                {urgentSubscriptions.length > 0 && (
+                  <div className="alert-banner alert-red">
+                    <strong>{urgentSubscriptions.length} cliente{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong>{" "}
+                    {urgentSubscriptions.slice(0,3).map(c=>c.name).join(", ")}{urgentSubscriptions.length > 3 ? ` y ${urgentSubscriptions.length-3} más` : ""}
+                  </div>
+                )}
+              </div>
+            )}
+          </>
         )}
 
-        {/* Alertas */}
-        {(urgentClients.length > 0 || urgentSubscriptions.length > 0) && (
-          <div className="client-alerts">
-            {urgentClients.length > 0 && (
-              <div className="alert-banner alert-orange">
-                <strong>{urgentClients.length} lead{urgentClients.length > 1 ? "s" : ""} sin contacto:</strong>{" "}
-                {urgentClients.slice(0,3).map(c=>c.name).join(", ")}{urgentClients.length > 3 ? ` y ${urgentClients.length-3} más` : ""} — actúa hoy.
+        {/* ── SEMANA ── */}
+        {clientsTab === 1 && (
+          <>
+            <div className="cl-kpi-row">
+              <div className="cl-kpi">
+                <span>En proceso</span>
+                <strong>{activeClients}</strong>
+                <small>{money.format(pipelineTotal)} potencial</small>
               </div>
-            )}
-            {urgentSubscriptions.length > 0 && (
-              <div className="alert-banner alert-red">
-                <strong>{urgentSubscriptions.length} cliente{urgentSubscriptions.length > 1 ? "s" : ""} sin seguimiento:</strong>{" "}
-                {urgentSubscriptions.slice(0,3).map(c=>c.name).join(", ")}{urgentSubscriptions.length > 3 ? ` y ${urgentSubscriptions.length-3} más` : ""}
+              <div className="cl-kpi cl-kpi-divider">
+                <span>Conversión</span>
+                <strong>{conversionRate}%</strong>
+                <small>{totalWon} cerradas de {totalLeads}</small>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* Layout: formulario + pipeline */}
-        <div className="clients-main-layout">
-
-          {/* Formulario simplificado */}
-          <form className="card clients-form-card" onSubmit={addClient}>
-            <h3>Nuevo cliente</h3>
-            {clients.length >= currentLimits.clients && (
-              <div className="plan-limit-banner">
-                ⚠️ Llegaste al límite de <strong>{currentLimits.clients} clientes</strong> de tu plan.{" "}
-                <button type="button" className="plan-limit-link" onClick={() => setActiveView("pricing")}>Ver planes →</button>
+              <div className="cl-kpi cl-kpi-divider">
+                <span>Ventas cerradas</span>
+                <strong style={{color:"#1D9E75"}}>{money.format(wonSalesTotal)}</strong>
+                <small>{paidClients.length} clientes</small>
               </div>
-            )}
+            </div>
 
-            {/* Nombre */}
-            <input placeholder="Nombre *" value={clientForm.name} onChange={(e) => updateClientForm("name", e.target.value)}
-              className={clientFormErrors.name ? "input-error" : ""} />
-            {clientFormErrors.name && <span className="field-error">{clientFormErrors.name}</span>}
-
-            {/* Servicio */}
-            <input placeholder="Servicio o producto *" value={clientForm.service} onChange={(e) => updateClientForm("service", e.target.value)}
-              className={clientFormErrors.service ? "input-error" : ""} />
-            {clientFormErrors.service && <span className="field-error">{clientFormErrors.service}</span>}
-
-            {/* Monto */}
-            <MoneyAmountInput placeholder="Monto *" value={clientForm.amount} onChange={(v) => updateClientForm("amount", v)}
-              className={clientFormErrors.amount ? "input-error" : ""} />
-            {clientFormErrors.amount && <span className="field-error">{clientFormErrors.amount}</span>}
-
-            {/* Teléfono — visible por defecto para que el botón de WhatsApp funcione */}
-            <input placeholder="Teléfono WhatsApp (ej: 573001234567)" value={clientForm.phone} onChange={(e) => updateClientForm("phone", e.target.value)} />
-
-            {/* Estado — chips visuales */}
-            <div>
-              <p className="cl-form-label">Estado</p>
-              <div className="cl-status-chips">
-                {stages.map(s => (
-                  <button type="button" key={s}
-                    className={`cl-status-chip${clientForm.status === s ? " active" : ""}`}
-                    onClick={() => updateClientForm("status", s)}>
-                    {stageEmoji[s] || "✓"} {s.replace("Lead ", "")}
-                  </button>
+            <div className="biz-week-summary">
+              <p className="biz-week-title">Esta semana</p>
+              <div className="biz-week-row">
+                {[
+                  { label: "Leads nuevos", val: newLeadsThisWeek, sub: "esta semana", color: "#7F77DD" },
+                  { label: "Contactos", val: contactsThisWeek, sub: contactsThisWeek >= 5 ? "¡Buen ritmo!" : contactsThisWeek >= 3 ? "Bien, sigue" : "Apunta a 5+", color: contactsThisWeek >= 5 ? "#1D9E75" : contactsThisWeek >= 3 ? "#e87b1e" : "#C4526A" },
+                  { label: "Ventas cerradas", val: wonThisWeek, sub: "esta semana", color: "#1D9E75" },
+                ].map(({ label, val, sub, color }) => (
+                  <div key={label} className="biz-week-stat">
+                    <span className="biz-week-label">{label}</span>
+                    <strong className="biz-week-val">{val}</strong>
+                    {sub && <span className="biz-week-sub" style={{color}}>{sub}</span>}
+                  </div>
                 ))}
               </div>
             </div>
+          </>
+        )}
 
-            {/* Más detalles — colapsable */}
-            <button type="button" className="cl-details-toggle" onClick={() => setShowClientDetails(v => !v)}>
-              {showClientDetails ? "▲ Menos detalles" : "▼ Agregar detalles (fuente, próxima acción)"}
-            </button>
-
-            {showClientDetails && (
-              <>
-                <input placeholder="Próxima acción (opcional)" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} />
-                <select value={clientForm.source} onChange={(e) => updateClientForm("source", e.target.value)}>
-                  <option value="">¿De dónde llegó?</option>
-                  {defaultSources.map((s) => <option key={s}>{s}</option>)}
-                </select>
-                {clientForm.source === "Otra" && (
-                  <input placeholder="¿Cuál fuente?" value={clientForm.customSource} onChange={(e) => updateClientForm("customSource", e.target.value)} />
-                )}
-                <label className="inline-date-field">
-                  <span>Último contacto</span>
-                  <input type="date" value={clientForm.lastContactDate} onChange={(e) => updateClientForm("lastContactDate", e.target.value)} />
-                </label>
-              </>
-            )}
-
-            <button className="primary-button" type="submit">Guardar cliente</button>
-          </form>
-
-          {/* Pipeline — solo 3 columnas (sin "Venta ganada") */}
-          <div className="clients-pipeline-wrap">
-            <div className="clients-search-bar">
-              <input placeholder="Buscar por nombre..." value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} className="clients-search-input" />
+        {/* ── TAREAS (pipeline) ── */}
+        {clientsTab === 2 && (
+          <>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexWrap:"wrap",gap:"8px"}}>
+              <div>
+                <h3 style={{margin:"0 0 2px"}}>Pipeline</h3>
+                <p className="helper-copy" style={{margin:0}}>Gestiona cada lead, de frío a cerrado.</p>
+              </div>
+              <button type="button" className="fin-add-btn" onClick={() => setShowClientFormModal(true)}>+ Nuevo cliente</button>
             </div>
-            <div className="pipeline-board">
-              {pipelineStages.map((stage) => (
-                <div className="pipeline-column" key={stage}>
-                  <div className="pipeline-col-header">
-                    <h3>{stageEmoji[stage]} {stage.replace("Lead ", "")}</h3>
-                    <small>{filteredClients(stage).length} · {money.format(stageTotal(stage))}</small>
-                  </div>
-                  {filteredClients(stage).map((client) => {
-                    const alert = getAlert(client);
-                    const days = daysSince(client.lastContact);
-                    const daysColor = days > 7 ? "#C4526A" : days > 3 ? "#e87b1e" : "#1D9E75";
-                    return (
-                      <div className={`lead-card lead-alert-${alert}`} key={client.id}>
-                        <div className="lead-card-top">
-                          <strong>{client.name}</strong>
-                          <span className="cl-amount-chip">{money.format(client.amount)}</span>
-                        </div>
-                        <p className="cl-service-text">{client.service}</p>
-                        {client.nextAction && <p className="cl-next-action">→ {client.nextAction}</p>}
-                        <div className="cl-days-row">
-                          <span className="cl-days-badge" style={{color:daysColor,background:daysColor+"18"}}>
-                            {client.lastContact ? `Hace ${days} día${days !== 1 ? "s" : ""}` : "Sin contacto"}
-                          </span>
-                        </div>
-                        <div className="cl-card-actions">
-                          <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>✓ Contacté</button>
-                          <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-wa-btn">WA</a>
-                        </div>
-                        <div className="lead-stage-btns">
-                          {pipelineStages.filter(s => s !== stage).map(s => (
-                            <button type="button" key={s} onClick={() => moveClientStatus(client.id, s)}>{stageEmoji[s]} {s.replace("Lead ","")}</button>
-                          ))}
-                          <button type="button" className="cl-close-btn" onClick={() => moveClientStatus(client.id, "Venta ganada")}>✓ Cerré</button>
-                          <button type="button" className="delete-btn" onClick={() => confirmDelete("¿Eliminar este cliente?", () => setClients(c => c.filter(cl => cl.id !== client.id)))}>×</button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {filteredClients(stage).length === 0 && (
-                    <p className="cl-empty-col">Sin clientes aquí</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
 
-        {/* Clientes que ya pagaron */}
-        <div className="paid-clients-section card">
-          <div className="section-title compact-title">
-            <h2>Clientes que ya pagaron</h2>
-            <p>Cuida la relación, fomenta la recompra y los referidos.</p>
-          </div>
-          {paidClients.length === 0 && <p className="helper-copy">Tus ventas cerradas aparecerán aquí.</p>}
-          <div className="paid-client-grid">
-            {paidClients.map((client) => {
-              const days = daysSince(client.lastContact);
-              const daysColor = days > 30 ? "#C4526A" : days > 14 ? "#e87b1e" : "#1D9E75";
-              return (
-                <article className="paid-client-card" key={client.id}>
-                  <div className="paid-client-header">
-                    <div>
-                      <strong>{client.name}</strong>
-                      <small>{client.service} · {money.format(client.amount)}</small>
+            <div className="clients-pipeline-wrap">
+              <div className="clients-search-bar">
+                <input placeholder="Buscar por nombre..." value={clientSearch} onChange={(e) => setClientSearch(e.target.value)} className="clients-search-input" />
+              </div>
+              <div className="pipeline-board">
+                {pipelineStages.map((stage) => (
+                  <div className="pipeline-column" key={stage}>
+                    <div className="pipeline-col-header">
+                      <h3>{stageEmoji[stage]} {stage.replace("Lead ", "")}</h3>
+                      <small>{filteredClients(stage).length} · {money.format(stageTotal(stage))}</small>
                     </div>
-                    <span className="cl-days-badge" style={{color:daysColor,background:daysColor+"18",fontSize:"11px"}}>
-                      {client.lastContact ? `Hace ${days}d` : "Sin contacto"}
-                    </span>
+                    {filteredClients(stage).map((client) => {
+                      const alert = getAlert(client);
+                      const days = daysSince(client.lastContact);
+                      const daysColor = days > 7 ? "#C4526A" : days > 3 ? "#e87b1e" : "#1D9E75";
+                      return (
+                        <div className={`lead-card lead-alert-${alert}`} key={client.id}>
+                          <div className="lead-card-top">
+                            <strong>{client.name}</strong>
+                            <span className="cl-amount-chip">{money.format(client.amount)}</span>
+                          </div>
+                          <p className="cl-service-text">{client.service}</p>
+                          {client.nextAction && <p className="cl-next-action">→ {client.nextAction}</p>}
+                          <div className="cl-days-row">
+                            <span className="cl-days-badge" style={{color:daysColor,background:daysColor+"18"}}>
+                              {client.lastContact ? `Hace ${days} día${days !== 1 ? "s" : ""}` : "Sin contacto"}
+                            </span>
+                          </div>
+                          <div className="cl-card-actions">
+                            <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>✓ Contacté</button>
+                            <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-wa-btn">WA</a>
+                          </div>
+                          <div className="lead-stage-btns">
+                            {pipelineStages.filter(s => s !== stage).map(s => (
+                              <button type="button" key={s} onClick={() => moveClientStatus(client.id, s)}>{stageEmoji[s]} {s.replace("Lead ","")}</button>
+                            ))}
+                            <button type="button" className="cl-close-btn" onClick={() => moveClientStatus(client.id, "Venta ganada")}>✓ Cerré</button>
+                            <button type="button" className="delete-btn" onClick={() => confirmDelete("¿Eliminar este cliente?", () => setClients(c => c.filter(cl => cl.id !== client.id)))}>×</button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {filteredClients(stage).length === 0 && (
+                      <p className="cl-empty-col">Sin clientes aquí</p>
+                    )}
                   </div>
-                  <div style={{display:"flex",gap:"6px"}}>
-                    <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>✓ Contacté hoy</button>
-                    <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-wa-btn">WA</a>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── CLIENTES GANADOS ── */}
+        {clientsTab === 3 && (
+          <>
+            <div className="cl-kpi-row">
+              <div className="cl-kpi">
+                <span>Ingreso total</span>
+                <strong style={{color:"#1D9E75"}}>{money.format(wonSalesTotal)}</strong>
+              </div>
+              <div className="cl-kpi cl-kpi-divider">
+                <span>Clientes ganados</span>
+                <strong>{paidClients.length}</strong>
+              </div>
+              <div className="cl-kpi cl-kpi-divider">
+                <span>Ticket promedio</span>
+                <strong>{money.format(avgTicket)}</strong>
+              </div>
+              <div className="cl-kpi cl-kpi-divider">
+                <span>Días para cerrar</span>
+                <strong>{avgCloseDays ?? "—"}</strong>
+              </div>
+            </div>
+
+            <div className="paid-clients-section card">
+              <div className="section-title compact-title">
+                <h2>Tus clientes ganados</h2>
+                <p>Toca un cliente para editarlo y ver facturas/contratos pendientes.</p>
+              </div>
+              {paidClients.length === 0 && <p className="helper-copy">Tus ventas cerradas aparecerán aquí.</p>}
+              <div className="paid-client-grid">
+                {paidClients.map((client) => {
+                  const days = daysSince(client.lastContact);
+                  const daysColor = days > 30 ? "#C4526A" : days > 14 ? "#e87b1e" : "#1D9E75";
+                  return (
+                    <article className="paid-client-card" key={client.id} onClick={() => setEditingClientId(client.id)} style={{cursor:"pointer"}}>
+                      <div className="paid-client-header">
+                        <div>
+                          <strong>{client.name}</strong>
+                          <small>{client.service} · {money.format(client.amount)}</small>
+                        </div>
+                        <span className="cl-days-badge" style={{color:daysColor,background:daysColor+"18",fontSize:"11px"}}>
+                          {client.lastContact ? `Hace ${days}d` : "Sin contacto"}
+                        </span>
+                      </div>
+                      <div className="cl-pending-badges">
+                        <span className={`cl-pending-badge${client.facturaEnviada ? " done" : ""}`}>{client.facturaEnviada ? "✓ Factura enviada" : "⏳ Factura pendiente"}</span>
+                        <span className={`cl-pending-badge${client.contratoEnviado ? " done" : ""}`}>{client.contratoEnviado ? "✓ Contrato enviado" : "⏳ Contrato pendiente"}</span>
+                      </div>
+                      <p className="cl-edit-hint">Editar →</p>
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Modal: Nuevo cliente ── */}
+        {showClientFormModal && (
+          <div className="app-modal-backdrop" onClick={e => e.target===e.currentTarget && setShowClientFormModal(false)}>
+            <div className="app-modal-card" style={{width:"min(460px,100%)"}}>
+              <div className="app-modal-head">
+                <div>
+                  <p className="app-modal-head-eyebrow">Mis Clientes</p>
+                  <p className="app-modal-head-title">Nuevo cliente</p>
+                </div>
+                <button type="button" className="app-modal-close" onClick={() => setShowClientFormModal(false)}>✕</button>
+              </div>
+              <form onSubmit={addClient} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                {clients.length >= currentLimits.clients && (
+                  <div className="plan-limit-banner">
+                    ⚠️ Llegaste al límite de <strong>{currentLimits.clients} clientes</strong> de tu plan.{" "}
+                    <button type="button" className="plan-limit-link" onClick={() => setActiveView("pricing")}>Ver planes →</button>
                   </div>
-                  <textarea placeholder="Notas: entrega, resultados, próxima recompra…" value={client.notes || ""} onChange={(e) => updateClientNotes(client.id, e.target.value)} />
-                </article>
-              );
-            })}
+                )}
+
+                <div>
+                  <label className="app-form-label">Nombre</label>
+                  <input autoFocus placeholder="Nombre del cliente" value={clientForm.name} onChange={(e) => updateClientForm("name", e.target.value)}
+                    className={`app-form-input${clientFormErrors.name ? " input-error" : ""}`} />
+                  {clientFormErrors.name && <span className="field-error">{clientFormErrors.name}</span>}
+                </div>
+
+                <div>
+                  <label className="app-form-label">Servicio o producto</label>
+                  <input placeholder="Ej: Mentoría 1:1" value={clientForm.service} onChange={(e) => updateClientForm("service", e.target.value)}
+                    className={`app-form-input${clientFormErrors.service ? " input-error" : ""}`} />
+                  {clientFormErrors.service && <span className="field-error">{clientFormErrors.service}</span>}
+                </div>
+
+                <div>
+                  <label className="app-form-label">Monto</label>
+                  <MoneyAmountInput placeholder="Monto" value={clientForm.amount} onChange={(v) => updateClientForm("amount", v)}
+                    className={clientFormErrors.amount ? "input-error" : ""} />
+                  {clientFormErrors.amount && <span className="field-error">{clientFormErrors.amount}</span>}
+                </div>
+
+                <div>
+                  <label className="app-form-label">Teléfono WhatsApp</label>
+                  <input placeholder="Ej: 573001234567" value={clientForm.phone} onChange={(e) => updateClientForm("phone", e.target.value)} className="app-form-input" />
+                </div>
+
+                <div>
+                  <label className="app-form-label">Estado</label>
+                  <div className="cl-status-chips">
+                    {stages.map(s => (
+                      <button type="button" key={s}
+                        className={`cl-status-chip${clientForm.status === s ? " active" : ""}`}
+                        onClick={() => updateClientForm("status", s)}>
+                        {stageEmoji[s] || "✓"} {s.replace("Lead ", "")}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <button type="button" className="cl-details-toggle" onClick={() => setShowClientDetails(v => !v)}>
+                  {showClientDetails ? "▲ Menos detalles" : "▼ Agregar detalles (fuente, próxima acción)"}
+                </button>
+
+                {showClientDetails && (
+                  <>
+                    <input placeholder="Próxima acción (opcional)" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} className="app-form-input" />
+                    <select value={clientForm.source} onChange={(e) => updateClientForm("source", e.target.value)} className="app-form-input">
+                      <option value="">¿De dónde llegó?</option>
+                      {defaultSources.map((s) => <option key={s}>{s}</option>)}
+                    </select>
+                    {clientForm.source === "Otra" && (
+                      <input placeholder="¿Cuál fuente?" value={clientForm.customSource} onChange={(e) => updateClientForm("customSource", e.target.value)} className="app-form-input" />
+                    )}
+                    <label className="inline-date-field">
+                      <span>Último contacto</span>
+                      <input type="date" value={clientForm.lastContactDate} onChange={(e) => updateClientForm("lastContactDate", e.target.value)} />
+                    </label>
+                  </>
+                )}
+
+                <button className="app-modal-submit" type="submit">Guardar cliente</button>
+              </form>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* ── Modal: Editar cliente ganado ── */}
+        {editingClient && (
+          <div className="app-modal-backdrop" onClick={e => e.target===e.currentTarget && setEditingClientId(null)}>
+            <div className="app-modal-card" style={{width:"min(460px,100%)"}}>
+              <div className="app-modal-head">
+                <div>
+                  <p className="app-modal-head-eyebrow">Cliente ganado</p>
+                  <p className="app-modal-head-title">{editingClient.name}</p>
+                </div>
+                <button type="button" className="app-modal-close" onClick={() => setEditingClientId(null)}>✕</button>
+              </div>
+              <div style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                <div>
+                  <label className="app-form-label">Nombre</label>
+                  <input value={editingClient.name} onChange={(e) => updateClientField(editingClient.id, "name", e.target.value)} className="app-form-input" />
+                </div>
+                <div>
+                  <label className="app-form-label">Servicio o producto</label>
+                  <input value={editingClient.service} onChange={(e) => updateClientField(editingClient.id, "service", e.target.value)} className="app-form-input" />
+                </div>
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                  <div>
+                    <label className="app-form-label">Monto</label>
+                    <MoneyAmountInput value={String(editingClient.amount)} onChange={(v) => updateClientField(editingClient.id, "amount", Number(v) || 0)} />
+                  </div>
+                  <div>
+                    <label className="app-form-label">Teléfono</label>
+                    <input value={editingClient.phone || ""} onChange={(e) => updateClientField(editingClient.id, "phone", e.target.value)} className="app-form-input" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="app-form-label">Pendientes administrativos</label>
+                  <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+                    <button type="button" onClick={() => toggleClientFlag(editingClient.id, "facturaEnviada")}
+                      className={`cl-pending-toggle${editingClient.facturaEnviada ? " done" : ""}`}>
+                      {editingClient.facturaEnviada ? "✓ Factura enviada" : "⏳ Factura pendiente"}
+                    </button>
+                    <button type="button" onClick={() => toggleClientFlag(editingClient.id, "contratoEnviado")}
+                      className={`cl-pending-toggle${editingClient.contratoEnviado ? " done" : ""}`}>
+                      {editingClient.contratoEnviado ? "✓ Contrato enviado" : "⏳ Contrato pendiente"}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="app-form-label">Notas <span style={{fontWeight:400,textTransform:"none"}}>(entrega, resultados, recompra)</span></label>
+                  <textarea placeholder="Notas..." value={editingClient.notes || ""} onChange={(e) => updateClientNotes(editingClient.id, e.target.value)}
+                    className="app-form-input" style={{minHeight:"70px",resize:"vertical"}} />
+                </div>
+
+                <div style={{display:"flex",gap:"8px"}}>
+                  <a href={waLink(editingClient)} target="_blank" rel="noreferrer" className="cl-wa-btn" style={{flex:1,textAlign:"center"}}>WhatsApp</a>
+                  <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(editingClient.id, editingClient.name)}>✓ Contacté hoy</button>
+                </div>
+                <button type="button" onClick={() => { confirmDelete("¿Eliminar este cliente?", () => setClients(c => c.filter(cl => cl.id !== editingClient.id))); setEditingClientId(null); }}
+                  style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"12px",fontWeight:600,padding:"4px 0"}}>
+                  Eliminar cliente
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </section>
     );
   }
