@@ -5611,6 +5611,8 @@ button {
   border: 1px solid var(--line);
   border-radius: 14px;
   padding: 14px;
+  min-width: 0;
+  overflow: hidden;
 }
 .biz-task-area-head {
   display: flex;
@@ -5637,6 +5639,7 @@ button {
   padding: 6px 8px;
   background: rgba(255, 255, 255, 0.6);
   border-radius: 8px;
+  min-width: 0;
 }
 
 /* Fuentes de ingreso */
@@ -6510,7 +6513,7 @@ button {
   backdrop-filter: blur(4px);
 }
 .home-today-card--revenue {
-  background: linear-gradient(140deg, #1D9E75 0%, #156b50 100%);
+  background: linear-gradient(140deg, #2DBE8C 0%, #1c8f69 100%);
   border-color: transparent;
   position: relative;
   overflow: hidden;
@@ -6525,7 +6528,7 @@ button {
   background: rgba(255, 255, 255, 0.07);
   border-radius: 50%;
 }
-.home-today-card--revenue .home-today-card-menu-cta { color: #1D9E75; }
+.home-today-card--revenue .home-today-card-menu-cta { color: #2DBE8C; }
 
 .home-today-card-menu-cta {
   margin-top: auto;
@@ -6988,6 +6991,20 @@ button {
 @keyframes fin-btn-pulse {
   0%, 100% { box-shadow: 0 4px 14px rgba(196, 82, 106, 0.38); }
   50%       { box-shadow: 0 4px 22px rgba(196, 82, 106, 0.6), 0 0 0 6px rgba(196, 82, 106, 0.1); }
+}
+
+.fin-add-btn--green {
+  background: linear-gradient(135deg, #2DBE8C, #1c8f69);
+  box-shadow: 0 4px 14px rgba(45, 190, 140, 0.38);
+  animation: fin-btn-pulse-green 3s ease-in-out infinite;
+}
+.fin-add-btn--green:hover {
+  box-shadow: 0 6px 20px rgba(45, 190, 140, 0.5);
+  animation: none;
+}
+@keyframes fin-btn-pulse-green {
+  0%, 100% { box-shadow: 0 4px 14px rgba(45, 190, 140, 0.38); }
+  50%       { box-shadow: 0 4px 22px rgba(45, 190, 140, 0.6), 0 0 0 6px rgba(45, 190, 140, 0.1); }
 }
 
 /* ── Budget modal slide-up ── */

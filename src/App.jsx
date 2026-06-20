@@ -3432,7 +3432,7 @@ export default function App() {
     const brandComplete = !!(brandProfile.queOfreces && brandProfile.transformacion);
 
     // Salud del mes — un solo numero + una frase humana + una accion
-    const healthColor = totals.profit >= 0 && monthlyProgress >= 75 ? "#1D9E75"
+    const healthColor = totals.profit >= 0 && monthlyProgress >= 75 ? "#2DBE8C"
       : totals.profit >= 0 || monthlyProgress >= 50 ? "#e87b1e" : "#C4526A";
     const heroStatus = totals.profit >= 0 && monthlyProgress >= 75
       ? { emoji: "💚", msg: "Vas muy bien este mes. Sigue así." }
@@ -3875,7 +3875,7 @@ export default function App() {
 
             {/* Registrar — botón, el form vive en popup */}
             <div className="biz-register-row">
-              <button type="button" className="fin-add-btn" onClick={() => setShowMovementModal(true)}>+ Registrar movimiento</button>
+              <button type="button" className="fin-add-btn fin-add-btn--green" onClick={() => setShowMovementModal(true)}>+ Registrar movimiento</button>
               {streakDays > 0 && (
                 <span className="biz-streak-badge">🔥 {streakDays} día{streakDays>1?"s":""} seguidos registrando</span>
               )}
