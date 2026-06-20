@@ -1376,6 +1376,7 @@ export default function App() {
     setPremiumExpiresAt(state.premiumExpiresAt || null);
     setUserMode(state.userMode || null);
     setHomeFocusOverride(state.homeFocusOverride || null);
+    setFamilyMembers(state.familyMembers || []);
     setAppointments(state.appointments || []);
     setWeekMenu((() => { const wm=state.weekMenu; const mg=v=>!v?{desayuno:"",almuerzo:"",cena:"",snack:""}:typeof v==="string"?{desayuno:"",almuerzo:v,cena:"",snack:""}:{desayuno:"",almuerzo:"",cena:"",snack:"",...v}; return {L:mg(wm?.L),M:mg(wm?.M),X:mg(wm?.X),J:mg(wm?.J),V:mg(wm?.V),S:mg(wm?.S),D:mg(wm?.D)}; })());
     setHomeRoutines(state.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
@@ -1506,7 +1507,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride, familyMembers]);
 
   const expandAppts = (list, limitDays = 90) => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
