@@ -2283,7 +2283,7 @@ button {
 
 .pipeline-board {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -2352,9 +2352,9 @@ button {
 }
 
 .paid-client-card {
-  border: 1px solid var(--line);
+  border: 1px solid rgba(201, 169, 110, 0.25);
   border-radius: 12px;
-  background: rgba(255,255,255,0.72);
+  background: #FDF8EF;
   padding: 14px;
   display: grid;
   gap: 10px;
@@ -2377,6 +2377,17 @@ button {
 .cl-pending-badge.done {
   background: rgba(29, 158, 117, 0.1);
   color: #1D9E75;
+}
+.cl-card-notes {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  font-style: italic;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .cl-edit-hint {
   margin: 0;
@@ -2700,7 +2711,7 @@ button {
   }
 
   .pipeline-board {
-    grid-template-columns: repeat(4, 220px);
+    grid-template-columns: repeat(3, 240px);
     min-width: max-content;
   }
 
@@ -3743,97 +3754,126 @@ button {
   overflow: hidden;
 }
 
-/* ── Semana: a quién contactar + proyección ── */
-.cl-week-action-card {
+/* ── Semana: metrica compacta + listado con cuenta atras, lado a lado ── */
+.cl-week-split {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 14px;
+  margin-bottom: 16px;
+  align-items: start;
+}
+@media (max-width: 800px) {
+  .cl-week-split { grid-template-columns: 1fr; }
+}
+.cl-week-metric-card {
   background: linear-gradient(135deg, #C4526A, #a33a52);
+  border-radius: 16px;
+  padding: 18px 20px;
+  color: #fff;
+}
+.cl-week-metric-label {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  opacity: 0.85;
+}
+.cl-week-metric-count-row { display: flex; align-items: baseline; gap: 6px; margin-bottom: 12px; }
+.cl-week-metric-count { font-size: 34px; font-weight: 800; line-height: 1; }
+.cl-week-metric-sub { font-size: 13px; opacity: 0.85; }
+.cl-week-metric-projection {
+  background: rgba(255, 255, 255, 0.16);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+.cl-week-metric-projection p { margin: 0 0 4px; font-size: 11px; line-height: 1.4; opacity: 0.95; }
+.cl-week-metric-projection strong { font-size: 16px; display: block; }
+.cl-week-metric-projection span { font-size: 11px; opacity: 0.85; }
+
+.cl-week-list-card {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 16px 18px;
+}
+.cl-week-list-title { margin: 0 0 10px; font-size: 13px; font-weight: 800; color: var(--ink); text-transform: uppercase; letter-spacing: 0.4px; }
+.cl-week-list { display: grid; gap: 6px; max-height: 320px; overflow-y: auto; }
+.cl-week-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+  background: #FAF7F5;
+}
+.cl-week-list-row-main { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.cl-week-list-row-main strong { font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-week-list-row-sub { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cl-due-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.cl-due-badge--red     { background: rgba(220, 38, 38, 0.1); color: #DC2626; }
+.cl-due-badge--orange  { background: rgba(217, 119, 6, 0.1); color: #D97706; }
+.cl-due-badge--neutral { background: rgba(0, 0, 0, 0.06); color: var(--muted); }
+.cl-week-list-wa {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(29, 158, 117, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+/* ── Calculadora de meta ── */
+.cl-goal-card {
+  background: linear-gradient(160deg, #fff 0%, #FDF2F5 100%);
+  border: 1px solid rgba(196, 82, 106, 0.18);
   border-radius: 18px;
   padding: 22px 24px;
   margin-bottom: 16px;
-  color: #fff;
+}
+.cl-goal-card-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+.cl-goal-card-ico {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgba(196, 82, 106, 0.1);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  flex-wrap: wrap;
+  justify-content: center;
+  font-size: 18px;
 }
-.cl-week-action-label {
-  margin: 0 0 4px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  opacity: 0.85;
-}
-.cl-week-action-count-row {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.cl-week-action-count { font-size: 42px; font-weight: 800; line-height: 1; }
-.cl-week-action-sub { font-size: 14px; opacity: 0.85; }
-.cl-week-projection {
-  background: rgba(255, 255, 255, 0.16);
-  border-radius: 14px;
-  padding: 12px 16px;
-  text-align: right;
-  max-width: 260px;
-}
-.cl-week-projection p { margin: 0 0 4px; font-size: 12px; line-height: 1.4; opacity: 0.95; }
-.cl-week-projection strong { font-size: 18px; display: block; }
-.cl-week-projection span { font-size: 12px; opacity: 0.85; }
-
-/* ── Calculadora de meta ── */
-.cl-goal-calc-card {
-  background: #fff;
-  border: 1.5px dashed rgba(196, 82, 106, 0.35);
-  border-radius: 16px;
-  padding: 20px 22px;
-  margin-bottom: 16px;
-}
-.cl-goal-calc-title { margin: 0 0 2px; font-size: 15px; font-weight: 800; color: var(--ink); }
-.cl-goal-calc-sub { margin: 0 0 12px; font-size: 13px; color: var(--muted); }
-.cl-goal-calc-input { max-width: 240px; }
-.cl-goal-calc-result {
-  margin-top: 14px;
-  padding: 14px 16px;
-  background: rgba(196, 82, 106, 0.06);
-  border-radius: 12px;
-}
-.cl-goal-calc-result p { margin: 0 0 6px; font-size: 13px; color: var(--ink); line-height: 1.5; }
-.cl-goal-calc-result p:last-child { margin-bottom: 0; }
-.cl-goal-calc-result strong { color: #C4526A; }
-
-/* ── Tarjetas a quién contactar ── */
-.cl-contact-grid {
+.cl-goal-card-title { margin: 0 0 2px; font-size: 15px; font-weight: 800; color: var(--ink); }
+.cl-goal-card-sub { margin: 0; font-size: 12px; color: var(--muted); }
+.cl-goal-card-input { max-width: 280px; }
+.cl-goal-card-results {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 16px;
 }
-.cl-contact-card {
-  background: #fff;
-  border: 1px solid var(--line);
-  border-left: 4px solid var(--line);
+.cl-goal-result-stat {
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(196, 82, 106, 0.15);
   border-radius: 12px;
-  padding: 14px;
-  display: grid;
-  gap: 6px;
-  min-width: 0;
-  overflow: hidden;
+  padding: 12px 10px;
+  text-align: center;
 }
-.cl-contact-card--red    { border-left-color: #C4526A; }
-.cl-contact-card--yellow { border-left-color: #e87b1e; }
-.cl-contact-card--green  { border-left-color: #1D9E75; }
-.cl-contact-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 8px;
-}
-.cl-contact-card-top strong {
-  font-size: 14px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.cl-goal-result-stat strong { display: block; font-size: 22px; font-weight: 800; color: #C4526A; line-height: 1.2; }
+.cl-goal-result-stat span { font-size: 11px; color: var(--muted); }
+@media (max-width: 600px) {
+  .cl-goal-card-results { grid-template-columns: 1fr; }
 }
 
 .cl-kpi {

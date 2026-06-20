@@ -4115,6 +4115,14 @@ export default function App() {
     const projectedSales = conversionRate > 0 ? Math.round(toContactClients.length * (conversionRate / 100)) : 0;
     const projectedRevenue = projectedSales * avgTicket;
 
+    // ── Listado completo con cuenta atrás para contactar (vencidos primero) ──
+    const dueInDays = (client) => {
+      const [warn] = alertDays[client.status] || [7, 14];
+      return warn - daysSince(client.lastContact);
+    };
+    const weekContactList = clients.filter((c) => c.status !== "Venta ganada")
+      .sort((a, b) => dueInDays(a) - dueInDays(b));
+
     // ── Calculadora: ¿cuántos contactos necesito para vender $X? ──
     const goalAmount = Number(clientGoalInput) || 0;
     const goalSalesNeeded = goalAmount > 0 && avgTicket > 0 ? Math.ceil(goalAmount / avgTicket) : 0;
@@ -4236,67 +4244,76 @@ export default function App() {
               </div>
             </div>
 
-            {/* Cuántos contactar + proyección de cierre */}
-            <div className="cl-week-action-card">
-              <div className="cl-week-action-main">
-                <p className="cl-week-action-label">Esta semana debes contactar a</p>
-                <div className="cl-week-action-count-row">
-                  <strong className="cl-week-action-count">{toContactClients.length}</strong>
-                  <span className="cl-week-action-sub">cliente{toContactClients.length !== 1 ? "s" : ""}</span>
+            {/* Cuántos contactar (compacto) + listado con cuenta atrás, lado a lado */}
+            <div className="cl-week-split">
+              <div className="cl-week-metric-card">
+                <p className="cl-week-metric-label">Esta semana debes contactar a</p>
+                <div className="cl-week-metric-count-row">
+                  <strong className="cl-week-metric-count">{toContactClients.length}</strong>
+                  <span className="cl-week-metric-sub">cliente{toContactClients.length !== 1 ? "s" : ""}</span>
                 </div>
+                {toContactClients.length > 0 && (
+                  <div className="cl-week-metric-projection">
+                    <p>Con tu conversión histórica del <strong>{conversionRate}%</strong> podrías cerrar</p>
+                    <strong>~{projectedSales} venta{projectedSales !== 1 ? "s" : ""}</strong>
+                    <span>≈ {money.format(projectedRevenue)}</span>
+                  </div>
+                )}
               </div>
-              {toContactClients.length > 0 && (
-                <div className="cl-week-projection">
-                  <p>Si los contactas, con tu conversión histórica del <strong>{conversionRate}%</strong> podrías cerrar</p>
-                  <strong>~{projectedSales} venta{projectedSales !== 1 ? "s" : ""}</strong>
-                  <span>≈ {money.format(projectedRevenue)}</span>
-                </div>
-              )}
+
+              <div className="cl-week-list-card">
+                <p className="cl-week-list-title">A quién contactar</p>
+                {weekContactList.length === 0 ? (
+                  <p className="helper-copy" style={{margin:0}}>No tienes leads activos.</p>
+                ) : (
+                  <div className="cl-week-list">
+                    {weekContactList.map(client => {
+                      const due = dueInDays(client);
+                      const tone = due <= 0 ? "red" : due <= 2 ? "orange" : "neutral";
+                      const label = due <= 0 ? (due === 0 ? "Contactar ya" : `Atrasado ${Math.abs(due)}d`) : `Contactar en ${due}d`;
+                      return (
+                        <div key={client.id} className="cl-week-list-row">
+                          <div className="cl-week-list-row-main">
+                            <strong>{client.name}</strong>
+                            <span className="cl-week-list-row-sub">{client.service} · {money.format(client.amount)}</span>
+                          </div>
+                          <span className={`cl-due-badge cl-due-badge--${tone}`}>{label}</span>
+                          <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-week-list-wa" title="WhatsApp">💬</a>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Calculadora de meta */}
-            <div className="cl-goal-calc-card">
-              <p className="cl-goal-calc-title">🎯 ¿Cuánto quieres vender?</p>
-              <p className="cl-goal-calc-sub">Te decimos cuántos leads necesitas contactar para lograrlo.</p>
-              <MoneyAmountInput placeholder="Ej: 1.000.000" value={clientGoalInput} onChange={setClientGoalInput} className="cl-goal-calc-input" />
+            <div className="cl-goal-card">
+              <div className="cl-goal-card-head">
+                <span className="cl-goal-card-ico">🎯</span>
+                <div>
+                  <p className="cl-goal-card-title">¿Cuánto quieres vender?</p>
+                  <p className="cl-goal-card-sub">Te decimos cuántos leads necesitas contactar para lograrlo.</p>
+                </div>
+              </div>
+              <MoneyAmountInput placeholder="Ej: 1.000.000" value={clientGoalInput} onChange={setClientGoalInput} className="cl-goal-card-input" />
               {goalSalesNeeded > 0 && (
-                <div className="cl-goal-calc-result">
-                  <p>Con tu ticket promedio de <strong>{money.format(avgTicket)}</strong> necesitas cerrar <strong>{goalSalesNeeded}</strong> venta{goalSalesNeeded !== 1 ? "s" : ""}.</p>
-                  <p>Para lograrlo, contacta a unos <strong>{goalContactsNeeded}</strong> lead{goalContactsNeeded !== 1 ? "s" : ""} {conversionRate > 0 ? `(con tu conversión actual del ${conversionRate}%)` : ""}.</p>
+                <div className="cl-goal-card-results">
+                  <div className="cl-goal-result-stat">
+                    <strong>{goalSalesNeeded}</strong>
+                    <span>venta{goalSalesNeeded !== 1 ? "s" : ""} necesarias</span>
+                  </div>
+                  <div className="cl-goal-result-stat">
+                    <strong>{goalContactsNeeded}</strong>
+                    <span>lead{goalContactsNeeded !== 1 ? "s" : ""} a contactar</span>
+                  </div>
+                  <div className="cl-goal-result-stat">
+                    <strong>{money.format(avgTicket)}</strong>
+                    <span>ticket promedio</span>
+                  </div>
                 </div>
               )}
             </div>
-
-            {/* Tarjetas — a quién contactar */}
-            {toContactClients.length > 0 && (
-              <div style={{marginTop:"18px"}}>
-                <p className="biz-week-title" style={{marginBottom:"10px"}}>A quién contactar</p>
-                <div className="cl-contact-grid">
-                  {toContactClients.map(client => {
-                    const alert = getAlert(client);
-                    const days = daysSince(client.lastContact);
-                    const daysColor = days > 7 ? "#C4526A" : days > 3 ? "#e87b1e" : "#1D9E75";
-                    return (
-                      <div key={client.id} className={`cl-contact-card cl-contact-card--${alert}`}>
-                        <div className="cl-contact-card-top">
-                          <strong>{client.name}</strong>
-                          <span className="cl-amount-chip">{money.format(client.amount)}</span>
-                        </div>
-                        <p className="cl-service-text">{client.service}</p>
-                        <span className="cl-days-badge" style={{color:daysColor,background:daysColor+"18"}}>
-                          {client.lastContact ? `Hace ${days} día${days !== 1 ? "s" : ""}` : "Sin contacto"}
-                        </span>
-                        {client.nextAction && <p className="cl-next-action">→ {client.nextAction}</p>}
-                        <div className="cl-card-actions">
-                          <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>✓ Contacté</button>
-                          <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-wa-btn">WA</a>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </>
         )}
 
@@ -4410,6 +4427,7 @@ export default function App() {
                         <span className={`cl-pending-badge${client.facturaEnviada ? " done" : ""}`}>{client.facturaEnviada ? "✓ Factura enviada" : "⏳ Factura pendiente"}</span>
                         <span className={`cl-pending-badge${client.contratoEnviado ? " done" : ""}`}>{client.contratoEnviado ? "✓ Contrato enviado" : "⏳ Contrato pendiente"}</span>
                       </div>
+                      {client.notes && <p className="cl-card-notes">"{client.notes}"</p>}
                       <p className="cl-edit-hint">Editar →</p>
                     </article>
                   );
