@@ -3096,7 +3096,6 @@ export default function App() {
     const daysSincePublish = lastPublished ? Math.floor((Date.now() - lastPublished.createdAt) / 86400000) : null;
     const urgentHomeTasks = homeTasks.filter((t) => !t.done && t.priority === "Importante");
     const hasAlerts = urgentLeads.length > 0 || (daysSincePublish !== null && daysSincePublish > 3) || urgentHomeTasks.length > 0;
-    const focusTasks = [...tasks].filter((t) => !t.done).sort((a, b) => taskUrgencyScore(b) - taskUrgencyScore(a)).slice(0, 3);
 
     // ── Gating por modo / trial ──
     const trialActive = !!premiumExpiresAt && Date.now() < premiumExpiresAt;
@@ -3126,6 +3125,7 @@ export default function App() {
     // Usar fecha local (no UTC) para evitar desfase de timezone
     const _tn = new Date();
     const todayISO = `${_tn.getFullYear()}-${String(_tn.getMonth()+1).padStart(2,"0")}-${String(_tn.getDate()).padStart(2,"0")}`;
+    const focusTasks = tasks.filter((t) => !t.done && t.dueDate && t.dueDate <= todayISO).sort((a, b) => taskUrgencyScore(b) - taskUrgencyScore(a)).slice(0, 3);
     const isTodayAppt = (appt) => {
       if (!appt.date) return false;
       const orig = new Date(appt.date + "T00:00:00");
@@ -3148,7 +3148,7 @@ export default function App() {
     const trackWork = userMode !== "mama";
     const trackHome = userMode !== "emprendedora";
     const pendingHomeAll = homeTasks.filter(t => !t.done);
-    const pendingBizAll = tasks.filter(t => !t.done);
+    const pendingBizAll = tasks.filter(t => !t.done && t.dueDate && t.dueDate <= todayISO);
     const homeTaskMinutes = pendingHomeAll.reduce((s,t)=>s+homeTaskEstDuration(t),0);
     const bizTaskMinutes = pendingBizAll.reduce((s,t)=>s+bizTaskEstDuration(t),0);
     const todayHogarMinutes = todayHogar.reduce((s,a)=>s+apptEstDuration(a),0);
@@ -3275,7 +3275,9 @@ export default function App() {
                 <div className="db-today-col">
                   <p className="db-today-label">💼 Negocio</p>
                   {focusTasks.length === 0
-                    ? <button type="button" className="db-today-cta-link" onClick={() => setActiveView("business")}>Agregar tarea de negocio →</button>
+                    ? (tasks.filter(t => !t.done).length > 0
+                        ? <p className="db-today-done">✅ Nada urgente para hoy en tu negocio</p>
+                        : <button type="button" className="db-today-cta-link" onClick={() => setActiveView("business")}>Agregar tarea de negocio →</button>)
                     : <>
                         {focusTasks.map(task => (
                           <div key={task.id} className="db-today-task-row">
