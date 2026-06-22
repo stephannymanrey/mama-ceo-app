@@ -49,6 +49,7 @@ const AWAKE_MINUTES_PER_DAY = 16 * 60;
 const homeTaskEstDuration = (t) => t.duration || HOME_CATEGORY_DURATION[t.category] || DEFAULT_HOME_DURATION;
 const apptEstDuration = (a) => a.duration || APPT_TYPE_DURATION[a.type] || DEFAULT_APPT_DURATION;
 const bizTaskEstDuration = (t) => t.duration || DEFAULT_BIZ_TASK_DURATION;
+const fmtHrs = (mins) => { const h=Math.floor(mins/60); const m=Math.round(mins%60); if (h<=0) return `${m}m`; return m>0 ? `${h}h ${m}m` : `${h}h`; };
 
 const EXPENSE_CATEGORIES = ["Marketing y publicidad", "Herramientas y software", "Insumos o materiales", "Transporte", "Pago a colaboradores", "Impuestos"];
 
@@ -3165,7 +3166,6 @@ export default function App() {
       : loadPct < 85
       ? { label: "Ocupada", emoji: "💪", color: "#e87b1e", bg: "rgba(232,123,30,0.08)", msg: "Hoy requiere enfoque, pero es manejable. Prueba el temporizador Pomodoro para avanzar sin agobiarte." }
       : { label: "Saturada", emoji: "😮‍💨", color: "#C4526A", bg: "rgba(196,82,106,0.08)", msg: "Tu día está muy cargado. Considera delegar algo o mover lo que pueda esperar a otro día." };
-    const fmtHrs = (mins) => { const h=Math.floor(mins/60); const m=Math.round(mins%60); if (h<=0) return `${m}m`; return m>0 ? `${h}h ${m}m` : `${h}h`; };
 
     // ── Hogar: "Tus 3 de hoy" ──
     const pendingHome = homeTasks.filter((t) => !t.done);
@@ -3638,7 +3638,8 @@ export default function App() {
                     {[...overdueBizTasks, ...todayBizTasks].slice(0,4).map(task => (
                       <label key={task.id} style={{display:"flex",alignItems:"center",gap:"6px",cursor:"pointer"}}>
                         <input type="checkbox" checked={task.done} onChange={() => toggleTask(task.id)} style={{accentColor:"#1D9E75",flexShrink:0}} />
-                        <span style={{fontSize:"13px",color:"var(--ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.text}</span>
+                        <span style={{flex:1,minWidth:0,fontSize:"13px",color:"var(--ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{task.text}</span>
+                        <span style={{flexShrink:0,fontSize:"11px",fontWeight:700,color:"var(--muted)",background:"rgba(0,0,0,0.05)",padding:"2px 7px",borderRadius:"10px"}}>{fmtHrs(bizTaskEstDuration(task))}</span>
                       </label>
                     ))}
                   </div>
