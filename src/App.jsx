@@ -3147,7 +3147,7 @@ export default function App() {
     // ── Carga del día: minutos estimados (sin pedirte nada extra) ──
     const trackWork = userMode !== "mama";
     const trackHome = userMode !== "emprendedora";
-    const pendingHomeAll = homeTasks.filter(t => !t.done);
+    const pendingHomeAll = homeTasks.filter(t => !t.done && (!t.frequency || t.frequency === "Rutina"));
     const pendingBizAll = tasks.filter(t => !t.done && t.dueDate && t.dueDate <= todayISO);
     const homeTaskMinutes = pendingHomeAll.reduce((s,t)=>s+homeTaskEstDuration(t),0);
     const bizTaskMinutes = pendingBizAll.reduce((s,t)=>s+bizTaskEstDuration(t),0);
