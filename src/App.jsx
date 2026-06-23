@@ -4831,16 +4831,6 @@ export default function App() {
                 </div>
 
                 <div>
-                  <label className="app-form-label">Palabras clave <span style={{fontWeight:400,textTransform:"none"}}>(separadas por coma)</span></label>
-                  <input className="app-form-input" placeholder="Ej: finanzas, mamás, organización" value={editingItem.keywords || ""} onChange={(e) => updateContentField(editingItem.id, "keywords", e.target.value)} />
-                </div>
-
-                <div>
-                  <label className="app-form-label">Hook <span style={{fontWeight:400,textTransform:"none"}}>(opcional)</span></label>
-                  <input className="app-form-input" placeholder="La frase que engancha en los primeros 3 segundos" value={editingItem.hook || ""} onChange={(e) => updateContentField(editingItem.id, "hook", e.target.value)} />
-                </div>
-
-                <div>
                   <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:"6px"}}>
                     <label className="app-form-label" style={{margin:0}}>Guión <span style={{fontWeight:400,textTransform:"none"}}>— si lo escribes, pasa sola a "Por grabar"</span></label>
                     {onCrearGuionForCard && (

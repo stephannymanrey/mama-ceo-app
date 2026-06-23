@@ -241,46 +241,56 @@ Responde SOLO JSON válido, sin texto extra:
 {"titulo":"título del video (sin comillas, max 10 palabras)","secciones":[{"nombre":"Hook","tiempo":"0-15 seg","guion":"..."},{"nombre":"Interés","tiempo":"15 seg - 1 min","guion":"..."},{"nombre":"Deseo","tiempo":"1-2 min","guion":"..."},{"nombre":"Llamada a Acción","tiempo":"últimos 30 seg","guion":"..."}]}`;
     }
 
+    const jsonSafety = `
+
+FORMATO DE RESPUESTA — REGLAS ESTRICTAS para que el JSON sea válido:
+- Responde EXCLUSIVAMENTE con el objeto JSON, sin texto antes ni después, sin markdown ni \`\`\`
+- Dentro de los textos NUNCA uses comillas dobles ("); si necesitas citar algo usa comillas simples (')
+- Dentro de los textos NO uses saltos de línea literales; si necesitas separar ideas usa un punto y sigue en la misma línea
+- No uses guiones largos (—) ni viñetas dentro de "guion", escribe todo como texto corrido`;
+
     if (formato === "youtube") {
       return `Eres guionista de YouTube para mamás emprendedoras en LatAm.
 Escribe el guión COMPLETO Y LISTO PARA GRABAR de un video de 15 a 20 minutos.
 
 ${base}
 
-Estructura — 7 secciones con contenido completamente desarrollado para grabar:
+Estructura — 7 secciones con contenido desarrollado para grabar:
 1. Hook de apertura (0-1 min): Arranca con una situación concreta o historia personal que engancha desde el primer segundo.
 2. Intro y contexto (1-3 min): Preséntate brevemente, explica qué van a aprender y por qué importa para ellas hoy.
-3. Punto principal 1 (3-7 min): Primer insight clave con historia real, ejemplo o caso concreto. Desarrollado con detalle.
-4. Punto principal 2 (7-12 min): Segundo insight con otro ejemplo o historia diferente. Que profundice en el tema.
+3. Punto principal 1 (3-7 min): Primer insight clave con historia real, ejemplo o caso concreto.
+4. Punto principal 2 (7-12 min): Segundo insight con otro ejemplo o historia diferente.
 5. Punto principal 3 (12-16 min): Tercer insight, el más accionable. Qué puede hacer ella hoy mismo.
-6. Conclusión y síntesis (16-18 min): Resume los 3 puntos en 2-3 oraciones. Qué cambió en ella al entender esto.
+6. Conclusión y síntesis (16-18 min): Resume los 3 puntos en 2-3 oraciones.
 7. CTA y cierre (18-20 min): Una sola instrucción clara. Cierra con algo personal y cercano.
 
-Escribe texto corrido, NO bullet points. Cada sección debe tener mínimo 150 palabras.
+Escribe texto corrido, NO bullet points. Cada sección entre 90 y 130 palabras — ni más, ni menos. Sé concisa para que el guión completo quepa en la respuesta.
+${jsonSafety}
 
-Responde SOLO JSON válido, sin texto extra:
+Responde SOLO JSON válido:
 {"titulo":"título del episodio (max 12 palabras, sin comillas)","secciones":[{"nombre":"Hook de apertura","tiempo":"0-1 min","guion":"..."},{"nombre":"Intro y contexto","tiempo":"1-3 min","guion":"..."},{"nombre":"Punto 1","tiempo":"3-7 min","guion":"..."},{"nombre":"Punto 2","tiempo":"7-12 min","guion":"..."},{"nombre":"Punto 3","tiempo":"12-16 min","guion":"..."},{"nombre":"Conclusión","tiempo":"16-18 min","guion":"..."},{"nombre":"CTA y cierre","tiempo":"18-20 min","guion":"..."}]}`;
     }
 
     if (formato === "podcast") {
       return `Eres productora de podcast para mamás emprendedoras en LatAm.
-Escribe el guión COMPLETO de un episodio de podcast de aproximadamente 60 minutos.
+Escribe el guión de los TEMAS Y PUNTOS clave de un episodio de podcast de aproximadamente 60 minutos (no palabra por palabra, sino una guía sólida para hablar con naturalidad de cada segmento).
 
 ${base}
 
-Estructura — 8 segmentos completamente desarrollados con texto listo para hablar:
+Estructura — 8 segmentos:
 1. Apertura y bienvenida (0-3 min): Saludo cálido, presenta el episodio y por qué decidiste grabar esto hoy.
 2. Contexto del tema (3-8 min): Cuenta qué es este tema, por qué importa, y qué error común existe sobre él.
-3. Tu historia con este tema (8-18 min): Una historia personal real y detallada — el antes, el momento de quiebre, el aprendizaje. Honesta.
-4. Profundización 1 (18-28 min): Primer ángulo o subtema importante. Desarrollado con ejemplos, situaciones reales, casos de clientas.
-5. Profundización 2 (28-38 min): Segundo ángulo. Más profundo. Puede incluir preguntas para que ella reflexione.
-6. Profundización 3 (38-48 min): Tercer ángulo o lo más accionable del episodio. Qué puede hacer esta semana.
+3. Tu historia con este tema (8-18 min): Una historia personal real — el antes, el momento de quiebre, el aprendizaje. Honesta.
+4. Profundización 1 (18-28 min): Primer ángulo o subtema importante, con ejemplo o caso de clienta.
+5. Profundización 2 (28-38 min): Segundo ángulo. Puede incluir preguntas para que ella reflexione.
+6. Profundización 3 (38-48 min): Tercer ángulo o lo más accionable del episodio.
 7. Reflexión y síntesis (48-55 min): Qué quieres que se lleven. La idea central en 3-4 oraciones.
 8. Cierre y CTA (55-60 min): Despedida cercana, una sola acción concreta, y algo personal para terminar.
 
-Escribe texto corrido, NO bullet points. Cada segmento mínimo 200 palabras. Tono conversacional — como si estuviera hablando en vivo.
+Escribe texto corrido, NO bullet points. Cada segmento entre 90 y 130 palabras — ni más, ni menos. Tono conversacional. Sé concisa para que el guión completo quepa en la respuesta.
+${jsonSafety}
 
-Responde SOLO JSON válido, sin texto extra:
+Responde SOLO JSON válido:
 {"titulo":"título del episodio (max 10 palabras)","secciones":[{"nombre":"Apertura","tiempo":"0-3 min","guion":"..."},{"nombre":"Contexto del tema","tiempo":"3-8 min","guion":"..."},{"nombre":"Tu historia","tiempo":"8-18 min","guion":"..."},{"nombre":"Profundización 1","tiempo":"18-28 min","guion":"..."},{"nombre":"Profundización 2","tiempo":"28-38 min","guion":"..."},{"nombre":"Profundización 3","tiempo":"38-48 min","guion":"..."},{"nombre":"Reflexión y síntesis","tiempo":"48-55 min","guion":"..."},{"nombre":"Cierre y CTA","tiempo":"55-60 min","guion":"..."}]}`;
     }
 
@@ -491,6 +501,12 @@ export const handler = async (event) => {
   let maxTokens = 4096;
   if (type === "guion" && (context.formato === "youtube" || context.formato === "podcast")) maxTokens = 8192;
   if (type === "reproposito") maxTokens = 8192;
+
+  const parseJSON = (rawText) => {
+    const match = rawText.match(/\{[\s\S]*\}/);
+    return JSON.parse(match ? match[0] : rawText);
+  };
+
   let rawText;
   try {
     rawText = await callClaude(prompt, maxTokens);
@@ -504,11 +520,19 @@ export const handler = async (event) => {
 
   let result;
   try {
-    const match = rawText.match(/\{[\s\S]*\}/);
-    result = JSON.parse(match ? match[0] : rawText);
-  } catch {
-    console.error("Parse error, raw:", rawText);
-    return respond(502, { error: "Respuesta no válida. Intenta de nuevo." }, event);
+    result = parseJSON(rawText);
+  } catch (firstErr) {
+    // Las respuestas largas (Youtube/Podcast) tienen más riesgo de comillas o saltos de línea
+    // sin escapar dentro del JSON — reintentamos una vez pidiendo explícitamente que lo corrija.
+    console.warn("Parse error, reintentando. Raw:", rawText);
+    try {
+      const retryPrompt = `${prompt}\n\nTu respuesta anterior NO fue JSON válido. Corrígelo: responde EXCLUSIVAMENTE el objeto JSON (sin texto antes/después, sin markdown), escapa toda comilla doble dentro de los textos como \\", y no incluyas saltos de línea literales dentro de ningún string.`;
+      const rawText2 = await callClaude(retryPrompt, maxTokens);
+      result = parseJSON(rawText2);
+    } catch (err) {
+      console.error("Parse error tras reintento:", err);
+      return respond(502, { error: "Respuesta no válida. Intenta de nuevo." }, event);
+    }
   }
 
   const updatedUsage = { ...usage, [mk]: currentCount + 1 };
