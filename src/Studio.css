@@ -2435,6 +2435,15 @@
   max-width: 860px; margin: 0 auto; padding: 16px 16px 40px;
   display: flex; flex-direction: column; gap: 16px;
 }
+.gn2-linked-banner {
+  background: rgba(196,82,106,0.08);
+  border: 1px solid rgba(196,82,106,0.25);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+  color: #8B4A56;
+  text-align: center;
+}
 .gn2-hero { text-align: center; padding: 16px 0 4px; }
 .gn2-hero-title { font-size: 24px; font-weight: 800; color: #2D1B1B; margin: 0 0 6px; letter-spacing: -0.4px; }
 .gn2-hero-sub  { font-size: 14px; color: #9A7878; margin: 0; }

@@ -4685,6 +4685,20 @@ button {
   transition: color 0.15s;
 }
 .ck-card-del:hover { color: #C4526A; }
+.ck-card-guion-btn {
+  background: #C4526A;
+  border: none;
+  border-radius: 7px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.1s;
+}
+.ck-card-guion-btn:hover { background: #AD3F56; }
+.ck-card-guion-btn:active { transform: scale(0.97); }
 .ck-card-body {
   padding: 2px 12px 10px;
 }

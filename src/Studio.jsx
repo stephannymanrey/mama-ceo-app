@@ -1895,7 +1895,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
 }
 
 // ── GUIÓN ──────────────────────────────────────────────────────
-function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {}, callGemini, plan = "free", onAiUsed, onAddToContent }) {
+function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {}, callGemini, plan = "free", onAiUsed, onAddToContent, linkedContentId, onUpdateContentGuion, onLinkedSaved }) {
   const [subTab,       setSubTab]       = useState("guion");
   const [fase,         setFase]         = useState("tema");
   const [topic,        setTopic]        = useState(seed || "");
@@ -1929,8 +1929,14 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
 
   const scriptTexto = script?.secciones?.map(s => `【${s.nombre}】\n${s.guion}`).join("\n\n") || "";
 
-  // Guarda el guión Y lo manda al tablero de Mi Contenido en "Por grabar"
+  // Si el guión viene desde una tarjeta de Mi Contenido, se guarda EN esa misma tarjeta.
+  // Si no, crea una tarjeta nueva en "Por grabar".
   const enviarAGuionContenido = () => {
+    if (linkedContentId && onUpdateContentGuion) {
+      onUpdateContentGuion(linkedContentId, scriptTexto);
+      onLinkedSaved?.();
+      return;
+    }
     if (!onAddToContent) return;
     const meta = { ...(FORMATO_TO_CONTENT[formato] || {}), guion: scriptTexto, status: "Por grabar" };
     onAddToContent(script?.titulo || topic, meta);
@@ -2000,6 +2006,9 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
 
   return (
     <div className="studio-tab-content">
+      {linkedContentId && (
+        <div className="gn2-linked-banner">🔗 Este guión se va a guardar directo en tu tarjeta de <b>Mi Contenido</b> — al guardar, solo te falta abrir y grabar.</div>
+      )}
       {true && (
         <>
           {/* ── TEMA + FORMATO ── */}
@@ -3765,10 +3774,11 @@ function BrandProfileForm({ initial = {}, onSave, onCancel, isOnboarding = false
   );
 }
 
-export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, callGemini, plan = "free", onAddToContent, contentBoard }) {
+export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, callGemini, plan = "free", onAddToContent, onUpdateContentGuion, contentBoard }) {
   const [activeTab, setActiveTab] = useState("contenido");
   const [data, setData] = useState(() => loadStudio());
   const [guionSeed, setGuionSeed] = useState("");
+  const [guionLinkedContentId, setGuionLinkedContentId] = useState(null);
   const [toast, setToast] = useState(null);
   const [aiUsage, setAiUsage] = useState(null);
   const [editingBrand, setEditingBrand] = useState(false);
@@ -3784,6 +3794,15 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
   const handleDelete = (tipo, id) => setData(prev => ({ ...prev, [tipo]: (prev[tipo] || []).filter(i => i.id !== id) }));
   const handleCrearGuion = (texto) => {
     setGuionSeed(texto);
+    setGuionLinkedContentId(null);
+    setActiveTab("guion");
+    setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
+  };
+
+  // Crear guión desde una tarjeta de Mi Contenido: el guión final se guarda EN esa misma tarjeta
+  const handleCrearGuionForCard = (contentId, texto) => {
+    setGuionSeed(texto);
+    setGuionLinkedContentId(contentId);
     setActiveTab("guion");
     setTimeout(() => window.scrollTo({ top: 0, behavior: "smooth" }), 50);
   };
@@ -3859,12 +3878,14 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
       ) : null}
 
       <main className="studio-main">
-        {activeTab === "contenido" && contentBoard}
+        {activeTab === "contenido" && (typeof contentBoard === "function" ? contentBoard(handleCrearGuionForCard) : contentBoard)}
         {activeTab === "mensaje"  && <MensajeTab    {...tabProps} />}
         {activeTab === "ideas"    && <IdeasTab      {...tabProps} onCrearGuion={handleCrearGuion} />}
         {activeTab === "lead"     && <LeadMagnetTab {...tabProps} />}
         {activeTab === "hooks"    && <HooksTab      {...tabProps} onCrearGuion={handleCrearGuion} />}
-        {activeTab === "guion"    && <GuionTab      {...tabProps} seed={guionSeed} onSeedConsumed={() => setGuionSeed("")} />}
+        {activeTab === "guion"    && <GuionTab      {...tabProps} seed={guionSeed} onSeedConsumed={() => setGuionSeed("")}
+                                       linkedContentId={guionLinkedContentId} onUpdateContentGuion={onUpdateContentGuion}
+                                       onLinkedSaved={() => setGuionLinkedContentId(null)} />}
         {activeTab === "carrusel"    && <CarruselTab     {...tabProps} />}
         {activeTab === "reproposito" && <RepropositoTab  {...tabProps} />}
         {activeTab === "email"       && <EmailTab        {...tabProps} />}

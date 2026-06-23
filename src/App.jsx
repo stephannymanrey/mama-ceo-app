@@ -1973,7 +1973,7 @@ export default function App() {
   }
 
   if (activeView === "studio") {
-    return <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} onAddToContent={addContentFromIdea} contentBoard={renderContent()} />;
+    return <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} onAddToContent={addContentFromIdea} onUpdateContentGuion={updateContentGuion} contentBoard={renderContent} />;
   }
 
   if (!user && awsActive) {
@@ -4592,7 +4592,7 @@ export default function App() {
       </section>
     );
   }
-  function renderContent() {
+  function renderContent(onCrearGuionForCard) {
     const unpublished = contentItems.filter((i) => i.status !== "Publicado").length;
     const byNetwork = contentItems.reduce((acc, i) => { acc[i.network] = (acc[i.network] || 0) + 1; return acc; }, {});
     const topNetwork = Object.entries(byNetwork).sort((a, b) => b[1] - a[1])[0];
@@ -4841,10 +4841,18 @@ export default function App() {
                 </div>
 
                 <div>
-                  <label className="app-form-label">Guión <span style={{fontWeight:400,textTransform:"none"}}>— si lo escribes, pasa sola a "Por grabar"</span></label>
-                  <textarea className="app-form-input" placeholder="Escribe o pega aquí el guión completo..." value={editingItem.guion || ""}
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:"6px"}}>
+                    <label className="app-form-label" style={{margin:0}}>Guión <span style={{fontWeight:400,textTransform:"none"}}>— si lo escribes, pasa sola a "Por grabar"</span></label>
+                    {onCrearGuionForCard && (
+                      <button type="button" className="ck-card-guion-btn"
+                        onClick={() => onCrearGuionForCard(editingItem.id, editingItem.title)}>
+                        🎬 {editingItem.guion ? "Editar guión" : "Crear guión"}
+                      </button>
+                    )}
+                  </div>
+                  <textarea className="app-form-input" placeholder="Escribe o pega aquí el guión completo... o usa el botón de arriba para que la IA te ayude" value={editingItem.guion || ""}
                     onChange={(e) => updateContentGuion(editingItem.id, e.target.value)}
-                    style={{minHeight:"140px",resize:"vertical"}} />
+                    style={{minHeight:"140px",resize:"vertical",marginTop:"6px"}} />
                 </div>
 
                 <div>
