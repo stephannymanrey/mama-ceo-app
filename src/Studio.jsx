@@ -978,6 +978,9 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
               </div>
               <p className="studio-idea-titulo">{idea.titulo}</p>
               <div className="studio-bank-actions">
+                <button className="studio-bank-action-guion" onClick={() => onCrearGuion?.(idea.titulo)}>
+                  🎬 Crear guión
+                </button>
                 <button className="studio-bank-action-copy" onClick={() => copiar(idea.titulo, `bank-${idea.id}`)}>
                   {copiado === `bank-${idea.id}` ? "¡Copiado!" : "Copiar"}
                 </button>

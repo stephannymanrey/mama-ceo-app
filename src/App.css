@@ -4543,6 +4543,20 @@ button {
   background: #FAF7F5;
   transition: box-shadow 0.15s, border-color 0.15s;
 }
+/* Estilo Trello en desktop: columnas con alto fijo y scroll propio, sin scrollear toda la página */
+@media (min-width: 721px) {
+  .ck-kanban--5col {
+    align-items: stretch;
+  }
+  .ck-kanban--5col .ck-col {
+    max-height: calc(100vh - 320px);
+    min-height: 320px;
+  }
+  .ck-kanban--5col .ck-col-body {
+    overflow-y: auto;
+    flex: 1;
+  }
+}
 .ck-col--over {
   box-shadow: 0 0 0 2px rgba(196, 82, 106, 0.4) inset;
   border-color: transparent;
@@ -4584,6 +4598,10 @@ button {
   padding: 12px;
   min-height: 80px;
 }
+.ck-col-body::-webkit-scrollbar { width: 6px; }
+.ck-col-body::-webkit-scrollbar-track { background: transparent; }
+.ck-col-body::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 999px; }
+.ck-col-body::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.22); }
 .ck-empty {
   text-align: center;
   font-size: 13px;

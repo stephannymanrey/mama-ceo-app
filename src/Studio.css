@@ -521,6 +521,20 @@
   transition: color 0.15s, border-color 0.15s;
 }
 .studio-bank-action-copy:hover { color: #C4526A; border-color: #C4526A; }
+.studio-bank-action-guion {
+  background: #C4526A;
+  border: none;
+  border-radius: 7px;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 11px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s, transform 0.1s;
+}
+.studio-bank-action-guion:hover { background: #AD3F56; }
+.studio-bank-action-guion:active { transform: scale(0.97); }
 .studio-bank-action-mpm {
   background: rgba(196,82,106,0.07);
   border: none;
