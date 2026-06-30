@@ -2560,7 +2560,7 @@ export default function App() {
             <span className="sidebar-tool-icon">🎓</span>
             <span className="sidebar-tool-label">
               UMP Academy
-              <span className="sidebar-miniapp-sub">Aprende a monetizar</span>
+              <span className="sidebar-miniapp-sub">Aprende a monetizar tu conocimiento</span>
             </span>
             <span className="sidebar-miniapp-arrow">↗</span>
           </a>
