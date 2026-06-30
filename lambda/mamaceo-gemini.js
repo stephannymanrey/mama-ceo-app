@@ -179,119 +179,94 @@ function buildPrompt(type, ctx) {
   const tono  = ctx.tono  || "cercano y cálido";
 
   if (type === "guion" && ctx.modo === "refinar") {
-    const formatoLabel = { ig: "Reel de Instagram (máx 3 min)", youtube: "Video de YouTube (15-20 min)", podcast: "Podcast (~60 min)" }[ctx.formato || "ig"] || "video";
+    const formatoLabel = { ig: "Reel de Instagram (máx 3 min)", youtube: "Video de YouTube (15-20 min)" }[ctx.formato || "ig"] || "video";
     const guionJSON = JSON.stringify(ctx.guionActual || {}, null, 2);
-    return `Eres guionista refinando el guión de una mamá emprendedora.
+    return `Eres Abi, asistente de contenido que ayuda a mejorar guiones. Eres directa, específica y cálida — como una editora que lee el guión a fondo y hace exactamente lo que le piden, con criterio.
 
 ${DIALECTO}
 
 Guión actual de ${formatoLabel} sobre "${ctx.tema || ""}":
 ${guionJSON}
 
-Instrucción de la usuaria: "${ctx.instruccion || ""}"
+Instrucción: "${ctx.instruccion || ""}"
 
-Aplica la instrucción. Si afecta una sección específica, solo modifica esa sección y deja las demás exactamente igual. Si es general, aplícala a todo el guión.
+Qué debes hacer:
+- Lee el guión completo y aplica la instrucción con precisión.
+- Si la instrucción afecta una sección específica, modifica solo esa sección y deja las demás EXACTAMENTE igual.
+- Si es general, aplícala en todo el guión con coherencia.
+- Sé valiente con los cambios: si pide "más emotivo", sé realmente emotivo, no levemente.
+- Primera persona, como si ELLA lo dijera en voz alta. Coloquial pero neutro.
+- Sin emojis dentro del guión. PROHIBIDO: "transforma", "potencial", "empoderar".
+- Mantén el mismo número de secciones, nombres y tiempos originales.
 
-Reglas de escritura:
-- Primera persona, como si ELLA lo dijera en voz alta
-- Coloquial pero neutro — NO Argentina
-- Sin emojis dentro del guión
-- PROHIBIDO: "transforma tu vida", "potencial", "empoderar", "journey"
-- Mantén el mismo número de secciones y sus nombres/tiempos originales
+Después de aplicar los cambios, escribe un campo "abi" con 1-2 oraciones específicas explicando QUÉ cambiaste y POR QUÉ — como si le dijeras a tu clienta en persona. Menciona la sección o parte concreta que modificaste.
 
-Responde SOLO JSON válido con el mismo formato, sin texto extra, sin markdown:
-{"titulo":"...","secciones":[{"nombre":"...","tiempo":"...","guion":"..."}]}`;
+Responde SOLO JSON válido, sin texto extra ni markdown:
+{"titulo":"...","secciones":[{"nombre":"...","tiempo":"...","guion":"..."}],"abi":"Aquí va tu respuesta específica de Abi..."}`;
   }
 
   if (type === "guion") {
     const formato   = ctx.formato || "ig";
     const tema      = ctx.tema || ctx.queOfreces || "";
-    const queOfrece = ctx.queOfreces || "";
-    const transf    = ctx.transformacion || "";
+    const queOfrece = ctx.queOfreces ? `Contexto del creador: ${ctx.queOfreces}` : "";
+    const transf    = ctx.transformacion ? `Valor que transmite: ${ctx.transformacion}` : "";
 
-    const base = `Tema del video: "${tema}"
-Negocio: ${queOfrece}
-Transformación que logra con sus clientas: ${transf}
-Habla a: ${nicho}
+    const base = `Tema del contenido: "${tema}"
+Audiencia: ${nicho}
 Tono: ${tono}
+${queOfrece}
+${transf}
 
 ${DIALECTO}
 
 Reglas de escritura CRÍTICAS:
-- Escribe en primera persona como si ELLA lo estuviera diciendo en voz alta, natural
-- Coloquial pero neutro — como habla una mamá con su mejor amiga en WhatsApp
-- PROHIBIDO: "transforma tu vida", "alcanza el éxito", "potencial", "empoderar", "journey", "abundancia"
-- PROHIBIDO: empezar con "¿Cansada de...?", "Si quieres...", "Llegó el momento de..."
-- SÍ: situaciones concretas del día a día, emociones nombradas con precisión, momentos reales
-- Sin emojis dentro del guión`;
-
-    if (formato === "ig") {
-      return `Eres guionista de Reels de Instagram para mamás emprendedoras en LatAm.
-Escribe el guión COMPLETO Y LISTO PARA GRABAR de un Reel de máximo 3 minutos.
-
-${base}
-
-Estructura — 4 secciones, cada una completamente desarrollada:
-1. Hook (0-15 seg, 1-2 oraciones): Arranca desde una situación real que detiene el scroll. Sin promesas genéricas.
-2. Interés (15 seg - 1 min, 4-6 oraciones): Nombra el dolor con precisión. Que ella sienta "eso me pasa exactamente". Sin solución aún.
-3. Deseo (1-2 min, 6-8 oraciones): Pinta la vida después. Escenas reales y concretas — su rutina, sus resultados, cómo se siente. Emocional pero creíble.
-4. Llamada a Acción (últimos 30 seg, 1-2 oraciones): Una sola instrucción. Simple y directa.
-
-Responde SOLO JSON válido, sin texto extra:
-{"titulo":"título del video (sin comillas, max 10 palabras)","secciones":[{"nombre":"Hook","tiempo":"0-15 seg","guion":"..."},{"nombre":"Interés","tiempo":"15 seg - 1 min","guion":"..."},{"nombre":"Deseo","tiempo":"1-2 min","guion":"..."},{"nombre":"Llamada a Acción","tiempo":"últimos 30 seg","guion":"..."}]}`;
-    }
+- El guión debe girar EXCLUSIVAMENTE alrededor del tema — no introduzcas ángulos de negocio, ventas o emprendimiento si el tema no los pide.
+- Escribe en primera persona, como si ELLA lo estuviera diciendo en voz alta de forma natural.
+- Coloquial pero neutro — como habla una persona con su mejor amiga.
+- PROHIBIDO: "transforma tu vida", "alcanza el éxito", "potencial", "empoderar", "journey", "abundancia".
+- PROHIBIDO: empezar con "¿Cansada de...?", "Si quieres...", "Llegó el momento de...".
+- SÍ: situaciones concretas y reales del tema, emociones nombradas con precisión, momentos específicos.
+- Sin emojis dentro del guión.`;
 
     const jsonSafety = `
-
-FORMATO DE RESPUESTA — REGLAS ESTRICTAS para que el JSON sea válido:
+FORMATO DE RESPUESTA — REGLAS ESTRICTAS:
 - Responde EXCLUSIVAMENTE con el objeto JSON, sin texto antes ni después, sin markdown ni \`\`\`
-- Dentro de los textos NUNCA uses comillas dobles ("); si necesitas citar algo usa comillas simples (')
-- Dentro de los textos NO uses saltos de línea literales; si necesitas separar ideas usa un punto y sigue en la misma línea
-- No uses guiones largos (—) ni viñetas dentro de "guion", escribe todo como texto corrido`;
+- Dentro de los campos "guion" NUNCA uses comillas dobles ("); usa comillas simples (') si necesitas citar algo.
+- NO uses saltos de línea literales dentro de ningún string; separa ideas con puntos.
+- Escribe todo como texto corrido — sin guiones, viñetas ni bullet points.`;
 
-    if (formato === "youtube") {
-      return `Eres guionista de YouTube para mamás emprendedoras en LatAm.
-Escribe el guión COMPLETO Y LISTO PARA GRABAR de un video de 15 a 20 minutos.
+    if (formato === "ig") {
+      return `Eres guionista experta en Reels de Instagram. Escribe el guión COMPLETO Y LISTO PARA GRABAR de un Reel de máximo 3 minutos.
 
 ${base}
 
-Estructura — 7 secciones con contenido desarrollado para grabar:
-1. Hook de apertura (0-1 min): Arranca con una situación concreta o historia personal que engancha desde el primer segundo.
-2. Intro y contexto (1-3 min): Preséntate brevemente, explica qué van a aprender y por qué importa para ellas hoy.
-3. Punto principal 1 (3-7 min): Primer insight clave con historia real, ejemplo o caso concreto.
-4. Punto principal 2 (7-12 min): Segundo insight con otro ejemplo o historia diferente.
-5. Punto principal 3 (12-16 min): Tercer insight, el más accionable. Qué puede hacer ella hoy mismo.
-6. Conclusión y síntesis (16-18 min): Resume los 3 puntos en 2-3 oraciones.
-7. CTA y cierre (18-20 min): Una sola instrucción clara. Cierra con algo personal y cercano.
+Estructura — 4 secciones:
+1. Hook (0-15 seg): 1-2 oraciones. Arranca desde una situación real que detiene el scroll. Sin promesas genéricas.
+2. Interés (15 seg - 1 min): 4-6 oraciones. Nombra el dolor o la situación con precisión. Que ella sienta "eso me pasa exactamente". Sin solución aún.
+3. Deseo (1-2 min): 6-8 oraciones. Pinta la vida o la situación después. Escenas reales y concretas. Emocional pero creíble.
+4. Llamada a Acción (últimos 30 seg): 1-2 oraciones. Una sola instrucción. Simple y directa.
 
-Escribe texto corrido, NO bullet points. Cada sección entre 90 y 130 palabras — ni más, ni menos. Sé concisa para que el guión completo quepa en la respuesta.
-${jsonSafety}
-
-Responde SOLO JSON válido:
-{"titulo":"título del episodio (max 12 palabras, sin comillas)","secciones":[{"nombre":"Hook de apertura","tiempo":"0-1 min","guion":"..."},{"nombre":"Intro y contexto","tiempo":"1-3 min","guion":"..."},{"nombre":"Punto 1","tiempo":"3-7 min","guion":"..."},{"nombre":"Punto 2","tiempo":"7-12 min","guion":"..."},{"nombre":"Punto 3","tiempo":"12-16 min","guion":"..."},{"nombre":"Conclusión","tiempo":"16-18 min","guion":"..."},{"nombre":"CTA y cierre","tiempo":"18-20 min","guion":"..."}]}`;
+Responde SOLO JSON válido, sin texto extra:
+{"titulo":"título del video (max 10 palabras)","secciones":[{"nombre":"Hook","tiempo":"0-15 seg","guion":"..."},{"nombre":"Interés","tiempo":"15 seg - 1 min","guion":"..."},{"nombre":"Deseo","tiempo":"1-2 min","guion":"..."},{"nombre":"Llamada a Acción","tiempo":"últimos 30 seg","guion":"..."}]}`;
     }
 
-    if (formato === "podcast") {
-      return `Eres productora de podcast para mamás emprendedoras en LatAm.
-Escribe el guión de los TEMAS Y PUNTOS clave de un episodio de podcast de aproximadamente 60 minutos (no palabra por palabra, sino una guía sólida para hablar con naturalidad de cada segmento).
+    if (formato === "youtube") {
+      return `Eres guionista experta en contenido de YouTube de formato largo. Escribe el guión COMPLETO Y LISTO PARA GRABAR de un video de 15 a 20 minutos.
 
 ${base}
 
-Estructura — 8 segmentos:
-1. Apertura y bienvenida (0-3 min): Saludo cálido, presenta el episodio y por qué decidiste grabar esto hoy.
-2. Contexto del tema (3-8 min): Cuenta qué es este tema, por qué importa, y qué error común existe sobre él.
-3. Tu historia con este tema (8-18 min): Una historia personal real — el antes, el momento de quiebre, el aprendizaje. Honesta.
-4. Profundización 1 (18-28 min): Primer ángulo o subtema importante, con ejemplo o caso de clienta.
-5. Profundización 2 (28-38 min): Segundo ángulo. Puede incluir preguntas para que ella reflexione.
-6. Profundización 3 (38-48 min): Tercer ángulo o lo más accionable del episodio.
-7. Reflexión y síntesis (48-55 min): Qué quieres que se lleven. La idea central en 3-4 oraciones.
-8. Cierre y CTA (55-60 min): Despedida cercana, una sola acción concreta, y algo personal para terminar.
+Estructura — 5 secciones con contenido sólido y desarrollado:
+1. Hook de apertura (0-2 min): Empieza con una situación, pregunta o historia concreta que enganche desde el primer segundo. No promesas — una escena real.
+2. Contexto y promesa (2-5 min): Explica de qué va el video y por qué importa. Qué van a aprender o sentir al terminar. Honesta y directa.
+3. Desarrollo central (5-13 min): El corazón del video. Desarrolla el tema con profundidad — cuenta historias reales, da ejemplos concretos, explica conceptos con claridad. Puede tener 2 o 3 bloques internos de ideas, pero escríbelos como texto corrido, uno fluyendo en el otro.
+4. Cierre reflexivo (13-17 min): Resume la idea central en tus propias palabras. Qué quieres que se lleven. Sin repetir lo anterior — eleva el mensaje.
+5. Llamada a Acción (17-20 min): Una sola instrucción concreta y personal. Cierra con algo cálido y propio de ti.
 
-Escribe texto corrido, NO bullet points. Cada segmento entre 90 y 130 palabras — ni más, ni menos. Tono conversacional. Sé concisa para que el guión completo quepa en la respuesta.
+Cada sección entre 130 y 180 palabras. Escribe texto corrido, fluido y natural — como habla alguien frente a una cámara.
 ${jsonSafety}
 
 Responde SOLO JSON válido:
-{"titulo":"título del episodio (max 10 palabras)","secciones":[{"nombre":"Apertura","tiempo":"0-3 min","guion":"..."},{"nombre":"Contexto del tema","tiempo":"3-8 min","guion":"..."},{"nombre":"Tu historia","tiempo":"8-18 min","guion":"..."},{"nombre":"Profundización 1","tiempo":"18-28 min","guion":"..."},{"nombre":"Profundización 2","tiempo":"28-38 min","guion":"..."},{"nombre":"Profundización 3","tiempo":"38-48 min","guion":"..."},{"nombre":"Reflexión y síntesis","tiempo":"48-55 min","guion":"..."},{"nombre":"Cierre y CTA","tiempo":"55-60 min","guion":"..."}]}`;
+{"titulo":"título del video (max 12 palabras)","secciones":[{"nombre":"Hook de apertura","tiempo":"0-2 min","guion":"..."},{"nombre":"Contexto y promesa","tiempo":"2-5 min","guion":"..."},{"nombre":"Desarrollo central","tiempo":"5-13 min","guion":"..."},{"nombre":"Cierre reflexivo","tiempo":"13-17 min","guion":"..."},{"nombre":"Llamada a Acción","tiempo":"17-20 min","guion":"..."}]}`;
     }
 
     return "";

@@ -1792,7 +1792,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
   };
 
   const totalHooks = hooks ? Object.values(HOOK_CATS).reduce((s, _, i) => s + (hooks[Object.keys(HOOK_CATS)[i]]?.length || 0), 0) : 0;
-  const EJEMPLOS = ["vender en WhatsApp", "cobrar sin miedo", "organizarme mejor", "conseguir clientas", "reels de negocio", "emprender con hijos"];
+  const EJEMPLOS = ["cobrar sin miedo", "conversaciones con mi hijo", "organizarme mejor", "recetas sin tiempo", "crianza con calma", "conseguir clientas"];
 
   const CAT_COLORS_BANCO = { curiosidad:"#4A90D9", dolor:"#C4526A", promesa:"#27AE60", pregunta:"#E8755A", historia:"#8B6565", numero:"#C9903A", contraintuitivo:"#E67E22", identidad:"#16A085" };
 
@@ -1948,10 +1948,9 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
   const FORMATOS = [
     { k: "ig",      label: "Instagram Reel", sub: "hasta 3 min", icon: "📱" },
     { k: "youtube", label: "YouTube",         sub: "15-20 min",   icon: "📹" },
-    { k: "podcast", label: "Podcast",         sub: "~60 min",     icon: "🎙️" },
   ];
-  const FORMATO_LABEL = { ig: "Instagram Reel", youtube: "YouTube · 15-20 min", podcast: "Podcast · 60 min" };
-  const FORMATO_TO_CONTENT = { ig: { format: "Reel", network: "Instagram" }, youtube: { format: "Episodio", network: "YouTube" }, podcast: { format: "Episodio", network: "Spotify" } };
+  const FORMATO_LABEL = { ig: "Instagram Reel", youtube: "YouTube · 15-20 min" };
+  const FORMATO_TO_CONTENT = { ig: { format: "Reel", network: "Instagram" }, youtube: { format: "Episodio", network: "YouTube" } };
   const SECTION_COLORS = ["#C9903A", "#C4526A", "#27AE60", "#6366F1", "#E8755A", "#0EA5E9", "#9333EA", "#F59E0B"];
 
   const scriptTexto = script?.secciones?.map(s => `【${s.nombre}】\n${s.guion}`).join("\n\n") || "";
@@ -2018,7 +2017,8 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
     const r = res.result || {};
     if (r.secciones) {
       setScript({ titulo: r.titulo || script.titulo, secciones: r.secciones });
-      setChatHistory(prev => [...prev, { role: "claude", text: "¡Listo! Actualicé el guión. ¿Algo más que ajustar? 😊" }]);
+      const abiMsg = r.abi || "Listo, apliqué el cambio. ¿Algo más que ajustar?";
+      setChatHistory(prev => [...prev, { role: "claude", text: abiMsg }]);
     }
   };
 
@@ -2027,8 +2027,8 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
     const hook = script.secciones[0]?.guion?.split(".")[0] || topic;
     const body = script.secciones[1]?.guion?.slice(0, 250) || "";
     const cta  = script.secciones[script.secciones.length - 1]?.guion?.split(".")[0] || "";
-    const tags = brandProfile.hashtags || "#mamáemprendedora #negociodigital #emprendimiento #mamáceo";
-    return `${hook}.\n\n${body}\n\n👉 ${cta}.\n\n${tags}`;
+    const tags = brandProfile.hashtags || "";
+    return `${hook}.\n\n${body}\n\n👉 ${cta}.${tags ? `\n\n${tags}` : ""}`;
   };
 
   return (
@@ -2048,13 +2048,13 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
 
               <div className="gn2-field">
                 <input className="gn2-input" autoFocus
-                  placeholder="Ej: cobrar sin culpa, vender con reels, organizar el tiempo..."
+                  placeholder="Ej: conversaciones con mi hijo, cobrar sin culpa, recetas rápidas..."
                   value={topic}
                   onChange={e => setTopic(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && topic.trim().length > 2 && generar()}
                 />
                 <div className="ideas-chips" style={{marginTop:"10px"}}>
-                  {["cobrar sin culpa","vender por WhatsApp","organizar el tiempo","conseguir clientas","reels que venden","mentalidad de CEO"].map(ej => (
+                  {["cobrar sin culpa","conversaciones con mi hijo","organizar el tiempo","recetas saludables rápidas","mindset de mamá","conseguir clientas"].map(ej => (
                     <button key={ej} className="ideas-chip" onClick={() => setTopic(ej)}>{ej}</button>
                   ))}
                 </div>
@@ -2277,7 +2277,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
               <div className="cap-guiones-grid">
                 {saved.guiones.slice().reverse().slice(0, 6).map(g => (
                   <button key={g.id} className="cap-guion-card" onClick={() => {
-                    setCaption(g.scriptTexto?.slice(0, 500) || `${g.tema}\n\n[Escribe aquí tu caption]\n\n#mamáemprendedora #negociodigital #mamáceo`);
+                    setCaption(g.scriptTexto?.slice(0, 500) || `${g.tema}\n\n[Escribe aquí tu caption]`);
                     setC(p => ({ ...p, tema: g.tema }));
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}>
