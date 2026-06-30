@@ -2404,11 +2404,7 @@ export default function App() {
               <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ?"}</button>
               {profileSetup && (
                 <button type="button" onClick={() => setConfirmModal({
-                  msg: "
-¿
-Eliminar tu cuenta y todos tus datos? Esta acci
-ó
-n no se puede deshacer.",
+                  msg: "¿Eliminar tu cuenta y todos tus datos? Esta acción no se puede deshacer.",
                   danger: true,
                   onConfirm: async () => {
                     try {
@@ -2421,13 +2417,7 @@ n no se puede deshacer.",
                       setShowProfileModal(false);
                     } catch (err) {
                       console.error("Error eliminando cuenta:", err);
-                      alert("No pudimos eliminar los datos en AWS de forma segura. No se cerr
-ó
- la cuenta; intenta m
-á
-s tarde o cont
-á
-ctanos en hola@umpacademy.co");
+                      alert("No pudimos eliminar los datos en AWS de forma segura. No se cerró la cuenta; intenta más tarde o contáctanos en hola@umpacademy.co");
                     }
                   }
                 })}
