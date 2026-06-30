@@ -7,6 +7,7 @@ import Landing from "./Landing";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
+const ADMIN_EMAILS = ["ysmanrei21@gmail.com"];
 
 // Sistema de planes
 const PLAN_LIMITS = {
@@ -951,6 +952,8 @@ export default function App() {
   };
 
   const effectivePlan = useMemo(() => {
+    const userEmail = user?.email || profileSetup?.email || "";
+    if (ADMIN_EMAILS.includes(userEmail)) return "ceo";
     if (userPlan === "ceo" || userPlan === "emprendedora" || userPlan === "mama") {
       if (premiumExpiresAt && Date.now() > premiumExpiresAt) return "free";
       return userPlan;
@@ -960,7 +963,7 @@ export default function App() {
       return "ceo";
     }
     return "free";
-  }, [userPlan, premiumExpiresAt]);
+  }, [userPlan, premiumExpiresAt, user, profileSetup]);
 
   const currentLimits = PLAN_LIMITS[effectivePlan] || PLAN_LIMITS.free;
 
@@ -1504,7 +1507,7 @@ export default function App() {
       quickNotes,
       reminderTime,
       reminderEnabled,
-      userPlan,
+      userPlan: ADMIN_EMAILS.includes(user?.email || profileSetup?.email || "") ? "ceo" : userPlan,
       premiumExpiresAt,
       userMode,
       homeFocusOverride,
