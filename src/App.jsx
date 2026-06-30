@@ -644,6 +644,7 @@ export default function App() {
   const [resetPassword, setResetPassword] = useState(false);
   const [confirmMode, setConfirmMode] = useState(false);
   const [confirmCode, setConfirmCode] = useState("");
+  const [confirmModal, setConfirmModal] = useState(null);
   const [resetEmail, setResetEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
   const [resetNewPassword, setResetNewPassword] = useState("");
@@ -1097,7 +1098,7 @@ export default function App() {
   }, { fixed: 0, variable: 0, other: 0 });
 
   const budgetMonthlyIncome = annualTotals.income / 12;
-  const confirmDelete = (msg, onConfirm) => { if (window.confirm(msg)) onConfirm(); };
+  const confirmDelete = (msg, onConfirm) => setConfirmModal({ msg, onConfirm });
   const signOut = async () => {
     await awsAuth.signOut();
     setCloudReadyUserId(null);
@@ -2399,22 +2400,34 @@ export default function App() {
 
               <button className="primary-button" type="submit" style={{marginTop:"8px"}}>{profileSetup ? "Guardar cambios" : "Guardar y comenzar ?"}</button>
               {profileSetup && (
-                <button type="button" onClick={async () => {
-                  if (!window.confirm("\u00bfEstás segura de que quieres eliminar tu cuenta? Esta acción no se puede deshacer y perderás todos tus datos.")) return;
-                  if (!window.confirm("\u00daltima confirmación: se eliminarán todos tus datos permanentemente.")) return;
-                  try {
-                    if (user && awsActive && remoteStorageEnabled) {
-                      await deleteRemoteState();
-                      await awsAuth.signOut();
+                <button type="button" onClick={() => setConfirmModal({
+                  msg: "
+¿
+Eliminar tu cuenta y todos tus datos? Esta acci
+ó
+n no se puede deshacer.",
+                  danger: true,
+                  onConfirm: async () => {
+                    try {
+                      if (user && awsActive && remoteStorageEnabled) {
+                        await deleteRemoteState();
+                        await awsAuth.signOut();
+                      }
+                      window.localStorage.removeItem(STORAGE_KEY);
+                      setUser(null);
+                      setShowProfileModal(false);
+                    } catch (err) {
+                      console.error("Error eliminando cuenta:", err);
+                      alert("No pudimos eliminar los datos en AWS de forma segura. No se cerr
+ó
+ la cuenta; intenta m
+á
+s tarde o cont
+á
+ctanos en hola@umpacademy.co");
                     }
-                    window.localStorage.removeItem(STORAGE_KEY);
-                    setUser(null);
-                    setShowProfileModal(false);
-                  } catch (err) {
-                    console.error("Error eliminando cuenta:", err);
-                    alert("No pudimos eliminar los datos en AWS de forma segura. No se cerró la cuenta; intenta más tarde o contáctanos en hola@umpacademy.co");
                   }
-                }}
+                })}
                 style={{marginTop:"8px",width:"100%",padding:"12px",border:"1px solid #e05a4e",background:"#fff5f4",color:"#e05a4e",borderRadius:"8px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>
                   Eliminar mi cuenta y todos mis datos
                 </button>
@@ -3112,6 +3125,23 @@ export default function App() {
           </div>
         );
       })()}
+
+      {confirmModal && (
+        <div className="confirm-overlay" onClick={() => setConfirmModal(null)}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="confirm-icon">{confirmModal.danger ? "⚠️" : "🗑️"}</div>
+            <p className="confirm-msg">{confirmModal.msg}</p>
+            <div className="confirm-actions">
+              <button className="confirm-cancel" onClick={() => setConfirmModal(null)}>Cancelar</button>
+              <button
+                className={confirmModal.danger ? "confirm-ok confirm-ok--danger" : "confirm-ok"}
+                onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }}>
+                {confirmModal.danger ? "Sí, eliminar" : "Eliminar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 
