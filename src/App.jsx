@@ -2544,6 +2544,26 @@ export default function App() {
             <span className="sidebar-tool-icon">📅</span>
             <span className="sidebar-tool-label">Calendario</span>
           </button>
+
+          {/* Mini Apps */}
+          <div className="sidebar-miniapps-divider">
+            <span className="sidebar-miniapps-label">Mini Apps</span>
+          </div>
+          <a
+            className="sidebar-tool-btn sidebar-miniapp-btn"
+            href="https://www.umpacademy.co"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="UMP Academy — Aprende a monetizar tu negocio">
+            <span className="sidebar-tool-icon">🎓</span>
+            <span className="sidebar-tool-label">
+              UMP Academy
+              <span className="sidebar-miniapp-sub">Aprende a monetizar</span>
+            </span>
+            <span className="sidebar-miniapp-arrow">↗</span>
+          </a>
+          {/* Aquí van las próximas mini apps */}
+
           <button
             className="sidebar-tool-btn"
             onClick={() => setActiveView("pricing")}

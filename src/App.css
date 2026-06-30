@@ -7573,6 +7573,53 @@ button {
   .tools-fab-row.tools-fab-item { display: none !important; }
 }
 
+/* Mini Apps section */
+.sidebar-miniapps-divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 4px 4px;
+}
+.sidebar-miniapps-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.sidebar-miniapps-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.sidebar-miniapp-btn {
+  text-decoration: none;
+  color: inherit;
+}
+.sidebar-miniapp-btn:hover {
+  background: rgba(201,169,110,0.1);
+  border-left-color: #C9A96E;
+  color: #8a6a2a;
+}
+.sidebar-miniapp-btn .sidebar-tool-label {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.sidebar-miniapp-sub {
+  font-size: 10px;
+  color: var(--muted);
+  font-weight: 400;
+}
+.sidebar-miniapp-arrow {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
 /* Sidebar colapsado: mostrar solo iconos en tools */
 .sidebar--collapsed .sidebar-tools-divider { margin: 6px 0 8px; }
 .sidebar--collapsed .sidebar-tool-btn {
@@ -7584,7 +7631,14 @@ button {
   border-radius: 10px;
 }
 .sidebar--collapsed .sidebar-tool-label,
-.sidebar--collapsed .sidebar-tool-badge { display: none; }
+.sidebar--collapsed .sidebar-tool-badge,
+.sidebar--collapsed .sidebar-miniapps-divider,
+.sidebar--collapsed .sidebar-miniapp-arrow { display: none; }
+.sidebar--collapsed .sidebar-miniapp-btn {
+  justify-content: center;
+  padding: 0;
+  width: 48px;
+}
 
 /* ─── Custom Confirm Modal ─────────────────────────────────────────────── */
 .confirm-overlay {
