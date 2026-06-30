@@ -337,45 +337,61 @@ Responde SOLO JSON válido, sin texto extra:
   }
 
   if (type === "ideas") {
-    return `Eres estratega de contenido para mamás emprendedoras en LatAm. Tu trabajo es generar ideas de contenido que se sientan ORIGINALES, ESPECÍFICAS y que ella quiera hacer ya.
+    const ideasBase = `Eres estratega de contenido digital especializada en generar ideas creativas y originales para cualquier tipo de creadora de contenido — de crianza, negocios, cocina, salud, relaciones, lifestyle, o cualquier otro tema.
 
-Tema: "${ctx.keyword}"
-Nicho: ${nicho}
+Tema de búsqueda: "${ctx.keyword}"
+Audiencia: ${nicho}
 Tono: ${tono}
 
 ${DIALECTO}
 
-Genera 6 ideas para cada formato. Cada idea es un título o ángulo listo para usar:
-
-- vertical: Reels / TikTok — 1 idea narrativa o de momento real que quepa en 60 segundos
-- horizontal: YouTube / Podcast — episodio que promete UNA historia real o UN insight concreto y profundo
-- carrusel: Post de Instagram con slides — que enseñe algo accionable paso a paso o cuente algo con datos
-- story: Historia de Instagram — pregunta directa, detrás de escenas, o mini-tip conversacional
-- digital: Producto digital (guía, plantilla, reto, mini-curso) — título que promete un resultado específico
-- email: Asunto de email — corto, personal, como mensaje de una amiga, que genere curiosidad real
-- whatsapp: Broadcast de WhatsApp — máximo 18 palabras, termina con 1 solo emoji natural
+REGLA FUNDAMENTAL: Las ideas deben girar EXCLUSIVAMENTE alrededor del tema de búsqueda tal como está escrito. No mezcles otros temas ni introduzcas ángulos de negocio, ventas, o emprendimiento si el tema no lo pide. Si el tema es crianza, todas las ideas son de crianza. Si es cocina, son de cocina. Si es fitness, son de fitness.
 
 PROHIBIDO en todos los formatos:
-- Fórmulas de plantilla: "N errores que...", "N razones por las que...", "N pasos para...", "Todo lo que nadie te dice sobre...", "La verdad sobre..."
+- Fórmulas predecibles: "N errores que...", "N razones por las que...", "N pasos para...", "Todo lo que nadie te dice sobre...", "La verdad sobre..."
 - Empezar con "POV:", "Cómo X sin Y", "Así hago yo", "Descubrí que", "Lo que aprendí sobre"
-- Frases genéricas: "mejorar tu negocio", "alcanzar el éxito", "vivir tus sueños", "potencial", "empoderar", "journey"
-- Repetir la palabra clave del tema textualmente como título — escribe desde el ÁNGULO, no desde la etiqueta
+- Frases vacías: "potencial", "empoderar", "journey", "vivir tus sueños", "transformar tu vida"
+- Repetir la frase exacta del tema como título — escribe desde el ÁNGULO o la EMOCIÓN, no desde la etiqueta
 
 LO QUE SÍ QUEREMOS:
-- Títulos que cuenten una historia en pocas palabras o hagan una pregunta que incomoda
-- Situaciones del día a día de una mamá emprendedora (recoger hijos, responder DMs, cobrar, etc.)
-- Números concretos cuando apliquen (no inventados, pero reales)
-- Que al leerlo ella piense "eso me pasó" o "eso quiero saber exactamente"
+- Títulos que cuenten una situación real y concreta relacionada con el tema
+- Preguntas que detienen el scroll porque tocan algo que ella realmente siente o vive
+- Momentos cotidianos específicos del tema — no genéricos
+- Que al leerlo ella piense "eso me pasó exactamente" o "eso quiero saber"`;
 
-EJEMPLOS de lo que NO y SÍ (tema: "cobrar sin culpa"):
-MAL vertical: "3 errores que cometes al cobrar sin culpa"
-BIEN vertical: "Mandé la cotización y estuve 2 días esperando que me dijeran que era muy caro"
+    const formatosDesc = `
+Genera 6 ideas para cada formato. Cada idea es un título o ángulo listo para usar:
+- vertical: Reels / TikTok — narrativa breve de un momento real, quepa en 60 segundos
+- horizontal: YouTube / Podcast — episodio que promete UNA historia real o UN insight profundo sobre el tema
+- carrusel: Post de Instagram con slides — enseña algo accionable o cuenta algo con estructura clara
+- story: Historia de Instagram — pregunta directa, detrás de escenas, o mini-tip conversacional
+- digital: Producto digital (guía, plantilla, reto, mini-curso) — título que promete un resultado concreto
+- email: Asunto de email — corto, personal, como mensaje de amiga, genera curiosidad real
+- whatsapp: Broadcast de WhatsApp — máximo 18 palabras, termina con 1 solo emoji natural`;
 
-MAL horizontal: "Cómo cobrar sin culpa y transformar tu negocio"
-BIEN horizontal: "Le bajé el precio una vez. Después me lo pidió en cada sesión — lo que aprendí de ese cliente"
+    // Modo "más ideas": solo para un formato, evitando repetir las existentes
+    if (ctx.modo === "mas" && ctx.catKey) {
+      const formatoLabels = {
+        vertical: "Reels / TikTok (narrativa breve, momento real, quepa en 60 segundos)",
+        horizontal: "YouTube / Podcast (episodio con historia real o insight profundo)",
+        carrusel: "Carrusel de Instagram (enseña algo accionable con estructura clara)",
+        story: "Historia de Instagram (pregunta directa, detrás de escenas, mini-tip)",
+        digital: "Producto digital como guía, plantilla, reto o mini-curso",
+        email: "Asunto de email (corto, personal, curioso, como mensaje de amiga)",
+        whatsapp: "Broadcast de WhatsApp (máximo 18 palabras, termina con 1 emoji natural)",
+      };
+      const excluir = (ctx.excluir || []).map(t => `- ${t}`).join("\n");
+      return `${ideasBase}
 
-MAL email: "Sobre cobrar sin culpa..."
-BIEN email: "te cuento algo que me da pena admitir"
+Genera 4 ideas NUEVAS Y DIFERENTES de tipo "${formatoLabels[ctx.catKey] || ctx.catKey}" sobre el tema.
+
+${excluir ? `IMPORTANTE — NO repitas ni hagas variaciones de estas ideas que ya generaste:\n${excluir}\n` : ""}
+Responde SOLO JSON válido, sin texto extra:
+{"${ctx.catKey}":["idea1","idea2","idea3","idea4"]}`;
+    }
+
+    return `${ideasBase}
+${formatosDesc}
 
 Responde SOLO JSON válido, sin texto extra:
 {"vertical":["i1","i2","i3","i4","i5","i6"],"horizontal":["i1","i2","i3","i4","i5","i6"],"carrusel":["i1","i2","i3","i4","i5","i6"],"story":["i1","i2","i3","i4","i5","i6"],"digital":["i1","i2","i3","i4","i5","i6"],"email":["i1","i2","i3","i4","i5","i6"],"whatsapp":["i1","i2","i3","i4","i5","i6"]}`;

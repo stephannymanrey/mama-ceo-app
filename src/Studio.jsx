@@ -553,6 +553,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
   const [vistaBlueprint, setVistaBlueprint] = useState(null);
   const [aiLoading,      setAiLoading]      = useState(false);
   const [aiMsg,          setAiMsg]          = useState("");
+  const [masLoading,     setMasLoading]     = useState("");
   const [agendado,       setAgendado]       = useState("");
   const [agendaMsg,      setAgendaMsg]      = useState("");
 
@@ -747,10 +748,34 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
     setIdeas({ keyword: k, ...gen, isAI: true });
   };
 
-  const masIdeas = (catKey) => {
+  const masIdeas = async (catKey) => {
     if (!ideas) return;
+    // Modo IA: pide ideas nuevas pasando las existentes como lista de exclusión
+    if (ideas.isAI && callGemini) {
+      setMasLoading(catKey);
+      const excluir = (ideas[catKey] || []).map(i => i.texto);
+      const res = await callGemini("ideas", {
+        keyword: ideas.keyword,
+        nicho: brandProfile.clienteIdeal || "mamás emprendedoras",
+        tono: brandProfile.tono || "Cercano",
+        modo: "mas",
+        catKey,
+        excluir,
+      });
+      setMasLoading("");
+      if (!res?.error && res?.result?.[catKey]) {
+        const nuevas = res.result[catKey].map((texto, i) => ({
+          id: `${catKey}-mas-${Date.now()}-${i}`, texto,
+        }));
+        setIdeas(prev => ({ ...prev, [catKey]: [...prev[catKey], ...nuevas] }));
+      }
+      return;
+    }
+    // Modo plantillas: usa templates locales
     const cat = CATS[catKey];
-    const nuevas = shuffle([...cat.templates]).slice(0, 3).map((f, i) => ({
+    const usadas = new Set((ideas[catKey] || []).map(i => i.texto));
+    const disponibles = shuffle([...cat.templates]).filter(f => !usadas.has(f(ideas.keyword)));
+    const nuevas = (disponibles.length ? disponibles : shuffle([...cat.templates])).slice(0, 3).map((f, i) => ({
       id: `${catKey}-mas-${Date.now()}-${i}`,
       texto: f(ideas.keyword),
     }));
@@ -916,7 +941,9 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
                   <span className="ideas-cat-label">{cat.label}</span>
                   <span className="ideas-cat-sub">{cat.sub}</span>
                 </div>
-                <button className="ideas-mas-btn" onClick={() => masIdeas(catKey)}>+ Más ideas</button>
+                <button className="ideas-mas-btn" disabled={masLoading === catKey} onClick={() => masIdeas(catKey)}>
+                  {masLoading === catKey ? "✨ Cargando..." : "+ Más ideas"}
+                </button>
               </div>
               <div className="ideas-cards-grid">
                 {ideas[catKey].map((idea, i) => (

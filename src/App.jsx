@@ -494,7 +494,8 @@ function createBlankUserState(currency = "USD") {
     groceryList: [],
     userPlan: "free",
     premiumExpiresAt: null,
-    userMode: null
+    userMode: null,
+    usage: { views: {}, subtabs: {} }
   };
 }
 
@@ -591,6 +592,7 @@ export default function App() {
 
   const stored = loadState();
   const [activeView, setActiveView] = useState(stored?.activeView || "dashboard");
+  const [usage, setUsage] = useState(stored?.usage || { views: {}, subtabs: {} });
   const [currency, setCurrency] = useState(stored?.currency || "USD");
   const isNewUser = !stored;
   const [movements, setMovements] = useState(isNewUser ? [] : normalizeMovements(stored?.movements || initialMovements));
@@ -1393,6 +1395,7 @@ export default function App() {
     setQuickNotes(state.quickNotes || []);
     if (state.reminderTime) setReminderTime(state.reminderTime);
     if (state.reminderEnabled !== undefined) setReminderEnabled(state.reminderEnabled);
+    setUsage(state.usage || { views: {}, subtabs: {} });
   };
 
   useEffect(() => {
@@ -1445,6 +1448,28 @@ export default function App() {
     }
   }, [ready, isRestoringRemote, profileSetup]);
 
+  // Tracking mínimo de uso: conteos agregados de qué pestaña/sub-pestaña se abre más.
+  // Viaja como parte de "usage" dentro del guardado normal del estado (sin endpoint nuevo).
+  useEffect(() => {
+    setUsage((prev) => ({ ...prev, views: { ...prev.views, [activeView]: (prev.views?.[activeView] || 0) + 1 } }));
+  }, [activeView]);
+  useEffect(() => {
+    const key = `business:${businessTab}`;
+    setUsage((prev) => ({ ...prev, subtabs: { ...prev.subtabs, [key]: (prev.subtabs?.[key] || 0) + 1 } }));
+  }, [businessTab]);
+  useEffect(() => {
+    const key = `clients:${clientsTab}`;
+    setUsage((prev) => ({ ...prev, subtabs: { ...prev.subtabs, [key]: (prev.subtabs?.[key] || 0) + 1 } }));
+  }, [clientsTab]);
+  useEffect(() => {
+    const key = `home:${homeTab}`;
+    setUsage((prev) => ({ ...prev, subtabs: { ...prev.subtabs, [key]: (prev.subtabs?.[key] || 0) + 1 } }));
+  }, [homeTab]);
+  useEffect(() => {
+    const key = `calendar:${calTab}`;
+    setUsage((prev) => ({ ...prev, subtabs: { ...prev.subtabs, [key]: (prev.subtabs?.[key] || 0) + 1 } }));
+  }, [calTab]);
+
   useEffect(() => {
     if (!ready) return;
     const stateToSave = {
@@ -1482,7 +1507,8 @@ export default function App() {
       premiumExpiresAt,
       userMode,
       homeFocusOverride,
-      familyMembers
+      familyMembers,
+      usage
     };
 
     if (user && awsActive && remoteStorageEnabled) {
@@ -1508,7 +1534,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride, familyMembers]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride, familyMembers, usage]);
 
   const expandAppts = (list, limitDays = 90) => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
