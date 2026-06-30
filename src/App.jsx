@@ -2528,7 +2528,9 @@ export default function App() {
 
         {/* Herramientas en sidebar */}
         <div className="sidebar-tools">
-          <div className="sidebar-tools-divider" />
+          <div className="sidebar-miniapps-divider">
+            <span className="sidebar-miniapps-label">Herramientas</span>
+          </div>
           <button
             className={`sidebar-tool-btn${pomodoroRunning ? " sidebar-tool-btn--active" : ""}${pomodoroOpen ? " sidebar-tool-btn--on" : ""}`}
             onClick={() => setPomodoroOpen(v => !v)}
@@ -2564,6 +2566,10 @@ export default function App() {
           </a>
           {/* Aquí van las próximas mini apps */}
 
+          {/* Mi Plan */}
+          <div className="sidebar-miniapps-divider">
+            <span className="sidebar-miniapps-label">Mi Plan</span>
+          </div>
           <button
             className="sidebar-tool-btn"
             onClick={() => setActiveView("pricing")}
