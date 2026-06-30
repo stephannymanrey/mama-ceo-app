@@ -180,6 +180,7 @@ button {
 
 .main-menu {
   display: grid;
+  align-content: start;
   gap: 3px;
   flex: 1;
 }
