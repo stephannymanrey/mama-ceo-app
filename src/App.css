@@ -182,7 +182,6 @@ button {
   display: grid;
   align-content: start;
   gap: 3px;
-  flex: 1;
 }
 
 .menu-item {
