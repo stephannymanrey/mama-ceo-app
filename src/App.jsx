@@ -2526,6 +2526,32 @@ export default function App() {
           })}
         </nav>
 
+        {/* Herramientas en sidebar */}
+        <div className="sidebar-tools">
+          <div className="sidebar-tools-divider" />
+          <button
+            className={`sidebar-tool-btn${pomodoroRunning ? " sidebar-tool-btn--active" : ""}${pomodoroOpen ? " sidebar-tool-btn--on" : ""}`}
+            onClick={() => setPomodoroOpen(v => !v)}
+            title="Temporizador de foco">
+            <span className="sidebar-tool-icon">⏱️</span>
+            <span className="sidebar-tool-label">Temporizador</span>
+            {pomodoroRunning && <span className="sidebar-tool-badge">{String(pomodoroMinutes).padStart(2,"0")}:{String(pomodoroSeconds).padStart(2,"0")}</span>}
+          </button>
+          <button
+            className="sidebar-tool-btn"
+            onClick={() => { setShowCalendar(true); setCalMorningDismissed(true); }}
+            title="Calendario">
+            <span className="sidebar-tool-icon">📅</span>
+            <span className="sidebar-tool-label">Calendario</span>
+          </button>
+          <button
+            className="sidebar-tool-btn"
+            onClick={() => setActiveView("pricing")}
+            title="Mi Plan">
+            <span className="sidebar-tool-icon">✨</span>
+            <span className="sidebar-tool-label">{effectivePlan === "ceo" ? "Plan CEO" : effectivePlan === "emprendedora" ? "Plan Emprendedora" : effectivePlan === "mama" ? "Plan Mamá" : "Actualizar Plan"}</span>
+          </button>
+        </div>
 
         <div className="quote-card">
           <p>{promesas[(new Date().getDate() - 1) % promesas.length]}</p>
@@ -2611,7 +2637,7 @@ export default function App() {
           return (
             <>
               {/* Panel — abre hacia arriba */}
-              {pomodoroOpen && toolsFabOpen && (
+              {pomodoroOpen && (
                 <div className={`pomo-panel${pomodoroRunning && pomodoroMode === "work" ? " pomo-panel--focus" : pomodoroMode === "break" ? " pomo-panel--break" : ""}`}
                   style={{ bottom: "256px" }}>
                   <div className="pomo-panel-head">
