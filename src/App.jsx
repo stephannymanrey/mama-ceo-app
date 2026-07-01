@@ -4775,7 +4775,19 @@ export default function App() {
                 </div>
                 <div>
                   <label className="app-form-label">Servicio o producto</label>
-                  <input value={editingClient.service} onChange={(e) => updateClientField(editingClient.id, "service", e.target.value)} className="app-form-input" />
+                  {incomeSources.length > 0 && (
+                    <div className="cl-service-chips">
+                      {incomeSources.map(src => (
+                        <button type="button" key={src.id}
+                          className={`cl-service-chip${editingClient.service === src.name ? " active" : ""}`}
+                          onClick={() => updateClientField(editingClient.id, "service", editingClient.service === src.name ? "" : src.name)}>
+                          {src.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <input value={editingClient.service} onChange={(e) => updateClientField(editingClient.id, "service", e.target.value)}
+                    className="app-form-input" style={{marginTop: incomeSources.length > 0 ? "6px" : "0"}} placeholder="O escribe el servicio..." />
                 </div>
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
                   <div>
