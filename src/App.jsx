@@ -3529,103 +3529,24 @@ export default function App() {
 
           {/* Alertas */}
           {hasAlerts && (
-            <div className="db-alerts">
+            <div className="db-nudges">
               {urgentLeads.length > 0 && (
-                <button className="db-alert db-alert--purple" onClick={() => setActiveView("clients")}>
-                  &#x1F469;&#x200D;&#x1F4BC; {urgentLeads.length} lead{urgentLeads.length > 1 ? "s" : ""} caliente{urgentLeads.length > 1 ? "s" : ""} esperando &rarr;
+                <button className="db-nudge db-nudge--purple" onClick={() => setActiveView("clients")}>
+                  🔥 {urgentLeads.length} lead{urgentLeads.length > 1 ? "s" : ""} caliente{urgentLeads.length > 1 ? "s" : ""} sin contactar
                 </button>
               )}
-              {daysSincePublish !== null && daysSincePublish > 3 && (
-                <button className="db-alert db-alert--orange" onClick={() => setActiveView("studio")}>
-                  &#x1F4F1; {daysSincePublish} d&iacute;as sin publicar &mdash; crea algo hoy &rarr;
+              {daysSincePublish !== null && daysSincePublish > 5 && (
+                <button className="db-nudge db-nudge--neutral" onClick={() => setActiveView("studio")}>
+                  ✦ {daysSincePublish} días sin publicar
                 </button>
               )}
               {urgentHomeTasks.length > 0 && (
-                <button className="db-alert db-alert--red" onClick={() => setActiveView("home")}>
-                  &#x1F3E0; {urgentHomeTasks.length} tarea{urgentHomeTasks.length > 1 ? "s" : ""} urgente{urgentHomeTasks.length > 1 ? "s" : ""} en el hogar &rarr;
+                <button className="db-nudge db-nudge--neutral" onClick={() => setActiveView("home")}>
+                  🏠 {urgentHomeTasks.length} tarea{urgentHomeTasks.length > 1 ? "s" : ""} urgente{urgentHomeTasks.length > 1 ? "s" : ""} en hogar
                 </button>
               )}
             </div>
           )}
-
-          {/* Lo que sostiene tu negocio: clientes + servicios */}
-          {showNegocioPareto && (
-            <div className="db-sustain-card">
-              <div className="db-sustain-head">
-                <span className="db-sustain-title">Lo que sostiene tu negocio</span>
-                <button type="button" className="db-pareto-link" onClick={() => setActiveView("business")}>Ver negocio →</button>
-              </div>
-              <div className="db-sustain-grid">
-
-                {/* Top clientes */}
-                <div className="db-sustain-col">
-                  <p className="db-sustain-col-label">Clientes que más aportan</p>
-                  {wonClients.length === 0 ? (
-                    <div className="db-pareto-empty-state">
-                      <p className="db-pareto-empty">Sin ventas cerradas aún. Registra clientes para ver quién sostiene tu negocio.</p>
-                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Agregar clientes →</button>
-                    </div>
-                  ) : (
-                    <>
-                      {wonClients.length >= 2 && (
-                        <p className="db-sustain-stat">{paretoTopClients.length} cliente{paretoTopClients.length > 1 ? "s" : ""} generan el <strong>{paretoShareOfIncome}%</strong> de tus ingresos</p>
-                      )}
-                      {wonClients.slice(0, 5).map(c => (
-                        <div key={c.id} className="db-sustain-row">
-                          <span className="db-sustain-row-name">{c.name}</span>
-                          <span className="db-sustain-row-val">{money.format(c.amount)}</span>
-                        </div>
-                      ))}
-                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("clients")}>Ver clientes →</button>
-                    </>
-                  )}
-                </div>
-
-                {/* Top servicios/productos */}
-                <div className="db-sustain-col">
-                  <p className="db-sustain-col-label">Servicios / productos top</p>
-                  {topServices.length === 0 ? (
-                    <div className="db-pareto-empty-state">
-                      <p className="db-pareto-empty">Registra ingresos clasificados para ver qué ofrece mejores resultados.</p>
-                      <button type="button" className="db-pareto-link" onClick={() => setActiveView("business")}>Ir a finanzas →</button>
-                    </div>
-                  ) : (
-                    topServices.map(([name, amount]) => (
-                      <div key={name} className="db-sustain-row">
-                        <span className="db-sustain-row-name">{name}</span>
-                        <span className="db-sustain-row-val">{money.format(amount)}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-              </div>
-            </div>
-          )}
-
-          {/* Studio — insight motivacional */}
-          <div className="db-studio-insight">
-            <div className="db-studio-insight-icon">✦</div>
-            <div className="db-studio-insight-body">
-              <p className="db-studio-insight-title">Mi Studio de Contenido</p>
-              <p className="db-studio-insight-msg">
-                {daysSincePublish === null
-                  ? "Las mamás CEO que publican contenido consistente atraen más clientes sin salir a buscarlos."
-                  : daysSincePublish === 0
-                  ? "¡Publicaste hoy! La consistencia construye audiencias — y las audiencias construyen ventas."
-                  : daysSincePublish <= 3
-                  ? `Último contenido hace ${daysSincePublish} día${daysSincePublish > 1 ? "s" : ""}. Cada pieza que publicas trabaja para ti 24/7.`
-                  : `Llevas ${daysSincePublish} días sin publicar. Tu próxima pieza puede ser tu próxima venta.`
-                }
-              </p>
-            </div>
-            <div className="db-studio-insight-right">
-              {contentItems.length > 0 && (
-                <p className="db-studio-insight-stat">{contentItems.filter(i => i.status !== "Publicado").length} <span>en proceso</span></p>
-              )}
-              <button type="button" className="db-studio-insight-btn" onClick={() => setActiveView("studio")}>Abrir Studio →</button>
-            </div>
-          </div>
 
         </div>
       </section>
@@ -3723,7 +3644,7 @@ export default function App() {
     const bottomSource = rankedSources.length > 1 ? rankedSources[rankedSources.length - 1] : null;
 
     const inp = { border:"1px solid var(--line)", borderRadius:"8px", padding:"8px 12px", fontSize:"14px", fontFamily:"inherit", outline:"none", background:"#fff", width:"100%" };
-    const TABS_BIZ = ["Hoy", "Semana", "Tareas", "Revenue"];
+    const TABS_BIZ = ["Hoy", "Tareas", "Revenue"];
     const sortedBizTasks = [...tasks].sort((a, b) => (a.done === b.done ? taskUrgencyScore(b) - taskUrgencyScore(a) : a.done ? 1 : -1));
     const pendingBizTasksCount = tasks.filter(t => !t.done).length;
 
@@ -3817,7 +3738,7 @@ export default function App() {
                     ))}
                   </div>
                 )}
-                <button type="button" className="home-today-card-btn" style={{color:"#1D9E75"}} onClick={() => setBusinessTab(2)}>Ver tareas →</button>
+                <button type="button" className="home-today-card-btn" style={{color:"#1D9E75"}} onClick={() => setBusinessTab(1)}>Ver tareas →</button>
               </div>
 
               <div className="home-today-card">
@@ -3874,88 +3795,8 @@ export default function App() {
         )}
 
         {/* ── SEMANA ── */}
-        {businessTab === 1 && (
-          <>
-            {/* Buenas noticias primero, atención después */}
-            {(goodNews.length > 0 || attention.length > 0) && (
-              <div style={{display:"grid",gap:"8px",marginBottom:"16px"}}>
-                {goodNews.map((a, i) => (
-                  <div key={`g${i}`} className="biz-news-row biz-news-row--good">
-                    <span>{a.msg}</span>
-                    {a.action && <button type="button" onClick={() => setActiveView(a.action)} className="biz-news-action">{a.actionLabel}</button>}
-                  </div>
-                ))}
-                {attention.map((a, i) => (
-                  <div key={`a${i}`} className={`biz-news-row biz-news-row--${a.tone}`}>
-                    <span>{a.msg}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Esta semana — resumen compacto */}
-            <div className="biz-week-summary">
-              <p className="biz-week-title">Esta semana</p>
-              <div className="biz-week-row">
-                {[
-                  { label: "Entradas", val: money.format(twIncome), sub: twChange !== null ? `${twChange > 0 ? "+" : ""}${twChange}% vs semana anterior` : null, color: twChange !== null ? (twChange >= 0 ? "#1D9E75" : "#C4526A") : null },
-                  { label: "Ventas cerradas", val: twWon, sub: "esta semana", color: "#7F77DD" },
-                  { label: "Contactos", val: twContacts, sub: twContacts >= 5 ? "¡Buen ritmo!" : twContacts >= 3 ? "Bien, sigue" : "Apunta a 5+", color: twContacts >= 5 ? "#1D9E75" : twContacts >= 3 ? "#e87b1e" : "#C4526A" },
-                ].map(({ label, val, sub, color }) => (
-                  <div key={label} className="biz-week-stat">
-                    <span className="biz-week-label">{label}</span>
-                    <strong className="biz-week-val">{val}</strong>
-                    {sub && <span className="biz-week-sub" style={{color}}>{sub}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Tu semana por área — tareas con fecha esta semana + reuniones del calendario */}
-            {(() => {
-              const cats = BIZ_CAT_CONFIG.filter(cat => (weekTasksByCat[cat.key]?.length || 0) + (weekApptsByCat[cat.key]?.length || 0) > 0);
-              if (!cats.length) return null;
-              return (
-                <div style={{marginTop:"16px"}}>
-                  <p className="biz-week-title" style={{marginBottom:"10px"}}>Tu semana por área</p>
-                  <div className="biz-task-area-grid">
-                    {cats.map(cat => {
-                      const catTasks = weekTasksByCat[cat.key] || [];
-                      const catAppts = weekApptsByCat[cat.key] || [];
-                      return (
-                        <div key={cat.key} className="biz-task-area-card" style={{background:cat.bg, borderColor:`${cat.color}26`}}>
-                          <div className="biz-task-area-head">
-                            <span style={{fontSize:"20px"}}>{cat.emoji}</span>
-                            <span className="biz-task-area-count" style={{color:cat.color, background:`${cat.color}1c`}}>{catTasks.length + catAppts.length}</span>
-                          </div>
-                          <p className="biz-task-area-title">{cat.key}</p>
-                          <div style={{display:"grid",gap:"4px"}}>
-                            {catAppts.map(a => (
-                              <div key={`a${a.id}`} className="biz-task-area-row">
-                                <span style={{fontSize:"13px",flexShrink:0}}>📅</span>
-                                <span style={{flex:1,minWidth:0,fontSize:"13px",color:"var(--ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{a.title}</span>
-                                {a.time && <small style={{color:"var(--muted)",flexShrink:0}}>{a.time}</small>}
-                              </div>
-                            ))}
-                            {catTasks.map(t => (
-                              <div key={`t${t.id}`} className="biz-task-area-row">
-                                <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)} style={{accentColor:cat.color, flexShrink:0}} />
-                                <span style={{flex:1,minWidth:0,fontSize:"13px",color:"var(--ink)",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.text}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })()}
-          </>
-        )}
-
         {/* ── TAREAS ── */}
-        {businessTab === 2 && (
+        {businessTab === 1 && (
           <>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexWrap:"wrap",gap:"8px"}}>
               <div>
@@ -4063,7 +3904,7 @@ export default function App() {
         )}
 
         {/* ── REVENUE ── */}
-        {businessTab === 3 && (
+        {businessTab === 2 && (
           <>
             {/* Top / bottom servicio o producto */}
             {(topSource || bottomSource) && (
@@ -4307,7 +4148,7 @@ export default function App() {
     const newLeadsThisWeek = clients.filter((c) => (c.createdAt || 0) >= weekStart).length;
     const wonThisWeek = clients.filter((c) => c.status === "Venta ganada" && (c.updatedAt || 0) >= weekStart).length;
     const avgTicket = paidClients.length > 0 ? Math.round(wonSalesTotal / paidClients.length) : 0;
-    const TABS_CLIENTS = ["Hoy", "Semana", "Tareas", "Clientes ganados"];
+    const TABS_CLIENTS = ["Pipeline", "Ganados"];
 
     // ── A quién contactar esta semana + proyección ──
     const toContactClients = [...urgentClients, ...urgentSubscriptions].sort((a, b) => {
@@ -4374,10 +4215,10 @@ export default function App() {
           ))}
         </div>
 
-        {/* ── HOY ── */}
+        {/* ── PIPELINE ── */}
         {clientsTab === 0 && (
           <>
-            {priorityClient ? (
+            {priorityClient && (
               <div className="action-day-banner">
                 <div className="action-day-left">
                   <span className="action-day-label">Acción del día</span>
@@ -4397,136 +4238,10 @@ export default function App() {
                   </div>
                 </div>
               </div>
-            ) : (
-              <div className="card" style={{padding:"28px",textAlign:"center",background:"linear-gradient(135deg,#fdf9f6,#fef4f0)",border:"2px dashed #e8d5c4"}}>
-                <p style={{fontSize:"32px",margin:"0 0 10px"}}>🌱</p>
-                <h3 style={{margin:"0 0 6px",fontSize:"16px"}}>Sin leads activos por ahora</h3>
-                <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Agrega tu primer cliente en la pestaña Tareas.</p>
-              </div>
             )}
 
-          </>
-        )}
-
-        {/* ── SEMANA ── */}
-        {clientsTab === 1 && (
-          <>
-            <div className="cl-kpi-row">
-              <div className="cl-kpi">
-                <span>En proceso</span>
-                <strong>{activeClients}</strong>
-                <small>{money.format(pipelineTotal)} potencial</small>
-              </div>
-              <div className="cl-kpi cl-kpi-divider">
-                <span>Conversión</span>
-                <strong>{conversionRate}%</strong>
-                <small>{totalWon} cerradas de {totalLeads}</small>
-              </div>
-              <div className="cl-kpi cl-kpi-divider">
-                <span>Ventas cerradas</span>
-                <strong style={{color:"#1D9E75"}}>{money.format(wonSalesTotal)}</strong>
-                <small>{paidClients.length} clientes</small>
-              </div>
-            </div>
-
-            <div className="biz-week-summary">
-              <p className="biz-week-title">Esta semana</p>
-              <div className="biz-week-row">
-                {[
-                  { label: "Leads nuevos", val: newLeadsThisWeek, sub: "esta semana", color: "#7F77DD" },
-                  { label: "Contactos", val: contactsThisWeek, sub: contactsThisWeek >= 5 ? "¡Buen ritmo!" : contactsThisWeek >= 3 ? "Bien, sigue" : "Apunta a 5+", color: contactsThisWeek >= 5 ? "#1D9E75" : contactsThisWeek >= 3 ? "#e87b1e" : "#C4526A" },
-                  { label: "Ventas cerradas", val: wonThisWeek, sub: "esta semana", color: "#1D9E75" },
-                ].map(({ label, val, sub, color }) => (
-                  <div key={label} className="biz-week-stat">
-                    <span className="biz-week-label">{label}</span>
-                    <strong className="biz-week-val">{val}</strong>
-                    {sub && <span className="biz-week-sub" style={{color}}>{sub}</span>}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Cuántos contactar (compacto) + listado con cuenta atrás, lado a lado */}
-            <div className="cl-week-split">
-              <div className="cl-week-metric-card">
-                <p className="cl-week-metric-label">Esta semana debes contactar a</p>
-                <div className="cl-week-metric-count-row">
-                  <strong className="cl-week-metric-count">{toContactClients.length}</strong>
-                  <span className="cl-week-metric-sub">cliente{toContactClients.length !== 1 ? "s" : ""}</span>
-                </div>
-                {toContactClients.length > 0 && (
-                  <div className="cl-week-metric-projection">
-                    <p>Con tu conversión histórica del <strong>{conversionRate}%</strong> podrías cerrar</p>
-                    <strong>~{projectedSales} venta{projectedSales !== 1 ? "s" : ""}</strong>
-                    <span>≈ {money.format(projectedRevenue)}</span>
-                  </div>
-                )}
-              </div>
-
-              <div className="cl-week-list-card">
-                <p className="cl-week-list-title">A quién contactar</p>
-                {weekContactList.length === 0 ? (
-                  <p className="helper-copy" style={{margin:0}}>No tienes leads activos.</p>
-                ) : (
-                  <div className="cl-week-list">
-                    {weekContactList.map(client => {
-                      const due = dueInDays(client);
-                      const tone = due <= 0 ? "red" : due <= 2 ? "orange" : "neutral";
-                      const label = due <= 0 ? (due === 0 ? "Contactar ya" : `Atrasado ${Math.abs(due)}d`) : `Contactar en ${due}d`;
-                      return (
-                        <div key={client.id} className="cl-week-list-row">
-                          <div className="cl-week-list-row-main">
-                            <strong>{client.name}</strong>
-                            <span className="cl-week-list-row-sub">{client.service} · {money.format(client.amount)}</span>
-                          </div>
-                          <span className={`cl-due-badge cl-due-badge--${tone}`}>{label}</span>
-                          <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-week-list-wa" title="WhatsApp">💬</a>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Calculadora de meta */}
-            <div className="cl-goal-card">
-              <div className="cl-goal-card-head">
-                <span className="cl-goal-card-ico">🎯</span>
-                <div>
-                  <p className="cl-goal-card-title">¿Cuánto quieres vender?</p>
-                  <p className="cl-goal-card-sub">Te decimos cuántos leads necesitas contactar para lograrlo.</p>
-                </div>
-              </div>
-              <MoneyAmountInput placeholder="Ej: 1.000.000" value={clientGoalInput} onChange={setClientGoalInput} className="cl-goal-card-input" />
-              {goalSalesNeeded > 0 && (
-                <div className="cl-goal-card-results">
-                  <div className="cl-goal-result-stat">
-                    <strong>{goalSalesNeeded}</strong>
-                    <span>venta{goalSalesNeeded !== 1 ? "s" : ""} necesarias</span>
-                  </div>
-                  <div className="cl-goal-result-stat">
-                    <strong>{goalContactsNeeded}</strong>
-                    <span>lead{goalContactsNeeded !== 1 ? "s" : ""} a contactar</span>
-                  </div>
-                  <div className="cl-goal-result-stat">
-                    <strong>{money.format(avgTicket)}</strong>
-                    <span>ticket promedio</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* ── TAREAS (pipeline) ── */}
-        {clientsTab === 2 && (
-          <>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexWrap:"wrap",gap:"8px"}}>
-              <div>
-                <h3 style={{margin:"0 0 2px"}}>Pipeline</h3>
-                <p className="helper-copy" style={{margin:0}}>Gestiona cada lead, de frío a cerrado.</p>
-              </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",margin:"16px 0",flexWrap:"wrap",gap:"8px"}}>
+              <p className="helper-copy" style={{margin:0}}>Gestiona cada lead, de frío a cerrado.</p>
               <button type="button" className="fin-add-btn" onClick={() => setShowClientFormModal(true)}>+ Nuevo cliente</button>
             </div>
 
@@ -4582,8 +4297,8 @@ export default function App() {
           </>
         )}
 
-        {/* ── CLIENTES GANADOS ── */}
-        {clientsTab === 3 && (
+        {/* ── GANADOS ── */}
+        {clientsTab === 1 && (
           <>
             <div className="cl-kpi-row">
               <div className="cl-kpi">
