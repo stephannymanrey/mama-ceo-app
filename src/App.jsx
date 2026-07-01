@@ -666,7 +666,7 @@ export default function App() {
   const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", categoryOther: "", amount: "", bank: banks[0] || "", date: getTodayInputValue() });
   const [showMovementModal, setShowMovementModal] = useState(false);
   const [formErrors, setFormErrors] = useState({});
-  const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue() });
+  const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue(), paymentType: "unico", paymentDay: "" });
   const [clientFormErrors, setClientFormErrors] = useState({});
   const [contentFilter, setContentFilter] = useState("");
   const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
@@ -1036,6 +1036,35 @@ export default function App() {
   const monthlyProgress = Math.min(Math.round((totals.income / monthlyGoal) * 100), 100);
   const weeklyProgress = Math.min(Math.round((totals.income / weeklyGoal) * 100), 100);
   const dailyProgress = Math.min(Math.round((totals.income / dailyGoal) * 100), 100);
+
+  // Recurring income prediction
+  const _today = new Date();
+  const _currentDay = _today.getDate();
+  const _daysInMonth = new Date(_today.getFullYear(), _today.getMonth() + 1, 0).getDate();
+  const recurringWonClients = clients.filter(c => c.status === "Venta ganada" && c.paymentType && c.paymentType !== "unico");
+  const pendingThisMonth = recurringWonClients.reduce((sum, c) => {
+    const day = Number(c.paymentDay) || 1;
+    if (c.paymentType === "mensual") return sum + (day >= _currentDay ? c.amount : 0);
+    if (c.paymentType === "quincenal") {
+      const day2 = Math.min(day + 15, 28);
+      return sum + (day >= _currentDay ? c.amount : 0) + (day2 >= _currentDay ? c.amount : 0);
+    }
+    if (c.paymentType === "semanal") {
+      const weeksLeft = Math.max(0, Math.ceil((_daysInMonth - _currentDay) / 7));
+      return sum + c.amount * weeksLeft;
+    }
+    return sum;
+  }, 0);
+  const recurringMonthlyTotal = recurringWonClients.reduce((sum, c) => {
+    const factor = c.paymentType === "quincenal" ? 2 : c.paymentType === "semanal" ? 4 : 1;
+    return sum + c.amount * factor;
+  }, 0);
+  const predictedIncome = totals.income + pendingThisMonth;
+  const predictedProgress = monthlyGoal > 0 ? Math.min(Math.round((predictedIncome / monthlyGoal) * 100), 100) : 0;
+  const upcomingPayments = recurringWonClients.filter(c => {
+    const day = Number(c.paymentDay) || 1;
+    return day >= _currentDay && day <= _currentDay + 7;
+  });
   const monthWeekInfo = useMemo(() => getMonthWeekInfo(), []);
   const currentWeekRange = useMemo(() => getCurrentWeekRange(), []);
   const sortedMovements = useMemo(() => [...movements].sort((a, b) => timestampFromInputDate(b.date || b.createdAt) - timestampFromInputDate(a.date || a.createdAt)), [movements]);
@@ -1630,23 +1659,25 @@ export default function App() {
     const contactDate = clientForm.lastContactDate || getTodayInputValue();
     const contactTimestamp = timestampFromInputDate(contactDate);
     const now = Date.now();
-    setClients((current) => [{ 
-      id: now, 
-      name: clientForm.name.trim(), 
-      service: clientForm.service.trim(), 
-      status: clientForm.status, 
-      amount, 
-      nextAction: clientForm.nextAction.trim() || "Hacer seguimiento", 
+    setClients((current) => [{
+      id: now,
+      name: clientForm.name.trim(),
+      service: clientForm.service.trim(),
+      status: clientForm.status,
+      amount,
+      nextAction: clientForm.nextAction.trim() || "Hacer seguimiento",
       lastContact: contactTimestamp,
       lastContactDate: contactDate,
       source: clientForm.source === "Otra" ? clientForm.customSource.trim() || "Otra" : clientForm.source,
       phone: clientForm.phone.trim(),
       facturaEnviada: false,
       contratoEnviado: false,
+      paymentType: clientForm.paymentType || "unico",
+      paymentDay: clientForm.paymentType !== "unico" ? (Number(clientForm.paymentDay) || 1) : null,
       createdAt: now,
       updatedAt: now
     }, ...current]);
-    setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue() });
+    setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue(), paymentType: "unico", paymentDay: "" });
     setShowClientFormModal(false);
   };
 
@@ -3465,6 +3496,23 @@ export default function App() {
               <p className="db-meta-msg">
                 {monthlyProgress >= 100 ? "Meta cumplida. &#x1F3C6;" : monthlyProgress >= 75 ? "Vas muy bien, sigue as\xED." : monthlyProgress >= 50 ? "Mitad del camino, t\xFA puedes!" : monthlyProgress >= 25 ? "Buen comienzo, acelera." : "Empieza hoy con una acci\xF3n concreta."}
               </p>
+              {recurringMonthlyTotal > 0 && predictedProgress > monthlyProgress && (
+                <div className="db-prediction-wrap">
+                  <div className="db-prediction-top">
+                    <span className="db-prediction-label">💡 Predicción con recurrentes</span>
+                    <span className="db-prediction-pct" style={{color: predictedProgress >= 100 ? "var(--green)" : "var(--orange)"}}>{predictedProgress}%</span>
+                  </div>
+                  <div className="db-prediction-bar-bg">
+                    <div className="db-prediction-bar-fill" style={{width:`${predictedProgress}%`}} />
+                    <div className="db-prediction-bar-current" style={{left:`${monthlyProgress}%`}} />
+                  </div>
+                  <p className="db-prediction-msg">
+                    {predictedProgress >= 100
+                      ? `🎉 Con tus cobros recurrentes llegas a la meta — faltan ${money.format(Math.max(0, monthlyGoal - totals.income))} por cobrar`
+                      : `Con cobros recurrentes podrías llegar a ${money.format(predictedIncome)} — te faltan ${money.format(Math.max(0, monthlyGoal - predictedIncome))} para la meta`}
+                  </p>
+                </div>
+              )}
             </div>
             <div className="db-week-card">
               <div className="week-ring" style={{"--value": monthWeekInfo.progress}}>
@@ -3797,6 +3845,31 @@ export default function App() {
                 <button type="button" className="home-today-card-menu-cta" onClick={() => setShowMovementModal(true)}>+ Registrar movimiento</button>
               </div>
             </div>
+
+            {upcomingPayments.length > 0 && (
+              <div className="biz-upcoming-payments">
+                <p className="biz-upcoming-title">💳 Cobros próximos (7 días)</p>
+                {upcomingPayments.map(c => {
+                  const day = Number(c.paymentDay) || 1;
+                  const daysUntil = day - _currentDay;
+                  return (
+                    <div key={c.id} className="biz-upcoming-row">
+                      <div>
+                        <span className="biz-upcoming-name">{c.name}</span>
+                        <span className="biz-upcoming-service"> · {c.service}</span>
+                      </div>
+                      <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+                        <span className="biz-upcoming-amount">{money.format(c.amount)}</span>
+                        <span className="biz-upcoming-day" style={{color: daysUntil === 0 ? "#C4526A" : daysUntil <= 2 ? "#D97706" : "#1D9E75"}}>
+                          {daysUntil === 0 ? "Hoy" : daysUntil === 1 ? "Mañana" : `Día ${day}`}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+                <p className="biz-upcoming-total">Total a cobrar: <strong>{money.format(upcomingPayments.reduce((s,c)=>s+c.amount,0))}</strong></p>
+              </div>
+            )}
           </>
         )}
 
@@ -4018,10 +4091,10 @@ export default function App() {
                 <span className="biz-hero-label">Lo que vas ganando</span>
                 <strong className="biz-hero-val" style={{color:healthColor}}>{money.format(totals.profit)}</strong>
               </div>
-              {(salesGoal > 0 || monthlyGoal > 0) && (
+              {monthlyGoal > 0 && (
                 <div className="biz-meta-mini" style={{margin:"6px 0 10px"}}>
-                  <div className="biz-meta-bar"><div className="biz-meta-fill" style={{width:`${salesGoalProgress}%`}} /></div>
-                  <span className="biz-meta-pct">{salesGoalProgress}% de tu meta</span>
+                  <div className="biz-meta-bar"><div className="biz-meta-fill" style={{width:`${monthlyProgress}%`}} /></div>
+                  <span className="biz-meta-pct">{monthlyProgress}% de tu meta</span>
                 </div>
               )}
               <div className="biz-hero-status">
@@ -4594,8 +4667,19 @@ export default function App() {
 
                 <div>
                   <label className="app-form-label">Servicio o producto</label>
-                  <input placeholder="Ej: Mentoría 1:1" value={clientForm.service} onChange={(e) => updateClientForm("service", e.target.value)}
-                    className={`app-form-input${clientFormErrors.service ? " input-error" : ""}`} />
+                  {incomeSources.length > 0 && (
+                    <div className="cl-service-chips">
+                      {incomeSources.map(src => (
+                        <button type="button" key={src.id}
+                          className={`cl-service-chip${clientForm.service === src.name ? " active" : ""}`}
+                          onClick={() => updateClientForm("service", clientForm.service === src.name ? "" : src.name)}>
+                          {src.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <input placeholder="O escribe el servicio..." value={clientForm.service} onChange={(e) => updateClientForm("service", e.target.value)}
+                    className={`app-form-input${clientFormErrors.service ? " input-error" : ""}`} style={{marginTop: incomeSources.length > 0 ? "6px" : "0"}} />
                   {clientFormErrors.service && <span className="field-error">{clientFormErrors.service}</span>}
                 </div>
 
@@ -4604,6 +4688,28 @@ export default function App() {
                   <MoneyAmountInput placeholder="Monto" value={clientForm.amount} onChange={(v) => updateClientForm("amount", v)}
                     className={clientFormErrors.amount ? "input-error" : ""} />
                   {clientFormErrors.amount && <span className="field-error">{clientFormErrors.amount}</span>}
+                </div>
+
+                <div>
+                  <label className="app-form-label">¿Cada cuánto paga?</label>
+                  <div className="cl-payment-chips">
+                    {[{k:"unico",l:"Único (contado)"},{k:"mensual",l:"Mensual"},{k:"quincenal",l:"Quincenal"},{k:"semanal",l:"Semanal"}].map(pt => (
+                      <button type="button" key={pt.k}
+                        className={`cl-payment-chip${clientForm.paymentType === pt.k ? " active" : ""}`}
+                        onClick={() => updateClientForm("paymentType", pt.k)}>
+                        {pt.l}
+                      </button>
+                    ))}
+                  </div>
+                  {clientForm.paymentType !== "unico" && (
+                    <div className="cl-payday-row">
+                      <span className="cl-payday-label">Día de pago:</span>
+                      <input type="number" min="1" max="28" placeholder="15" value={clientForm.paymentDay}
+                        onChange={(e) => updateClientForm("paymentDay", e.target.value)}
+                        className="cl-payday-input" />
+                      <span className="cl-payday-suffix">del mes</span>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -4680,6 +4786,28 @@ export default function App() {
                     <label className="app-form-label">Teléfono</label>
                     <input value={editingClient.phone || ""} onChange={(e) => updateClientField(editingClient.id, "phone", e.target.value)} className="app-form-input" />
                   </div>
+                </div>
+
+                <div>
+                  <label className="app-form-label">¿Cada cuánto paga?</label>
+                  <div className="cl-payment-chips">
+                    {[{k:"unico",l:"Único"},{k:"mensual",l:"Mensual"},{k:"quincenal",l:"Quincenal"},{k:"semanal",l:"Semanal"}].map(pt => (
+                      <button type="button" key={pt.k}
+                        className={`cl-payment-chip${(editingClient.paymentType || "unico") === pt.k ? " active" : ""}`}
+                        onClick={() => updateClientField(editingClient.id, "paymentType", pt.k)}>
+                        {pt.l}
+                      </button>
+                    ))}
+                  </div>
+                  {editingClient.paymentType && editingClient.paymentType !== "unico" && (
+                    <div className="cl-payday-row">
+                      <span className="cl-payday-label">Día de pago:</span>
+                      <input type="number" min="1" max="28" placeholder="15" value={editingClient.paymentDay || ""}
+                        onChange={(e) => updateClientField(editingClient.id, "paymentDay", Number(e.target.value) || 1)}
+                        className="cl-payday-input" />
+                      <span className="cl-payday-suffix">del mes</span>
+                    </div>
+                  )}
                 </div>
 
                 <div>
