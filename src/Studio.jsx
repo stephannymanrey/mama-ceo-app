@@ -546,8 +546,11 @@ const IDEA_CAT_TO_CONTENT = {
 };
 
 function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, callGemini, plan = "free", onAiUsed, onAddToContent }) {
-  const [keyword,        setKeyword]        = useState("");
-  const [ideas,          setIdeas]          = useState(null);
+  const IDEAS_SK = "studio-ideas-session";
+  const _is = (() => { try { return JSON.parse(sessionStorage.getItem(IDEAS_SK)) || {}; } catch { return {}; } })();
+  const [keyword,        setKeyword]        = useState(_is.keyword || "");
+  const [ideas,          setIdeas]          = useState(_is.ideas || null);
+  const [savedIds,       setSavedIds]       = useState(new Set());
   const [thinking,       setThinking]       = useState(false);
   const [copiado,        setCopiado]        = useState("");
   const [vistaBlueprint, setVistaBlueprint] = useState(null);
@@ -556,6 +559,10 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
   const [masLoading,     setMasLoading]     = useState("");
   const [agendado,       setAgendado]       = useState("");
   const [agendaMsg,      setAgendaMsg]      = useState("");
+
+  useEffect(() => {
+    try { sessionStorage.setItem(IDEAS_SK, JSON.stringify({ keyword, ideas })); } catch {}
+  }, [keyword, ideas]);
 
   const agendar = (texto, catKey, key) => {
     if (!onAddToContent) return;
@@ -970,16 +977,19 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
                           </button>
                         )}
                         <button className="ideas-card-bookmark"
-                          title="Guardar idea"
+                          title={savedIds.has(idea.id) ? "Idea guardada" : "Guardar idea"}
                           onClick={e => {
                             e.stopPropagation();
+                            if (savedIds.has(idea.id)) return;
                             onSave("ideas", {
                               id: Date.now(), titulo: idea.texto, tipo: cat.label,
                               plataforma: cat.sub, color: cat.color, keyword: ideas.keyword,
                               catKey, fecha: new Date().toLocaleDateString("es"),
                             });
-                          }}>
-                          💾
+                            setSavedIds(prev => new Set([...prev, idea.id]));
+                          }}
+                          style={savedIds.has(idea.id) ? {opacity:0.5,cursor:"default"} : {}}>
+                          {savedIds.has(idea.id) ? "✅" : "💾"}
                         </button>
                       </div>
                     </div>
@@ -1923,11 +1933,13 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
 
 // ── GUIÓN ──────────────────────────────────────────────────────
 function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {}, callGemini, plan = "free", onAiUsed, onAddToContent, linkedContentId, onUpdateContentGuion, onLinkedSaved }) {
+  const GUION_SK = "studio-guion-session";
+  const _gs = seed ? {} : (() => { try { return JSON.parse(sessionStorage.getItem(GUION_SK)) || {}; } catch { return {}; } })();
   const [subTab,       setSubTab]       = useState("guion");
-  const [fase,         setFase]         = useState("tema");
-  const [topic,        setTopic]        = useState(seed || "");
-  const [formato,      setFormato]      = useState("ig");
-  const [script,       setScript]       = useState(null);
+  const [fase,         setFase]         = useState(_gs.fase || "tema");
+  const [topic,        setTopic]        = useState(seed || _gs.topic || "");
+  const [formato,      setFormato]      = useState(_gs.formato || "ig");
+  const [script,       setScript]       = useState(_gs.script || null);
   const [aiMsg,        setAiMsg]        = useState("");
   const [copiado,      setCopiado]      = useState("");
   const [c,            setC]            = useState({ red: brandProfile.redPrincipal || "Instagram", tono: brandProfile.tono || "Cercano", tema: "", cta: "", hashtags: true });
@@ -1937,9 +1949,14 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
   const [chatInput,      setChatInput]      = useState("");
   const [chatLoading,    setChatLoading]    = useState(false);
   const [captionInline,  setCaptionInline]  = useState(null);
+  const [headerSaved,    setHeaderSaved]    = useState(false);
   const chatEndRef = useRef(null);
 
-  useEffect(() => { if (seed) { setTopic(seed); onSeedConsumed?.(); } }, []);
+  useEffect(() => {
+    try { sessionStorage.setItem(GUION_SK, JSON.stringify({ fase, topic, formato, script })); } catch {}
+  }, [fase, topic, formato, script]);
+
+  useEffect(() => { if (seed) { setTopic(seed); setScript(null); setFase("tema"); onSeedConsumed?.(); } }, []);
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [chatHistory, chatLoading]);
 
   const copiar = (t, k) => { navigator.clipboard.writeText(t); setCopiado(k); setTimeout(() => setCopiado(""), 2200); };
@@ -1957,14 +1974,14 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
 
   // Si el guión viene desde una tarjeta de Mi Contenido, se guarda EN esa misma tarjeta.
   // Si no, crea una tarjeta nueva en "Por grabar".
-  const enviarAGuionContenido = () => {
+  const enviarAGuionContenido = (captionText = "") => {
     if (linkedContentId && onUpdateContentGuion) {
-      onUpdateContentGuion(linkedContentId, scriptTexto);
+      onUpdateContentGuion(linkedContentId, scriptTexto, captionText || undefined);
       onLinkedSaved?.();
       return;
     }
     if (!onAddToContent) return;
-    const meta = { ...(FORMATO_TO_CONTENT[formato] || {}), guion: scriptTexto, status: "Por grabar" };
+    const meta = { ...(FORMATO_TO_CONTENT[formato] || {}), guion: scriptTexto, status: "Por grabar", ...(captionText ? { caption: captionText } : {}) };
     onAddToContent(script?.titulo || topic, meta);
   };
 
@@ -2129,13 +2146,17 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                     <span className="gn2-script-obj">{FORMATO_LABEL[formato]}</span>
                   </div>
                   <div style={{display:"flex",gap:"6px"}}>
-                    <button className="mpm-wizard-back-btn" onClick={() => copiar(scriptTexto, "script")}>
-                      {copiado === "script" ? "✓" : "📋"}
+                    <button className="mpm-wizard-back-btn" onClick={() => copiar(scriptTexto, "script")} title="Copiar guión completo">
+                      {copiado === "script" ? "✓ Copiado" : "📋 Copiar"}
                     </button>
-                    <button className="mpm-wizard-back-btn" onClick={() => { onSave("guiones", {
-                      id: Date.now(), tema: topic, tipo: FORMATO_LABEL[formato],
-                      formato, scriptTexto, fecha: new Date().toLocaleDateString("es"),
-                    }); enviarAGuionContenido(); }}>💾 Guardar</button>
+                    <button className="mpm-wizard-back-btn" onClick={() => {
+                      onSave("guiones", { id: Date.now(), tema: topic, tipo: FORMATO_LABEL[formato], formato, scriptTexto, fecha: new Date().toLocaleDateString("es") });
+                      enviarAGuionContenido();
+                      setHeaderSaved(true);
+                      setTimeout(() => setHeaderSaved(false), 3000);
+                    }} title="Guardar guión en Mi Contenido">
+                      {headerSaved ? "✓ Guardado" : "💾 Guardar"}
+                    </button>
                   </div>
                 </div>
 
@@ -2164,11 +2185,12 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                 ))}
 
                 <button className="gn2-save-caption-btn" onClick={() => {
+                  const cap = buildCaption();
                   onSave("guiones", { id: Date.now(), tema: topic, tipo: FORMATO_LABEL[formato], formato, scriptTexto, fecha: new Date().toLocaleDateString("es") });
-                  enviarAGuionContenido();
-                  setCaptionInline(buildCaption());
+                  enviarAGuionContenido(cap);
+                  setCaptionInline(cap);
                 }}>
-                  {captionInline ? "✓ Guardado — caption listo abajo" : "💾 Guardar y generar caption"}
+                  {captionInline ? "✓ Guardado — caption listo abajo" : "📝 Guardar + generar caption"}
                 </button>
 
                 {captionInline && (

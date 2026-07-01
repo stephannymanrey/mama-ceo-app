@@ -616,6 +616,7 @@ export default function App() {
   const [wellnessForm, setWellnessForm] = useState("");
   const [banks, setBanks] = useState(stored?.banks || initialBanks);
   const [newBank, setNewBank] = useState("");
+  const [bankAddMode, setBankAddMode] = useState(false);
   const [annualBudget, setAnnualBudget] = useState(normalizeAnnualBudget(stored?.annualBudget || initialAnnualBudget));
   const [homeBudget, setHomeBudget] = useState(isNewUser ? [] : normalizeHomeBudget(stored?.homeBudget || initialHomeBudget));
   const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue() });
@@ -1692,6 +1693,7 @@ export default function App() {
       goal: "Vender",
       publishDate: "",
       guion,
+      caption: meta.caption || "",
       keywords: meta.keywords || "",
       responsable: meta.responsable || "",
       createdAt: now,
@@ -1899,10 +1901,13 @@ export default function App() {
     setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, [field]: value } : item));
   };
   // Si se escribe un guión en una pieza que aún es Idea, avanza sola a "Por grabar"
-  const updateContentGuion = (contentId, value) => {
+  const updateContentGuion = (contentId, value, caption) => {
     setContentItems((current) => current.map((item) => item.id === contentId
-      ? { ...item, guion: value, status: (item.status === "Idea" && value.trim()) ? "Por grabar" : item.status }
+      ? { ...item, guion: value, status: (item.status === "Idea" && value.trim()) ? "Por grabar" : item.status, ...(caption !== undefined ? { caption } : {}) }
       : item));
+  };
+  const updateContentCaption = (contentId, value) => {
+    setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, caption: value } : item));
   };
   const updateClientNotes = (clientId, notes) => {
     setClients((current) => current.map((client) => client.id === clientId ? { ...client, notes, updatedAt: Date.now() } : client));
@@ -2003,7 +2008,26 @@ export default function App() {
   }
 
   if (activeView === "studio") {
-    return <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} onAddToContent={addContentFromIdea} onUpdateContentGuion={updateContentGuion} contentBoard={renderContent} />;
+    return (
+      <>
+        <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} onAddToContent={addContentFromIdea} onUpdateContentGuion={updateContentGuion} contentBoard={renderContent} />
+        {confirmModal && (
+          <div className="confirm-overlay" onClick={() => setConfirmModal(null)}>
+            <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+              <div className="confirm-icon">{confirmModal.danger ? "⚠️" : "🗑️"}</div>
+              <p className="confirm-msg">{confirmModal.msg}</p>
+              <div className="confirm-actions">
+                <button className="confirm-cancel" onClick={() => setConfirmModal(null)}>Cancelar</button>
+                <button className={confirmModal.danger ? "confirm-ok confirm-ok--danger" : "confirm-ok"}
+                  onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }}>
+                  {confirmModal.danger ? "Sí, eliminar" : "Eliminar"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </>
+    );
   }
 
   if (!user && awsActive) {
@@ -4947,6 +4971,20 @@ export default function App() {
                 </div>
 
                 <div>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"baseline",flexWrap:"wrap",gap:"6px"}}>
+                    <label className="app-form-label" style={{margin:0}}>Caption <span style={{fontWeight:400,textTransform:"none"}}>— listo para copiar y publicar</span></label>
+                    {editingItem.caption && (
+                      <button type="button" className="ck-card-guion-btn" onClick={() => { navigator.clipboard.writeText(editingItem.caption); }}>
+                        📋 Copiar
+                      </button>
+                    )}
+                  </div>
+                  <textarea className="app-form-input" placeholder="El caption se genera automáticamente al guardar el guión con caption en Studio..." value={editingItem.caption || ""}
+                    onChange={(e) => updateContentCaption(editingItem.id, e.target.value)}
+                    style={{minHeight:"90px",resize:"vertical",marginTop:"6px"}} />
+                </div>
+
+                <div>
                   <label className="app-form-label">Estado</label>
                   <div className="cl-status-chips">
                     {COLUMNAS.map(c => (
@@ -6030,6 +6068,22 @@ export default function App() {
             <select value={form.bank} onChange={(e) => updateForm("bank", e.target.value)}>
               {banks.map((b) => <option key={b}>{b}</option>)}
             </select>
+            {bankAddMode ? (
+              <div className="bank-inline-add">
+                <input autoFocus className="bank-inline-input" placeholder="Nombre del banco o billetera"
+                  value={newBank} onChange={e => setNewBank(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); const b = newBank.trim(); if (b && !banks.includes(b)) { setBanks(c => [...c, b]); updateForm("bank", b); } setNewBank(""); setBankAddMode(false); } if (e.key === "Escape") { setNewBank(""); setBankAddMode(false); } }} />
+                <button type="button" className="bank-inline-ok" onClick={() => { const b = newBank.trim(); if (b && !banks.includes(b)) { setBanks(c => [...c, b]); updateForm("bank", b); } setNewBank(""); setBankAddMode(false); }}>✓</button>
+                <button type="button" className="bank-inline-cancel" onClick={() => { setNewBank(""); setBankAddMode(false); }}>✕</button>
+              </div>
+            ) : (
+              <div className="bank-inline-actions">
+                <button type="button" className="bank-inline-link" onClick={() => setBankAddMode(true)}>＋ Agregar cuenta</button>
+                {banks.length > 1 && (
+                  <button type="button" className="bank-inline-link bank-inline-link--del" onClick={() => { confirmDelete(`¿Eliminar "${form.bank}"?`, () => removeBank(form.bank)); }}>✕ Eliminar</button>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
