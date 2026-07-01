@@ -550,6 +550,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
   const _is = (() => { try { return JSON.parse(sessionStorage.getItem(IDEAS_SK)) || {}; } catch { return {}; } })();
   const [keyword,        setKeyword]        = useState(_is.keyword || "");
   const [ideas,          setIdeas]          = useState(_is.ideas || null);
+  const [intention,      setIntention]      = useState(_is.intention || "");
   const [savedIds,       setSavedIds]       = useState(new Set());
   const [thinking,       setThinking]       = useState(false);
   const [copiado,        setCopiado]        = useState("");
@@ -561,8 +562,8 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
   const [agendaMsg,      setAgendaMsg]      = useState("");
 
   useEffect(() => {
-    try { sessionStorage.setItem(IDEAS_SK, JSON.stringify({ keyword, ideas })); } catch {}
-  }, [keyword, ideas]);
+    try { sessionStorage.setItem(IDEAS_SK, JSON.stringify({ keyword, ideas, intention })); } catch {}
+  }, [keyword, ideas, intention]);
 
   const agendar = (texto, catKey, key) => {
     if (!onAddToContent) return;
@@ -736,6 +737,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
       keyword: k,
       nicho: brandProfile.clienteIdeal || "mamás emprendedoras",
       tono: brandProfile.tono || "Cercano",
+      ...(intention ? { intention } : {}),
     });
     setAiLoading(false);
     if (res?.error === "rate_limit") { setAiMsg("Muchas solicitudes en este momento. Intenta en 1 minuto."); return; }
@@ -768,6 +770,7 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
         modo: "mas",
         catKey,
         excluir,
+        ...(intention ? { intention } : {}),
       });
       setMasLoading("");
       if (!res?.error && res?.result?.[catKey]) {
@@ -788,6 +791,14 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
     }));
     setIdeas(prev => ({ ...prev, [catKey]: [...prev[catKey], ...nuevas] }));
   };
+
+  const INTENTIONS = [
+    { key: "entretener", label: "Entretener", emoji: "🎭" },
+    { key: "educar",     label: "Educar",     emoji: "📚" },
+    { key: "inspirar",   label: "Inspirar",   emoji: "✨" },
+    { key: "nutrir",     label: "Nutrir",     emoji: "🌱" },
+    { key: "divertir",   label: "Divertir",   emoji: "😂" },
+  ];
 
   const bancoIdeas = saved?.ideas || [];
   const EJEMPLOS = ["ventas en WhatsApp", "organizar el tiempo", "reels", "bienestar", "maternidad", "redes sociales"];
@@ -898,6 +909,22 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
         >
           {(thinking || aiLoading) ? "Generando..." : callGemini ? "Generar ✨" : "Generar ✦"}
         </button>
+      </div>
+
+      <div className="ideas-intention-wrap">
+        <span className="ideas-intention-label">¿Con qué intención?</span>
+        <div className="ideas-intention-row">
+          {INTENTIONS.map(({ key, label, emoji }) => (
+            <button
+              key={key}
+              type="button"
+              className={`ideas-intention-chip${intention === key ? " active" : ""}`}
+              onClick={() => setIntention(prev => prev === key ? "" : key)}
+            >
+              {emoji} {label}
+            </button>
+          ))}
+        </div>
       </div>
       {aiMsg && <p className="studio-ai-msg">{aiMsg}</p>}
       {agendaMsg && <p className="studio-ai-msg">{agendaMsg}</p>}
