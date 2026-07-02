@@ -312,53 +312,72 @@ Responde SOLO JSON válido, sin texto extra:
   }
 
   if (type === "ideas") {
+    const intentionMap = {
+      entretener: "ENTRETENER — cada idea debe capturar la atención de inmediato: sorpresa, curiosidad, giro inesperado, revelación que nadie se espera. El viewer no puede scrollear.",
+      educar:     "EDUCAR — cada idea enseña algo concreto y aplicable. El viewer se lleva un aprendizaje real. Ángulos: datos sorprendentes, comparaciones, desmitificaciones, procesos paso a paso.",
+      inspirar:   "INSPIRAR — cada idea eleva la perspectiva o desafía una creencia limitante. El viewer se siente motivada a actuar o a ver su situación diferente.",
+      nutrir:     "NUTRIR — cada idea construye confianza y conexión con la comunidad. Ángulos: empatía, vulnerabilidad honesta, apoyo, cercanía, 'te entiendo'.",
+      divertir:   "DIVERTIR — cada idea usa humor, ligereza y situaciones cotidianas reconocibles. El viewer sonríe o se identifica al instante. Irónía amigable, exageraciones, memes de nicho.",
+    };
+    const intentionInstr = ctx.intention && intentionMap[ctx.intention]
+      ? `\nINTENCIÓN DE CONTENIDO: ${intentionMap[ctx.intention]}\nTodas las ideas de todos los formatos deben cumplir esta intención sin excepción.\n`
+      : "";
+
     const ideasBase = `Eres estratega de contenido digital especializada en generar ideas creativas y originales para cualquier tipo de creadora de contenido — de crianza, negocios, cocina, salud, relaciones, lifestyle, o cualquier otro tema.
 
 Tema de búsqueda: "${ctx.keyword}"
 Audiencia: ${nicho}
 Tono: ${tono}
-
+${intentionInstr}
 ${DIALECTO}
 
 REGLA FUNDAMENTAL: Las ideas deben girar EXCLUSIVAMENTE alrededor del tema de búsqueda tal como está escrito. No mezcles otros temas ni introduzcas ángulos de negocio, ventas, o emprendimiento si el tema no lo pide. Si el tema es crianza, todas las ideas son de crianza. Si es cocina, son de cocina. Si es fitness, son de fitness.
 
+LONGITUD DE TÍTULOS — REGLA CRÍTICA:
+- Máximo 8 palabras por título. Punchy, directo, que quepa en 2 líneas en móvil.
+- Prohibido usar comas, "—", dos puntos o conectores que alargan la frase.
+- Si tienes ganas de poner "y además...", "que te...", "para que puedas..." — CÓRTALO. Quédate con el gancho.
+- Ejemplos CORRECTOS: "¿Tus reels no funcionan? Esto falta", "El hábito que destruye tu productividad", "Nadie te dijo esto sobre vender"
+- Ejemplos PROHIBIDOS: "5 errores que arruinan tus resultados con reels y cómo evitarlos de una vez por todas", "Todo lo que necesitas saber sobre organización para mamás emprendedoras que quieren más tiempo"
+
 PROHIBIDO en todos los formatos:
+- Anécdotas fabricadas en primera persona: "Mi hijo me interrumpió...", "Cuando yo...", "Me pasó que...", "Esa vez que..." — NO inventes vivencias personales.
 - Fórmulas predecibles: "N errores que...", "N razones por las que...", "N pasos para...", "Todo lo que nadie te dice sobre...", "La verdad sobre..."
 - Empezar con "POV:", "Cómo X sin Y", "Así hago yo", "Descubrí que", "Lo que aprendí sobre"
 - Frases vacías: "potencial", "empoderar", "journey", "vivir tus sueños", "transformar tu vida"
 - Repetir la frase exacta del tema como título — escribe desde el ÁNGULO o la EMOCIÓN, no desde la etiqueta
 
-LO QUE SÍ QUEREMOS:
-- Títulos que cuenten una situación real y concreta relacionada con el tema
-- Preguntas que detienen el scroll porque tocan algo que ella realmente siente o vive
-- Momentos cotidianos específicos del tema — no genéricos
-- Que al leerlo ella piense "eso me pasó exactamente" o "eso quiero saber"`;
+LO QUE SÍ QUEREMOS — hooks que paran el scroll:
+1. PREGUNTA DIRECTA que toca un dolor real: "¿Por qué nadie te contacta después de ver tus reels?"
+2. AFIRMACIÓN PROVOCADORA: "Vender sin convencer es posible"
+3. SITUACIÓN en 2da persona: "Publicas todos los días y nadie compra"
+4. DATO O CONTRASTE inesperado: "El reel de 7 segundos que vendió más que el de 3 minutos"`;
 
     const formatosDesc = `
-Genera 6 ideas para cada formato. Cada idea es un título o ángulo listo para usar:
-- vertical: Reels / TikTok — narrativa breve de un momento real, quepa en 60 segundos
-- horizontal: YouTube / Podcast — episodio que promete UNA historia real o UN insight profundo sobre el tema
-- carrusel: Post de Instagram con slides — enseña algo accionable o cuenta algo con estructura clara
-- story: Historia de Instagram — pregunta directa, detrás de escenas, o mini-tip conversacional
-- digital: Producto digital (guía, plantilla, reto, mini-curso) — título que promete un resultado concreto
-- email: Asunto de email — corto, personal, como mensaje de amiga, genera curiosidad real
-- whatsapp: Broadcast de WhatsApp — máximo 18 palabras, termina con 1 solo emoji natural`;
+Genera 6 ideas para cada formato. Cada idea es un título o hook listo para usar, máximo 8 palabras:
+- vertical: Reels / TikTok — gancho visual que para el scroll en 2 segundos
+- horizontal: YouTube / Podcast — pregunta o insight que justifica 15-20 min de atención
+- carrusel: Post de Instagram — promesa de aprendizaje accionable en slides
+- story: Historia de Instagram — pregunta directa o mini-reflexión conversacional
+- digital: Producto digital (guía, plantilla, reto, mini-curso) — promesa de resultado concreto
+- email: Asunto de email — corto, personal, como mensaje de amiga, genera curiosidad
+- whatsapp: Broadcast de WhatsApp — máximo 12 palabras, 1 solo emoji natural al final`;
 
     // Modo "más ideas": solo para un formato, evitando repetir las existentes
     if (ctx.modo === "mas" && ctx.catKey) {
       const formatoLabels = {
-        vertical: "Reels / TikTok (narrativa breve, momento real, quepa en 60 segundos)",
-        horizontal: "YouTube / Podcast (episodio con historia real o insight profundo)",
-        carrusel: "Carrusel de Instagram (enseña algo accionable con estructura clara)",
-        story: "Historia de Instagram (pregunta directa, detrás de escenas, mini-tip)",
-        digital: "Producto digital como guía, plantilla, reto o mini-curso",
+        vertical: "Reels / TikTok (gancho visual que para el scroll en 2 segundos)",
+        horizontal: "YouTube / Podcast (pregunta o insight que justifica 15-20 min de atención)",
+        carrusel: "Carrusel de Instagram (promesa de aprendizaje accionable en slides)",
+        story: "Historia de Instagram (pregunta directa o mini-reflexión conversacional)",
+        digital: "Producto digital como guía, plantilla, reto o mini-curso (promete resultado concreto)",
         email: "Asunto de email (corto, personal, curioso, como mensaje de amiga)",
-        whatsapp: "Broadcast de WhatsApp (máximo 18 palabras, termina con 1 emoji natural)",
+        whatsapp: "Broadcast de WhatsApp (máximo 12 palabras, 1 emoji natural al final)",
       };
       const excluir = (ctx.excluir || []).map(t => `- ${t}`).join("\n");
       return `${ideasBase}
 
-Genera 4 ideas NUEVAS Y DIFERENTES de tipo "${formatoLabels[ctx.catKey] || ctx.catKey}" sobre el tema.
+Genera 4 ideas NUEVAS Y DIFERENTES de tipo "${formatoLabels[ctx.catKey] || ctx.catKey}" sobre el tema. Máximo 8 palabras cada una.
 
 ${excluir ? `IMPORTANTE — NO repitas ni hagas variaciones de estas ideas que ya generaste:\n${excluir}\n` : ""}
 Responde SOLO JSON válido, sin texto extra:
@@ -456,17 +475,191 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
   return "";
 }
 
+// ─── Prompt: Plan de Negocio Público ──────────────────────────────────────
+function buildPlanNegocioPrompt(ctx) {
+  const nombre = ctx.nombre ? `Nombre: ${ctx.nombre}` : "";
+  return `Eres una asesora de negocios experta en mamás emprendedoras de Latinoamérica. Tu misión es construir un plan de negocio digital aterrizado, simple, humano y accionable — adaptado a la realidad de una mamá que quiere generar ingresos online.
+
+INFORMACIÓN DE LA EMPRENDEDORA:
+${nombre}
+- Historia personal: ${ctx.historia || ""}
+- Habilidades: ${ctx.habilidades || ""}
+- Pasiones: ${ctx.pasion || ""}
+- Problemas que puede resolver: ${ctx.problemas || ""}
+- Experiencia: ${ctx.experiencia || ""}
+- Tiempo disponible: ${ctx.tiempo || ""}
+- Meta de ingresos: ${ctx.ingresos || ""}
+- Estilo de vida deseado: ${ctx.estiloVida || ""}
+
+INSTRUCCIONES GENERALES:
+- Escribe en español de LatAm, cálido, claro y sin jerga técnica.
+- Usa "tú" (nunca "usted" ni "vos").
+- Adapta todo a la realidad específica de esta mamá — no uses ejemplos genéricos.
+- El plan debe ser realista, práctico y útil para convocatorias de capital semilla, inversionistas y alianzas.
+- Propone un nombre de negocio basado en lo que ella hace.
+- Donde pongas proyecciones financieras, basalas en su meta de ingresos real.
+- PROHIBIDO: "empoderar", "potencial", "journey", "transformar tu vida", "éxito que mereces".
+
+Genera el plan completo con esta estructura exacta en JSON:
+
+- nombreNegocio: string — nombre propuesto para su negocio
+- resumenEjecutivo: string — 1 página que responde qué hace, a quién ayuda, cómo genera ingresos, qué impacto produce y cuánto quiere crecer
+- problema: string — el dolor o necesidad que tiene su cliente ideal, con contexto real
+- solucion: objeto con "descripcion" (string), "productos" (array de strings con sus servicios/productos propuestos), "areas" (array de strings con las áreas que trabaja: ej. ventas, marketing, IA, bienestar, etc.)
+- mercado: objeto con "descripcion" (string), "mercadoObjetivo" (string con perfil demográfico), "clienteIdeal" (array de 4-6 características del cliente ideal)
+- modeloNegocio: objeto con "descripcion" (string), "lineasIngreso" (array de strings con cada línea de ingreso y su precio estimado), "estructura" (string explicando cómo funciona el modelo)
+- ventajaCompetitiva: string — por qué alguien la elegiría a ella específicamente
+- estrategiaCrecimiento: objeto con "embudo" (string explicando el funnel de conversión), "fases" (array de 3 strings: fase 1, 2 y 3 del crecimiento en 12 meses)
+- impacto: objeto con "economico" (string), "familiar" (string), "educativo" (string), "emocional" (string) — cómo se mide el impacto en cada dimensión
+- proyeccionesFinancieras: objeto con "año1" (string con proyección detallada), "año2" (string), "año3" (string), "vision5anos" (string con visión a 5 años)
+- usoRecursos: objeto con "descripcion" (string explicando para qué necesita financiación), "categorias" (array de strings con cada uso específico del capital: ej. "Adquisición de clientes: $X", "Producción educativa: $X")
+
+Responde SOLO JSON válido, sin texto extra, sin markdown:`;
+}
+
+// ─── Handler público: Plan de Negocio ─────────────────────────────────────
+const PLAN_DAILY_LIMIT = 150;
+
+async function handlePlanNegocio(publicEmail, context, event) {
+  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
+
+  const emailKey = `plan_pub#${publicEmail}`;
+  const today    = new Date().toISOString().slice(0, 10);
+  const dayKey   = `plan_daily#${today}`;
+
+  // 1. Verificar si este email ya tiene un plan
+  try {
+    const existing = await dynamoCall("GetItem", {
+      TableName: TABLE,
+      Key: { user_id: { S: emailKey } },
+    });
+    if (existing.Item) {
+      const item = unmarshal(existing.Item);
+      if (item.plan) {
+        return respond(200, { result: item.plan, emailSent: false, error: "ya_generado", plan: item.plan }, event);
+      }
+    }
+  } catch { /* continuar */ }
+
+  // 2. Verificar límite diario global
+  try {
+    const dayItem = await dynamoCall("GetItem", {
+      TableName: TABLE,
+      Key: { user_id: { S: dayKey } },
+    });
+    if (dayItem.Item) {
+      const dayData = unmarshal(dayItem.Item);
+      if ((dayData.count || 0) >= PLAN_DAILY_LIMIT) {
+        return respond(429, { error: "limite_diario" }, event);
+      }
+    }
+  } catch { /* continuar */ }
+
+  // 3. Generar el plan
+  const prompt = buildPlanNegocioPrompt(context);
+  let rawText;
+  try {
+    rawText = await callClaude(prompt, 8192);
+  } catch (err) {
+    if (err.message === "rate_limit") return respond(429, { error: "rate_limit" }, event);
+    return respond(502, { error: "Error al generar el plan. Intenta de nuevo." }, event);
+  }
+
+  let planResult;
+  try {
+    const match = rawText.match(/\{[\s\S]*\}/);
+    planResult = JSON.parse(match ? match[0] : rawText);
+  } catch {
+    return respond(502, { error: "Respuesta no válida. Intenta de nuevo." }, event);
+  }
+
+  // 4. Guardar email como lead + plan generado
+  try {
+    await dynamoCall("PutItem", {
+      TableName: TABLE,
+      Item: {
+        user_id:    { S: emailKey },
+        email:      { S: publicEmail },
+        nombre:     { S: context.nombre || "" },
+        plan:       mv(planResult),
+        createdAt:  { N: String(Date.now()) },
+        type:       { S: "plan_lead" },
+      },
+    });
+  } catch { /* no bloquear por error de guardado */ }
+
+  // 5. Incrementar contador diario
+  try {
+    await dynamoCall("UpdateItem", {
+      TableName: TABLE,
+      Key: { user_id: { S: dayKey } },
+      UpdateExpression: "ADD #c :one SET #t = :type",
+      ExpressionAttributeNames: { "#c": "count", "#t": "type" },
+      ExpressionAttributeValues: { ":one": { N: "1" }, ":type": { S: "daily_counter" } },
+    });
+  } catch { /* continuar */ }
+
+  // 6. Enviar email con Brevo (cuando esté configurado)
+  let emailSent = false;
+  const brevoKey = process.env.BREVO_API_KEY;
+  if (brevoKey && planResult) {
+    try {
+      const nombreNegocio = planResult.nombreNegocio || "Tu Negocio";
+      const resumen = planResult.resumenEjecutivo || "";
+      const htmlBody = `
+        <div style="font-family:Inter,sans-serif;max-width:600px;margin:0 auto;color:#1a1a2e">
+          <div style="background:#C4526A;padding:24px 32px;border-radius:12px 12px 0 0">
+            <h1 style="color:#fff;margin:0;font-size:22px">Tu Plan de Negocio está listo 🎉</h1>
+          </div>
+          <div style="background:#fff;padding:28px 32px;border-radius:0 0 12px 12px;border:1px solid #e5e7eb">
+            <p style="margin:0 0 16px">Hola${context.nombre ? ` ${context.nombre}` : ""},</p>
+            <p style="margin:0 0 16px">Tu plan de negocio <strong>${nombreNegocio}</strong> está listo. Aquí un resumen ejecutivo:</p>
+            <div style="background:#faf9f7;border-left:3px solid #C4526A;padding:16px 20px;border-radius:8px;margin:0 0 20px">
+              <p style="margin:0;font-size:14px;line-height:1.7;color:#374151">${resumen.slice(0, 500)}${resumen.length > 500 ? "..." : ""}</p>
+            </div>
+            <p style="margin:0 0 20px;color:#6b7280;font-size:14px">Para ver tu plan completo con todas las secciones, ve a:</p>
+            <a href="https://www.mamaceoapp.co/plan-de-negocio" style="display:inline-block;background:#C4526A;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Ver mi plan completo →</a>
+            <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0">
+            <p style="margin:0;font-size:13px;color:#9ca3af">Mamá CEO · <a href="https://www.mamaceoapp.co" style="color:#C4526A">mamaceoapp.co</a></p>
+          </div>
+        </div>`;
+
+      const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "api-key": brevoKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          sender:      { name: "Mamá CEO", email: "hola@mamaceoapp.co" },
+          to:          [{ email: publicEmail, name: context.nombre || "" }],
+          subject:     `Tu plan de negocio está listo — ${nombreNegocio}`,
+          htmlContent: htmlBody,
+        }),
+      });
+      if (brevoRes.ok) emailSent = true;
+    } catch { /* no bloquear si el email falla */ }
+  }
+
+  return respond(200, { result: planResult, emailSent }, event);
+}
+
 // ─── Handler ──────────────────────────────────────────────────────────────
 export const handler = async (event) => {
   const method = event?.requestContext?.http?.method || event?.httpMethod || "POST";
   if (method === "OPTIONS") return respond(200, "", event);
 
-  const userId = getUserId(event);
-  if (!userId) return respond(401, { error: "No autorizada" }, event);
-
   let body;
   try { body = JSON.parse(event.body || "{}"); }
   catch { return respond(400, { error: "JSON inválido" }, event); }
+
+  // Ruta pública: plan de negocio gratuito (sin JWT)
+  if (body.type === "planNegocio" && body.publicEmail) {
+    return handlePlanNegocio(body.publicEmail, body.context || {}, event);
+  }
+
+  const userId = getUserId(event);
+  if (!userId) return respond(401, { error: "No autorizada" }, event);
 
   const { type, context } = body;
   if (!type || !context) return respond(400, { error: "Faltan campos: type, context" }, event);

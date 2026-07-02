@@ -4,6 +4,7 @@ import { awsAuth, getAwsAuthToken, isAwsConfigured, confirmAwsResetPassword, onG
 import Logo from "./Logo";
 import Studio from "./Studio";
 import Landing from "./Landing";
+import PlanBuilder from "./PlanBuilder";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -2059,6 +2060,11 @@ export default function App() {
         )}
       </>
     );
+  }
+
+  // Ruta pública — sin autenticación
+  if (window.location.pathname === "/plan-de-negocio") {
+    return <PlanBuilder />;
   }
 
   if (!user && awsActive) {
