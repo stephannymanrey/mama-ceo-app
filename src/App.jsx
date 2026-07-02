@@ -2024,6 +2024,10 @@ export default function App() {
     setUserPlan(plan);
   };
 
+  // Rutas públicas — sin autenticación, antes de cualquier chequeo de sesión
+  if (window.location.pathname === "/plan-de-negocio") return <PlanBuilder />;
+  if (window.location.pathname === "/editor") return <SilenceCutter />;
+
   if (!ready || isRestoringRemote) {
     return (
       <div className="auth-shell">
@@ -2061,14 +2065,6 @@ export default function App() {
         )}
       </>
     );
-  }
-
-  // Ruta pública — sin autenticación
-  if (window.location.pathname === "/plan-de-negocio") {
-    return <PlanBuilder />;
-  }
-  if (window.location.pathname === "/editor") {
-    return <SilenceCutter />;
   }
 
   if (!user && awsActive) {
