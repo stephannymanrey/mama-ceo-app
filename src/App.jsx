@@ -2625,7 +2625,19 @@ export default function App() {
             </span>
             <span className="sidebar-miniapp-arrow">↗</span>
           </a>
-          {/* Aquí van las próximas mini apps */}
+          <a
+            className="sidebar-tool-btn sidebar-miniapp-btn"
+            href="/plan-de-negocio"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="UMP Business Plan — Construye tu plan de negocio gratis">
+            <span className="sidebar-tool-icon">📋</span>
+            <span className="sidebar-tool-label">
+              UMP Business Plan
+              <span className="sidebar-miniapp-sub">Construye tu plan de negocio gratis</span>
+            </span>
+            <span className="sidebar-miniapp-arrow">↗</span>
+          </a>
 
           {/* Mi Plan */}
           <div className="sidebar-miniapps-divider">

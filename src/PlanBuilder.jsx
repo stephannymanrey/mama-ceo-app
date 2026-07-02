@@ -1,7 +1,7 @@
 import React, { useState, useRef } from "react";
 import "./PlanBuilder.css";
 
-const API_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-user-data";
+const API_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-gemini";
 
 const PREGUNTAS = [
   {
