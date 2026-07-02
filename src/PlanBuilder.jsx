@@ -155,6 +155,12 @@ export default function PlanBuilder() {
         return;
       }
 
+      if (!data.result) {
+        setError("La generación tardó demasiado. Intenta de nuevo en unos segundos.");
+        setFase("email");
+        return;
+      }
+
       setPlan(data.result);
       setEmailSent(data.emailSent || false);
       setFase("result");

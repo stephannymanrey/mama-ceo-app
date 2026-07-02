@@ -559,7 +559,7 @@ async function handlePlanNegocio(publicEmail, context, event) {
   const prompt = buildPlanNegocioPrompt(context);
   let rawText;
   try {
-    rawText = await callClaude(prompt, 8192);
+    rawText = await callClaude(prompt, 4096);
   } catch (err) {
     if (err.message === "rate_limit") return respond(429, { error: "rate_limit" }, event);
     return respond(502, { error: "Error al generar el plan. Intenta de nuevo." }, event);
