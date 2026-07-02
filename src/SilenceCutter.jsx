@@ -39,9 +39,9 @@ function getKeepSegments(silences, duration) {
   return segments;
 }
 
-function buildConcatFile(segments) {
+function buildConcatFile(segments, inputName = "input.mp4") {
   return segments
-    .map(({ start, end }) => `file 'input.mp4'\ninpoint ${start.toFixed(3)}\noutpoint ${end.toFixed(3)}`)
+    .map(({ start, end }) => `file '${inputName}'\ninpoint ${start.toFixed(3)}\noutpoint ${end.toFixed(3)}`)
     .join("\n\n");
 }
 
@@ -115,11 +115,16 @@ export default function SilenceCutter() {
 
       if (!ffmpegInstance) {
         ffmpegInstance = new FFmpeg();
-        const base = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd";
-        await ffmpegInstance.load({
-          coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
-          wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
-        });
+        const base = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+        try {
+          await ffmpegInstance.load({
+            coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
+            wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+          });
+        } catch (e) {
+          ffmpegInstance = null;
+          throw new Error(`No se pudo cargar el editor de video. Verifica tu conexión e intenta de nuevo. (${e.message})`);
+        }
       }
 
       const ffmpeg = ffmpegInstance;
@@ -128,7 +133,10 @@ export default function SilenceCutter() {
       ffmpeg.on("log", logHandler);
 
       // Escribir archivo en FS virtual
-      await ffmpeg.writeFile("input.mp4", await fetchFile(file));
+      setStepMsg("Cargando video...");
+      const ext = file.name.match(/\.(mp4|mov|m4v|webm)$/i)?.[1]?.toLowerCase() || "mp4";
+      const inputName = `input.${ext}`;
+      await ffmpeg.writeFile(inputName, await fetchFile(file));
 
       // Step 1 — analizar audio
       setStepIdx(1);
@@ -136,7 +144,7 @@ export default function SilenceCutter() {
 
       const { noise, duration: minDur } = PRESETS[preset];
       await ffmpeg.exec([
-        "-i", "input.mp4",
+        "-i", inputName,
         "-af", `silencedetect=noise=${noise}dB:d=${minDur}`,
         "-f", "null", "-",
       ]);
@@ -146,19 +154,19 @@ export default function SilenceCutter() {
       const silences = parseSilences(logs);
       setStepMsg(`${STEPS[2]} · ${silences.length} silencio${silences.length !== 1 ? "s" : ""} encontrado${silences.length !== 1 ? "s" : ""}`);
 
-      ffmpeg.off("log", logHandler);
+      try { ffmpeg.off("log", logHandler); } catch (_) { /* ignorar si no existe */ }
 
       const duration = await getVideoDuration(file);
 
       if (silences.length === 0) {
-        await ffmpeg.deleteFile("input.mp4");
+        try { await ffmpeg.deleteFile(inputName); } catch (_) {}
         setResult({ noSilences: true, duration, filename: file.name });
         setFase("done");
         return;
       }
 
       const segments = getKeepSegments(silences, duration);
-      const concatContent = buildConcatFile(segments);
+      const concatContent = buildConcatFile(segments, inputName);
       await ffmpeg.writeFile("concat.txt", concatContent);
 
       // Step 3 — exportar
@@ -179,9 +187,9 @@ export default function SilenceCutter() {
       const savedTime = silences.reduce((sum, s) => sum + (s.end - s.start), 0);
       const editedDuration = Math.max(0, duration - savedTime + segments.length * PADDING * 2);
 
-      await ffmpeg.deleteFile("input.mp4");
-      await ffmpeg.deleteFile("concat.txt");
-      await ffmpeg.deleteFile("output.mp4");
+      try { await ffmpeg.deleteFile(inputName); } catch (_) {}
+      try { await ffmpeg.deleteFile("concat.txt"); } catch (_) {}
+      try { await ffmpeg.deleteFile("output.mp4"); } catch (_) {}
 
       setResult({
         url,
@@ -194,8 +202,8 @@ export default function SilenceCutter() {
       setFase("done");
 
     } catch (err) {
-      console.error(err);
-      setError("Algo salió mal al procesar el video. Intenta de nuevo con un archivo .mp4.");
+      console.error("SilenceCutter error:", err);
+      setError(err.message || "Algo salió mal. Intenta de nuevo con un archivo .mp4.");
       setFase("upload");
       ffmpegInstance = null;
     }
