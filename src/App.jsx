@@ -5,6 +5,7 @@ import Logo from "./Logo";
 import Studio from "./Studio";
 import Landing from "./Landing";
 import PlanBuilder from "./PlanBuilder";
+import SilenceCutter from "./SilenceCutter";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -2066,6 +2067,9 @@ export default function App() {
   if (window.location.pathname === "/plan-de-negocio") {
     return <PlanBuilder />;
   }
+  if (window.location.pathname === "/cortador") {
+    return <SilenceCutter />;
+  }
 
   if (!user && awsActive) {
     if (preAuthView === "landing") {
@@ -2635,6 +2639,19 @@ export default function App() {
             <span className="sidebar-tool-label">
               UMP Business Plan
               <span className="sidebar-miniapp-sub">Construye tu plan de negocio gratis</span>
+            </span>
+            <span className="sidebar-miniapp-arrow">↗</span>
+          </a>
+          <a
+            className="sidebar-tool-btn sidebar-miniapp-btn"
+            href="/cortador"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Corta Silencios — Elimina silencios de tus videos automáticamente">
+            <span className="sidebar-tool-icon">✂️</span>
+            <span className="sidebar-tool-label">
+              Corta Silencios
+              <span className="sidebar-miniapp-sub">Elimina silencios de tus videos</span>
             </span>
             <span className="sidebar-miniapp-arrow">↗</span>
           </a>
