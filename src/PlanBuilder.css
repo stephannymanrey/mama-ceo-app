@@ -31,11 +31,8 @@
   border-bottom: 1px solid #ede9e4;
   background: #fff;
 }
-.pb-nav-brand {
-  font-size: 18px;
-  font-weight: 800;
-  color: #C4526A;
-  letter-spacing: -0.3px;
+.pb-nav img {
+  display: block;
 }
 .pb-nav-link {
   font-size: 13px;

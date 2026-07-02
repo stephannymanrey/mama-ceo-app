@@ -1,4 +1,5 @@
 import React, { useState, useRef } from "react";
+import Logo from "./Logo";
 import "./PlanBuilder.css";
 
 const API_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-gemini";
@@ -176,7 +177,7 @@ export default function PlanBuilder() {
     <div className="pb-page">
       <div className="pb-hero">
         <nav className="pb-nav">
-          <span className="pb-nav-brand">Mamá CEO</span>
+          <Logo width={110} />
           <a href="/" className="pb-nav-link">Ir a la app →</a>
         </nav>
         <div className="pb-hero-body">
@@ -328,7 +329,7 @@ export default function PlanBuilder() {
       {/* Header — solo pantalla */}
       <div className="pb-result-header no-print">
         <nav className="pb-nav">
-          <span className="pb-nav-brand">Mamá CEO</span>
+          <Logo width={110} />
           <a href="/" className="pb-nav-link">Crear mi cuenta gratis →</a>
         </nav>
         <div className="pb-result-top">
