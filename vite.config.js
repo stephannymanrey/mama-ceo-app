@@ -38,6 +38,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     include: ['aws-amplify', 'aws-amplify/auth'],
+    exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util'],
   },
   build: {
     commonjsOptions: {
