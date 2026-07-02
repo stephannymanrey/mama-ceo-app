@@ -115,15 +115,15 @@ export default function SilenceCutter() {
 
       if (!ffmpegInstance) {
         ffmpegInstance = new FFmpeg();
-        const base = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd";
+        const origin = window.location.origin;
         try {
           await ffmpegInstance.load({
-            coreURL: await toBlobURL(`${base}/ffmpeg-core.js`, "text/javascript"),
-            wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+            coreURL: await toBlobURL(`${origin}/ffmpeg/ffmpeg-core.js`,   "text/javascript"),
+            wasmURL: await toBlobURL(`${origin}/ffmpeg/ffmpeg-core.wasm`, "application/wasm"),
           });
         } catch (e) {
           ffmpegInstance = null;
-          throw new Error(`No se pudo cargar el editor de video. Verifica tu conexión e intenta de nuevo. (${e.message})`);
+          throw new Error(`No se pudo cargar el editor. (${e?.message || e})`);
         }
       }
 

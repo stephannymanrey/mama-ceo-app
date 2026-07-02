@@ -1,9 +1,27 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import { copyFileSync, mkdirSync } from 'fs'
+
+// Copia los binarios de FFmpeg.wasm al build para evitar dependencia de CDN
+function copyFfmpegPlugin() {
+  return {
+    name: 'copy-ffmpeg-core',
+    buildStart() {
+      try {
+        mkdirSync('public/ffmpeg', { recursive: true })
+        copyFileSync('node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.js',   'public/ffmpeg/ffmpeg-core.js')
+        copyFileSync('node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm', 'public/ffmpeg/ffmpeg-core.wasm')
+      } catch (e) {
+        console.warn('No se pudieron copiar los archivos de FFmpeg:', e.message)
+      }
+    },
+  }
+}
 
 export default defineConfig({
   plugins: [
+    copyFfmpegPlugin(),
     react(),
     VitePWA({
       registerType: 'autoUpdate',
