@@ -2067,7 +2067,7 @@ export default function App() {
   if (window.location.pathname === "/plan-de-negocio") {
     return <PlanBuilder />;
   }
-  if (window.location.pathname === "/cortador") {
+  if (window.location.pathname === "/editor") {
     return <SilenceCutter />;
   }
 
@@ -2644,14 +2644,14 @@ export default function App() {
           </a>
           <a
             className="sidebar-tool-btn sidebar-miniapp-btn"
-            href="/cortador"
+            href="/editor"
             target="_blank"
             rel="noopener noreferrer"
-            title="Corta Silencios — Elimina silencios de tus videos automáticamente">
+            title="Editor de Video — Elimina silencios de tus videos automáticamente">
             <span className="sidebar-tool-icon">✂️</span>
             <span className="sidebar-tool-label">
-              Corta Silencios
-              <span className="sidebar-miniapp-sub">Elimina silencios de tus videos</span>
+              Editor de Video
+              <span className="sidebar-miniapp-sub">Elimina silencios automáticamente</span>
             </span>
             <span className="sidebar-miniapp-arrow">↗</span>
           </a>
