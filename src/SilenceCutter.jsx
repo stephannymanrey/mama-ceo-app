@@ -115,11 +115,11 @@ export default function SilenceCutter() {
 
       if (!ffmpegInstance) {
         ffmpegInstance = new FFmpeg();
-        const origin = window.location.origin;
         try {
+          const base = `${window.location.origin}/ffmpeg`;
           await ffmpegInstance.load({
-            coreURL: await toBlobURL(`${origin}/ffmpeg/ffmpeg-core.js`,   "text/javascript"),
-            wasmURL: await toBlobURL(`${origin}/ffmpeg/ffmpeg-core.wasm`, "application/wasm"),
+            coreURL: await toBlobURL(`${base}/ffmpeg-core.js`,   "text/javascript"),
+            wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
           });
         } catch (e) {
           ffmpegInstance = null;
