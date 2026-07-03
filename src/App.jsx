@@ -2567,7 +2567,8 @@ export default function App() {
           {mobileMenuOpen ? "✕" : "☰"}
         </button>
 
-        <nav className={`main-menu ${mobileMenuOpen ? "mobile-open" : ""}`} aria-label="Navegacion principal">
+        <div className={`mobile-menu-wrap${mobileMenuOpen ? " mobile-menu-wrap--open" : ""}`}>
+        <nav className="main-menu" aria-label="Navegacion principal">
           {menu.map((item) => {
             const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
             const itemPlan = ["business","clients","studio"].includes(item.id) ? "emprendedora" : "free";
@@ -2664,6 +2665,7 @@ export default function App() {
             <span className="sidebar-tool-label">{effectivePlan === "ceo" ? "Plan CEO" : effectivePlan === "emprendedora" ? "Plan Emprendedora" : effectivePlan === "mama" ? "Plan Mamá" : "Actualizar Plan"}</span>
           </button>
         </div>
+        </div>{/* /mobile-menu-wrap */}
 
         <div className="quote-card">
           <p>{promesas[(new Date().getDate() - 1) % promesas.length]}</p>

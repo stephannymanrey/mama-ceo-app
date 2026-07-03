@@ -1359,7 +1359,7 @@ button {
   }
 
   .sidebar {
-    position: static;
+    position: relative;
     height: auto;
     padding: 16px;
   }
@@ -5204,18 +5204,41 @@ button {
   margin-bottom: 8px;
 }
 
+/* Wrapper transparente en desktop — no afecta layout */
+.mobile-menu-wrap {
+  display: contents;
+}
+
 @media (max-width: 1180px) {
   .mobile-menu-toggle { display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 18px; }
   .mobile-menu-toggle::after { content: "Menú"; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
 
-  .main-menu {
+  /* El wrapper controla visibilidad en móvil */
+  .mobile-menu-wrap {
     display: none;
-    grid-template-columns: 1fr;
-    gap: 4px;
   }
 
-  .main-menu.mobile-open {
-    display: grid;
+  /* Cuando abre: overlay absoluto — no empuja el contenido del dashboard */
+  .mobile-menu-wrap--open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 100%;
+    left: -16px;
+    right: -16px;
+    z-index: 500;
+    background: rgba(250, 247, 245, 0.99);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.13);
+    padding: 8px 16px 16px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
+    gap: 8px;
+  }
+
+  .main-menu {
+    grid-template-columns: 1fr;
+    gap: 4px;
   }
 
   .menu-item {
