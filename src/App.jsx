@@ -2553,13 +2553,9 @@ export default function App() {
         </div>
       )}
 
-      <aside className={`sidebar${sidebarCollapsed?" sidebar--collapsed":""}`}>
-        <div className="brand" style={{display:"flex",alignItems:"center",justifyContent:sidebarCollapsed?"center":"space-between"}}>
-          {!sidebarCollapsed && <Logo width={120} />}
-          <button onClick={()=>setSidebarCollapsed(v=>!v)} title={sidebarCollapsed?"Expandir menú":"Colapsar menú"}
-            className="sidebar-collapse-btn">
-            {sidebarCollapsed ? "›" : "‹"}
-          </button>
+      <aside className="sidebar">
+        <div className="brand">
+          <Logo width={120} />
         </div>
 
         {/* Botón hamburguesa solo en móvil */}
@@ -2575,7 +2571,7 @@ export default function App() {
             const locked = (planOrder[effectivePlan] ?? 0) < (planOrder[itemPlan] ?? 0);
             return (
               <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id}
-                title={sidebarCollapsed ? item.label : undefined}
+                title={item.label}
                 onClick={() => {
                   if (locked) { setUpgradeModal({ feature: item.label, plan: "Emprendedora" }); setMobileMenuOpen(false); return; }
                   setActiveView(item.id); setMobileMenuOpen(false);

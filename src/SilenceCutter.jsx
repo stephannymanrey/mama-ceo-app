@@ -115,15 +115,28 @@ export default function SilenceCutter() {
 
       if (!ffmpegInstance) {
         ffmpegInstance = new FFmpeg();
-        try {
-          const base = `${window.location.origin}/ffmpeg`;
-          await ffmpegInstance.load({
-            coreURL: await toBlobURL(`${base}/ffmpeg-core.js`,   "text/javascript"),
-            wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
-          });
-        } catch (e) {
+        const sources = [
+          "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd",
+          "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd",
+          `${window.location.origin}/ffmpeg`,
+        ];
+        let loaded = false;
+        let lastErr = null;
+        for (const base of sources) {
+          try {
+            await ffmpegInstance.load({
+              coreURL: await toBlobURL(`${base}/ffmpeg-core.js`,   "text/javascript"),
+              wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
+            });
+            loaded = true;
+            break;
+          } catch (e) {
+            lastErr = e;
+          }
+        }
+        if (!loaded) {
           ffmpegInstance = null;
-          throw new Error(`No se pudo cargar el editor. (${e?.message || e})`);
+          throw new Error(`No se pudo cargar el editor. (${lastErr?.message || lastErr})`);
         }
       }
 

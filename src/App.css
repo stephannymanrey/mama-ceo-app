@@ -1362,6 +1362,7 @@ button {
     position: relative;
     height: auto;
     padding: 16px;
+    overflow: visible;
   }
 
   .brand,
