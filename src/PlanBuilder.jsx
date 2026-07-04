@@ -133,6 +133,11 @@ export default function PlanBuilder() {
           context: { nombre: nombre.trim(), ...respuestas },
         }),
       });
+      if (!res.ok && res.status >= 500) {
+        setError("El servidor tardó demasiado. Intenta de nuevo en unos segundos.");
+        setFase("email");
+        return;
+      }
       const data = await res.json();
 
       if (data.error === "ya_generado") {

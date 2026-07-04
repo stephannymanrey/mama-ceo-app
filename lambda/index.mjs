@@ -527,39 +527,31 @@ async function handlePlanNegocio(publicEmail, context, event) {
   const today    = new Date().toISOString().slice(0, 10);
   const dayKey   = `plan_daily#${today}`;
 
-  // 1. Verificar si este email ya tiene un plan
-  try {
-    const existing = await dynamoCall("GetItem", {
-      TableName: TABLE,
-      Key: { user_id: { S: emailKey } },
-    });
-    if (existing.Item) {
-      const item = unmarshal(existing.Item);
-      if (item.plan) {
-        return respond(200, { result: item.plan, emailSent: false, error: "ya_generado", plan: item.plan }, event);
-      }
-    }
-  } catch { /* continuar */ }
+  // 1+2. Verificar email existente y límite diario en paralelo
+  const [existingRes, dayRes] = await Promise.allSettled([
+    dynamoCall("GetItem", { TableName: TABLE, Key: { user_id: { S: emailKey } } }),
+    dynamoCall("GetItem", { TableName: TABLE, Key: { user_id: { S: dayKey } } }),
+  ]);
 
-  // 2. Verificar límite diario global
-  try {
-    const dayItem = await dynamoCall("GetItem", {
-      TableName: TABLE,
-      Key: { user_id: { S: dayKey } },
-    });
-    if (dayItem.Item) {
-      const dayData = unmarshal(dayItem.Item);
-      if ((dayData.count || 0) >= PLAN_DAILY_LIMIT) {
-        return respond(429, { error: "limite_diario" }, event);
-      }
+  if (existingRes.status === "fulfilled" && existingRes.value.Item) {
+    const item = unmarshal(existingRes.value.Item);
+    if (item.plan) {
+      return respond(200, { result: item.plan, emailSent: false, error: "ya_generado", plan: item.plan }, event);
     }
-  } catch { /* continuar */ }
+  }
+
+  if (dayRes.status === "fulfilled" && dayRes.value.Item) {
+    const dayData = unmarshal(dayRes.value.Item);
+    if ((dayData.count || 0) >= PLAN_DAILY_LIMIT) {
+      return respond(429, { error: "limite_diario" }, event);
+    }
+  }
 
   // 3. Generar el plan
   const prompt = buildPlanNegocioPrompt(context);
   let rawText;
   try {
-    rawText = await callClaude(prompt, 4096);
+    rawText = await callClaude(prompt, 3000);
   } catch (err) {
     if (err.message === "rate_limit") return respond(429, { error: "rate_limit" }, event);
     return respond(502, { error: "Error al generar el plan. Intenta de nuevo." }, event);
@@ -573,9 +565,9 @@ async function handlePlanNegocio(publicEmail, context, event) {
     return respond(502, { error: "Respuesta no válida. Intenta de nuevo." }, event);
   }
 
-  // 4. Guardar email como lead + plan generado
-  try {
-    await dynamoCall("PutItem", {
+  // 4+5. Guardar lead e incrementar contador en paralelo
+  await Promise.allSettled([
+    dynamoCall("PutItem", {
       TableName: TABLE,
       Item: {
         user_id:    { S: emailKey },
@@ -585,21 +577,17 @@ async function handlePlanNegocio(publicEmail, context, event) {
         createdAt:  { N: String(Date.now()) },
         type:       { S: "plan_lead" },
       },
-    });
-  } catch { /* no bloquear por error de guardado */ }
-
-  // 5. Incrementar contador diario
-  try {
-    await dynamoCall("UpdateItem", {
+    }),
+    dynamoCall("UpdateItem", {
       TableName: TABLE,
       Key: { user_id: { S: dayKey } },
       UpdateExpression: "ADD #c :one SET #t = :type",
       ExpressionAttributeNames: { "#c": "count", "#t": "type" },
       ExpressionAttributeValues: { ":one": { N: "1" }, ":type": { S: "daily_counter" } },
-    });
-  } catch { /* continuar */ }
+    }),
+  ]);
 
-  // 6. Enviar email con Brevo (cuando esté configurado)
+  // 6. Enviar email con Brevo — timeout 4s para no bloquear la respuesta
   let emailSent = false;
   const brevoKey = process.env.BREVO_API_KEY;
   if (brevoKey && planResult) {
@@ -624,21 +612,22 @@ async function handlePlanNegocio(publicEmail, context, event) {
           </div>
         </div>`;
 
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 4000);
       const brevoRes = await fetch("https://api.brevo.com/v3/smtp/email", {
         method: "POST",
-        headers: {
-          "api-key": brevoKey,
-          "Content-Type": "application/json",
-        },
+        headers: { "api-key": brevoKey, "Content-Type": "application/json" },
         body: JSON.stringify({
           sender:      { name: "Mamá CEO", email: "hola@mamaceoapp.co" },
           to:          [{ email: publicEmail, name: context.nombre || "" }],
           subject:     `Tu plan de negocio está listo — ${nombreNegocio}`,
           htmlContent: htmlBody,
         }),
+        signal: ctrl.signal,
       });
+      clearTimeout(timer);
       if (brevoRes.ok) emailSent = true;
-    } catch { /* no bloquear si el email falla */ }
+    } catch { /* no bloquear si el email falla o se agota el tiempo */ }
   }
 
   return respond(200, { result: planResult, emailSent }, event);

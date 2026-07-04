@@ -86,8 +86,8 @@ export default function SilenceCutter() {
       setError("Formato no compatible. Usa .mp4, .mov o .m4v");
       return;
     }
-    if (f.size > 2.5 * 1024 * 1024 * 1024) {
-      setError("El archivo es demasiado grande (máximo 2.5 GB)");
+    if (f.size > 400 * 1024 * 1024) {
+      setError("El archivo es demasiado grande. El editor funciona en tu navegador sin subir nada, por eso el límite es 400 MB. Para videos más largos, usa CapCut o DaVinci Resolve.");
       return;
     }
     setError("");
@@ -275,7 +275,7 @@ export default function SilenceCutter() {
               <span className="sc-drop-icon">✂️</span>
               <p className="sc-drop-title">Arrastra tu video aquí</p>
               <p className="sc-drop-hint">o haz clic para seleccionar</p>
-              <p className="sc-drop-formats">.mp4 · .mov · .m4v · Máx. 2.5 GB · 20 min recomendado</p>
+              <p className="sc-drop-formats">.mp4 · .mov · .m4v · Máx. 400 MB · ~10 min recomendado</p>
             </>
           )}
         </div>
