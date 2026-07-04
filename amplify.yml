@@ -6,7 +6,6 @@ frontend:
         - npm ci
     build:
       commands:
-        - node copy-ffmpeg.mjs
         - npm run build
   artifacts:
     baseDirectory: dist

@@ -133,8 +133,12 @@ export default function PlanBuilder() {
           context: { nombre: nombre.trim(), ...respuestas },
         }),
       });
-      if (!res.ok && res.status >= 500) {
-        setError("El servidor tardó demasiado. Intenta de nuevo en unos segundos.");
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          setError("Error de conexión con el servidor (401). Intenta de nuevo o contacta soporte.");
+        } else {
+          setError("El servidor tardó demasiado. Intenta de nuevo en unos segundos.");
+        }
         setFase("email");
         return;
       }

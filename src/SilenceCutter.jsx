@@ -114,26 +114,42 @@ export default function SilenceCutter() {
       const { fetchFile, toBlobURL } = await import("@ffmpeg/util");
 
       if (!ffmpegInstance) {
-        ffmpegInstance = new FFmpeg();
+        // Fetch con validación: rechaza respuestas HTML que pasen como JS/WASM
+        async function fetchBlob(url, mimeType) {
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`HTTP ${res.status} — ${url}`);
+          const buf = await res.arrayBuffer();
+          if (new Uint8Array(buf)[0] === 0x3C) // '<' = HTML, no es JS ni WASM
+            throw new Error(`URL devolvió HTML en vez de ${mimeType}: ${url}`);
+          return URL.createObjectURL(new Blob([buf], { type: mimeType }));
+        }
+
         const sources = [
+          `${window.location.origin}/ffmpeg`,
           "https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd",
           "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd",
-          `${window.location.origin}/ffmpeg`,
         ];
         let loaded = false;
         let lastErr = null;
+
         for (const base of sources) {
+          let coreURL = null, wasmURL = null;
           try {
-            await ffmpegInstance.load({
-              coreURL: await toBlobURL(`${base}/ffmpeg-core.js`,   "text/javascript"),
-              wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`, "application/wasm"),
-            });
+            // Instancia nueva por intento — una instancia fallida no puede reutilizarse
+            const instance = new FFmpeg();
+            coreURL = await fetchBlob(`${base}/ffmpeg-core.js`,   "text/javascript");
+            wasmURL = await fetchBlob(`${base}/ffmpeg-core.wasm`, "application/wasm");
+            await instance.load({ coreURL, wasmURL });
+            ffmpegInstance = instance;
             loaded = true;
             break;
           } catch (e) {
             lastErr = e;
+            if (coreURL) URL.revokeObjectURL(coreURL);
+            if (wasmURL) URL.revokeObjectURL(wasmURL);
           }
         }
+
         if (!loaded) {
           ffmpegInstance = null;
           throw new Error(`No se pudo cargar el editor. (${lastErr?.message || lastErr})`);
