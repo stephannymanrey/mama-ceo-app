@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import Logo from "./Logo";
 import "./PlanBuilder.css";
 
-const API_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-gemini";
+const API_URL = "https://lq3avrfazlfuyaakkt5iwz54ym0aqxvv.lambda-url.us-east-1.on.aws/";
 
 const PREGUNTAS = [
   {
