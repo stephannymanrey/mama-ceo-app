@@ -179,6 +179,13 @@ export default function SilenceCutter() {
       }
 
       const segments = getKeepSegments(silences, duration);
+
+      if (segments.length === 0) {
+        try { await ffmpeg.deleteFile(inputName); } catch (_) {}
+        setResult({ noSilences: true, duration, filename: file.name });
+        setFase("done");
+        return;
+      }
       const concatContent = buildConcatFile(segments, inputName);
       await ffmpeg.writeFile("concat.txt", concatContent);
 
@@ -194,7 +201,7 @@ export default function SilenceCutter() {
       ]);
 
       const data = await ffmpeg.readFile("output.mp4");
-      const blob = new Blob([data.buffer], { type: "video/mp4" });
+      const blob = new Blob([data], { type: "video/mp4" });
       const url = URL.createObjectURL(blob);
 
       const savedTime = silences.reduce((sum, s) => sum + (s.end - s.start), 0);
@@ -272,7 +279,7 @@ export default function SilenceCutter() {
             </>
           )}
         </div>
-        <input ref={inputRef} type="file" accept="video/mp4,video/quicktime,video/x-m4v,.mp4,.mov,.m4v" style={{ display: "none" }} onChange={(e) => onFile(e.target.files[0])} />
+        <input ref={inputRef} type="file" accept="video/mp4,video/quicktime,video/x-m4v,video/webm,.mp4,.mov,.m4v,.webm" style={{ display: "none" }} onChange={(e) => onFile(e.target.files[0])} />
 
         {/* Presets */}
         <div className="sc-presets">

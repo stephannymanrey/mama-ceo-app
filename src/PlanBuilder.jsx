@@ -101,7 +101,7 @@ export default function PlanBuilder() {
 
   const pregunta = PREGUNTAS[paso];
   const total    = PREGUNTAS.length;
-  const progreso = Math.round((paso / total) * 100);
+  const progreso = Math.round(((paso + 1) / total) * 100);
 
   const siguiente = () => {
     if (!respuestas[pregunta.id]?.trim()) return;
@@ -318,7 +318,7 @@ export default function PlanBuilder() {
             </div>
           ))}
         </div>
-        <p className="pb-gen-note">Puede tomar hasta 60 segundos. No cierres esta ventana.</p>
+        <p className="pb-gen-note">Puede tomar hasta 25 segundos. No cierres esta ventana.</p>
       </div>
     </div>
   );
