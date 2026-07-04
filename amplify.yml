@@ -4,7 +4,10 @@ frontend:
     preBuild:
       commands:
         - npm ci
-        - node copy-ffmpeg.mjs
+        - mkdir -p public/ffmpeg
+        - cp node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.js public/ffmpeg/ffmpeg-core.js
+        - cp node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm public/ffmpeg/ffmpeg-core.wasm
+        - echo "FFmpeg copiado:" && ls -lh public/ffmpeg/
     build:
       commands:
         - npm run build
