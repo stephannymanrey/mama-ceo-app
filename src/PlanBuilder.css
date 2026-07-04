@@ -407,10 +407,23 @@
 .pb-sec-header {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 20px 24px 18px;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 24px 14px;
   border-bottom: 1px solid #f3f4f6;
   background: #fafaf9;
+}
+.pb-sec-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.pb-sec-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 .pb-sec-num {
   font-size: 11px;
@@ -423,6 +436,9 @@
   border-radius: 20px;
   flex-shrink: 0;
 }
+.pb-sec-num--dofa {
+  background: #1a1a2e;
+}
 .pb-sec-title {
   font-size: 18px;
   font-weight: 800;
@@ -430,6 +446,199 @@
   margin: 0;
   letter-spacing: -0.2px;
 }
+
+/* ── Botones de sección ── */
+.pb-btn-mejorar,
+.pb-btn-edit {
+  padding: 5px 11px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid;
+  transition: background 0.15s, color 0.15s;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.pb-btn-mejorar {
+  background: #fef0f3;
+  color: #C4526A;
+  border-color: rgba(196,82,106,0.3);
+}
+.pb-btn-mejorar:hover { background: #C4526A; color: #fff; }
+.pb-btn-edit {
+  background: #f3f4f6;
+  color: #6b7280;
+  border-color: #e5e7eb;
+}
+.pb-btn-edit:hover { background: #e5e7eb; }
+.pb-btn-edit.active {
+  background: #fff0f0;
+  color: #dc2626;
+  border-color: #fca5a5;
+}
+.pb-improving-badge {
+  font-size: 12px;
+  color: #C4526A;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.pb-err-badge {
+  font-size: 11px;
+  color: #dc2626;
+  background: #fff0f0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  max-width: 180px;
+  line-height: 1.3;
+}
+
+/* ── Modo edición ── */
+.pb-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.pb-edit-area {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 14px;
+  line-height: 1.65;
+  color: #374151;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  resize: vertical;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pb-edit-area:focus {
+  outline: none;
+  border-color: #C4526A;
+  box-shadow: 0 0 0 3px rgba(196,82,106,0.1);
+}
+.pb-edit-area--sm { font-size: 13px; }
+.pb-edit-fields { display: flex; flex-direction: column; gap: 14px; }
+.pb-edit-row    { display: flex; flex-direction: column; gap: 6px; }
+.pb-edit-label {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #C4526A;
+}
+.pb-edit-note {
+  font-size: 13px;
+  color: #9ca3af;
+  font-style: italic;
+  margin: 0;
+}
+.pb-edit-btns {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding-top: 4px;
+}
+.pb-btn-save,
+.pb-btn-cancel {
+  padding: 8px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1.5px solid;
+  transition: background 0.15s;
+}
+.pb-btn-save   { background: #C4526A; color: #fff; border-color: #C4526A; }
+.pb-btn-save:hover { background: #b04461; }
+.pb-btn-cancel { background: #fff; color: #6b7280; border-color: #e5e7eb; }
+.pb-btn-cancel:hover { background: #f3f4f6; }
+
+/* ── Inline edit cells ── */
+.pb-edit-cell {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1.5px solid #f3c4ce;
+  border-radius: 0;
+  outline: none;
+  font-size: 14px;
+  font-family: inherit;
+  color: #1a1a2e;
+  padding: 3px 2px;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+.pb-edit-cell:focus {
+  border-bottom-color: #C4526A;
+  background: rgba(196, 82, 106, 0.04);
+}
+.pb-edit-cell::placeholder { color: #d1bcc2; }
+
+/* ── Row add / delete buttons ── */
+.pb-row-del {
+  background: none;
+  border: none;
+  color: #d1bcc2;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.15s, background 0.15s;
+}
+.pb-row-del:hover { color: #C4526A; background: rgba(196, 82, 106, 0.08); }
+.pb-row-add {
+  background: none;
+  border: 1.5px dashed #f3c4ce;
+  color: #C4526A;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 14px;
+  border-radius: 6px;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.pb-row-add:hover { background: rgba(196, 82, 106, 0.06); border-color: #C4526A; }
+.pb-row-add-row td { padding: 6px 4px 2px; }
+
+/* ── Table editing mode ── */
+.pb-table--editing {
+  background: rgba(196, 82, 106, 0.02);
+}
+.pb-table--editing td {
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+/* ── Funnel editing mode ── */
+.pb-funnel--editing { flex-wrap: wrap; gap: 8px; }
+.pb-funnel-step--editing {
+  flex-direction: column;
+  min-width: 140px;
+  gap: 6px;
+  position: relative;
+  padding: 10px 32px 10px 12px;
+}
+.pb-funnel-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+.pb-funnel-del {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+}
+.pb-funnel-add {
+  width: auto;
+  padding: 8px 16px;
+  align-self: flex-start;
+}
+
 .pb-sec-body {
   padding: 20px 24px 24px;
 }
@@ -466,6 +675,176 @@
   margin: 0 0 8px;
 }
 
+/* ── Tablas ── */
+.pb-table-wrap { overflow-x: auto; }
+.pb-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.pb-table th {
+  background: #fdf2f4;
+  color: #C4526A;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 14px;
+  text-align: left;
+  border-bottom: 2px solid rgba(196,82,106,0.2);
+  white-space: nowrap;
+}
+.pb-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid #f0ece8;
+  color: #374151;
+  line-height: 1.5;
+  vertical-align: top;
+}
+.pb-table tbody tr:last-child td { border-bottom: none; }
+.pb-table tbody tr:hover td { background: #faf9f8; }
+.pb-table-total { font-weight: 700; color: #C4526A !important; }
+.pb-table-muted { color: #9ca3af !important; font-size: 13px; }
+
+.pb-vision-box {
+  margin-top: 20px;
+  background: #fdf9f6;
+  border-left: 3px solid #C4526A;
+  border-radius: 0 8px 8px 0;
+  padding: 14px 18px;
+}
+
+/* ── Embudo / Funnel ── */
+.pb-funnel {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.pb-funnel-step {
+  flex: 1 1 130px;
+  min-width: 110px;
+  background: linear-gradient(135deg, #fff5f7, #fef8f0);
+  border: 1.5px solid rgba(196,82,106,0.18);
+  border-radius: 12px;
+  padding: 16px 12px;
+  text-align: center;
+}
+.pb-funnel-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #C4526A;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.pb-funnel-paso {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin: 0 0 4px;
+  line-height: 1.3;
+}
+.pb-funnel-desc {
+  font-size: 12px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.4;
+}
+.pb-funnel-arrow {
+  flex: 0 0 auto;
+  font-size: 20px;
+  color: #C4526A;
+  opacity: 0.45;
+  align-self: center;
+  padding: 0 2px;
+  line-height: 1;
+}
+
+/* ── Tarjetas de impacto ── */
+.pb-impact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.pb-impact-card {
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pb-impact-card--eco { background: #f0fdf4; border: 1.5px solid #86efac; }
+.pb-impact-card--fam { background: #f5f3ff; border: 1.5px solid #c4b5fd; }
+.pb-impact-card--edu { background: #eff6ff; border: 1.5px solid #93c5fd; }
+.pb-impact-card--emo { background: #fdf2f4; border: 1.5px solid rgba(196,82,106,0.3); }
+.pb-impact-icon  { font-size: 22px; line-height: 1; }
+.pb-impact-label {
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #374151;
+  margin: 0;
+}
+.pb-impact-text {
+  font-size: 14px;
+  color: #4b5563;
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* ── DOFA ── */
+.pb-dofa-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.pb-dofa-quadrant {
+  border-radius: 12px;
+  padding: 18px;
+}
+.pb-dofa-quadrant--f { background: #f0fdf4; border: 1.5px solid #86efac; }
+.pb-dofa-quadrant--o { background: #eff6ff; border: 1.5px solid #93c5fd; }
+.pb-dofa-quadrant--d { background: #fffbeb; border: 1.5px solid #fcd34d; }
+.pb-dofa-quadrant--a { background: #fff0f0; border: 1.5px solid #fca5a5; }
+.pb-dofa-q-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #1a1a2e;
+  margin: 0 0 12px;
+}
+.pb-dofa-q-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pb-dofa-q-list li {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.5;
+}
+.pb-dofa-placeholder {
+  font-size: 14px;
+  color: #9ca3af;
+  text-align: center;
+  margin: 0 0 20px;
+  line-height: 1.65;
+}
+.pb-btn-dofa {
+  display: block;
+  width: fit-content;
+  margin: 0 auto;
+}
+
 /* CTA final */
 .pb-final-cta {
   background: linear-gradient(135deg, #fff5f7 0%, #fdf9f6 100%);
@@ -492,32 +871,33 @@
   margin-right: auto;
 }
 
-/* ── Portada PDF ── */
+/* ── Portada PDF — sin branding, espacio superior para firma ── */
 .pb-cover {
   text-align: center;
-  padding: 80px 40px;
-  border-bottom: 2px solid #C4526A;
+  padding: 32px 40px 40px;
   margin-bottom: 40px;
+  page-break-after: always;
 }
-.pb-cover-brand {
-  font-size: 12px;
+.pb-cover-hr {
+  border: none;
+  border-top: 1px solid rgba(196, 82, 106, 0.25);
+  margin: 28px 0 0;
+}
+.pb-cover-main-title {
+  font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: #C4526A;
-  margin-bottom: 32px;
+  letter-spacing: 0.12em;
+  color: #9ca3af;
+  margin: 0 0 16px;
 }
-.pb-cover-title {
-  font-size: 38px;
+.pb-cover-negocio {
+  font-size: 36px;
   font-weight: 900;
   color: #1a1a2e;
-  margin: 0 0 16px;
   letter-spacing: -0.5px;
-}
-.pb-cover-autor {
-  font-size: 16px;
-  color: #6b7280;
-  margin: 0 0 8px;
+  margin: 0 0 12px;
+  line-height: 1.2;
 }
 .pb-cover-date {
   font-size: 14px;
@@ -528,28 +908,216 @@
 /* ── Print ── */
 .print-only { display: none; }
 
-@media print {
-  .no-print  { display: none !important; }
-  .print-only { display: block !important; }
+/* Formato A4 vertical con márgenes APA (2.54 cm) */
+@page {
+  size: A4 portrait;
+  margin: 3cm 2.54cm 2.54cm 2.54cm; /* margen top mayor = aire entre encabezado del navegador y contenido */
+}
 
-  .pb-page { background: #fff; }
-  .pb-plan-wrap { max-width: 100%; padding: 0; }
-  .pb-sec { border: none; border-radius: 0; margin-bottom: 0; page-break-inside: avoid; }
-  .pb-sec-header { background: #fafaf9; }
+@media print {
+  /* Visibilidad */
+  .no-print    { display: none !important; }
+  .print-only  { display: block !important; }
+
+  /* Página */
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  body { background: #fff; }
+  .pb-page  { background: #fff; padding: 0; }
   .pb-plan-title { display: none; }
-  .pb-cover { page-break-after: always; }
+
+  /* Contenedor del plan */
+  .pb-plan-wrap {
+    max-width: 100%;
+    padding: 0;
+    font-family: "Poppins", sans-serif;
+    font-size: 12pt;
+    line-height: 2;
+    color: #000;
+  }
+
+  /* Portada */
+  .pb-cover {
+    page-break-after: always;
+    text-align: center;
+    padding: 60pt 0 40pt;
+  }
+  .pb-cover-main-title {
+    font-size: 13pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #555;
+    margin-bottom: 12pt;
+  }
+  .pb-cover-negocio {
+    font-size: 24pt;
+    font-weight: 700;
+    color: #000;
+    margin-bottom: 8pt;
+  }
+  .pb-cover-date {
+    font-size: 12pt;
+    color: #555;
+    margin-bottom: 0;
+  }
+  .pb-cover-hr {
+    border: none;
+    border-top: 1pt solid rgba(196, 82, 106, 0.35);
+    margin-top: 20pt;
+  }
+
+  /* Secciones — estilo APA */
+  .pb-sec {
+    border: none;
+    border-radius: 0;
+    margin-bottom: 0;
+    padding: 0;
+    page-break-inside: avoid;
+  }
+  .pb-sec + .pb-sec { margin-top: 18pt; }
+
+  /* Encabezado de sección — Nivel 1 APA: negrita, alineado izquierda */
+  .pb-sec-header {
+    background: transparent;
+    padding: 0 0 4pt 0;
+    border-bottom: 0.75pt solid rgba(196, 82, 106, 0.3);
+    margin-bottom: 10pt;
+  }
+  .pb-sec-num {
+    font-size: 10pt;
+    color: #C4526A;
+    font-weight: 700;
+    margin-right: 6pt;
+  }
+  .pb-sec-title {
+    font-size: 13pt;
+    font-weight: 700;
+    color: #000;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  /* Subtítulos — Nivel 2 APA: negrita cursiva, izquierda */
+  .pb-subsec-title {
+    font-size: 12pt;
+    font-weight: 700;
+    font-style: italic;
+    color: #000;
+    text-transform: none;
+    letter-spacing: 0;
+    margin: 10pt 0 4pt;
+  }
+
+  /* Cuerpo de sección */
+  .pb-sec-body { padding: 0; }
+  .pb-sec-text {
+    font-size: 11pt;
+    line-height: 1.8;
+    color: #000;
+    font-family: "Poppins", sans-serif;
+    text-align: justify;
+  }
+  .pb-list li {
+    font-size: 11pt;
+    line-height: 1.8;
+    color: #000;
+    font-family: "Poppins", sans-serif;
+  }
+
+  /* Tablas — APA: sin relleno de fondo, bordes horizontales solo */
+  .pb-table-wrap { overflow-x: visible; }
+  .pb-table {
+    font-size: 11pt;
+    width: 100%;
+    border-collapse: collapse;
+    border-top: 1.5pt solid #000;
+    border-bottom: 1.5pt solid #000;
+  }
+  .pb-table thead tr {
+    border-bottom: 0.75pt solid #000;
+    background: transparent;
+  }
+  .pb-table th {
+    background: transparent;
+    font-size: 11pt;
+    font-weight: 700;
+    color: #000;
+    padding: 5pt 8pt;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .pb-table td {
+    background: transparent;
+    font-size: 11pt;
+    color: #000;
+    padding: 5pt 8pt;
+    border: none;
+  }
+  .pb-table tbody tr + tr { border-top: 0.4pt solid #ccc; }
+  .pb-table-total { font-weight: 700; color: #000; }
+  .pb-table-muted { color: #333; }
+
+  /* Tarjetas de impacto */
+  .pb-impact-grid { grid-template-columns: 1fr 1fr; gap: 12pt; }
+  .pb-impact-card {
+    border: 0.75pt solid #ccc;
+    border-radius: 4pt;
+    background: transparent;
+    padding: 10pt;
+    box-shadow: none;
+  }
+  .pb-impact-label { font-size: 11pt; font-weight: 700; color: #000; }
+  .pb-impact-text  { font-size: 11pt; line-height: 1.6; color: #000; }
+
+  /* Embudo */
+  .pb-funnel { flex-wrap: nowrap; gap: 6pt; }
+  .pb-funnel-step {
+    background: transparent;
+    border: 0.75pt solid #C4526A;
+    border-radius: 4pt;
+    padding: 8pt;
+    box-shadow: none;
+  }
+  .pb-funnel-badge { background: #C4526A; color: #fff; font-size: 10pt; }
+  .pb-funnel-paso  { font-size: 10pt; font-weight: 700; color: #000; }
+  .pb-funnel-desc  { font-size: 9pt; color: #333; }
+
+  /* DOFA */
+  .pb-dofa-grid { grid-template-columns: 1fr 1fr; gap: 10pt; }
+  .pb-dofa-quadrant {
+    background: transparent;
+    border: 0.75pt solid #ccc;
+    border-radius: 4pt;
+    padding: 10pt;
+    box-shadow: none;
+  }
+  .pb-dofa-q-title { font-size: 11pt; font-weight: 700; color: #000; }
+  .pb-dofa-q-list li { font-size: 10pt; line-height: 1.6; color: #000; }
+
+  /* Proyecciones */
+  .pb-vision-box { background: transparent; border: 0.75pt solid #ccc; padding: 8pt; border-radius: 4pt; }
+
+  /* CTA final — no imprimir */
+  .pb-final-cta { display: none !important; }
 }
 
 /* ── Responsive ── */
 @media (max-width: 600px) {
   .pb-hero-body { padding: 40px 20px 60px; }
   .pb-nav { padding: 16px 20px; }
-  .pb-result-top { padding: 12px 16px; }
+  .pb-result-top { padding: 12px 16px; flex-direction: column; align-items: flex-start; }
   .pb-plan-wrap { padding: 20px 16px 60px; }
-  .pb-sec-header { padding: 16px 18px 14px; }
+  .pb-sec-header { flex-wrap: wrap; padding: 14px 16px 12px; }
+  .pb-sec-header-left { flex: 1 1 auto; }
+  .pb-sec-actions { width: 100%; justify-content: flex-end; }
   .pb-sec-body { padding: 16px 18px 20px; }
   .pb-final-cta { padding: 28px 20px; }
   .pb-question-wrap { padding: 24px 20px; }
   .pb-email-card { padding: 28px 20px; }
-  .pb-result-top { flex-direction: column; align-items: flex-start; }
+  .pb-impact-grid { grid-template-columns: 1fr; }
+  .pb-dofa-grid { grid-template-columns: 1fr; }
+  .pb-funnel { flex-direction: column; align-items: stretch; }
+  .pb-funnel-arrow { align-self: center; transform: rotate(90deg); }
+  .pb-funnel-step { text-align: left; display: flex; align-items: flex-start; gap: 12px; }
+  .pb-funnel-badge { flex-shrink: 0; margin-bottom: 0; }
 }

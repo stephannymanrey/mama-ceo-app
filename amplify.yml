@@ -4,6 +4,7 @@ frontend:
     preBuild:
       commands:
         - npm ci
+        - node copy-ffmpeg.mjs
     build:
       commands:
         - npm run build
