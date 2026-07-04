@@ -145,7 +145,9 @@ function getUserId(event) {
 }
 
 // ─── Claude (Anthropic) ───────────────────────────────────────────────────
-async function callClaude(prompt, maxTokens = 4096) {
+async function callClaude(prompt, maxTokens = 4096, prefill = null) {
+  const messages = [{ role: "user", content: prompt }];
+  if (prefill) messages.push({ role: "assistant", content: prefill });
   const res = await fetch(ANTHROPIC_URL, {
     method: "POST",
     headers: {
@@ -157,13 +159,14 @@ async function callClaude(prompt, maxTokens = 4096) {
       model: CLAUDE_MODEL,
       max_tokens: maxTokens,
       temperature: 0.88,
-      messages: [{ role: "user", content: prompt }],
+      messages,
     }),
   });
   if (res.status === 429) throw new Error("rate_limit");
   if (!res.ok) throw new Error(`Claude ${res.status}: ${await res.text()}`);
   const data = await res.json();
-  return data.content?.[0]?.text || "";
+  const text = data.content?.[0]?.text || "";
+  return prefill ? prefill + text : text;
 }
 
 // ─── Prompts ──────────────────────────────────────────────────────────────
@@ -499,20 +502,23 @@ INSTRUCCIONES GENERALES:
 - Propone un nombre de negocio basado en lo que ella hace.
 - Donde pongas proyecciones financieras, basalas en su meta de ingresos real.
 - PROHIBIDO: "empoderar", "potencial", "journey", "transformar tu vida", "éxito que mereces".
+- CRÍTICO: NUNCA uses comillas dobles (") dentro de los valores de texto — usa comillas simples (') si necesitas citar algo.
+- NO incluyas saltos de línea literales dentro de ningún string; escribe texto corrido separado por puntos.
+- LONGITUD: Cada campo string debe tener máximo 60 palabras. Sé directo y preciso — un plan conciso es más accionable que uno extenso.
 
 Genera el plan completo con esta estructura exacta en JSON:
 
-- nombreNegocio: string — nombre propuesto para su negocio
-- resumenEjecutivo: string — 1 página que responde qué hace, a quién ayuda, cómo genera ingresos, qué impacto produce y cuánto quiere crecer
-- problema: string — el dolor o necesidad que tiene su cliente ideal, con contexto real
-- solucion: objeto con "descripcion" (string), "productos" (array de strings con sus servicios/productos propuestos), "areas" (array de strings con las áreas que trabaja: ej. ventas, marketing, IA, bienestar, etc.)
-- mercado: objeto con "descripcion" (string), "mercadoObjetivo" (string con perfil demográfico), "clienteIdeal" (array de 4-6 características del cliente ideal)
-- modeloNegocio: objeto con "descripcion" (string), "lineasIngreso" (array de strings con cada línea de ingreso y su precio estimado), "estructura" (string explicando cómo funciona el modelo)
-- ventajaCompetitiva: string — por qué alguien la elegiría a ella específicamente
-- estrategiaCrecimiento: objeto con "embudo" (string explicando el funnel de conversión), "fases" (array de 3 strings: fase 1, 2 y 3 del crecimiento en 12 meses)
-- impacto: objeto con "economico" (string), "familiar" (string), "educativo" (string), "emocional" (string) — cómo se mide el impacto en cada dimensión
-- proyeccionesFinancieras: objeto con "año1" (string con proyección detallada), "año2" (string), "año3" (string), "vision5anos" (string con visión a 5 años)
-- usoRecursos: objeto con "descripcion" (string explicando para qué necesita financiación), "categorias" (array de strings con cada uso específico del capital: ej. "Adquisición de clientes: $X", "Producción educativa: $X")
+- nombreNegocio: string — nombre propuesto (máx 5 palabras)
+- resumenEjecutivo: string — qué hace, a quién ayuda, cómo genera ingresos y cuánto quiere crecer (máx 60 palabras)
+- problema: string — el dolor real de su cliente ideal (máx 40 palabras)
+- solucion: objeto con "descripcion" (string, máx 40 palabras), "productos" (array de 3-4 strings cortos), "areas" (array de 3-5 strings de 1-3 palabras)
+- mercado: objeto con "descripcion" (string, máx 40 palabras), "mercadoObjetivo" (string, máx 30 palabras), "clienteIdeal" (array de 4 strings cortos)
+- modeloNegocio: objeto con "descripcion" (string, máx 40 palabras), "lineasIngreso" (array de 3-4 strings con precio estimado), "estructura" (string, máx 40 palabras)
+- ventajaCompetitiva: string — por qué la elegirían a ella (máx 40 palabras)
+- estrategiaCrecimiento: objeto con "embudo" (string, máx 40 palabras), "fases" (array de 3 strings, cada uno máx 20 palabras)
+- impacto: objeto con "economico" (string, máx 30 palabras), "familiar" (string, máx 30 palabras), "educativo" (string, máx 30 palabras), "emocional" (string, máx 30 palabras)
+- proyeccionesFinancieras: objeto con "año1" (string, máx 40 palabras), "año2" (string, máx 30 palabras), "año3" (string, máx 30 palabras), "vision5anos" (string, máx 30 palabras)
+- usoRecursos: objeto con "descripcion" (string, máx 40 palabras), "categorias" (array de 3-4 strings con monto estimado)
 
 Responde SOLO JSON válido, sin texto extra, sin markdown:`;
 }
@@ -551,17 +557,35 @@ async function handlePlanNegocio(publicEmail, context, event) {
   const prompt = buildPlanNegocioPrompt(context);
   let rawText;
   try {
-    rawText = await callClaude(prompt, 3000);
+    rawText = await callClaude(prompt, 6000, "{");
   } catch (err) {
+    console.error("[planNegocio] Claude error:", err.message);
     if (err.message === "rate_limit") return respond(429, { error: "rate_limit" }, event);
     return respond(502, { error: "Error al generar el plan. Intenta de nuevo." }, event);
   }
 
   let planResult;
   try {
-    const match = rawText.match(/\{[\s\S]*\}/);
-    planResult = JSON.parse(match ? match[0] : rawText);
-  } catch {
+    let txt = (rawText || "").replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+    const start = txt.indexOf("{");
+    const end = txt.lastIndexOf("}");
+    if (start === -1 || end === -1) throw new Error("Sin bloque JSON");
+    txt = txt.slice(start, end + 1);
+    // Reparar saltos de línea/tabs literales dentro de strings (Claude los incluye con frecuencia)
+    let fixed = "";
+    let inStr = false, esc = false;
+    for (const c of txt) {
+      if (esc)                      { fixed += c; esc = false; }
+      else if (c === "\\" && inStr) { fixed += c; esc = true; }
+      else if (c === '"')           { inStr = !inStr; fixed += c; }
+      else if (inStr && c === "\n") fixed += "\\n";
+      else if (inStr && c === "\r") fixed += "\\r";
+      else if (inStr && c === "\t") fixed += "\\t";
+      else                          fixed += c;
+    }
+    planResult = JSON.parse(fixed);
+  } catch(err) {
+    console.error("[planNegocio] JSON parse error:", err.message, "| Raw (first 1200):", rawText?.slice(0, 1200));
     return respond(502, { error: "Respuesta no válida. Intenta de nuevo." }, event);
   }
 
