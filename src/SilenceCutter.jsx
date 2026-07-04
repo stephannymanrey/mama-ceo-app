@@ -316,9 +316,89 @@ export default function SilenceCutter() {
     }
   };
 
-  // ── Grabación por segmentos con pause/resume ───────────────────────────
+  // ── Grabación con avance rápido en silencios (timestamps continuos) ────────
+  // El pause/resume causaba stutter por discontinuidades en timestamps.
+  // Este enfoque graba todo de corrido: 1x en segmentos a conservar, 16x en silencios.
+  // Los silencios quedan como destellos de <0.2s — sin stutter, sin cortes abruptos.
 
   function recordSegments(file, segments, totalDuration, onProgress) {
+    return new Promise((resolve, reject) => {
+      const videoEl = document.createElement("video");
+      videoEl.src = URL.createObjectURL(file);
+      videoEl.preload = "auto";
+      videoEl.volume = 1;
+
+      videoEl.addEventListener("error", () => reject(new Error("No se pudo cargar el video para procesar.")));
+
+      videoEl.addEventListener("loadedmetadata", async () => {
+        try {
+          const mimeType = getSupportedMimeType();
+          const stream = videoEl.captureStream ? videoEl.captureStream() : videoEl.mozCaptureStream();
+          const recorder = new MediaRecorder(stream, { mimeType });
+          const chunks = [];
+
+          recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+          recorder.onstop = () => {
+            URL.revokeObjectURL(videoEl.src);
+            resolve(new Blob(chunks, { type: mimeType }));
+          };
+
+          // Buscar silencios a cortar, ordenados
+          const toRemove = silences.filter(s => s.cut).sort((a, b) => a.start - b.start);
+
+          videoEl.currentTime = 0;
+          await new Promise(r => { videoEl.onseeked = r; });
+
+          recorder.start(100);
+          videoEl.playbackRate = 1;
+          videoEl.play();
+
+          let inCut = false;
+
+          await new Promise((res, rej) => {
+            const interval = setInterval(() => {
+              if (abortRef.current) { clearInterval(interval); rej(new Error("Cancelado")); return; }
+
+              const ct = videoEl.currentTime;
+              setCurrentTime(ct);
+              onProgress(ct / totalDuration, "Procesando video...");
+
+              if (ct >= totalDuration - 0.1 || videoEl.ended) {
+                clearInterval(interval);
+                videoEl.pause();
+                res();
+                return;
+              }
+
+              // Detectar si estamos en zona de silencio a cortar
+              const silenceZone = toRemove.find(s => ct >= s.start && ct < s.end);
+
+              if (silenceZone && !inCut) {
+                inCut = true;
+                videoEl.playbackRate = 16; // avance rápido — destello imperceptible
+                videoEl.volume = 0;
+              } else if (!silenceZone && inCut) {
+                inCut = false;
+                videoEl.playbackRate = 1;
+                videoEl.volume = 1;
+              }
+            }, 60);
+          });
+
+          // Dar tiempo al recorder para capturar los últimos frames
+          await new Promise(r => setTimeout(r, 400));
+          recorder.stop();
+
+        } catch (err) {
+          URL.revokeObjectURL(videoEl.src);
+          reject(err);
+        }
+      });
+    });
+  }
+
+  // LEGACY: función anterior con pause/resume (dejada como referencia, no usada)
+  function _recordSegmentsPauseResume_UNUSED(file, segments, totalDuration, onProgress) {
     return new Promise((resolve, reject) => {
       const videoEl = document.createElement("video");
       videoEl.src = URL.createObjectURL(file);
@@ -348,14 +428,12 @@ export default function SilenceCutter() {
             const { start, end } = segments[i];
             onProgress(processedTime / totalKept, `Procesando segmento ${i + 1} de ${segments.length}...`);
 
-            // Seek to segment start
             videoEl.currentTime = start;
             await new Promise((res, rej) => {
               const timeout = setTimeout(() => rej(new Error("Timeout en seek")), 10000);
               videoEl.onseeked = () => { clearTimeout(timeout); res(); };
             });
 
-            // Pause recorder between segments to avoid gaps
             if (recorder.state === "recording") recorder.pause();
             if (recorder.state === "inactive") {
               recorder.start(100);
@@ -363,14 +441,12 @@ export default function SilenceCutter() {
               recorder.resume();
             }
 
-            // Play segment
             videoEl.play();
 
             await new Promise((res, rej) => {
               const interval = setInterval(() => {
                 if (abortRef.current) { clearInterval(interval); rej(new Error("Cancelado")); return; }
                 const ct = videoEl.currentTime;
-                const segProgress = (ct - start) / (end - start);
                 setCurrentTime(ct);
                 onProgress((processedTime + (ct - start)) / totalKept, `Procesando segmento ${i + 1} de ${segments.length}...`);
 
@@ -385,10 +461,8 @@ export default function SilenceCutter() {
             processedTime += (end - start);
           }
 
-          // Stop recording
           if (recorder.state === "paused") recorder.resume();
           setTimeout(() => recorder.stop(), 300);
-
         } catch (err) {
           URL.revokeObjectURL(videoEl.src);
           reject(err);
