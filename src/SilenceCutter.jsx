@@ -328,6 +328,134 @@ async function recordAllClips(clips, onProgress, abortRef) {
   });
 }
 
+// ── Vista previa ───────────────────────────────────────────────────────────
+function PreviewScreen({ clips, onBack, onExport }) {
+  const canvasRef  = useRef(null);
+  const playRef    = useRef(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [clipInfo,  setClipInfo]  = useState("Presiona ▶ para previsualizar el resultado");
+  const [pct,       setPct]       = useState(0);
+  const [done,      setDone]      = useState(false);
+
+  const totalDuration = clips.reduce((t, c) => t + (c.duration || 0), 0);
+
+  const runPreview = async () => {
+    if (isPlaying) { playRef.current = false; return; }
+    setIsPlaying(true); setDone(false); setPct(0);
+    playRef.current = true;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+
+    // Detectar resolución del primer clip
+    const fv = document.createElement("video");
+    const fu = URL.createObjectURL(clips[0].file);
+    fv.src = fu;
+    await new Promise(r => { fv.onloadedmetadata = r; fv.onerror = r; });
+    const W = fv.videoWidth || 1280, H = fv.videoHeight || 720;
+    canvas.width = W; canvas.height = H;
+    URL.revokeObjectURL(fu);
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+
+    let elapsed = 0;
+
+    for (let ci = 0; ci < clips.length && playRef.current; ci++) {
+      const clip = clips[ci];
+      setClipInfo(`Clip ${ci + 1} de ${clips.length} — ${clip.name}`);
+
+      await new Promise(resolve => {
+        const vid = document.createElement("video");
+        const url = URL.createObjectURL(clip.file);
+        vid.src = url;
+
+        vid.addEventListener("loadedmetadata", async () => {
+          const vW = vid.videoWidth || W, vH = vid.videoHeight || H;
+          const scale = Math.min(W / vW, H / vH);
+          const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
+
+          let animId;
+          const draw = () => {
+            ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+            if (!vid.paused && !vid.ended) ctx.drawImage(vid, dX, dY, dW, dH);
+            animId = requestAnimationFrame(draw);
+          };
+
+          vid.currentTime = 0;
+          await new Promise(r => { vid.onseeked = r; });
+
+          const toRemove = (clip.silences || []).filter(s => s.cut);
+          let inCut = false;
+          vid.play(); animId = requestAnimationFrame(draw);
+
+          const tick = setInterval(() => {
+            if (!playRef.current) {
+              clearInterval(tick); cancelAnimationFrame(animId);
+              vid.pause(); URL.revokeObjectURL(url); resolve(); return;
+            }
+            const ct = vid.currentTime, dur = clip.duration || vid.duration;
+            setPct(Math.round(((elapsed + ct) / totalDuration) * 100));
+            const inSilence = toRemove.some(s => ct >= s.start && ct < s.end);
+            if (inSilence && !inCut) { inCut = true; vid.playbackRate = 16; vid.volume = 0; }
+            else if (!inSilence && inCut) { inCut = false; vid.playbackRate = 1; vid.volume = 1; }
+            if (vid.ended || ct >= dur - 0.1) {
+              clearInterval(tick); cancelAnimationFrame(animId);
+              vid.pause(); URL.revokeObjectURL(url); resolve();
+            }
+          }, 60);
+        });
+        vid.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+      });
+
+      elapsed += clip.duration || 0;
+    }
+
+    if (playRef.current) { setDone(true); setClipInfo("Vista previa completada ✓"); }
+    setIsPlaying(false); playRef.current = false;
+  };
+
+  return (
+    <div className="sc-page">
+      <nav className="sc-nav"><Logo width={110} /><a href="/" className="sc-nav-link">Ir a la app →</a></nav>
+      <div className="sc-preview-wrap">
+        <div className="sc-preview-header">
+          <button className="sc-btn-outline sc-btn-sm" onClick={onBack}>← Editar</button>
+          <h2 className="sc-preview-title">Vista previa</h2>
+          <button className="sc-btn-primary sc-btn-sm" onClick={onExport}>✂️ Exportar</button>
+        </div>
+
+        <div className="sc-canvas-wrap" onClick={!isPlaying ? runPreview : undefined}>
+          <canvas ref={canvasRef} className="sc-preview-canvas" width={1280} height={720} />
+          {!isPlaying && (
+            <div className="sc-canvas-overlay">
+              <button className="sc-play-big-btn" onClick={e => { e.stopPropagation(); runPreview(); }}>
+                {done ? "↺" : "▶"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="sc-preview-controls">
+          <button className="sc-play-toggle" onClick={runPreview}>
+            {isPlaying ? "⏸ Pausar" : done ? "↺ Repetir" : "▶ Reproducir"}
+          </button>
+          <div className="sc-progress-bar-wrap" style={{ flex: 1 }}>
+            <div className="sc-progress-bar" style={{ width: `${pct}%` }} />
+          </div>
+          <span className="sc-preview-pct">{pct}%</span>
+        </div>
+        <p className="sc-preview-clip-info">{clipInfo}</p>
+
+        {done && (
+          <div className="sc-preview-done-bar">
+            <p>¿Todo se ve bien?</p>
+            <button className="sc-btn-primary" onClick={onExport}>✂️ Exportar video final</button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Componente principal ───────────────────────────────────────────────────
 export default function SilenceCutter() {
   const [clips, setClips]         = useState([]);
@@ -503,6 +631,15 @@ export default function SilenceCutter() {
     </div>
   );
 
+  // ── PREVIEW ───────────────────────────────────────────────────────────────
+  if (fase === "preview") return (
+    <PreviewScreen
+      clips={clips.filter(c => c.analyzed && !c.error)}
+      onBack={() => setFase("editor")}
+      onExport={exportar}
+    />
+  );
+
   // ── DONE ─────────────────────────────────────────────────────────────────
   if (fase === "done" && result) return (
     <div className="sc-page">
@@ -613,8 +750,8 @@ export default function SilenceCutter() {
                 <strong>{fmtTime(totalCutTime)}</strong> a eliminar
               </p>
             </div>
-            <button className="sc-btn-primary sc-btn-export" onClick={exportar}>
-              ✂️ Cortar
+            <button className="sc-btn-primary sc-btn-export" onClick={() => setFase("preview")}>
+              ▶ Vista previa
             </button>
           </div>
         )}
