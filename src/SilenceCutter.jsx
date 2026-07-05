@@ -332,7 +332,7 @@ async function recordAllClips(clips, onProgress, abortRef) {
 export default function SilenceCutter() {
   const [clips, setClips]         = useState([]);
   const [fase, setFase]           = useState("editor");
-  const [preset, setPreset]       = useState("normal");
+  const preset = "normal";
   const [progress, setProgress]   = useState(0);
   const [progressMsg, setProgressMsg] = useState("");
   const [result, setResult]       = useState(null);
@@ -571,15 +571,8 @@ export default function SilenceCutter() {
               )}
             </div>
             <div className="sc-toolbar-right">
-              <div className="sc-presets-row sc-presets-row--compact">
-                {Object.entries(PRESETS).map(([key, p]) => (
-                  <button key={key} className={`sc-preset-btn${preset === key ? " active" : ""}`} onClick={() => setPreset(key)}>
-                    <span className="sc-preset-name">{p.label}</span>
-                  </button>
-                ))}
-              </div>
               <button className="sc-btn-outline sc-btn-sm" onClick={analizarTodos}>
-                🔍 Analizar {clips.length > 1 ? "todos" : ""}
+                🔍 Analizar todos
               </button>
             </div>
           </div>
@@ -616,12 +609,12 @@ export default function SilenceCutter() {
             <div className="sc-export-summary">
               <p>
                 <strong>{analyzedCount}</strong> clip{analyzedCount !== 1 ? "s" : ""} listos ·{" "}
-                <strong>{totalCuts}</strong> silencios a cortar ·{" "}
-                <strong>{fmtTime(totalCutTime)}</strong> eliminados
+                <strong>{totalCuts}</strong> silencios ·{" "}
+                <strong>{fmtTime(totalCutTime)}</strong> a eliminar
               </p>
             </div>
-            <button className="sc-btn-primary sc-btn-export" onClick={exportar} disabled={totalCuts === 0 && analyzedCount > 0}>
-              ✂️ Exportar video final
+            <button className="sc-btn-primary sc-btn-export" onClick={exportar}>
+              ✂️ Cortar
             </button>
           </div>
         )}

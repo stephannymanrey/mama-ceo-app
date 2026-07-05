@@ -131,22 +131,6 @@
   flex-wrap: wrap;
 }
 
-/* Presets */
-.sc-presets-row { display: flex; gap: 6px; }
-.sc-preset-btn {
-  padding: 5px 12px;
-  border: 1px solid rgba(196, 82, 106, 0.3);
-  background: #fff;
-  border-radius: 20px;
-  cursor: pointer;
-  color: #555;
-  font-size: 12px;
-  font-weight: 500;
-  transition: all 0.15s;
-}
-.sc-preset-btn:hover { border-color: #C4526A; color: #C4526A; }
-.sc-preset-btn.active { background: #C4526A; color: #fff; border-color: #C4526A; }
-
 /* Botones */
 .sc-btn-primary {
   display: inline-flex;
