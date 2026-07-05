@@ -166,19 +166,32 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
   const y    = H - Math.floor(H / 10);
   const startX = W / 2 - totalW / 2;
 
-  // Fondo pill
-  ctx.fillStyle = "rgba(0,0,0,0.60)";
-  ctx.beginPath();
-  ctx.roundRect(startX - pad, y - fs - padV, totalW + pad * 2, fs + padV * 2, 10);
-  ctx.fill();
-
-  // Dibujar palabras
+  // Dibujar palabras (sin fondo de grupo — solo cajita en la palabra activa)
   let x = startX;
   group.forEach((w, i) => {
     const isCurrent = time >= w.start && time <= w.end;
     const isPast    = time > w.end;
-    ctx.fillStyle = isCurrent ? hlColor : isPast ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.92)";
-    ctx.fillText(w.word + (i < group.length - 1 ? " " : ""), x, y);
+    const wordText  = w.word + (i < group.length - 1 ? " " : "");
+    const wordW     = ctx.measureText(w.word).width; // solo el ancho de la palabra (sin espacio)
+
+    if (isCurrent) {
+      // Cajita de color solo bajo la palabra activa
+      const bPadX = fs * 0.22, bPadY = fs * 0.15;
+      ctx.fillStyle = hlColor;
+      ctx.beginPath();
+      ctx.roundRect(x - bPadX, y - fs - bPadY, wordW + bPadX * 2, fs + bPadY * 2, 6);
+      ctx.fill();
+      // Texto oscuro sobre la cajita de color
+      ctx.fillStyle = "#1a1a2e";
+    } else {
+      // Sombra para legibilidad sin fondo
+      ctx.shadowColor = "rgba(0,0,0,0.85)";
+      ctx.shadowBlur  = 6;
+      ctx.fillStyle = isPast ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.95)";
+    }
+
+    ctx.fillText(wordText, x, y);
+    ctx.shadowBlur = 0;
     x += wMeasures[i];
   });
 
