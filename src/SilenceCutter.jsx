@@ -8,7 +8,7 @@ const PRESETS = {
   normal:       { noise: -35, duration: 0.5, label: "Normal",        desc: "Ideal para redes sociales" },
   agresiva:     { noise: -28, duration: 0.3, label: "Agresiva",      desc: "Corta pausas breves" },
 };
-const PADDING = 0.08;
+const PADDING = 0.03;
 
 // ── Utilidades ────────────────────────────────────────────────────────────
 function fmtTime(s) {
@@ -449,11 +449,28 @@ function PreviewScreen({ clips, onBack, onExport }) {
     URL.revokeObjectURL(fu);
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
 
-    let elapsed = 0;
+    // Duración total de lo que se reproducirá (sin silencios cortados)
+    const totalKept = clips.reduce((t, c) => {
+      const cut = (c.silences || []).filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0);
+      return t + (c.duration || 0) - cut;
+    }, 0) || 1;
+    let keptPlayed = 0;
 
     for (let ci = 0; ci < clips.length && playRef.current; ci++) {
       const clip = clips[ci];
       setClipInfo(`Clip ${ci + 1} de ${clips.length} — ${clip.name}`);
+
+      // Construir segmentos a reproducir (partes que NO se cortan)
+      const cuts = (clip.silences || []).filter(s => s.cut).sort((a, b) => a.start - b.start);
+      const dur = clip.duration || 0;
+      const segs = [];
+      let pos = 0;
+      for (const s of cuts) {
+        if (s.start > pos + 0.05) segs.push({ start: pos, end: s.start });
+        pos = s.end;
+      }
+      if (pos < dur - 0.05) segs.push({ start: pos, end: dur });
+      if (!segs.length) segs.push({ start: 0, end: dur });
 
       await new Promise(resolve => {
         const vid = document.createElement("video");
@@ -468,43 +485,50 @@ function PreviewScreen({ clips, onBack, onExport }) {
           let animId;
           const draw = () => {
             ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
-            if (!vid.paused && !vid.ended) {
-              ctx.drawImage(vid, dX, dY, dW, dH);
-              drawSubtitle(ctx, W, H, vid.currentTime, clip.segments);
-            }
+            ctx.drawImage(vid, dX, dY, dW, dH);
+            drawSubtitle(ctx, W, H, vid.currentTime, clip.segments);
             animId = requestAnimationFrame(draw);
           };
+          animId = requestAnimationFrame(draw);
 
-          vid.currentTime = 0;
-          await new Promise(r => { vid.onseeked = r; });
+          // Reproducir segmento por segmento (seek instantáneo entre cortes)
+          for (const seg of segs) {
+            if (!playRef.current) break;
 
-          const toRemove = (clip.silences || []).filter(s => s.cut);
-          let inCut = false;
-          vid.play(); animId = requestAnimationFrame(draw);
+            vid.currentTime = seg.start;
+            await new Promise(r => { vid.onseeked = r; });
+            if (!playRef.current) break;
 
-          const tick = setInterval(() => {
-            if (!playRef.current) {
-              clearInterval(tick); cancelAnimationFrame(animId);
-              vid.pause(); URL.revokeObjectURL(url); resolve(); return;
-            }
-            const ct = vid.currentTime, dur = clip.duration || vid.duration;
-            setPct(Math.round(((elapsed + ct) / totalDuration) * 100));
-            const inSilence = toRemove.some(s => ct >= s.start && ct < s.end);
-            if (inSilence && !inCut) { inCut = true; vid.playbackRate = 16; vid.volume = 0; }
-            else if (!inSilence && inCut) { inCut = false; vid.playbackRate = 1; vid.volume = 1; }
-            if (vid.ended || ct >= dur - 0.1) {
-              clearInterval(tick); cancelAnimationFrame(animId);
-              vid.pause(); URL.revokeObjectURL(url); resolve();
-            }
-          }, 60);
+            vid.playbackRate = 1;
+            vid.play().catch(() => {});
+
+            const segKeptStart = keptPlayed;
+            const segDur = seg.end - seg.start;
+
+            await new Promise(segDone => {
+              const tick = setInterval(() => {
+                if (!playRef.current) { clearInterval(tick); vid.pause(); segDone(); return; }
+                const ct = vid.currentTime;
+                const played = Math.max(0, ct - seg.start);
+                setPct(Math.round(Math.min(99, ((segKeptStart + played) / totalKept) * 100)));
+                if (ct >= seg.end - 0.04 || vid.ended) {
+                  clearInterval(tick); vid.pause();
+                  keptPlayed += segDur;
+                  segDone();
+                }
+              }, 50);
+            });
+          }
+
+          cancelAnimationFrame(animId);
+          URL.revokeObjectURL(url);
+          resolve();
         });
         vid.onerror = () => { URL.revokeObjectURL(url); resolve(); };
       });
-
-      elapsed += clip.duration || 0;
     }
 
-    if (playRef.current) { setDone(true); setClipInfo("Vista previa completada ✓"); }
+    if (playRef.current) { setDone(true); setClipInfo("Vista previa completada ✓"); setPct(100); }
     setIsPlaying(false); playRef.current = false;
   };
 
