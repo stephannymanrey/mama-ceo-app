@@ -106,53 +106,80 @@ async function transcribeClip(file, onModelProgress) {
   const audio = await getAudioMono16k(file);
   const result = await asr(audio, {
     language: "spanish", task: "transcribe",
-    return_timestamps: true, chunk_length_s: 30, stride_length_s: 5,
+    return_timestamps: "word", chunk_length_s: 30, stride_length_s: 5,
   });
   return (result.chunks || []).map(c => ({
+    word: c.text.replace(/^\s+/, ""),
     start: c.timestamp[0] ?? 0,
-    end: c.timestamp[1] ?? (c.timestamp[0] + 3),
-    text: c.text.trim(),
-  })).filter(s => s.text);
+    end: c.timestamp[1] ?? ((c.timestamp[0] ?? 0) + 0.5),
+  })).filter(s => s.word);
 }
 
-// ── Dibuja subtítulo en canvas ────────────────────────────────────────────
-function drawSubtitle(ctx, W, H, time, segments) {
-  if (!segments?.length) return;
-  const seg = segments.find(s => time >= s.start && time <= s.end);
-  if (!seg?.text) return;
+// ── Subtítulos estilo CapCut (por palabra) ────────────────────────────────
+function drawSubtitle(ctx, W, H, time, words, style = {}) {
+  if (!words?.length) return;
 
-  const fs = Math.max(20, Math.floor(H / 22));
+  const font    = style.font    || "Poppins";
+  const hlColor = style.hlColor || "#FFE44D";
+  const fs      = Math.max(24, Math.floor(H / 17));
+  const GROUP   = 5;
+
+  // Encontrar índice de la palabra activa
+  let idx = words.findIndex(w => time >= w.start && time <= w.end);
+  if (idx === -1) {
+    // Entre palabras: buscar la más reciente cuyo grupo aún es relevante
+    const prev = [...words].reverse().find(w => time > w.end);
+    if (!prev) return;
+    idx = words.indexOf(prev);
+    // Ocultar si el siguiente grupo todavía no empieza en <1.2s
+    const nextGroup = Math.floor(idx / GROUP) * GROUP + GROUP;
+    if (nextGroup < words.length && words[nextGroup].start - time > 1.2) return;
+  }
+
+  const groupStart = Math.floor(idx / GROUP) * GROUP;
+  const group = words.slice(groupStart, groupStart + GROUP);
+
   ctx.save();
-  ctx.font = `bold ${fs}px Arial, sans-serif`;
-  ctx.textAlign = "center";
+  ctx.font = `800 ${fs}px "${font}", sans-serif`;
   ctx.textBaseline = "alphabetic";
 
-  // Wrap text si es muy largo
-  const maxW = W * 0.85;
-  const words = seg.text.split(" ");
-  const lines = [];
-  let line = "";
-  for (const w of words) {
-    const test = line ? `${line} ${w}` : w;
-    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
-    else line = test;
+  // Medir cada palabra + espacio
+  const wMeasures = group.map((w, i) =>
+    ctx.measureText(w.word + (i < group.length - 1 ? " " : "")).width
+  );
+  let totalW = wMeasures.reduce((a, b) => a + b, 0);
+
+  // Ajustar si es demasiado ancho
+  const maxW = W * 0.84;
+  if (totalW > maxW) {
+    const ratio = maxW / totalW;
+    const newFs = Math.floor(fs * ratio);
+    ctx.font = `800 ${newFs}px "${font}", sans-serif`;
+    wMeasures.forEach((_, i) => {
+      wMeasures[i] = ctx.measureText(group[i].word + (i < group.length - 1 ? " " : "")).width;
+    });
+    totalW = wMeasures.reduce((a, b) => a + b, 0);
   }
-  if (line) lines.push(line);
 
-  const lineH = fs * 1.3;
-  const totalH = lines.length * lineH;
-  const baseY = H - Math.floor(H / 14);
+  const pad  = fs * 0.55;
+  const padV = fs * 0.35;
+  const y    = H - Math.floor(H / 10);
+  const startX = W / 2 - totalW / 2;
 
-  lines.forEach((l, i) => {
-    const y = baseY - (lines.length - 1 - i) * lineH;
-    const mW = ctx.measureText(l).width;
-    const pad = fs * 0.45;
-    ctx.fillStyle = "rgba(0,0,0,0.62)";
-    ctx.beginPath();
-    ctx.roundRect(W / 2 - mW / 2 - pad, y - fs - pad * 0.4, mW + pad * 2, fs + pad * 0.8, 5);
-    ctx.fill();
-    ctx.fillStyle = "#fff";
-    ctx.fillText(l, W / 2, y);
+  // Fondo pill
+  ctx.fillStyle = "rgba(0,0,0,0.60)";
+  ctx.beginPath();
+  ctx.roundRect(startX - pad, y - fs - padV, totalW + pad * 2, fs + padV * 2, 10);
+  ctx.fill();
+
+  // Dibujar palabras
+  let x = startX;
+  group.forEach((w, i) => {
+    const isCurrent = time >= w.start && time <= w.end;
+    const isPast    = time > w.end;
+    ctx.fillStyle = isCurrent ? hlColor : isPast ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.92)";
+    ctx.fillText(w.word + (i < group.length - 1 ? " " : ""), x, y);
+    x += wMeasures[i];
   });
 
   ctx.restore();
@@ -282,9 +309,9 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
                   className={`sc-silence-item${s.cut ? " sc-silence-item--cut" : " sc-silence-item--keep"}`}
                   onClick={() => onToggle(clip.id, s.id)}
                 >
-                  <span className="sc-silence-range">{fmtTime(s.start)} – {fmtTime(s.end)}</span>
+                  <span className="sc-silence-range">{fmtTime(s.start)}–{fmtTime(s.end)}</span>
                   <span className="sc-silence-dur">{(s.end - s.start).toFixed(1)}s</span>
-                  <span className="sc-silence-status">{s.cut ? "✕ Cortar" : "✓ Conservar"}</span>
+                  <span className="sc-silence-status">{s.cut ? "✕" : "✓"}</span>
                 </button>
               ))}
             </div>
@@ -298,7 +325,7 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
 }
 
 // ── Grabación multi-clip en canvas ────────────────────────────────────────
-async function recordAllClips(clips, onProgress, abortRef) {
+async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}) {
   // Detectar resolución del primer clip
   const firstVid = document.createElement("video");
   const firstUrl = URL.createObjectURL(clips[0].file);
@@ -367,7 +394,7 @@ async function recordAllClips(clips, onProgress, abortRef) {
           ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
           if (!videoEl.paused && !videoEl.ended) {
             ctx.drawImage(videoEl, dX, dY, dW, dH);
-            drawSubtitle(ctx, W, H, videoEl.currentTime, clip.segments);
+            drawSubtitle(ctx, W, H, videoEl.currentTime, clip.segments, subtitleStyle);
           }
           animId = requestAnimationFrame(drawLoop);
         };
@@ -421,7 +448,15 @@ async function recordAllClips(clips, onProgress, abortRef) {
 }
 
 // ── Vista previa ───────────────────────────────────────────────────────────
-function PreviewScreen({ clips, onBack, onExport }) {
+const FONTS = ["Poppins", "Montserrat", "Arial"];
+const HL_COLORS = [
+  { label: "Amarillo", c: "#FFE44D" },
+  { label: "Rosa",     c: "#FF6B8A" },
+  { label: "Blanco",   c: "#FFFFFF" },
+  { label: "Verde",    c: "#4ADE80" },
+];
+
+function PreviewScreen({ clips, subtitleStyle, onStyleChange, onBack, onExport, onTranscribe }) {
   const canvasRef  = useRef(null);
   const playRef    = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -486,7 +521,7 @@ function PreviewScreen({ clips, onBack, onExport }) {
           const draw = () => {
             ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
             ctx.drawImage(vid, dX, dY, dW, dH);
-            drawSubtitle(ctx, W, H, vid.currentTime, clip.segments);
+            drawSubtitle(ctx, W, H, vid.currentTime, clip.segments, subtitleStyle);
             animId = requestAnimationFrame(draw);
           };
           animId = requestAnimationFrame(draw);
@@ -564,6 +599,53 @@ function PreviewScreen({ clips, onBack, onExport }) {
         </div>
         <p className="sc-preview-clip-info">{clipInfo}</p>
 
+        {/* Panel de subtítulos */}
+        <div className="sc-subs-panel">
+          <div className="sc-subs-panel-row">
+            <span className="sc-subs-label">Subtítulos</span>
+            {!clips.some(c => c.transcribed) && (
+              <button className="sc-btn-outline sc-btn-sm sc-btn-subs" onClick={onTranscribe}>
+                💬 Generar subtítulos
+              </button>
+            )}
+          </div>
+          {clips.some(c => c.transcribed) && (
+            <>
+              <div className="sc-subs-row">
+                <span className="sc-subs-sublabel">Fuente</span>
+                <div className="sc-font-pills">
+                  {FONTS.map(f => (
+                    <button key={f}
+                      className={`sc-font-pill${subtitleStyle.font === f ? " active" : ""}`}
+                      style={{ fontFamily: f }}
+                      onClick={() => onStyleChange({ ...subtitleStyle, font: f })}>
+                      {f}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="sc-subs-row">
+                <span className="sc-subs-sublabel">Resaltado</span>
+                <div className="sc-color-swatches">
+                  {HL_COLORS.map(opt => (
+                    <button key={opt.c}
+                      className={`sc-color-swatch${subtitleStyle.hlColor === opt.c ? " active" : ""}`}
+                      style={{ "--sw": opt.c }}
+                      onClick={() => onStyleChange({ ...subtitleStyle, hlColor: opt.c })}
+                      title={opt.label}>
+                      <span className="sc-swatch-dot" />
+                      <span>{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <button className="sc-btn-ghost-dark sc-btn-sm" onClick={onTranscribe}>
+                ↺ Re-generar
+              </button>
+            </>
+          )}
+        </div>
+
         {done && (
           <div className="sc-preview-done-bar">
             <p>¿Todo se ve bien?</p>
@@ -585,6 +667,7 @@ export default function SilenceCutter() {
   const [result, setResult]       = useState(null);
   const [error, setError]         = useState("");
   const [dragOver, setDragOver]   = useState(false);
+  const [subtitleStyle, setSubtitleStyle] = useState({ font: "Poppins", hlColor: "#FFE44D" });
   const inputRef  = useRef(null);
   const abortRef  = useRef(false);
 
@@ -671,7 +754,7 @@ export default function SilenceCutter() {
   const removeClip = (id) => setClips(prev => prev.filter(c => c.id !== id));
 
   // ── Transcribir subtítulos ──────────────────────────────────────────────
-  const transcribeAll = async () => {
+  const transcribeAll = async (returnFase = "editor") => {
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) return;
     setFase("transcribing");
@@ -698,7 +781,7 @@ export default function SilenceCutter() {
       }
     }
 
-    setFase("editor");
+    setFase(returnFase);
   };
 
   // ── Exportar ────────────────────────────────────────────────────────────
@@ -715,7 +798,7 @@ export default function SilenceCutter() {
       const blob = await recordAllClips(ready, (p, msg) => {
         setProgress(Math.round(p * 100));
         setProgressMsg(msg);
-      }, abortRef);
+      }, abortRef, subtitleStyle);
 
       const totalOriginal = ready.reduce((t, c) => t + (c.duration || 0), 0);
       const totalCut = ready.reduce((t, c) =>
@@ -805,8 +888,11 @@ export default function SilenceCutter() {
   if (fase === "preview") return (
     <PreviewScreen
       clips={clips.filter(c => c.analyzed && !c.error)}
+      subtitleStyle={subtitleStyle}
+      onStyleChange={setSubtitleStyle}
       onBack={() => setFase("editor")}
       onExport={exportar}
+      onTranscribe={() => transcribeAll("preview")}
     />
   );
 
