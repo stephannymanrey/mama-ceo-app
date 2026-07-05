@@ -76,6 +76,88 @@ async function analyzeClip(file, noiseDb, minDuration) {
   };
 }
 
+// ── Transcripción (Whisper Tiny) ──────────────────────────────────────────
+let _asr = null;
+
+async function loadTranscriber(onProgress) {
+  if (_asr) return _asr;
+  const { pipeline } = await import("@xenova/transformers");
+  _asr = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny", {
+    progress_callback: onProgress,
+  });
+  return _asr;
+}
+
+async function getAudioMono16k(file) {
+  const buf = await file.arrayBuffer();
+  const ctx = new AudioContext();
+  const decoded = await ctx.decodeAudioData(buf);
+  ctx.close();
+  if (decoded.sampleRate === 16000) return decoded.getChannelData(0);
+  const offline = new OfflineAudioContext(1, Math.ceil(decoded.duration * 16000), 16000);
+  const src = offline.createBufferSource();
+  src.buffer = decoded; src.connect(offline.destination); src.start();
+  const resampled = await offline.startRendering();
+  return resampled.getChannelData(0);
+}
+
+async function transcribeClip(file, onModelProgress) {
+  const asr = await loadTranscriber(onModelProgress);
+  const audio = await getAudioMono16k(file);
+  const result = await asr(audio, {
+    language: "spanish", task: "transcribe",
+    return_timestamps: true, chunk_length_s: 30, stride_length_s: 5,
+  });
+  return (result.chunks || []).map(c => ({
+    start: c.timestamp[0] ?? 0,
+    end: c.timestamp[1] ?? (c.timestamp[0] + 3),
+    text: c.text.trim(),
+  })).filter(s => s.text);
+}
+
+// ── Dibuja subtítulo en canvas ────────────────────────────────────────────
+function drawSubtitle(ctx, W, H, time, segments) {
+  if (!segments?.length) return;
+  const seg = segments.find(s => time >= s.start && time <= s.end);
+  if (!seg?.text) return;
+
+  const fs = Math.max(20, Math.floor(H / 22));
+  ctx.save();
+  ctx.font = `bold ${fs}px Arial, sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "alphabetic";
+
+  // Wrap text si es muy largo
+  const maxW = W * 0.85;
+  const words = seg.text.split(" ");
+  const lines = [];
+  let line = "";
+  for (const w of words) {
+    const test = line ? `${line} ${w}` : w;
+    if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+
+  const lineH = fs * 1.3;
+  const totalH = lines.length * lineH;
+  const baseY = H - Math.floor(H / 14);
+
+  lines.forEach((l, i) => {
+    const y = baseY - (lines.length - 1 - i) * lineH;
+    const mW = ctx.measureText(l).width;
+    const pad = fs * 0.45;
+    ctx.fillStyle = "rgba(0,0,0,0.62)";
+    ctx.beginPath();
+    ctx.roundRect(W / 2 - mW / 2 - pad, y - fs - pad * 0.4, mW + pad * 2, fs + pad * 0.8, 5);
+    ctx.fill();
+    ctx.fillStyle = "#fff";
+    ctx.fillText(l, W / 2, y);
+  });
+
+  ctx.restore();
+}
+
 async function generateThumbnail(file) {
   return new Promise(resolve => {
     const v = document.createElement("video");
@@ -167,6 +249,9 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
           {clip.analyzed && !clip.error && (
             <div className="sc-clip-badges">
               <span className="sc-badge-cut">{cutCount} silencios · {fmtTime(savedTime)} ahorrados</span>
+              {clip.transcribed && !clip.transcribeError && (
+                <span className="sc-badge-subs">💬 {clip.segments?.length ?? 0} subtítulos</span>
+              )}
             </div>
           )}
           {clip.error && <p className="sc-clip-err">⚠ {clip.error}</p>}
@@ -239,7 +324,11 @@ async function recordAllClips(clips, onProgress, abortRef) {
   ]);
 
   const mimeType = getSupportedMimeType();
-  const recorder = new MediaRecorder(combinedStream, { mimeType });
+  const recorder = new MediaRecorder(combinedStream, {
+    mimeType,
+    videoBitsPerSecond: 8_000_000,
+    audioBitsPerSecond: 192_000,
+  });
   const chunks = [];
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   recorder.start(100);
@@ -276,7 +365,10 @@ async function recordAllClips(clips, onProgress, abortRef) {
         let animId;
         const drawLoop = () => {
           ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
-          if (!videoEl.paused && !videoEl.ended) ctx.drawImage(videoEl, dX, dY, dW, dH);
+          if (!videoEl.paused && !videoEl.ended) {
+            ctx.drawImage(videoEl, dX, dY, dW, dH);
+            drawSubtitle(ctx, W, H, videoEl.currentTime, clip.segments);
+          }
           animId = requestAnimationFrame(drawLoop);
         };
 
@@ -376,7 +468,10 @@ function PreviewScreen({ clips, onBack, onExport }) {
           let animId;
           const draw = () => {
             ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
-            if (!vid.paused && !vid.ended) ctx.drawImage(vid, dX, dY, dW, dH);
+            if (!vid.paused && !vid.ended) {
+              ctx.drawImage(vid, dX, dY, dW, dH);
+              drawSubtitle(ctx, W, H, vid.currentTime, clip.segments);
+            }
             animId = requestAnimationFrame(draw);
           };
 
@@ -482,6 +577,7 @@ export default function SilenceCutter() {
     const newClips = valid.map(f => ({
       id: uid(), file: f, name: f.name, size: f.size,
       thumbnail: null, duration: null, waveform: null, silences: [], analyzed: false, error: null,
+      segments: null, transcribed: false, transcribeError: null,
     }));
 
     setClips(prev => [...prev, ...newClips]);
@@ -550,6 +646,37 @@ export default function SilenceCutter() {
 
   const removeClip = (id) => setClips(prev => prev.filter(c => c.id !== id));
 
+  // ── Transcribir subtítulos ──────────────────────────────────────────────
+  const transcribeAll = async () => {
+    const ready = clips.filter(c => c.analyzed && !c.error);
+    if (!ready.length) return;
+    setFase("transcribing");
+    setError("");
+
+    for (let i = 0; i < ready.length; i++) {
+      const clip = ready[i];
+      setProgressMsg(`Transcribiendo clip ${i + 1} de ${ready.length}: ${clip.name}`);
+      setProgress(Math.round((i / ready.length) * 100));
+      try {
+        const segments = await transcribeClip(clip.file, info => {
+          if (info.status === "downloading") {
+            const pct = info.progress ? Math.round(info.progress) : 0;
+            setProgressMsg(`Descargando modelo Whisper... ${pct}%`);
+          }
+        });
+        setClips(prev => prev.map(c => c.id === clip.id
+          ? { ...c, segments, transcribed: true }
+          : c));
+      } catch (err) {
+        setClips(prev => prev.map(c => c.id === clip.id
+          ? { ...c, segments: [], transcribed: true, transcribeError: "No se pudo transcribir" }
+          : c));
+      }
+    }
+
+    setFase("editor");
+  };
+
   // ── Exportar ────────────────────────────────────────────────────────────
   const exportar = async () => {
     const ready = clips.filter(c => c.analyzed && !c.error);
@@ -607,6 +734,25 @@ export default function SilenceCutter() {
           <div className="sc-progress-bar" style={{ width: `${progress}%` }} />
         </div>
         <p className="sc-proc-note">{progressMsg}</p>
+      </div>
+    </div>
+  );
+
+  // ── TRANSCRIBING ─────────────────────────────────────────────────────────
+  if (fase === "transcribing") return (
+    <div className="sc-page sc-page--center">
+      <Logo width={100} />
+      <div className="sc-processing">
+        <div className="sc-proc-rings">
+          <div className="sc-proc-ring sc-proc-ring--1" /><div className="sc-proc-ring sc-proc-ring--2" /><div className="sc-proc-ring sc-proc-ring--3" />
+          <span className="sc-proc-icon">💬</span>
+        </div>
+        <h2 className="sc-proc-title">Generando subtítulos...</h2>
+        <div className="sc-progress-bar-wrap" style={{ width: 320 }}>
+          <div className="sc-progress-bar" style={{ width: `${progress}%` }} />
+        </div>
+        <p className="sc-proc-note">{progressMsg}</p>
+        <p className="sc-proc-note sc-proc-note--small">La primera vez descarga el modelo Whisper (~77 MB). Luego queda guardado.</p>
       </div>
     </div>
   );
@@ -708,6 +854,12 @@ export default function SilenceCutter() {
               )}
             </div>
             <div className="sc-toolbar-right">
+              {analyzedCount > 0 && (
+                <button className="sc-btn-outline sc-btn-sm sc-btn-subs" onClick={transcribeAll}
+                  title="Genera subtítulos automáticos en español (Whisper Tiny)">
+                  💬 {clips.some(c => c.transcribed) ? "Re-transcribir" : "Agregar subtítulos"}
+                </button>
+              )}
               <button className="sc-btn-outline sc-btn-sm" onClick={analizarTodos}>
                 🔍 Analizar todos
               </button>
