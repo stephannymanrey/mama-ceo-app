@@ -8,14 +8,27 @@ const PRESETS = {
   normal:       { noise: -35, duration: 0.5 },
   agresiva:     { noise: -28, duration: 0.3 },
 };
-const PADDING   = 0.03;
-const FONTS     = ["Poppins", "Montserrat", "Arial"];
+const PADDING = 0.03;
+const FONTS   = ["Poppins", "Montserrat", "Arial"];
 const HL_COLORS = [
   { label: "Amarillo", c: "#FFE44D" },
   { label: "Rosa",     c: "#FF6B8A" },
   { label: "Blanco",   c: "#FFFFFF" },
   { label: "Verde",    c: "#4ADE80" },
 ];
+const CLIP_COLORS   = ["#C4526A","#4A90BF","#5FB87A","#B07FD4","#D4955F","#5FB8B0"];
+const TRANSITIONS   = [
+  { id: "none",  icon: "—", label: "Sin efecto"     },
+  { id: "fade",  icon: "◐", label: "Fundido negro"  },
+  { id: "zoom",  icon: "⊕", label: "Zoom suave"     },
+  { id: "flash", icon: "✦", label: "Flash blanco"   },
+];
+const SKIN_FILTERS  = [
+  "blur(0.35px) contrast(1.05) saturate(1.05)",
+  "blur(0.65px) contrast(1.08) saturate(1.07) brightness(1.01)",
+  "blur(1.0px)  contrast(1.10) saturate(1.09) brightness(1.02)",
+];
+const BOKEH_BLUR    = [8, 14, 22];
 
 // ── Utilidades ────────────────────────────────────────────────────────────
 function fmtTime(s) {
@@ -30,8 +43,49 @@ function fmtSize(b) {
 }
 function uid() { return Math.random().toString(36).slice(2); }
 function getSupportedMimeType() {
-  return ["video/webm;codecs=vp9,opus", "video/webm;codecs=vp8,opus", "video/webm", "video/mp4"]
+  return ["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm","video/mp4"]
     .find(t => MediaRecorder.isTypeSupported(t)) || "video/webm";
+}
+
+// ── Segmentos conservados ─────────────────────────────────────────────────
+function buildKeptSegments(clips) {
+  return clips
+    .filter(c => c.analyzed && !c.error)
+    .flatMap(clip => {
+      const dur  = clip.duration || 0;
+      const cuts = (clip.silences || []).filter(s => s.cut).sort((a, b) => a.start - b.start);
+      const segs = [];
+      let pos = 0;
+      for (const s of cuts) {
+        if (s.start > pos + 0.05) segs.push({ clip, start: pos, end: s.start });
+        pos = s.end;
+      }
+      if (pos < dur - 0.05) segs.push({ clip, start: pos, end: dur });
+      if (!segs.length) segs.push({ clip, start: 0, end: dur });
+      return segs;
+    });
+}
+
+function effectiveToNative(keptSegs, et) {
+  let elapsed = 0;
+  for (const seg of keptSegs) {
+    const d = seg.end - seg.start;
+    if (et <= elapsed + d) return { clip: seg.clip, localTime: seg.start + (et - elapsed) };
+    elapsed += d;
+  }
+  const last = keptSegs[keptSegs.length - 1];
+  return last ? { clip: last.clip, localTime: last.end } : null;
+}
+
+function nativeToEffective(keptSegs, clipId, lt) {
+  let elapsed = 0;
+  for (const seg of keptSegs) {
+    const d = seg.end - seg.start;
+    if (seg.clip.id === clipId && lt >= seg.start && lt < seg.end)
+      return elapsed + (lt - seg.start);
+    elapsed += d;
+  }
+  return null;
 }
 
 // ── Audio / análisis ──────────────────────────────────────────────────────
@@ -92,33 +146,111 @@ async function loadTranscriber(onProgress) {
   });
   return _asr;
 }
-async function getAudioMono16k(file) {
+
+// Extrae solo los segmentos conservados (sin silencios eliminados) y resamplea a 16kHz.
+// Devuelve {audio, mappingRanges} donde mappingRanges permite convertir el tiempo
+// condensado que devuelve Whisper al tiempo real del video original.
+async function getKeptAudioMono16k(file, silences) {
+  const TARGET_SR = 16000;
   const buf = await file.arrayBuffer();
-  const ctx = new AudioContext();
-  const decoded = await ctx.decodeAudioData(buf);
-  ctx.close();
-  if (decoded.sampleRate === 16000) return decoded.getChannelData(0);
-  const offline = new OfflineAudioContext(1, Math.ceil(decoded.duration * 16000), 16000);
+  const audioCtx = new AudioContext();
+  const decoded = await audioCtx.decodeAudioData(buf);
+  audioCtx.close();
+  const dur = decoded.duration;
+
+  // Rangos conservados = todo lo que NO está marcado como cut
+  const cuts = (silences || []).filter(s => s.cut).sort((a, b) => a.start - b.start);
+  const keptRanges = [];
+  let pos = 0;
+  for (const s of cuts) {
+    if (s.start > pos + 0.05) keptRanges.push({ start: pos, end: s.start });
+    pos = s.end;
+  }
+  if (pos < dur - 0.05) keptRanges.push({ start: pos, end: dur });
+  if (!keptRanges.length) keptRanges.push({ start: 0, end: dur });
+
+  // Resamplear el audio completo a 16 kHz
+  const offline = new OfflineAudioContext(1, Math.ceil(dur * TARGET_SR), TARGET_SR);
   const src = offline.createBufferSource();
-  src.buffer = decoded; src.connect(offline.destination); src.start();
+  src.buffer = decoded;
+  src.connect(offline.destination);
+  src.start();
   const resampled = await offline.startRendering();
-  return resampled.getChannelData(0);
+  const fullData = resampled.getChannelData(0);
+
+  // Concatenar solo los tramos conservados
+  const parts = [];
+  let condensedSamples = 0;
+  for (const r of keptRanges) {
+    const from = Math.floor(r.start * TARGET_SR);
+    const to   = Math.min(Math.ceil(r.end * TARGET_SR), fullData.length);
+    parts.push({ data: fullData.slice(from, to), originalStart: r.start, condensedStart: condensedSamples / TARGET_SR });
+    condensedSamples += to - from;
+  }
+  const combined = new Float32Array(condensedSamples);
+  let off = 0;
+  for (const p of parts) { combined.set(p.data, off); off += p.data.length; }
+
+  const mappingRanges = parts.map(p => ({
+    originalStart:  p.originalStart,
+    originalEnd:    p.originalStart + p.data.length / TARGET_SR,
+    condensedStart: p.condensedStart,
+  }));
+  return { audio: combined, mappingRanges };
 }
-async function transcribeClip(file, onModelProgress) {
+
+// Convierte tiempo condensado (en el audio sin silencios) → tiempo real del video
+function mapCondensedToOriginal(t, mappingRanges) {
+  for (const r of mappingRanges) {
+    const dur = r.originalEnd - r.originalStart;
+    if (t >= r.condensedStart && t <= r.condensedStart + dur + 0.001)
+      return r.originalStart + (t - r.condensedStart);
+  }
+  const last = mappingRanges[mappingRanges.length - 1];
+  return last ? last.originalEnd : t;
+}
+
+// silences: array de silencios del clip — pasarlos siempre para evitar
+// que Whisper alucine sobre zonas de silencio y repita frases.
+async function transcribeClip(file, silences, onModelProgress) {
   const asr = await loadTranscriber(onModelProgress);
-  const audio = await getAudioMono16k(file);
+  const { audio, mappingRanges } = await getKeptAudioMono16k(file, silences);
   const result = await asr(audio, {
     language: "spanish", task: "transcribe",
     return_timestamps: "word", chunk_length_s: 30, stride_length_s: 5,
   });
-  return (result.chunks || []).map(c => ({
-    word: c.text.replace(/^\s+/, ""),
-    start: c.timestamp[0] ?? 0,
-    end: c.timestamp[1] ?? ((c.timestamp[0] ?? 0) + 0.5),
-  })).filter(s => s.word);
+  return (result.chunks || []).map(c => {
+    const cs = c.timestamp[0] ?? 0;
+    const ce = c.timestamp[1] ?? (cs + 0.5);
+    return {
+      word:  c.text.replace(/^\s+/, ""),
+      start: mapCondensedToOriginal(cs, mappingRanges),
+      end:   mapCondensedToOriginal(ce, mappingRanges),
+    };
+  }).filter(s => s.word);
 }
 
-// ── Subtítulos estilo CapCut ──────────────────────────────────────────────
+// ── Bokeh (MediaPipe Selfie Segmentation) ─────────────────────────────────
+async function loadBokehSegmenter() {
+  if (!window.SelfieSegmentation) {
+    await new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/selfie_segmentation.js";
+      s.crossOrigin = "anonymous";
+      s.onload = resolve;
+      s.onerror = () => reject(new Error("No se pudo cargar el modelo de fondo"));
+      document.head.appendChild(s);
+    });
+  }
+  const seg = new window.SelfieSegmentation({
+    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/${f}`,
+  });
+  seg.setOptions({ modelSelection: 1 }); // landscape model = mejor calidad
+  await seg.initialize();
+  return seg;
+}
+
+// ── Subtítulos ────────────────────────────────────────────────────────────
 function drawSubtitle(ctx, W, H, time, words, style = {}) {
   if (!words?.length) return;
   const font    = style.font    || "Poppins";
@@ -147,8 +279,7 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
   let totalW = wMeasures.reduce((a, b) => a + b, 0);
   const maxW = W * 0.84;
   if (totalW > maxW) {
-    const ratio = maxW / totalW;
-    const newFs = Math.floor(fs * ratio);
+    const newFs = Math.floor(fs * (maxW / totalW));
     ctx.font = `800 ${newFs}px "${font}", sans-serif`;
     wMeasures.forEach((_, i) => {
       wMeasures[i] = ctx.measureText(group[i].word + (i < group.length - 1 ? " " : "")).width;
@@ -157,8 +288,7 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
   }
 
   const y = H - Math.floor(H / 10);
-  const startX = W / 2 - totalW / 2;
-  let x = startX;
+  let x = W / 2 - totalW / 2;
 
   group.forEach((w, i) => {
     const isCurrent = time >= w.start && time <= w.end;
@@ -173,8 +303,7 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
       ctx.fill();
       ctx.fillStyle = "#1a1a2e";
     } else {
-      ctx.shadowColor = "rgba(0,0,0,0.85)";
-      ctx.shadowBlur  = 6;
+      ctx.shadowColor = "rgba(0,0,0,0.85)"; ctx.shadowBlur = 6;
       ctx.fillStyle = isPast ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.95)";
     }
     ctx.fillText(wordText, x, y);
@@ -201,21 +330,14 @@ async function generateThumbnail(file) {
   });
 }
 
-// ── Agrupar palabras en líneas de subtítulo ───────────────────────────────
 function groupSegments(words, perLine = 5) {
   if (!words?.length) return [];
   const lines = [];
   for (let i = 0; i < words.length; i += perLine) {
-    const group = words.slice(i, i + perLine);
-    lines.push({
-      id: i,
-      startIdx: i,
-      endIdx: i + group.length,
-      start: group[0].start,
-      end: group[group.length - 1].end,
-      text: group.map(w => w.word).join(" "),
-      words: group,
-    });
+    const g = words.slice(i, i + perLine);
+    lines.push({ id: i, startIdx: i, endIdx: i + g.length,
+      start: g[0].start, end: g[g.length - 1].end,
+      text: g.map(w => w.word).join(" "), words: g });
   }
   return lines;
 }
@@ -252,11 +374,11 @@ function MiniWaveform({ waveform, duration, silences, onToggle }) {
   };
   return (
     <canvas ref={canvasRef} className="sc-mini-waveform" width={900} height={72}
-      onClick={handleClick} title="Clic en zona roja/verde para cambiar" style={{ cursor: "pointer" }} />
+      onClick={handleClick} style={{ cursor: "pointer" }} />
   );
 }
 
-// ── ClipCard (fase de subida) ──────────────────────────────────────────────
+// ── ClipCard ──────────────────────────────────────────────────────────────
 function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
   const [open, setOpen] = useState(true);
   const cutCount  = clip.silences?.filter(s => s.cut).length ?? 0;
@@ -274,15 +396,10 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
           : <div className="sc-clip-thumb sc-clip-thumb--placeholder">🎬</div>}
         <div className="sc-clip-info">
           <p className="sc-clip-name">{clip.name}</p>
-          <p className="sc-clip-meta">
-            {fmtSize(clip.size)}{clip.duration ? ` · ${fmtTime(clip.duration)}` : " · Cargando..."}
-          </p>
+          <p className="sc-clip-meta">{fmtSize(clip.size)}{clip.duration ? ` · ${fmtTime(clip.duration)}` : " · Cargando..."}</p>
           {clip.analyzed && !clip.error && (
             <div className="sc-clip-badges">
               <span className="sc-badge-cut">{cutCount} silencios · {fmtTime(savedTime)} ahorrados</span>
-              {clip.transcribed && !clip.transcribeError && (
-                <span className="sc-badge-subs">💬 {clip.segments?.length ?? 0} palabras</span>
-              )}
             </div>
           )}
           {clip.error && <p className="sc-clip-err">⚠ {clip.error}</p>}
@@ -313,7 +430,7 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
               ))}
             </div>
           ) : (
-            <p className="sc-no-silences-msg">✨ No se detectaron silencios en este clip.</p>
+            <p className="sc-no-silences-msg">✨ No se detectaron silencios.</p>
           )}
         </div>
       )}
@@ -358,18 +475,14 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}) {
     const clip = clips[ci];
     onProgress(elapsed / totalDuration, `Procesando clip ${ci + 1} de ${clips.length}: ${clip.name}`);
 
-    await new Promise((resolve) => {
+    await new Promise(resolve => {
       const videoEl = document.createElement("video");
       const url = URL.createObjectURL(clip.file);
       videoEl.src = url; videoEl.crossOrigin = "anonymous";
 
       videoEl.addEventListener("loadedmetadata", async () => {
         let source;
-        try {
-          source = audioCtx.createMediaElementSource(videoEl);
-          source.connect(destination);
-        } catch (_) {}
-
+        try { source = audioCtx.createMediaElementSource(videoEl); source.connect(destination); } catch (_) {}
         const vW = videoEl.videoWidth || W, vH = videoEl.videoHeight || H;
         const scale = Math.min(W / vW, H / vH);
         const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
@@ -421,372 +534,609 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}) {
 // ── SegmentRow ────────────────────────────────────────────────────────────
 function SegmentRow({ line, isActive, onEdit, onSeek }) {
   const [editing, setEditing] = useState(false);
-  const [val, setVal]         = useState(line.text);
+  const [val, setVal] = useState(line.text);
   const ref = useRef(null);
-
   useEffect(() => { setVal(line.text); }, [line.text]);
   useEffect(() => { if (editing) ref.current?.focus(); }, [editing]);
-
   const commit = () => {
     setEditing(false);
     if (val.trim() && val.trim() !== line.text) onEdit(val.trim());
   };
   return (
     <div className={`sce-seg-row${isActive ? " sce-seg-row--active" : ""}`}>
-      <button className="sce-seg-time" onClick={() => onSeek(line.start)} title="Saltar a este punto">
-        {fmtTime(line.start)}
-      </button>
+      <button className="sce-seg-time" onClick={() => onSeek(line.start)}>{fmtTime(line.start)}</button>
       {editing ? (
         <input ref={ref} className="sce-seg-input" value={val}
-          onChange={e => setVal(e.target.value)}
-          onBlur={commit}
-          onKeyDown={e => {
-            if (e.key === "Enter") commit();
-            if (e.key === "Escape") { setVal(line.text); setEditing(false); }
-          }}
-        />
+          onChange={e => setVal(e.target.value)} onBlur={commit}
+          onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") { setVal(line.text); setEditing(false); } }} />
       ) : (
-        <button className="sce-seg-text" onClick={() => setEditing(true)} title="Clic para editar">
-          {line.text}
-        </button>
+        <button className="sce-seg-text" onClick={() => setEditing(true)}>{line.text}</button>
       )}
     </div>
   );
 }
 
-// ── Panel de subtítulos ───────────────────────────────────────────────────
-function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyle, onStyleChange, onTranscribe, onSeekInClip, listRef }) {
+// ── SubtitlePanel ─────────────────────────────────────────────────────────
+function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyle, onStyleChange,
+    onTranscribe, onSeekInClip, listRef, transcribing, transcribeMsg }) {
   const hasSubtitles = clips.some(c => c.transcribed && c.segments?.length);
-
   const handleEdit = (clip, line, newText) => {
     const words = newText.trim().split(/\s+/);
     const dur   = line.end - line.start;
     const newWords = words.map((w, i) => ({
-      word: w,
-      start: line.start + (i / words.length) * dur,
-      end:   line.start + ((i + 1) / words.length) * dur,
+      word: w, start: line.start + (i / words.length) * dur, end: line.start + ((i + 1) / words.length) * dur,
     }));
-    const newSegs = [
-      ...(clip.segments || []).slice(0, line.startIdx),
-      ...newWords,
-      ...(clip.segments || []).slice(line.endIdx),
-    ];
-    setClips(prev => prev.map(c => c.id !== clip.id ? c : { ...c, segments: newSegs }));
+    setClips(prev => prev.map(c => c.id !== clip.id ? c : {
+      ...c, segments: [...(c.segments || []).slice(0, line.startIdx), ...newWords, ...(c.segments || []).slice(line.endIdx)],
+    }));
   };
-
   const transcribedClips = clips.filter(c => c.transcribed && c.segments?.length);
 
   return (
     <div className="sce-sub-panel">
       <div className="sce-panel-header">
         <span className="sce-panel-title">Subtítulos</span>
-        <button
-          className={`sc-btn-subs sc-btn-sm sc-btn-outline${hasSubtitles ? " sce-regen-btn" : ""}`}
-          onClick={onTranscribe}
-        >
-          {hasSubtitles ? "↺ Re-generar" : "💬 Generar"}
-        </button>
+        {!transcribing && (
+          <button className={`sc-btn-subs sc-btn-sm sc-btn-outline${hasSubtitles ? " sce-regen-btn" : ""}`}
+            onClick={onTranscribe}>
+            {hasSubtitles ? "↺ Re-generar" : "💬 Generar"}
+          </button>
+        )}
       </div>
 
-      {hasSubtitles && (
-        <div className="sce-sub-style">
-          <div className="sc-font-pills">
-            {FONTS.map(f => (
-              <button key={f}
-                className={`sc-font-pill${subtitleStyle.font === f ? " active" : ""}`}
-                style={{ fontFamily: f }}
-                onClick={() => onStyleChange({ ...subtitleStyle, font: f })}>{f}</button>
-            ))}
-          </div>
-          <div className="sc-color-swatches">
-            {HL_COLORS.map(opt => (
-              <button key={opt.c}
-                className={`sc-color-swatch${subtitleStyle.hlColor === opt.c ? " active" : ""}`}
-                style={{ "--sw": opt.c }}
-                onClick={() => onStyleChange({ ...subtitleStyle, hlColor: opt.c })}
-                title={opt.label}>
-                <span className="sc-swatch-dot" />{opt.label}
-              </button>
-            ))}
-          </div>
+      {transcribing ? (
+        <div className="sce-transcribing">
+          <div className="sce-trans-spinner" />
+          <p className="sce-trans-msg">{transcribeMsg || "Generando subtítulos..."}</p>
+          <p className="sce-trans-hint">Whisper Tiny · Español · Primera vez ~77 MB</p>
         </div>
+      ) : (
+        <>
+          {hasSubtitles && (
+            <div className="sce-sub-style">
+              <div className="sc-font-pills">
+                {FONTS.map(f => (
+                  <button key={f} className={`sc-font-pill${subtitleStyle.font === f ? " active" : ""}`}
+                    style={{ fontFamily: f }} onClick={() => onStyleChange({ ...subtitleStyle, font: f })}>{f}</button>
+                ))}
+              </div>
+              <div className="sc-color-swatches">
+                {HL_COLORS.map(opt => (
+                  <button key={opt.c} className={`sc-color-swatch${subtitleStyle.hlColor === opt.c ? " active" : ""}`}
+                    style={{ "--sw": opt.c }} onClick={() => onStyleChange({ ...subtitleStyle, hlColor: opt.c })} title={opt.label}>
+                    <span className="sc-swatch-dot" />{opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="sce-seg-list" ref={listRef}>
+            {transcribedClips.map(clip => {
+              const lines = groupSegments(clip.segments);
+              return (
+                <React.Fragment key={clip.id}>
+                  {transcribedClips.length > 1 && (
+                    <p className="sce-seg-clip-label">{clip.name.replace(/\.[^/.]+$/, "")}</p>
+                  )}
+                  {lines.map((line, li) => {
+                    const isActive = clip.id === currentClipId && localTime >= line.start && localTime <= line.end;
+                    return (
+                      <SegmentRow key={li} line={line} isActive={isActive}
+                        onSeek={t => onSeekInClip(clip.id, t)}
+                        onEdit={newText => handleEdit(clip, line, newText)} />
+                    );
+                  })}
+                </React.Fragment>
+              );
+            })}
+            {!hasSubtitles && (
+              <div className="sce-no-subs">
+                <p>Genera subtítulos automáticos con IA</p>
+                <p className="sce-no-subs-hint">Whisper Tiny · sincronizado palabra por palabra</p>
+              </div>
+            )}
+          </div>
+        </>
       )}
+    </div>
+  );
+}
 
-      <div className="sce-seg-list" ref={listRef}>
-        {transcribedClips.map(clip => {
-          const lines = groupSegments(clip.segments);
-          return (
-            <React.Fragment key={clip.id}>
-              {transcribedClips.length > 1 && (
-                <p className="sce-seg-clip-label">{clip.name.replace(/\.[^/.]+$/, "")}</p>
-              )}
-              {lines.map((line, li) => {
-                const isActive = clip.id === currentClipId &&
-                  localTime >= line.start && localTime <= line.end;
-                return (
-                  <SegmentRow key={li} line={line} isActive={isActive}
-                    onSeek={(t) => onSeekInClip(clip.id, t)}
-                    onEdit={(newText) => handleEdit(clip, line, newText)}
-                  />
-                );
-              })}
-            </React.Fragment>
-          );
-        })}
-        {!hasSubtitles && (
-          <div className="sce-no-subs">
-            <p>Genera subtítulos automáticos con IA</p>
-            <p className="sce-no-subs-hint">Whisper Tiny transcribe en español<br/>sincronizando palabra por palabra</p>
+// ── Timeline contraído ────────────────────────────────────────────────────
+function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles }) {
+  const pct = totalKept > 0 ? Math.min(100, (effectiveTime / totalKept) * 100) : 0;
+
+  const handleTrackClick = e => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const p = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    onSeek(p * totalKept);
+  };
+
+  return (
+    <div className="sce-timeline">
+      <div className="sce-tl-header">
+        <span className="sce-tl-label">TIMELINE</span>
+        <span className="sce-tl-duration">{fmtTime(effectiveTime)} / {fmtTime(totalKept)}</span>
+      </div>
+      <div className="sce-tl-body">
+        {/* Track contraído */}
+        <div className="sce-tl-track" onClick={handleTrackClick}>
+          {keptSegs.length === 0 && (
+            <div className="sce-tl-empty">Analiza los clips para ver el timeline</div>
+          )}
+          {keptSegs.map((seg, i) => {
+            const w = (seg.end - seg.start) / (totalKept || 1) * 100;
+            const clipIdx = allClips.findIndex(c => c.id === seg.clip.id);
+            const color = CLIP_COLORS[clipIdx % CLIP_COLORS.length] || "#C4526A";
+            return (
+              <div key={i} className="sce-tl-seg"
+                style={{ width: `${w}%`, "--seg-color": color }}
+                title={`${seg.clip.name.replace(/\.[^/.]+$/, "")} · ${fmtTime(seg.start)}–${fmtTime(seg.end)}`}>
+                <span className="sce-tl-seg-label">{seg.clip.name.replace(/\.[^/.]+$/, "").slice(0, 14)}</span>
+              </div>
+            );
+          })}
+          {totalKept > 0 && <div className="sce-tl-ph" style={{ left: `${pct}%` }} />}
+        </div>
+
+        {/* Sidebar de clips */}
+        <div className="sce-tl-mgmt">
+          {allClips.map((clip, i) => (
+            <div key={clip.id} className="sce-tl-clip-row">
+              <span className="sce-tl-clip-idx"
+                style={{ "--ci-color": CLIP_COLORS[i % CLIP_COLORS.length] }}>{i + 1}</span>
+              <span className="sce-tl-clip-title">{clip.name.replace(/\.[^/.]+$/, "")}</span>
+              {clip.duration && <span className="sce-tl-clip-dur">{fmtTime(clip.duration)}</span>}
+              <div className="sce-tl-btns">
+                <button disabled={i === 0} onClick={e => { e.stopPropagation(); onMoveClip(clip.id, -1); }}>↑</button>
+                <button disabled={i === allClips.length - 1} onClick={e => { e.stopPropagation(); onMoveClip(clip.id, 1); }}>↓</button>
+                <button className="sce-tl-rm" onClick={e => { e.stopPropagation(); onRemoveClip(clip.id); }}>✕</button>
+              </div>
+            </div>
+          ))}
+          <button className="sce-tl-add-clip" onClick={onAddFiles}>＋ Agregar clip</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── EffectsPanel ─────────────────────────────────────────────────────────
+function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bokehReady }) {
+  return (
+    <div className="sce-effects-panel">
+
+      {/* Transiciones */}
+      <div className="sce-fx-section">
+        <p className="sce-fx-section-label">TRANSICIÓN ENTRE CLIPS</p>
+        <div className="sce-fx-trans-grid">
+          {TRANSITIONS.map(t => (
+            <button key={t.id}
+              className={`sce-fx-trans${effects.transition === t.id ? " active" : ""}`}
+              onClick={() => onEffectChange({ ...effects, transition: t.id })}>
+              <span className="sce-fx-trans-icon">{t.icon}</span>
+              <span className="sce-fx-trans-label">{t.label}</span>
+            </button>
+          ))}
+        </div>
+        {effects.transition !== "none" && (
+          <div className="sce-fx-slider-row">
+            <span>Duración</span>
+            <input type="range" min="0.2" max="1.2" step="0.1" className="sce-fx-slider"
+              value={effects.transitionSecs}
+              onChange={e => onEffectChange({ ...effects, transitionSecs: +e.target.value })} />
+            <span>{effects.transitionSecs}s</span>
           </div>
         )}
       </div>
-    </div>
-  );
-}
 
-// ── Timeline de clips ─────────────────────────────────────────────────────
-function ClipTimeline({ clips, currentClipId, localTime, onSeekByClip, onToggleSilence, onMoveClip, onRemoveClip, onAddFiles }) {
-  const total = clips.reduce((t, c) => t + (c.duration || 0.0001), 0);
-  return (
-    <div className="sce-timeline">
-      <div className="sce-tl-label">TIMELINE</div>
-      <div className="sce-tl-inner">
-        {clips.map((clip, i) => {
-          const pct      = (clip.duration || 0.0001) / total * 100;
-          const isCurrent = clip.id === currentClipId;
-          const localPct  = isCurrent && clip.duration ? (localTime / clip.duration) * 100 : null;
-
-          return (
-            <div key={clip.id}
-              className={`sce-tl-clip${isCurrent ? " sce-tl-clip--active" : ""}${!clip.analyzed ? " sce-tl-clip--pending" : ""}`}
-              style={{ width: `${pct}%` }}
-              onClick={() => clip.analyzed && onSeekByClip(clip.id, 0)}
-              title={clip.name}
-            >
-              {/* Zonas de silencio */}
-              {(clip.silences || []).map(s => (
-                <div key={s.id}
-                  className={`sce-tl-zone${s.cut ? " sce-tl-zone--cut" : " sce-tl-zone--keep"}`}
-                  style={{
-                    left:  `${(s.start / (clip.duration || 1)) * 100}%`,
-                    width: `${((s.end - s.start) / (clip.duration || 1)) * 100}%`,
-                  }}
-                  onClick={e => { e.stopPropagation(); onToggleSilence(clip.id, s.id); }}
-                  title={`${s.cut ? "Silencio a cortar" : "Silencio conservado"} · Clic para cambiar`}
-                />
-              ))}
-
-              {/* Playhead */}
-              {localPct !== null && (
-                <div className="sce-tl-playhead" style={{ left: `${localPct}%` }} />
-              )}
-
-              {/* Info */}
-              <div className="sce-tl-clip-meta">
-                <span className="sce-tl-num">{i + 1}</span>
-                <span className="sce-tl-name">{clip.name.replace(/\.[^/.]+$/, "")}</span>
-                {clip.duration && <span className="sce-tl-dur">{fmtTime(clip.duration)}</span>}
-              </div>
-
-              {/* Botones */}
-              <div className="sce-tl-btns" onClick={e => e.stopPropagation()}>
-                <button disabled={i === 0} onClick={() => onMoveClip(clip.id, -1)} title="Mover atrás">‹</button>
-                <button disabled={i === clips.length - 1} onClick={() => onMoveClip(clip.id, 1)} title="Mover adelante">›</button>
-                <button className="sce-tl-rm" onClick={() => onRemoveClip(clip.id)} title="Quitar">✕</button>
-              </div>
-            </div>
-          );
-        })}
-
-        <button className="sce-tl-add" onClick={onAddFiles} title="Agregar clips">＋</button>
+      {/* Suavizante de piel */}
+      <div className="sce-fx-section">
+        <div className="sce-fx-row">
+          <p className="sce-fx-section-label">SUAVIZANTE DE PIEL</p>
+          <button className={`sce-fx-toggle${effects.skin ? " active" : ""}`}
+            onClick={() => onEffectChange({ ...effects, skin: effects.skin ? 0 : 1 })}>
+            {effects.skin ? "ON" : "OFF"}
+          </button>
+        </div>
+        {effects.skin > 0 && (
+          <div className="sce-fx-levels">
+            {["Suave", "Medio", "Fuerte"].map((l, i) => (
+              <button key={i} className={`sce-fx-level${effects.skin === i+1 ? " active" : ""}`}
+                onClick={() => onEffectChange({ ...effects, skin: i + 1 })}>{l}</button>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* Bokeh */}
+      <div className="sce-fx-section">
+        <div className="sce-fx-row">
+          <p className="sce-fx-section-label">DESENFOQUE DE FONDO (BOKEH)</p>
+          <button
+            className={`sce-fx-toggle${effects.bokeh ? " active" : ""}${bokehLoading ? " loading" : ""}`}
+            onClick={onToggleBokeh} disabled={bokehLoading}>
+            {bokehLoading ? "..." : effects.bokeh ? "ON" : "OFF"}
+          </button>
+        </div>
+        {effects.bokeh > 0 && (
+          <div className="sce-fx-levels">
+            {["Suave", "Medio", "Fuerte"].map((l, i) => (
+              <button key={i} className={`sce-fx-level${effects.bokeh === i+1 ? " active" : ""}`}
+                onClick={() => onEffectChange({ ...effects, bokeh: i + 1 })}>{l}</button>
+            ))}
+          </div>
+        )}
+        {!bokehReady && !bokehLoading && (
+          <p className="sce-fx-hint">Primera activación descarga modelo IA (~2 MB)</p>
+        )}
+        {bokehLoading && <p className="sce-fx-hint">Cargando modelo de segmentación...</p>}
+      </div>
+
+      <p className="sce-fx-footer">Los efectos se ven en preview y se exportan automáticamente.</p>
     </div>
   );
 }
 
-// ── EditorScreen (interfaz principal tipo CapCut) ─────────────────────────
-function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onTranscribe, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze }) {
-  const canvasRef   = useRef(null);
-  const playRef     = useRef(false);
-  const subListRef  = useRef(null);
+// ── EditorScreen ──────────────────────────────────────────────────────────
+function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze }) {
+  const canvasRef    = useRef(null);
+  const playRef      = useRef(false);
+  const subListRef   = useRef(null);
   const fileInputRef = useRef(null);
 
-  const [isPlaying,     setIsPlaying]     = useState(false);
-  const [pct,           setPct]           = useState(0);
-  const [clipInfo,      setClipInfo]      = useState("");
-  const [done,          setDone]          = useState(false);
-  const [currentClipId, setCurrentClipId] = useState(null);
-  const [localTime,     setLocalTime]     = useState(0);
-  const [dims,          setDims]          = useState({ W: 1280, H: 720 });
-  const [seeking,       setSeeking]       = useState(false);
+  // Efectos — refs para que drawFrame/runPlay lean siempre el valor actual sin re-crearse
+  const segRef      = useRef(null);   // MediaPipe SelfieSegmentation instance
+  const maskRef     = useRef(null);   // último segmentation mask
+  const maskCbRef   = useRef(null);   // resolve pendiente para drawFrame blocking
+  const effectsRef  = useRef({ transition: "none", transitionSecs: 0.4, skin: 0, bokeh: 0 });
+  const transAlpha  = useRef(0);      // 0-1 overlay negro/blanco para transiciones
+  const transColor  = useRef("0,0,0");
+  const zoomFactor  = useRef(1.0);    // >1 = zoom out from, animates to 1.0
+
+  const [isPlaying,    setIsPlaying]    = useState(false);
+  const [effectiveTime, setEffectiveTime] = useState(0);
+  const [done,         setDone]         = useState(false);
+  const [seeking,      setSeeking]      = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const [transcribeMsg, setTranscribeMsg] = useState("");
+  const [cutMark,      setCutMark]      = useState(null);
+  const [dims,         setDims]         = useState({ W: 1280, H: 720 });
+  const [tab,          setTab]          = useState("subs");
+  const [effects,      setEffects]      = useState({ transition: "none", transitionSecs: 0.4, skin: 0, bokeh: 0 });
+  const [bokehLoading, setBokehLoading] = useState(false);
+
+  // Sync effects state → ref (para que callbacks estables lo lean sin deps)
+  useEffect(() => { effectsRef.current = effects; }, [effects]);
+
+  // Renderiza un frame de `vid` al canvas ctx con todos los efectos activos.
+  // blocking=true → espera el mask de bokeh (para seekTo); false → usa último mask (animation loop).
+  const applyFrame = useCallback(async (ctx, vid, dX, dY, dW, dH, W, H, blocking = false) => {
+    const { skin, bokeh } = effectsRef.current;
+    const skinFilter = skin > 0 ? SKIN_FILTERS[skin - 1] : null;
+    const bgBlur     = bokeh > 0 ? BOKEH_BLUR[bokeh - 1] : 0;
+    const seg        = segRef.current;
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0, 0, W, H);
+
+    // Zoom (transición zoom-in: zoomFactor va de 1.08 → 1.0)
+    const z = zoomFactor.current;
+    const [zdX, zdY, zdW, zdH] = z !== 1
+      ? [(W - dW * z) / 2, (H - dH * z) / 2, dW * z, dH * z]
+      : [dX, dY, dW, dH];
+
+    if (bgBlur && seg) {
+      // Fondo desenfocado
+      ctx.save(); ctx.filter = `blur(${bgBlur}px)`;
+      ctx.drawImage(vid, zdX, zdY, zdW, zdH);
+      ctx.restore();
+
+      // Obtener mask
+      let mask;
+      if (blocking) {
+        mask = await new Promise(res => {
+          maskCbRef.current = res;
+          try { seg.send({ image: vid }); } catch (_) { res(null); }
+        });
+      } else {
+        mask = maskRef.current;
+        try { seg.send({ image: vid }); } catch (_) {}
+      }
+
+      // Persona (sharp + skin filter) recortada con el mask
+      const mc = new OffscreenCanvas(W, H);
+      const mctx = mc.getContext("2d");
+      if (skinFilter) { mctx.save(); mctx.filter = skinFilter; }
+      mctx.drawImage(vid, zdX, zdY, zdW, zdH);
+      if (skinFilter) mctx.restore();
+      if (mask) {
+        mctx.globalCompositeOperation = "destination-in";
+        mctx.drawImage(mask, 0, 0, W, H);
+        mctx.globalCompositeOperation = "source-over";
+      }
+      ctx.drawImage(mc, 0, 0);
+
+    } else if (skinFilter) {
+      ctx.save(); ctx.filter = skinFilter;
+      ctx.drawImage(vid, zdX, zdY, zdW, zdH);
+      ctx.restore();
+    } else {
+      ctx.drawImage(vid, zdX, zdY, zdW, zdH);
+    }
+
+    // Overlay de transición (fade/flash)
+    if (transAlpha.current > 0) {
+      ctx.fillStyle = `rgba(${transColor.current},${transAlpha.current})`;
+      ctx.fillRect(0, 0, W, H);
+    }
+  }, []); // sin deps — lee refs siempre actualizados
+
+  // Inicializar / toggle bokeh
+  const initBokeh = useCallback(async () => {
+    if (effects.bokeh) { setEffects(e => ({ ...e, bokeh: 0 })); return; }
+    if (segRef.current) { setEffects(e => ({ ...e, bokeh: 1 })); return; }
+    setBokehLoading(true);
+    try {
+      const seg = await loadBokehSegmenter();
+      seg.onResults(r => {
+        maskRef.current = r.segmentationMask;
+        if (maskCbRef.current) { maskCbRef.current(r.segmentationMask); maskCbRef.current = null; }
+      });
+      segRef.current = seg;
+      setEffects(e => ({ ...e, bokeh: 1 }));
+    } catch (err) {
+      console.error("Bokeh:", err);
+    } finally {
+      setBokehLoading(false);
+    }
+  }, [effects.bokeh]);
+
+  // Anima el overlay de transición (await = bloquea hasta completar)
+  const animFade = useCallback((from, to, dur, color = "0,0,0") => {
+    transColor.current = color;
+    return new Promise(resolve => {
+      const t0 = performance.now();
+      const tick = () => {
+        const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
+        transAlpha.current = from + (to - from) * (t < 0.5 ? 2*t*t : 1-(-2*t+2)**2/2);
+        if (t < 1) requestAnimationFrame(tick);
+        else { transAlpha.current = to; resolve(); }
+      };
+      requestAnimationFrame(tick);
+    });
+  }, []);
+
+  // Inicia animación de zoom-in no bloqueante (1.08 → 1.0)
+  const startZoom = useCallback((dur) => {
+    zoomFactor.current = 1.08;
+    const t0 = performance.now();
+    const tick = () => {
+      const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
+      zoomFactor.current = 1.08 - 0.08 * t;
+      if (t < 1) requestAnimationFrame(tick); else zoomFactor.current = 1.0;
+    };
+    requestAnimationFrame(tick);
+  }, []);
+
+  // Valores derivados
+  const keptSegs   = useMemo(() => buildKeptSegments(clips), [clips]);
+  const totalKept  = useMemo(() => Math.max(0.001, keptSegs.reduce((t, s) => t + s.end - s.start, 0)), [keptSegs]);
+  const nativePos  = useMemo(() => effectiveToNative(keptSegs, effectiveTime), [keptSegs, effectiveTime]);
+  const currentClipId = nativePos?.clip.id ?? null;
+  const localTime     = nativePos?.localTime ?? 0;
+  const pct = Math.min(100, (effectiveTime / totalKept) * 100);
 
   const analyzedClips = useMemo(() => clips.filter(c => c.analyzed && !c.error), [clips]);
   const unanalyzed    = clips.filter(c => !c.analyzed);
 
-  const totalKept = useMemo(() => analyzedClips.reduce((t, c) => {
-    const cut = (c.silences || []).filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0);
-    return t + (c.duration || 0) - cut;
-  }, 0) || 1, [analyzedClips]);
-
-  // Detectar dimensiones del video del primer clip
+  // Detectar dimensiones
   useEffect(() => {
     const first = clips.find(c => c.analyzed && !c.error);
     if (!first) return;
     const v = document.createElement("video");
     const u = URL.createObjectURL(first.file);
     v.src = u;
-    v.onloadedmetadata = () => {
-      if (v.videoWidth) setDims({ W: v.videoWidth, H: v.videoHeight });
-      URL.revokeObjectURL(u);
-    };
-  }, []); // Solo al montar
+    v.onloadedmetadata = () => { if (v.videoWidth) setDims({ W: v.videoWidth, H: v.videoHeight }); URL.revokeObjectURL(u); };
+  }, []); // solo al montar
 
-  // Auto-scroll del panel de subtítulos a la línea activa
+  // Parar reproducción al desmontar
+  useEffect(() => () => { playRef.current = false; }, []);
+
+  // Auto-scroll subtítulos al activo
   useEffect(() => {
-    if (!subListRef.current) return;
-    const active = subListRef.current.querySelector(".sce-seg-row--active");
-    if (active) active.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [localTime, currentClipId]);
+    const el = subListRef.current?.querySelector(".sce-seg-row--active");
+    if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [effectiveTime]);
 
-  // Dibujar un frame estático en el canvas (para seeking)
-  const seekTo = useCallback(async (clipId, lt) => {
-    const clip = clips.find(c => c.id === clipId);
-    if (!clip || !canvasRef.current) return;
-    setSeeking(true);
+  // Dibujar un frame estático (seek) — aplica efectos en modo blocking
+  const drawFrame = useCallback(async (clip, lt) => {
     const canvas = canvasRef.current;
-    const ctx    = canvas.getContext("2d");
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
     const { W, H } = dims;
-
+    canvas.width = W; canvas.height = H;
     await new Promise(resolve => {
       const vid = document.createElement("video");
       const url = URL.createObjectURL(clip.file);
       vid.src = url;
       vid.onloadedmetadata = () => {
         vid.currentTime = Math.min(lt, vid.duration - 0.01);
-        vid.onseeked = () => {
+        vid.onseeked = async () => {
           const vW = vid.videoWidth || W, vH = vid.videoHeight || H;
           const scale = Math.min(W / vW, H / vH);
           const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
-          ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
-          ctx.drawImage(vid, dX, dY, dW, dH);
+          await applyFrame(ctx, vid, dX, dY, dW, dH, W, H, true);
           drawSubtitle(ctx, W, H, lt, clip.segments, subtitleStyle);
-          URL.revokeObjectURL(url);
-          resolve();
+          URL.revokeObjectURL(url); resolve();
         };
       };
       vid.onerror = () => { URL.revokeObjectURL(url); resolve(); };
     });
+  }, [dims, subtitleStyle, applyFrame]);
 
-    setCurrentClipId(clipId);
-    setLocalTime(lt);
+  // Seek a effective time
+  const seekToEffective = useCallback(async (et) => {
+    const clamped = Math.max(0, Math.min(et, totalKept));
+    const native = effectiveToNative(keptSegs, clamped);
+    if (!native) return;
+    setSeeking(true);
+    setEffectiveTime(clamped);
+    await drawFrame(native.clip, native.localTime);
     setSeeking(false);
-  }, [clips, dims, subtitleStyle]);
+  }, [keptSegs, totalKept, drawFrame]);
 
-  // Reproducción (segmento por segmento, sin silencio)
+  // Seek desde panel de subtítulos (clip + localTime)
+  const handleSeekInClip = useCallback((clipId, lt) => {
+    if (isPlaying) { playRef.current = false; setTimeout(() => {}, 80); }
+    const et = nativeToEffective(keptSegs, clipId, lt);
+    if (et !== null) seekToEffective(et);
+  }, [isPlaying, keptSegs, seekToEffective]);
+
+  // Transcripción inline (sin salir del editor)
+  const handleTranscribeInline = useCallback(async () => {
+    playRef.current = false;
+    setIsPlaying(false);
+    await new Promise(r => setTimeout(r, 120));
+    setTranscribing(true);
+    const ready = clips.filter(c => c.analyzed && !c.error);
+    for (let i = 0; i < ready.length; i++) {
+      const clip = ready[i];
+      setTranscribeMsg(`Clip ${i + 1}/${ready.length}: ${clip.name.slice(0, 30)}...`);
+      try {
+        const segments = await transcribeClip(clip.file, clip.silences, info => {
+          if (info.status === "downloading") {
+            const p = info.progress ? Math.round(info.progress) : 0;
+            setTranscribeMsg(`Descargando modelo Whisper... ${p}%`);
+          }
+        });
+        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
+      } catch (_) {
+        setClips(prev => prev.map(c => c.id === clip.id
+          ? { ...c, segments: [], transcribed: true, transcribeError: "No se pudo transcribir" } : c));
+      }
+    }
+    setTranscribing(false);
+    setTranscribeMsg("");
+  }, [clips, setClips]);
+
+  // Cortador manual
+  const handleMarkStart = useCallback(() => {
+    if (!currentClipId) return;
+    setCutMark({ clipId: currentClipId, time: localTime });
+  }, [currentClipId, localTime]);
+
+  const handleMarkEnd = useCallback(() => {
+    if (!cutMark || !currentClipId || cutMark.clipId !== currentClipId) { setCutMark(null); return; }
+    const start = Math.min(cutMark.time, localTime);
+    const end   = Math.max(cutMark.time, localTime);
+    if (end - start < 0.1) { setCutMark(null); return; }
+    const newSilence = { id: uid(), start, end, cut: true };
+    setClips(prev => prev.map(c => c.id !== cutMark.clipId ? c : {
+      ...c, silences: [...c.silences, newSilence].sort((a, b) => a.start - b.start),
+    }));
+    setCutMark(null);
+  }, [cutMark, currentClipId, localTime, setClips]);
+
+  // Reproducción
   const runPlay = useCallback(async () => {
-    if (isPlaying || !analyzedClips.length) return;
-    setIsPlaying(true); setDone(false); setPct(0);
+    if (isPlaying || transcribing || !keptSegs.length) return;
+    setIsPlaying(true); setDone(false);
     playRef.current = true;
-
     const canvas = canvasRef.current;
     if (!canvas) { setIsPlaying(false); playRef.current = false; return; }
-    const ctx    = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d");
     const { W, H } = dims;
     canvas.width = W; canvas.height = H;
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
 
-    let keptPlayed = 0;
+    // Agrupar keptSegs por clip manteniendo orden global
+    const uniqueClipIds = [...new Set(keptSegs.map(s => s.clip.id))];
+    let etOffset = 0;
 
-    for (let ci = 0; ci < analyzedClips.length && playRef.current; ci++) {
-      const clip = analyzedClips[ci];
-      setCurrentClipId(clip.id);
-      setClipInfo(`Clip ${ci + 1} / ${analyzedClips.length} — ${clip.name.replace(/\.[^/.]+$/, "")}`);
-
-      const cuts = (clip.silences || []).filter(s => s.cut).sort((a, b) => a.start - b.start);
-      const dur  = clip.duration || 0;
-      const segs = [];
-      let pos = 0;
-      for (const s of cuts) {
-        if (s.start > pos + 0.05) segs.push({ start: pos, end: s.start });
-        pos = s.end;
-      }
-      if (pos < dur - 0.05) segs.push({ start: pos, end: dur });
-      if (!segs.length) segs.push({ start: 0, end: dur });
+    for (const clipId of uniqueClipIds) {
+      if (!playRef.current) break;
+      const clipSegs = keptSegs.filter(s => s.clip.id === clipId);
+      const clip = clipSegs[0].clip;
 
       await new Promise(resolve => {
         const vid = document.createElement("video");
         const url = URL.createObjectURL(clip.file);
         vid.src = url;
-
         vid.addEventListener("loadedmetadata", async () => {
           const vW = vid.videoWidth || W, vH = vid.videoHeight || H;
           const scale = Math.min(W / vW, H / vH);
           const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
-
           let animId;
           const draw = () => {
-            ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
-            ctx.drawImage(vid, dX, dY, dW, dH);
+            applyFrame(ctx, vid, dX, dY, dW, dH, W, H, false); // no-await, non-blocking
             drawSubtitle(ctx, W, H, vid.currentTime, clip.segments, subtitleStyle);
             animId = requestAnimationFrame(draw);
           };
           animId = requestAnimationFrame(draw);
 
-          for (const seg of segs) {
+          for (const seg of clipSegs) {
             if (!playRef.current) break;
+            const segEtStart = etOffset;
+            const segDur = seg.end - seg.start;
             vid.currentTime = seg.start;
             await new Promise(r => { vid.onseeked = r; });
             if (!playRef.current) break;
             vid.playbackRate = 1;
             vid.play().catch(() => {});
-            const segKeptStart = keptPlayed;
-            const segDur = seg.end - seg.start;
-
             await new Promise(segDone => {
               const tick = setInterval(() => {
                 if (!playRef.current) { clearInterval(tick); vid.pause(); segDone(); return; }
                 const ct = vid.currentTime;
-                setLocalTime(ct);
-                const played = Math.max(0, ct - seg.start);
-                setPct(Math.round(Math.min(99, ((segKeptStart + played) / totalKept) * 100)));
+                setEffectiveTime(segEtStart + Math.max(0, ct - seg.start));
                 if (ct >= seg.end - 0.04 || vid.ended) {
-                  clearInterval(tick); vid.pause();
-                  keptPlayed += segDur;
-                  segDone();
+                  clearInterval(tick); vid.pause(); segDone();
                 }
               }, 50);
             });
+            etOffset += segDur;
           }
 
           cancelAnimationFrame(animId);
+
+          // Transición de salida (solo si hay otro clip después y se sigue reproduciendo)
+          const clipIdx = uniqueClipIds.indexOf(clipId);
+          const { transition, transitionSecs } = effectsRef.current;
+          if (playRef.current && transition !== "none" && clipIdx < uniqueClipIds.length - 1) {
+            if (transition === "fade") await animFade(0, 1, transitionSecs / 2);
+            else if (transition === "flash") await animFade(0, 1, 0.08, "255,255,255");
+          }
+
           URL.revokeObjectURL(url);
           resolve();
         });
         vid.onerror = () => { URL.revokeObjectURL(url); resolve(); };
       });
+
+      // Transición de entrada al clip siguiente
+      const clipIdx = uniqueClipIds.indexOf(clipId);
+      const { transition, transitionSecs } = effectsRef.current;
+      if (playRef.current && transition !== "none" && clipIdx < uniqueClipIds.length - 1) {
+        if (transition === "fade") await animFade(1, 0, transitionSecs / 2);
+        else if (transition === "flash") await animFade(1, 0, 0.08, "255,255,255");
+        else if (transition === "zoom") startZoom(transitionSecs);
+      }
     }
 
-    if (playRef.current) { setDone(true); setClipInfo("Vista previa completa ✓"); setPct(100); }
+    if (playRef.current) { setDone(true); setEffectiveTime(totalKept); }
     setIsPlaying(false); playRef.current = false;
-  }, [analyzedClips, dims, subtitleStyle, totalKept, isPlaying]);
+  }, [keptSegs, dims, subtitleStyle, totalKept, isPlaying, transcribing, animFade, startZoom]);
 
   const togglePlay = useCallback(() => {
-    if (isPlaying) { playRef.current = false; }
-    else { runPlay(); }
+    if (isPlaying) { playRef.current = false; } else { runPlay(); }
   }, [isPlaying, runPlay]);
-
-  const handleSeekInClip = useCallback((clipId, lt) => {
-    if (isPlaying) playRef.current = false;
-    setTimeout(() => seekTo(clipId, lt), isPlaying ? 80 : 0);
-  }, [isPlaying, seekTo]);
 
   return (
     <div className="sce-layout">
-      {/* Input oculto para agregar más archivos */}
       <input ref={fileInputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple
         style={{ display: "none" }} onChange={e => onAddFiles(e.target.files)} />
 
-      {/* ── Top bar ──────────────────────────────────────────────────────── */}
+      {/* Top bar */}
       <div className="sce-topbar">
         <Logo width={88} />
         <div className="sce-topbar-center">
@@ -794,10 +1144,10 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onTranscr
             <button className="sce-analyze-pill" onClick={onAnalyze}>
               🔍 Analizar {unanalyzed.length} clip{unanalyzed.length > 1 ? "s" : ""} nuevo{unanalyzed.length > 1 ? "s" : ""}
             </button>
-          ) : clipInfo ? (
-            <span className="sce-clip-info-tag">{clipInfo}</span>
           ) : (
-            <span className="sce-clip-info-tag">Editor · {analyzedClips.length} clip{analyzedClips.length !== 1 ? "s" : ""}</span>
+            <span className="sce-clip-info-tag">
+              {analyzedClips.length} clip{analyzedClips.length !== 1 ? "s" : ""} · {fmtTime(totalKept)} final
+            </span>
           )}
         </div>
         <div className="sce-topbar-right">
@@ -805,62 +1155,88 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onTranscr
         </div>
       </div>
 
-      {/* ── Cuerpo principal ─────────────────────────────────────────────── */}
+      {/* Cuerpo */}
       <div className="sce-body">
-        {/* Canvas + barra de reproducción */}
+        {/* Canvas + controles */}
         <div className="sce-canvas-col">
           <div className="sce-canvas-wrap" onClick={!isPlaying && !seeking ? togglePlay : undefined}>
             <canvas ref={canvasRef} className="sce-canvas" width={dims.W} height={dims.H} />
-
             {!isPlaying && !seeking && (
               <div className="sce-canvas-overlay">
-                <button className="sc-play-big-btn"
-                  onClick={e => { e.stopPropagation(); togglePlay(); }}>
+                <button className="sc-play-big-btn" onClick={e => { e.stopPropagation(); togglePlay(); }}>
                   {done ? "↺" : "▶"}
                 </button>
               </div>
             )}
             {seeking && (
-              <div className="sce-canvas-overlay">
-                <div className="sce-seeking-spinner" />
-              </div>
+              <div className="sce-canvas-overlay"><div className="sce-seeking-spinner" /></div>
             )}
           </div>
 
+          {/* Playbar con scrubber clicable y cortador manual */}
           <div className="sce-playbar">
             <button className="sce-playbtn" onClick={togglePlay}>
               {isPlaying ? "⏸" : done ? "↺" : "▶"}
             </button>
-            <div className="sce-scrubber">
+
+            {/* Scrubber clicable */}
+            <div className="sce-scrubber" onClick={e => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const p = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+              seekToEffective(p * totalKept);
+            }}>
               <div className="sce-scrubber-fill" style={{ width: `${pct}%` }} />
             </div>
-            <span className="sce-pct-label">{pct}%</span>
+            <span className="sce-pct-label">{fmtTime(effectiveTime)}</span>
+
+            {/* Cortador manual */}
+            <div className="sce-cut-mark">
+              {!cutMark ? (
+                <button className="sce-cut-btn" disabled={!currentClipId} onClick={handleMarkStart}
+                  title="Marcar inicio del corte manual">✂ Inicio</button>
+              ) : (
+                <>
+                  <span className="sce-cut-info">desde {fmtTime(cutMark.time)}</span>
+                  <button className="sce-cut-btn sce-cut-btn--end" onClick={handleMarkEnd}
+                    title="Cortar hasta aquí">Cortar</button>
+                  <button className="sce-cut-cancel" onClick={() => setCutMark(null)}>✕</button>
+                </>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Panel de subtítulos */}
-        <SubtitlePanel
-          clips={clips}
-          setClips={setClips}
-          currentClipId={currentClipId}
-          localTime={localTime}
-          subtitleStyle={subtitleStyle}
-          onStyleChange={onStyleChange}
-          onTranscribe={onTranscribe}
-          onSeekInClip={handleSeekInClip}
-          listRef={subListRef}
-        />
+        {/* Panel derecho con tabs: Subtítulos | Efectos */}
+        <div className="sce-right-panel">
+          <div className="sce-tab-bar">
+            <button className={`sce-tab${tab === "subs" ? " active" : ""}`} onClick={() => setTab("subs")}>💬 Subtítulos</button>
+            <button className={`sce-tab${tab === "fx"   ? " active" : ""}`} onClick={() => setTab("fx")}>✨ Efectos</button>
+          </div>
+          {tab === "subs"
+            ? <SubtitlePanel
+                clips={clips} setClips={setClips}
+                currentClipId={currentClipId} localTime={localTime}
+                subtitleStyle={subtitleStyle} onStyleChange={onStyleChange}
+                onTranscribe={handleTranscribeInline}
+                onSeekInClip={handleSeekInClip}
+                listRef={subListRef}
+                transcribing={transcribing} transcribeMsg={transcribeMsg}
+              />
+            : <EffectsPanel
+                effects={effects} onEffectChange={setEffects}
+                bokehLoading={bokehLoading}
+                bokehReady={!!segRef.current}
+                onToggleBokeh={initBokeh}
+              />
+          }
+        </div>
       </div>
 
-      {/* ── Timeline ─────────────────────────────────────────────────────── */}
+      {/* Timeline contraído */}
       <ClipTimeline
-        clips={clips}
-        currentClipId={currentClipId}
-        localTime={localTime}
-        onSeekByClip={handleSeekInClip}
-        onToggleSilence={toggleSilence}
-        onMoveClip={moveClip}
-        onRemoveClip={removeClip}
+        keptSegs={keptSegs} totalKept={totalKept} effectiveTime={effectiveTime}
+        onSeek={seekToEffective}
+        allClips={clips} onMoveClip={moveClip} onRemoveClip={removeClip}
         onAddFiles={() => fileInputRef.current?.click()}
       />
     </div>
@@ -877,16 +1253,12 @@ export default function SilenceCutter() {
   const [error, setError]           = useState("");
   const [dragOver, setDragOver]     = useState(false);
   const [subtitleStyle, setSubtitleStyle] = useState({ font: "Poppins", hlColor: "#FFE44D" });
-  const inputRef  = useRef(null);
-  const abortRef  = useRef(false);
-  const preset    = "normal";
-  const { noise: noiseDb, duration: minDur } = PRESETS[preset];
+  const inputRef = useRef(null);
+  const abortRef = useRef(false);
+  const { noise: noiseDb, duration: minDur } = PRESETS["normal"];
 
-  // ── Agregar archivos ──────────────────────────────────────────────────
   const addFiles = useCallback(async (files) => {
-    const valid = Array.from(files).filter(f =>
-      /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name) || f.type.startsWith("video/")
-    );
+    const valid = Array.from(files).filter(f => /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name) || f.type.startsWith("video/"));
     if (!valid.length) { setError("No se encontraron archivos de video válidos."); return; }
     setError("");
     const newClips = valid.map(f => ({
@@ -901,97 +1273,50 @@ export default function SilenceCutter() {
     });
   }, []);
 
-  const onDrop = useCallback(e => {
-    e.preventDefault(); setDragOver(false);
-    addFiles(e.dataTransfer.files);
-  }, [addFiles]);
+  const onDrop = useCallback(e => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); }, [addFiles]);
 
-  // ── Analizar ──────────────────────────────────────────────────────────
   const analizarTodos = async () => {
     const toAnalyze = clips.filter(c => !c.analyzed);
     if (!toAnalyze.length) return;
     setFase("analyzing"); setError("");
     for (let i = 0; i < toAnalyze.length; i++) {
       const clip = toAnalyze[i];
-      setProgressMsg(`Analizando clip ${i + 1} de ${toAnalyze.length}: ${clip.name}`);
+      setProgressMsg(`Analizando ${i + 1} de ${toAnalyze.length}: ${clip.name}`);
       setProgress(Math.round((i / toAnalyze.length) * 100));
       try {
         const { duration, waveform, silences } = await analyzeClip(clip.file, noiseDb, minDur);
-        setClips(prev => prev.map(c => c.id === clip.id
-          ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
+        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
       } catch (_) {
-        setClips(prev => prev.map(c => c.id === clip.id
-          ? { ...c, analyzed: true, error: "No se pudo analizar el audio" } : c));
+        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, analyzed: true, error: "No se pudo analizar el audio" } : c));
       }
     }
     setFase("editor");
   };
 
-  // ── Toggle silencios ──────────────────────────────────────────────────
   const toggleSilence = (clipId, silenceId) => {
     setClips(prev => prev.map(c => c.id !== clipId ? c : {
       ...c, silences: c.silences.map(s => s.id === silenceId ? { ...s, cut: !s.cut } : s),
     }));
   };
+  const moveClip   = (id, dir) => setClips(prev => {
+    const idx = prev.findIndex(c => c.id === id), newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= prev.length) return prev;
+    const arr = [...prev]; [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]]; return arr;
+  });
+  const removeClip = id => setClips(prev => prev.filter(c => c.id !== id));
 
-  // ── Reordenar / quitar ────────────────────────────────────────────────
-  const moveClip = (id, dir) => {
-    setClips(prev => {
-      const idx = prev.findIndex(c => c.id === id);
-      const newIdx = idx + dir;
-      if (newIdx < 0 || newIdx >= prev.length) return prev;
-      const arr = [...prev];
-      [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-      return arr;
-    });
-  };
-  const removeClip = (id) => setClips(prev => prev.filter(c => c.id !== id));
-
-  // ── Transcribir ───────────────────────────────────────────────────────
-  const transcribeAll = async () => {
-    const ready = clips.filter(c => c.analyzed && !c.error);
-    if (!ready.length) return;
-    setFase("transcribing"); setError("");
-    for (let i = 0; i < ready.length; i++) {
-      const clip = ready[i];
-      setProgressMsg(`Transcribiendo clip ${i + 1} de ${ready.length}: ${clip.name}`);
-      setProgress(Math.round((i / ready.length) * 100));
-      try {
-        const segments = await transcribeClip(clip.file, info => {
-          if (info.status === "downloading") {
-            const pct = info.progress ? Math.round(info.progress) : 0;
-            setProgressMsg(`Descargando modelo Whisper... ${pct}%`);
-          }
-        });
-        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
-      } catch (_) {
-        setClips(prev => prev.map(c => c.id === clip.id
-          ? { ...c, segments: [], transcribed: true, transcribeError: "No se pudo transcribir" } : c));
-      }
-    }
-    setFase("editor");
-  };
-
-  // ── Exportar ──────────────────────────────────────────────────────────
   const exportar = async () => {
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) { setError("Analiza los clips primero."); return; }
     abortRef.current = false;
     setFase("cutting"); setProgress(0); setError("");
     try {
-      const blob = await recordAllClips(ready, (p, msg) => {
-        setProgress(Math.round(p * 100)); setProgressMsg(msg);
-      }, abortRef, subtitleStyle);
+      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle);
       const totalOriginal = ready.reduce((t, c) => t + (c.duration || 0), 0);
-      const totalCut = ready.reduce((t, c) =>
-        t + c.silences.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0), 0);
+      const totalCut = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0), 0);
       const totalCuts = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).length, 0);
-      setResult({
-        url: URL.createObjectURL(blob),
-        filename: (clips[0]?.name.replace(/\.[^/.]+$/, "") || "video") + "_editado.webm",
-        totalOriginal, totalKept: totalOriginal - totalCut, totalCut, totalCuts,
-        clipsCount: ready.length,
-      });
+      setResult({ url: URL.createObjectURL(blob), filename: (clips[0]?.name.replace(/\.[^/.]+$/, "") || "video") + "_editado.webm",
+        totalOriginal, totalKept: totalOriginal - totalCut, totalCut, totalCuts, clipsCount: ready.length });
       setFase("done");
     } catch (err) {
       if (err.message !== "Cancelado") setError("Error al exportar: " + err.message);
@@ -999,60 +1324,26 @@ export default function SilenceCutter() {
     }
   };
 
-  // ── Cálculos globales ─────────────────────────────────────────────────
   const analyzedCount = clips.filter(c => c.analyzed && !c.error).length;
-  const totalCutTime  = clips.reduce((t, c) =>
-    t + (c.silences?.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0) ?? 0), 0);
-  const totalCuts     = clips.reduce((t, c) => t + (c.silences?.filter(s => s.cut).length ?? 0), 0);
 
-  // ── Pantallas de proceso ──────────────────────────────────────────────
+  // Pantallas de proceso
   if (fase === "analyzing") return (
-    <div className="sc-page sc-page--center">
-      <Logo width={100} />
+    <div className="sc-page sc-page--center"><Logo width={100} />
       <div className="sc-processing">
-        <div className="sc-proc-rings">
-          <div className="sc-proc-ring sc-proc-ring--1" /><div className="sc-proc-ring sc-proc-ring--2" /><div className="sc-proc-ring sc-proc-ring--3" />
-          <span className="sc-proc-icon">🔍</span>
-        </div>
+        <div className="sc-proc-rings"><div className="sc-proc-ring sc-proc-ring--1" /><div className="sc-proc-ring sc-proc-ring--2" /><div className="sc-proc-ring sc-proc-ring--3" /><span className="sc-proc-icon">🔍</span></div>
         <h2 className="sc-proc-title">Analizando clips...</h2>
-        <div className="sc-progress-bar-wrap" style={{ width: 320 }}>
-          <div className="sc-progress-bar" style={{ width: `${progress}%` }} />
-        </div>
+        <div className="sc-progress-bar-wrap" style={{ width: 320 }}><div className="sc-progress-bar" style={{ width: `${progress}%` }} /></div>
         <p className="sc-proc-note">{progressMsg}</p>
-      </div>
-    </div>
-  );
-
-  if (fase === "transcribing") return (
-    <div className="sc-page sc-page--center">
-      <Logo width={100} />
-      <div className="sc-processing">
-        <div className="sc-proc-rings">
-          <div className="sc-proc-ring sc-proc-ring--1" /><div className="sc-proc-ring sc-proc-ring--2" /><div className="sc-proc-ring sc-proc-ring--3" />
-          <span className="sc-proc-icon">💬</span>
-        </div>
-        <h2 className="sc-proc-title">Generando subtítulos...</h2>
-        <div className="sc-progress-bar-wrap" style={{ width: 320 }}>
-          <div className="sc-progress-bar" style={{ width: `${progress}%` }} />
-        </div>
-        <p className="sc-proc-note">{progressMsg}</p>
-        <p className="sc-proc-note sc-proc-note--small">La primera vez descarga el modelo Whisper (~77 MB). Luego queda guardado.</p>
       </div>
     </div>
   );
 
   if (fase === "cutting") return (
-    <div className="sc-page sc-page--center">
-      <Logo width={100} />
+    <div className="sc-page sc-page--center"><Logo width={100} />
       <div className="sc-processing">
-        <div className="sc-proc-rings">
-          <div className="sc-proc-ring sc-proc-ring--1" /><div className="sc-proc-ring sc-proc-ring--2" /><div className="sc-proc-ring sc-proc-ring--3" />
-          <span className="sc-proc-icon">✂️</span>
-        </div>
+        <div className="sc-proc-rings"><div className="sc-proc-ring sc-proc-ring--1" /><div className="sc-proc-ring sc-proc-ring--2" /><div className="sc-proc-ring sc-proc-ring--3" /><span className="sc-proc-icon">✂️</span></div>
         <h2 className="sc-proc-title">Exportando video...</h2>
-        <div className="sc-progress-bar-wrap" style={{ width: 320 }}>
-          <div className="sc-progress-bar" style={{ width: `${progress}%` }} />
-        </div>
+        <div className="sc-progress-bar-wrap" style={{ width: 320 }}><div className="sc-progress-bar" style={{ width: `${progress}%` }} /></div>
         <p className="sc-proc-note">{progressMsg}</p>
         <p className="sc-proc-note sc-proc-note--small">El procesamiento ocurre en tiempo real. No cierres esta ventana.</p>
         <button className="sc-btn-ghost" style={{ marginTop: 16 }} onClick={() => { abortRef.current = true; }}>Cancelar</button>
@@ -1074,10 +1365,7 @@ export default function SilenceCutter() {
         </div>
         <a className="sc-btn-primary sc-btn-download" href={result.url} download={result.filename}>⬇ Descargar video editado</a>
         <p className="sc-done-hint">Formato WebM · Compatible con YouTube, Instagram y WhatsApp</p>
-        <button className="sc-btn-outline" onClick={() => {
-          if (result?.url) URL.revokeObjectURL(result.url);
-          setResult(null); setFase("editor");
-        }}>✂️ Editar más clips</button>
+        <button className="sc-btn-outline" onClick={() => { if (result?.url) URL.revokeObjectURL(result.url); setResult(null); setFase("editor"); }}>✂️ Editar más clips</button>
         <div className="sc-done-cta">
           <p>¿Quieres gestionar tu negocio, contenido y clientes en un solo lugar?</p>
           <a href="/">Crear mi cuenta en Mamá CEO →</a>
@@ -1086,24 +1374,15 @@ export default function SilenceCutter() {
     </div>
   );
 
-  // ── EDITOR con clips analizados → interfaz de 3 paneles ───────────────
   if (fase === "editor" && analyzedCount > 0) return (
-    <EditorScreen
-      clips={clips}
-      setClips={setClips}
-      subtitleStyle={subtitleStyle}
-      onStyleChange={setSubtitleStyle}
-      onTranscribe={transcribeAll}
-      onExport={exportar}
-      onAddFiles={addFiles}
-      moveClip={moveClip}
-      removeClip={removeClip}
-      toggleSilence={toggleSilence}
-      onAnalyze={analizarTodos}
-    />
+    <EditorScreen clips={clips} setClips={setClips}
+      subtitleStyle={subtitleStyle} onStyleChange={setSubtitleStyle}
+      onExport={exportar} onAddFiles={addFiles}
+      moveClip={moveClip} removeClip={removeClip} toggleSilence={toggleSilence}
+      onAnalyze={analizarTodos} />
   );
 
-  // ── EDITOR sin clips analizados → pantalla de subida ─────────────────
+  // Pantalla de subida
   return (
     <div className="sc-page">
       <nav className="sc-nav"><Logo width={110} /><a href="/" className="sc-nav-link">Ir a la app →</a></nav>
@@ -1115,14 +1394,10 @@ export default function SilenceCutter() {
           </div>
           <span className="sc-badge">Herramienta gratuita · En tu dispositivo</span>
         </div>
-
-        <div
-          className={`sc-drop sc-drop--compact${dragOver ? " sc-drop--over" : ""}`}
+        <div className={`sc-drop sc-drop--compact${dragOver ? " sc-drop--over" : ""}`}
           onClick={() => inputRef.current?.click()}
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={onDrop}
-        >
+          onDragLeave={() => setDragOver(false)} onDrop={onDrop}>
           <span className="sc-drop-icon" style={{ fontSize: 28 }}>＋</span>
           <div>
             <p className="sc-drop-title" style={{ fontSize: 16, margin: 0 }}>Agrega clips de video</p>
@@ -1131,22 +1406,15 @@ export default function SilenceCutter() {
         </div>
         <input ref={inputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple
           style={{ display: "none" }} onChange={e => addFiles(e.target.files)} />
-
         {clips.length > 0 && (
           <div className="sc-toolbar">
             <span className="sc-toolbar-left">{clips.length} clip{clips.length !== 1 ? "s" : ""}</span>
             <button className="sc-btn-outline sc-btn-sm" onClick={analizarTodos}>🔍 Analizar todos</button>
           </div>
         )}
-
         {error && <p className="sc-error">{error}</p>}
-
         {clips.length === 0 ? (
-          <div className="sc-empty-state">
-            <span>🎬</span>
-            <p>Agrega tus clips arriba para empezar</p>
-            <p className="sc-empty-hint">Puedes agregar múltiples videos y se combinarán en el orden que definas</p>
-          </div>
+          <div className="sc-empty-state"><span>🎬</span><p>Agrega tus clips arriba para empezar</p><p className="sc-empty-hint">Puedes agregar múltiples videos y se combinarán en el orden que definas</p></div>
         ) : (
           <div className="sc-clips-list">
             {clips.map((clip, i) => (

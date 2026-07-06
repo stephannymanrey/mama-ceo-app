@@ -3477,6 +3477,35 @@ export default function App() {
                 </div>
               )}
 
+              {/* Hijos hoy — aparece si hay actividad configurada para este día */}
+              {userMode !== "emprendedora" && kidsSchedule[todayDay]?.act && (
+                <div className="db-today-col">
+                  <p className="db-today-label">🎒 Hijos hoy</p>
+                  <div className="db-today-task-row" style={{alignItems:"flex-start"}}>
+                    <span style={{fontSize:"18px",lineHeight:1,marginTop:"1px"}}>🎒</span>
+                    <div style={{minWidth:0}}>
+                      <span className="db-today-task-title">{kidsSchedule[todayDay].act}</span>
+                      {kidsSchedule[todayDay].time && (
+                        <span style={{display:"block",fontSize:"11px",color:"var(--muted)",marginTop:"2px"}}>{kidsSchedule[todayDay].time}</span>
+                      )}
+                    </div>
+                  </div>
+                  <button type="button" className="db-today-see-more" onClick={() => { setActiveView("home"); setHomeTab(1); }}>Ver semana →</button>
+                </div>
+              )}
+
+              {/* Rutina del hogar hoy */}
+              {userMode !== "emprendedora" && homeRoutines[todayDay] && (
+                <div className="db-today-col">
+                  <p className="db-today-label">🧹 Rutina hoy</p>
+                  <div className="db-today-task-row">
+                    <span style={{fontSize:"16px",lineHeight:1}}>🧹</span>
+                    <span className="db-today-task-title">{homeRoutines[todayDay]}</span>
+                  </div>
+                  <button type="button" className="db-today-see-more" onClick={() => { setActiveView("home"); setHomeTab(2); }}>Ver hogar →</button>
+                </div>
+              )}
+
             </div>
 
             {/* Menú de hoy strip */}
