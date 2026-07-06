@@ -439,7 +439,7 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
 }
 
 // ── Grabación multi-clip ──────────────────────────────────────────────────
-async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}) {
+async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape") {
   const firstVid = document.createElement("video");
   const firstUrl = URL.createObjectURL(clips[0].file);
   firstVid.src = firstUrl;
@@ -447,10 +447,16 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}) {
   const W = firstVid.videoWidth || 1280, H = firstVid.videoHeight || 720;
   URL.revokeObjectURL(firstUrl);
 
+  // Dimensiones de salida según formato
+  const outW = format === "portrait" ? Math.round(H * 9 / 16)
+             : format === "square"   ? Math.min(W, H)
+             : W;
+  const outH = format === "square"   ? Math.min(W, H) : H;
+
   const canvas = document.createElement("canvas");
-  canvas.width = W; canvas.height = H;
+  canvas.width = outW; canvas.height = outH;
   const ctx = canvas.getContext("2d");
-  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
 
   const audioCtx = new AudioContext();
   const destination = audioCtx.createMediaStreamDestination();
@@ -484,15 +490,23 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}) {
         let source;
         try { source = audioCtx.createMediaElementSource(videoEl); source.connect(destination); } catch (_) {}
         const vW = videoEl.videoWidth || W, vH = videoEl.videoHeight || H;
-        const scale = Math.min(W / vW, H / vH);
-        const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
+        const scale = Math.min(outW / vW, outH / vH);
+        const dW = vW * scale, dH = vH * scale, dX = (outW - dW) / 2, dY = (outH - dH) / 2;
 
         let animId;
         const drawLoop = () => {
-          ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+          ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
           if (!videoEl.paused && !videoEl.ended) {
+            if (format !== "landscape") {
+              const bgS = Math.max(outW / vW, outH / vH);
+              const bgW = vW * bgS, bgH = vH * bgS;
+              const bgX = (outW - bgW) / 2, bgY = (outH - bgH) / 2;
+              ctx.save(); ctx.filter = "blur(20px) brightness(0.6) saturate(1.4)";
+              ctx.drawImage(videoEl, bgX, bgY, bgW, bgH);
+              ctx.restore();
+            }
             ctx.drawImage(videoEl, dX, dY, dW, dH);
-            drawSubtitle(ctx, W, H, videoEl.currentTime, clip.segments, subtitleStyle);
+            drawSubtitle(ctx, outW, outH, videoEl.currentTime, clip.segments, subtitleStyle);
           }
           animId = requestAnimationFrame(drawLoop);
         };
@@ -779,7 +793,7 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
 }
 
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze }) {
+function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze, format, onFormatChange }) {
   const canvasRef    = useRef(null);
   const playRef      = useRef(false);
   const subListRef   = useRef(null);
@@ -790,6 +804,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const maskRef     = useRef(null);   // último segmentation mask
   const maskCbRef   = useRef(null);   // resolve pendiente para drawFrame blocking
   const effectsRef  = useRef({ transition: "none", transitionSecs: 0.4, skin: 0, bokeh: 0 });
+  const formatRef   = useRef("landscape");
   const transAlpha  = useRef(0);      // 0-1 overlay negro/blanco para transiciones
   const transColor  = useRef("0,0,0");
   const zoomFactor  = useRef(1.0);    // >1 = zoom out from, animates to 1.0
@@ -808,6 +823,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
 
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
   useEffect(() => { effectsRef.current = effects; }, [effects]);
+  useEffect(() => { formatRef.current = format; }, [format]);
 
   // Renderiza un frame de `vid` al canvas ctx con todos los efectos activos.
   // blocking=true → espera el mask de bokeh (para seekTo); false → usa último mask (animation loop).
@@ -819,6 +835,18 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
 
     ctx.fillStyle = "#000";
     ctx.fillRect(0, 0, W, H);
+
+    // Portrait / square: blur-fill de fondo antes del foreground
+    if (formatRef.current !== "landscape") {
+      const vW = vid.videoWidth || W, vH = vid.videoHeight || H;
+      const bgS = Math.max(W / vW, H / vH);
+      const bgW = vW * bgS, bgH = vH * bgS;
+      const bgX = (W - bgW) / 2, bgY = (H - bgH) / 2;
+      ctx.save();
+      ctx.filter = "blur(20px) brightness(0.6) saturate(1.4)";
+      ctx.drawImage(vid, bgX, bgY, bgW, bgH);
+      ctx.restore();
+    }
 
     // Zoom (transición zoom-in: zoomFactor va de 1.08 → 1.0)
     const z = zoomFactor.current;
@@ -923,6 +951,14 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const keptSegs   = useMemo(() => buildKeptSegments(clips), [clips]);
   const totalKept  = useMemo(() => Math.max(0.001, keptSegs.reduce((t, s) => t + s.end - s.start, 0)), [keptSegs]);
   const nativePos  = useMemo(() => effectiveToNative(keptSegs, effectiveTime), [keptSegs, effectiveTime]);
+
+  // Dimensiones de salida según formato seleccionado (dims = dimensiones nativas del video)
+  const outDims = useMemo(() => {
+    const { W: vW, H: vH } = dims;
+    if (format === "portrait") return { W: Math.round(vH * 9 / 16), H: vH };
+    if (format === "square")   return { W: Math.min(vW, vH), H: Math.min(vW, vH) };
+    return { W: vW, H: vH };
+  }, [format, dims]);
   const currentClipId = nativePos?.clip.id ?? null;
   const localTime     = nativePos?.localTime ?? 0;
   const pct = Math.min(100, (effectiveTime / totalKept) * 100);
@@ -954,7 +990,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
-    const { W, H } = dims;
+    const { W, H } = outDims;
     canvas.width = W; canvas.height = H;
     await new Promise(resolve => {
       const vid = document.createElement("video");
@@ -963,7 +999,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       vid.onloadedmetadata = () => {
         vid.currentTime = Math.min(lt, vid.duration - 0.01);
         vid.onseeked = async () => {
-          const vW = vid.videoWidth || W, vH = vid.videoHeight || H;
+          const vW = vid.videoWidth || dims.W, vH = vid.videoHeight || dims.H;
           const scale = Math.min(W / vW, H / vH);
           const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
           await applyFrame(ctx, vid, dX, dY, dW, dH, W, H, true);
@@ -973,7 +1009,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       };
       vid.onerror = () => { URL.revokeObjectURL(url); resolve(); };
     });
-  }, [dims, subtitleStyle, applyFrame]);
+  }, [outDims, dims, subtitleStyle, applyFrame]);
 
   // Seek a effective time
   const seekToEffective = useCallback(async (et) => {
@@ -1046,7 +1082,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     const canvas = canvasRef.current;
     if (!canvas) { setIsPlaying(false); playRef.current = false; return; }
     const ctx = canvas.getContext("2d");
-    const { W, H } = dims;
+    const { W, H } = outDims;
     canvas.width = W; canvas.height = H;
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
 
@@ -1064,7 +1100,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         const url = URL.createObjectURL(clip.file);
         vid.src = url;
         vid.addEventListener("loadedmetadata", async () => {
-          const vW = vid.videoWidth || W, vH = vid.videoHeight || H;
+          const vW = vid.videoWidth || dims.W, vH = vid.videoHeight || dims.H;
           const scale = Math.min(W / vW, H / vH);
           const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
           let animId;
@@ -1125,7 +1161,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
 
     if (playRef.current) { setDone(true); setEffectiveTime(totalKept); }
     setIsPlaying(false); playRef.current = false;
-  }, [keptSegs, dims, subtitleStyle, totalKept, isPlaying, transcribing, animFade, startZoom]);
+  }, [keptSegs, outDims, dims, subtitleStyle, totalKept, isPlaying, transcribing, animFade, startZoom]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) { playRef.current = false; } else { runPlay(); }
@@ -1150,6 +1186,19 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             </span>
           )}
         </div>
+
+        {/* Selector de formato de salida */}
+        <div className="sce-fmt-group">
+          {[["landscape","16:9"],["portrait","9:16"],["square","1:1"]].map(([f, label]) => (
+            <button key={f} className={`sce-fmt-btn${format === f ? " active" : ""}`}
+              onClick={() => onFormatChange(f)} title={
+                f === "landscape" ? "Paisaje — YouTube / horizontal"
+              : f === "portrait"  ? "Vertical — Reels / TikTok / Stories"
+              :                     "Cuadrado — Instagram Feed"
+              }>{label}</button>
+          ))}
+        </div>
+
         <div className="sce-topbar-right">
           <button className="sc-btn-primary sc-btn-sm" onClick={onExport}>✂️ Exportar</button>
         </div>
@@ -1253,6 +1302,7 @@ export default function SilenceCutter() {
   const [error, setError]           = useState("");
   const [dragOver, setDragOver]     = useState(false);
   const [subtitleStyle, setSubtitleStyle] = useState({ font: "Poppins", hlColor: "#FFE44D" });
+  const [format, setFormat] = useState("landscape"); // "landscape" | "portrait" | "square"
   const inputRef = useRef(null);
   const abortRef = useRef(false);
   const { noise: noiseDb, duration: minDur } = PRESETS["normal"];
@@ -1311,7 +1361,7 @@ export default function SilenceCutter() {
     abortRef.current = false;
     setFase("cutting"); setProgress(0); setError("");
     try {
-      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle);
+      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format);
       const totalOriginal = ready.reduce((t, c) => t + (c.duration || 0), 0);
       const totalCut = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0), 0);
       const totalCuts = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).length, 0);
@@ -1379,7 +1429,8 @@ export default function SilenceCutter() {
       subtitleStyle={subtitleStyle} onStyleChange={setSubtitleStyle}
       onExport={exportar} onAddFiles={addFiles}
       moveClip={moveClip} removeClip={removeClip} toggleSilence={toggleSilence}
-      onAnalyze={analizarTodos} />
+      onAnalyze={analizarTodos}
+      format={format} onFormatChange={setFormat} />
   );
 
   // Pantalla de subida
