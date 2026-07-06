@@ -1,14 +1,21 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Logo from "./Logo";
 import "./SilenceCutter.css";
 
 // ── Constantes ────────────────────────────────────────────────────────────
 const PRESETS = {
-  conservadora: { noise: -45, duration: 0.8, label: "Conservadora", desc: "Solo silencios largos" },
-  normal:       { noise: -35, duration: 0.5, label: "Normal",        desc: "Ideal para redes sociales" },
-  agresiva:     { noise: -28, duration: 0.3, label: "Agresiva",      desc: "Corta pausas breves" },
+  conservadora: { noise: -45, duration: 0.8 },
+  normal:       { noise: -35, duration: 0.5 },
+  agresiva:     { noise: -28, duration: 0.3 },
 };
-const PADDING = 0.03;
+const PADDING   = 0.03;
+const FONTS     = ["Poppins", "Montserrat", "Arial"];
+const HL_COLORS = [
+  { label: "Amarillo", c: "#FFE44D" },
+  { label: "Rosa",     c: "#FF6B8A" },
+  { label: "Blanco",   c: "#FFFFFF" },
+  { label: "Verde",    c: "#4ADE80" },
+];
 
 // ── Utilidades ────────────────────────────────────────────────────────────
 function fmtTime(s) {
@@ -62,7 +69,6 @@ function detectSilences(channelData, sampleRate, noiseDb, minDuration, duration)
     silences.push({ id: uid(), start: Math.max(0, silenceStart + PADDING), end: duration, cut: true });
   return silences;
 }
-
 async function analyzeClip(file, noiseDb, minDuration) {
   const arrayBuffer = await file.arrayBuffer();
   const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -78,7 +84,6 @@ async function analyzeClip(file, noiseDb, minDuration) {
 
 // ── Transcripción (Whisper Tiny) ──────────────────────────────────────────
 let _asr = null;
-
 async function loadTranscriber(onProgress) {
   if (_asr) return _asr;
   const { pipeline } = await import("@xenova/transformers");
@@ -87,7 +92,6 @@ async function loadTranscriber(onProgress) {
   });
   return _asr;
 }
-
 async function getAudioMono16k(file) {
   const buf = await file.arrayBuffer();
   const ctx = new AudioContext();
@@ -100,7 +104,6 @@ async function getAudioMono16k(file) {
   const resampled = await offline.startRendering();
   return resampled.getChannelData(0);
 }
-
 async function transcribeClip(file, onModelProgress) {
   const asr = await loadTranscriber(onModelProgress);
   const audio = await getAudioMono16k(file);
@@ -115,27 +118,22 @@ async function transcribeClip(file, onModelProgress) {
   })).filter(s => s.word);
 }
 
-// ── Subtítulos estilo CapCut (por palabra) ────────────────────────────────
+// ── Subtítulos estilo CapCut ──────────────────────────────────────────────
 function drawSubtitle(ctx, W, H, time, words, style = {}) {
   if (!words?.length) return;
-
   const font    = style.font    || "Poppins";
   const hlColor = style.hlColor || "#FFE44D";
   const fs      = Math.max(24, Math.floor(H / 17));
   const GROUP   = 5;
 
-  // Encontrar índice de la palabra activa
   let idx = words.findIndex(w => time >= w.start && time <= w.end);
   if (idx === -1) {
-    // Entre palabras: buscar la más reciente cuyo grupo aún es relevante
     const prev = [...words].reverse().find(w => time > w.end);
     if (!prev) return;
     idx = words.indexOf(prev);
-    // Ocultar si el siguiente grupo todavía no empieza en <1.2s
     const nextGroup = Math.floor(idx / GROUP) * GROUP + GROUP;
     if (nextGroup < words.length && words[nextGroup].start - time > 1.2) return;
   }
-
   const groupStart = Math.floor(idx / GROUP) * GROUP;
   const group = words.slice(groupStart, groupStart + GROUP);
 
@@ -143,13 +141,10 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
   ctx.font = `800 ${fs}px "${font}", sans-serif`;
   ctx.textBaseline = "alphabetic";
 
-  // Medir cada palabra + espacio
   const wMeasures = group.map((w, i) =>
     ctx.measureText(w.word + (i < group.length - 1 ? " " : "")).width
   );
   let totalW = wMeasures.reduce((a, b) => a + b, 0);
-
-  // Ajustar si es demasiado ancho
   const maxW = W * 0.84;
   if (totalW > maxW) {
     const ratio = maxW / totalW;
@@ -161,40 +156,31 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
     totalW = wMeasures.reduce((a, b) => a + b, 0);
   }
 
-  const pad  = fs * 0.55;
-  const padV = fs * 0.35;
-  const y    = H - Math.floor(H / 10);
+  const y = H - Math.floor(H / 10);
   const startX = W / 2 - totalW / 2;
-
-  // Dibujar palabras (sin fondo de grupo — solo cajita en la palabra activa)
   let x = startX;
+
   group.forEach((w, i) => {
     const isCurrent = time >= w.start && time <= w.end;
     const isPast    = time > w.end;
     const wordText  = w.word + (i < group.length - 1 ? " " : "");
-    const wordW     = ctx.measureText(w.word).width; // solo el ancho de la palabra (sin espacio)
-
+    const wordW     = ctx.measureText(w.word).width;
     if (isCurrent) {
-      // Cajita de color solo bajo la palabra activa
       const bPadX = fs * 0.22, bPadY = fs * 0.15;
       ctx.fillStyle = hlColor;
       ctx.beginPath();
       ctx.roundRect(x - bPadX, y - fs - bPadY, wordW + bPadX * 2, fs + bPadY * 2, 6);
       ctx.fill();
-      // Texto oscuro sobre la cajita de color
       ctx.fillStyle = "#1a1a2e";
     } else {
-      // Sombra para legibilidad sin fondo
       ctx.shadowColor = "rgba(0,0,0,0.85)";
       ctx.shadowBlur  = 6;
       ctx.fillStyle = isPast ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.95)";
     }
-
     ctx.fillText(wordText, x, y);
     ctx.shadowBlur = 0;
     x += wMeasures[i];
   });
-
   ctx.restore();
 }
 
@@ -215,10 +201,28 @@ async function generateThumbnail(file) {
   });
 }
 
+// ── Agrupar palabras en líneas de subtítulo ───────────────────────────────
+function groupSegments(words, perLine = 5) {
+  if (!words?.length) return [];
+  const lines = [];
+  for (let i = 0; i < words.length; i += perLine) {
+    const group = words.slice(i, i + perLine);
+    lines.push({
+      id: i,
+      startIdx: i,
+      endIdx: i + group.length,
+      start: group[0].start,
+      end: group[group.length - 1].end,
+      text: group.map(w => w.word).join(" "),
+      words: group,
+    });
+  }
+  return lines;
+}
+
 // ── Mini waveform ─────────────────────────────────────────────────────────
 function MiniWaveform({ waveform, duration, silences, onToggle }) {
   const canvasRef = useRef(null);
-
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !waveform) return;
@@ -239,89 +243,69 @@ function MiniWaveform({ waveform, duration, silences, onToggle }) {
       ctx.fillRect(i * bw, mid - amp, Math.max(1, bw - 0.4), amp * 2);
     }
   }, [waveform, duration, silences]);
-
-  React.useEffect(() => { draw(); }, [draw]);
-
+  useEffect(() => { draw(); }, [draw]);
   const handleClick = e => {
     const rect = canvasRef.current.getBoundingClientRect();
     const t = ((e.clientX - rect.left) / rect.width) * duration;
     const hit = silences.find(s => t >= s.start && t <= s.end);
     if (hit) onToggle(hit.id);
   };
-
   return (
-    <canvas
-      ref={canvasRef}
-      className="sc-mini-waveform"
-      width={900} height={72}
-      onClick={handleClick}
-      title="Clic en zona roja/verde para cambiar"
-      style={{ cursor: "pointer" }}
-    />
+    <canvas ref={canvasRef} className="sc-mini-waveform" width={900} height={72}
+      onClick={handleClick} title="Clic en zona roja/verde para cambiar" style={{ cursor: "pointer" }} />
   );
 }
 
-// ── ClipCard ──────────────────────────────────────────────────────────────
+// ── ClipCard (fase de subida) ──────────────────────────────────────────────
 function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
   const [open, setOpen] = useState(true);
-  const cutCount = clip.silences?.filter(s => s.cut).length ?? 0;
+  const cutCount  = clip.silences?.filter(s => s.cut).length ?? 0;
   const savedTime = clip.silences?.filter(s => s.cut).reduce((t, s) => t + s.end - s.start, 0) ?? 0;
-
   return (
     <div className={`sc-clip-card${clip.error ? " sc-clip-card--error" : ""}`}>
       <div className="sc-clip-header">
         <div className="sc-clip-order">
-          <button className="sc-order-btn" disabled={index === 0} onClick={() => onMove(clip.id, -1)} title="Subir">↑</button>
+          <button className="sc-order-btn" disabled={index === 0} onClick={() => onMove(clip.id, -1)}>↑</button>
           <span className="sc-order-num">{index + 1}</span>
-          <button className="sc-order-btn" disabled={index === total - 1} onClick={() => onMove(clip.id, 1)} title="Bajar">↓</button>
+          <button className="sc-order-btn" disabled={index === total - 1} onClick={() => onMove(clip.id, 1)}>↓</button>
         </div>
-
         {clip.thumbnail
           ? <img className="sc-clip-thumb" src={clip.thumbnail} alt="" />
           : <div className="sc-clip-thumb sc-clip-thumb--placeholder">🎬</div>}
-
         <div className="sc-clip-info">
           <p className="sc-clip-name">{clip.name}</p>
           <p className="sc-clip-meta">
-            {fmtSize(clip.size)}
-            {clip.duration ? ` · ${fmtTime(clip.duration)}` : " · Cargando..."}
+            {fmtSize(clip.size)}{clip.duration ? ` · ${fmtTime(clip.duration)}` : " · Cargando..."}
           </p>
           {clip.analyzed && !clip.error && (
             <div className="sc-clip-badges">
               <span className="sc-badge-cut">{cutCount} silencios · {fmtTime(savedTime)} ahorrados</span>
               {clip.transcribed && !clip.transcribeError && (
-                <span className="sc-badge-subs">💬 {clip.segments?.length ?? 0} subtítulos</span>
+                <span className="sc-badge-subs">💬 {clip.segments?.length ?? 0} palabras</span>
               )}
             </div>
           )}
           {clip.error && <p className="sc-clip-err">⚠ {clip.error}</p>}
         </div>
-
         <div className="sc-clip-actions">
           {clip.analyzed && !clip.error && (
             <button className="sc-expand-btn" onClick={() => setOpen(o => !o)}>{open ? "▲" : "▼"}</button>
           )}
-          <button className="sc-remove-btn" onClick={() => onRemove(clip.id)} title="Quitar">✕</button>
+          <button className="sc-remove-btn" onClick={() => onRemove(clip.id)}>✕</button>
         </div>
       </div>
-
       {clip.analyzed && !clip.error && open && (
         <div className="sc-clip-body">
           {clip.waveform && (
-            <MiniWaveform
-              waveform={clip.waveform}
-              duration={clip.duration}
-              silences={clip.silences}
-              onToggle={sid => onToggle(clip.id, sid)}
-            />
+            <MiniWaveform waveform={clip.waveform} duration={clip.duration}
+              silences={clip.silences} onToggle={sid => onToggle(clip.id, sid)} />
           )}
           {clip.silences?.length > 0 ? (
-            <div className="sc-silence-items sc-silence-items--compact">
+            <div className="sc-silence-items">
               {clip.silences.map(s => (
                 <button key={s.id}
                   className={`sc-silence-item${s.cut ? " sc-silence-item--cut" : " sc-silence-item--keep"}`}
-                  onClick={() => onToggle(clip.id, s.id)}
-                >
+                  onClick={() => onToggle(clip.id, s.id)}>
                   <span className="sc-silence-range">{fmtTime(s.start)}–{fmtTime(s.end)}</span>
                   <span className="sc-silence-dur">{(s.end - s.start).toFixed(1)}s</span>
                   <span className="sc-silence-status">{s.cut ? "✕" : "✓"}</span>
@@ -337,18 +321,15 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
   );
 }
 
-// ── Grabación multi-clip en canvas ────────────────────────────────────────
+// ── Grabación multi-clip ──────────────────────────────────────────────────
 async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}) {
-  // Detectar resolución del primer clip
   const firstVid = document.createElement("video");
   const firstUrl = URL.createObjectURL(clips[0].file);
   firstVid.src = firstUrl;
   await new Promise(r => { firstVid.onloadedmetadata = r; firstVid.onerror = r; });
-  const W = firstVid.videoWidth || 1280;
-  const H = firstVid.videoHeight || 720;
+  const W = firstVid.videoWidth || 1280, H = firstVid.videoHeight || 720;
   URL.revokeObjectURL(firstUrl);
 
-  // Canvas + audio
   const canvas = document.createElement("canvas");
   canvas.width = W; canvas.height = H;
   const ctx = canvas.getContext("2d");
@@ -356,18 +337,14 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}) {
 
   const audioCtx = new AudioContext();
   const destination = audioCtx.createMediaStreamDestination();
-
   const canvasStream = canvas.captureStream(30);
   const combinedStream = new MediaStream([
     canvasStream.getVideoTracks()[0],
     destination.stream.getAudioTracks()[0],
   ]);
-
   const mimeType = getSupportedMimeType();
   const recorder = new MediaRecorder(combinedStream, {
-    mimeType,
-    videoBitsPerSecond: 8_000_000,
-    audioBitsPerSecond: 192_000,
+    mimeType, videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 192_000,
   });
   const chunks = [];
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
@@ -381,26 +358,21 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}) {
     const clip = clips[ci];
     onProgress(elapsed / totalDuration, `Procesando clip ${ci + 1} de ${clips.length}: ${clip.name}`);
 
-    await new Promise((resolve, reject) => {
+    await new Promise((resolve) => {
       const videoEl = document.createElement("video");
       const url = URL.createObjectURL(clip.file);
-      videoEl.src = url;
-      videoEl.crossOrigin = "anonymous";
+      videoEl.src = url; videoEl.crossOrigin = "anonymous";
 
       videoEl.addEventListener("loadedmetadata", async () => {
-        // Conectar audio
         let source;
         try {
           source = audioCtx.createMediaElementSource(videoEl);
           source.connect(destination);
-        } catch (e) { /* silencioso — puede fallar si ya fue conectado */ }
+        } catch (_) {}
 
-        // Calcular letterbox
-        const vW = videoEl.videoWidth || W;
-        const vH = videoEl.videoHeight || H;
+        const vW = videoEl.videoWidth || W, vH = videoEl.videoHeight || H;
         const scale = Math.min(W / vW, H / vH);
-        const dW = vW * scale, dH = vH * scale;
-        const dX = (W - dW) / 2, dY = (H - dH) / 2;
+        const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
 
         let animId;
         const drawLoop = () => {
@@ -414,103 +386,324 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}) {
 
         videoEl.currentTime = 0;
         await new Promise(r => { videoEl.onseeked = r; });
-
         const toRemove = (clip.silences || []).filter(s => s.cut);
         let inCut = false;
-
         videoEl.play();
         animId = requestAnimationFrame(drawLoop);
 
         const interval = setInterval(() => {
           if (abortRef.current) { clearInterval(interval); cancelAnimationFrame(animId); videoEl.pause(); resolve(); return; }
-
           const ct = videoEl.currentTime;
           const dur = clip.duration || videoEl.duration;
           onProgress((elapsed + ct) / totalDuration, `Procesando clip ${ci + 1} de ${clips.length}: ${clip.name}`);
-
           const inSilence = toRemove.some(s => ct >= s.start && ct < s.end);
           if (inSilence && !inCut) { inCut = true; videoEl.playbackRate = 16; videoEl.volume = 0; }
           else if (!inSilence && inCut) { inCut = false; videoEl.playbackRate = 1; videoEl.volume = 1; }
-
           if (videoEl.ended || ct >= dur - 0.1) {
-            clearInterval(interval);
-            cancelAnimationFrame(animId);
-            videoEl.pause();
+            clearInterval(interval); cancelAnimationFrame(animId); videoEl.pause();
             if (source) try { source.disconnect(); } catch (_) {}
-            URL.revokeObjectURL(url);
-            resolve();
+            URL.revokeObjectURL(url); resolve();
           }
         }, 60);
       });
-
-      videoEl.onerror = () => { URL.revokeObjectURL(url); resolve(); }; // skip clip on error
+      videoEl.onerror = () => { URL.revokeObjectURL(url); resolve(); };
     });
-
     elapsed += clip.duration || 0;
   }
 
   await new Promise(r => setTimeout(r, 400));
-
   return new Promise(resolve => {
-    recorder.onstop = () => {
-      audioCtx.close();
-      resolve(new Blob(chunks, { type: mimeType }));
-    };
+    recorder.onstop = () => { audioCtx.close(); resolve(new Blob(chunks, { type: mimeType })); };
     recorder.stop();
   });
 }
 
-// ── Vista previa ───────────────────────────────────────────────────────────
-const FONTS = ["Poppins", "Montserrat", "Arial"];
-const HL_COLORS = [
-  { label: "Amarillo", c: "#FFE44D" },
-  { label: "Rosa",     c: "#FF6B8A" },
-  { label: "Blanco",   c: "#FFFFFF" },
-  { label: "Verde",    c: "#4ADE80" },
-];
+// ── SegmentRow ────────────────────────────────────────────────────────────
+function SegmentRow({ line, isActive, onEdit, onSeek }) {
+  const [editing, setEditing] = useState(false);
+  const [val, setVal]         = useState(line.text);
+  const ref = useRef(null);
 
-function PreviewScreen({ clips, subtitleStyle, onStyleChange, onBack, onExport, onTranscribe }) {
-  const canvasRef  = useRef(null);
-  const playRef    = useRef(false);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [clipInfo,  setClipInfo]  = useState("Presiona ▶ para previsualizar el resultado");
-  const [pct,       setPct]       = useState(0);
-  const [done,      setDone]      = useState(false);
+  useEffect(() => { setVal(line.text); }, [line.text]);
+  useEffect(() => { if (editing) ref.current?.focus(); }, [editing]);
 
-  const totalDuration = clips.reduce((t, c) => t + (c.duration || 0), 0);
+  const commit = () => {
+    setEditing(false);
+    if (val.trim() && val.trim() !== line.text) onEdit(val.trim());
+  };
+  return (
+    <div className={`sce-seg-row${isActive ? " sce-seg-row--active" : ""}`}>
+      <button className="sce-seg-time" onClick={() => onSeek(line.start)} title="Saltar a este punto">
+        {fmtTime(line.start)}
+      </button>
+      {editing ? (
+        <input ref={ref} className="sce-seg-input" value={val}
+          onChange={e => setVal(e.target.value)}
+          onBlur={commit}
+          onKeyDown={e => {
+            if (e.key === "Enter") commit();
+            if (e.key === "Escape") { setVal(line.text); setEditing(false); }
+          }}
+        />
+      ) : (
+        <button className="sce-seg-text" onClick={() => setEditing(true)} title="Clic para editar">
+          {line.text}
+        </button>
+      )}
+    </div>
+  );
+}
 
-  const runPreview = async () => {
-    if (isPlaying) { playRef.current = false; return; }
+// ── Panel de subtítulos ───────────────────────────────────────────────────
+function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyle, onStyleChange, onTranscribe, onSeekInClip, listRef }) {
+  const hasSubtitles = clips.some(c => c.transcribed && c.segments?.length);
+
+  const handleEdit = (clip, line, newText) => {
+    const words = newText.trim().split(/\s+/);
+    const dur   = line.end - line.start;
+    const newWords = words.map((w, i) => ({
+      word: w,
+      start: line.start + (i / words.length) * dur,
+      end:   line.start + ((i + 1) / words.length) * dur,
+    }));
+    const newSegs = [
+      ...(clip.segments || []).slice(0, line.startIdx),
+      ...newWords,
+      ...(clip.segments || []).slice(line.endIdx),
+    ];
+    setClips(prev => prev.map(c => c.id !== clip.id ? c : { ...c, segments: newSegs }));
+  };
+
+  const transcribedClips = clips.filter(c => c.transcribed && c.segments?.length);
+
+  return (
+    <div className="sce-sub-panel">
+      <div className="sce-panel-header">
+        <span className="sce-panel-title">Subtítulos</span>
+        <button
+          className={`sc-btn-subs sc-btn-sm sc-btn-outline${hasSubtitles ? " sce-regen-btn" : ""}`}
+          onClick={onTranscribe}
+        >
+          {hasSubtitles ? "↺ Re-generar" : "💬 Generar"}
+        </button>
+      </div>
+
+      {hasSubtitles && (
+        <div className="sce-sub-style">
+          <div className="sc-font-pills">
+            {FONTS.map(f => (
+              <button key={f}
+                className={`sc-font-pill${subtitleStyle.font === f ? " active" : ""}`}
+                style={{ fontFamily: f }}
+                onClick={() => onStyleChange({ ...subtitleStyle, font: f })}>{f}</button>
+            ))}
+          </div>
+          <div className="sc-color-swatches">
+            {HL_COLORS.map(opt => (
+              <button key={opt.c}
+                className={`sc-color-swatch${subtitleStyle.hlColor === opt.c ? " active" : ""}`}
+                style={{ "--sw": opt.c }}
+                onClick={() => onStyleChange({ ...subtitleStyle, hlColor: opt.c })}
+                title={opt.label}>
+                <span className="sc-swatch-dot" />{opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="sce-seg-list" ref={listRef}>
+        {transcribedClips.map(clip => {
+          const lines = groupSegments(clip.segments);
+          return (
+            <React.Fragment key={clip.id}>
+              {transcribedClips.length > 1 && (
+                <p className="sce-seg-clip-label">{clip.name.replace(/\.[^/.]+$/, "")}</p>
+              )}
+              {lines.map((line, li) => {
+                const isActive = clip.id === currentClipId &&
+                  localTime >= line.start && localTime <= line.end;
+                return (
+                  <SegmentRow key={li} line={line} isActive={isActive}
+                    onSeek={(t) => onSeekInClip(clip.id, t)}
+                    onEdit={(newText) => handleEdit(clip, line, newText)}
+                  />
+                );
+              })}
+            </React.Fragment>
+          );
+        })}
+        {!hasSubtitles && (
+          <div className="sce-no-subs">
+            <p>Genera subtítulos automáticos con IA</p>
+            <p className="sce-no-subs-hint">Whisper Tiny transcribe en español<br/>sincronizando palabra por palabra</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Timeline de clips ─────────────────────────────────────────────────────
+function ClipTimeline({ clips, currentClipId, localTime, onSeekByClip, onToggleSilence, onMoveClip, onRemoveClip, onAddFiles }) {
+  const total = clips.reduce((t, c) => t + (c.duration || 0.0001), 0);
+  return (
+    <div className="sce-timeline">
+      <div className="sce-tl-label">TIMELINE</div>
+      <div className="sce-tl-inner">
+        {clips.map((clip, i) => {
+          const pct      = (clip.duration || 0.0001) / total * 100;
+          const isCurrent = clip.id === currentClipId;
+          const localPct  = isCurrent && clip.duration ? (localTime / clip.duration) * 100 : null;
+
+          return (
+            <div key={clip.id}
+              className={`sce-tl-clip${isCurrent ? " sce-tl-clip--active" : ""}${!clip.analyzed ? " sce-tl-clip--pending" : ""}`}
+              style={{ width: `${pct}%` }}
+              onClick={() => clip.analyzed && onSeekByClip(clip.id, 0)}
+              title={clip.name}
+            >
+              {/* Zonas de silencio */}
+              {(clip.silences || []).map(s => (
+                <div key={s.id}
+                  className={`sce-tl-zone${s.cut ? " sce-tl-zone--cut" : " sce-tl-zone--keep"}`}
+                  style={{
+                    left:  `${(s.start / (clip.duration || 1)) * 100}%`,
+                    width: `${((s.end - s.start) / (clip.duration || 1)) * 100}%`,
+                  }}
+                  onClick={e => { e.stopPropagation(); onToggleSilence(clip.id, s.id); }}
+                  title={`${s.cut ? "Silencio a cortar" : "Silencio conservado"} · Clic para cambiar`}
+                />
+              ))}
+
+              {/* Playhead */}
+              {localPct !== null && (
+                <div className="sce-tl-playhead" style={{ left: `${localPct}%` }} />
+              )}
+
+              {/* Info */}
+              <div className="sce-tl-clip-meta">
+                <span className="sce-tl-num">{i + 1}</span>
+                <span className="sce-tl-name">{clip.name.replace(/\.[^/.]+$/, "")}</span>
+                {clip.duration && <span className="sce-tl-dur">{fmtTime(clip.duration)}</span>}
+              </div>
+
+              {/* Botones */}
+              <div className="sce-tl-btns" onClick={e => e.stopPropagation()}>
+                <button disabled={i === 0} onClick={() => onMoveClip(clip.id, -1)} title="Mover atrás">‹</button>
+                <button disabled={i === clips.length - 1} onClick={() => onMoveClip(clip.id, 1)} title="Mover adelante">›</button>
+                <button className="sce-tl-rm" onClick={() => onRemoveClip(clip.id)} title="Quitar">✕</button>
+              </div>
+            </div>
+          );
+        })}
+
+        <button className="sce-tl-add" onClick={onAddFiles} title="Agregar clips">＋</button>
+      </div>
+    </div>
+  );
+}
+
+// ── EditorScreen (interfaz principal tipo CapCut) ─────────────────────────
+function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onTranscribe, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze }) {
+  const canvasRef   = useRef(null);
+  const playRef     = useRef(false);
+  const subListRef  = useRef(null);
+  const fileInputRef = useRef(null);
+
+  const [isPlaying,     setIsPlaying]     = useState(false);
+  const [pct,           setPct]           = useState(0);
+  const [clipInfo,      setClipInfo]      = useState("");
+  const [done,          setDone]          = useState(false);
+  const [currentClipId, setCurrentClipId] = useState(null);
+  const [localTime,     setLocalTime]     = useState(0);
+  const [dims,          setDims]          = useState({ W: 1280, H: 720 });
+  const [seeking,       setSeeking]       = useState(false);
+
+  const analyzedClips = useMemo(() => clips.filter(c => c.analyzed && !c.error), [clips]);
+  const unanalyzed    = clips.filter(c => !c.analyzed);
+
+  const totalKept = useMemo(() => analyzedClips.reduce((t, c) => {
+    const cut = (c.silences || []).filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0);
+    return t + (c.duration || 0) - cut;
+  }, 0) || 1, [analyzedClips]);
+
+  // Detectar dimensiones del video del primer clip
+  useEffect(() => {
+    const first = clips.find(c => c.analyzed && !c.error);
+    if (!first) return;
+    const v = document.createElement("video");
+    const u = URL.createObjectURL(first.file);
+    v.src = u;
+    v.onloadedmetadata = () => {
+      if (v.videoWidth) setDims({ W: v.videoWidth, H: v.videoHeight });
+      URL.revokeObjectURL(u);
+    };
+  }, []); // Solo al montar
+
+  // Auto-scroll del panel de subtítulos a la línea activa
+  useEffect(() => {
+    if (!subListRef.current) return;
+    const active = subListRef.current.querySelector(".sce-seg-row--active");
+    if (active) active.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [localTime, currentClipId]);
+
+  // Dibujar un frame estático en el canvas (para seeking)
+  const seekTo = useCallback(async (clipId, lt) => {
+    const clip = clips.find(c => c.id === clipId);
+    if (!clip || !canvasRef.current) return;
+    setSeeking(true);
+    const canvas = canvasRef.current;
+    const ctx    = canvas.getContext("2d");
+    const { W, H } = dims;
+
+    await new Promise(resolve => {
+      const vid = document.createElement("video");
+      const url = URL.createObjectURL(clip.file);
+      vid.src = url;
+      vid.onloadedmetadata = () => {
+        vid.currentTime = Math.min(lt, vid.duration - 0.01);
+        vid.onseeked = () => {
+          const vW = vid.videoWidth || W, vH = vid.videoHeight || H;
+          const scale = Math.min(W / vW, H / vH);
+          const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
+          ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+          ctx.drawImage(vid, dX, dY, dW, dH);
+          drawSubtitle(ctx, W, H, lt, clip.segments, subtitleStyle);
+          URL.revokeObjectURL(url);
+          resolve();
+        };
+      };
+      vid.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+    });
+
+    setCurrentClipId(clipId);
+    setLocalTime(lt);
+    setSeeking(false);
+  }, [clips, dims, subtitleStyle]);
+
+  // Reproducción (segmento por segmento, sin silencio)
+  const runPlay = useCallback(async () => {
+    if (isPlaying || !analyzedClips.length) return;
     setIsPlaying(true); setDone(false); setPct(0);
     playRef.current = true;
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-
-    // Detectar resolución del primer clip
-    const fv = document.createElement("video");
-    const fu = URL.createObjectURL(clips[0].file);
-    fv.src = fu;
-    await new Promise(r => { fv.onloadedmetadata = r; fv.onerror = r; });
-    const W = fv.videoWidth || 1280, H = fv.videoHeight || 720;
+    if (!canvas) { setIsPlaying(false); playRef.current = false; return; }
+    const ctx    = canvas.getContext("2d");
+    const { W, H } = dims;
     canvas.width = W; canvas.height = H;
-    URL.revokeObjectURL(fu);
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
 
-    // Duración total de lo que se reproducirá (sin silencios cortados)
-    const totalKept = clips.reduce((t, c) => {
-      const cut = (c.silences || []).filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0);
-      return t + (c.duration || 0) - cut;
-    }, 0) || 1;
     let keptPlayed = 0;
 
-    for (let ci = 0; ci < clips.length && playRef.current; ci++) {
-      const clip = clips[ci];
-      setClipInfo(`Clip ${ci + 1} de ${clips.length} — ${clip.name}`);
+    for (let ci = 0; ci < analyzedClips.length && playRef.current; ci++) {
+      const clip = analyzedClips[ci];
+      setCurrentClipId(clip.id);
+      setClipInfo(`Clip ${ci + 1} / ${analyzedClips.length} — ${clip.name.replace(/\.[^/.]+$/, "")}`);
 
-      // Construir segmentos a reproducir (partes que NO se cortan)
       const cuts = (clip.silences || []).filter(s => s.cut).sort((a, b) => a.start - b.start);
-      const dur = clip.duration || 0;
+      const dur  = clip.duration || 0;
       const segs = [];
       let pos = 0;
       for (const s of cuts) {
@@ -539,17 +732,13 @@ function PreviewScreen({ clips, subtitleStyle, onStyleChange, onBack, onExport, 
           };
           animId = requestAnimationFrame(draw);
 
-          // Reproducir segmento por segmento (seek instantáneo entre cortes)
           for (const seg of segs) {
             if (!playRef.current) break;
-
             vid.currentTime = seg.start;
             await new Promise(r => { vid.onseeked = r; });
             if (!playRef.current) break;
-
             vid.playbackRate = 1;
             vid.play().catch(() => {});
-
             const segKeptStart = keptPlayed;
             const segDur = seg.end - seg.start;
 
@@ -557,6 +746,7 @@ function PreviewScreen({ clips, subtitleStyle, onStyleChange, onBack, onExport, 
               const tick = setInterval(() => {
                 if (!playRef.current) { clearInterval(tick); vid.pause(); segDone(); return; }
                 const ct = vid.currentTime;
+                setLocalTime(ct);
                 const played = Math.max(0, ct - seg.start);
                 setPct(Math.round(Math.min(99, ((segKeptStart + played) / totalKept) * 100)));
                 if (ct >= seg.end - 0.04 || vid.ended) {
@@ -576,133 +766,135 @@ function PreviewScreen({ clips, subtitleStyle, onStyleChange, onBack, onExport, 
       });
     }
 
-    if (playRef.current) { setDone(true); setClipInfo("Vista previa completada ✓"); setPct(100); }
+    if (playRef.current) { setDone(true); setClipInfo("Vista previa completa ✓"); setPct(100); }
     setIsPlaying(false); playRef.current = false;
-  };
+  }, [analyzedClips, dims, subtitleStyle, totalKept, isPlaying]);
+
+  const togglePlay = useCallback(() => {
+    if (isPlaying) { playRef.current = false; }
+    else { runPlay(); }
+  }, [isPlaying, runPlay]);
+
+  const handleSeekInClip = useCallback((clipId, lt) => {
+    if (isPlaying) playRef.current = false;
+    setTimeout(() => seekTo(clipId, lt), isPlaying ? 80 : 0);
+  }, [isPlaying, seekTo]);
 
   return (
-    <div className="sc-page">
-      <nav className="sc-nav"><Logo width={110} /><a href="/" className="sc-nav-link">Ir a la app →</a></nav>
-      <div className="sc-preview-wrap">
-        <div className="sc-preview-header">
-          <button className="sc-btn-outline sc-btn-sm" onClick={onBack}>← Editar</button>
-          <h2 className="sc-preview-title">Vista previa</h2>
+    <div className="sce-layout">
+      {/* Input oculto para agregar más archivos */}
+      <input ref={fileInputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple
+        style={{ display: "none" }} onChange={e => onAddFiles(e.target.files)} />
+
+      {/* ── Top bar ──────────────────────────────────────────────────────── */}
+      <div className="sce-topbar">
+        <Logo width={88} />
+        <div className="sce-topbar-center">
+          {unanalyzed.length > 0 ? (
+            <button className="sce-analyze-pill" onClick={onAnalyze}>
+              🔍 Analizar {unanalyzed.length} clip{unanalyzed.length > 1 ? "s" : ""} nuevo{unanalyzed.length > 1 ? "s" : ""}
+            </button>
+          ) : clipInfo ? (
+            <span className="sce-clip-info-tag">{clipInfo}</span>
+          ) : (
+            <span className="sce-clip-info-tag">Editor · {analyzedClips.length} clip{analyzedClips.length !== 1 ? "s" : ""}</span>
+          )}
+        </div>
+        <div className="sce-topbar-right">
           <button className="sc-btn-primary sc-btn-sm" onClick={onExport}>✂️ Exportar</button>
         </div>
+      </div>
 
-        <div className="sc-canvas-wrap" onClick={!isPlaying ? runPreview : undefined}>
-          <canvas ref={canvasRef} className="sc-preview-canvas" width={1280} height={720} />
-          {!isPlaying && (
-            <div className="sc-canvas-overlay">
-              <button className="sc-play-big-btn" onClick={e => { e.stopPropagation(); runPreview(); }}>
-                {done ? "↺" : "▶"}
-              </button>
-            </div>
-          )}
-        </div>
+      {/* ── Cuerpo principal ─────────────────────────────────────────────── */}
+      <div className="sce-body">
+        {/* Canvas + barra de reproducción */}
+        <div className="sce-canvas-col">
+          <div className="sce-canvas-wrap" onClick={!isPlaying && !seeking ? togglePlay : undefined}>
+            <canvas ref={canvasRef} className="sce-canvas" width={dims.W} height={dims.H} />
 
-        <div className="sc-preview-controls">
-          <button className="sc-play-toggle" onClick={runPreview}>
-            {isPlaying ? "⏸ Pausar" : done ? "↺ Repetir" : "▶ Reproducir"}
-          </button>
-          <div className="sc-progress-bar-wrap" style={{ flex: 1 }}>
-            <div className="sc-progress-bar" style={{ width: `${pct}%` }} />
-          </div>
-          <span className="sc-preview-pct">{pct}%</span>
-        </div>
-        <p className="sc-preview-clip-info">{clipInfo}</p>
-
-        {/* Panel de subtítulos */}
-        <div className="sc-subs-panel">
-          <div className="sc-subs-panel-row">
-            <span className="sc-subs-label">Subtítulos</span>
-            {!clips.some(c => c.transcribed) && (
-              <button className="sc-btn-outline sc-btn-sm sc-btn-subs" onClick={onTranscribe}>
-                💬 Generar subtítulos
-              </button>
+            {!isPlaying && !seeking && (
+              <div className="sce-canvas-overlay">
+                <button className="sc-play-big-btn"
+                  onClick={e => { e.stopPropagation(); togglePlay(); }}>
+                  {done ? "↺" : "▶"}
+                </button>
+              </div>
+            )}
+            {seeking && (
+              <div className="sce-canvas-overlay">
+                <div className="sce-seeking-spinner" />
+              </div>
             )}
           </div>
-          {clips.some(c => c.transcribed) && (
-            <>
-              <div className="sc-subs-row">
-                <span className="sc-subs-sublabel">Fuente</span>
-                <div className="sc-font-pills">
-                  {FONTS.map(f => (
-                    <button key={f}
-                      className={`sc-font-pill${subtitleStyle.font === f ? " active" : ""}`}
-                      style={{ fontFamily: f }}
-                      onClick={() => onStyleChange({ ...subtitleStyle, font: f })}>
-                      {f}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="sc-subs-row">
-                <span className="sc-subs-sublabel">Resaltado</span>
-                <div className="sc-color-swatches">
-                  {HL_COLORS.map(opt => (
-                    <button key={opt.c}
-                      className={`sc-color-swatch${subtitleStyle.hlColor === opt.c ? " active" : ""}`}
-                      style={{ "--sw": opt.c }}
-                      onClick={() => onStyleChange({ ...subtitleStyle, hlColor: opt.c })}
-                      title={opt.label}>
-                      <span className="sc-swatch-dot" />
-                      <span>{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <button className="sc-btn-ghost-dark sc-btn-sm" onClick={onTranscribe}>
-                ↺ Re-generar
-              </button>
-            </>
-          )}
+
+          <div className="sce-playbar">
+            <button className="sce-playbtn" onClick={togglePlay}>
+              {isPlaying ? "⏸" : done ? "↺" : "▶"}
+            </button>
+            <div className="sce-scrubber">
+              <div className="sce-scrubber-fill" style={{ width: `${pct}%` }} />
+            </div>
+            <span className="sce-pct-label">{pct}%</span>
+          </div>
         </div>
 
-        {done && (
-          <div className="sc-preview-done-bar">
-            <p>¿Todo se ve bien?</p>
-            <button className="sc-btn-primary" onClick={onExport}>✂️ Exportar video final</button>
-          </div>
-        )}
+        {/* Panel de subtítulos */}
+        <SubtitlePanel
+          clips={clips}
+          setClips={setClips}
+          currentClipId={currentClipId}
+          localTime={localTime}
+          subtitleStyle={subtitleStyle}
+          onStyleChange={onStyleChange}
+          onTranscribe={onTranscribe}
+          onSeekInClip={handleSeekInClip}
+          listRef={subListRef}
+        />
       </div>
+
+      {/* ── Timeline ─────────────────────────────────────────────────────── */}
+      <ClipTimeline
+        clips={clips}
+        currentClipId={currentClipId}
+        localTime={localTime}
+        onSeekByClip={handleSeekInClip}
+        onToggleSilence={toggleSilence}
+        onMoveClip={moveClip}
+        onRemoveClip={removeClip}
+        onAddFiles={() => fileInputRef.current?.click()}
+      />
     </div>
   );
 }
 
-// ── Componente principal ───────────────────────────────────────────────────
+// ── Componente principal ──────────────────────────────────────────────────
 export default function SilenceCutter() {
-  const [clips, setClips]         = useState([]);
-  const [fase, setFase]           = useState("editor");
-  const preset = "normal";
-  const [progress, setProgress]   = useState(0);
+  const [clips, setClips]           = useState([]);
+  const [fase, setFase]             = useState("editor");
+  const [progress, setProgress]     = useState(0);
   const [progressMsg, setProgressMsg] = useState("");
-  const [result, setResult]       = useState(null);
-  const [error, setError]         = useState("");
-  const [dragOver, setDragOver]   = useState(false);
+  const [result, setResult]         = useState(null);
+  const [error, setError]           = useState("");
+  const [dragOver, setDragOver]     = useState(false);
   const [subtitleStyle, setSubtitleStyle] = useState({ font: "Poppins", hlColor: "#FFE44D" });
   const inputRef  = useRef(null);
   const abortRef  = useRef(false);
-
+  const preset    = "normal";
   const { noise: noiseDb, duration: minDur } = PRESETS[preset];
 
-  // ── Agregar archivos ────────────────────────────────────────────────────
+  // ── Agregar archivos ──────────────────────────────────────────────────
   const addFiles = useCallback(async (files) => {
     const valid = Array.from(files).filter(f =>
       /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name) || f.type.startsWith("video/")
     );
     if (!valid.length) { setError("No se encontraron archivos de video válidos."); return; }
     setError("");
-
     const newClips = valid.map(f => ({
       id: uid(), file: f, name: f.name, size: f.size,
-      thumbnail: null, duration: null, waveform: null, silences: [], analyzed: false, error: null,
-      segments: null, transcribed: false, transcribeError: null,
+      thumbnail: null, duration: null, waveform: null, silences: [],
+      analyzed: false, error: null, segments: null, transcribed: false, transcribeError: null,
     }));
-
     setClips(prev => [...prev, ...newClips]);
-
-    // Generar thumbnails en paralelo
     newClips.forEach(async clip => {
       const thumb = await generateThumbnail(clip.file);
       setClips(prev => prev.map(c => c.id === clip.id ? { ...c, thumbnail: thumb } : c));
@@ -714,45 +906,35 @@ export default function SilenceCutter() {
     addFiles(e.dataTransfer.files);
   }, [addFiles]);
 
-  // ── Analizar todos ──────────────────────────────────────────────────────
+  // ── Analizar ──────────────────────────────────────────────────────────
   const analizarTodos = async () => {
-    if (!clips.length) return;
-    setFase("analyzing");
-    setError("");
-
-    for (let i = 0; i < clips.length; i++) {
-      const clip = clips[i];
-      setProgressMsg(`Analizando clip ${i + 1} de ${clips.length}: ${clip.name}`);
-      setProgress(Math.round((i / clips.length) * 100));
+    const toAnalyze = clips.filter(c => !c.analyzed);
+    if (!toAnalyze.length) return;
+    setFase("analyzing"); setError("");
+    for (let i = 0; i < toAnalyze.length; i++) {
+      const clip = toAnalyze[i];
+      setProgressMsg(`Analizando clip ${i + 1} de ${toAnalyze.length}: ${clip.name}`);
+      setProgress(Math.round((i / toAnalyze.length) * 100));
       try {
         const { duration, waveform, silences } = await analyzeClip(clip.file, noiseDb, minDur);
         setClips(prev => prev.map(c => c.id === clip.id
-          ? { ...c, duration, waveform, silences, analyzed: true, error: null }
-          : c));
-      } catch (err) {
+          ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
+      } catch (_) {
         setClips(prev => prev.map(c => c.id === clip.id
-          ? { ...c, analyzed: true, error: "No se pudo analizar el audio" }
-          : c));
+          ? { ...c, analyzed: true, error: "No se pudo analizar el audio" } : c));
       }
     }
-
     setFase("editor");
   };
 
-  // ── Toggle silencios ────────────────────────────────────────────────────
+  // ── Toggle silencios ──────────────────────────────────────────────────
   const toggleSilence = (clipId, silenceId) => {
     setClips(prev => prev.map(c => c.id !== clipId ? c : {
       ...c, silences: c.silences.map(s => s.id === silenceId ? { ...s, cut: !s.cut } : s),
     }));
   };
 
-  const toggleAllInClip = (clipId, cut) => {
-    setClips(prev => prev.map(c => c.id !== clipId ? c : {
-      ...c, silences: c.silences.map(s => ({ ...s, cut })),
-    }));
-  };
-
-  // ── Reordenar ───────────────────────────────────────────────────────────
+  // ── Reordenar / quitar ────────────────────────────────────────────────
   const moveClip = (id, dir) => {
     setClips(prev => {
       const idx = prev.findIndex(c => c.id === id);
@@ -763,16 +945,13 @@ export default function SilenceCutter() {
       return arr;
     });
   };
-
   const removeClip = (id) => setClips(prev => prev.filter(c => c.id !== id));
 
-  // ── Transcribir subtítulos ──────────────────────────────────────────────
-  const transcribeAll = async (returnFase = "editor") => {
+  // ── Transcribir ───────────────────────────────────────────────────────
+  const transcribeAll = async () => {
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) return;
-    setFase("transcribing");
-    setError("");
-
+    setFase("transcribing"); setError("");
     for (let i = 0; i < ready.length; i++) {
       const clip = ready[i];
       setProgressMsg(`Transcribiendo clip ${i + 1} de ${ready.length}: ${clip.name}`);
@@ -784,47 +963,33 @@ export default function SilenceCutter() {
             setProgressMsg(`Descargando modelo Whisper... ${pct}%`);
           }
         });
+        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
+      } catch (_) {
         setClips(prev => prev.map(c => c.id === clip.id
-          ? { ...c, segments, transcribed: true }
-          : c));
-      } catch (err) {
-        setClips(prev => prev.map(c => c.id === clip.id
-          ? { ...c, segments: [], transcribed: true, transcribeError: "No se pudo transcribir" }
-          : c));
+          ? { ...c, segments: [], transcribed: true, transcribeError: "No se pudo transcribir" } : c));
       }
     }
-
-    setFase(returnFase);
+    setFase("editor");
   };
 
-  // ── Exportar ────────────────────────────────────────────────────────────
+  // ── Exportar ──────────────────────────────────────────────────────────
   const exportar = async () => {
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) { setError("Analiza los clips primero."); return; }
-
     abortRef.current = false;
-    setFase("cutting");
-    setProgress(0);
-    setError("");
-
+    setFase("cutting"); setProgress(0); setError("");
     try {
       const blob = await recordAllClips(ready, (p, msg) => {
-        setProgress(Math.round(p * 100));
-        setProgressMsg(msg);
+        setProgress(Math.round(p * 100)); setProgressMsg(msg);
       }, abortRef, subtitleStyle);
-
       const totalOriginal = ready.reduce((t, c) => t + (c.duration || 0), 0);
       const totalCut = ready.reduce((t, c) =>
-        t + c.silences.filter(s => s.cut).reduce((s, silence) => s + silence.end - silence.start, 0), 0);
+        t + c.silences.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0), 0);
       const totalCuts = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).length, 0);
-
       setResult({
         url: URL.createObjectURL(blob),
         filename: (clips[0]?.name.replace(/\.[^/.]+$/, "") || "video") + "_editado.webm",
-        totalOriginal,
-        totalKept: totalOriginal - totalCut,
-        totalCut,
-        totalCuts,
+        totalOriginal, totalKept: totalOriginal - totalCut, totalCut, totalCuts,
         clipsCount: ready.length,
       });
       setFase("done");
@@ -834,13 +999,13 @@ export default function SilenceCutter() {
     }
   };
 
-  // ── Cálculos globales ───────────────────────────────────────────────────
+  // ── Cálculos globales ─────────────────────────────────────────────────
   const analyzedCount = clips.filter(c => c.analyzed && !c.error).length;
   const totalCutTime  = clips.reduce((t, c) =>
     t + (c.silences?.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0) ?? 0), 0);
   const totalCuts     = clips.reduce((t, c) => t + (c.silences?.filter(s => s.cut).length ?? 0), 0);
 
-  // ── ANALYZING ────────────────────────────────────────────────────────────
+  // ── Pantallas de proceso ──────────────────────────────────────────────
   if (fase === "analyzing") return (
     <div className="sc-page sc-page--center">
       <Logo width={100} />
@@ -858,7 +1023,6 @@ export default function SilenceCutter() {
     </div>
   );
 
-  // ── TRANSCRIBING ─────────────────────────────────────────────────────────
   if (fase === "transcribing") return (
     <div className="sc-page sc-page--center">
       <Logo width={100} />
@@ -877,7 +1041,6 @@ export default function SilenceCutter() {
     </div>
   );
 
-  // ── CUTTING ───────────────────────────────────────────────────────────────
   if (fase === "cutting") return (
     <div className="sc-page sc-page--center">
       <Logo width={100} />
@@ -897,19 +1060,6 @@ export default function SilenceCutter() {
     </div>
   );
 
-  // ── PREVIEW ───────────────────────────────────────────────────────────────
-  if (fase === "preview") return (
-    <PreviewScreen
-      clips={clips.filter(c => c.analyzed && !c.error)}
-      subtitleStyle={subtitleStyle}
-      onStyleChange={setSubtitleStyle}
-      onBack={() => setFase("editor")}
-      onExport={exportar}
-      onTranscribe={() => transcribeAll("preview")}
-    />
-  );
-
-  // ── DONE ─────────────────────────────────────────────────────────────────
   if (fase === "done" && result) return (
     <div className="sc-page">
       <nav className="sc-nav"><Logo width={110} /><a href="/" className="sc-nav-link">Ir a la app →</a></nav>
@@ -924,7 +1074,10 @@ export default function SilenceCutter() {
         </div>
         <a className="sc-btn-primary sc-btn-download" href={result.url} download={result.filename}>⬇ Descargar video editado</a>
         <p className="sc-done-hint">Formato WebM · Compatible con YouTube, Instagram y WhatsApp</p>
-        <button className="sc-btn-outline" onClick={() => { if (result?.url) URL.revokeObjectURL(result.url); setResult(null); setFase("editor"); }}>✂️ Editar más clips</button>
+        <button className="sc-btn-outline" onClick={() => {
+          if (result?.url) URL.revokeObjectURL(result.url);
+          setResult(null); setFase("editor");
+        }}>✂️ Editar más clips</button>
         <div className="sc-done-cta">
           <p>¿Quieres gestionar tu negocio, contenido y clientes en un solo lugar?</p>
           <a href="/">Crear mi cuenta en Mamá CEO →</a>
@@ -933,13 +1086,28 @@ export default function SilenceCutter() {
     </div>
   );
 
-  // ── EDITOR ────────────────────────────────────────────────────────────────
+  // ── EDITOR con clips analizados → interfaz de 3 paneles ───────────────
+  if (fase === "editor" && analyzedCount > 0) return (
+    <EditorScreen
+      clips={clips}
+      setClips={setClips}
+      subtitleStyle={subtitleStyle}
+      onStyleChange={setSubtitleStyle}
+      onTranscribe={transcribeAll}
+      onExport={exportar}
+      onAddFiles={addFiles}
+      moveClip={moveClip}
+      removeClip={removeClip}
+      toggleSilence={toggleSilence}
+      onAnalyze={analizarTodos}
+    />
+  );
+
+  // ── EDITOR sin clips analizados → pantalla de subida ─────────────────
   return (
     <div className="sc-page">
       <nav className="sc-nav"><Logo width={110} /><a href="/" className="sc-nav-link">Ir a la app →</a></nav>
-
       <div className="sc-editor-wrap">
-        {/* Header */}
         <div className="sc-editor-header">
           <div>
             <h1 className="sc-editor-title">Editor de video</h1>
@@ -948,7 +1116,6 @@ export default function SilenceCutter() {
           <span className="sc-badge">Herramienta gratuita · En tu dispositivo</span>
         </div>
 
-        {/* Upload zone */}
         <div
           className={`sc-drop sc-drop--compact${dragOver ? " sc-drop--over" : ""}`}
           onClick={() => inputRef.current?.click()}
@@ -962,37 +1129,18 @@ export default function SilenceCutter() {
             <p className="sc-drop-formats" style={{ margin: "4px 0 0" }}>Arrastra o haz clic · .mp4, .mov, .webm · Múltiples archivos</p>
           </div>
         </div>
-        <input ref={inputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple style={{ display: "none" }}
-          onChange={e => addFiles(e.target.files)} />
+        <input ref={inputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple
+          style={{ display: "none" }} onChange={e => addFiles(e.target.files)} />
 
-        {/* Controles globales */}
         {clips.length > 0 && (
           <div className="sc-toolbar">
-            <div className="sc-toolbar-left">
-              <span className="sc-toolbar-count">{clips.length} clip{clips.length !== 1 ? "s" : ""}</span>
-              {analyzedCount > 0 && (
-                <span className="sc-toolbar-summary">
-                  · {totalCuts} silencios · {fmtTime(totalCutTime)} a eliminar
-                </span>
-              )}
-            </div>
-            <div className="sc-toolbar-right">
-              {analyzedCount > 0 && (
-                <button className="sc-btn-outline sc-btn-sm sc-btn-subs" onClick={transcribeAll}
-                  title="Genera subtítulos automáticos en español (Whisper Tiny)">
-                  💬 {clips.some(c => c.transcribed) ? "Re-transcribir" : "Agregar subtítulos"}
-                </button>
-              )}
-              <button className="sc-btn-outline sc-btn-sm" onClick={analizarTodos}>
-                🔍 Analizar todos
-              </button>
-            </div>
+            <span className="sc-toolbar-left">{clips.length} clip{clips.length !== 1 ? "s" : ""}</span>
+            <button className="sc-btn-outline sc-btn-sm" onClick={analizarTodos}>🔍 Analizar todos</button>
           </div>
         )}
 
         {error && <p className="sc-error">{error}</p>}
 
-        {/* Lista de clips */}
         {clips.length === 0 ? (
           <div className="sc-empty-state">
             <span>🎬</span>
@@ -1002,32 +1150,9 @@ export default function SilenceCutter() {
         ) : (
           <div className="sc-clips-list">
             {clips.map((clip, i) => (
-              <ClipCard
-                key={clip.id}
-                clip={clip}
-                index={i}
-                total={clips.length}
-                onMove={moveClip}
-                onRemove={removeClip}
-                onToggle={toggleSilence}
-              />
+              <ClipCard key={clip.id} clip={clip} index={i} total={clips.length}
+                onMove={moveClip} onRemove={removeClip} onToggle={toggleSilence} />
             ))}
-          </div>
-        )}
-
-        {/* Footer de acción */}
-        {analyzedCount > 0 && (
-          <div className="sc-export-footer">
-            <div className="sc-export-summary">
-              <p>
-                <strong>{analyzedCount}</strong> clip{analyzedCount !== 1 ? "s" : ""} listos ·{" "}
-                <strong>{totalCuts}</strong> silencios ·{" "}
-                <strong>{fmtTime(totalCutTime)}</strong> a eliminar
-              </p>
-            </div>
-            <button className="sc-btn-primary sc-btn-export" onClick={() => setFase("preview")}>
-              ▶ Vista previa
-            </button>
           </div>
         )}
       </div>

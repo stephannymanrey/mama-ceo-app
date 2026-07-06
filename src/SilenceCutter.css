@@ -779,7 +779,7 @@
   font-weight: 500;
 }
 
-/* ─ Responsive ─────────────────────────────────────────────────────────── */
+/* ─ Responsive (fase de subida) ────────────────────────────────────────── */
 @media (max-width: 600px) {
   .sc-editor-wrap { padding: 20px 14px 80px; }
   .sc-toolbar { flex-direction: column; align-items: flex-start; }
@@ -790,4 +790,548 @@
   .sc-stats-grid { grid-template-columns: 1fr 1fr; }
   .sc-nav { padding: 12px 16px; }
   .sc-editor-header { flex-direction: column; gap: 10px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   EDITOR SCREEN — Interfaz tipo CapCut (3 paneles)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Layout principal: topbar | body | timeline */
+.sce-layout {
+  display: grid;
+  grid-template-rows: 52px 1fr 168px;
+  height: 100vh;
+  overflow: hidden;
+  background: #111117;
+  color: #e8e8f0;
+  font-family: "Inter", "Segoe UI", sans-serif;
+}
+
+/* ── Top bar ───────────────────────────────────────────────────────────── */
+.sce-topbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  background: #1a1a2e;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  z-index: 20;
+}
+.sce-topbar-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sce-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+.sce-clip-info-tag {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+.sce-analyze-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  background: rgba(255, 228, 77, 0.1);
+  color: #FFE44D;
+  border: 1px solid rgba(255, 228, 77, 0.3);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.sce-analyze-pill:hover {
+  background: rgba(255, 228, 77, 0.18);
+  border-color: rgba(255, 228, 77, 0.55);
+}
+
+/* ── Body: canvas + panel ──────────────────────────────────────────────── */
+.sce-body {
+  display: grid;
+  grid-template-columns: 1fr 290px;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Columna del canvas ────────────────────────────────────────────────── */
+.sce-canvas-col {
+  display: flex;
+  flex-direction: column;
+  background: #0a0a10;
+  overflow: hidden;
+  min-height: 0;
+}
+.sce-canvas-wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  overflow: hidden;
+  cursor: pointer;
+  min-height: 0;
+}
+.sce-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  display: block;
+}
+.sce-canvas-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.38);
+}
+.sce-seeking-spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.15);
+  border-top-color: #C4526A;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ── Barra de reproducción ─────────────────────────────────────────────── */
+.sce-playbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  background: #13131e;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+}
+.sce-playbtn {
+  width: 34px;
+  height: 34px;
+  background: #C4526A;
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s, transform 0.1s;
+}
+.sce-playbtn:hover { background: #a93f56; transform: scale(1.05); }
+.sce-scrubber {
+  flex: 1;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.sce-scrubber-fill {
+  height: 100%;
+  background: #C4526A;
+  border-radius: 3px;
+  transition: width 0.18s linear;
+}
+.sce-pct-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.35);
+  font-variant-numeric: tabular-nums;
+  min-width: 30px;
+  text-align: right;
+}
+
+/* ── Panel de subtítulos ───────────────────────────────────────────────── */
+.sce-sub-panel {
+  display: flex;
+  flex-direction: column;
+  background: #161622;
+  border-left: 1px solid rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  min-height: 0;
+}
+.sce-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+}
+.sce-panel-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.45);
+}
+.sce-regen-btn {
+  font-size: 11px !important;
+  padding: 4px 10px !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+.sce-regen-btn:hover {
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Selectores de estilo de subtítulo (dentro del panel oscuro) */
+.sce-sub-style {
+  padding: 10px 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.sce-sub-style .sc-font-pills { gap: 5px; }
+.sce-sub-style .sc-font-pill {
+  padding: 3px 9px;
+  font-size: 11px;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.6);
+}
+.sce-sub-style .sc-font-pill:hover {
+  border-color: #C4526A;
+  color: #C4526A;
+  background: rgba(196, 82, 106, 0.08);
+}
+.sce-sub-style .sc-font-pill.active {
+  background: rgba(196, 82, 106, 0.2);
+  border-color: #C4526A;
+  color: #fff;
+}
+.sce-sub-style .sc-color-swatches { gap: 5px; }
+.sce-sub-style .sc-color-swatch {
+  padding: 3px 8px;
+  font-size: 10px;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.55);
+}
+.sce-sub-style .sc-color-swatch:hover {
+  border-color: rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.85);
+}
+.sce-sub-style .sc-color-swatch.active {
+  border-color: var(--sw);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* Lista de segmentos */
+.sce-seg-list {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0 12px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+.sce-seg-list::-webkit-scrollbar { width: 4px; }
+.sce-seg-list::-webkit-scrollbar-track { background: transparent; }
+.sce-seg-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 2px;
+}
+.sce-seg-clip-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: rgba(255, 255, 255, 0.25);
+  padding: 10px 13px 3px;
+  margin: 0;
+}
+.sce-seg-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 5px 13px;
+  transition: background 0.12s;
+  border-left: 2px solid transparent;
+}
+.sce-seg-row:hover { background: rgba(255, 255, 255, 0.04); }
+.sce-seg-row--active {
+  background: rgba(196, 82, 106, 0.12);
+  border-left-color: #C4526A;
+}
+.sce-seg-time {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.3);
+  font-variant-numeric: tabular-nums;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: background 0.12s, color 0.12s;
+}
+.sce-seg-time:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.75);
+}
+.sce-seg-row--active .sce-seg-time { color: rgba(196, 82, 106, 0.8); }
+.sce-seg-text {
+  flex: 1;
+  text-align: left;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+  line-height: 1.55;
+  cursor: text;
+  padding: 0;
+  border-radius: 3px;
+  font-family: inherit;
+  transition: color 0.12s;
+  min-width: 0;
+  word-break: break-word;
+}
+.sce-seg-text:hover { color: rgba(255, 255, 255, 0.9); }
+.sce-seg-row--active .sce-seg-text { color: #fff; font-weight: 500; }
+.sce-seg-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(196, 82, 106, 0.5);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.55;
+  border-radius: 4px;
+  padding: 2px 6px;
+  outline: none;
+  font-family: inherit;
+  resize: none;
+}
+.sce-seg-input:focus { border-color: #C4526A; background: rgba(196, 82, 106, 0.08); }
+.sce-no-subs {
+  padding: 28px 16px;
+  text-align: center;
+}
+.sce-no-subs p {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 12px;
+  margin: 0 0 5px;
+}
+.sce-no-subs-hint {
+  font-size: 11px !important;
+  color: rgba(255, 255, 255, 0.22) !important;
+  line-height: 1.5;
+}
+
+/* ── Timeline ──────────────────────────────────────────────────────────── */
+.sce-timeline {
+  background: #0f0f18;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+.sce-tl-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255, 255, 255, 0.2);
+  padding: 7px 14px 4px;
+  flex-shrink: 0;
+}
+.sce-tl-inner {
+  display: flex;
+  align-items: stretch;
+  gap: 5px;
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0 14px 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+.sce-tl-inner::-webkit-scrollbar { height: 3px; }
+.sce-tl-inner::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+}
+
+/* Bloque de cada clip en el timeline */
+.sce-tl-clip {
+  position: relative;
+  flex-shrink: 0;
+  min-width: 90px;
+  background: #20203a;
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.18s, background 0.18s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 7px 8px 6px;
+  min-height: 0;
+}
+.sce-tl-clip:hover:not(.sce-tl-clip--pending) {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: #252545;
+}
+.sce-tl-clip--active {
+  border-color: #C4526A !important;
+  background: #281822 !important;
+}
+.sce-tl-clip--pending { opacity: 0.45; cursor: default; }
+
+/* Zona de silencio sobre el bloque */
+.sce-tl-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  transition: filter 0.12s;
+  cursor: pointer;
+}
+.sce-tl-zone--cut  { background: rgba(196, 82, 106, 0.45); }
+.sce-tl-zone--keep { background: rgba(34, 197, 94, 0.18); }
+.sce-tl-zone:hover { filter: brightness(1.4); }
+
+/* Línea de posición (playhead) */
+.sce-tl-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #C4526A;
+  box-shadow: 0 0 6px rgba(196, 82, 106, 0.7);
+  z-index: 3;
+  pointer-events: none;
+}
+
+/* Info del clip */
+.sce-tl-clip-meta {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+}
+.sce-tl-num {
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 3px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.sce-tl-name {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+}
+.sce-tl-dur {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.3);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+/* Botones del clip en el timeline */
+.sce-tl-btns {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  gap: 3px;
+  align-self: flex-end;
+}
+.sce-tl-btns button {
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  line-height: 1;
+}
+.sce-tl-btns button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.13);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+.sce-tl-btns button:disabled { opacity: 0.25; cursor: default; }
+.sce-tl-rm {
+  border-color: rgba(220, 60, 60, 0.25) !important;
+  color: rgba(220, 60, 60, 0.55) !important;
+}
+.sce-tl-rm:hover {
+  background: rgba(220, 60, 60, 0.15) !important;
+  color: #e05555 !important;
+  border-color: rgba(220, 60, 60, 0.45) !important;
+}
+
+/* Botón de agregar clip (+) */
+.sce-tl-add {
+  flex-shrink: 0;
+  width: 56px;
+  background: transparent;
+  border: 1.5px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.25);
+  font-size: 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s;
+  align-self: stretch;
+}
+.sce-tl-add:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: rgba(255, 255, 255, 0.55);
+}
+
+/* ── Responsive del editor (pantallas pequeñas) ────────────────────────── */
+@media (max-width: 768px) {
+  .sce-layout {
+    grid-template-rows: 52px 1fr 140px;
+  }
+  .sce-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  .sce-sub-panel {
+    border-left: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    max-height: 220px;
+  }
+  .sce-timeline { display: none; }
 }
