@@ -3277,6 +3277,7 @@ export default function App() {
   function renderDashboard() {
     const todayStr = clockNow.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" });
     const timeStr = clockNow.toLocaleTimeString("es-CO", { hour: "2-digit", minute: "2-digit" });
+    const todayDay = ["D","L","M","X","J","V","S"][new Date().getDay()];
     const urgentLeads = clients.filter((c) => c.status === "Lead caliente");
     const lastPublished = contentItems.filter((i) => i.status === "Publicado" && i.createdAt).sort((a, b) => b.createdAt - a.createdAt)[0];
     const daysSincePublish = lastPublished ? Math.floor((Date.now() - lastPublished.createdAt) / 86400000) : null;

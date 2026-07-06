@@ -480,10 +480,10 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
 
 // ─── Prompt: Plan de Negocio Público ──────────────────────────────────────
 function buildPlanNegocioPrompt(ctx) {
-  const nombre = ctx.nombre ? `Nombre: ${ctx.nombre}` : "";
-  return `Eres una asesora de negocios experta en mamás emprendedoras de Latinoamérica. Tu misión es construir un plan de negocio digital aterrizado, simple, humano y accionable — adaptado a la realidad de una mamá que quiere generar ingresos online.
+  const nombre = ctx.nombre ? `Nombre de la fundadora: ${ctx.nombre}` : "";
+  return `Eres una consultora de negocios especializada en elaborar planes de negocio formales para mamás emprendedoras de Latinoamérica. Tu misión es redactar un plan de negocio profesional, con mérito jurídico, apto para convocatorias de capital semilla, solicitudes de financiación e inversionistas ángel.
 
-INFORMACIÓN DE LA EMPRENDEDORA:
+PERFIL DE LA EMPRENDEDORA:
 ${nombre}
 - Historia personal: ${ctx.historia || ""}
 - Habilidades: ${ctx.habilidades || ""}
@@ -494,31 +494,42 @@ ${nombre}
 - Meta de ingresos: ${ctx.ingresos || ""}
 - Estilo de vida deseado: ${ctx.estiloVida || ""}
 
-INSTRUCCIONES GENERALES:
-- Escribe en español de LatAm, cálido, claro y sin jerga técnica.
-- Usa "tú" (nunca "usted" ni "vos").
-- Adapta todo a la realidad específica de esta mamá — no uses ejemplos genéricos.
-- El plan debe ser realista, práctico y útil para convocatorias de capital semilla, inversionistas y alianzas.
-- Propone un nombre de negocio basado en lo que ella hace.
-- Donde pongas proyecciones financieras, basalas en su meta de ingresos real.
-- PROHIBIDO: "empoderar", "potencial", "journey", "transformar tu vida", "éxito que mereces".
-- CRÍTICO: NUNCA uses comillas dobles (") dentro de los valores de texto — usa comillas simples (') si necesitas citar algo.
-- NO incluyas saltos de línea literales dentro de ningún string; escribe texto corrido separado por puntos.
-- LONGITUD: Cada campo string debe tener máximo 60 palabras. Sé directo y preciso — un plan conciso es más accionable que uno extenso.
+INSTRUCCIONES DE REDACCIÓN — OBLIGATORIAS:
+- VOZ: Escribe en PRIMERA PERSONA DEL PLURAL empresarial. Usa siempre 'Ofrecemos', 'Desarrollamos', 'Nuestro modelo', 'Nuestra propuesta', 'Nos dirigimos a', 'Generamos', 'Contamos con'. NUNCA uses 'ella', 'la emprendedora', 'su negocio' ni segunda persona.
+- TONO: Formal y profesional, como un documento que se presenta ante un banco, un fondo o una convocatoria gubernamental. Claro, preciso y sin frases vagas.
+- CONTENIDO: Usa toda la información del perfil. Infiere y amplía con criterio empresarial — no inventes datos numéricos que no se puedan sustentar, pero sí construye argumentos sólidos a partir de lo que ella describió.
+- NOMBRES: Propone un nombre de negocio concreto y memorable basado en lo que hace.
+- FINANZAS: Basa las proyecciones en la meta de ingresos real mencionada. Desglosa con coherencia.
+- PROHIBIDO en el texto: 'empoderar', 'potencial', 'journey', 'transformar tu vida', 'éxito que mereces', 'abundancia'.
+- CRÍTICO para el JSON: NUNCA uses comillas dobles (") dentro de los valores — usa comillas simples (') si necesitas citar algo. NO incluyas saltos de línea literales; escribe texto corrido con puntos.
 
-Genera el plan completo con esta estructura exacta en JSON:
+LONGITUDES OBJETIVO por campo (respétalas para que el documento sea completo sin truncarse):
+- resumenEjecutivo: 150-180 palabras
+- problema: 80-100 palabras
+- solucion.descripcion: 80-100 palabras
+- mercado.descripcion: 80-100 palabras
+- modeloNegocio.descripcion: 80-100 palabras
+- modeloNegocio.estructura: 60-80 palabras
+- ventajaCompetitiva: 60-80 palabras
+- estrategiaCrecimiento.embudo: exactamente 4 pasos (objetos con "paso" y "desc")
+- impacto (cada sub-campo): 40-50 palabras
+- proyeccionesFinancieras (cada año): objeto con 4 campos numéricos
+- usoRecursos.descripcion: 60-80 palabras
+- Arrays de strings: máximo 5 elementos, cada elemento máximo 15 palabras
 
-- nombreNegocio: string — nombre propuesto (máx 5 palabras)
-- resumenEjecutivo: string — qué hace, a quién ayuda, cómo genera ingresos y cuánto quiere crecer (máx 60 palabras)
-- problema: string — el dolor real de su cliente ideal (máx 40 palabras)
-- solucion: objeto con "descripcion" (string, máx 40 palabras), "productos" (array de 3-4 strings cortos), "areas" (array de 3-5 strings de 1-3 palabras)
-- mercado: objeto con "descripcion" (string, máx 40 palabras), "mercadoObjetivo" (string, máx 30 palabras), "clienteIdeal" (array de 4 strings cortos)
-- modeloNegocio: objeto con "descripcion" (string, máx 40 palabras), "lineasIngreso" (array de 3-4 strings con precio estimado), "estructura" (string, máx 40 palabras)
-- ventajaCompetitiva: string — por qué la elegirían a ella (máx 40 palabras)
-- estrategiaCrecimiento: objeto con "embudo" (string, máx 40 palabras), "fases" (array de 3 strings, cada uno máx 20 palabras)
-- impacto: objeto con "economico" (string, máx 30 palabras), "familiar" (string, máx 30 palabras), "educativo" (string, máx 30 palabras), "emocional" (string, máx 30 palabras)
-- proyeccionesFinancieras: objeto con "año1" (string, máx 40 palabras), "año2" (string, máx 30 palabras), "año3" (string, máx 30 palabras), "vision5anos" (string, máx 30 palabras)
-- usoRecursos: objeto con "descripcion" (string, máx 40 palabras), "categorias" (array de 3-4 strings con monto estimado)
+Genera el plan con esta estructura exacta en JSON:
+
+- nombreNegocio: string — nombre formal de la empresa (máx 5 palabras)
+- resumenEjecutivo: string — presentación ejecutiva en primera persona: qué somos, a quién servimos, cómo generamos valor, modelo de ingresos y visión de crecimiento (150-180 palabras)
+- problema: string — descripción del problema o necesidad del mercado que resolvemos, con contexto del mercado latinoamericano (80-100 palabras)
+- solucion: objeto con 'descripcion' (string, 80-100 palabras describiendo la solución en primera persona), 'productos' (array de 3-5 strings, cada uno describiendo un producto o servicio concreto con su formato y público), 'areas' (array de 3-5 strings de 2-4 palabras con las áreas de trabajo)
+- mercado: objeto con 'descripcion' (string, 80-100 palabras sobre el tamaño y características del mercado), 'mercadoObjetivo' (string, 40-50 palabras con perfil demográfico y psicográfico preciso), 'clienteIdeal' (array de 4-5 strings describiendo características concretas del cliente ideal)
+- modeloNegocio: objeto con 'descripcion' (string, 80-100 palabras explicando el modelo en primera persona), 'lineasIngreso' (array de 3-5 OBJETOS, cada uno con "nombre" (string, nombre del producto/servicio), "precio" (string, ej: "$15/mes" o "$97 único pago"), "clientes" (string, proyección, ej: "40-60"), "total" (string, total mensual estimado, ej: "$800-1,000/mes")), 'estructura' (string, 60-80 palabras explicando cómo opera el negocio)
+- ventajaCompetitiva: string — por qué nos elegirían a nosotros, qué nos diferencia concretamente de otras opciones del mercado (60-80 palabras)
+- estrategiaCrecimiento: objeto con 'embudo' (array de exactamente 4 OBJETOS, cada uno con "paso" (string, 2-3 palabras, ej: "Atracción orgánica") y "desc" (string, máx 8 palabras describiendo la acción concreta)) y 'fases' (array de exactamente 3 strings con formato "Fase 1 (meses 1-4): objetivos concretos", "Fase 2 (meses 5-8): objetivos", "Fase 3 (meses 9-12): objetivos", cada uno máx 25 palabras)
+- impacto: objeto que describe el impacto del NEGOCIO en sus CLIENTAS y en la comunidad — NO menciones a la fundadora por nombre ni su situación personal. Usa primera persona del plural empresarial o forma impersonal. Campos: 'economico' (string, 40-50 palabras sobre qué ingresos y bienestar económico generamos en nuestras clientas), 'familiar' (string, 40-50 palabras sobre cómo facilitamos el equilibrio familia-trabajo en nuestras clientas), 'educativo' (string, 40-50 palabras sobre formación y conocimientos que entregamos), 'emocional' (string, 40-50 palabras sobre la confianza y el bienestar que generamos en quienes trabajan con nosotros)
+- proyeccionesFinancieras: objeto con 'año1', 'año2', 'año3' (cada uno un OBJETO con "clientes" (string, cantidad proyectada de clientes ese año), "ingresos" (string, ingresos totales anuales estimados), "costos" (string, costos operativos anuales estimados), "utilidad" (string, utilidad neta anual estimada)) y 'vision5anos' (string, 30-40 palabras sobre la escala del negocio a 5 años)
+- usoRecursos: objeto con 'descripcion' (string, 60-80 palabras explicando para qué necesitamos financiación y qué impacto tendrá), 'categorias' (array de 3-5 OBJETOS con "categoria" (string, nombre breve de la categoría), "descripcion" (string, qué incluye, máx 6 palabras), "porcentaje" (string, ej: "30%"), "monto" (string, ej: "$6,000"))
 
 Responde SOLO JSON válido, sin texto extra, sin markdown:`;
 }
@@ -657,6 +668,97 @@ async function handlePlanNegocio(publicEmail, context, event) {
   return respond(200, { result: planResult, emailSent }, event);
 }
 
+// ─── Handler: Mejorar sección ─────────────────────────────────────────────
+async function handleMejorarSeccion(body, event) {
+  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
+  const { texto, seccion, negocio } = body;
+  if (!texto?.trim()) return respond(400, { error: "Falta texto" }, event);
+
+  const prompt = `Eres redactor especializado en planes de negocio formales para presentar ante inversionistas, fondos de capital semilla y convocatorias gubernamentales en Latinoamérica.
+
+Empresa: ${negocio || "la empresa"}
+Sección: ${seccion || "Plan de Negocio"}
+
+Texto a mejorar:
+${texto}
+
+Instrucciones:
+- Conserva TODOS los datos, cifras y hechos exactos sin excepción — no inventes ni elimines información
+- Usa primera persona del plural empresarial: 'Ofrecemos', 'Nuestro modelo', 'Desarrollamos', 'Contamos con', 'Generamos'
+- Tono formal y profesional — como documento para banco, fondo o convocatoria gubernamental
+- Lenguaje claro, preciso y directo — sin frases vagas ni adjetivos vacíos
+- Longitud similar al original o ligeramente mayor si mejora la claridad
+- PROHIBIDO: 'empoderar', 'potencial', 'journey', 'transformar tu vida', 'abundancia'
+
+Responde ÚNICAMENTE con el texto mejorado. Sin explicaciones, sin comillas al inicio o al final, sin markdown.`;
+
+  try {
+    const resultado = await callClaude(prompt, 1200);
+    return respond(200, { resultado: resultado.trim() }, event);
+  } catch (err) {
+    console.error("[mejorarSeccion] error:", err.message);
+    return respond(502, { error: "Error al mejorar el texto. Intenta de nuevo." }, event);
+  }
+}
+
+// ─── Handler: DOFA ────────────────────────────────────────────────────────
+async function handleDofa(body, event) {
+  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
+  const { plan } = body;
+  if (!plan) return respond(400, { error: "Falta plan" }, event);
+
+  const ctx = [
+    plan.nombreNegocio         && `Empresa: ${plan.nombreNegocio}`,
+    plan.resumenEjecutivo      && `Resumen: ${plan.resumenEjecutivo}`,
+    plan.problema              && `Problema que resuelve: ${plan.problema}`,
+    plan.solucion?.descripcion && `Solución: ${plan.solucion.descripcion}`,
+    plan.ventajaCompetitiva    && `Ventaja competitiva: ${plan.ventajaCompetitiva}`,
+    plan.mercado?.descripcion  && `Mercado: ${plan.mercado.descripcion}`,
+    plan.modeloNegocio?.descripcion && `Modelo: ${plan.modeloNegocio.descripcion}`,
+  ].filter(Boolean).join("\n");
+
+  const prompt = `Eres consultor estratégico especializado en análisis DOFA para pequeñas y medianas empresas de Latinoamérica.
+
+Plan de negocio:
+${ctx}
+
+Genera un análisis DOFA completo, honesto y específico a este negocio. No uses frases genéricas que apliquen a cualquier empresa.
+
+Reglas de contenido:
+- Fortalezas: capacidades internas reales. Primera persona: 'Contamos con experiencia en...', 'Ofrecemos un modelo de...', 'Nuestra fundadora tiene...'
+- Oportunidades: factores externos favorables del mercado. Impersonal: 'Mercado digital en expansión de...', 'Alta demanda de...'
+- Debilidades: limitaciones internas honestas y específicas. Impersonal: 'Dependencia de redes sociales...', 'Requiere construcción de marca...'
+- Amenazas: riesgos externos concretos. Impersonal: 'Alta competencia de plataformas globales', 'Volatilidad del tipo de cambio'
+- Exactamente 4 puntos por cuadrante, máximo 12 palabras cada punto
+- NUNCA uses comillas dobles (") dentro de los valores — usa comillas simples
+- NO incluyas saltos de línea literales
+
+Responde SOLO JSON válido:
+{"fortalezas":["f1","f2","f3","f4"],"oportunidades":["o1","o2","o3","o4"],"debilidades":["d1","d2","d3","d4"],"amenazas":["a1","a2","a3","a4"]}`;
+
+  let rawText;
+  try {
+    rawText = await callClaude(prompt, 800, "{");
+  } catch (err) {
+    console.error("[dofa] error:", err.message);
+    return respond(502, { error: "Error al generar el análisis DOFA. Intenta de nuevo." }, event);
+  }
+
+  let dofa;
+  try {
+    let txt = rawText.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+    const start = txt.indexOf("{");
+    const end   = txt.lastIndexOf("}");
+    if (start === -1 || end === -1) throw new Error("Sin JSON");
+    dofa = JSON.parse(txt.slice(start, end + 1));
+  } catch (err) {
+    console.error("[dofa] JSON parse error:", err.message, rawText?.slice(0, 400));
+    return respond(502, { error: "Respuesta no válida. Intenta de nuevo." }, event);
+  }
+
+  return respond(200, { dofa }, event);
+}
+
 // ─── Handler ──────────────────────────────────────────────────────────────
 export const handler = async (event) => {
   const method = event?.requestContext?.http?.method || event?.httpMethod || "POST";
@@ -669,6 +771,12 @@ export const handler = async (event) => {
   // Ruta pública: plan de negocio gratuito (sin JWT)
   if (body.type === "planNegocio" && body.publicEmail) {
     return handlePlanNegocio(body.publicEmail, body.context || {}, event);
+  }
+  if (body.type === "mejorarSeccion" && body.publicEmail) {
+    return handleMejorarSeccion(body, event);
+  }
+  if (body.type === "dofa" && body.publicEmail) {
+    return handleDofa(body, event);
   }
 
   const userId = getUserId(event);
