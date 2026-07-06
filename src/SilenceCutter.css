@@ -1577,6 +1577,27 @@
 .sce-fx-level:hover { border-color: #C4526A; color: #C4526A; }
 .sce-fx-level.active { background: #C4526A; border-color: #C4526A; color: #fff; }
 
+.sce-fx-reset {
+  font-size: 10px;
+  color: #C4526A;
+  background: rgba(196,82,106,.08);
+  border: none;
+  border-radius: 5px;
+  padding: 2px 7px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  transition: background .15s;
+}
+.sce-fx-reset:hover { background: rgba(196,82,106,.18); }
+.sce-fx-temp-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: #bbb;
+  margin-top: 3px;
+  padding: 0 2px;
+}
 .sce-fx-hint {
   font-size: 10px;
   color: #bbb;

@@ -42,6 +42,17 @@ function fmtSize(b) {
   return (b / 1024).toFixed(0) + " KB";
 }
 function uid() { return Math.random().toString(36).slice(2); }
+
+// Construye el filtro CSS combinado: corrección de color + suavizante de piel
+function buildVidFilter(brightness, contrast, saturation, skin) {
+  const parts = [];
+  if (brightness) parts.push(`brightness(${(1 + brightness / 100).toFixed(2)})`);
+  if (contrast)   parts.push(`contrast(${(1 + contrast / 100).toFixed(2)})`);
+  if (saturation) parts.push(`saturate(${(1 + saturation / 100).toFixed(2)})`);
+  if (skin > 0)   parts.push(SKIN_FILTERS[skin - 1]);
+  return parts.length ? parts.join(" ") : null;
+}
+
 function getSupportedMimeType() {
   return ["video/webm;codecs=vp9,opus","video/webm;codecs=vp8,opus","video/webm","video/mp4"]
     .find(t => MediaRecorder.isTypeSupported(t)) || "video/webm";
@@ -439,7 +450,7 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
 }
 
 // ── Grabación multi-clip ──────────────────────────────────────────────────
-async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape") {
+async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape", effects = {}) {
   const firstVid = document.createElement("video");
   const firstUrl = URL.createObjectURL(clips[0].file);
   firstVid.src = firstUrl;
@@ -505,7 +516,21 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
               ctx.drawImage(videoEl, bgX, bgY, bgW, bgH);
               ctx.restore();
             }
+            // Aplicar corrección de color + skin al frame principal
+            const { brightness = 0, contrast = 0, saturation = 0, skin = 0, temperature = 0 } = effects;
+            const vf = buildVidFilter(brightness, contrast, saturation, skin);
+            if (vf) { ctx.save(); ctx.filter = vf; }
             ctx.drawImage(videoEl, dX, dY, dW, dH);
+            if (vf) ctx.restore();
+            // Temperatura
+            if (temperature !== 0) {
+              ctx.save();
+              ctx.globalCompositeOperation = "overlay";
+              ctx.globalAlpha = Math.abs(temperature) / 250;
+              ctx.fillStyle = temperature > 0 ? "rgb(255,140,0)" : "rgb(30,100,255)";
+              ctx.fillRect(0, 0, outW, outH);
+              ctx.restore();
+            }
             drawSubtitle(ctx, outW, outH, videoEl.currentTime, clip.segments, subtitleStyle);
           }
           animId = requestAnimationFrame(drawLoop);
@@ -787,6 +812,37 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
         {bokehLoading && <p className="sce-fx-hint">Cargando modelo de segmentación...</p>}
       </div>
 
+      {/* Corrección de color */}
+      <div className="sce-fx-section">
+        <div className="sce-fx-row">
+          <p className="sce-fx-section-label">CORRECCIÓN DE COLOR</p>
+          {(effects.brightness || effects.contrast || effects.saturation || effects.temperature) ? (
+            <button className="sce-fx-reset" onClick={() => onEffectChange({ ...effects, brightness: 0, contrast: 0, saturation: 0, temperature: 0 })}>
+              Reset
+            </button>
+          ) : null}
+        </div>
+        {[
+          ["brightness", "Brillo",      -100, 100],
+          ["contrast",   "Contraste",   -100, 100],
+          ["saturation", "Saturación",  -100, 100],
+          ["temperature","Temperatura", -100, 100],
+        ].map(([key, label, min, max]) => (
+          <div key={key} className="sce-fx-slider-row" style={{ marginTop: 7 }}>
+            <span style={{ minWidth: 72 }}>{label}</span>
+            <input type="range" min={min} max={max} step="1" className="sce-fx-slider"
+              value={effects[key] ?? 0}
+              onChange={e => onEffectChange({ ...effects, [key]: +e.target.value })} />
+            <span style={{ minWidth: 30, textAlign: "right", color: effects[key] ? "#C4526A" : "#bbb" }}>
+              {effects[key] > 0 ? "+" : ""}{effects[key] ?? 0}
+            </span>
+          </div>
+        ))}
+        <div className="sce-fx-temp-labels">
+          <span>❄ Frío</span><span>☀ Cálido</span>
+        </div>
+      </div>
+
       <p className="sce-fx-footer">Los efectos se ven en preview y se exportan automáticamente.</p>
     </div>
   );
@@ -803,7 +859,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const segRef      = useRef(null);   // MediaPipe SelfieSegmentation instance
   const maskRef     = useRef(null);   // último segmentation mask
   const maskCbRef   = useRef(null);   // resolve pendiente para drawFrame blocking
-  const effectsRef  = useRef({ transition: "none", transitionSecs: 0.4, skin: 0, bokeh: 0 });
+  const effectsRef  = useRef({ transition: "none", transitionSecs: 0.4, skin: 0, bokeh: 0, brightness: 0, contrast: 0, saturation: 0, temperature: 0 });
   const formatRef   = useRef("landscape");
   const transAlpha  = useRef(0);      // 0-1 overlay negro/blanco para transiciones
   const transColor  = useRef("0,0,0");
@@ -818,7 +874,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const [cutMark,      setCutMark]      = useState(null);
   const [dims,         setDims]         = useState({ W: 1280, H: 720 });
   const [tab,          setTab]          = useState("subs");
-  const [effects,      setEffects]      = useState({ transition: "none", transitionSecs: 0.4, skin: 0, bokeh: 0 });
+  const [effects,      setEffects]      = useState({ transition: "none", transitionSecs: 0.4, skin: 0, bokeh: 0, brightness: 0, contrast: 0, saturation: 0, temperature: 0 });
   const [bokehLoading, setBokehLoading] = useState(false);
 
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
@@ -828,8 +884,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   // Renderiza un frame de `vid` al canvas ctx con todos los efectos activos.
   // blocking=true → espera el mask de bokeh (para seekTo); false → usa último mask (animation loop).
   const applyFrame = useCallback(async (ctx, vid, dX, dY, dW, dH, W, H, blocking = false) => {
-    const { skin, bokeh } = effectsRef.current;
-    const skinFilter = skin > 0 ? SKIN_FILTERS[skin - 1] : null;
+    const { skin, bokeh, brightness = 0, contrast = 0, saturation = 0, temperature = 0 } = effectsRef.current;
+    const vidFilter  = buildVidFilter(brightness, contrast, saturation, skin);
     const bgBlur     = bokeh > 0 ? BOKEH_BLUR[bokeh - 1] : 0;
     const seg        = segRef.current;
 
@@ -872,12 +928,12 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         try { seg.send({ image: vid }); } catch (_) {}
       }
 
-      // Persona (sharp + skin filter) recortada con el mask
+      // Persona (sharp + filtros color + skin) recortada con el mask
       const mc = new OffscreenCanvas(W, H);
       const mctx = mc.getContext("2d");
-      if (skinFilter) { mctx.save(); mctx.filter = skinFilter; }
+      if (vidFilter) { mctx.save(); mctx.filter = vidFilter; }
       mctx.drawImage(vid, zdX, zdY, zdW, zdH);
-      if (skinFilter) mctx.restore();
+      if (vidFilter) mctx.restore();
       if (mask) {
         mctx.globalCompositeOperation = "destination-in";
         mctx.drawImage(mask, 0, 0, W, H);
@@ -885,12 +941,22 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       }
       ctx.drawImage(mc, 0, 0);
 
-    } else if (skinFilter) {
-      ctx.save(); ctx.filter = skinFilter;
+    } else if (vidFilter) {
+      ctx.save(); ctx.filter = vidFilter;
       ctx.drawImage(vid, zdX, zdY, zdW, zdH);
       ctx.restore();
     } else {
       ctx.drawImage(vid, zdX, zdY, zdW, zdH);
+    }
+
+    // Temperatura: tinte cálido/frío sobre el frame ya dibujado
+    if (temperature !== 0) {
+      ctx.save();
+      ctx.globalCompositeOperation = "overlay";
+      ctx.globalAlpha = Math.abs(temperature) / 250;
+      ctx.fillStyle = temperature > 0 ? "rgb(255,140,0)" : "rgb(30,100,255)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
     }
 
     // Overlay de transición (fade/flash)
@@ -1200,7 +1266,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         </div>
 
         <div className="sce-topbar-right">
-          <button className="sc-btn-primary sc-btn-sm" onClick={onExport}>✂️ Exportar</button>
+          <button className="sc-btn-primary sc-btn-sm" onClick={() => onExport(effects)}>✂️ Exportar</button>
         </div>
       </div>
 
@@ -1355,13 +1421,13 @@ export default function SilenceCutter() {
   });
   const removeClip = id => setClips(prev => prev.filter(c => c.id !== id));
 
-  const exportar = async () => {
+  const exportar = async (effects = {}) => {
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) { setError("Analiza los clips primero."); return; }
     abortRef.current = false;
     setFase("cutting"); setProgress(0); setError("");
     try {
-      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format);
+      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format, effects);
       const totalOriginal = ready.reduce((t, c) => t + (c.duration || 0), 0);
       const totalCut = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0), 0);
       const totalCuts = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).length, 0);
