@@ -164,7 +164,7 @@ let _asr = null;
 async function loadTranscriber(onProgress) {
   if (_asr) return _asr;
   const { pipeline } = await import("@xenova/transformers");
-  _asr = await pipeline("automatic-speech-recognition", "Xenova/whisper-tiny", {
+  _asr = await pipeline("automatic-speech-recognition", "Xenova/whisper-base", {
     progress_callback: onProgress,
   });
   return _asr;
@@ -287,7 +287,7 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
     if (!prev) return;
     idx = words.indexOf(prev);
     const nextGroup = Math.floor(idx / GROUP) * GROUP + GROUP;
-    if (nextGroup < words.length && words[nextGroup].start - time > 1.2) return;
+    if (nextGroup < words.length && words[nextGroup].start - time > 3.0) return;
   }
   const groupStart = Math.floor(idx / GROUP) * GROUP;
   const group = words.slice(groupStart, groupStart + GROUP);
@@ -729,7 +729,7 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
         <div className="sce-transcribing">
           <div className="sce-trans-spinner" />
           <p className="sce-trans-msg">{transcribeMsg || "Generando subtítulos..."}</p>
-          <p className="sce-trans-hint">Whisper Tiny · Español · Primera vez ~77 MB</p>
+          <p className="sce-trans-hint">Whisper Base · Español · Primera vez ~145 MB</p>
         </div>
       ) : (
         <>
