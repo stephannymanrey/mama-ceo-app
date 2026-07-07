@@ -30,6 +30,16 @@ const SKIN_FILTERS  = [
 ];
 const BOKEH_BLUR    = [8, 14, 22];
 
+// Presets de edición automática
+const VIDEO_PRESETS = [
+  { id: "natural",  icon: "🌿", label: "Natural",  values: { brightness: 8,  contrast: 5,  saturation: 5,   skin: 1, temperature: 0   } },
+  { id: "warm",     icon: "☀️", label: "Cálida",   values: { brightness: 5,  contrast: 5,  saturation: 10,  skin: 1, temperature: 35  } },
+  { id: "vibrant",  icon: "✨", label: "Vibrante", values: { brightness: 5,  contrast: 12, saturation: 25,  skin: 1, temperature: 0   } },
+  { id: "fresh",    icon: "❄️", label: "Fresca",   values: { brightness: 5,  contrast: 10, saturation: 5,   skin: 0, temperature: -30 } },
+  { id: "cinema",   icon: "🎬", label: "Cinema",   values: { brightness: -5, contrast: 18, saturation: -12, skin: 0, temperature: -15 } },
+  { id: "none",     icon: "—",  label: "Sin efecto", values: { brightness: 0, contrast: 0,  saturation: 0,   skin: 0, temperature: 0, bokeh: 0 } },
+];
+
 // ── Utilidades ────────────────────────────────────────────────────────────
 function fmtTime(s) {
   if (!s || isNaN(s)) return "0:00";
@@ -742,8 +752,39 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
 
 // ── EffectsPanel ─────────────────────────────────────────────────────────
 function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bokehReady }) {
+  const [showFine, setShowFine] = useState(false);
+
+  const applyPreset = (preset) => {
+    onEffectChange({
+      transition: effects.transition, transitionSecs: effects.transitionSecs,
+      bokeh: effects.bokeh,
+      ...preset.values,
+      _preset: preset.id,
+    });
+  };
+
+  const setFine = (key, val) => onEffectChange({ ...effects, [key]: val, _preset: "custom" });
+
   return (
     <div className="sce-effects-panel">
+
+      {/* Presets de estilo */}
+      <div className="sce-fx-section">
+        <p className="sce-fx-section-label">ESTILO DE VIDEO</p>
+        <div className="sce-preset-grid">
+          {VIDEO_PRESETS.map(p => (
+            <button key={p.id}
+              className={`sce-preset-card${effects._preset === p.id ? " active" : ""}`}
+              onClick={() => applyPreset(p)}>
+              <span className="sce-preset-icon">{p.icon}</span>
+              <span className="sce-preset-label">{p.label}</span>
+            </button>
+          ))}
+        </div>
+        {effects._preset === "natural" && (
+          <p className="sce-fx-hint" style={{ color: "#5FB87A" }}>✓ Edición base aplicada — listo para exportar</p>
+        )}
+      </div>
 
       {/* Transiciones */}
       <div className="sce-fx-section">
@@ -759,7 +800,7 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
           ))}
         </div>
         {effects.transition !== "none" && (
-          <div className="sce-fx-slider-row">
+          <div className="sce-fx-slider-row" style={{ marginTop: 8 }}>
             <span>Duración</span>
             <input type="range" min="0.2" max="1.2" step="0.1" className="sce-fx-slider"
               value={effects.transitionSecs}
@@ -769,31 +810,11 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
         )}
       </div>
 
-      {/* Suavizante de piel */}
-      <div className="sce-fx-section">
-        <div className="sce-fx-row">
-          <p className="sce-fx-section-label">SUAVIZANTE DE PIEL</p>
-          <button className={`sce-fx-toggle${effects.skin ? " active" : ""}`}
-            onClick={() => onEffectChange({ ...effects, skin: effects.skin ? 0 : 1 })}>
-            {effects.skin ? "ON" : "OFF"}
-          </button>
-        </div>
-        {effects.skin > 0 && (
-          <div className="sce-fx-levels">
-            {["Suave", "Medio", "Fuerte"].map((l, i) => (
-              <button key={i} className={`sce-fx-level${effects.skin === i+1 ? " active" : ""}`}
-                onClick={() => onEffectChange({ ...effects, skin: i + 1 })}>{l}</button>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* Bokeh */}
       <div className="sce-fx-section">
         <div className="sce-fx-row">
-          <p className="sce-fx-section-label">DESENFOQUE DE FONDO (BOKEH)</p>
-          <button
-            className={`sce-fx-toggle${effects.bokeh ? " active" : ""}${bokehLoading ? " loading" : ""}`}
+          <p className="sce-fx-section-label">BOKEH DE FONDO</p>
+          <button className={`sce-fx-toggle${effects.bokeh ? " active" : ""}${bokehLoading ? " loading" : ""}`}
             onClick={onToggleBokeh} disabled={bokehLoading}>
             {bokehLoading ? "..." : effects.bokeh ? "ON" : "OFF"}
           </button>
@@ -806,41 +827,53 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
             ))}
           </div>
         )}
-        {!bokehReady && !bokehLoading && (
-          <p className="sce-fx-hint">Primera activación descarga modelo IA (~2 MB)</p>
-        )}
-        {bokehLoading && <p className="sce-fx-hint">Cargando modelo de segmentación...</p>}
+        {!bokehReady && !bokehLoading && <p className="sce-fx-hint">Primera activación descarga modelo IA (~2 MB)</p>}
+        {bokehLoading && <p className="sce-fx-hint">Cargando modelo...</p>}
       </div>
 
-      {/* Corrección de color */}
+      {/* Ajuste fino (colapsable) */}
       <div className="sce-fx-section">
-        <div className="sce-fx-row">
-          <p className="sce-fx-section-label">CORRECCIÓN DE COLOR</p>
-          {(effects.brightness || effects.contrast || effects.saturation || effects.temperature) ? (
-            <button className="sce-fx-reset" onClick={() => onEffectChange({ ...effects, brightness: 0, contrast: 0, saturation: 0, temperature: 0 })}>
-              Reset
-            </button>
-          ) : null}
-        </div>
-        {[
-          ["brightness", "Brillo",      -100, 100],
-          ["contrast",   "Contraste",   -100, 100],
-          ["saturation", "Saturación",  -100, 100],
-          ["temperature","Temperatura", -100, 100],
-        ].map(([key, label, min, max]) => (
-          <div key={key} className="sce-fx-slider-row" style={{ marginTop: 7 }}>
-            <span style={{ minWidth: 72 }}>{label}</span>
-            <input type="range" min={min} max={max} step="1" className="sce-fx-slider"
-              value={effects[key] ?? 0}
-              onChange={e => onEffectChange({ ...effects, [key]: +e.target.value })} />
-            <span style={{ minWidth: 30, textAlign: "right", color: effects[key] ? "#C4526A" : "#bbb" }}>
-              {effects[key] > 0 ? "+" : ""}{effects[key] ?? 0}
-            </span>
+        <button className="sce-fine-toggle" onClick={() => setShowFine(v => !v)}>
+          🎛 Ajuste fino {showFine ? "▲" : "▼"}
+        </button>
+        {showFine && (
+          <div style={{ marginTop: 10 }}>
+            {/* Suavizante de piel */}
+            <div className="sce-fx-row" style={{ marginBottom: 6 }}>
+              <p className="sce-fx-section-label" style={{ margin: 0 }}>SUAVIZANTE DE PIEL</p>
+              <button className={`sce-fx-toggle${effects.skin ? " active" : ""}`}
+                onClick={() => setFine("skin", effects.skin ? 0 : 1)}>
+                {effects.skin ? "ON" : "OFF"}
+              </button>
+            </div>
+            {effects.skin > 0 && (
+              <div className="sce-fx-levels" style={{ marginBottom: 10 }}>
+                {["Suave", "Medio", "Fuerte"].map((l, i) => (
+                  <button key={i} className={`sce-fx-level${effects.skin === i+1 ? " active" : ""}`}
+                    onClick={() => setFine("skin", i + 1)}>{l}</button>
+                ))}
+              </div>
+            )}
+            {/* Sliders de color */}
+            {[
+              ["brightness", "Brillo",     -100, 100],
+              ["contrast",   "Contraste",  -100, 100],
+              ["saturation", "Saturación", -100, 100],
+              ["temperature","Temperatura",-100, 100],
+            ].map(([key, label, min, max]) => (
+              <div key={key} className="sce-fx-slider-row" style={{ marginTop: 7 }}>
+                <span style={{ minWidth: 76 }}>{label}</span>
+                <input type="range" min={min} max={max} step="1" className="sce-fx-slider"
+                  value={effects[key] ?? 0}
+                  onChange={e => setFine(key, +e.target.value)} />
+                <span style={{ minWidth: 30, textAlign: "right", color: effects[key] ? "#C4526A" : "#bbb" }}>
+                  {(effects[key] ?? 0) > 0 ? "+" : ""}{effects[key] ?? 0}
+                </span>
+              </div>
+            ))}
+            <div className="sce-fx-temp-labels"><span>❄ Frío</span><span>☀ Cálido</span></div>
           </div>
-        ))}
-        <div className="sce-fx-temp-labels">
-          <span>❄ Frío</span><span>☀ Cálido</span>
-        </div>
+        )}
       </div>
 
       <p className="sce-fx-footer">Los efectos se ven en preview y se exportan automáticamente.</p>
@@ -859,7 +892,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const segRef      = useRef(null);   // MediaPipe SelfieSegmentation instance
   const maskRef     = useRef(null);   // último segmentation mask
   const maskCbRef   = useRef(null);   // resolve pendiente para drawFrame blocking
-  const effectsRef  = useRef({ transition: "none", transitionSecs: 0.4, skin: 0, bokeh: 0, brightness: 0, contrast: 0, saturation: 0, temperature: 0 });
+  const _nat        = VIDEO_PRESETS[0].values;
+  const effectsRef  = useRef({ transition: "none", transitionSecs: 0.4, bokeh: 0, ..._nat, _preset: "natural" });
   const formatRef   = useRef("landscape");
   const transAlpha  = useRef(0);      // 0-1 overlay negro/blanco para transiciones
   const transColor  = useRef("0,0,0");
@@ -874,7 +908,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const [cutMark,      setCutMark]      = useState(null);
   const [dims,         setDims]         = useState({ W: 1280, H: 720 });
   const [tab,          setTab]          = useState("subs");
-  const [effects,      setEffects]      = useState({ transition: "none", transitionSecs: 0.4, skin: 0, bokeh: 0, brightness: 0, contrast: 0, saturation: 0, temperature: 0 });
+  const [effects,      setEffects]      = useState(() => ({ transition: "none", transitionSecs: 0.4, bokeh: 0, ...VIDEO_PRESETS[0].values, _preset: "natural" }));
   const [bokehLoading, setBokehLoading] = useState(false);
 
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
@@ -1373,6 +1407,30 @@ export default function SilenceCutter() {
   const abortRef = useRef(false);
   const { noise: noiseDb, duration: minDur } = PRESETS["normal"];
 
+  const analyzingRef = useRef(false);
+
+  const analizarClips = useCallback(async (toAnalyze) => {
+    if (analyzingRef.current || !toAnalyze.length) return;
+    analyzingRef.current = true;
+    setFase("analyzing"); setError("");
+    for (let i = 0; i < toAnalyze.length; i++) {
+      const clip = toAnalyze[i];
+      setProgressMsg(`Analizando ${i + 1} de ${toAnalyze.length}: ${clip.name}`);
+      setProgress(Math.round((i / toAnalyze.length) * 100));
+      try {
+        const { duration, waveform, silences } = await analyzeClip(clip.file, noiseDb, minDur);
+        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
+      } catch (_) {
+        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, analyzed: true, error: "No se pudo analizar el audio" } : c));
+      }
+    }
+    setFase("editor");
+    analyzingRef.current = false;
+  }, [noiseDb, minDur]);
+
+  const analizarTodos = useCallback(() =>
+    analizarClips(clips.filter(c => !c.analyzed)), [clips, analizarClips]);
+
   const addFiles = useCallback(async (files) => {
     const valid = Array.from(files).filter(f => /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name) || f.type.startsWith("video/"));
     if (!valid.length) { setError("No se encontraron archivos de video válidos."); return; }
@@ -1387,27 +1445,9 @@ export default function SilenceCutter() {
       const thumb = await generateThumbnail(clip.file);
       setClips(prev => prev.map(c => c.id === clip.id ? { ...c, thumbnail: thumb } : c));
     });
-  }, []);
-
-  const onDrop = useCallback(e => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); }, [addFiles]);
-
-  const analizarTodos = async () => {
-    const toAnalyze = clips.filter(c => !c.analyzed);
-    if (!toAnalyze.length) return;
-    setFase("analyzing"); setError("");
-    for (let i = 0; i < toAnalyze.length; i++) {
-      const clip = toAnalyze[i];
-      setProgressMsg(`Analizando ${i + 1} de ${toAnalyze.length}: ${clip.name}`);
-      setProgress(Math.round((i / toAnalyze.length) * 100));
-      try {
-        const { duration, waveform, silences } = await analyzeClip(clip.file, noiseDb, minDur);
-        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
-      } catch (_) {
-        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, analyzed: true, error: "No se pudo analizar el audio" } : c));
-      }
-    }
-    setFase("editor");
-  };
+    // Auto-análisis inmediato al subir
+    analizarClips(newClips);
+  }, [analizarClips]);
 
   const toggleSilence = (clipId, silenceId) => {
     setClips(prev => prev.map(c => c.id !== clipId ? c : {

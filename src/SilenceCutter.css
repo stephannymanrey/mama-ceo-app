@@ -1577,6 +1577,53 @@
 .sce-fx-level:hover { border-color: #C4526A; color: #C4526A; }
 .sce-fx-level.active { background: #C4526A; border-color: #C4526A; color: #fff; }
 
+/* ── Presets de estilo ─────────────────────────────────────────────────── */
+.sce-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+.sce-preset-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 10px 4px 8px;
+  border: 1.5px solid #e8e4e8;
+  border-radius: 10px;
+  background: #fafafa;
+  cursor: pointer;
+  transition: all .18s;
+  font-family: inherit;
+}
+.sce-preset-card:hover { border-color: #C4526A; background: rgba(196,82,106,.05); }
+.sce-preset-card.active {
+  border-color: #C4526A;
+  background: rgba(196,82,106,.08);
+  box-shadow: 0 0 0 2px rgba(196,82,106,.18);
+}
+.sce-preset-icon { font-size: 18px; line-height: 1; }
+.sce-preset-label { font-size: 10px; font-weight: 600; color: #5a4a58; letter-spacing: .02em; }
+.sce-preset-card.active .sce-preset-label { color: #C4526A; }
+
+/* ── Ajuste fino (toggle colapsable) ───────────────────────────────────── */
+.sce-fine-toggle {
+  width: 100%;
+  text-align: left;
+  padding: 7px 10px;
+  background: #f5f2f5;
+  border: 1px solid #e8e4e8;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #7a6878;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .15s;
+}
+.sce-fine-toggle:hover { background: #ece8ec; }
+
 .sce-fx-reset {
   font-size: 10px;
   color: #C4526A;
