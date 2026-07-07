@@ -974,7 +974,7 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
 }
 
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze, format, onFormatChange, onExtractReels }) {
+function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze, format, onFormatChange, onExtractReels, sensitivity, onReanalyze }) {
   const canvasRef    = useRef(null);
   const playRef      = useRef(false);
   const subListRef   = useRef(null);
@@ -1377,6 +1377,19 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
               {analyzedClips.length} clip{analyzedClips.length !== 1 ? "s" : ""} · {fmtTime(totalKept)} final
             </span>
           )}
+          {/* Selector de sensibilidad de silencios */}
+          {onReanalyze && (
+            <div className="sce-sens-group">
+              {[["conservadora","Suave"],["normal","Normal"],["agresiva","Agresivo"]].map(([key, label]) => (
+                <button key={key}
+                  className={`sce-sens-btn${sensitivity === key ? " active" : ""}`}
+                  title={key === "conservadora" ? "Corta solo pausas largas (+0.8s)" : key === "normal" ? "Corta pausas medianas (+0.5s)" : "Corta pausas cortas (+0.3s)"}
+                  onClick={() => sensitivity !== key && onReanalyze(key)}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Selector de formato de salida */}
@@ -1700,9 +1713,10 @@ export default function SilenceCutter() {
   const [subtitleStyle, setSubtitleStyle] = useState({ font: "Poppins", hlColor: "#FFE44D" });
   const [format, setFormat] = useState("landscape"); // "landscape" | "portrait" | "square"
   const [showReels, setShowReels] = useState(false);
+  const [sensitivity, setSensitivity] = useState("conservadora");
   const inputRef = useRef(null);
   const abortRef = useRef(false);
-  const { noise: noiseDb, duration: minDur } = PRESETS["normal"];
+  const { noise: noiseDb, duration: minDur } = PRESETS[sensitivity];
 
   const analyzingRef = useRef(false);
 
@@ -1727,6 +1741,13 @@ export default function SilenceCutter() {
 
   const analizarTodos = useCallback(() =>
     analizarClips(clips.filter(c => !c.analyzed)), [clips, analizarClips]);
+
+  const reanalizar = useCallback((newSensitivity) => {
+    setSensitivity(newSensitivity);
+    const reset = clips.map(c => ({ ...c, analyzed: false, silences: [], waveform: null }));
+    setClips(reset);
+    analizarClips(reset);
+  }, [clips, analizarClips]);
 
   const addFiles = useCallback(async (files) => {
     const valid = Array.from(files).filter(f => /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name) || f.type.startsWith("video/"));
@@ -1843,7 +1864,8 @@ export default function SilenceCutter() {
       moveClip={moveClip} removeClip={removeClip} toggleSilence={toggleSilence}
       onAnalyze={analizarTodos}
       format={format} onFormatChange={setFormat}
-      onExtractReels={() => setShowReels(true)} />
+      onExtractReels={() => setShowReels(true)}
+      sensitivity={sensitivity} onReanalyze={reanalizar} />
   );
 
   // Pantalla de subida
