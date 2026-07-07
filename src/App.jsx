@@ -948,6 +948,7 @@ export default function App() {
   const BETA_CODES = [
     { hash: "1df2627e3ac0f8268c070acdbf13b0d354f16f2c38bf873dee2d54b86af13440", days: 90, expiry: new Date("2026-12-31T23:59:59").getTime() },
     { hash: "42f8fdb0a7354c04e994970759b87588906eccb7741c9bc5a7dd52471f7961bf", days: 60, expiry: new Date("2027-12-31T23:59:59").getTime() },
+    { hash: "e838734981031ac5ebe63fc160b956a2b17c3e34768c34d73c4f3b2ff20d71d9", days: 60, expiry: new Date("2027-12-31T23:59:59").getTime() },
   ];
   const hashCode = async (str) => {
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
@@ -996,13 +997,18 @@ export default function App() {
 
   const isBetaUser = userPlan === "premium" && premiumExpiresAt !== null;
 
+  // Cuando el período termina, llevar a elegir plan
+  useEffect(() => {
+    if (isBetaUser && betaDaysLeft === 0) setActiveView("pricing");
+  }, [isBetaUser, betaDaysLeft]);
+
   const activateBetaCode = async (e) => {
     e.preventDefault();
     setBetaCodeError("");
     const entered = await hashCode(betaCode.trim().toUpperCase());
     const match = BETA_CODES.find(c => entered === c.hash);
     if (!match) {
-      setBetaCodeError("Código incorrecto. Verifica el correo de bienvenida de UMP Academy.");
+      setBetaCodeError("Código incorrecto. Verifica que lo escribiste exactamente como te lo enviaron.");
       return;
     }
     if (Date.now() > match.expiry) {
@@ -2708,7 +2714,7 @@ export default function App() {
         )}
 
         {/* Banner beta motivacional */}
-        {isBetaUser && effectivePlan === "premium" && betaDaysLeft !== null && (
+        {isBetaUser && betaDaysLeft !== null && (
           <div className="beta-banner">
             {betaDaysLeft > 30 ? (
               <><span>🌟</span><div><strong>Bienvenida al grupo beta de Mamá CEO</strong><p>Tienes <b>{betaDaysLeft} días</b> de acceso Premium gratis. ¡Úsalos para construir el hábito de organizar tu negocio y hogar!</p></div></>
