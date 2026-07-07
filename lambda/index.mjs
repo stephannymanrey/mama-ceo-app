@@ -759,6 +759,59 @@ Responde SOLO JSON válido:
   return respond(200, { dofa }, event);
 }
 
+// ─── Handler: Extraer fragmentos virales para Reels ───────────────────────
+async function handleExtractReels(body, event) {
+  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
+  const { transcription, duration } = body;
+  if (!transcription?.trim()) return respond(400, { error: "Falta transcripción" }, event);
+
+  const durMin = Math.round((duration || 0) / 60);
+
+  const prompt = `Eres experta en contenido viral para Instagram Reels y TikTok de Latinoamérica, especializada en mamás emprendedoras y mujeres de negocios.
+
+Video de ${durMin} minuto${durMin !== 1 ? "s" : ""}. Transcripción con timestamps en segundos:
+
+${transcription}
+
+Extrae exactamente 6 fragmentos para Reels. Criterios de selección:
+- Momentos con gancho emocional fuerte o revelación personal
+- Tips accionables y directos
+- Historias o testimonios concretos
+- Frases memorables que generen identificación
+- Cada fragmento: entre 25 y 90 segundos, coherente y completo
+- No cortes en medio de una oración — el fragmento debe tener inicio y cierre claros
+- Añade 2 segundos de margen al inicio y 2 al final
+- Variedad: evita fragmentos consecutivos o muy similares en tema
+
+Responde SOLO JSON válido, sin texto extra, sin markdown:
+[{"titulo":"string (4-6 palabras)","inicio":number,"fin":number,"hook":"string (gancho en máx 12 palabras)","por_que":"string (razón viral en máx 10 palabras)"}]`;
+
+  let rawText;
+  try {
+    rawText = await callClaude(prompt, 1200, "[");
+  } catch (err) {
+    console.error("[extractReels] callClaude error:", err.message);
+    return respond(502, { error: "Error al analizar el video. Intenta de nuevo." }, event);
+  }
+
+  let fragmentos;
+  try {
+    let txt = rawText.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+    const si = txt.indexOf("["), ei = txt.lastIndexOf("]");
+    if (si === -1 || ei === -1) throw new Error("No JSON array");
+    fragmentos = JSON.parse(txt.slice(si, ei + 1));
+    fragmentos = fragmentos.filter(f =>
+      typeof f.inicio === "number" && typeof f.fin === "number" && f.fin > f.inicio + 5
+    );
+    if (!fragmentos.length) throw new Error("Sin fragmentos válidos");
+  } catch (err) {
+    console.error("[extractReels] parse error:", err.message, rawText?.slice(0, 300));
+    return respond(502, { error: "No se pudo interpretar la respuesta. Intenta de nuevo." }, event);
+  }
+
+  return respond(200, { fragmentos }, event);
+}
+
 // ─── Handler ──────────────────────────────────────────────────────────────
 export const handler = async (event) => {
   const method = event?.requestContext?.http?.method || event?.httpMethod || "POST";
@@ -777,6 +830,9 @@ export const handler = async (event) => {
   }
   if (body.type === "dofa" && body.publicEmail) {
     return handleDofa(body, event);
+  }
+  if (body.type === "extractReels" && body.publicEmail) {
+    return handleExtractReels(body, event);
   }
 
   const userId = getUserId(event);

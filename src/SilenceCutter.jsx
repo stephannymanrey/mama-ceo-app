@@ -2,6 +2,8 @@ import React, { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import Logo from "./Logo";
 import "./SilenceCutter.css";
 
+const REELS_API = "https://lq3avrfazlfuyaakkt5iwz54ym0aqxvv.lambda-url.us-east-1.on.aws/";
+
 // ── Constantes ────────────────────────────────────────────────────────────
 const PRESETS = {
   conservadora: { noise: -45, duration: 0.8 },
@@ -580,6 +582,96 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
   });
 }
 
+// ── Exportar un fragmento individual ─────────────────────────────────────
+async function recordSingleFragment(clip, start, end, onProgress, subtitleStyle = {}, format = "portrait", effects = {}) {
+  const firstVid = document.createElement("video");
+  const firstUrl = URL.createObjectURL(clip.file);
+  firstVid.src = firstUrl;
+  await new Promise(r => { firstVid.onloadedmetadata = r; firstVid.onerror = r; });
+  const W = firstVid.videoWidth || 1280, H = firstVid.videoHeight || 720;
+  URL.revokeObjectURL(firstUrl);
+
+  const outW = format === "portrait" ? Math.round(H * 9 / 16) : format === "square" ? Math.min(W, H) : W;
+  const outH = format === "square" ? Math.min(W, H) : H;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = outW; canvas.height = outH;
+  const ctx = canvas.getContext("2d");
+
+  const audioCtx = new AudioContext();
+  const destination = audioCtx.createMediaStreamDestination();
+  const canvasStream = canvas.captureStream(30);
+  const combinedStream = new MediaStream([canvasStream.getVideoTracks()[0], destination.stream.getAudioTracks()[0]]);
+  const mimeType = getSupportedMimeType();
+  const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 192_000 });
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  recorder.start(100);
+
+  const segDuration = Math.max(0.1, end - start);
+  const { brightness = 0, contrast = 0, saturation = 0, skin = 0, temperature = 0 } = effects;
+  const vf = buildVidFilter(brightness, contrast, saturation, skin);
+
+  await new Promise(resolve => {
+    const vid = document.createElement("video");
+    const url = URL.createObjectURL(clip.file);
+    vid.src = url; vid.crossOrigin = "anonymous";
+    vid.addEventListener("loadedmetadata", async () => {
+      let src;
+      try { src = audioCtx.createMediaElementSource(vid); src.connect(destination); } catch (_) {}
+      const vW = vid.videoWidth || W, vH = vid.videoHeight || H;
+      const scale = Math.min(outW / vW, outH / vH);
+      const dW = vW * scale, dH = vH * scale, dX = (outW - dW) / 2, dY = (outH - dH) / 2;
+
+      let animId;
+      const drawLoop = () => {
+        ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
+        if (!vid.paused && !vid.ended) {
+          if (format !== "landscape") {
+            const bgS = Math.max(outW / vW, outH / vH);
+            const bgW = vW * bgS, bgH = vH * bgS;
+            ctx.save(); ctx.filter = "blur(20px) brightness(0.6) saturate(1.4)";
+            ctx.drawImage(vid, (outW - bgW) / 2, (outH - bgH) / 2, bgW, bgH);
+            ctx.restore();
+          }
+          if (vf) { ctx.save(); ctx.filter = vf; }
+          ctx.drawImage(vid, dX, dY, dW, dH);
+          if (vf) ctx.restore();
+          if (temperature !== 0) {
+            ctx.save(); ctx.globalCompositeOperation = "overlay";
+            ctx.globalAlpha = Math.abs(temperature) / 250;
+            ctx.fillStyle = temperature > 0 ? "rgb(255,140,0)" : "rgb(30,100,255)";
+            ctx.fillRect(0, 0, outW, outH); ctx.restore();
+          }
+          drawSubtitle(ctx, outW, outH, vid.currentTime, clip.segments, subtitleStyle);
+        }
+        animId = requestAnimationFrame(drawLoop);
+      };
+
+      vid.currentTime = Math.max(0, start);
+      await new Promise(r => { vid.onseeked = r; });
+      vid.play().catch(() => {});
+      animId = requestAnimationFrame(drawLoop);
+
+      const interval = setInterval(() => {
+        const ct = vid.currentTime;
+        if (onProgress) onProgress(Math.min(1, (ct - start) / segDuration));
+        if (ct >= end - 0.05 || vid.ended) {
+          clearInterval(interval); cancelAnimationFrame(animId); vid.pause();
+          if (src) try { src.disconnect(); } catch (_) {}
+          URL.revokeObjectURL(url); resolve();
+        }
+      }, 50);
+    });
+    vid.onerror = () => { URL.revokeObjectURL(url); resolve(); };
+  });
+
+  recorder.stop();
+  return new Promise(res => {
+    recorder.onstop = () => { audioCtx.close(); res(new Blob(chunks, { type: mimeType })); };
+  });
+}
+
 // ── SegmentRow ────────────────────────────────────────────────────────────
 function SegmentRow({ line, isActive, onEdit, onSeek }) {
   const [editing, setEditing] = useState(false);
@@ -882,7 +974,7 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
 }
 
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze, format, onFormatChange }) {
+function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze, format, onFormatChange, onExtractReels }) {
   const canvasRef    = useRef(null);
   const playRef      = useRef(false);
   const subListRef   = useRef(null);
@@ -1300,6 +1392,9 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         </div>
 
         <div className="sce-topbar-right">
+          {onExtractReels && (
+            <button className="sce-reel-pill" onClick={onExtractReels} title="Extractor de Reels">🎯 Reels</button>
+          )}
           <button className="sc-btn-primary sc-btn-sm" onClick={() => onExport(effects)}>✂️ Exportar</button>
         </div>
       </div>
@@ -1392,6 +1487,207 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   );
 }
 
+// ── Extractor de Reels ───────────────────────────────────────────────────
+const REELS_FMT_DEFAULT = "portrait";
+const REELS_EFFECTS_DEFAULT = { ...VIDEO_PRESETS[0].values };
+
+function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
+  const [phase,       setPhase]       = useState("idle");
+  const [msg,         setMsg]         = useState("");
+  const [fragments,   setFragments]   = useState([]);
+  const [reelFmt,     setReelFmt]     = useState(REELS_FMT_DEFAULT);
+  const [reelEffects, setReelEffects] = useState(REELS_EFFECTS_DEFAULT);
+  const [exporting,   setExporting]   = useState(null); // idx | null
+  const [progMap,     setProgMap]     = useState({});
+  const [urlMap,      setUrlMap]      = useState({});
+
+  const clip = clips.find(c => c.analyzed && !c.error);
+
+  const run = useCallback(async () => {
+    if (!clip) return;
+    setPhase("transcribing"); setMsg("Transcribiendo video con IA...");
+
+    // 1. Transcribir si no hay segmentos
+    let segments = clip.segments?.length ? clip.segments : null;
+    if (!segments) {
+      try {
+        const asr = await loadTranscriber(info => {
+          if (info.status === "downloading")
+            setMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
+        });
+        setMsg("Transcribiendo...");
+        const { audio, mappingRanges } = await getKeptAudioMono16k(clip.file, clip.silences || []);
+        const result = await asr(audio, { language: "spanish", task: "transcribe", return_timestamps: "word", chunk_length_s: 30, stride_length_s: 5 });
+        segments = (result.chunks || []).map(c => ({
+          word: c.text.replace(/^\s+/, ""),
+          start: mapCondensedToOriginal(c.timestamp[0] ?? 0, mappingRanges),
+          end:   mapCondensedToOriginal(c.timestamp[1] ?? ((c.timestamp[0] ?? 0) + 0.5), mappingRanges),
+        })).filter(s => s.word);
+      } catch {
+        setPhase("error"); setMsg("Error en la transcripción. Intenta de nuevo."); return;
+      }
+    }
+    if (!segments.length) { setPhase("error"); setMsg("No se pudo transcribir el video."); return; }
+
+    // 2. Formatear transcripción con timestamps cada 8 palabras
+    setPhase("analyzing"); setMsg("Analizando con IA para encontrar los mejores momentos para Reels...");
+    const parts = [];
+    segments.forEach((s, i) => {
+      if (i % 8 === 0) parts.push(`[${Math.round(s.start)}s]`);
+      parts.push(s.word);
+    });
+
+    // 3. Llamar a la lambda
+    try {
+      const res = await fetch(REELS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "extractReels",
+          publicEmail: "app@mamaceo.co",
+          transcription: parts.join(" "),
+          duration: clip.duration || 0,
+        }),
+      });
+      const data = await res.json();
+      if (!data.fragmentos?.length) throw new Error("Sin fragmentos");
+      // Clamp timestamps to clip duration
+      const dur = clip.duration || Infinity;
+      setFragments(data.fragmentos.map(f => ({
+        ...f,
+        inicio: Math.max(0, Math.min(f.inicio, dur - 5)),
+        fin:    Math.max(f.inicio + 5, Math.min(f.fin, dur)),
+      })));
+      setPhase("ready"); setMsg("");
+    } catch {
+      setPhase("error"); setMsg("Error al analizar. Intenta de nuevo.");
+    }
+  }, [clip]);
+
+  const exportFragment = useCallback(async (idx) => {
+    if (exporting !== null) return;
+    const f = fragments[idx];
+    if (!f || !clip) return;
+    setExporting(idx);
+    setProgMap(p => ({ ...p, [idx]: 0 }));
+    try {
+      const blob = await recordSingleFragment(
+        clip, f.inicio, f.fin,
+        p => setProgMap(prev => ({ ...prev, [idx]: Math.round(p * 100) })),
+        subtitleStyle, reelFmt, reelEffects
+      );
+      setUrlMap(u => ({ ...u, [idx]: URL.createObjectURL(blob) }));
+    } catch (e) { console.error(e); }
+    setExporting(null);
+    setProgMap(p => { const n = { ...p }; delete n[idx]; return n; });
+  }, [exporting, fragments, clip, subtitleStyle, reelFmt, reelEffects]);
+
+  return (
+    <div className="sce-reel-screen">
+      {/* Top bar */}
+      <div className="sce-reel-topbar">
+        <button className="sce-reel-back" onClick={onBack}>← Editor</button>
+        <h2 className="sce-reel-title">🎯 Extractor de Reels</h2>
+        <div className="sce-fmt-group" style={{ marginLeft: "auto" }}>
+          {[["portrait","9:16 ▲"],["landscape","16:9 ▷"],["square","1:1 □"]].map(([f, label]) => (
+            <button key={f} className={`sce-fmt-btn${reelFmt === f ? " active" : ""}`}
+              onClick={() => setReelFmt(f)}>{label}</button>
+          ))}
+        </div>
+      </div>
+
+      {/* Pantalla de inicio */}
+      {phase === "idle" && (
+        <div className="sce-reel-intro">
+          <div className="sce-reel-intro-icon">🎯</div>
+          <h3 className="sce-reel-intro-h">Convierte tu video largo en Reels virales</h3>
+          <p className="sce-reel-intro-p">
+            La IA transcribe tu video, detecta los 6 momentos más valiosos y te los entrega listos para descargar uno a uno.
+          </p>
+          <div className="sce-reel-preset-row">
+            {VIDEO_PRESETS.slice(0,4).map(p => (
+              <button key={p.id}
+                className={`sce-preset-card${reelEffects === VIDEO_PRESETS.find(x=>x.id===p.id)?.values ? " active" : ""} sce-preset-card--sm`}
+                onClick={() => setReelEffects(p.values)}>
+                <span className="sce-preset-icon">{p.icon}</span>
+                <span className="sce-preset-label">{p.label}</span>
+              </button>
+            ))}
+          </div>
+          <button className="sce-reel-start-btn" onClick={run} disabled={!clip}>
+            ✨ Analizar con IA
+          </button>
+          {!clip && <p style={{ color: "#C4526A", marginTop: 8, fontSize: 13 }}>Analiza un clip en el editor primero.</p>}
+        </div>
+      )}
+
+      {/* Cargando */}
+      {(phase === "transcribing" || phase === "analyzing") && (
+        <div className="sce-reel-loading">
+          <div className="sce-reel-spinner" />
+          <p className="sce-reel-loading-msg">{msg}</p>
+          <p className="sce-reel-loading-hint">Esto puede tardar 1-2 minutos según la duración del video.</p>
+        </div>
+      )}
+
+      {/* Error */}
+      {phase === "error" && (
+        <div className="sce-reel-loading">
+          <p style={{ color: "#C4526A" }}>{msg}</p>
+          <button className="sce-reel-start-btn" onClick={() => setPhase("idle")}>Intentar de nuevo</button>
+        </div>
+      )}
+
+      {/* Resultados */}
+      {phase === "ready" && (
+        <div className="sce-reel-results">
+          <p className="sce-reel-results-subtitle">
+            Se encontraron {fragments.length} fragmentos · Exporta los que te gusten en {reelFmt === "portrait" ? "9:16 (Reels)" : reelFmt === "square" ? "1:1 (Feed)" : "16:9 (YouTube)"}
+          </p>
+          <div className="sce-reel-grid">
+            {fragments.map((f, idx) => {
+              const dur = f.fin - f.inicio;
+              const prog = progMap[idx];
+              const url = urlMap[idx];
+              return (
+                <div key={idx} className="sce-reel-card">
+                  <div className="sce-reel-num">#{idx + 1}</div>
+                  <div className="sce-reel-card-title">{f.titulo}</div>
+                  <div className="sce-reel-meta">
+                    {fmtTime(f.inicio)} → {fmtTime(f.fin)} · <strong>{fmtTime(dur)}</strong>
+                  </div>
+                  <div className="sce-reel-hook">"{f.hook}"</div>
+                  <div className="sce-reel-why">📌 {f.por_que}</div>
+                  <div className="sce-reel-actions">
+                    {url ? (
+                      <a href={url}
+                        download={`reel-${idx+1}-${f.titulo.replace(/\s+/g,"-").toLowerCase()}.webm`}
+                        className="sce-reel-download">
+                        ⬇ Descargar Reel
+                      </a>
+                    ) : prog !== undefined ? (
+                      <div className="sce-reel-prog-wrap">
+                        <div className="sce-reel-prog-bar" style={{ width: `${prog}%` }} />
+                        <span className="sce-reel-prog-pct">{prog}%</span>
+                      </div>
+                    ) : (
+                      <button className="sce-reel-export-btn"
+                        onClick={() => exportFragment(idx)}
+                        disabled={exporting !== null}>
+                        ✂️ Exportar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Componente principal ──────────────────────────────────────────────────
 export default function SilenceCutter() {
   const [clips, setClips]           = useState([]);
@@ -1403,6 +1699,7 @@ export default function SilenceCutter() {
   const [dragOver, setDragOver]     = useState(false);
   const [subtitleStyle, setSubtitleStyle] = useState({ font: "Poppins", hlColor: "#FFE44D" });
   const [format, setFormat] = useState("landscape"); // "landscape" | "portrait" | "square"
+  const [showReels, setShowReels] = useState(false);
   const inputRef = useRef(null);
   const abortRef = useRef(false);
   const { noise: noiseDb, duration: minDur } = PRESETS["normal"];
@@ -1530,13 +1827,22 @@ export default function SilenceCutter() {
     </div>
   );
 
+  if (fase === "editor" && analyzedCount > 0 && showReels) return (
+    <ReelsExtractorScreen
+      clips={clips}
+      subtitleStyle={subtitleStyle}
+      onBack={() => setShowReels(false)}
+    />
+  );
+
   if (fase === "editor" && analyzedCount > 0) return (
     <EditorScreen clips={clips} setClips={setClips}
       subtitleStyle={subtitleStyle} onStyleChange={setSubtitleStyle}
       onExport={exportar} onAddFiles={addFiles}
       moveClip={moveClip} removeClip={removeClip} toggleSilence={toggleSilence}
       onAnalyze={analizarTodos}
-      format={format} onFormatChange={setFormat} />
+      format={format} onFormatChange={setFormat}
+      onExtractReels={() => setShowReels(true)} />
   );
 
   // Pantalla de subida
