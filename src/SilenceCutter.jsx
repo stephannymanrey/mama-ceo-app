@@ -1757,6 +1757,7 @@ export default function SilenceCutter() {
     const arr = [...prev]; [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]]; return arr;
   });
   const removeClip = id => setClips(prev => prev.filter(c => c.id !== id));
+  const onDrop = (e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); };
 
   const exportar = async (effects = {}) => {
     const ready = clips.filter(c => c.analyzed && !c.error);
