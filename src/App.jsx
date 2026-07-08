@@ -2658,6 +2658,13 @@ export default function App() {
             <span className="sidebar-tool-icon">📅</span>
             <span className="sidebar-tool-label">Calendario</span>
           </button>
+          <button
+            className="sidebar-tool-btn"
+            onClick={() => setShowCalcModal(true)}
+            title="Calculadora & Reinversión">
+            <span className="sidebar-tool-icon">🧮</span>
+            <span className="sidebar-tool-label">Calculadora</span>
+          </button>
 
           {/* Mini Apps */}
           <div className="sidebar-miniapps-divider">
