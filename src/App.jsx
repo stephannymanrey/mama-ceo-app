@@ -4171,8 +4171,7 @@ export default function App() {
         {businessTab === 2 && (
           <div key="biz-tab-2" className="tab-content-anim">{(()=>{
             const bizPaymentsBudget = bizPayments.reduce((s,p)=>s+p.amount,0);
-            const totalSourceGoal = incomeBySource.reduce((s,src)=>s+(src.goal||0),0);
-            const incomeTarget = totalSourceGoal > 0 ? totalSourceGoal : monthlyGoal;
+            const incomeTarget = monthlyGoal;
             const incomeProgress2 = incomeTarget>0?Math.min(100,Math.round((totals.income/incomeTarget)*100)):0;
             const spendProgress2 = bizPaymentsBudget>0?Math.min(100,Math.round((totals.expenses/bizPaymentsBudget)*100)):0;
             const incomeBarColor2 = incomeProgress2>=75?"#1D9E75":incomeProgress2>=40?"#D97706":"#C4526A";
@@ -4259,25 +4258,101 @@ export default function App() {
               </div>
             </div>
 
-            {/* Top / bottom fuente */}
-            {(topSource||bottomSource)&&(
-              <div className="biz-rank-grid" style={{marginBottom:"14px"}}>
-                {topSource&&<div className="biz-rank-card biz-rank-card--top"><p className="biz-rank-label">🏆 Tu top</p><p className="biz-rank-name">{topSource.name}</p><p className="biz-rank-val">{money.format(topSource.actual)}</p></div>}
-                {bottomSource&&<div className="biz-rank-card biz-rank-card--bottom"><p className="biz-rank-label">📉 Menor aporte</p><p className="biz-rank-name">{bottomSource.name}</p><p className="biz-rank-val">{money.format(bottomSource.actual)}</p></div>}
-              </div>
-            )}
-
             </>);
           })()}
 
-            {/* Mis fuentes de ingreso */}
+            {/* ── Tus movimientos ── */}
+            <div className="card movement-card" style={{marginBottom:"14px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px",flexWrap:"wrap",gap:"8px"}}>
+                <h3 style={{margin:0}}>Tus movimientos</h3>
+                <div style={{display:"flex",gap:"8px"}}>
+                  <button type="button" onClick={exportMovementsToExcel}
+                    style={{padding:"6px 14px",border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700}}>📊 Excel</button>
+                  <button type="button" onClick={exportMovementsToPdf}
+                    style={{padding:"6px 14px",border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700}}>📄 PDF</button>
+                </div>
+              </div>
+              {sortedMovements.length === 0 && <p style={{color:"var(--muted)",fontSize:"14px"}}>Sin movimientos registrados aún.</p>}
+              {sortedMovements.slice(0, bizHistoryLimit).map(m => (
+                <div className="movement-row" key={m.id}>
+                  <span className={m.type}>{m.type==="income"?"+":"-"}</span>
+                  <div>
+                    <strong>{m.description}</strong>
+                    <small>{m.classification} · {m.category} · {m.bank||"Sin banco"}</small>
+                    <small>Fecha: {formatShortDate(m.date||m.createdAt)}</small>
+                  </div>
+                  <input className="movement-date-input" type="date" value={inputDateFromValue(m.date||m.createdAt)}
+                    onChange={e=>updateMovementDate(m.id,e.target.value)} aria-label={`Fecha de ${m.description}`} />
+                  <b>{money.format(m.amount)}</b>
+                  <button className="row-delete" type="button"
+                    onClick={()=>confirmDelete("¿Eliminar este movimiento?",()=>setMovements(c=>c.filter(i=>i.id!==m.id)))}>×</button>
+                </div>
+              ))}
+              {sortedMovements.length > bizHistoryLimit && (
+                <button type="button" className="biz-detail-toggle" style={{marginTop:"10px"}} onClick={() => setBizHistoryLimit(l => l + 10)}>
+                  Ver más movimientos ▾ ({sortedMovements.length - bizHistoryLimit} más)
+                </button>
+              )}
+            </div>
+
+            {/* ── Mis fuentes de ingreso (torta) ── */}
             <div className="biz-sources-card">
               <div className="biz-sources-head">
                 <div>
                   <p className="biz-sources-title">Mis fuentes de ingreso</p>
-                  <p className="biz-sources-sub">¿Cuánto llevo por cada una este mes?</p>
+                  <p className="biz-sources-sub">Distribución {totals.income>0?"real":"proyectada"} de ingresos este mes</p>
                 </div>
               </div>
+
+              {/* Donut chart de fuentes */}
+              {incomeBySource.length > 0 && (()=>{
+                const PIE_C = ["#1D9E75","#8B5CF6","#F59E0B","#3B82F6","#EC4899","#6366F1","#EF4444","#10B981"];
+                const r=52,cxc=65,cyc=65,sw=18,circum=2*Math.PI*r;
+                const useActual = totals.income > 0;
+                const pieTotal = useActual ? totals.income : incomeBySource.reduce((s,src)=>s+(src.goal||0),0);
+                const segs = incomeBySource.map((src,i)=>{
+                  const val = useActual ? src.actual : (src.goal||0);
+                  const pct = pieTotal>0 ? (val/pieTotal)*100 : 0;
+                  return {name:src.name,val,pct,color:PIE_C[i%PIE_C.length]};
+                });
+                let cum=0;
+                const arcs=segs.map(seg=>{
+                  const dl=(seg.pct/100)*circum;
+                  const off=circum-(cum/100)*circum;
+                  cum+=seg.pct;
+                  return {...seg,dl,off};
+                });
+                return (
+                  <div style={{display:"flex",gap:"16px",alignItems:"center",margin:"12px 0 18px",flexWrap:"wrap"}}>
+                    <div style={{flexShrink:0}}>
+                      <svg width="130" height="130" viewBox="0 0 130 130">
+                        <circle cx={cxc} cy={cyc} r={r} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth={sw}/>
+                        {arcs.map((arc,i)=>arc.pct>0&&(
+                          <circle key={i} cx={cxc} cy={cyc} r={r} fill="none"
+                            stroke={arc.color} strokeWidth={sw-2}
+                            strokeDasharray={`${arc.dl} ${circum-arc.dl}`}
+                            strokeDashoffset={arc.off}
+                            transform={`rotate(-90 ${cxc} ${cyc})`}
+                            style={{transition:"stroke-dasharray 0.6s ease,stroke-dashoffset 0.6s ease"}}
+                          />
+                        ))}
+                        <text x={cxc} y={cyc-6} textAnchor="middle" fontSize="10" fill="var(--muted)">Ingresos</text>
+                        <text x={cxc} y={cyc+10} textAnchor="middle" fontSize="12" fontWeight="bold" fill="var(--ink)">{money.format(totals.income)}</text>
+                      </svg>
+                    </div>
+                    <div style={{flex:1,display:"flex",flexDirection:"column",gap:"7px",minWidth:"130px"}}>
+                      {segs.map((seg,i)=>(
+                        <div key={i} style={{display:"flex",alignItems:"center",gap:"7px"}}>
+                          <span style={{width:"10px",height:"10px",borderRadius:"50%",background:seg.color,flexShrink:0,display:"inline-block"}}/>
+                          <span style={{flex:1,fontSize:"12px",color:"var(--ink)",fontWeight:500}}>{seg.name}</span>
+                          <span style={{fontSize:"12px",color:"var(--muted)"}}>{money.format(seg.val)}</span>
+                          <span style={{fontSize:"12px",fontWeight:700,color:seg.color,minWidth:"34px",textAlign:"right"}}>{Math.round(seg.pct)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {incomeBySource.length === 0 && (
                 <p style={{fontSize:"13px",color:"var(--muted)",margin:"8px 0 14px"}}>Agrega tus fuentes para ver el progreso de cada una.</p>
@@ -4351,61 +4426,65 @@ export default function App() {
               )}
             </div>
 
-            {/* En qué se va el dinero */}
-            {topExpenseCategories.length > 0 && (
-              <div className="biz-sources-card">
-                <p className="biz-sources-title">En qué se va el dinero</p>
-                <p className="biz-sources-sub" style={{marginBottom:"14px"}}>Tus gastos del negocio por categoría.</p>
-                {topExpenseCategories.map(([cat, amt]) => {
-                  const pct = totals.expenses > 0 ? Math.round((amt/totals.expenses)*100) : 0;
-                  return (
-                    <div key={cat} style={{marginBottom:"10px"}}>
-                      <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
-                        <span style={{fontSize:"13px",color:"var(--ink)"}}>{cat}</span>
-                        <span style={{fontSize:"13px",fontWeight:700,color:"var(--muted)"}}>{money.format(amt)} · {pct}%</span>
-                      </div>
-                      <div className="biz-source-bar">
-                        <div className="biz-source-fill" style={{width:`${pct}%`,background:"#DC2626"}} />
-                      </div>
+            {/* ── En qué se va el dinero (torta) ── */}
+            {topExpenseCategories.length > 0 && (()=>{
+              const EXP_C = ["#EF4444","#F97316","#F59E0B","#84CC16","#10B981","#06B6D4","#8B5CF6","#EC4899"];
+              const r=52,cxc=65,cyc=65,sw=18,circum=2*Math.PI*r;
+              const expSegs = topExpenseCategories.map(([cat,amt],i)=>({
+                name:cat, val:amt,
+                pct:totals.expenses>0?(amt/totals.expenses)*100:0,
+                color:EXP_C[i%EXP_C.length]
+              }));
+              let cum=0;
+              const arcs=expSegs.map(seg=>{
+                const dl=(seg.pct/100)*circum;
+                const off=circum-(cum/100)*circum;
+                cum+=seg.pct;
+                return {...seg,dl,off};
+              });
+              return (
+                <div className="biz-sources-card">
+                  <p className="biz-sources-title" style={{marginBottom:"2px"}}>En qué se va el dinero</p>
+                  <p className="biz-sources-sub" style={{marginBottom:"4px"}}>Tus gastos del negocio por categoría.</p>
+                  <div style={{display:"flex",gap:"16px",alignItems:"center",margin:"12px 0 6px",flexWrap:"wrap"}}>
+                    <div style={{flexShrink:0}}>
+                      <svg width="130" height="130" viewBox="0 0 130 130">
+                        <circle cx={cxc} cy={cyc} r={r} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth={sw}/>
+                        {arcs.map((arc,i)=>arc.pct>0&&(
+                          <circle key={i} cx={cxc} cy={cyc} r={r} fill="none"
+                            stroke={arc.color} strokeWidth={sw-2}
+                            strokeDasharray={`${arc.dl} ${circum-arc.dl}`}
+                            strokeDashoffset={arc.off}
+                            transform={`rotate(-90 ${cxc} ${cyc})`}
+                            style={{transition:"stroke-dasharray 0.6s ease,stroke-dashoffset 0.6s ease"}}
+                          />
+                        ))}
+                        <text x={cxc} y={cyc-6} textAnchor="middle" fontSize="10" fill="var(--muted)">Gastos</text>
+                        <text x={cxc} y={cyc+10} textAnchor="middle" fontSize="12" fontWeight="bold" fill="var(--ink)">{money.format(totals.expenses)}</text>
+                      </svg>
                     </div>
-                  );
-                })}
+                    <div style={{flex:1,display:"flex",flexDirection:"column",gap:"7px",minWidth:"130px"}}>
+                      {expSegs.map((seg,i)=>(
+                        <div key={i} style={{display:"flex",alignItems:"center",gap:"7px"}}>
+                          <span style={{width:"10px",height:"10px",borderRadius:"50%",background:seg.color,flexShrink:0,display:"inline-block"}}/>
+                          <span style={{flex:1,fontSize:"12px",color:"var(--ink)",fontWeight:500}}>{seg.name}</span>
+                          <span style={{fontSize:"12px",color:"var(--muted)"}}>{money.format(seg.val)}</span>
+                          <span style={{fontSize:"12px",fontWeight:700,color:seg.color,minWidth:"34px",textAlign:"right"}}>{Math.round(seg.pct)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── 🏆 Tu top / 📉 Menor aporte ── */}
+            {(topSource||bottomSource)&&(
+              <div className="biz-rank-grid" style={{marginBottom:"14px"}}>
+                {topSource&&<div className="biz-rank-card biz-rank-card--top"><p className="biz-rank-label">🏆 Tu top</p><p className="biz-rank-name">{topSource.name}</p><p className="biz-rank-val">{money.format(topSource.actual)}</p></div>}
+                {bottomSource&&<div className="biz-rank-card biz-rank-card--bottom"><p className="biz-rank-label">📉 Menor aporte</p><p className="biz-rank-name">{bottomSource.name}</p><p className="biz-rank-val">{money.format(bottomSource.actual)}</p></div>}
               </div>
             )}
-
-            {/* Historial — contraido, no infinito */}
-            <div className="card movement-card" style={{marginTop:"16px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px",flexWrap:"wrap",gap:"8px"}}>
-                <h3 style={{margin:0}}>Tus movimientos</h3>
-                <div style={{display:"flex",gap:"8px"}}>
-                  <button type="button" onClick={exportMovementsToExcel}
-                    style={{padding:"6px 14px",border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700}}>📊 Excel</button>
-                  <button type="button" onClick={exportMovementsToPdf}
-                    style={{padding:"6px 14px",border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700}}>📄 PDF</button>
-                </div>
-              </div>
-              {sortedMovements.length === 0 && <p style={{color:"var(--muted)",fontSize:"14px"}}>Sin movimientos registrados aún.</p>}
-              {sortedMovements.slice(0, bizHistoryLimit).map(m => (
-                <div className="movement-row" key={m.id}>
-                  <span className={m.type}>{m.type==="income"?"+":"-"}</span>
-                  <div>
-                    <strong>{m.description}</strong>
-                    <small>{m.classification} · {m.category} · {m.bank||"Sin banco"}</small>
-                    <small>Fecha: {formatShortDate(m.date||m.createdAt)}</small>
-                  </div>
-                  <input className="movement-date-input" type="date" value={inputDateFromValue(m.date||m.createdAt)}
-                    onChange={e=>updateMovementDate(m.id,e.target.value)} aria-label={`Fecha de ${m.description}`} />
-                  <b>{money.format(m.amount)}</b>
-                  <button className="row-delete" type="button"
-                    onClick={()=>confirmDelete("¿Eliminar este movimiento?",()=>setMovements(c=>c.filter(i=>i.id!==m.id)))}>×</button>
-                </div>
-              ))}
-              {sortedMovements.length > bizHistoryLimit && (
-                <button type="button" className="biz-detail-toggle" style={{marginTop:"10px"}} onClick={() => setBizHistoryLimit(l => l + 10)}>
-                  Ver más movimientos ▾ ({sortedMovements.length - bizHistoryLimit} más)
-                </button>
-              )}
-            </div>
 
             {/* ── Deudas del negocio ── */}
             {(()=>{
