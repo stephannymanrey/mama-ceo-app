@@ -1250,6 +1250,19 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     requestAnimationFrame(tick);
   }, []);
 
+  // Valores derivados
+  const keptSegs   = useMemo(() => buildKeptSegments(clips), [clips]);
+  const totalKept  = useMemo(() => Math.max(0.001, keptSegs.reduce((t, s) => t + s.end - s.start, 0)), [keptSegs]);
+  const nativePos  = useMemo(() => effectiveToNative(keptSegs, effectiveTime), [keptSegs, effectiveTime]);
+
+  // Dimensiones de salida según formato seleccionado (dims = dimensiones nativas del video)
+  const outDims = useMemo(() => {
+    const { W: vW, H: vH } = dims;
+    if (format === "portrait") return { W: Math.round(vH * 9 / 16), H: vH };
+    if (format === "square")   return { W: Math.min(vW, vH), H: Math.min(vW, vH) };
+    return { W: vW, H: vH };
+  }, [format, dims]);
+
   // Slide: congela canvas actual y lo anima saliendo en la dirección indicada
   const animSlide = useCallback((dir, dur) => {
     const canvas = canvasRef.current;
@@ -1271,19 +1284,6 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       requestAnimationFrame(tick);
     }));
   }, [outDims]);
-
-  // Valores derivados
-  const keptSegs   = useMemo(() => buildKeptSegments(clips), [clips]);
-  const totalKept  = useMemo(() => Math.max(0.001, keptSegs.reduce((t, s) => t + s.end - s.start, 0)), [keptSegs]);
-  const nativePos  = useMemo(() => effectiveToNative(keptSegs, effectiveTime), [keptSegs, effectiveTime]);
-
-  // Dimensiones de salida según formato seleccionado (dims = dimensiones nativas del video)
-  const outDims = useMemo(() => {
-    const { W: vW, H: vH } = dims;
-    if (format === "portrait") return { W: Math.round(vH * 9 / 16), H: vH };
-    if (format === "square")   return { W: Math.min(vW, vH), H: Math.min(vW, vH) };
-    return { W: vW, H: vH };
-  }, [format, dims]);
   const currentClipId = nativePos?.clip.id ?? null;
   const localTime     = nativePos?.localTime ?? 0;
   const pct = Math.min(100, (effectiveTime / totalKept) * 100);

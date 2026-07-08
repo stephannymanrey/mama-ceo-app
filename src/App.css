@@ -7938,3 +7938,156 @@ button {
   background: #e05a4e;
 }
 .confirm-ok--danger:hover { background: #c94e43; }
+
+/* ── Deudas y Pagos — secciones finanzas ────────────────────────────────── */
+.fin-section { padding: 18px 20px; }
+.fin-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+.fin-section-title { margin: 0; font-size: 15px; }
+.fin-empty { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* Deuda individual */
+.fin-debt-row {
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.fin-debt-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.fin-debt-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+.fin-debt-name:hover { text-decoration: underline; color: var(--pink); }
+.fin-del-btn {
+  border: none; background: none; color: var(--muted);
+  cursor: pointer; font-size: 18px; line-height: 1; padding: 0 2px;
+  transition: color 0.12s;
+}
+.fin-del-btn:hover { color: #DC2626; }
+.fin-debt-bar-wrap {
+  height: 6px;
+  background: rgba(0,0,0,0.07);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.fin-debt-bar {
+  height: 100%;
+  background: var(--green);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+.fin-debt-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.fin-debt-paid  { color: var(--green); font-weight: 600; }
+.fin-debt-remaining { color: #DC2626; font-weight: 600; }
+.fin-abono-btn {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pink);
+  cursor: pointer;
+  align-self: flex-start;
+  transition: background 0.12s, border-color 0.12s;
+}
+.fin-abono-btn:hover { background: rgba(196,82,106,0.06); border-color: var(--pink); }
+
+/* Pago mensual individual */
+.fin-pmt-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  margin-bottom: 6px;
+  transition: border-color 0.15s;
+}
+.fin-pmt-row--urgent { border-color: rgba(220,38,38,0.3); background: rgba(220,38,38,0.02); }
+.fin-pmt-info { flex: 1; min-width: 0; }
+.fin-pmt-name { display: block; font-size: 13px; font-weight: 600; color: var(--ink); }
+.fin-pmt-day  { display: block; font-size: 11px; margin-top: 1px; }
+.fin-pmt-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.fin-pmt-amt { font-size: 14px; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.fin-pmt-check {
+  border: 1.5px solid var(--line);
+  background: #fff;
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.fin-pmt-check:hover { border-color: var(--green); color: var(--green); }
+.fin-pmt-check.paid { background: var(--green); border-color: var(--green); color: #fff; }
+
+/* ── Dashboard: alerta de pagos próximos ─────────────────────────────────── */
+.db-payments-alert {
+  background: #fff;
+  border: 1px solid rgba(217,119,6,0.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  margin-bottom: 0;
+}
+.db-payments-alert-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.db-payments-alert-icon { font-size: 18px; }
+.db-payments-alert-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.db-payments-alert-list { display: flex; flex-direction: column; gap: 6px; }
+.db-payments-alert-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: rgba(217,119,6,0.04);
+  border: 1px solid rgba(217,119,6,0.1);
+}
+.db-payments-alert-row.urgent {
+  background: rgba(220,38,38,0.04);
+  border-color: rgba(220,38,38,0.15);
+}
+.db-payments-alert-info { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.db-payments-alert-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.db-payments-alert-src  { font-size: 11px; color: var(--muted); }
+.db-payments-alert-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.db-payments-alert-amt  { font-size: 13px; font-weight: 700; color: var(--ink); }
+.db-payments-alert-due  { font-size: 11px; font-weight: 700; color: #D97706; white-space: nowrap; }
+.db-payments-alert-due.urgent { color: #DC2626; }

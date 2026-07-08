@@ -719,6 +719,16 @@ export default function App() {
   const [homeTaskError, setHomeTaskError] = useState("");
   const [homeBudgetError, setHomeBudgetError] = useState("");
   const [showBudgetModal, setShowBudgetModal] = useState(false);
+  const [homeDebts, setHomeDebts] = useState(stored?.homeDebts || []);
+  const [homePayments, setHomePayments] = useState(stored?.homePayments || []);
+  const [bizDebts, setBizDebts] = useState(stored?.bizDebts || []);
+  const [bizPayments, setBizPayments] = useState(stored?.bizPayments || []);
+  const [debtModal, setDebtModal] = useState(null); // {type:"home"|"biz", item?}
+  const [paymentModal, setPaymentModal] = useState(null); // {type:"home"|"biz", item?}
+  const [debtForm, setDebtForm] = useState({ name:"", total:"", paid:"" });
+  const [paymentForm, setPaymentForm] = useState({ name:"", amount:"", dayOfMonth:"" });
+  const [abonoModal, setAbonoModal] = useState(null); // {type:"home"|"biz", debtId, abonoAmt:""}
+
   const [homeTab, setHomeTab] = useState(0);
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [abiMenuPrefs, setAbiMenuPrefs] = useState({ personas: "4", dieta: "normal", pais: "colombia" });
@@ -1117,6 +1127,10 @@ export default function App() {
   const homePaymentsThisWeek = homeBudget
     .filter((item) => !["Ingreso", "Ahorro"].includes(item.type) && isDateThisWeek(item.dueDate || item.createdAt, currentWeekRange))
     .sort((a, b) => timestampFromInputDate(a.dueDate) - timestampFromInputDate(b.dueDate));
+  const _currentMonthKey = `${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,"0")}`;
+  const upcomingHomePayments = homePayments.filter(p => p.lastPaidMonth !== _currentMonthKey && (p.dayOfMonth - _currentDay) >= -1 && (p.dayOfMonth - _currentDay) <= 3);
+  const upcomingBizPayments  = bizPayments.filter(p  => p.lastPaidMonth !== _currentMonthKey && (p.dayOfMonth - _currentDay) >= -1 && (p.dayOfMonth - _currentDay) <= 3);
+  const allUpcomingPayments  = [...upcomingHomePayments.map(p=>({...p,src:"Hogar"})), ...upcomingBizPayments.map(p=>({...p,src:"Negocio"}))];
   const biggestHomeLeak = [
     ["gastos fijos", homeBudgetTotals.fixed],
     ["gastos variables", homeBudgetTotals.variable],
@@ -1411,6 +1425,10 @@ export default function App() {
     setBanks(state.banks || [...initialBanks]);
     setAnnualBudget(normalizeAnnualBudget(state.annualBudget || initialAnnualBudget));
     setHomeBudget(normalizeHomeBudget(state.homeBudget || cloneList(initialHomeBudget)));
+    setHomeDebts(state.homeDebts || []);
+    setHomePayments(state.homePayments || []);
+    setBizDebts(state.bizDebts || []);
+    setBizPayments(state.bizPayments || []);
     setPurpose(createInitialPurpose(state.purpose || {}));
     setProfileSetup(state.profileSetup || null);
     setProfileForm(state.profileSetup ? { ...initialProfileForm, ...state.profileSetup } : { ...initialProfileForm });
@@ -1534,6 +1552,10 @@ export default function App() {
       banks,
       annualBudget,
       homeBudget,
+      homeDebts,
+      homePayments,
+      bizDebts,
+      bizPayments,
       purpose,
       profileSetup,
       brandProfile,
@@ -1576,7 +1598,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride, familyMembers, usage]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, homeDebts, homePayments, bizDebts, bizPayments, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride, familyMembers, usage]);
 
   const expandAppts = (list, limitDays = 90) => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -3546,6 +3568,35 @@ export default function App() {
             })()}
           </div>
 
+          {/* ── Pagos próximos ── */}
+          {allUpcomingPayments.length > 0 && (
+            <div className="db-payments-alert">
+              <div className="db-payments-alert-head">
+                <span className="db-payments-alert-icon">💳</span>
+                <span className="db-payments-alert-title">Pagos próximos</span>
+              </div>
+              <div className="db-payments-alert-list">
+                {allUpcomingPayments.map((p, i) => {
+                  const daysLeft = p.dayOfMonth - _currentDay;
+                  const label = daysLeft < 0 ? "Vencido" : daysLeft === 0 ? "Hoy" : `En ${daysLeft} día${daysLeft > 1 ? "s" : ""}`;
+                  const isUrgent = daysLeft <= 0;
+                  return (
+                    <div key={i} className={`db-payments-alert-row${isUrgent ? " urgent" : ""}`}>
+                      <div className="db-payments-alert-info">
+                        <span className="db-payments-alert-name">{p.name}</span>
+                        <span className="db-payments-alert-src">{p.src}</span>
+                      </div>
+                      <div className="db-payments-alert-right">
+                        <span className="db-payments-alert-amt">{money.format(p.amount)}</span>
+                        <span className={`db-payments-alert-due${isUrgent ? " urgent" : ""}`}>{label}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Meta del mes + Semana */}
           <div className="db-meta-row">
             <div className="db-meta-card">
@@ -4153,6 +4204,83 @@ export default function App() {
                 </button>
               )}
             </div>
+
+            {/* ── Deudas del negocio ── */}
+            {(()=>{
+              const addDebt  = () => { setDebtForm({name:"",total:"",paid:""}); setDebtModal({type:"biz"}); };
+              const editDebt = (d) => { setDebtForm({name:d.name,total:String(d.total),paid:String(d.paid)}); setDebtModal({type:"biz",item:d}); };
+              return (
+                <div className="card fin-section">
+                  <div className="fin-section-head">
+                    <h3 className="fin-section-title">📋 Deudas del negocio</h3>
+                    <button type="button" className="fin-add-btn" onClick={addDebt}>+ Agregar</button>
+                  </div>
+                  {bizDebts.length === 0 ? (
+                    <p className="fin-empty">Sin deudas registradas.</p>
+                  ) : bizDebts.map(d => {
+                    const remaining = Math.max(0, d.total - d.paid);
+                    const pct = d.total > 0 ? Math.min(100, Math.round((d.paid / d.total) * 100)) : 0;
+                    return (
+                      <div key={d.id} className="fin-debt-row">
+                        <div className="fin-debt-top">
+                          <span className="fin-debt-name" onClick={() => editDebt(d)}>{d.name}</span>
+                          <button type="button" className="fin-del-btn" onClick={() => setBizDebts(prev => prev.filter(x => x.id !== d.id))}>×</button>
+                        </div>
+                        <div className="fin-debt-bar-wrap">
+                          <div className="fin-debt-bar" style={{width:`${pct}%`}}/>
+                        </div>
+                        <div className="fin-debt-stats">
+                          <span className="fin-debt-paid">Abonado {money.format(d.paid)} · {pct}%</span>
+                          <span className="fin-debt-remaining">Falta {money.format(remaining)}</span>
+                        </div>
+                        <button type="button" className="fin-abono-btn" onClick={() => setAbonoModal({type:"biz",debtId:d.id,abonoAmt:""})}>+ Registrar abono</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* ── Pagos del mes — Negocio ── */}
+            {(()=>{
+              const addPmt = () => { setPaymentForm({name:"",amount:"",dayOfMonth:""}); setPaymentModal({type:"biz"}); };
+              return (
+                <div className="card fin-section">
+                  <div className="fin-section-head">
+                    <h3 className="fin-section-title">📅 Pagos del mes</h3>
+                    <button type="button" className="fin-add-btn" onClick={addPmt}>+ Agregar</button>
+                  </div>
+                  {bizPayments.length === 0 ? (
+                    <p className="fin-empty">Agrega suscripciones y pagos fijos de tu negocio.</p>
+                  ) : bizPayments.map(p => {
+                    const isPaid = p.lastPaidMonth === _currentMonthKey;
+                    const daysLeft = p.dayOfMonth - _currentDay;
+                    const isOverdue = !isPaid && daysLeft < 0;
+                    const isToday   = !isPaid && daysLeft === 0;
+                    const isSoon    = !isPaid && daysLeft > 0 && daysLeft <= 3;
+                    const statusLabel = isPaid ? "Pagado ✓" : isOverdue ? `Vencido (día ${p.dayOfMonth})` : isToday ? "¡Hoy!" : isSoon ? `En ${daysLeft} día${daysLeft>1?"s":""}` : `Día ${p.dayOfMonth}`;
+                    const statusColor = isPaid ? "var(--green)" : isOverdue||isToday ? "#DC2626" : isSoon ? "#D97706" : "var(--muted)";
+                    return (
+                      <div key={p.id} className={`fin-pmt-row${isOverdue||isToday?" fin-pmt-row--urgent":""}`}>
+                        <div className="fin-pmt-info">
+                          <span className="fin-pmt-name">{p.name}</span>
+                          <span className="fin-pmt-day" style={{color:statusColor}}>{statusLabel}</span>
+                        </div>
+                        <div className="fin-pmt-right">
+                          <span className="fin-pmt-amt">{money.format(p.amount)}</span>
+                          <button type="button"
+                            className={`fin-pmt-check${isPaid?" paid":""}`}
+                            onClick={() => setBizPayments(prev => prev.map(x => x.id === p.id ? {...x, lastPaidMonth: isPaid ? null : _currentMonthKey} : x))}>
+                            {isPaid ? "✓" : "Pagar"}
+                          </button>
+                          <button type="button" className="fin-del-btn" onClick={() => setBizPayments(prev => prev.filter(x => x.id !== p.id))}>×</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </>
         )}
 
@@ -5524,6 +5652,83 @@ export default function App() {
               )}
             </div>
 
+            {/* ── Deudas del hogar ── */}
+            {(()=>{
+              const addDebt  = () => { setDebtForm({name:"",total:"",paid:""}); setDebtModal({type:"home"}); };
+              const editDebt = (d) => { setDebtForm({name:d.name,total:String(d.total),paid:String(d.paid)}); setDebtModal({type:"home",item:d}); };
+              return (
+                <div className="card fin-section">
+                  <div className="fin-section-head">
+                    <h3 className="fin-section-title">📋 Mis deudas</h3>
+                    <button type="button" className="fin-add-btn" onClick={addDebt}>+ Agregar</button>
+                  </div>
+                  {homeDebts.length === 0 ? (
+                    <p className="fin-empty">Sin deudas registradas. ¡Qué bien!</p>
+                  ) : homeDebts.map(d => {
+                    const remaining = Math.max(0, d.total - d.paid);
+                    const pct = d.total > 0 ? Math.min(100, Math.round((d.paid / d.total) * 100)) : 0;
+                    return (
+                      <div key={d.id} className="fin-debt-row">
+                        <div className="fin-debt-top">
+                          <span className="fin-debt-name" onClick={() => editDebt(d)}>{d.name}</span>
+                          <button type="button" className="fin-del-btn" onClick={() => setHomeDebts(prev => prev.filter(x => x.id !== d.id))}>×</button>
+                        </div>
+                        <div className="fin-debt-bar-wrap">
+                          <div className="fin-debt-bar" style={{width:`${pct}%`}}/>
+                        </div>
+                        <div className="fin-debt-stats">
+                          <span className="fin-debt-paid">Abonado {money.format(d.paid)} · {pct}%</span>
+                          <span className="fin-debt-remaining">Falta {money.format(remaining)}</span>
+                        </div>
+                        <button type="button" className="fin-abono-btn" onClick={() => setAbonoModal({type:"home",debtId:d.id,abonoAmt:""})}>+ Registrar abono</button>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
+            {/* ── Pagos del mes — Hogar ── */}
+            {(()=>{
+              const addPmt = () => { setPaymentForm({name:"",amount:"",dayOfMonth:""}); setPaymentModal({type:"home"}); };
+              return (
+                <div className="card fin-section">
+                  <div className="fin-section-head">
+                    <h3 className="fin-section-title">📅 Pagos del mes</h3>
+                    <button type="button" className="fin-add-btn" onClick={addPmt}>+ Agregar</button>
+                  </div>
+                  {homePayments.length === 0 ? (
+                    <p className="fin-empty">Agrega tus pagos fijos para recibir alertas cuando se acerquen.</p>
+                  ) : homePayments.map(p => {
+                    const isPaid = p.lastPaidMonth === _currentMonthKey;
+                    const daysLeft = p.dayOfMonth - _currentDay;
+                    const isOverdue = !isPaid && daysLeft < 0;
+                    const isToday   = !isPaid && daysLeft === 0;
+                    const isSoon    = !isPaid && daysLeft > 0 && daysLeft <= 3;
+                    const statusLabel = isPaid ? "Pagado ✓" : isOverdue ? `Vencido (día ${p.dayOfMonth})` : isToday ? "¡Hoy!" : isSoon ? `En ${daysLeft} día${daysLeft>1?"s":""}` : `Día ${p.dayOfMonth}`;
+                    const statusColor = isPaid ? "var(--green)" : isOverdue||isToday ? "#DC2626" : isSoon ? "#D97706" : "var(--muted)";
+                    return (
+                      <div key={p.id} className={`fin-pmt-row${isOverdue||isToday?" fin-pmt-row--urgent":""}`}>
+                        <div className="fin-pmt-info">
+                          <span className="fin-pmt-name">{p.name}</span>
+                          <span className="fin-pmt-day" style={{color:statusColor}}>{statusLabel}</span>
+                        </div>
+                        <div className="fin-pmt-right">
+                          <span className="fin-pmt-amt">{money.format(p.amount)}</span>
+                          <button type="button"
+                            className={`fin-pmt-check${isPaid?" paid":""}`}
+                            onClick={() => setHomePayments(prev => prev.map(x => x.id === p.id ? {...x, lastPaidMonth: isPaid ? null : _currentMonthKey} : x))}>
+                            {isPaid ? "✓" : "Pagar"}
+                          </button>
+                          <button type="button" className="fin-del-btn" onClick={() => setHomePayments(prev => prev.filter(x => x.id !== p.id))}>×</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
             {/* Weekly analysis */}
             {homeBudget.length>0&&(()=>{
               const weeks=[{label:"Sem 1 (1-7)",from:1,to:7},{label:"Sem 2 (8-14)",from:8,to:14},{label:"Sem 3 (15-21)",from:15,to:21},{label:"Sem 4 (22+)",from:22,to:31}];
@@ -5692,6 +5897,129 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {/* ── Modal: Agregar/editar deuda ── */}
+        {debtModal && (()=>{
+          const isHome = debtModal.type === "home";
+          const isEdit = !!debtModal.item;
+          const saveDebt = (e) => {
+            e.preventDefault();
+            const total = Number(debtForm.total);
+            const paid  = Math.min(Number(debtForm.paid)||0, total);
+            if (!debtForm.name.trim() || !total) return;
+            const entry = { id: debtModal.item?.id || Date.now(), name: debtForm.name.trim(), total, paid };
+            if (isHome) setHomeDebts(prev => isEdit ? prev.map(x => x.id===entry.id?entry:x) : [entry,...prev]);
+            else        setBizDebts(prev  => isEdit ? prev.map(x => x.id===entry.id?entry:x) : [entry,...prev]);
+            setDebtModal(null);
+          };
+          return (
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&setDebtModal(null)}>
+              <div style={{background:"#fff",borderRadius:"24px 24px 0 0",width:"min(520px,100%)",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)"}}>
+                <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"24px 24px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <p style={{margin:0,fontSize:"18px",fontWeight:800}}>{isEdit?"Editar deuda":"Nueva deuda"}</p>
+                  <button type="button" onClick={()=>setDebtModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                </div>
+                <form onSubmit={saveDebt} style={{padding:"22px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                  <div>
+                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Nombre de la deuda</label>
+                    <input placeholder="Ej: Tarjeta VISA, Préstamo banco..." autoFocus value={debtForm.name} onChange={e=>setDebtForm(c=>({...c,name:e.target.value}))}
+                      style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                    <div>
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Total de la deuda</label>
+                      <MoneyAmountInput placeholder="$ 0" value={debtForm.total} onChange={v=>setDebtForm(c=>({...c,total:v}))}/>
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Ya abonado</label>
+                      <MoneyAmountInput placeholder="$ 0" value={debtForm.paid} onChange={v=>setDebtForm(c=>({...c,paid:v}))}/>
+                    </div>
+                  </div>
+                  <button type="submit" style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>Guardar deuda</button>
+                </form>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── Modal: Registrar abono ── */}
+        {abonoModal && (()=>{
+          const isHome = abonoModal.type === "home";
+          const debts  = isHome ? homeDebts : bizDebts;
+          const debt   = debts.find(d => d.id === abonoModal.debtId);
+          if (!debt) { setAbonoModal(null); return null; }
+          const saveAbono = (e) => {
+            e.preventDefault();
+            const amt = Number(abonoModal.abonoAmt);
+            if (!amt) return;
+            const setter = isHome ? setHomeDebts : setBizDebts;
+            setter(prev => prev.map(d => d.id === debt.id ? {...d, paid: Math.min(d.total, d.paid + amt)} : d));
+            setAbonoModal(null);
+          };
+          return (
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&setAbonoModal(null)}>
+              <div style={{background:"#fff",borderRadius:"24px 24px 0 0",width:"min(520px,100%)",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)",padding:"24px 22px"}}>
+                <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase"}}>Registrar abono</p>
+                <p style={{margin:"0 0 18px",fontSize:"18px",fontWeight:800}}>{debt.name}</p>
+                <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Falta por pagar: <strong style={{color:"#DC2626"}}>{money.format(Math.max(0, debt.total - debt.paid))}</strong></p>
+                <form onSubmit={saveAbono} style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+                  <div>
+                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Monto del abono</label>
+                    <MoneyAmountInput placeholder="$ 0" value={abonoModal.abonoAmt} onChange={v=>setAbonoModal(c=>({...c,abonoAmt:v}))} autoFocus/>
+                  </div>
+                  <div style={{display:"flex",gap:"8px"}}>
+                    <button type="button" onClick={()=>setAbonoModal(null)} style={{flex:1,padding:"14px",background:"var(--line)",color:"var(--ink)",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:600}}>Cancelar</button>
+                    <button type="submit" style={{flex:2,padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>Guardar abono</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ── Modal: Agregar pago recurrente ── */}
+        {paymentModal && (()=>{
+          const isHome = paymentModal.type === "home";
+          const savePmt = (e) => {
+            e.preventDefault();
+            const amount = Number(paymentForm.amount);
+            const day    = Number(paymentForm.dayOfMonth);
+            if (!paymentForm.name.trim() || !amount || !day || day < 1 || day > 31) return;
+            const entry = { id: Date.now(), name: paymentForm.name.trim(), amount, dayOfMonth: day, lastPaidMonth: null };
+            if (isHome) setHomePayments(prev => [entry, ...prev]);
+            else        setBizPayments(prev  => [entry, ...prev]);
+            setPaymentModal(null);
+          };
+          return (
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&setPaymentModal(null)}>
+              <div style={{background:"#fff",borderRadius:"24px 24px 0 0",width:"min(520px,100%)",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)"}}>
+                <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"24px 24px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Nuevo pago del mes</p>
+                  <button type="button" onClick={()=>setPaymentModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                </div>
+                <form onSubmit={savePmt} style={{padding:"22px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                  <div>
+                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Nombre del pago</label>
+                    <input placeholder="Ej: Netflix, Arriendo, Internet..." autoFocus value={paymentForm.name} onChange={e=>setPaymentForm(c=>({...c,name:e.target.value}))}
+                      style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
+                  </div>
+                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                    <div>
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Monto mensual</label>
+                      <MoneyAmountInput placeholder="$ 0" value={paymentForm.amount} onChange={v=>setPaymentForm(c=>({...c,amount:v}))}/>
+                    </div>
+                    <div>
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Día del mes</label>
+                      <input type="number" min="1" max="31" placeholder="Ej: 15" value={paymentForm.dayOfMonth} onChange={e=>setPaymentForm(c=>({...c,dayOfMonth:e.target.value}))}
+                        style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
+                    </div>
+                  </div>
+                  <button type="submit" style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>Guardar pago</button>
+                </form>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* ── Modal: Abi Menú ── */}
         {showMenuModal&&(
