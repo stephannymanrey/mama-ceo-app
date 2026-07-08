@@ -622,6 +622,9 @@ export default function App() {
   const [annualBudget, setAnnualBudget] = useState(normalizeAnnualBudget(stored?.annualBudget || initialAnnualBudget));
   const [homeBudget, setHomeBudget] = useState(isNewUser ? [] : normalizeHomeBudget(stored?.homeBudget || initialHomeBudget));
   const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue(), linkedDebtId: "" });
+  const [homeIncomeGoal, setHomeIncomeGoal] = useState(stored?.homeIncomeGoal || 0);
+  const [editingHomeGoal, setEditingHomeGoal] = useState(false);
+  const [homeGoalInput, setHomeGoalInput] = useState("");
   const [purpose, setPurpose] = useState(createInitialPurpose(stored?.purpose || {}));
   const [profileSetup, setProfileSetup] = useState(stored?.profileSetup || null);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -1441,6 +1444,7 @@ export default function App() {
     setUserMode(state.userMode || null);
     setHomeFocusOverride(state.homeFocusOverride || null);
     setFamilyMembers(state.familyMembers || []);
+    if (state.homeIncomeGoal !== undefined) setHomeIncomeGoal(state.homeIncomeGoal);
     setAppointments(state.appointments || []);
     setWeekMenu((() => { const wm=state.weekMenu; const mg=v=>!v?{desayuno:"",almuerzo:"",cena:"",snack:""}:typeof v==="string"?{desayuno:"",almuerzo:v,cena:"",snack:""}:{desayuno:"",almuerzo:"",cena:"",snack:"",...v}; return {L:mg(wm?.L),M:mg(wm?.M),X:mg(wm?.X),J:mg(wm?.J),V:mg(wm?.V),S:mg(wm?.S),D:mg(wm?.D)}; })());
     setHomeRoutines(state.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
@@ -1568,6 +1572,7 @@ export default function App() {
       quickNotes,
       reminderTime,
       reminderEnabled,
+      homeIncomeGoal,
       userPlan: ADMIN_EMAILS.includes(user?.email || profileSetup?.email || "") ? "ceo" : userPlan,
       premiumExpiresAt,
       userMode,
@@ -4164,52 +4169,106 @@ export default function App() {
 
         {/* ── REVENUE ── */}
         {businessTab === 2 && (
-          <div key="biz-tab-2" className="tab-content-anim">
-            {/* Top / bottom servicio o producto */}
-            {(topSource || bottomSource) && (
-              <div className="biz-rank-grid">
-                {topSource && (
-                  <div className="biz-rank-card biz-rank-card--top">
-                    <p className="biz-rank-label">🏆 Tu top</p>
-                    <p className="biz-rank-name">{topSource.name}</p>
-                    <p className="biz-rank-val">{money.format(topSource.actual)}</p>
+          <div key="biz-tab-2" className="tab-content-anim">{(()=>{
+            const bizPaymentsBudget = bizPayments.reduce((s,p)=>s+p.amount,0);
+            const totalSourceGoal = incomeBySource.reduce((s,src)=>s+(src.goal||0),0);
+            const incomeTarget = totalSourceGoal > 0 ? totalSourceGoal : monthlyGoal;
+            const incomeProgress2 = incomeTarget>0?Math.min(100,Math.round((totals.income/incomeTarget)*100)):0;
+            const spendProgress2 = bizPaymentsBudget>0?Math.min(100,Math.round((totals.expenses/bizPaymentsBudget)*100)):0;
+            const incomeBarColor2 = incomeProgress2>=75?"#1D9E75":incomeProgress2>=40?"#D97706":"#C4526A";
+            const spendBarColor2 = spendProgress2>=100?"#DC2626":spendProgress2>=85?"#D97706":"#1D9E75";
+            const projBalance = incomeTarget>0&&bizPaymentsBudget>0 ? incomeTarget-bizPaymentsBudget : null;
+            return (<>
+
+            {/* ── Presupuesto del negocio ── */}
+            <div className="card" style={{padding:"20px",marginBottom:"14px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"16px",flexWrap:"wrap",gap:"8px"}}>
+                <div>
+                  <h3 style={{margin:"0 0 2px",fontSize:"15px",fontWeight:700}}>📊 Presupuesto del negocio</h3>
+                  <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Proyección vs lo registrado este mes</p>
+                </div>
+                <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
+                  {streakDays>0&&<span className="biz-streak-badge">🔥 {streakDays}d registrando</span>}
+                  <button type="button" className="fin-add-btn fin-add-btn--green" onClick={()=>setShowMovementModal(true)}>+ Registrar</button>
+                </div>
+              </div>
+
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+                {/* Ingresos */}
+                <div style={{padding:"14px",background:"rgba(47,159,112,0.05)",borderRadius:"12px",border:"1px solid rgba(47,159,112,0.18)"}}>
+                  <p style={{margin:"0 0 10px",fontSize:"10px",fontWeight:700,color:"#1D9E75",textTransform:"uppercase",letterSpacing:"0.6px"}}>↑ Ingresos</p>
+                  <p style={{margin:"0 0 2px",fontSize:"22px",fontWeight:800,color:"#1D9E75",lineHeight:1}}>{money.format(totals.income)}</p>
+                  <p style={{margin:"0 0 10px",fontSize:"11px",color:"var(--muted)"}}>registrado este mes</p>
+                  {incomeTarget>0?(
+                    <>
+                      <div style={{height:"6px",background:"rgba(0,0,0,0.07)",borderRadius:"3px",overflow:"hidden",marginBottom:"5px"}}>
+                        <div style={{height:"100%",width:`${incomeProgress2}%`,background:incomeBarColor2,borderRadius:"3px",transition:"width 0.5s"}}/>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px"}}>
+                        <span style={{color:"var(--muted)"}}>Meta: {money.format(incomeTarget)}</span>
+                        <span style={{fontWeight:700,color:incomeBarColor2}}>{incomeProgress2}%</span>
+                      </div>
+                      {totals.income<incomeTarget&&(
+                        <p style={{margin:"6px 0 0",fontSize:"11px",color:"#D97706",fontWeight:600}}>Falta {money.format(incomeTarget-totals.income)}</p>
+                      )}
+                    </>
+                  ):(
+                    <p style={{margin:"4px 0 0",fontSize:"11px",color:"var(--muted)",fontStyle:"italic"}}>Define tu meta en configuración.</p>
+                  )}
+                </div>
+
+                {/* Gastos */}
+                <div style={{padding:"14px",background:"rgba(220,38,38,0.03)",borderRadius:"12px",border:"1px solid rgba(220,38,38,0.12)"}}>
+                  <p style={{margin:"0 0 10px",fontSize:"10px",fontWeight:700,color:"#DC2626",textTransform:"uppercase",letterSpacing:"0.6px"}}>↓ Gastos</p>
+                  <p style={{margin:"0 0 2px",fontSize:"22px",fontWeight:800,color:"#DC2626",lineHeight:1}}>{money.format(totals.expenses)}</p>
+                  <p style={{margin:"0 0 10px",fontSize:"11px",color:"var(--muted)"}}>registrado este mes</p>
+                  {bizPaymentsBudget>0?(
+                    <>
+                      <div style={{height:"6px",background:"rgba(0,0,0,0.07)",borderRadius:"3px",overflow:"hidden",marginBottom:"5px"}}>
+                        <div style={{height:"100%",width:`${spendProgress2}%`,background:spendBarColor2,borderRadius:"3px",transition:"width 0.5s"}}/>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px"}}>
+                        <span style={{color:"var(--muted)"}}>Presupuesto fijo: {money.format(bizPaymentsBudget)}</span>
+                        <span style={{fontWeight:700,color:spendBarColor2}}>{spendProgress2}%</span>
+                      </div>
+                      {totals.expenses>bizPaymentsBudget&&(
+                        <p style={{margin:"6px 0 0",fontSize:"11px",color:"#DC2626",fontWeight:600}}>Excedido en {money.format(totals.expenses-bizPaymentsBudget)}</p>
+                      )}
+                    </>
+                  ):(
+                    <p style={{margin:"4px 0 0",fontSize:"11px",color:"var(--muted)",fontStyle:"italic"}}>Agrega pagos fijos para ver presupuesto.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Balance */}
+              <div style={{marginTop:"14px",paddingTop:"14px",borderTop:"1px solid var(--line)",display:"flex",flexWrap:"wrap",gap:"10px",justifyContent:"space-between",alignItems:"center"}}>
+                {projBalance!==null&&(
+                  <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                    <span style={{fontSize:"12px",color:"var(--muted)"}}>Balance proyectado:</span>
+                    <strong style={{fontSize:"14px",color:projBalance>=0?"#1D9E75":"#DC2626"}}>{projBalance>=0?"+":""}{money.format(projBalance)}</strong>
                   </div>
                 )}
-                {bottomSource && (
-                  <div className="biz-rank-card biz-rank-card--bottom">
-                    <p className="biz-rank-label">📉 El que menos genera</p>
-                    <p className="biz-rank-name">{bottomSource.name}</p>
-                    <p className="biz-rank-val">{money.format(bottomSource.actual)}</p>
-                  </div>
-                )}
+                <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                  <span style={{fontSize:"12px",color:"var(--muted)"}}>Ganancia real:</span>
+                  <strong style={{fontSize:"14px",color:totals.profit>=0?"#1D9E75":"#DC2626"}}>{totals.profit>=0?"+":""}{money.format(totals.profit)}</strong>
+                </div>
+                <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                  <span style={{fontSize:"11px",padding:"3px 8px",borderRadius:"6px",background:totals.profit>=0&&monthlyProgress>=75?"rgba(29,158,117,0.1)":totals.profit>=0?"rgba(216,119,6,0.1)":"rgba(220,38,38,0.07)",color:healthColor,fontWeight:600}}>{heroStatus.emoji} {heroStatus.msg}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Top / bottom fuente */}
+            {(topSource||bottomSource)&&(
+              <div className="biz-rank-grid" style={{marginBottom:"14px"}}>
+                {topSource&&<div className="biz-rank-card biz-rank-card--top"><p className="biz-rank-label">🏆 Tu top</p><p className="biz-rank-name">{topSource.name}</p><p className="biz-rank-val">{money.format(topSource.actual)}</p></div>}
+                {bottomSource&&<div className="biz-rank-card biz-rank-card--bottom"><p className="biz-rank-label">📉 Menor aporte</p><p className="biz-rank-name">{bottomSource.name}</p><p className="biz-rank-val">{money.format(bottomSource.actual)}</p></div>}
               </div>
             )}
 
-            {/* Hero — un solo numero, una frase, una accion */}
-            <div className="biz-hero">
-              <div className="biz-hero-top">
-                <span className="biz-hero-label">Lo que vas ganando</span>
-                <strong className="biz-hero-val" style={{color:healthColor}}>{money.format(totals.profit)}</strong>
-              </div>
-              {monthlyGoal > 0 && (
-                <div className="biz-meta-mini" style={{margin:"6px 0 10px"}}>
-                  <div className="biz-meta-bar"><div className="biz-meta-fill" style={{width:`${monthlyProgress}%`}} /></div>
-                  <span className="biz-meta-pct">{monthlyProgress}% de tu meta</span>
-                </div>
-              )}
-              <div className="biz-hero-status">
-                <span>{heroStatus.emoji} {heroStatus.msg}</span>
-              </div>
-              <p className="biz-hero-sub">Entradas {money.format(totals.income)} · Salidas {money.format(totals.expenses)}</p>
-            </div>
-
-            {/* Registrar — botón, el form vive en popup */}
-            <div className="biz-register-row">
-              <button type="button" className="fin-add-btn fin-add-btn--green" onClick={() => setShowMovementModal(true)}>+ Registrar movimiento</button>
-              {streakDays > 0 && (
-                <span className="biz-streak-badge">🔥 {streakDays} día{streakDays>1?"s":""} seguidos registrando</span>
-              )}
-            </div>
+            </>);
+          })()}
 
             {/* Mis fuentes de ingreso */}
             <div className="biz-sources-card">
@@ -4394,11 +4453,11 @@ export default function App() {
               return (
                 <div className="card fin-section">
                   <div className="fin-section-head">
-                    <h3 className="fin-section-title">📅 Pagos del mes</h3>
+                    <h3 className="fin-section-title">📅 Presupuesto de salida fija</h3>
                     <button type="button" className="fin-add-btn" onClick={addPmt}>+ Agregar</button>
                   </div>
                   {bizPayments.length === 0 ? (
-                    <p className="fin-empty">Agrega suscripciones y pagos fijos de tu negocio.</p>
+                    <p className="fin-empty">Agrega tus suscripciones y costos fijos mensuales del negocio para calcular tu presupuesto.</p>
                   ) : (
                     <div className="fin-list-scroll">
                     {bizPayments.map(p => {
@@ -5738,36 +5797,112 @@ export default function App() {
 
         {/* ── TAB 3: MIS FINANZAS ── */}
         {homeTab === 3 && (
-          <div key="tab-3" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"14px"}}>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
-              <div className="card" style={{padding:"16px",textAlign:"center"}}>
-                <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Gano</p>
-                <p style={{margin:"0 0 2px",fontSize:"20px",fontWeight:800,color:"var(--green)"}}>{money.format(homeBudgetTotals.income)}</p>
-                <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>este mes</p>
+          <div key="tab-3" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"14px"}}>{(()=>{
+            const homePaymentsBudget = homePayments.reduce((s,p)=>s+p.amount,0);
+            const projectedBalance = homeIncomeGoal > 0 ? homeIncomeGoal - homePaymentsBudget : null;
+            const realBalance = homeBudgetTotals.income - homeSpent;
+            const incomeProgress = homeIncomeGoal > 0 ? Math.min(100, Math.round((homeBudgetTotals.income/homeIncomeGoal)*100)) : 0;
+            const spendProgress = homePaymentsBudget > 0 ? Math.min(100, Math.round((homeSpent/homePaymentsBudget)*100)) : 0;
+            const incomeBarColor = incomeProgress >= 75 ? "#1D9E75" : incomeProgress >= 40 ? "#D97706" : "#C4526A";
+            const spendBarColor = spendProgress >= 100 ? "#DC2626" : spendProgress >= 85 ? "#D97706" : "#1D9E75";
+            return (<>
+
+            {/* ── Presupuesto mensual ── */}
+            <div className="card" style={{padding:"20px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}>
+                <div>
+                  <h3 style={{margin:"0 0 2px",fontSize:"15px",fontWeight:700}}>📊 Mi presupuesto mensual</h3>
+                  <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Proyección vs lo que llevas registrado</p>
+                </div>
+                <button type="button" onClick={()=>{setHomeGoalInput(homeIncomeGoal?String(homeIncomeGoal):"");setEditingHomeGoal(true);}}
+                  style={{border:"1px solid var(--line)",background:"var(--surface)",borderRadius:"8px",padding:"5px 10px",fontSize:"12px",fontWeight:600,color:"var(--ink)",cursor:"pointer"}}>
+                  {homeIncomeGoal>0?"Editar meta":"+ Definir meta"}
+                </button>
               </div>
-              <div className="card" style={{padding:"16px",textAlign:"center"}}>
-                <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Gasto</p>
-                <p style={{margin:"0 0 2px",fontSize:"20px",fontWeight:800,color:homeSpent>homeBudgetTotals.income?"#DC2626":"var(--ink)"}}>{money.format(homeSpent)}</p>
-                <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>{homeBudgetTotals.income>0?Math.round((homeSpent/homeBudgetTotals.income)*100):0}% de ingresos</p>
+
+              {editingHomeGoal&&(
+                <div style={{marginBottom:"14px",padding:"12px 14px",background:"rgba(196,82,106,0.04)",borderRadius:"10px",border:"1px solid rgba(196,82,106,0.15)"}}>
+                  <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Meta de ingresos mensual</label>
+                  <div style={{display:"flex",gap:"8px"}}>
+                    <MoneyAmountInput placeholder="$ 0" value={homeGoalInput} onChange={v=>setHomeGoalInput(v)} style={{flex:1}}/>
+                    <button type="button" onClick={()=>{setHomeIncomeGoal(Number(homeGoalInput)||0);setEditingHomeGoal(false);}}
+                      style={{padding:"10px 16px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontWeight:700,fontSize:"13px"}}>Guardar</button>
+                    <button type="button" onClick={()=>setEditingHomeGoal(false)}
+                      style={{padding:"10px 12px",background:"var(--line)",color:"var(--ink)",border:"none",borderRadius:"8px",cursor:"pointer",fontSize:"13px"}}>✕</button>
+                  </div>
+                </div>
+              )}
+
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+                {/* Ingresos */}
+                <div style={{padding:"14px",background:"rgba(47,159,112,0.05)",borderRadius:"12px",border:"1px solid rgba(47,159,112,0.18)"}}>
+                  <p style={{margin:"0 0 10px",fontSize:"10px",fontWeight:700,color:"#1D9E75",textTransform:"uppercase",letterSpacing:"0.6px"}}>↑ Entradas</p>
+                  <p style={{margin:"0 0 2px",fontSize:"22px",fontWeight:800,color:"#1D9E75",lineHeight:1}}>{money.format(homeBudgetTotals.income)}</p>
+                  <p style={{margin:"0 0 10px",fontSize:"11px",color:"var(--muted)"}}>registrado este mes</p>
+                  {homeIncomeGoal>0?(
+                    <>
+                      <div style={{height:"6px",background:"rgba(0,0,0,0.07)",borderRadius:"3px",overflow:"hidden",marginBottom:"5px"}}>
+                        <div style={{height:"100%",width:`${incomeProgress}%`,background:incomeBarColor,borderRadius:"3px",transition:"width 0.5s"}}/>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px"}}>
+                        <span style={{color:"var(--muted)"}}>Meta: {money.format(homeIncomeGoal)}</span>
+                        <span style={{fontWeight:700,color:incomeBarColor}}>{incomeProgress}%</span>
+                      </div>
+                      {homeBudgetTotals.income < homeIncomeGoal && (
+                        <p style={{margin:"6px 0 0",fontSize:"11px",color:"#D97706",fontWeight:600}}>Falta {money.format(homeIncomeGoal-homeBudgetTotals.income)}</p>
+                      )}
+                    </>
+                  ):(
+                    <p style={{margin:"4px 0 0",fontSize:"11px",color:"var(--muted)",fontStyle:"italic"}}>Agrega una meta para ver tu avance.</p>
+                  )}
+                </div>
+
+                {/* Gastos */}
+                <div style={{padding:"14px",background:"rgba(220,38,38,0.03)",borderRadius:"12px",border:"1px solid rgba(220,38,38,0.12)"}}>
+                  <p style={{margin:"0 0 10px",fontSize:"10px",fontWeight:700,color:"#DC2626",textTransform:"uppercase",letterSpacing:"0.6px"}}>↓ Salidas</p>
+                  <p style={{margin:"0 0 2px",fontSize:"22px",fontWeight:800,color:"#DC2626",lineHeight:1}}>{money.format(homeSpent)}</p>
+                  <p style={{margin:"0 0 10px",fontSize:"11px",color:"var(--muted)"}}>gastado este mes</p>
+                  {homePaymentsBudget>0?(
+                    <>
+                      <div style={{height:"6px",background:"rgba(0,0,0,0.07)",borderRadius:"3px",overflow:"hidden",marginBottom:"5px"}}>
+                        <div style={{height:"100%",width:`${spendProgress}%`,background:spendBarColor,borderRadius:"3px",transition:"width 0.5s"}}/>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px"}}>
+                        <span style={{color:"var(--muted)"}}>Presupuesto fijo: {money.format(homePaymentsBudget)}</span>
+                        <span style={{fontWeight:700,color:spendBarColor}}>{spendProgress}%</span>
+                      </div>
+                      {homeSpent > homePaymentsBudget && (
+                        <p style={{margin:"6px 0 0",fontSize:"11px",color:"#DC2626",fontWeight:600}}>Excedido en {money.format(homeSpent-homePaymentsBudget)}</p>
+                      )}
+                    </>
+                  ):(
+                    <p style={{margin:"4px 0 0",fontSize:"11px",color:"var(--muted)",fontStyle:"italic"}}>Agrega pagos fijos para ver el presupuesto.</p>
+                  )}
+                </div>
               </div>
-              <div className="card" style={{padding:"16px",textAlign:"center"}}>
-                <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Me queda</p>
-                <p style={{margin:"0 0 2px",fontSize:"20px",fontWeight:800,color:homeAvailable>=0?"var(--green)":"#DC2626"}}>{money.format(homeAvailable)}</p>
-                <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>disponible</p>
+
+              {/* Balance */}
+              <div style={{marginTop:"14px",paddingTop:"14px",borderTop:"1px solid var(--line)",display:"flex",flexWrap:"wrap",gap:"10px",justifyContent:"space-between",alignItems:"center"}}>
+                {projectedBalance !== null && (
+                  <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                    <span style={{fontSize:"12px",color:"var(--muted)"}}>Balance proyectado:</span>
+                    <strong style={{fontSize:"14px",color:projectedBalance>=0?"#1D9E75":"#DC2626"}}>{projectedBalance>=0?"+":""}{money.format(projectedBalance)}</strong>
+                  </div>
+                )}
+                <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                  <span style={{fontSize:"12px",color:"var(--muted)"}}>Balance real:</span>
+                  <strong style={{fontSize:"14px",color:realBalance>=0?"#1D9E75":"#DC2626"}}>{realBalance>=0?"+":""}{money.format(realBalance)}</strong>
+                </div>
+                {homeBudgetTotals.savings>0&&(
+                  <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                    <span style={{fontSize:"12px",color:"var(--muted)"}}>Ahorro:</span>
+                    <strong style={{fontSize:"14px",color:"#2563EB"}}>+{money.format(homeBudgetTotals.savings)}</strong>
+                  </div>
+                )}
               </div>
             </div>
-
-            {homeBudgetTotals.income>0&&(
-              <div className="card" style={{padding:"14px 18px"}}>
-                <div style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}>
-                  <span style={{fontSize:"12px",fontWeight:600,color:"var(--muted)"}}>Gastado vs ingresos</span>
-                  <span style={{fontSize:"12px",fontWeight:700,color:homeSpent>homeBudgetTotals.income?"#DC2626":"var(--ink)"}}>{Math.round((homeSpent/homeBudgetTotals.income)*100)}%</span>
-                </div>
-                <div style={{height:"9px",background:"rgba(0,0,0,0.07)",borderRadius:"5px",overflow:"hidden"}}>
-                  <div style={{height:"100%",width:`${Math.min(100,(homeSpent/homeBudgetTotals.income)*100)}%`,background:homeSpent>homeBudgetTotals.income*0.9?"#DC2626":homeSpent>homeBudgetTotals.income*0.7?"#D97706":"var(--green)",borderRadius:"5px",transition:"width 0.5s"}}></div>
-                </div>
-              </div>
-            )}
+            </>);
+          })()}
 
             {/* Movements list full-width + add button */}
             <div className="card" style={{padding:"18px 20px"}}>
@@ -5849,11 +5984,11 @@ export default function App() {
               return (
                 <div className="card fin-section">
                   <div className="fin-section-head">
-                    <h3 className="fin-section-title">📅 Pagos del mes</h3>
+                    <h3 className="fin-section-title">📅 Presupuesto básico de salida</h3>
                     <button type="button" className="fin-add-btn" onClick={addPmt}>+ Agregar</button>
                   </div>
                   {homePayments.length === 0 ? (
-                    <p className="fin-empty">Agrega tus pagos fijos para recibir alertas cuando se acerquen.</p>
+                    <p className="fin-empty">Agrega tus pagos fijos mensuales (arriendo, servicios, colegio…) para calcular tu presupuesto base.</p>
                   ) : (
                     <div className="fin-list-scroll">
                     {homePayments.map(p => {
