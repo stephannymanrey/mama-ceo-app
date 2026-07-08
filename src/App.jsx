@@ -728,6 +728,7 @@ export default function App() {
   const [debtForm, setDebtForm] = useState({ name:"", total:"", paid:"" });
   const [paymentForm, setPaymentForm] = useState({ name:"", amount:"", dayOfMonth:"" });
   const [abonoModal, setAbonoModal] = useState(null); // {type:"home"|"biz", debtId, abonoAmt:""}
+  const [modalSaving, setModalSaving] = useState(null); // "debt"|"abono"|"payment" — estado éxito
 
   const [homeTab, setHomeTab] = useState(0);
   const [showMenuModal, setShowMenuModal] = useState(false);
@@ -3820,15 +3821,15 @@ export default function App() {
         </div>
 
         {/* Sub-tab nav */}
-        <div style={{display:"flex",gap:"4px",background:"var(--line)",padding:"4px",borderRadius:"12px",marginBottom:"20px"}}>
+        <div className="biz-tab-nav" style={{"--tab-idx": businessTab}}>
           {TABS_BIZ.map((label,i) => (
             <button key={i} type="button" onClick={() => setBusinessTab(i)} style={{
               flex:1, padding:"9px 0", borderRadius:"8px", border:"none",
-              background: businessTab===i ? "#fff" : "transparent",
+              background: "transparent",
               cursor:"pointer", fontFamily:"inherit", fontSize:"13px",
               fontWeight: businessTab===i ? 700 : 400,
               color: businessTab===i ? "var(--ink)" : "var(--muted)",
-              boxShadow: businessTab===i ? "0 1px 4px rgba(0,0,0,0.08)" : "none",
+              boxShadow: "none",
               transition:"all 0.15s ease",
             }}>{label}</button>
           ))}
@@ -5246,7 +5247,7 @@ export default function App() {
         </div>
 
         {/* Tab nav */}
-        <div className="home-tab-nav">
+        <div className="home-tab-nav" style={{"--tab-idx": homeTab}}>
           {TABS.map((label,i) => (
             <button key={i} type="button" onClick={() => setHomeTab(i)} className={`home-tab-btn${homeTab===i?" home-tab-btn--active":""}`}>{label}</button>
           ))}
@@ -5254,7 +5255,7 @@ export default function App() {
 
         {/* ── TAB 0: HOY ── */}
         {homeTab === 0 && (
-          <div className="home-today-grid">
+          <div key="tab-0" className="home-today-grid tab-content-anim">
             <div className="home-today-card home-today-card--menu">
               <div className="home-today-card-menu-top">
                 <span className="home-today-card-ico">🍽️</span>
@@ -5299,7 +5300,7 @@ export default function App() {
 
         {/* ── TAB 1: SEMANA ── */}
         {homeTab === 1 && (
-          <div style={{display:"flex",flexDirection:"column",gap:"16px"}}>
+          <div key="tab-1" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"16px"}}>
 
             {/* Con mi familia — PRIORITY */}
             <div className="fam-card">
@@ -5453,7 +5454,7 @@ export default function App() {
 
         {/* ── TAB 2: TAREAS ── */}
         {homeTab === 2 && (
-          <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
+          <div key="tab-2" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"14px"}}>
 
             {/* Progress + add button */}
             <div className="card" style={{padding:"16px 20px"}}>
@@ -5587,7 +5588,7 @@ export default function App() {
 
         {/* ── TAB 3: MIS FINANZAS ── */}
         {homeTab === 3 && (
-          <div style={{display:"flex",flexDirection:"column",gap:"14px"}}>
+          <div key="tab-3" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"14px"}}>
             <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
               <div className="card" style={{padding:"16px",textAlign:"center"}}>
                 <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Gano</p>
@@ -5910,12 +5911,13 @@ export default function App() {
             const entry = { id: debtModal.item?.id || Date.now(), name: debtForm.name.trim(), total, paid };
             if (isHome) setHomeDebts(prev => isEdit ? prev.map(x => x.id===entry.id?entry:x) : [entry,...prev]);
             else        setBizDebts(prev  => isEdit ? prev.map(x => x.id===entry.id?entry:x) : [entry,...prev]);
-            setDebtModal(null);
+            setModalSaving("debt");
+            setTimeout(() => { setDebtModal(null); setModalSaving(null); }, 500);
           };
           return (
-            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+            <div className="modal-overlay-anim" style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
               <div style={{display:"flex",minHeight:"100%",alignItems:"center",justifyContent:"center",padding:"20px 16px"}} onClick={e=>e.target===e.currentTarget&&setDebtModal(null)}>
-                <div style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
+                <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
                   <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <p style={{margin:0,fontSize:"18px",fontWeight:800}}>{isEdit?"Editar deuda":"Nueva deuda"}</p>
                     <button type="button" onClick={()=>setDebtModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
@@ -5936,7 +5938,7 @@ export default function App() {
                         <MoneyAmountInput placeholder="$ 0" value={debtForm.paid} onChange={v=>setDebtForm(c=>({...c,paid:v}))}/>
                       </div>
                     </div>
-                    <button type="submit" style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>Guardar deuda</button>
+                    <button type="submit" className={modalSaving==="debt"?"btn-success":""} style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>{modalSaving==="debt"?"✓ Guardado":"Guardar deuda"}</button>
                   </form>
                 </div>
               </div>
@@ -5956,12 +5958,13 @@ export default function App() {
             if (!amt) return;
             const setter = isHome ? setHomeDebts : setBizDebts;
             setter(prev => prev.map(d => d.id === debt.id ? {...d, paid: Math.min(d.total, d.paid + amt)} : d));
-            setAbonoModal(null);
+            setModalSaving("abono");
+            setTimeout(() => { setAbonoModal(null); setModalSaving(null); }, 500);
           };
           return (
-            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+            <div className="modal-overlay-anim" style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
               <div style={{display:"flex",minHeight:"100%",alignItems:"center",justifyContent:"center",padding:"20px 16px"}} onClick={e=>e.target===e.currentTarget&&setAbonoModal(null)}>
-                <div style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)",padding:"24px 22px"}}>
+                <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)",padding:"24px 22px"}}>
                   <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase"}}>Registrar abono</p>
                   <p style={{margin:"0 0 18px",fontSize:"18px",fontWeight:800}}>{debt.name}</p>
                   <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Falta por pagar: <strong style={{color:"#DC2626"}}>{money.format(Math.max(0, debt.total - debt.paid))}</strong></p>
@@ -5972,7 +5975,7 @@ export default function App() {
                     </div>
                     <div style={{display:"flex",gap:"8px"}}>
                       <button type="button" onClick={()=>setAbonoModal(null)} style={{flex:1,padding:"14px",background:"var(--line)",color:"var(--ink)",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:600}}>Cancelar</button>
-                      <button type="submit" style={{flex:2,padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>Guardar abono</button>
+                      <button type="submit" className={modalSaving==="abono"?"btn-success":""} style={{flex:2,padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>{modalSaving==="abono"?"✓ Guardado":"Guardar abono"}</button>
                     </div>
                   </form>
                 </div>
@@ -5992,12 +5995,13 @@ export default function App() {
             const entry = { id: Date.now(), name: paymentForm.name.trim(), amount, dayOfMonth: day, lastPaidMonth: null };
             if (isHome) setHomePayments(prev => [entry, ...prev]);
             else        setBizPayments(prev  => [entry, ...prev]);
-            setPaymentModal(null);
+            setModalSaving("payment");
+            setTimeout(() => { setPaymentModal(null); setModalSaving(null); }, 500);
           };
           return (
-            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+            <div className="modal-overlay-anim" style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
               <div style={{display:"flex",minHeight:"100%",alignItems:"center",justifyContent:"center",padding:"20px 16px"}} onClick={e=>e.target===e.currentTarget&&setPaymentModal(null)}>
-                <div style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
+                <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
                   <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                     <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Nuevo pago del mes</p>
                     <button type="button" onClick={()=>setPaymentModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
@@ -6019,7 +6023,7 @@ export default function App() {
                           style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
                       </div>
                     </div>
-                    <button type="submit" style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>Guardar pago</button>
+                    <button type="submit" className={modalSaving==="payment"?"btn-success":""} style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>{modalSaving==="payment"?"✓ Guardado":"Guardar pago"}</button>
                   </form>
                 </div>
               </div>
