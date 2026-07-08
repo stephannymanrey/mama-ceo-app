@@ -20,9 +20,14 @@ const HL_COLORS = [
 ];
 const CLIP_COLORS   = ["#C4526A","#4A90BF","#5FB87A","#B07FD4","#D4955F","#5FB8B0"];
 const TRANSITIONS   = [
-  { id: "none",  icon: "—", label: "Sin efecto"     },
-  { id: "fade",  icon: "◐", label: "Fundido negro"  },
-  { id: "zoom",  icon: "⊕", label: "Zoom suave"     },
+  { id: "none",       icon: "—", label: "Sin efecto"    },
+  { id: "fade",       icon: "◐", label: "Fundido"       },
+  { id: "flash",      icon: "✦", label: "Flash"         },
+  { id: "zoom",       icon: "⊕", label: "Zoom"          },
+  { id: "slideLeft",  icon: "←", label: "Deslizar ←"   },
+  { id: "slideRight", icon: "→", label: "Deslizar →"   },
+  { id: "slideUp",    icon: "↑", label: "Deslizar ↑"   },
+  { id: "slideDown",  icon: "↓", label: "Deslizar ↓"   },
   { id: "flash", icon: "✦", label: "Flash blanco"   },
 ];
 const SKIN_FILTERS  = [
@@ -516,6 +521,7 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
         const scale = Math.min(outW / vW, outH / vH);
         const dW = vW * scale, dH = vH * scale, dX = (outW - dW) / 2, dY = (outH - dH) / 2;
 
+        const { autoZoom = false, zoomInterval = 4 } = effects;
         let animId;
         const drawLoop = () => {
           ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
@@ -528,11 +534,14 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
               ctx.drawImage(videoEl, bgX, bgY, bgW, bgH);
               ctx.restore();
             }
+            // Auto-zoom rítmico
+            const z = autoZoom ? 1 + 0.07 * Math.abs(Math.sin(videoEl.currentTime * Math.PI / zoomInterval)) : 1;
+            const zdX = (outW - dW * z) / 2, zdY = (outH - dH * z) / 2;
             // Aplicar corrección de color + skin al frame principal
             const { brightness = 0, contrast = 0, saturation = 0, skin = 0, temperature = 0 } = effects;
             const vf = buildVidFilter(brightness, contrast, saturation, skin);
             if (vf) { ctx.save(); ctx.filter = vf; }
-            ctx.drawImage(videoEl, dX, dY, dW, dH);
+            ctx.drawImage(videoEl, zdX, zdY, dW * z, dH * z);
             if (vf) ctx.restore();
             // Temperatura
             if (temperature !== 0) {
@@ -573,6 +582,50 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
       videoEl.onerror = () => { URL.revokeObjectURL(url); resolve(); };
     });
     elapsed += clip.duration || 0;
+
+    // Transición entre clips en exportación
+    const { transition = "none", transitionSecs = 0.4 } = effects;
+    if (!abortRef.current && transition !== "none" && ci < clips.length - 1) {
+      await new Promise(resolve => {
+        if (transition === "fade") {
+          // Fade a negro
+          const t0 = performance.now();
+          const dur = transitionSecs / 2;
+          const step = () => {
+            const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
+            ctx.fillStyle = `rgba(0,0,0,${t})`; ctx.fillRect(0, 0, outW, outH);
+            if (t < 1) requestAnimationFrame(step); else resolve();
+          };
+          requestAnimationFrame(step);
+        } else if (transition === "flash") {
+          const t0 = performance.now();
+          const step = () => {
+            const t = Math.min(1, (performance.now() - t0) / 1000 / 0.12);
+            ctx.fillStyle = `rgba(255,255,255,${t})`; ctx.fillRect(0, 0, outW, outH);
+            if (t < 1) requestAnimationFrame(step); else resolve();
+          };
+          requestAnimationFrame(step);
+        } else if (transition.startsWith("slide")) {
+          createImageBitmap(canvas).then(bitmap => {
+            const t0 = performance.now();
+            const dur = transitionSecs * 0.6;
+            const step = () => {
+              const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
+              const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+              ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
+              const ox = transition === "slideLeft" ? -outW * ease : transition === "slideRight" ? outW * ease : 0;
+              const oy = transition === "slideUp"   ? -outH * ease : transition === "slideDown"  ? outH * ease : 0;
+              ctx.drawImage(bitmap, ox, oy, outW, outH);
+              if (t < 1) requestAnimationFrame(step);
+              else { bitmap.close(); resolve(); }
+            };
+            requestAnimationFrame(step);
+          });
+        } else {
+          resolve();
+        }
+      });
+    }
   }
 
   await new Promise(r => setTimeout(r, 400));
@@ -784,10 +837,12 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
 }
 
 // ── Timeline contraído ────────────────────────────────────────────────────
-function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles }) {
+function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg }) {
   const pct = totalKept > 0 ? Math.min(100, (effectiveTime / totalKept) * 100) : 0;
+  const [hoveredSeg, setHoveredSeg] = useState(null);
 
   const handleTrackClick = e => {
+    if (e.target.closest(".sce-tl-seg-del")) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const p = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     onSeek(p * totalKept);
@@ -809,11 +864,25 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
             const w = (seg.end - seg.start) / (totalKept || 1) * 100;
             const clipIdx = allClips.findIndex(c => c.id === seg.clip.id);
             const color = CLIP_COLORS[clipIdx % CLIP_COLORS.length] || "#C4526A";
+            const isHov = hoveredSeg === i;
             return (
-              <div key={i} className="sce-tl-seg"
+              <div key={i} className={`sce-tl-seg${isHov ? " hovered" : ""}`}
                 style={{ width: `${w}%`, "--seg-color": color }}
-                title={`${seg.clip.name.replace(/\.[^/.]+$/, "")} · ${fmtTime(seg.start)}–${fmtTime(seg.end)}`}>
+                title={`${seg.clip.name.replace(/\.[^/.]+$/, "")} · ${fmtTime(seg.start)}–${fmtTime(seg.end)}`}
+                onMouseEnter={() => setHoveredSeg(i)} onMouseLeave={() => setHoveredSeg(null)}>
                 <span className="sce-tl-seg-label">{seg.clip.name.replace(/\.[^/.]+$/, "").slice(0, 14)}</span>
+                {isHov && onCutSeg && (
+                  <div className="sce-tl-seg-toolbar">
+                    <button className="sce-tl-seg-del" title="Eliminar este fragmento"
+                      onClick={e => { e.stopPropagation(); onCutSeg(seg.clip.id, seg.start, seg.end); }}>
+                      🗑
+                    </button>
+                    <button className="sce-tl-seg-play" title="Reproducir desde aquí"
+                      onClick={e => { e.stopPropagation(); onSeek(keptSegs.slice(0,i).reduce((t,s)=>t+s.end-s.start,0) + (seg.start - seg.start)); }}>
+                      ▶
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
@@ -838,6 +907,72 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
           <button className="sce-tl-add-clip" onClick={onAddFiles}>＋ Agregar clip</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── TransitionsPanel ─────────────────────────────────────────────────────
+function TransitionsPanel({ effects, onEffectChange }) {
+  const [hovered, setHovered] = useState(null);
+  return (
+    <div className="sce-effects-panel">
+      <div className="sce-fx-section">
+        <p className="sce-fx-section-label">TRANSICIÓN ENTRE CLIPS</p>
+        <div className="sce-trans-cards-grid">
+          {TRANSITIONS.map(t => (
+            <button key={t.id}
+              className={`sce-trans-card${effects.transition === t.id ? " active" : ""}`}
+              onClick={() => onEffectChange({ ...effects, transition: t.id })}
+              onMouseEnter={() => setHovered(t.id)} onMouseLeave={() => setHovered(null)}>
+              <div className={`sce-trans-preview sce-trans-prev--${t.id}${hovered === t.id ? " play" : ""}`}>
+                <div className="sce-tprev-a">A</div>
+                <div className="sce-tprev-b">B</div>
+              </div>
+              <span className="sce-trans-card-label">{t.icon} {t.label}</span>
+            </button>
+          ))}
+        </div>
+        {effects.transition !== "none" && (
+          <div className="sce-fx-slider-row" style={{ marginTop: 10 }}>
+            <span>Duración</span>
+            <input type="range" min="0.2" max="1.5" step="0.1" className="sce-fx-slider"
+              value={effects.transitionSecs}
+              onChange={e => onEffectChange({ ...effects, transitionSecs: +e.target.value })} />
+            <span>{effects.transitionSecs}s</span>
+          </div>
+        )}
+      </div>
+
+      {/* Auto-zoom de retención */}
+      <div className="sce-fx-section">
+        <div className="sce-fx-row">
+          <div>
+            <p className="sce-fx-section-label" style={{ marginBottom: 2 }}>AUTO-ZOOM DE RETENCIÓN</p>
+            <p className="sce-fx-hint" style={{ margin: 0 }}>
+              Zoom sutil cada {effects.zoomInterval || 4}s · Aumenta la retención del espectador
+            </p>
+          </div>
+          <button className={`sce-fx-toggle${effects.autoZoom ? " active" : ""}`}
+            onClick={() => onEffectChange({ ...effects, autoZoom: !effects.autoZoom })}>
+            {effects.autoZoom ? "ON" : "OFF"}
+          </button>
+        </div>
+        {effects.autoZoom && (
+          <div className="sce-fx-slider-row" style={{ marginTop: 8 }}>
+            <span style={{ minWidth: 64 }}>Intervalo</span>
+            <input type="range" min="2" max="8" step="1" className="sce-fx-slider"
+              value={effects.zoomInterval || 4}
+              onChange={e => onEffectChange({ ...effects, zoomInterval: +e.target.value })} />
+            <span>cada {effects.zoomInterval || 4}s</span>
+          </div>
+        )}
+        <div className="sce-trans-zoom-demo">
+          <div className={`sce-tzoom-box${effects.autoZoom ? " active" : ""}`}>
+            <span>Vista previa del zoom</span>
+          </div>
+        </div>
+      </div>
+      <p className="sce-fx-footer">Las transiciones y el auto-zoom se exportan automáticamente.</p>
     </div>
   );
 }
@@ -875,30 +1010,6 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
         </div>
         {effects._preset === "natural" && (
           <p className="sce-fx-hint" style={{ color: "#5FB87A" }}>✓ Edición base aplicada — listo para exportar</p>
-        )}
-      </div>
-
-      {/* Transiciones */}
-      <div className="sce-fx-section">
-        <p className="sce-fx-section-label">TRANSICIÓN ENTRE CLIPS</p>
-        <div className="sce-fx-trans-grid">
-          {TRANSITIONS.map(t => (
-            <button key={t.id}
-              className={`sce-fx-trans${effects.transition === t.id ? " active" : ""}`}
-              onClick={() => onEffectChange({ ...effects, transition: t.id })}>
-              <span className="sce-fx-trans-icon">{t.icon}</span>
-              <span className="sce-fx-trans-label">{t.label}</span>
-            </button>
-          ))}
-        </div>
-        {effects.transition !== "none" && (
-          <div className="sce-fx-slider-row" style={{ marginTop: 8 }}>
-            <span>Duración</span>
-            <input type="range" min="0.2" max="1.2" step="0.1" className="sce-fx-slider"
-              value={effects.transitionSecs}
-              onChange={e => onEffectChange({ ...effects, transitionSecs: +e.target.value })} />
-            <span>{effects.transitionSecs}s</span>
-          </div>
         )}
       </div>
 
@@ -974,7 +1085,7 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
 }
 
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze, format, onFormatChange, onExtractReels, sensitivity, onReanalyze }) {
+function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze, format, onFormatChange, onExtractReels, sensitivity, onReanalyze, onCutSeg }) {
   const canvasRef    = useRef(null);
   const playRef      = useRef(false);
   const subListRef   = useRef(null);
@@ -985,7 +1096,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const maskRef     = useRef(null);   // último segmentation mask
   const maskCbRef   = useRef(null);   // resolve pendiente para drawFrame blocking
   const _nat        = VIDEO_PRESETS[0].values;
-  const effectsRef  = useRef({ transition: "none", transitionSecs: 0.4, bokeh: 0, ..._nat, _preset: "natural" });
+  const effectsRef  = useRef({ transition: "none", transitionSecs: 0.4, bokeh: 0, autoZoom: false, zoomInterval: 4, ..._nat, _preset: "natural" });
   const formatRef   = useRef("landscape");
   const transAlpha  = useRef(0);      // 0-1 overlay negro/blanco para transiciones
   const transColor  = useRef("0,0,0");
@@ -1000,7 +1111,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const [cutMark,      setCutMark]      = useState(null);
   const [dims,         setDims]         = useState({ W: 1280, H: 720 });
   const [tab,          setTab]          = useState("subs");
-  const [effects,      setEffects]      = useState(() => ({ transition: "none", transitionSecs: 0.4, bokeh: 0, ...VIDEO_PRESETS[0].values, _preset: "natural" }));
+  const [effects,      setEffects]      = useState(() => ({ transition: "none", transitionSecs: 0.4, bokeh: 0, autoZoom: false, zoomInterval: 4, ...VIDEO_PRESETS[0].values, _preset: "natural" }));
   const [bokehLoading, setBokehLoading] = useState(false);
 
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
@@ -1138,6 +1249,28 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     };
     requestAnimationFrame(tick);
   }, []);
+
+  // Slide: congela canvas actual y lo anima saliendo en la dirección indicada
+  const animSlide = useCallback((dir, dur) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return Promise.resolve();
+    const ctx = canvas.getContext("2d");
+    const { W, H } = outDims;
+    return createImageBitmap(canvas).then(bitmap => new Promise(resolve => {
+      const t0 = performance.now();
+      const tick = () => {
+        const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
+        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+        const ox = dir === "slideLeft" ? -W * ease : dir === "slideRight" ? W * ease : 0;
+        const oy = dir === "slideUp"   ? -H * ease : dir === "slideDown"  ? H * ease : 0;
+        ctx.drawImage(bitmap, ox, oy, W, H);
+        if (t < 1) requestAnimationFrame(tick);
+        else { bitmap.close(); resolve(); }
+      };
+      requestAnimationFrame(tick);
+    }));
+  }, [outDims]);
 
   // Valores derivados
   const keptSegs   = useMemo(() => buildKeptSegments(clips), [clips]);
@@ -1297,6 +1430,10 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
           let animId;
           const draw = () => {
+            const efx = effectsRef.current;
+            if (efx.autoZoom) {
+              zoomFactor.current = 1 + 0.07 * Math.abs(Math.sin(vid.currentTime * Math.PI / (efx.zoomInterval || 4)));
+            }
             applyFrame(ctx, vid, dX, dY, dW, dH, W, H, false); // no-await, non-blocking
             drawSubtitle(ctx, W, H, vid.currentTime, clip.segments, subtitleStyle);
             animId = requestAnimationFrame(draw);
@@ -1333,6 +1470,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           if (playRef.current && transition !== "none" && clipIdx < uniqueClipIds.length - 1) {
             if (transition === "fade") await animFade(0, 1, transitionSecs / 2);
             else if (transition === "flash") await animFade(0, 1, 0.08, "255,255,255");
+            else if (transition.startsWith("slide")) await animSlide(transition, transitionSecs * 0.6);
           }
 
           URL.revokeObjectURL(url);
@@ -1348,12 +1486,13 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         if (transition === "fade") await animFade(1, 0, transitionSecs / 2);
         else if (transition === "flash") await animFade(1, 0, 0.08, "255,255,255");
         else if (transition === "zoom") startZoom(transitionSecs);
+        // slides: canvas ya está negro tras animSlide, el nuevo clip arranca directo
       }
     }
 
     if (playRef.current) { setDone(true); setEffectiveTime(totalKept); }
     setIsPlaying(false); playRef.current = false;
-  }, [keptSegs, outDims, dims, subtitleStyle, totalKept, isPlaying, transcribing, animFade, startZoom]);
+  }, [keptSegs, outDims, dims, subtitleStyle, totalKept, isPlaying, transcribing, animFade, startZoom, animSlide]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) { playRef.current = false; } else { runPlay(); }
@@ -1463,11 +1602,12 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           </div>
         </div>
 
-        {/* Panel derecho con tabs: Subtítulos | Efectos */}
+        {/* Panel derecho con tabs: Subtítulos | Transiciones | Efectos */}
         <div className="sce-right-panel">
           <div className="sce-tab-bar">
-            <button className={`sce-tab${tab === "subs" ? " active" : ""}`} onClick={() => setTab("subs")}>💬 Subtítulos</button>
-            <button className={`sce-tab${tab === "fx"   ? " active" : ""}`} onClick={() => setTab("fx")}>✨ Efectos</button>
+            <button className={`sce-tab${tab === "subs"  ? " active" : ""}`} onClick={() => setTab("subs")}>💬 Subtítulos</button>
+            <button className={`sce-tab${tab === "trans" ? " active" : ""}`} onClick={() => setTab("trans")}>🎬 Transiciones</button>
+            <button className={`sce-tab${tab === "fx"    ? " active" : ""}`} onClick={() => setTab("fx")}>✨ Efectos</button>
           </div>
           {tab === "subs"
             ? <SubtitlePanel
@@ -1479,6 +1619,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
                 listRef={subListRef}
                 transcribing={transcribing} transcribeMsg={transcribeMsg}
               />
+            : tab === "trans"
+            ? <TransitionsPanel effects={effects} onEffectChange={setEffects} />
             : <EffectsPanel
                 effects={effects} onEffectChange={setEffects}
                 bokehLoading={bokehLoading}
@@ -1495,6 +1637,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         onSeek={seekToEffective}
         allClips={clips} onMoveClip={moveClip} onRemoveClip={removeClip}
         onAddFiles={() => fileInputRef.current?.click()}
+        onCutSeg={onCutSeg}
       />
     </div>
   );
@@ -1749,6 +1892,15 @@ export default function SilenceCutter() {
     analizarClips(reset);
   }, [clips, analizarClips]);
 
+  const cutSeg = useCallback((clipId, segStart, segEnd) => {
+    setClips(prev => prev.map(c => {
+      if (c.id !== clipId) return c;
+      const newSilences = [...(c.silences || []), { start: segStart, end: segEnd, cut: true }]
+        .sort((a, b) => a.start - b.start);
+      return { ...c, silences: newSilences };
+    }));
+  }, []);
+
   const addFiles = useCallback(async (files) => {
     const valid = Array.from(files).filter(f => /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name) || f.type.startsWith("video/"));
     if (!valid.length) { setError("No se encontraron archivos de video válidos."); return; }
@@ -1865,7 +2017,8 @@ export default function SilenceCutter() {
       onAnalyze={analizarTodos}
       format={format} onFormatChange={setFormat}
       onExtractReels={() => setShowReels(true)}
-      sensitivity={sensitivity} onReanalyze={reanalizar} />
+      sensitivity={sensitivity} onReanalyze={reanalizar}
+      onCutSeg={cutSeg} />
   );
 
   // Pantalla de subida
