@@ -5913,30 +5913,32 @@ export default function App() {
             setDebtModal(null);
           };
           return (
-            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&setDebtModal(null)}>
-              <div style={{background:"#fff",borderRadius:"24px 24px 0 0",width:"min(520px,100%)",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)"}}>
-                <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"24px 24px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <p style={{margin:0,fontSize:"18px",fontWeight:800}}>{isEdit?"Editar deuda":"Nueva deuda"}</p>
-                  <button type="button" onClick={()=>setDebtModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+              <div style={{display:"flex",minHeight:"100%",alignItems:"center",justifyContent:"center",padding:"20px 16px"}} onClick={e=>e.target===e.currentTarget&&setDebtModal(null)}>
+                <div style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
+                  <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <p style={{margin:0,fontSize:"18px",fontWeight:800}}>{isEdit?"Editar deuda":"Nueva deuda"}</p>
+                    <button type="button" onClick={()=>setDebtModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                  </div>
+                  <form onSubmit={saveDebt} style={{padding:"22px",display:"flex",flexDirection:"column",gap:"12px"}}>
+                    <div>
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Nombre de la deuda</label>
+                      <input placeholder="Ej: Tarjeta VISA, Préstamo banco..." autoFocus value={debtForm.name} onChange={e=>setDebtForm(c=>({...c,name:e.target.value}))}
+                        style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
+                    </div>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                      <div>
+                        <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Total de la deuda</label>
+                        <MoneyAmountInput placeholder="$ 0" value={debtForm.total} onChange={v=>setDebtForm(c=>({...c,total:v}))}/>
+                      </div>
+                      <div>
+                        <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Ya abonado</label>
+                        <MoneyAmountInput placeholder="$ 0" value={debtForm.paid} onChange={v=>setDebtForm(c=>({...c,paid:v}))}/>
+                      </div>
+                    </div>
+                    <button type="submit" style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>Guardar deuda</button>
+                  </form>
                 </div>
-                <form onSubmit={saveDebt} style={{padding:"22px",display:"flex",flexDirection:"column",gap:"12px"}}>
-                  <div>
-                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Nombre de la deuda</label>
-                    <input placeholder="Ej: Tarjeta VISA, Préstamo banco..." autoFocus value={debtForm.name} onChange={e=>setDebtForm(c=>({...c,name:e.target.value}))}
-                      style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
-                  </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
-                    <div>
-                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Total de la deuda</label>
-                      <MoneyAmountInput placeholder="$ 0" value={debtForm.total} onChange={v=>setDebtForm(c=>({...c,total:v}))}/>
-                    </div>
-                    <div>
-                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Ya abonado</label>
-                      <MoneyAmountInput placeholder="$ 0" value={debtForm.paid} onChange={v=>setDebtForm(c=>({...c,paid:v}))}/>
-                    </div>
-                  </div>
-                  <button type="submit" style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>Guardar deuda</button>
-                </form>
               </div>
             </div>
           );
@@ -5957,21 +5959,23 @@ export default function App() {
             setAbonoModal(null);
           };
           return (
-            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&setAbonoModal(null)}>
-              <div style={{background:"#fff",borderRadius:"24px 24px 0 0",width:"min(520px,100%)",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)",padding:"24px 22px"}}>
-                <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase"}}>Registrar abono</p>
-                <p style={{margin:"0 0 18px",fontSize:"18px",fontWeight:800}}>{debt.name}</p>
-                <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Falta por pagar: <strong style={{color:"#DC2626"}}>{money.format(Math.max(0, debt.total - debt.paid))}</strong></p>
-                <form onSubmit={saveAbono} style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-                  <div>
-                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Monto del abono</label>
-                    <MoneyAmountInput placeholder="$ 0" value={abonoModal.abonoAmt} onChange={v=>setAbonoModal(c=>({...c,abonoAmt:v}))} autoFocus/>
-                  </div>
-                  <div style={{display:"flex",gap:"8px"}}>
-                    <button type="button" onClick={()=>setAbonoModal(null)} style={{flex:1,padding:"14px",background:"var(--line)",color:"var(--ink)",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:600}}>Cancelar</button>
-                    <button type="submit" style={{flex:2,padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>Guardar abono</button>
-                  </div>
-                </form>
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+              <div style={{display:"flex",minHeight:"100%",alignItems:"center",justifyContent:"center",padding:"20px 16px"}} onClick={e=>e.target===e.currentTarget&&setAbonoModal(null)}>
+                <div style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)",padding:"24px 22px"}}>
+                  <p style={{margin:"0 0 4px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase"}}>Registrar abono</p>
+                  <p style={{margin:"0 0 18px",fontSize:"18px",fontWeight:800}}>{debt.name}</p>
+                  <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Falta por pagar: <strong style={{color:"#DC2626"}}>{money.format(Math.max(0, debt.total - debt.paid))}</strong></p>
+                  <form onSubmit={saveAbono} style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+                    <div>
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Monto del abono</label>
+                      <MoneyAmountInput placeholder="$ 0" value={abonoModal.abonoAmt} onChange={v=>setAbonoModal(c=>({...c,abonoAmt:v}))} autoFocus/>
+                    </div>
+                    <div style={{display:"flex",gap:"8px"}}>
+                      <button type="button" onClick={()=>setAbonoModal(null)} style={{flex:1,padding:"14px",background:"var(--line)",color:"var(--ink)",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:600}}>Cancelar</button>
+                      <button type="submit" style={{flex:2,padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>Guardar abono</button>
+                    </div>
+                  </form>
+                </div>
               </div>
             </div>
           );
@@ -5991,31 +5995,33 @@ export default function App() {
             setPaymentModal(null);
           };
           return (
-            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"flex-end",justifyContent:"center"}} onClick={e=>e.target===e.currentTarget&&setPaymentModal(null)}>
-              <div style={{background:"#fff",borderRadius:"24px 24px 0 0",width:"min(520px,100%)",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)"}}>
-                <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"24px 24px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                  <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Nuevo pago del mes</p>
-                  <button type="button" onClick={()=>setPaymentModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
-                </div>
-                <form onSubmit={savePmt} style={{padding:"22px",display:"flex",flexDirection:"column",gap:"12px"}}>
-                  <div>
-                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Nombre del pago</label>
-                    <input placeholder="Ej: Netflix, Arriendo, Internet..." autoFocus value={paymentForm.name} onChange={e=>setPaymentForm(c=>({...c,name:e.target.value}))}
-                      style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
+            <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+              <div style={{display:"flex",minHeight:"100%",alignItems:"center",justifyContent:"center",padding:"20px 16px"}} onClick={e=>e.target===e.currentTarget&&setPaymentModal(null)}>
+                <div style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
+                  <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Nuevo pago del mes</p>
+                    <button type="button" onClick={()=>setPaymentModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
                   </div>
-                  <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                  <form onSubmit={savePmt} style={{padding:"22px",display:"flex",flexDirection:"column",gap:"12px"}}>
                     <div>
-                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Monto mensual</label>
-                      <MoneyAmountInput placeholder="$ 0" value={paymentForm.amount} onChange={v=>setPaymentForm(c=>({...c,amount:v}))}/>
-                    </div>
-                    <div>
-                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Día del mes</label>
-                      <input type="number" min="1" max="31" placeholder="Ej: 15" value={paymentForm.dayOfMonth} onChange={e=>setPaymentForm(c=>({...c,dayOfMonth:e.target.value}))}
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Nombre del pago</label>
+                      <input placeholder="Ej: Netflix, Arriendo, Internet..." autoFocus value={paymentForm.name} onChange={e=>setPaymentForm(c=>({...c,name:e.target.value}))}
                         style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
                     </div>
-                  </div>
-                  <button type="submit" style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>Guardar pago</button>
-                </form>
+                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                      <div>
+                        <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Monto mensual</label>
+                        <MoneyAmountInput placeholder="$ 0" value={paymentForm.amount} onChange={v=>setPaymentForm(c=>({...c,amount:v}))}/>
+                      </div>
+                      <div>
+                        <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Día del mes</label>
+                        <input type="number" min="1" max="31" placeholder="Ej: 15" value={paymentForm.dayOfMonth} onChange={e=>setPaymentForm(c=>({...c,dayOfMonth:e.target.value}))}
+                          style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
+                      </div>
+                    </div>
+                    <button type="submit" style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>Guardar pago</button>
+                  </form>
+                </div>
               </div>
             </div>
           );
