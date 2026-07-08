@@ -283,8 +283,8 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
   if (!words?.length) return;
   const font    = style.font    || "Poppins";
   const hlColor = style.hlColor || "#FFE44D";
-  const fs      = Math.max(24, Math.floor(H / 17));
-  const GROUP   = 5;
+  let fs        = Math.max(28, Math.floor(H / 13));
+  const GROUP   = 4;
 
   let idx = words.findIndex(w => time >= w.start && time <= w.end);
   if (idx === -1) {
@@ -305,34 +305,40 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
     ctx.measureText(w.word + (i < group.length - 1 ? " " : "")).width
   );
   let totalW = wMeasures.reduce((a, b) => a + b, 0);
-  const maxW = W * 0.84;
+  const maxW = W * 0.86;
   if (totalW > maxW) {
-    const newFs = Math.floor(fs * (maxW / totalW));
-    ctx.font = `800 ${newFs}px "${font}", sans-serif`;
+    fs = Math.floor(fs * (maxW / totalW));
+    ctx.font = `800 ${fs}px "${font}", sans-serif`;
     wMeasures.forEach((_, i) => {
       wMeasures[i] = ctx.measureText(group[i].word + (i < group.length - 1 ? " " : "")).width;
     });
     totalW = wMeasures.reduce((a, b) => a + b, 0);
   }
 
-  const y = H - Math.floor(H / 10);
-  let x = W / 2 - totalW / 2;
+  const y    = Math.round(H * 0.87);
+  let x      = W / 2 - totalW / 2;
+  const padX = 5, padY = 3;
+
+  // Franja semitransparente detrás de todas las palabras
+  ctx.fillStyle = "rgba(0,0,0,0.52)";
+  ctx.beginPath();
+  ctx.roundRect(x - padX - 5, y - fs - padY - 5, totalW + (padX + 5) * 2, fs + (padY + 5) * 2, 12);
+  ctx.fill();
 
   group.forEach((w, i) => {
     const isCurrent = time >= w.start && time <= w.end;
-    const isPast    = time > w.end;
     const wordText  = w.word + (i < group.length - 1 ? " " : "");
     const wordW     = ctx.measureText(w.word).width;
     if (isCurrent) {
-      const bPadX = fs * 0.22, bPadY = fs * 0.15;
       ctx.fillStyle = hlColor;
       ctx.beginPath();
-      ctx.roundRect(x - bPadX, y - fs - bPadY, wordW + bPadX * 2, fs + bPadY * 2, 6);
+      ctx.roundRect(x - padX, y - fs - padY, wordW + padX * 2, fs + padY * 2, 6);
       ctx.fill();
       ctx.fillStyle = "#1a1a2e";
     } else {
-      ctx.shadowColor = "rgba(0,0,0,0.85)"; ctx.shadowBlur = 6;
-      ctx.fillStyle = isPast ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.95)";
+      ctx.shadowColor = "rgba(0,0,0,0.9)";
+      ctx.shadowBlur = 4;
+      ctx.fillStyle = "rgba(255,255,255,0.95)";
     }
     ctx.fillText(wordText, x, y);
     ctx.shadowBlur = 0;
@@ -467,7 +473,7 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
 }
 
 // ── Grabación multi-clip ──────────────────────────────────────────────────
-async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape", effects = {}) {
+async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape", effects = {}, clipTransitions = {}) {
   const firstVid = document.createElement("video");
   const firstUrl = URL.createObjectURL(clips[0].file);
   firstVid.src = firstUrl;
@@ -583,8 +589,10 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
     });
     elapsed += clip.duration || 0;
 
-    // Transición entre clips en exportación
-    const { transition = "none", transitionSecs = 0.4 } = effects;
+    // Transición entre clips en exportación (per-clip override o global)
+    const clipTrans = clipTransitions[clip.id] ?? effects.transition ?? "none";
+    const { transitionSecs = 0.4 } = effects;
+    const transition = clipTrans;
     if (!abortRef.current && transition !== "none" && ci < clips.length - 1) {
       await new Promise(resolve => {
         if (transition === "fade") {
@@ -837,56 +845,111 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
 }
 
 // ── Timeline contraído ────────────────────────────────────────────────────
-function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg }) {
+function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none" }) {
   const pct = totalKept > 0 ? Math.min(100, (effectiveTime / totalKept) * 100) : 0;
   const [hoveredSeg, setHoveredSeg] = useState(null);
+  const [transPickerClipId, setTransPickerClipId] = useState(null); // clipId para el mini-picker de transición
 
   const handleTrackClick = e => {
-    if (e.target.closest(".sce-tl-seg-del")) return;
+    if (e.target.closest(".sce-tl-seg-del") || e.target.closest(".sce-tl-trans-btn")) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const p = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     onSeek(p * totalKept);
   };
 
+  // Agrupar segmentos consecutivos del mismo clip para saber dónde terminan los clips
+  const clipBoundaries = useMemo(() => {
+    const bounds = [];
+    let cumW = 0;
+    for (let i = 0; i < keptSegs.length; i++) {
+      const seg = keptSegs[i];
+      const w = (seg.end - seg.start) / (totalKept || 1) * 100;
+      const nextSeg = keptSegs[i + 1];
+      const isLastOfClip = !nextSeg || nextSeg.clip.id !== seg.clip.id;
+      if (isLastOfClip && nextSeg) {
+        bounds.push({ clipId: seg.clip.id, leftPct: cumW + w });
+      }
+      cumW += w;
+    }
+    return bounds;
+  }, [keptSegs, totalKept]);
+
+  const presetInfo = VIDEO_PRESETS.find(p => p.id === activePreset);
+
   return (
     <div className="sce-timeline">
       <div className="sce-tl-header">
         <span className="sce-tl-label">TIMELINE</span>
-        <span className="sce-tl-duration">{fmtTime(effectiveTime)} / {fmtTime(totalKept)}</span>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {presetInfo && activePreset !== "none" && (
+            <span className="sce-tl-preset-badge">{presetInfo.icon} {presetInfo.label}</span>
+          )}
+          <span className="sce-tl-duration">{fmtTime(effectiveTime)} / {fmtTime(totalKept)}</span>
+        </div>
       </div>
       <div className="sce-tl-body">
-        {/* Track contraído */}
-        <div className="sce-tl-track" onClick={handleTrackClick}>
-          {keptSegs.length === 0 && (
-            <div className="sce-tl-empty">Analiza los clips para ver el timeline</div>
-          )}
-          {keptSegs.map((seg, i) => {
-            const w = (seg.end - seg.start) / (totalKept || 1) * 100;
-            const clipIdx = allClips.findIndex(c => c.id === seg.clip.id);
-            const color = CLIP_COLORS[clipIdx % CLIP_COLORS.length] || "#C4526A";
-            const isHov = hoveredSeg === i;
+        {/* Track principal */}
+        <div style={{ position: "relative" }}>
+          <div className="sce-tl-track" onClick={handleTrackClick}>
+            {keptSegs.length === 0 && (
+              <div className="sce-tl-empty">Analiza los clips para ver el timeline</div>
+            )}
+            {keptSegs.map((seg, i) => {
+              const w = (seg.end - seg.start) / (totalKept || 1) * 100;
+              const clipIdx = allClips.findIndex(c => c.id === seg.clip.id);
+              const color = CLIP_COLORS[clipIdx % CLIP_COLORS.length] || "#C4526A";
+              const isHov = hoveredSeg === i;
+              return (
+                <div key={i} className={`sce-tl-seg${isHov ? " hovered" : ""}`}
+                  style={{ width: `${w}%`, "--seg-color": color }}
+                  title={`${seg.clip.name.replace(/\.[^/.]+$/, "")} · ${fmtTime(seg.start)}–${fmtTime(seg.end)}`}
+                  onMouseEnter={() => setHoveredSeg(i)} onMouseLeave={() => setHoveredSeg(null)}>
+                  <span className="sce-tl-seg-label">{seg.clip.name.replace(/\.[^/.]+$/, "").slice(0, 14)}</span>
+                  {isHov && onCutSeg && (
+                    <div className="sce-tl-seg-toolbar">
+                      <button className="sce-tl-seg-del" title="Eliminar este fragmento"
+                        onClick={e => { e.stopPropagation(); onCutSeg(seg.clip.id, seg.start, seg.end); }}>🗑</button>
+                      <button className="sce-tl-seg-play" title="Reproducir desde aquí"
+                        onClick={e => { e.stopPropagation(); onSeek(keptSegs.slice(0,i).reduce((t,s)=>t+s.end-s.start,0)); }}>▶</button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {totalKept > 0 && <div className="sce-tl-ph" style={{ left: `${pct}%` }} />}
+          </div>
+
+          {/* Marcadores de transición entre clips */}
+          {clipBoundaries.map(({ clipId, leftPct }) => {
+            const transType = clipTransitions[clipId] ?? defaultTransition;
+            const transInfo = TRANSITIONS.find(t => t.id === transType) || TRANSITIONS[0];
+            const showPicker = transPickerClipId === clipId;
             return (
-              <div key={i} className={`sce-tl-seg${isHov ? " hovered" : ""}`}
-                style={{ width: `${w}%`, "--seg-color": color }}
-                title={`${seg.clip.name.replace(/\.[^/.]+$/, "")} · ${fmtTime(seg.start)}–${fmtTime(seg.end)}`}
-                onMouseEnter={() => setHoveredSeg(i)} onMouseLeave={() => setHoveredSeg(null)}>
-                <span className="sce-tl-seg-label">{seg.clip.name.replace(/\.[^/.]+$/, "").slice(0, 14)}</span>
-                {isHov && onCutSeg && (
-                  <div className="sce-tl-seg-toolbar">
-                    <button className="sce-tl-seg-del" title="Eliminar este fragmento"
-                      onClick={e => { e.stopPropagation(); onCutSeg(seg.clip.id, seg.start, seg.end); }}>
-                      🗑
-                    </button>
-                    <button className="sce-tl-seg-play" title="Reproducir desde aquí"
-                      onClick={e => { e.stopPropagation(); onSeek(keptSegs.slice(0,i).reduce((t,s)=>t+s.end-s.start,0) + (seg.start - seg.start)); }}>
-                      ▶
-                    </button>
+              <div key={clipId} className="sce-tl-trans-marker" style={{ left: `${leftPct}%` }}>
+                <button
+                  className={`sce-tl-trans-btn${transType !== "none" ? " has-trans" : ""}`}
+                  title={`Transición: ${transInfo.label}`}
+                  onClick={e => { e.stopPropagation(); setTransPickerClipId(showPicker ? null : clipId); }}>
+                  {transInfo.icon}
+                </button>
+                {showPicker && (
+                  <div className="sce-tl-trans-picker" onClick={e => e.stopPropagation()}>
+                    <p className="sce-tl-trans-picker-title">Transición aquí</p>
+                    <div className="sce-tl-trans-picker-grid">
+                      {TRANSITIONS.filter((t,i,a) => a.findIndex(x=>x.id===t.id)===i).map(t => (
+                        <button key={t.id}
+                          className={`sce-tl-trans-option${(clipTransitions[clipId] ?? defaultTransition) === t.id ? " active" : ""}`}
+                          onClick={() => { onSetClipTransition(clipId, t.id); setTransPickerClipId(null); }}>
+                          <span>{t.icon}</span>
+                          <span>{t.label}</span>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             );
           })}
-          {totalKept > 0 && <div className="sce-tl-ph" style={{ left: `${pct}%` }} />}
         </div>
 
         {/* Sidebar de clips */}
@@ -985,12 +1048,15 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
     onEffectChange({
       transition: effects.transition, transitionSecs: effects.transitionSecs,
       bokeh: effects.bokeh,
+      skin: effects.skin,              // piel es independiente del preset
       ...preset.values,
+      skin: effects.skin,              // asegurar que piel no la pise el preset
       _preset: preset.id,
     });
   };
 
   const setFine = (key, val) => onEffectChange({ ...effects, [key]: val, _preset: "custom" });
+  const setSkin = (val) => onEffectChange({ ...effects, skin: val }); // no cambia _preset
 
   return (
     <div className="sce-effects-panel">
@@ -1011,6 +1077,26 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
         {effects._preset === "natural" && (
           <p className="sce-fx-hint" style={{ color: "#5FB87A" }}>✓ Edición base aplicada — listo para exportar</p>
         )}
+      </div>
+
+      {/* Suavizante de piel — independiente del estilo */}
+      <div className="sce-fx-section">
+        <div className="sce-fx-row">
+          <p className="sce-fx-section-label">✨ SUAVIZANTE DE PIEL</p>
+          <button className={`sce-fx-toggle${effects.skin ? " active" : ""}`}
+            onClick={() => setSkin(effects.skin ? 0 : 1)}>
+            {effects.skin ? "ON" : "OFF"}
+          </button>
+        </div>
+        {effects.skin > 0 && (
+          <div className="sce-fx-levels">
+            {["Suave", "Medio", "Fuerte"].map((l, i) => (
+              <button key={i} className={`sce-fx-level${effects.skin === i+1 ? " active" : ""}`}
+                onClick={() => setSkin(i + 1)}>{l}</button>
+            ))}
+          </div>
+        )}
+        <p className="sce-fx-hint">Funciona junto con cualquier estilo de video.</p>
       </div>
 
       {/* Bokeh */}
@@ -1041,23 +1127,6 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
         </button>
         {showFine && (
           <div style={{ marginTop: 10 }}>
-            {/* Suavizante de piel */}
-            <div className="sce-fx-row" style={{ marginBottom: 6 }}>
-              <p className="sce-fx-section-label" style={{ margin: 0 }}>SUAVIZANTE DE PIEL</p>
-              <button className={`sce-fx-toggle${effects.skin ? " active" : ""}`}
-                onClick={() => setFine("skin", effects.skin ? 0 : 1)}>
-                {effects.skin ? "ON" : "OFF"}
-              </button>
-            </div>
-            {effects.skin > 0 && (
-              <div className="sce-fx-levels" style={{ marginBottom: 10 }}>
-                {["Suave", "Medio", "Fuerte"].map((l, i) => (
-                  <button key={i} className={`sce-fx-level${effects.skin === i+1 ? " active" : ""}`}
-                    onClick={() => setFine("skin", i + 1)}>{l}</button>
-                ))}
-              </div>
-            )}
-            {/* Sliders de color */}
             {[
               ["brightness", "Brillo",     -100, 100],
               ["contrast",   "Contraste",  -100, 100],
@@ -1113,6 +1182,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const [tab,          setTab]          = useState("subs");
   const [effects,      setEffects]      = useState(() => ({ transition: "none", transitionSecs: 0.4, bokeh: 0, autoZoom: false, zoomInterval: 4, ...VIDEO_PRESETS[0].values, _preset: "natural" }));
   const [bokehLoading, setBokehLoading] = useState(false);
+  const [clipTransitions, setClipTransitions] = useState({}); // { clipId: transitionType }
 
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
   useEffect(() => { effectsRef.current = effects; }, [effects]);
@@ -1547,7 +1617,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           {onExtractReels && (
             <button className="sce-reel-pill" onClick={onExtractReels} title="Extractor de Reels">🎯 Reels</button>
           )}
-          <button className="sc-btn-primary sc-btn-sm" onClick={() => onExport(effects)}>✂️ Exportar</button>
+          <button className="sc-btn-primary sc-btn-sm" onClick={() => onExport(effects, clipTransitions)}>✂️ Exportar</button>
         </div>
       </div>
 
@@ -1638,6 +1708,10 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         allClips={clips} onMoveClip={moveClip} onRemoveClip={removeClip}
         onAddFiles={() => fileInputRef.current?.click()}
         onCutSeg={onCutSeg}
+        clipTransitions={clipTransitions}
+        onSetClipTransition={(clipId, type) => setClipTransitions(p => ({ ...p, [clipId]: type }))}
+        activePreset={effects._preset}
+        defaultTransition={effects.transition}
       />
     </div>
   );
@@ -1932,13 +2006,13 @@ export default function SilenceCutter() {
   const removeClip = id => setClips(prev => prev.filter(c => c.id !== id));
   const onDrop = (e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); };
 
-  const exportar = async (effects = {}) => {
+  const exportar = async (effects = {}, clipTransitions = {}) => {
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) { setError("Analiza los clips primero."); return; }
     abortRef.current = false;
     setFase("cutting"); setProgress(0); setError("");
     try {
-      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format, effects);
+      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format, effects, clipTransitions);
       const totalOriginal = ready.reduce((t, c) => t + (c.duration || 0), 0);
       const totalCut = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0), 0);
       const totalCuts = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).length, 0);
