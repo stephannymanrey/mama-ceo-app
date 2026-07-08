@@ -3400,30 +3400,29 @@ export default function App() {
                   {/* Display */}
                   <div className="calc-display">
                     {calcPrev !== null && <span className="calc-display-prev">{fmt(calcPrev)} {calcOp}</span>}
-                    <span className="calc-display-main">{fmt(Number(calcDisplay).toLocaleString("es-CO")) || calcDisplay}</span>
+                    <span className="calc-display-main">{fmt(calcDisplay) || "0"}</span>
                   </div>
-                  {/* Grid */}
+                  {/* Grid 4×5 — filas exactas, sin overflow */}
                   <div className="calc-grid">
-                    <BTN label="C"   type="func"   onClick={pressC} />
-                    <BTN label="±"   type="func"   onClick={pressPlusMinus} />
-                    <BTN label="%"   type="func"   onClick={pressPct} />
-                    <BTN label="÷"   type="op"     onClick={()=>pressOp("÷")} />
-                    <BTN label="7"   onClick={()=>pressDigit("7")} />
-                    <BTN label="8"   onClick={()=>pressDigit("8")} />
-                    <BTN label="9"   onClick={()=>pressDigit("9")} />
-                    <BTN label="×"   type="op"     onClick={()=>pressOp("×")} />
-                    <BTN label="4"   onClick={()=>pressDigit("4")} />
-                    <BTN label="5"   onClick={()=>pressDigit("5")} />
-                    <BTN label="6"   onClick={()=>pressDigit("6")} />
-                    <BTN label="−"   type="op"     onClick={()=>pressOp("-")} />
-                    <BTN label="1"   onClick={()=>pressDigit("1")} />
-                    <BTN label="2"   onClick={()=>pressDigit("2")} />
-                    <BTN label="3"   onClick={()=>pressDigit("3")} />
-                    <BTN label="+"   type="op"     onClick={()=>pressOp("+")} />
-                    <BTN label="0"   wide onClick={()=>pressDigit("0")} />
-                    <BTN label="."   onClick={()=>pressDigit(".")} />
-                    <BTN label="⌫"  onClick={pressBack} />
-                    <BTN label="="   type="eq"     onClick={pressEqual} />
+                    <BTN label="C"  type="func"  onClick={pressC} />
+                    <BTN label="⌫" type="func"  onClick={pressBack} />
+                    <BTN label="%"  type="func"  onClick={pressPct} />
+                    <BTN label="÷"  type="op"    onClick={()=>pressOp("÷")} />
+                    <BTN label="7"  onClick={()=>pressDigit("7")} />
+                    <BTN label="8"  onClick={()=>pressDigit("8")} />
+                    <BTN label="9"  onClick={()=>pressDigit("9")} />
+                    <BTN label="×"  type="op"    onClick={()=>pressOp("×")} />
+                    <BTN label="4"  onClick={()=>pressDigit("4")} />
+                    <BTN label="5"  onClick={()=>pressDigit("5")} />
+                    <BTN label="6"  onClick={()=>pressDigit("6")} />
+                    <BTN label="−"  type="op"    onClick={()=>pressOp("-")} />
+                    <BTN label="1"  onClick={()=>pressDigit("1")} />
+                    <BTN label="2"  onClick={()=>pressDigit("2")} />
+                    <BTN label="3"  onClick={()=>pressDigit("3")} />
+                    <BTN label="+"  type="op"    onClick={()=>pressOp("+")} />
+                    <BTN label="0"  wide onClick={()=>pressDigit("0")} />
+                    <BTN label="."  onClick={()=>pressDigit(".")} />
+                    <BTN label="="  type="eq"    onClick={pressEqual} />
                   </div>
                   <p style={{margin:"12px 0 0",textAlign:"center",fontSize:"11px",color:"var(--muted)"}}>
                     Tip: Pasa a <strong style={{cursor:"pointer",color:"var(--accent)"}} onClick={()=>setCalcMode("reinv")}>Reinversión</strong> para calcular cuánto separar de esta venta.
