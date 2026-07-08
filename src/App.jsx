@@ -745,6 +745,14 @@ export default function App() {
   const [reminderEnabled, setReminderEnabled] = useState(stored?.reminderEnabled !== false);
   const [toolsFabOpen, setToolsFabOpen] = useState(false);
   const [showCalendar, setShowCalendar] = useState(false);
+  const [showCalcModal, setShowCalcModal] = useState(false);
+  const [calcDisplay, setCalcDisplay] = useState("0");
+  const [calcPrev, setCalcPrev] = useState(null);
+  const [calcOp, setCalcOp] = useState(null);
+  const [calcNewNum, setCalcNewNum] = useState(true);
+  const [calcMode, setCalcMode] = useState("calc");
+  const [calcReinvPct, setCalcReinvPct] = useState(stored?.calcReinvPct || 10);
+  const [calcReinvInput, setCalcReinvInput] = useState("");
   const [calendarMonth, setCalendarMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [calendarAddDate, setCalendarAddDate] = useState(null);
   const [calendarNewAppt, setCalendarNewAppt] = useState({ title: "", type: "Médico", time: "", recurrence: "none", duration: "" });
@@ -1445,6 +1453,7 @@ export default function App() {
     setHomeFocusOverride(state.homeFocusOverride || null);
     setFamilyMembers(state.familyMembers || []);
     if (state.homeIncomeGoal !== undefined) setHomeIncomeGoal(state.homeIncomeGoal);
+    if (state.calcReinvPct !== undefined) setCalcReinvPct(state.calcReinvPct);
     setAppointments(state.appointments || []);
     setWeekMenu((() => { const wm=state.weekMenu; const mg=v=>!v?{desayuno:"",almuerzo:"",cena:"",snack:""}:typeof v==="string"?{desayuno:"",almuerzo:v,cena:"",snack:""}:{desayuno:"",almuerzo:"",cena:"",snack:"",...v}; return {L:mg(wm?.L),M:mg(wm?.M),X:mg(wm?.X),J:mg(wm?.J),V:mg(wm?.V),S:mg(wm?.S),D:mg(wm?.D)}; })());
     setHomeRoutines(state.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
@@ -1573,6 +1582,7 @@ export default function App() {
       reminderTime,
       reminderEnabled,
       homeIncomeGoal,
+      calcReinvPct,
       userPlan: ADMIN_EMAILS.includes(user?.email || profileSetup?.email || "") ? "ceo" : userPlan,
       premiumExpiresAt,
       userMode,
@@ -2845,6 +2855,12 @@ export default function App() {
                   </div>
                 </div>
               )}
+              {/* Calculadora FAB */}
+              <div className={`tools-fab-row tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}`} style={{ position: "fixed", bottom: "252px", right: "28px", zIndex: 1400 }}>
+                <span className="tools-fab-tag">Calculadora</span>
+                <button type="button" className="calc-hub-fab" onClick={() => { setShowCalcModal(true); setToolsFabOpen(false); }} title="Calculadora & Reinversión" tabIndex={toolsFabOpen ? 0 : -1}>🧮</button>
+              </div>
+
               {/* FAB icono */}
               <div className={`tools-fab-row tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}`} style={{ position: "fixed", bottom: "196px", right: "28px", zIndex: 1400 }}>
                 <span className="tools-fab-tag">Temporizador</span>
@@ -3294,6 +3310,175 @@ export default function App() {
                 style={{width:"100%",padding:"10px",borderRadius:"12px",border:"1px solid var(--line)",background:"none",color:"var(--muted)",fontSize:"14px",cursor:"pointer"}}>
                 Ahora no
               </button>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Calculadora Modal ── */}
+      {showCalcModal && (()=>{
+        const fmt = (n) => {
+          if (n === null || n === undefined) return "";
+          const str = String(n);
+          const [int, dec] = str.split(".");
+          const intFmt = Number(int).toLocaleString("es-CO");
+          return dec !== undefined ? `${intFmt}.${dec}` : intFmt;
+        };
+        const calcCompute = (a, b, op) => {
+          const x = parseFloat(a), y = parseFloat(b);
+          if (op === "+") return x + y;
+          if (op === "-") return x - y;
+          if (op === "×") return x * y;
+          if (op === "÷") return y !== 0 ? x / y : "Error";
+          return y;
+        };
+        const pressDigit = (d) => {
+          if (calcNewNum) {
+            setCalcDisplay(d === "." ? "0." : d);
+            setCalcNewNum(false);
+          } else {
+            if (d === "." && calcDisplay.includes(".")) return;
+            setCalcDisplay(p => p === "0" && d !== "." ? d : p + d);
+          }
+        };
+        const pressOp = (op) => {
+          const cur = parseFloat(calcDisplay);
+          if (calcPrev !== null && !calcNewNum && calcOp) {
+            const res = calcCompute(calcPrev, cur, calcOp);
+            setCalcDisplay(String(res));
+            setCalcPrev(res);
+          } else {
+            setCalcPrev(cur);
+          }
+          setCalcOp(op);
+          setCalcNewNum(true);
+        };
+        const pressEqual = () => {
+          if (calcPrev === null || calcNewNum) return;
+          const res = calcCompute(calcPrev, parseFloat(calcDisplay), calcOp);
+          setCalcDisplay(String(res));
+          setCalcPrev(null);
+          setCalcOp(null);
+          setCalcNewNum(true);
+        };
+        const pressC = () => { setCalcDisplay("0"); setCalcPrev(null); setCalcOp(null); setCalcNewNum(true); };
+        const pressPct = () => { setCalcDisplay(p => String(parseFloat(p) / 100)); };
+        const pressPlusMinus = () => { setCalcDisplay(p => String(-parseFloat(p))); };
+        const pressBack = () => {
+          if (calcNewNum) return;
+          setCalcDisplay(p => { const s = p.slice(0,-1); return s === "" || s === "-" ? "0" : s; });
+        };
+        const reinvAmt = parseFloat(calcReinvInput.replace(/[^0-9.]/g,"")) || 0;
+        const reinvValue = Math.round(reinvAmt * calcReinvPct / 100);
+        const reinvRest = Math.max(0, reinvAmt - reinvValue);
+        const BTN = ({label, type="num", wide=false, onClick}) => (
+          <button type="button"
+            className={`calc-btn calc-btn--${type}${wide?" calc-btn--wide":""}`}
+            onClick={onClick}>{label}</button>
+        );
+        return (
+          <div className="calc-backdrop" onClick={e => { if(e.target===e.currentTarget) setShowCalcModal(false); }}>
+            <div className="calc-modal">
+              {/* Header */}
+              <div className="calc-header">
+                <div className="calc-tabs">
+                  <button className={`calc-tab${calcMode==="calc"?" active":""}`} onClick={()=>setCalcMode("calc")}>🔢 Calculadora</button>
+                  <button className={`calc-tab${calcMode==="reinv"?" active":""}`} onClick={()=>setCalcMode("reinv")}>💸 Reinversión</button>
+                </div>
+                <button className="calc-close" onClick={()=>setShowCalcModal(false)}>✕</button>
+              </div>
+
+              {calcMode === "calc" && (
+                <div className="calc-body">
+                  {/* Display */}
+                  <div className="calc-display">
+                    {calcPrev !== null && <span className="calc-display-prev">{fmt(calcPrev)} {calcOp}</span>}
+                    <span className="calc-display-main">{fmt(Number(calcDisplay).toLocaleString("es-CO")) || calcDisplay}</span>
+                  </div>
+                  {/* Grid */}
+                  <div className="calc-grid">
+                    <BTN label="C"   type="func"   onClick={pressC} />
+                    <BTN label="±"   type="func"   onClick={pressPlusMinus} />
+                    <BTN label="%"   type="func"   onClick={pressPct} />
+                    <BTN label="÷"   type="op"     onClick={()=>pressOp("÷")} />
+                    <BTN label="7"   onClick={()=>pressDigit("7")} />
+                    <BTN label="8"   onClick={()=>pressDigit("8")} />
+                    <BTN label="9"   onClick={()=>pressDigit("9")} />
+                    <BTN label="×"   type="op"     onClick={()=>pressOp("×")} />
+                    <BTN label="4"   onClick={()=>pressDigit("4")} />
+                    <BTN label="5"   onClick={()=>pressDigit("5")} />
+                    <BTN label="6"   onClick={()=>pressDigit("6")} />
+                    <BTN label="−"   type="op"     onClick={()=>pressOp("-")} />
+                    <BTN label="1"   onClick={()=>pressDigit("1")} />
+                    <BTN label="2"   onClick={()=>pressDigit("2")} />
+                    <BTN label="3"   onClick={()=>pressDigit("3")} />
+                    <BTN label="+"   type="op"     onClick={()=>pressOp("+")} />
+                    <BTN label="0"   wide onClick={()=>pressDigit("0")} />
+                    <BTN label="."   onClick={()=>pressDigit(".")} />
+                    <BTN label="⌫"  onClick={pressBack} />
+                    <BTN label="="   type="eq"     onClick={pressEqual} />
+                  </div>
+                  <p style={{margin:"12px 0 0",textAlign:"center",fontSize:"11px",color:"var(--muted)"}}>
+                    Tip: Pasa a <strong style={{cursor:"pointer",color:"var(--accent)"}} onClick={()=>setCalcMode("reinv")}>Reinversión</strong> para calcular cuánto separar de esta venta.
+                  </p>
+                </div>
+              )}
+
+              {calcMode === "reinv" && (
+                <div className="calc-body">
+                  <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"14px",lineHeight:1.5}}>
+                    Ingresa el monto de una venta o pago recibido y te digo cuánto reinvertir en tu negocio 💡
+                  </p>
+                  <label style={{display:"block",marginBottom:"14px"}}>
+                    <span style={{fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Monto recibido</span>
+                    <input
+                      type="text" inputMode="decimal"
+                      className="calc-reinv-input"
+                      placeholder="Ej: 500000"
+                      value={calcReinvInput}
+                      onChange={e => setCalcReinvInput(e.target.value.replace(/[^0-9.]/g,""))}
+                    />
+                  </label>
+
+                  <div style={{marginBottom:"18px"}}>
+                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
+                      <span style={{fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>% a reinvertir</span>
+                      <span style={{fontSize:"18px",fontWeight:800,color:"var(--accent)"}}>{calcReinvPct}%</span>
+                    </div>
+                    <input type="range" min="5" max="50" step="5" value={calcReinvPct}
+                      onChange={e=>setCalcReinvPct(Number(e.target.value))}
+                      className="calc-reinv-slider" />
+                    <div style={{display:"flex",gap:"6px",marginTop:"8px",flexWrap:"wrap"}}>
+                      {[10,15,20,25,30].map(p=>(
+                        <button key={p} type="button"
+                          className={`calc-pct-chip${calcReinvPct===p?" active":""}`}
+                          onClick={()=>setCalcReinvPct(p)}>{p}%</button>
+                      ))}
+                    </div>
+                    {calcReinvPct === 10 && <p style={{fontSize:"11px",color:"#1D9E75",marginTop:"6px",fontWeight:600}}>✓ Mínimo recomendado por Mamá CEO</p>}
+                  </div>
+
+                  {reinvAmt > 0 ? (
+                    <div className="calc-reinv-result">
+                      <div className="calc-reinv-row calc-reinv-row--invest">
+                        <span>💼 Reinvierte</span>
+                        <strong>{money.format(reinvValue)}</strong>
+                      </div>
+                      <div className="calc-reinv-row calc-reinv-row--keep">
+                        <span>🏠 Te queda</span>
+                        <strong>{money.format(reinvRest)}</strong>
+                      </div>
+                      <div style={{marginTop:"12px",paddingTop:"12px",borderTop:"1px solid var(--line)",fontSize:"12px",color:"var(--muted)",lineHeight:1.5}}>
+                        Usa los <strong style={{color:"var(--ink)"}}>{money.format(reinvValue)}</strong> en publicidad medible, contenido que venda, email list o herramientas que traigan clientes. No los mezcles con gastos personales.
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{padding:"20px",textAlign:"center",color:"var(--muted)",fontSize:"13px",borderRadius:"12px",background:"rgba(0,0,0,0.03)"}}>
+                      Ingresa un monto para ver el cálculo ↑
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         );
