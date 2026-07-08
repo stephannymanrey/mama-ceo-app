@@ -2321,8 +2321,8 @@ export default function App() {
 
       {/* Modal guía iOS */}
       {showIOSGuide && (
-        <div style={{position:"fixed",inset:0,zIndex:10000,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"flex-end"}}>
-          <div style={{background:"#fff",borderRadius:"20px 20px 0 0",padding:"28px 24px 40px",width:"100%",maxWidth:"480px",margin:"0 auto"}}>
+        <div className="modal-overlay-anim" style={{position:"fixed",inset:0,zIndex:10000,background:"rgba(0,0,0,0.5)",overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
+          <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",padding:"28px 24px 40px",width:"min(480px,100%)",margin:"auto",marginTop:"40px",marginBottom:"40px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px"}}>
               <h3 style={{margin:0,fontSize:"18px"}}>Instalar MamaCEO 🌸</h3>
               <button type="button" onClick={() => { setShowIOSGuide(false); dismissInstall(); }} style={{border:"none",background:"none",fontSize:"22px",color:"var(--muted)",cursor:"pointer",lineHeight:1}}>×</button>
@@ -3255,8 +3255,8 @@ export default function App() {
         };
         const planPerks = perks[upgradeModal.plan] || perks["Emprendedora"];
         return (
-          <div onClick={() => setUpgradeModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
-            <div onClick={e => e.stopPropagation()} style={{background:"#fff",borderRadius:"22px",padding:"28px 24px",maxWidth:"360px",width:"100%",boxShadow:"0 12px 50px rgba(0,0,0,0.2)"}}>
+          <div className="modal-overlay-anim" onClick={() => setUpgradeModal(null)} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:9999,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
+            <div className="modal-card-anim" onClick={e => e.stopPropagation()} style={{background:"#fff",borderRadius:"22px",padding:"28px 24px",maxWidth:"360px",width:"100%",boxShadow:"0 12px 50px rgba(0,0,0,0.2)"}}>
               <p style={{margin:"0 0 6px",fontSize:"11px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.8px",color:"var(--muted)"}}>Plan {upgradeModal.plan}</p>
               <h3 style={{margin:"0 0 6px",fontSize:"20px",color:"var(--ink)",fontWeight:800,lineHeight:1.25}}>
                 ✨ {upgradeModal.feature} te espera
@@ -3969,7 +3969,7 @@ export default function App() {
 
         {/* ── HOY ── */}
         {businessTab === 0 && (
-          <>
+          <div key="biz-tab-0" className="tab-content-anim">
             <div className="home-today-grid">
               <div className="home-today-card">
                 <span className="home-today-card-ico">📋</span>
@@ -4040,13 +4040,13 @@ export default function App() {
                 <p className="biz-upcoming-total">Total a cobrar: <strong>{money.format(upcomingPayments.reduce((s,c)=>s+c.amount,0))}</strong></p>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* ── SEMANA ── */}
         {/* ── TAREAS ── */}
         {businessTab === 1 && (
-          <>
+          <div key="biz-tab-1" className="tab-content-anim">
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexWrap:"wrap",gap:"8px"}}>
               <div>
                 <h3 style={{margin:"0 0 2px"}}>Tareas por área</h3>
@@ -4149,12 +4149,12 @@ export default function App() {
                 </div>
               </div>
             )}
-          </>
+          </div>
         )}
 
         {/* ── REVENUE ── */}
         {businessTab === 2 && (
-          <>
+          <div key="biz-tab-2" className="tab-content-anim">
             {/* Top / bottom servicio o producto */}
             {(topSource || bottomSource) && (
               <div className="biz-rank-grid">
@@ -4414,7 +4414,7 @@ export default function App() {
                 </div>
               );
             })()}
-          </>
+          </div>
         )}
 
         {/* ── Modal: Registrar movimiento ── */}
@@ -5981,10 +5981,11 @@ export default function App() {
 
         {/* ── Modal: Registrar movimiento ── */}
         {showBudgetModal&&(
-          <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"flex-end",justifyContent:"center",padding:"0"}}
+          <div className="modal-overlay-anim" style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}
             onClick={e=>e.target===e.currentTarget&&(setShowBudgetModal(false),setHomeBudgetError(""))}>
-            <div style={{background:"#fff",borderRadius:"24px 24px 0 0",width:"min(520px,100%)",boxShadow:"0 -8px 40px rgba(0,0,0,0.18)",animation:"slideUp 0.25s ease"}}>
-              <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"24px 24px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{display:"flex",minHeight:"100%",alignItems:"center",justifyContent:"center",padding:"20px 16px"}} onClick={e=>e.target===e.currentTarget&&(setShowBudgetModal(false),setHomeBudgetError(""))}>
+            <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",width:"min(520px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
+              <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div>
                   <p style={{margin:"0 0 2px",fontSize:"11px",fontWeight:700,opacity:0.8,letterSpacing:"0.8px",textTransform:"uppercase"}}>Mis Finanzas</p>
                   <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Registrar movimiento</p>
@@ -6027,6 +6028,7 @@ export default function App() {
                   Guardar movimiento
                 </button>
               </form>
+            </div>
             </div>
           </div>
         )}
@@ -6860,7 +6862,7 @@ export default function App() {
           </div>
         )}
 
-        <div style={{display:"grid",gridTemplateColumns:window.innerWidth<700?"1fr":"repeat(3,1fr)",gap:"16px",maxWidth:"960px",margin:"0 auto"}}>
+        <div className="pricing-plan-grid" style={{display:"grid",gridTemplateColumns:window.innerWidth<700?"1fr":"repeat(3,1fr)",gap:"16px",maxWidth:"960px",margin:"0 auto"}}>
           {plans.map((plan) => {
             const isCurrent = effectivePlan===plan.id||(plan.id==="ceo"&&effectivePlan==="premium")||(plan.id==="mama"&&userMode==="mama"&&effectivePlan==="emprendedora");
             return (
