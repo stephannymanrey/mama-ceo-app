@@ -7950,6 +7950,17 @@ button {
 .fin-section-title { margin: 0; font-size: 15px; }
 .fin-empty { margin: 0; font-size: 13px; color: var(--muted); }
 
+/* Lista compacta con scroll interno — max 4 items visibles sin scroll */
+.fin-list-scroll {
+  max-height: 280px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+}
+.fin-list-scroll::-webkit-scrollbar { width: 4px; }
+.fin-list-scroll::-webkit-scrollbar-track { background: transparent; }
+.fin-list-scroll::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
+
 /* Deuda individual */
 .fin-debt-row {
   padding: 12px 14px;

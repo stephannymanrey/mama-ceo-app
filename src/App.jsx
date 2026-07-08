@@ -621,7 +621,7 @@ export default function App() {
   const [bankAddMode, setBankAddMode] = useState(false);
   const [annualBudget, setAnnualBudget] = useState(normalizeAnnualBudget(stored?.annualBudget || initialAnnualBudget));
   const [homeBudget, setHomeBudget] = useState(isNewUser ? [] : normalizeHomeBudget(stored?.homeBudget || initialHomeBudget));
-  const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue() });
+  const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue(), linkedDebtId: "" });
   const [purpose, setPurpose] = useState(createInitialPurpose(stored?.purpose || {}));
   const [profileSetup, setProfileSetup] = useState(stored?.profileSetup || null);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -665,7 +665,7 @@ export default function App() {
     ...(stored?.businessSettings || {})
   });
 
-  const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", categoryOther: "", amount: "", bank: banks[0] || "", date: getTodayInputValue() });
+  const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", categoryOther: "", amount: "", bank: banks[0] || "", date: getTodayInputValue(), linkedBizDebtId: "" });
   const [showMovementModal, setShowMovementModal] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue(), paymentType: "unico", paymentDay: "" });
@@ -1655,8 +1655,13 @@ export default function App() {
       amount,
       bank: form.bank || banks[0] || "",
       date: movementDate,
-      createdAt: timestampFromInputDate(movementDate)
+      createdAt: timestampFromInputDate(movementDate),
+      linkedBizDebtId: form.linkedBizDebtId || null
     }, ...current]);
+    // Sincronizar abono con deuda del negocio vinculada
+    if (form.type === "expense" && form.linkedBizDebtId) {
+      setBizDebts(prev => prev.map(d => d.id === Number(form.linkedBizDebtId) ? { ...d, paid: Math.min(d.total, d.paid + amount) } : d));
+    }
     setForm({
       type: form.type,
       classification: form.classification,
@@ -1665,7 +1670,8 @@ export default function App() {
       categoryOther: "",
       amount: "",
       bank: form.bank || banks[0] || "",
-      date: getTodayInputValue()
+      date: getTodayInputValue(),
+      linkedBizDebtId: ""
     });
     setShowMovementModal(false);
   };
@@ -1923,8 +1929,12 @@ export default function App() {
     if (!amount) { setHomeBudgetError("Ingresa el monto. Puede ser 0 si no aplica."); return; }
     setHomeBudgetError("");
     const dueDate = homeBudgetForm.dueDate || getTodayInputValue();
-    setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount, dueDate, createdAt: timestampFromInputDate(dueDate) }, ...current]);
-    setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue() });
+    setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount, dueDate, createdAt: timestampFromInputDate(dueDate), linkedDebtId: homeBudgetForm.linkedDebtId || null }, ...current]);
+    // Sincronizar abono con deuda vinculada
+    if (homeBudgetForm.linkedDebtId) {
+      setHomeDebts(prev => prev.map(d => d.id === Number(homeBudgetForm.linkedDebtId) ? { ...d, paid: Math.min(d.total, d.paid + amount) } : d));
+    }
+    setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue(), linkedDebtId: "" });
     setShowBudgetModal(false);
   };
   const updateHomeBudgetDate = (itemId, dueDate) => {
@@ -4350,26 +4360,30 @@ export default function App() {
                   </div>
                   {bizDebts.length === 0 ? (
                     <p className="fin-empty">Sin deudas registradas.</p>
-                  ) : bizDebts.map(d => {
-                    const remaining = Math.max(0, d.total - d.paid);
-                    const pct = d.total > 0 ? Math.min(100, Math.round((d.paid / d.total) * 100)) : 0;
-                    return (
-                      <div key={d.id} className="fin-debt-row">
-                        <div className="fin-debt-top">
-                          <span className="fin-debt-name" onClick={() => editDebt(d)}>{d.name}</span>
-                          <button type="button" className="fin-del-btn" onClick={() => setBizDebts(prev => prev.filter(x => x.id !== d.id))}>×</button>
+                  ) : (
+                    <div className="fin-list-scroll">
+                    {bizDebts.map(d => {
+                      const remaining = Math.max(0, d.total - d.paid);
+                      const pct = d.total > 0 ? Math.min(100, Math.round((d.paid / d.total) * 100)) : 0;
+                      return (
+                        <div key={d.id} className="fin-debt-row">
+                          <div className="fin-debt-top">
+                            <span className="fin-debt-name" onClick={() => editDebt(d)}>{d.name}</span>
+                            <button type="button" className="fin-del-btn" onClick={() => setBizDebts(prev => prev.filter(x => x.id !== d.id))}>×</button>
+                          </div>
+                          <div className="fin-debt-bar-wrap">
+                            <div className="fin-debt-bar" style={{width:`${pct}%`}}/>
+                          </div>
+                          <div className="fin-debt-stats">
+                            <span className="fin-debt-paid">Abonado {money.format(d.paid)} · {pct}%</span>
+                            <span className="fin-debt-remaining">Falta {money.format(remaining)}</span>
+                          </div>
+                          <button type="button" className="fin-abono-btn" onClick={() => setAbonoModal({type:"biz",debtId:d.id,abonoAmt:""})}>+ Registrar abono</button>
                         </div>
-                        <div className="fin-debt-bar-wrap">
-                          <div className="fin-debt-bar" style={{width:`${pct}%`}}/>
-                        </div>
-                        <div className="fin-debt-stats">
-                          <span className="fin-debt-paid">Abonado {money.format(d.paid)} · {pct}%</span>
-                          <span className="fin-debt-remaining">Falta {money.format(remaining)}</span>
-                        </div>
-                        <button type="button" className="fin-abono-btn" onClick={() => setAbonoModal({type:"biz",debtId:d.id,abonoAmt:""})}>+ Registrar abono</button>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -4385,32 +4399,36 @@ export default function App() {
                   </div>
                   {bizPayments.length === 0 ? (
                     <p className="fin-empty">Agrega suscripciones y pagos fijos de tu negocio.</p>
-                  ) : bizPayments.map(p => {
-                    const isPaid = p.lastPaidMonth === _currentMonthKey;
-                    const daysLeft = p.dayOfMonth - _currentDay;
-                    const isOverdue = !isPaid && daysLeft < 0;
-                    const isToday   = !isPaid && daysLeft === 0;
-                    const isSoon    = !isPaid && daysLeft > 0 && daysLeft <= 3;
-                    const statusLabel = isPaid ? "Pagado ✓" : isOverdue ? `Vencido (día ${p.dayOfMonth})` : isToday ? "¡Hoy!" : isSoon ? `En ${daysLeft} día${daysLeft>1?"s":""}` : `Día ${p.dayOfMonth}`;
-                    const statusColor = isPaid ? "var(--green)" : isOverdue||isToday ? "#DC2626" : isSoon ? "#D97706" : "var(--muted)";
-                    return (
-                      <div key={p.id} className={`fin-pmt-row${isOverdue||isToday?" fin-pmt-row--urgent":""}`}>
-                        <div className="fin-pmt-info">
-                          <span className="fin-pmt-name">{p.name}</span>
-                          <span className="fin-pmt-day" style={{color:statusColor}}>{statusLabel}</span>
+                  ) : (
+                    <div className="fin-list-scroll">
+                    {bizPayments.map(p => {
+                      const isPaid = p.lastPaidMonth === _currentMonthKey;
+                      const daysLeft = p.dayOfMonth - _currentDay;
+                      const isOverdue = !isPaid && daysLeft < 0;
+                      const isToday   = !isPaid && daysLeft === 0;
+                      const isSoon    = !isPaid && daysLeft > 0 && daysLeft <= 3;
+                      const statusLabel = isPaid ? "Pagado ✓" : isOverdue ? `Vencido (día ${p.dayOfMonth})` : isToday ? "¡Hoy!" : isSoon ? `En ${daysLeft} día${daysLeft>1?"s":""}` : `Día ${p.dayOfMonth}`;
+                      const statusColor = isPaid ? "var(--green)" : isOverdue||isToday ? "#DC2626" : isSoon ? "#D97706" : "var(--muted)";
+                      return (
+                        <div key={p.id} className={`fin-pmt-row${isOverdue||isToday?" fin-pmt-row--urgent":""}`}>
+                          <div className="fin-pmt-info">
+                            <span className="fin-pmt-name">{p.name}</span>
+                            <span className="fin-pmt-day" style={{color:statusColor}}>{statusLabel}</span>
+                          </div>
+                          <div className="fin-pmt-right">
+                            <span className="fin-pmt-amt">{money.format(p.amount)}</span>
+                            <button type="button"
+                              className={`fin-pmt-check${isPaid?" paid":""}`}
+                              onClick={() => setBizPayments(prev => prev.map(x => x.id === p.id ? {...x, lastPaidMonth: isPaid ? null : _currentMonthKey} : x))}>
+                              {isPaid ? "✓" : "Pagar"}
+                            </button>
+                            <button type="button" className="fin-del-btn" onClick={() => setBizPayments(prev => prev.filter(x => x.id !== p.id))}>×</button>
+                          </div>
                         </div>
-                        <div className="fin-pmt-right">
-                          <span className="fin-pmt-amt">{money.format(p.amount)}</span>
-                          <button type="button"
-                            className={`fin-pmt-check${isPaid?" paid":""}`}
-                            onClick={() => setBizPayments(prev => prev.map(x => x.id === p.id ? {...x, lastPaidMonth: isPaid ? null : _currentMonthKey} : x))}>
-                            {isPaid ? "✓" : "Pagar"}
-                          </button>
-                          <button type="button" className="fin-del-btn" onClick={() => setBizPayments(prev => prev.filter(x => x.id !== p.id))}>×</button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -5797,26 +5815,30 @@ export default function App() {
                   </div>
                   {homeDebts.length === 0 ? (
                     <p className="fin-empty">Sin deudas registradas. ¡Qué bien!</p>
-                  ) : homeDebts.map(d => {
-                    const remaining = Math.max(0, d.total - d.paid);
-                    const pct = d.total > 0 ? Math.min(100, Math.round((d.paid / d.total) * 100)) : 0;
-                    return (
-                      <div key={d.id} className="fin-debt-row">
-                        <div className="fin-debt-top">
-                          <span className="fin-debt-name" onClick={() => editDebt(d)}>{d.name}</span>
-                          <button type="button" className="fin-del-btn" onClick={() => setHomeDebts(prev => prev.filter(x => x.id !== d.id))}>×</button>
+                  ) : (
+                    <div className="fin-list-scroll">
+                    {homeDebts.map(d => {
+                      const remaining = Math.max(0, d.total - d.paid);
+                      const pct = d.total > 0 ? Math.min(100, Math.round((d.paid / d.total) * 100)) : 0;
+                      return (
+                        <div key={d.id} className="fin-debt-row">
+                          <div className="fin-debt-top">
+                            <span className="fin-debt-name" onClick={() => editDebt(d)}>{d.name}</span>
+                            <button type="button" className="fin-del-btn" onClick={() => setHomeDebts(prev => prev.filter(x => x.id !== d.id))}>×</button>
+                          </div>
+                          <div className="fin-debt-bar-wrap">
+                            <div className="fin-debt-bar" style={{width:`${pct}%`}}/>
+                          </div>
+                          <div className="fin-debt-stats">
+                            <span className="fin-debt-paid">Abonado {money.format(d.paid)} · {pct}%</span>
+                            <span className="fin-debt-remaining">Falta {money.format(remaining)}</span>
+                          </div>
+                          <button type="button" className="fin-abono-btn" onClick={() => setAbonoModal({type:"home",debtId:d.id,abonoAmt:""})}>+ Registrar abono</button>
                         </div>
-                        <div className="fin-debt-bar-wrap">
-                          <div className="fin-debt-bar" style={{width:`${pct}%`}}/>
-                        </div>
-                        <div className="fin-debt-stats">
-                          <span className="fin-debt-paid">Abonado {money.format(d.paid)} · {pct}%</span>
-                          <span className="fin-debt-remaining">Falta {money.format(remaining)}</span>
-                        </div>
-                        <button type="button" className="fin-abono-btn" onClick={() => setAbonoModal({type:"home",debtId:d.id,abonoAmt:""})}>+ Registrar abono</button>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -5832,32 +5854,36 @@ export default function App() {
                   </div>
                   {homePayments.length === 0 ? (
                     <p className="fin-empty">Agrega tus pagos fijos para recibir alertas cuando se acerquen.</p>
-                  ) : homePayments.map(p => {
-                    const isPaid = p.lastPaidMonth === _currentMonthKey;
-                    const daysLeft = p.dayOfMonth - _currentDay;
-                    const isOverdue = !isPaid && daysLeft < 0;
-                    const isToday   = !isPaid && daysLeft === 0;
-                    const isSoon    = !isPaid && daysLeft > 0 && daysLeft <= 3;
-                    const statusLabel = isPaid ? "Pagado ✓" : isOverdue ? `Vencido (día ${p.dayOfMonth})` : isToday ? "¡Hoy!" : isSoon ? `En ${daysLeft} día${daysLeft>1?"s":""}` : `Día ${p.dayOfMonth}`;
-                    const statusColor = isPaid ? "var(--green)" : isOverdue||isToday ? "#DC2626" : isSoon ? "#D97706" : "var(--muted)";
-                    return (
-                      <div key={p.id} className={`fin-pmt-row${isOverdue||isToday?" fin-pmt-row--urgent":""}`}>
-                        <div className="fin-pmt-info">
-                          <span className="fin-pmt-name">{p.name}</span>
-                          <span className="fin-pmt-day" style={{color:statusColor}}>{statusLabel}</span>
+                  ) : (
+                    <div className="fin-list-scroll">
+                    {homePayments.map(p => {
+                      const isPaid = p.lastPaidMonth === _currentMonthKey;
+                      const daysLeft = p.dayOfMonth - _currentDay;
+                      const isOverdue = !isPaid && daysLeft < 0;
+                      const isToday   = !isPaid && daysLeft === 0;
+                      const isSoon    = !isPaid && daysLeft > 0 && daysLeft <= 3;
+                      const statusLabel = isPaid ? "Pagado ✓" : isOverdue ? `Vencido (día ${p.dayOfMonth})` : isToday ? "¡Hoy!" : isSoon ? `En ${daysLeft} día${daysLeft>1?"s":""}` : `Día ${p.dayOfMonth}`;
+                      const statusColor = isPaid ? "var(--green)" : isOverdue||isToday ? "#DC2626" : isSoon ? "#D97706" : "var(--muted)";
+                      return (
+                        <div key={p.id} className={`fin-pmt-row${isOverdue||isToday?" fin-pmt-row--urgent":""}`}>
+                          <div className="fin-pmt-info">
+                            <span className="fin-pmt-name">{p.name}</span>
+                            <span className="fin-pmt-day" style={{color:statusColor}}>{statusLabel}</span>
+                          </div>
+                          <div className="fin-pmt-right">
+                            <span className="fin-pmt-amt">{money.format(p.amount)}</span>
+                            <button type="button"
+                              className={`fin-pmt-check${isPaid?" paid":""}`}
+                              onClick={() => setHomePayments(prev => prev.map(x => x.id === p.id ? {...x, lastPaidMonth: isPaid ? null : _currentMonthKey} : x))}>
+                              {isPaid ? "✓" : "Pagar"}
+                            </button>
+                            <button type="button" className="fin-del-btn" onClick={() => setHomePayments(prev => prev.filter(x => x.id !== p.id))}>×</button>
+                          </div>
                         </div>
-                        <div className="fin-pmt-right">
-                          <span className="fin-pmt-amt">{money.format(p.amount)}</span>
-                          <button type="button"
-                            className={`fin-pmt-check${isPaid?" paid":""}`}
-                            onClick={() => setHomePayments(prev => prev.map(x => x.id === p.id ? {...x, lastPaidMonth: isPaid ? null : _currentMonthKey} : x))}>
-                            {isPaid ? "✓" : "Pagar"}
-                          </button>
-                          <button type="button" className="fin-del-btn" onClick={() => setHomePayments(prev => prev.filter(x => x.id !== p.id))}>×</button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -5965,6 +5991,44 @@ export default function App() {
                     )}
                   </div>
                 </div>
+                {homeDebts.length>0&&(()=>{
+                  const totalDeuda=homeDebts.reduce((s,d)=>s+d.total,0);
+                  const totalPagado=homeDebts.reduce((s,d)=>s+d.paid,0);
+                  const totalPendiente=Math.max(0,totalDeuda-totalPagado);
+                  const pctPagado=totalDeuda>0?Math.min(100,Math.round((totalPagado/totalDeuda)*100)):0;
+                  const mayorDeuda=[...homeDebts].sort((a,b)=>Math.max(0,b.total-b.paid)-Math.max(0,a.total-a.paid))[0];
+                  return (
+                    <div style={{borderTop:"1px solid var(--line)",paddingTop:"14px",marginTop:"4px"}}>
+                      <p style={{margin:"0 0 10px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>🏦 Estado de deudas</p>
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px",marginBottom:"10px"}}>
+                        <div style={{padding:"10px 12px",background:"rgba(220,38,38,0.04)",borderRadius:"8px",border:"1px solid rgba(220,38,38,0.1)"}}>
+                          <p style={{margin:0,fontSize:"10px",color:"var(--muted)"}}>Total deudas</p>
+                          <p style={{margin:"2px 0 0",fontSize:"14px",fontWeight:800,color:"#DC2626"}}>{money.format(totalDeuda)}</p>
+                        </div>
+                        <div style={{padding:"10px 12px",background:"rgba(47,159,112,0.06)",borderRadius:"8px",border:"1px solid rgba(47,159,112,0.15)"}}>
+                          <p style={{margin:0,fontSize:"10px",color:"var(--muted)"}}>Ya pagado</p>
+                          <p style={{margin:"2px 0 0",fontSize:"14px",fontWeight:800,color:"var(--green)"}}>{money.format(totalPagado)}</p>
+                        </div>
+                        <div style={{padding:"10px 12px",background:"rgba(37,99,235,0.05)",borderRadius:"8px",border:"1px solid rgba(37,99,235,0.12)"}}>
+                          <p style={{margin:0,fontSize:"10px",color:"var(--muted)"}}>Por pagar</p>
+                          <p style={{margin:"2px 0 0",fontSize:"14px",fontWeight:800,color:"#2563EB"}}>{money.format(totalPendiente)}</p>
+                        </div>
+                      </div>
+                      <div style={{marginBottom:"6px"}}>
+                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
+                          <span style={{fontSize:"11px",color:"var(--muted)"}}>Progreso general de pago</span>
+                          <span style={{fontSize:"11px",fontWeight:700,color:"var(--ink)"}}>{pctPagado}%</span>
+                        </div>
+                        <div style={{height:"7px",background:"rgba(0,0,0,0.07)",borderRadius:"4px",overflow:"hidden"}}>
+                          <div style={{height:"100%",width:`${pctPagado}%`,background:"var(--green)",borderRadius:"4px",transition:"width 0.5s"}}></div>
+                        </div>
+                      </div>
+                      {mayorDeuda&&Math.max(0,mayorDeuda.total-mayorDeuda.paid)>0&&(
+                        <p style={{margin:"8px 0 0",fontSize:"12px",color:"var(--muted)"}}>Mayor pendiente: <strong style={{color:"var(--ink)"}}>{mayorDeuda.name}</strong> — falta {money.format(Math.max(0,mayorDeuda.total-mayorDeuda.paid))}</p>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div style={{borderTop:"1px solid var(--line)",paddingTop:"12px"}}>
                   <p style={{margin:"0 0 8px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>💡 Recomendaciones</p>
                   {financeRecs.map((rec,i)=>(
@@ -6023,9 +6087,23 @@ export default function App() {
                       style={{width:"100%",padding:"11px 12px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"13px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
                   </div>
                 </div>
+                {homeBudgetForm.type==="Deuda"&&homeDebts.length>0&&(
+                  <div>
+                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>¿Abono a deuda existente?</label>
+                    <select value={homeBudgetForm.linkedDebtId} onChange={e=>setHomeBudgetForm(c=>({...c,linkedDebtId:e.target.value}))}
+                      style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}>
+                      <option value="">— Sin vincular (nueva deuda) —</option>
+                      {homeDebts.map(d=>{
+                        const rem=Math.max(0,d.total-d.paid);
+                        return <option key={d.id} value={d.id}>{d.name} {rem>0?`(falta ${money.format(rem)})`:"✓ pagada"}</option>;
+                      })}
+                    </select>
+                    {homeBudgetForm.linkedDebtId&&<p style={{margin:"5px 0 0",fontSize:"11px",color:"var(--green)"}}>✓ El abono se sumará automáticamente al progreso de esta deuda.</p>}
+                  </div>
+                )}
                 {homeBudgetError&&<p style={{margin:0,fontSize:"12px",color:"#C4526A",fontWeight:600}}>{homeBudgetError}</p>}
                 <button type="submit" style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>
-                  Guardar movimiento
+                  {homeBudgetForm.type==="Deuda"&&homeBudgetForm.linkedDebtId?"Registrar abono":"Guardar movimiento"}
                 </button>
               </form>
             </div>
@@ -6372,8 +6450,22 @@ export default function App() {
         )}
         {formErrors.category && <span className="field-error">{formErrors.category}</span>}
 
+        {!isIncome && bizDebts.length > 0 && (
+          <div>
+            <label className="mov-field-label">¿Es abono a una deuda? (opcional)</label>
+            <select value={form.linkedBizDebtId} onChange={(e) => updateForm("linkedBizDebtId", e.target.value)}
+              style={{width:"100%",padding:"9px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"14px",background:"#fff",outline:"none",boxSizing:"border-box"}}>
+              <option value="">— No es abono a deuda —</option>
+              {bizDebts.map(d => {
+                const rem = Math.max(0, d.total - d.paid);
+                return <option key={d.id} value={d.id}>{d.name} {rem > 0 ? `(falta ${money.format(rem)})` : "✓ pagada"}</option>;
+              })}
+            </select>
+            {form.linkedBizDebtId && <p style={{margin:"4px 0 0",fontSize:"11px",color:"var(--green)"}}>✓ El monto se sumará al progreso de esta deuda.</p>}
+          </div>
+        )}
         <button className={`primary-button mov-submit${isIncome ? " mov-submit-in" : " mov-submit-ex"}`} type="submit">
-          {isIncome ? "Registrar ingreso ↑" : "Registrar gasto ↓"}
+          {isIncome ? "Registrar ingreso ↑" : form.linkedBizDebtId ? "Registrar abono ↓" : "Registrar gasto ↓"}
         </button>
       </form>
     );
