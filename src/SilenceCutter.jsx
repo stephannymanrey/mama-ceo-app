@@ -151,17 +151,134 @@ function detectSilences(channelData, sampleRate, noiseDb, minDuration, duration)
     silences.push({ id: uid(), start: Math.max(0, silenceStart + PADDING), end: duration, cut: true });
   return silences;
 }
-async function analyzeClip(file, noiseDb, minDuration) {
-  const arrayBuffer = await file.arrayBuffer();
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  const audioBuf = await audioCtx.decodeAudioData(arrayBuffer);
-  const channelData = audioBuf.getChannelData(0);
-  const duration = audioBuf.duration;
-  return {
-    duration,
-    waveform: buildWaveform(channelData, 900),
-    silences: detectSilences(channelData, audioBuf.sampleRate, noiseDb, minDuration, duration),
-  };
+async function analyzeClip(file, noiseDb, minDuration, onProgress) {
+  // PATH RÁPIDO: decodeAudioData (desktop, Android Chrome, FF)
+  // Falla en iOS Safari porque no puede extraer audio de un contenedor de video
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioCtx();
+    if (audioCtx.state === "suspended") await audioCtx.resume();
+    const audioBuf = await new Promise((res, rej) => audioCtx.decodeAudioData(arrayBuffer, res, rej));
+    audioCtx.close();
+    const channelData = audioBuf.getChannelData(0);
+    if (onProgress) onProgress(1);
+    return {
+      duration: audioBuf.duration,
+      waveform: buildWaveform(channelData, 900),
+      silences: detectSilences(channelData, audioBuf.sampleRate, noiseDb, minDuration, audioBuf.duration),
+    };
+  } catch (_) {
+    // PATH MOBILE: análisis en tiempo real vía <video> + AnalyserNode
+    // Funciona en iOS Safari — el video.muted=true permite autoplay sin gesto adicional
+    return analyzeViaVideoElement(file, noiseDb, minDuration, onProgress);
+  }
+}
+
+function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement("video");
+    video.src = url;
+    video.muted = true;          // muted permite autoplay en iOS sin gesto
+    video.playsInline = true;
+    video.preload = "auto";
+
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    const audioCtx = new AudioCtx();
+
+    video.onloadedmetadata = async () => {
+      const duration = video.duration;
+      if (!isFinite(duration) || duration <= 0) {
+        URL.revokeObjectURL(url);
+        reject(new Error("Video sin duración válida"));
+        return;
+      }
+
+      try { await audioCtx.resume(); } catch (_) {}
+
+      // Conectar video → AnalyserNode (silencioso, sin speakers)
+      const source = audioCtx.createMediaElementSource(video);
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 2048;
+      source.connect(analyser);
+      // NO conectar a audioCtx.destination → análisis mudo
+
+      const fftData = new Float32Array(analyser.fftSize);
+      const sampleRms = [];   // [{ t, rms }]
+
+      let raf;
+      const collect = () => {
+        analyser.getFloatTimeDomainData(fftData);
+        let sumSq = 0;
+        for (let i = 0; i < fftData.length; i++) sumSq += fftData[i] * fftData[i];
+        sampleRms.push({ t: video.currentTime, rms: Math.sqrt(sumSq / fftData.length) });
+        if (onProgress) onProgress(video.currentTime / duration);
+        raf = requestAnimationFrame(collect);
+      };
+
+      // iOS max playbackRate = 2; Chrome permite más
+      video.playbackRate = Math.min(
+        typeof video.playbackRate !== "undefined" ? 16 : 2,
+        2   // seguro en iOS
+      );
+
+      video.play().then(() => { collect(); }).catch(err => {
+        cancelAnimationFrame(raf);
+        audioCtx.close();
+        URL.revokeObjectURL(url);
+        reject(err);
+      });
+
+      video.onended = () => {
+        cancelAnimationFrame(raf);
+        audioCtx.close();
+        URL.revokeObjectURL(url);
+
+        const n = sampleRms.length;
+        if (n === 0) { reject(new Error("Sin muestras de audio")); return; }
+
+        // Waveform normalizado de 900 puntos
+        const waveform = Array.from({ length: 900 }, (_, wi) => {
+          const idx = Math.min(n - 1, Math.floor(wi / 900 * n));
+          return sampleRms[idx]?.rms ?? 0;
+        });
+        const maxR = Math.max(...waveform, 1e-6);
+        const waveformNorm = waveform.map(v => v / maxR);
+
+        // Detectar silencios desde muestras rms
+        const silences = [];
+        let inSilence = false, silStart = 0;
+        for (const { t, rms } of sampleRms) {
+          const db = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
+          if (db < noiseDb) {
+            if (!inSilence) { inSilence = true; silStart = t; }
+          } else if (inSilence) {
+            inSilence = false;
+            const dur = t - silStart;
+            if (dur >= minDuration)
+              silences.push({ id: uid(), start: Math.max(0, silStart + PADDING), end: Math.min(duration, t - PADDING), cut: true });
+          }
+        }
+        if (inSilence && duration - silStart >= minDuration)
+          silences.push({ id: uid(), start: Math.max(0, silStart + PADDING), end: duration, cut: true });
+
+        resolve({ duration, waveform: waveformNorm, silences });
+      };
+
+      video.onerror = () => {
+        cancelAnimationFrame(raf);
+        audioCtx.close();
+        URL.revokeObjectURL(url);
+        reject(new Error("Error cargando el video"));
+      };
+    };
+
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error("No se pudo abrir el archivo de video"));
+    };
+  });
 }
 
 // ── Transcripción (Whisper Tiny) ──────────────────────────────────────────
@@ -1987,12 +2104,20 @@ export default function SilenceCutter() {
     setFase("analyzing"); setError("");
     for (let i = 0; i < toAnalyze.length; i++) {
       const clip = toAnalyze[i];
-      setProgressMsg(`Analizando ${i + 1} de ${toAnalyze.length}: ${clip.name}`);
-      setProgress(Math.round((i / toAnalyze.length) * 100));
+      const baseProgress = Math.round((i / toAnalyze.length) * 100);
+      setProgressMsg(`Analizando ${i + 1} de ${toAnalyze.length}: ${clip.name.replace(/\.[^.]+$/, "")}`);
+      setProgress(baseProgress);
       try {
-        const { duration, waveform, silences } = await analyzeClip(clip.file, noiseDb, minDur);
+        const { duration, waveform, silences } = await analyzeClip(
+          clip.file, noiseDb, minDur,
+          (p) => {
+            // progreso dentro del clip (0-1) → progreso global
+            const clipSlice = 100 / toAnalyze.length;
+            setProgress(Math.round(baseProgress + p * clipSlice));
+          }
+        );
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
-      } catch (_) {
+      } catch (err) {
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, analyzed: true, error: "No se pudo analizar el audio" } : c));
       }
     }
@@ -2077,8 +2202,11 @@ export default function SilenceCutter() {
       <div className="sc-processing">
         <div className="sc-proc-rings"><div className="sc-proc-ring sc-proc-ring--1" /><div className="sc-proc-ring sc-proc-ring--2" /><div className="sc-proc-ring sc-proc-ring--3" /><span className="sc-proc-icon">🔍</span></div>
         <h2 className="sc-proc-title">Analizando clips...</h2>
-        <div className="sc-progress-bar-wrap" style={{ width: 320 }}><div className="sc-progress-bar" style={{ width: `${progress}%` }} /></div>
+        <div className="sc-progress-bar-wrap" style={{ width: "min(320px,80vw)" }}><div className="sc-progress-bar" style={{ width: `${progress}%` }} /></div>
         <p className="sc-proc-note">{progressMsg}</p>
+        <p className="sc-proc-note" style={{ fontSize: 12, color: "#bbb", marginTop: 6 }}>
+          En móvil el análisis corre en tiempo real — por favor espera sin cerrar la pantalla
+        </p>
       </div>
     </div>
   );

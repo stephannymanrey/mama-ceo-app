@@ -5226,6 +5226,10 @@ button {
 .mobile-menu-wrap {
   display: contents;
 }
+/* Etiqueta "Navegación" oculta por defecto (solo aparece dentro del drawer abierto) */
+.mobile-menu-section-label {
+  display: none;
+}
 
 @media (max-width: 1180px) {
   /* ── Botón hamburguesa rediseñado ── */
@@ -5324,14 +5328,16 @@ button {
     to   { opacity: 1; transform: translateY(0); }
   }
 
-  /* Etiqueta de sección dentro del drawer */
-  .mobile-menu-section-label {
+  /* Etiqueta de sección dentro del drawer (solo visible en drawer abierto) */
+  .mobile-menu-wrap--open .mobile-menu-section-label {
+    display: block;
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.8px;
     text-transform: uppercase;
     color: var(--muted);
     padding: 10px 8px 4px;
+    margin: 0;
   }
 
   .main-menu {
