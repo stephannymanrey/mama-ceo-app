@@ -1965,6 +1965,35 @@ export default function App() {
   };
   const weekStart = (() => { const d = new Date(); d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1)); d.setHours(0,0,0,0); return d.getTime(); })();
   const contactsThisWeek = Object.values(contactLog).filter((e) => timestampFromInputDate(e.date) >= weekStart).length;
+
+  // ── Radar de Clientas: a quién contactar hoy, en orden de prioridad ──
+  const priorityClients = useMemo(() => {
+    const today = Date.now();
+    const daysSinceContact = (ts) => ts ? Math.floor((today - ts) / 86400000) : 999;
+    const stageScore = { "Lead caliente": 3, "Lead tibio": 2, "Lead frio": 1 };
+    return [...clients]
+      .filter((c) => c.status !== "Venta ganada")
+      .sort((a, b) => ((stageScore[b.status] || 0) * 100 + daysSinceContact(b.lastContact)) - ((stageScore[a.status] || 0) * 100 + daysSinceContact(a.lastContact)))
+      .slice(0, 3)
+      .map((c) => ({ ...c, daysSinceContact: daysSinceContact(c.lastContact) }));
+  }, [clients]);
+
+  const [followupSuggestions, setFollowupSuggestions] = useState({});
+  const suggestFollowup = async (client) => {
+    setFollowupSuggestions((prev) => ({ ...prev, [client.id]: { loading: true } }));
+    const res = await callGemini("followup", {
+      nombre: client.name,
+      negocio: client.service,
+      etapa: client.status,
+      diasSinContacto: client.daysSinceContact,
+      notas: client.nextAction || "",
+    });
+    if (res?.error === "rate_limit") { setFollowupSuggestions((p) => ({ ...p, [client.id]: { error: "Muchas solicitudes en este momento. Intenta en 1 minuto." } })); return; }
+    if (res?.error === "limite_alcanzado") { setFollowupSuggestions((p) => ({ ...p, [client.id]: { error: "Llegaste al límite de generaciones IA del mes." } })); return; }
+    if (res?.error === "No autorizada" || res?.error?.includes("autent")) { setFollowupSuggestions((p) => ({ ...p, [client.id]: { error: "Inicia sesión para usar la IA." } })); return; }
+    if (res?.error) { setFollowupSuggestions((p) => ({ ...p, [client.id]: { error: "No se pudo generar el mensaje. Intenta de nuevo." } })); return; }
+    setFollowupSuggestions((p) => ({ ...p, [client.id]: { message: res.result?.mensaje || "" } }));
+  };
   const updateContentStatus = (contentId, status) => {
     setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, status } : item));
   };
@@ -3996,11 +4025,14 @@ export default function App() {
           {/* Alertas */}
           {hasAlerts && (
             <div className="db-nudges">
-              {urgentLeads.length > 0 && (
-                <button className="db-nudge db-nudge--purple" onClick={() => setActiveView("clients")}>
-                  🔥 {urgentLeads.length} lead{urgentLeads.length > 1 ? "s" : ""} caliente{urgentLeads.length > 1 ? "s" : ""} sin contactar
-                </button>
-              )}
+              {urgentLeads.length > 0 && (() => {
+                const topHotLead = priorityClients.find((c) => c.status === "Lead caliente");
+                return (
+                  <button className="db-nudge db-nudge--purple" onClick={() => setActiveView("clients")}>
+                    🔥 {topHotLead.name} lleva {topHotLead.daysSinceContact} día{topHotLead.daysSinceContact === 1 ? "" : "s"} sin contacto — ábrelo en tu Radar de Clientas
+                  </button>
+                );
+              })()}
               {daysSincePublish !== null && daysSincePublish > 5 && (
                 <button className="db-nudge db-nudge--neutral" onClick={() => setActiveView("studio")}>
                   ✦ {daysSincePublish} días sin publicar
@@ -4812,10 +4844,6 @@ export default function App() {
     const stageTotal = (stage) => clients.filter((c) => c.status === stage).reduce((sum, c) => sum + (c.amount || 0), 0);
     const paidClients = clients.filter((c) => c.status === "Venta ganada");
     const pipelineTotal = clients.filter((c) => c.status !== "Venta ganada").reduce((sum, c) => sum + (c.amount || 0), 0);
-    const priorityClient = [...clients].filter((c) => c.status !== "Venta ganada").sort((a, b) => {
-      const stageScore = { "Lead caliente": 3, "Lead tibio": 2, "Lead frio": 1 };
-      return ((stageScore[b.status] || 0) * 100 + daysSince(b.lastContact)) - ((stageScore[a.status] || 0) * 100 + daysSince(a.lastContact));
-    })[0];
     const totalLeads = clients.length;
     const totalWon = clients.filter((c) => c.status === "Venta ganada").length;
     const conversionRate = totalLeads > 0 ? Math.round((totalWon / totalLeads) * 100) : 0;
@@ -4867,8 +4895,8 @@ export default function App() {
       return encodeURIComponent(msgs[client.status] || `Hola ${client.name}, queria hacer seguimiento sobre ${client.service}.`);
     };
 
-    const waLink = (client) => {
-      const msg = waMsg(client);
+    const waLink = (client, customMsg) => {
+      const msg = customMsg ? encodeURIComponent(customMsg) : waMsg(client);
       return client.phone ? `https://wa.me/${client.phone.replace(/\D/g,"")}?text=${msg}` : `https://wa.me/?text=${msg}`;
     };
 
@@ -4902,25 +4930,45 @@ export default function App() {
         {/* ── PIPELINE ── */}
         {clientsTab === 0 && (
           <>
-            {priorityClient && (
-              <div className="action-day-banner">
-                <div className="action-day-left">
-                  <span className="action-day-label">Acción del día</span>
-                  <strong>{priorityClient.name}</strong>
-                  <span>{priorityClient.status} · {money.format(priorityClient.amount)} · hace {daysSince(priorityClient.lastContact)} días sin contacto</span>
-                  <div style={{display:"flex",gap:"8px",flexWrap:"wrap",marginTop:"8px"}}>
-                    <button type="button" className="contact-today-btn" style={{width:"auto",padding:"0 14px"}} onClick={() => logContact(priorityClient.id, priorityClient.name)}>✓ Contacté hoy</button>
-                    <a href={waLink(priorityClient)} target="_blank" rel="noreferrer" className="cl-wa-btn">WhatsApp</a>
+            {priorityClients.length > 0 && (
+              <div className="radar-card">
+                <div className="radar-card-head">
+                  <span className="radar-card-title">✦ Radar de Clientas</span>
+                  <div style={{textAlign:"right"}}>
+                    <strong style={{fontSize:"20px",color:"var(--green)",display:"block",lineHeight:1}}>{contactsThisWeek}</strong>
+                    <small style={{color:"var(--muted)",fontSize:"10px",textTransform:"uppercase",fontWeight:800}}>contactos esta semana</small>
                   </div>
                 </div>
-                <div className="action-day-right">
-                  <p>{priorityClient.nextAction || "Hacer seguimiento"}</p>
-                  <div style={{marginTop:"8px",textAlign:"center"}}>
-                    <strong style={{fontSize:"28px",color:"var(--green)",display:"block",lineHeight:1}}>{contactsThisWeek}</strong>
-                    <small style={{color:"var(--muted)",fontSize:"11px",textTransform:"uppercase",fontWeight:800}}>contactos esta semana</small>
-                    <small style={{color:"var(--green)",fontSize:"11px",fontWeight:700}}>{contactsThisWeek >= 5 ? "¡Excelente ritmo!" : contactsThisWeek >= 3 ? "Buen avance" : "Meta: 5 esta semana"}</small>
-                  </div>
-                </div>
+
+                {priorityClients.map((client, i) => {
+                  const suggestion = followupSuggestions[client.id] || {};
+                  return (
+                    <div className={`radar-lead-row${i === 0 ? " radar-lead-row--top" : ""}`} key={client.id}>
+                      <div className="radar-lead-info">
+                        {i === 0 && <span className="radar-lead-flag">A quién contactar hoy</span>}
+                        <strong>{client.name}</strong>
+                        <span>{client.status} · {money.format(client.amount)} · hace {client.daysSinceContact} día{client.daysSinceContact === 1 ? "" : "s"} sin contacto</span>
+                        {client.nextAction && <small>{client.nextAction}</small>}
+                      </div>
+                      <div className="radar-lead-actions">
+                        <button type="button" className="contact-today-btn" style={{width:"auto",padding:"0 14px"}} onClick={() => logContact(client.id, client.name)}>✓ Contacté hoy</button>
+                        <button type="button" className="radar-suggest-btn" disabled={suggestion.loading} onClick={() => suggestFollowup(client)}>
+                          {suggestion.loading ? "Pensando…" : "✦ Sugerir mensaje con IA"}
+                        </button>
+                        {!suggestion.message && (
+                          <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-wa-btn">WhatsApp</a>
+                        )}
+                      </div>
+                      {suggestion.message && (
+                        <div className="radar-suggestion">
+                          <p>{suggestion.message}</p>
+                          <a href={waLink(client, suggestion.message)} target="_blank" rel="noreferrer" className="cl-wa-btn">Enviar por WhatsApp</a>
+                        </div>
+                      )}
+                      {suggestion.error && <small className="radar-suggestion-error">{suggestion.error}</small>}
+                    </div>
+                  );
+                })}
               </div>
             )}
 

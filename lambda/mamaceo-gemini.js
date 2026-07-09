@@ -372,6 +372,38 @@ Responde SOLO JSON válido, sin texto extra:
 {"vertical":["i1","i2","i3","i4","i5","i6"],"horizontal":["i1","i2","i3","i4","i5","i6"],"carrusel":["i1","i2","i3","i4","i5","i6"],"story":["i1","i2","i3","i4","i5","i6"],"digital":["i1","i2","i3","i4","i5","i6"],"email":["i1","i2","i3","i4","i5","i6"],"whatsapp":["i1","i2","i3","i4","i5","i6"]}`;
   }
 
+  if (type === "followup") {
+    const etapaLabel = {
+      "Lead frio": "un lead frío, apenas se están conociendo",
+      "Lead tibio": "un lead tibio que ya mostró interés real",
+      "Lead caliente": "un lead caliente, muy cerca de decidir",
+      "Venta ganada": "una clienta que ya le compró — esto es seguimiento postventa",
+    }[ctx.etapa] || "un lead";
+
+    return `Eres una mamá emprendedora de LatAm escribiéndole un mensaje de WhatsApp de seguimiento a una clienta suya.
+
+Datos de la clienta:
+- Nombre: ${ctx.nombre}
+- Negocio/servicio que le interesa: ${ctx.negocio || "su servicio"}
+- Etapa: ${ctx.etapa} (${etapaLabel})
+- Días sin contacto: ${ctx.diasSinContacto ?? "varios"}
+${ctx.notas ? `- Notas de la última conversación: ${ctx.notas}` : ""}
+
+${DIALECTO}
+
+Escribe UN mensaje de WhatsApp corto (máximo 45 palabras) para retomar el contacto.
+
+Reglas:
+- Cálido y directo, como si se lo escribiera a una conocida — no suena a plantilla de ventas
+- Si hay notas de la conversación anterior, haz referencia concreta a eso; si no hay notas, no inventes detalles
+- Máximo 1 emoji
+- No firmes con ningún nombre al final
+- Termina invitando a responder (una pregunta abierta o una propuesta concreta)
+
+Responde SOLO JSON válido, sin texto extra:
+{"mensaje":"..."}`;
+  }
+
   if (type === "leadmagnet") {
     const tipoLabel = {
       guia:      "Guía / Ebook PDF descargable",
@@ -470,7 +502,7 @@ export const handler = async (event) => {
 
   const { type, context } = body;
   if (!type || !context) return respond(400, { error: "Faltan campos: type, context" }, event);
-  if (!["guion", "hooks", "ideas", "leadmagnet", "reproposito"].includes(type)) return respond(400, { error: "Tipo no soportado" }, event);
+  if (!["guion", "hooks", "ideas", "leadmagnet", "reproposito", "followup"].includes(type)) return respond(400, { error: "Tipo no soportado" }, event);
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
 
   const { plan, usage } = await getUserPlanAndUsage(userId);

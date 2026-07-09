@@ -3343,27 +3343,45 @@ button {
 
 .paid-client-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
 
-/* ── Acción del día ── */
-.action-day-banner {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 16px;
-  align-items: center;
-  padding: 18px 22px;
+/* ── Radar de Clientas ── */
+.radar-card {
+  padding: 18px 20px 8px;
   border-radius: 14px;
   background: linear-gradient(135deg, rgba(155,45,111,0.08), rgba(201,96,122,0.06));
   border: 1px solid rgba(155,45,111,0.2);
   margin-bottom: 14px;
 }
-.action-day-left { display:grid; gap:4px; }
-.action-day-label { font-size:11px; font-weight: 800; text-transform:uppercase; letter-spacing:1px; color:var(--purple); }
-.action-day-left strong { font-size:18px; color:var(--ink); }
-.action-day-left span { font-size:13px; color:var(--muted); }
-.action-day-right { display:grid; gap:8px; text-align:right; min-width:180px; }
-.action-day-right p { margin:0; font-size:14px; color:var(--ink); font-weight:600; }
+.radar-card-head { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px; }
+.radar-card-title { font-size:15px; font-weight:800; color:var(--purple); }
+
+.radar-lead-row { display:grid; gap:8px; padding:12px 0; border-top:1px solid rgba(155,45,111,0.14); }
+.radar-lead-row--top { padding-top:8px; }
+.radar-lead-info { display:grid; gap:2px; }
+.radar-lead-flag { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:1px; color:var(--purple); }
+.radar-lead-info strong { font-size:16px; color:var(--ink); }
+.radar-lead-info span { font-size:13px; color:var(--muted); }
+.radar-lead-info small { font-size:12px; color:var(--muted); font-style:italic; }
+
+.radar-lead-actions { display:flex; gap:8px; flex-wrap:wrap; }
+.radar-lead-actions .contact-today-btn { flex:none; }
+.radar-suggest-btn {
+  min-height:32px; padding:0 14px; border-radius:8px; border:none;
+  background: linear-gradient(135deg, var(--purple) 0%, #a8394f 100%);
+  color:#fff; font-size:12px; font-weight:700; cursor:pointer; font-family:inherit;
+}
+.radar-suggest-btn:disabled { opacity:0.6; cursor:default; }
+
+.radar-suggestion {
+  display:grid; gap:8px;
+  background: rgba(255,255,255,0.75);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+.radar-suggestion p { margin:0; font-size:13px; line-height:1.5; color:var(--ink); }
+.radar-suggestion-error { color:var(--pink); font-size:12px; }
+
 @media (max-width:720px) {
-  .action-day-banner { grid-template-columns:1fr; }
-  .action-day-right { text-align:left; }
+  .radar-card-head { flex-direction:column; gap:8px; }
 }
 
 /* ── Modal de perfil ── */
