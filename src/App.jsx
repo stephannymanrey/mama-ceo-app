@@ -1990,6 +1990,7 @@ export default function App() {
     });
     if (res?.error === "rate_limit") { setFollowupSuggestions((p) => ({ ...p, [client.id]: { error: "Muchas solicitudes en este momento. Intenta en 1 minuto." } })); return; }
     if (res?.error === "limite_alcanzado") { setFollowupSuggestions((p) => ({ ...p, [client.id]: { error: "Llegaste al límite de generaciones IA del mes." } })); return; }
+    if (res?.error === "No autorizada" || res?.error?.includes("autent")) { setFollowupSuggestions((p) => ({ ...p, [client.id]: { error: "Inicia sesión para usar la IA." } })); return; }
     if (res?.error) { setFollowupSuggestions((p) => ({ ...p, [client.id]: { error: "No se pudo generar el mensaje. Intenta de nuevo." } })); return; }
     setFollowupSuggestions((p) => ({ ...p, [client.id]: { message: res.result?.mensaje || "" } }));
   };
