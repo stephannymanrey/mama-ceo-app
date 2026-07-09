@@ -848,7 +848,22 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
 function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none" }) {
   const pct = totalKept > 0 ? Math.min(100, (effectiveTime / totalKept) * 100) : 0;
   const [hoveredSeg, setHoveredSeg] = useState(null);
-  const [transPickerClipId, setTransPickerClipId] = useState(null); // clipId para el mini-picker de transición
+  const [transPickerClipId, setTransPickerClipId] = useState(null);
+  const [zoom, setZoom] = useState(1);
+  const trackWrapRef = useRef(null);
+
+  useEffect(() => {
+    const el = trackWrapRef.current;
+    if (!el) return;
+    const onWheel = (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+        setZoom(z => Math.max(1, Math.min(10, z * (e.deltaY > 0 ? 0.85 : 1.18))));
+      }
+    };
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => el.removeEventListener('wheel', onWheel);
+  }, []);
 
   const handleTrackClick = e => {
     if (e.target.closest(".sce-tl-seg-del") || e.target.closest(".sce-tl-trans-btn")) return;
@@ -885,11 +900,13 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
             <span className="sce-tl-preset-badge">{presetInfo.icon} {presetInfo.label}</span>
           )}
           <span className="sce-tl-duration">{fmtTime(effectiveTime)} / {fmtTime(totalKept)}</span>
+          {zoom > 1.05 && <button className="sce-tl-zoom-reset" onClick={() => setZoom(1)} title="Restablecer zoom">×{zoom.toFixed(1)}</button>}
         </div>
       </div>
       <div className="sce-tl-body">
-        {/* Track principal */}
-        <div style={{ position: "relative" }}>
+        {/* Track principal — scroll horizontal + pinch zoom trackpad */}
+        <div ref={trackWrapRef} className="sce-tl-scroll-wrap">
+          <div style={{ position: "relative", width: zoom > 1 ? `${zoom * 100}%` : "100%", height: "100%", display: "flex" }}>
           <div className="sce-tl-track" onClick={handleTrackClick}>
             {keptSegs.length === 0 && (
               <div className="sce-tl-empty">Analiza los clips para ver el timeline</div>
@@ -950,7 +967,8 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
               </div>
             );
           })}
-        </div>
+          </div>{/* /inner zoom div */}
+        </div>{/* /scroll-wrap */}
 
         {/* Sidebar de clips */}
         <div className="sce-tl-mgmt">
@@ -1974,6 +1992,32 @@ export default function SilenceCutter() {
       return { ...c, silences: newSilences };
     }));
   }, []);
+
+  // Ctrl+B: divide el segmento actual en la posición del playhead (como CapCut)
+  const splitAtPlayhead = useCallback(() => {
+    const native = effectiveToNative(keptSegs, effectiveTime);
+    if (!native) return;
+    const { clip, localTime } = native;
+    const seg = keptSegs.find(s => s.clip.id === clip.id && localTime >= s.start && localTime <= s.end);
+    if (!seg || localTime - seg.start < 0.06 || seg.end - localTime < 0.06) return;
+    setClips(prev => prev.map(c => {
+      if (c.id !== clip.id) return c;
+      const newSilences = [...(c.silences || []), { id: uid(), start: localTime, end: localTime + 0.001, cut: true }]
+        .sort((a, b) => a.start - b.start);
+      return { ...c, silences: newSilences };
+    }));
+  }, [keptSegs, effectiveTime]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        splitAtPlayhead();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [splitAtPlayhead]);
 
   const addFiles = useCallback(async (files) => {
     const valid = Array.from(files).filter(f => /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name) || f.type.startsWith("video/"));

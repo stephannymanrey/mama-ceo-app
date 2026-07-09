@@ -25,6 +25,8 @@
 body {
   margin: 0;
   min-width: 320px;
+  /* Safe area para iPhone notch / Dynamic Island / home bar en PWA */
+  padding-bottom: env(safe-area-inset-bottom);
   background:
     radial-gradient(circle at top left, rgba(212, 104, 122, 0.06), transparent 28rem),
     radial-gradient(circle at bottom right, rgba(201, 169, 110, 0.08), transparent 32rem),
@@ -1349,7 +1351,7 @@ button {
   }
 
   .dashboard {
-    padding-bottom: 80px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -1402,7 +1404,8 @@ button {
 
 @media (max-width: 720px) {
   .dashboard {
-    padding: 20px 14px;
+    /* padding-bottom mantiene espacio sobre el nav móvil + safe-area (home bar iPhone) */
+    padding: 20px 14px calc(80px + env(safe-area-inset-bottom, 0px));
   }
 
   .topbar,
@@ -6511,7 +6514,7 @@ button {
 }
 
 @media (max-width: 390px) {
-  .dashboard { padding: 12px 10px; }
+  .dashboard { padding: 12px 10px calc(80px + env(safe-area-inset-bottom, 0px)); }
 
   .topbar { padding: 14px 16px; gap: 12px; }
   .profile-area { flex-wrap: wrap; gap: 6px; }
