@@ -1343,6 +1343,32 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const totalKept  = useMemo(() => Math.max(0.001, keptSegs.reduce((t, s) => t + s.end - s.start, 0)), [keptSegs]);
   const nativePos  = useMemo(() => effectiveToNative(keptSegs, effectiveTime), [keptSegs, effectiveTime]);
 
+  // Ctrl+B: divide el segmento actual en la posición del playhead (como CapCut)
+  const splitAtPlayhead = useCallback(() => {
+    const native = effectiveToNative(keptSegs, effectiveTime);
+    if (!native) return;
+    const { clip, localTime } = native;
+    const seg = keptSegs.find(s => s.clip.id === clip.id && localTime >= s.start && localTime <= s.end);
+    if (!seg || localTime - seg.start < 0.06 || seg.end - localTime < 0.06) return;
+    setClips(prev => prev.map(c => {
+      if (c.id !== clip.id) return c;
+      const newSilences = [...(c.silences || []), { id: uid(), start: localTime, end: localTime + 0.001, cut: true }]
+        .sort((a, b) => a.start - b.start);
+      return { ...c, silences: newSilences };
+    }));
+  }, [keptSegs, effectiveTime]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        splitAtPlayhead();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [splitAtPlayhead]);
+
   // Dimensiones de salida según formato seleccionado (dims = dimensiones nativas del video)
   const outDims = useMemo(() => {
     const { W: vW, H: vH } = dims;
@@ -1992,32 +2018,6 @@ export default function SilenceCutter() {
       return { ...c, silences: newSilences };
     }));
   }, []);
-
-  // Ctrl+B: divide el segmento actual en la posición del playhead (como CapCut)
-  const splitAtPlayhead = useCallback(() => {
-    const native = effectiveToNative(keptSegs, effectiveTime);
-    if (!native) return;
-    const { clip, localTime } = native;
-    const seg = keptSegs.find(s => s.clip.id === clip.id && localTime >= s.start && localTime <= s.end);
-    if (!seg || localTime - seg.start < 0.06 || seg.end - localTime < 0.06) return;
-    setClips(prev => prev.map(c => {
-      if (c.id !== clip.id) return c;
-      const newSilences = [...(c.silences || []), { id: uid(), start: localTime, end: localTime + 0.001, cut: true }]
-        .sort((a, b) => a.start - b.start);
-      return { ...c, silences: newSilences };
-    }));
-  }, [keptSegs, effectiveTime]);
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
-        e.preventDefault();
-        splitAtPlayhead();
-      }
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [splitAtPlayhead]);
 
   const addFiles = useCallback(async (files) => {
     const valid = Array.from(files).filter(f => /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name) || f.type.startsWith("video/"));

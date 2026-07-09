@@ -2613,12 +2613,22 @@ export default function App() {
         </div>
 
         {/* Botón hamburguesa solo en móvil */}
-        <button className="mobile-menu-toggle" onClick={() => setMobileMenuOpen(v => !v)} aria-label="Menú">
-          {mobileMenuOpen ? "✕" : "☰"}
+        <button
+          className={`mobile-menu-toggle${mobileMenuOpen ? " mobile-menu-toggle--open" : ""}`}
+          onClick={() => setMobileMenuOpen(v => !v)}
+          aria-label="Menú" aria-expanded={mobileMenuOpen}>
+          <span className="mobile-menu-toggle-icon">
+            <span /><span /><span />
+          </span>
+          <span className="mobile-menu-toggle-label">Menú</span>
+          {!mobileMenuOpen && activeLabel && (
+            <span className="mobile-menu-toggle-active">{activeLabel}</span>
+          )}
         </button>
 
         {mobileMenuOpen && <div className="mobile-menu-backdrop" onClick={() => setMobileMenuOpen(false)} />}
         <div className={`mobile-menu-wrap${mobileMenuOpen ? " mobile-menu-wrap--open" : ""}`}>
+        <p className="mobile-menu-section-label">Navegación</p>
         <nav className="main-menu" aria-label="Navegacion principal">
           {menu.map((item) => {
             const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };

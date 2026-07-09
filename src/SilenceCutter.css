@@ -1718,11 +1718,49 @@
 }
 
 /* ── Responsive del editor (pantallas pequeñas) ────────────────────────── */
+
+/* 100dvh evita el bug del address bar en iOS Safari (100vh incluye la barra) */
+.sce-layout {
+  height: 100dvh;
+}
+
 @media (max-width: 768px) {
-  .sce-layout { grid-template-rows: 52px 1fr 140px; }
-  .sce-body { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
-  .sce-sub-panel { border-left: none; border-top: 1px solid rgba(196,82,106,0.1); max-height: 220px; }
-  .sce-timeline { display: none; }
+  .sce-layout {
+    grid-template-rows: 48px 1fr auto;
+    height: 100dvh;
+    overflow: hidden;
+  }
+  .sce-body {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+    overflow: hidden;
+  }
+  /* Panel de herramientas en mobile: tabs horizontales */
+  .sce-sub-panel {
+    border-left: none;
+    border-top: 1px solid rgba(196,82,106,0.1);
+    max-height: 46vh;
+    overflow-y: auto;
+  }
+  /* Timeline simplificado en mobile (scroll horizontal propio) */
+  .sce-timeline {
+    display: block;
+    max-height: 90px;
+    overflow: hidden;
+  }
+  .sce-tl-mgmt { display: none; }  /* ocultar sidebar de clips en mobile */
+  .sce-tl-scroll-wrap { height: 60px; }
+  .sce-tl-track { height: 60px; padding: 6px 10px; }
+  /* Canvas preview ocupa el máximo en mobile */
+  .sce-canvas-wrap {
+    flex: 1;
+    min-height: 0;
+  }
+  /* Topbar del editor más compacto */
+  .sce-topbar { padding: 0 12px; gap: 8px; }
+  .sce-topbar-left { gap: 8px; }
+  .sce-topbar-right { gap: 6px; }
+  .sce-reel-pill { padding: 5px 10px; font-size: 11px; }
 }
 
 /* ── Botón Reels en topbar del editor ────────────────────────────────────── */
