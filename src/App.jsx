@@ -2617,6 +2617,7 @@ export default function App() {
           {mobileMenuOpen ? "✕" : "☰"}
         </button>
 
+        {mobileMenuOpen && <div className="mobile-menu-backdrop" onClick={() => setMobileMenuOpen(false)} />}
         <div className={`mobile-menu-wrap${mobileMenuOpen ? " mobile-menu-wrap--open" : ""}`}>
         <nav className="main-menu" aria-label="Navegacion principal">
           {menu.map((item) => {

@@ -1361,10 +1361,15 @@ button {
   }
 
   .sidebar {
-    position: relative;
+    position: sticky;
+    top: 0;
+    z-index: 600;                          /* stacking context encima del <main> */
     height: auto;
     padding: 16px;
     overflow: visible;
+    background: rgba(250, 247, 245, 0.98); /* fondo sólido — no se transparenta */
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(180, 160, 140, 0.15);
   }
 
   .brand,
@@ -5194,6 +5199,25 @@ button {
 }
 
 /* ── Menú hamburguesa móvil ── */
+.mobile-menu-backdrop {
+  display: none;
+}
+@media (max-width: 1180px) {
+  .mobile-menu-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 590;                        /* debajo del sidebar (600) pero encima del contenido */
+    background: rgba(26, 20, 18, 0.32);
+    backdrop-filter: blur(2px);
+    animation: backdropFadeIn 0.18s ease both;
+  }
+}
+@keyframes backdropFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 .mobile-menu-toggle {
   display: none;
   width: 100%;
@@ -5222,7 +5246,7 @@ button {
     display: none;
   }
 
-  /* Cuando abre: overlay absoluto — no empuja el contenido del dashboard */
+  /* Cuando abre: drawer desde el sidebar sticky — siempre encima del contenido */
   .mobile-menu-wrap--open {
     display: flex;
     flex-direction: column;
@@ -5230,12 +5254,14 @@ button {
     top: 100%;
     left: -16px;
     right: -16px;
-    z-index: 500;
+    z-index: 700;                          /* dentro del stacking context del sidebar */
     background: rgba(250, 247, 245, 0.99);
-    backdrop-filter: blur(18px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.13);
-    padding: 8px 16px 16px;
-    max-height: calc(100vh - 80px);
+    backdrop-filter: blur(20px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.16);
+    border-bottom-left-radius: 20px;
+    border-bottom-right-radius: 20px;
+    padding: 8px 16px 20px;
+    max-height: calc(85vh - 80px);
     overflow-y: auto;
     gap: 8px;
   }
