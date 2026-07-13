@@ -803,8 +803,8 @@
   grid-template-rows: 52px 1fr 168px;
   height: 100vh;
   overflow: hidden;
-  background: #f8f5f7;
-  color: #1a1a2e;
+  background: #0C0C16;
+  color: #E8E4F4;
   font-family: "Inter", "Segoe UI", sans-serif;
 }
 
@@ -814,8 +814,8 @@
   align-items: center;
   gap: 12px;
   padding: 0 16px;
-  background: #fff;
-  border-bottom: 1.5px solid rgba(196, 82, 106, 0.13);
+  background: #12121E;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
   z-index: 20;
 }
 .sce-topbar-center {
@@ -832,7 +832,7 @@
 }
 .sce-clip-info-tag {
   font-size: 12px;
-  color: #999;
+  color: #5E5A78;
   font-weight: 500;
   letter-spacing: 0.02em;
 }
@@ -859,7 +859,7 @@
 .sce-sens-group {
   display: flex;
   gap: 2px;
-  background: #f0edf0;
+  background: rgba(255,255,255,0.06);
   border-radius: 8px;
   padding: 3px;
   flex-shrink: 0;
@@ -870,24 +870,24 @@
   font-weight: 600;
   border: none;
   background: transparent;
-  color: #7a6878;
+  color: #5E5A78;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
 }
 .sce-sens-btn.active {
-  background: #fff;
+  background: rgba(255,255,255,0.1);
   color: #C4526A;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
-.sce-sens-btn:hover:not(.active) { background: rgba(196,82,106,0.07); color: #C4526A; }
+.sce-sens-btn:hover:not(.active) { background: rgba(196,82,106,0.12); color: #C4526A; }
 
 /* ── Selector de formato de salida ─────────────────────────────────────── */
 .sce-fmt-group {
   display: flex;
   gap: 2px;
-  background: #f0edf0;
+  background: rgba(255,255,255,0.06);
   border-radius: 8px;
   padding: 3px;
   flex-shrink: 0;
@@ -898,7 +898,7 @@
   font-weight: 600;
   border: none;
   background: transparent;
-  color: #7a6878;
+  color: #5E5A78;
   border-radius: 6px;
   cursor: pointer;
   transition: background .15s, color .15s;
@@ -906,12 +906,12 @@
   letter-spacing: 0.02em;
 }
 .sce-fmt-btn.active {
-  background: #fff;
+  background: rgba(255,255,255,0.1);
   color: #C4526A;
-  box-shadow: 0 1px 3px rgba(0,0,0,.12);
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
 }
 .sce-fmt-btn:hover:not(.active) {
-  background: rgba(196,82,106,.08);
+  background: rgba(196,82,106,.12);
   color: #C4526A;
 }
 
@@ -994,12 +994,14 @@
 .sce-playbtn:hover { background: #a93f56; transform: scale(1.05); }
 .sce-scrubber {
   flex: 1;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 3px;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
   overflow: hidden;
   cursor: pointer;
+  transition: height 0.15s;
 }
+.sce-scrubber:hover { height: 14px; }
 .sce-scrubber-fill {
   height: 100%;
   background: #C4526A;
@@ -1075,8 +1077,8 @@
 .sce-sub-panel {
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border-left: 1px solid rgba(196, 82, 106, 0.12);
+  background: #12121E;
+  border-left: none;
   overflow: hidden;
   min-height: 0;
 }
@@ -1086,7 +1088,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 11px 13px;
-  border-bottom: 1px solid rgba(196, 82, 106, 0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
   flex-shrink: 0;
 }
 .sce-panel-title {
@@ -1094,7 +1096,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #aaa;
+  color: #3E3C4C;
 }
 .sce-regen-btn {
   font-size: 11px !important;
@@ -1104,7 +1106,7 @@
 /* Selectores de estilo de subtítulo */
 .sce-sub-style {
   padding: 10px 13px;
-  border-bottom: 1px solid rgba(196, 82, 106, 0.08);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -1114,13 +1116,13 @@
 .sce-sub-style .sc-font-pill {
   padding: 3px 9px;
   font-size: 11px;
-  border-color: rgba(0,0,0,0.12);
-  background: #f7f7f7;
-  color: #555;
+  border-color: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.05);
+  color: #7A769A;
 }
 .sce-sub-style .sc-font-pill:hover { border-color: #C4526A; color: #C4526A; }
 .sce-sub-style .sc-font-pill.active {
-  background: rgba(196, 82, 106, 0.1);
+  background: rgba(196, 82, 106, 0.15);
   border-color: #C4526A;
   color: #C4526A;
 }
@@ -1128,12 +1130,12 @@
 .sce-sub-style .sc-color-swatch {
   padding: 3px 8px;
   font-size: 10px;
-  border-color: rgba(0,0,0,0.1);
-  background: #f7f7f7;
-  color: #555;
+  border-color: rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.04);
+  color: #7A769A;
 }
-.sce-sub-style .sc-color-swatch:hover { border-color: #aaa; }
-.sce-sub-style .sc-color-swatch.active { border-color: var(--sw); background: rgba(0,0,0,0.04); }
+.sce-sub-style .sc-color-swatch:hover { border-color: rgba(255,255,255,0.25); color: #B0ACD0; }
+.sce-sub-style .sc-color-swatch.active { border-color: var(--sw); background: rgba(255,255,255,0.07); color: #D0CCEE; }
 
 /* Lista de segmentos */
 .sce-seg-list {
@@ -1155,7 +1157,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #ccc;
+  color: #2E2C3C;
   padding: 10px 13px 3px;
   margin: 0;
 }
@@ -1167,14 +1169,14 @@
   transition: background 0.12s;
   border-left: 2px solid transparent;
 }
-.sce-seg-row:hover { background: rgba(196, 82, 106, 0.04); }
+.sce-seg-row:hover { background: rgba(196, 82, 106, 0.08); }
 .sce-seg-row--active {
-  background: rgba(196, 82, 106, 0.07);
+  background: rgba(196, 82, 106, 0.12);
   border-left-color: #C4526A;
 }
 .sce-seg-time {
   font-size: 10px;
-  color: #bbb;
+  color: #3E3C50;
   font-variant-numeric: tabular-nums;
   background: transparent;
   border: none;
@@ -1186,14 +1188,14 @@
   margin-top: 1px;
   transition: background 0.12s, color 0.12s;
 }
-.sce-seg-time:hover { background: rgba(196, 82, 106, 0.08); color: #C4526A; }
+.sce-seg-time:hover { background: rgba(196, 82, 106, 0.12); color: #C4526A; }
 .sce-seg-row--active .sce-seg-time { color: #C4526A; }
 .sce-seg-text {
   flex: 1;
   text-align: left;
   background: transparent;
   border: none;
-  color: #555;
+  color: #6A669A;
   font-size: 12px;
   line-height: 1.55;
   cursor: text;
@@ -1204,13 +1206,13 @@
   min-width: 0;
   word-break: break-word;
 }
-.sce-seg-text:hover { color: #222; }
-.sce-seg-row--active .sce-seg-text { color: #1a1a2e; font-weight: 500; }
+.sce-seg-text:hover { color: #C0BCDC; }
+.sce-seg-row--active .sce-seg-text { color: #D0CCEC; font-weight: 500; }
 .sce-seg-input {
   flex: 1;
-  background: rgba(196, 82, 106, 0.05);
+  background: rgba(196, 82, 106, 0.1);
   border: 1.5px solid rgba(196, 82, 106, 0.4);
-  color: #1a1a2e;
+  color: #D8D4F0;
   font-size: 12px;
   line-height: 1.55;
   border-radius: 4px;
@@ -1224,8 +1226,8 @@
   padding: 28px 16px;
   text-align: center;
 }
-.sce-no-subs p { color: #bbb; font-size: 12px; margin: 0 0 5px; }
-.sce-no-subs-hint { font-size: 11px !important; color: #d0d0d0 !important; line-height: 1.5; }
+.sce-no-subs p { color: #2E2C3C; font-size: 12px; margin: 0 0 5px; }
+.sce-no-subs-hint { font-size: 11px !important; color: #252336 !important; line-height: 1.5; }
 
 /* Spinner de transcripción inline */
 .sce-transcribing {
@@ -1249,21 +1251,21 @@
 }
 .sce-trans-msg {
   font-size: 12px;
-  color: #555;
+  color: #8A869E;
   margin: 0;
   line-height: 1.5;
   max-width: 220px;
 }
 .sce-trans-hint {
   font-size: 10px;
-  color: #bbb;
+  color: #3E3C4E;
   margin: 0;
 }
 
 /* ── Timeline contraído — fondo claro ──────────────────────────────────── */
 .sce-timeline {
-  background: #faf6f8;
-  border-top: 1.5px solid rgba(196, 82, 106, 0.12);
+  background: #090910;
+  border-top: 1px solid rgba(255,255,255,0.05);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1281,11 +1283,11 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #ccc;
+  color: #252336;
 }
 .sce-tl-duration {
   font-size: 10px;
-  color: #bbb;
+  color: #38364A;
   font-variant-numeric: tabular-nums;
 }
 
@@ -1342,7 +1344,7 @@
 }
 .sce-tl-empty {
   font-size: 11px;
-  color: #ccc;
+  color: #252336;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1399,13 +1401,13 @@
 .sce-tl-mgmt {
   width: 200px;
   flex-shrink: 0;
-  border-left: 1px solid rgba(196,82,106,0.1);
-  background: #fff;
+  border-left: 1px solid rgba(255,255,255,0.05);
+  background: #0E0E18;
   overflow-y: auto;
   overflow-x: hidden;
   padding: 6px 0;
   scrollbar-width: thin;
-  scrollbar-color: rgba(196,82,106,0.15) transparent;
+  scrollbar-color: rgba(196,82,106,0.2) transparent;
 }
 .sce-tl-clip-row {
   display: flex;
@@ -1414,7 +1416,7 @@
   padding: 3px 10px;
   min-height: 28px;
 }
-.sce-tl-clip-row:hover { background: rgba(196,82,106,0.04); }
+.sce-tl-clip-row:hover { background: rgba(255,255,255,0.04); }
 .sce-tl-clip-idx {
   width: 14px;
   height: 14px;
@@ -1431,7 +1433,7 @@
 .sce-tl-clip-title {
   flex: 1;
   font-size: 10px;
-  color: #555;
+  color: #3A3850;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1439,7 +1441,7 @@
 }
 .sce-tl-clip-dur {
   font-size: 9px;
-  color: #bbb;
+  color: #28263A;
   font-variant-numeric: tabular-nums;
   flex-shrink: 0;
 }
@@ -1452,9 +1454,9 @@
   width: 18px;
   height: 18px;
   background: transparent;
-  border: 1px solid rgba(0,0,0,0.1);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 3px;
-  color: #999;
+  color: #38364A;
   cursor: pointer;
   font-size: 10px;
   display: flex;
@@ -1463,22 +1465,22 @@
   transition: all 0.12s;
   line-height: 1;
 }
-.sce-tl-btns button:hover:not(:disabled) { background: #f0f0f0; color: #333; }
-.sce-tl-btns button:disabled { opacity: 0.25; cursor: default; }
+.sce-tl-btns button:hover:not(:disabled) { background: rgba(255,255,255,0.08); color: #C0BCDC; }
+.sce-tl-btns button:disabled { opacity: 0.2; cursor: default; }
 .sce-tl-rm {
-  border-color: rgba(220,60,60,0.2) !important;
-  color: rgba(220,60,60,0.5) !important;
+  border-color: rgba(220,60,60,0.15) !important;
+  color: rgba(220,60,60,0.35) !important;
 }
-.sce-tl-rm:hover { background: rgba(220,60,60,0.08) !important; color: #e05555 !important; }
+.sce-tl-rm:hover { background: rgba(220,60,60,0.1) !important; color: #e05555 !important; }
 
 .sce-tl-add-clip {
   width: calc(100% - 20px);
   margin: 6px 10px 4px;
   padding: 5px 8px;
   background: transparent;
-  border: 1.5px dashed rgba(196,82,106,0.25);
+  border: 1.5px dashed rgba(196,82,106,0.2);
   border-radius: 6px;
-  color: rgba(196,82,106,0.55);
+  color: rgba(196,82,106,0.4);
   font-size: 10px;
   font-weight: 600;
   cursor: pointer;
@@ -1487,7 +1489,7 @@
   font-family: inherit;
 }
 .sce-tl-add-clip:hover {
-  background: rgba(196,82,106,0.05);
+  background: rgba(196,82,106,0.08);
   border-color: #C4526A;
   color: #C4526A;
 }
@@ -1496,31 +1498,33 @@
 .sce-right-panel {
   display: flex;
   flex-direction: column;
-  background: #fff;
-  border-left: 1px solid rgba(196,82,106,0.12);
+  background: #12121E;
+  border-left: 1px solid rgba(255,255,255,0.06);
   overflow: hidden;
   min-height: 0;
 }
 .sce-tab-bar {
   display: flex;
   flex-shrink: 0;
-  border-bottom: 1.5px solid rgba(196,82,106,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 .sce-tab {
   flex: 1;
-  padding: 9px 6px;
+  padding: 10px 4px;
   background: transparent;
   border: none;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
-  color: #bbb;
+  color: #42404E;
   cursor: pointer;
   font-family: inherit;
   transition: color 0.15s, background 0.15s;
   border-bottom: 2px solid transparent;
-  margin-bottom: -1.5px;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
 }
-.sce-tab:hover { color: #888; background: rgba(196,82,106,0.03); }
+.sce-tab:hover { color: #8A86A0; background: rgba(255,255,255,0.03); }
 .sce-tab.active { color: #C4526A; border-bottom-color: #C4526A; }
 
 /* El SubtitlePanel ya tiene su clase sce-sub-panel, pero cuando está
@@ -1533,18 +1537,18 @@
   overflow-y: auto;
   padding: 6px 0 16px;
   scrollbar-width: thin;
-  scrollbar-color: rgba(196,82,106,0.15) transparent;
+  scrollbar-color: rgba(196,82,106,0.2) transparent;
 }
 .sce-fx-section {
   padding: 12px 14px 10px;
-  border-bottom: 1px solid rgba(196,82,106,0.07);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
 .sce-fx-section-label {
   font-size: 9px;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #bbb;
+  color: #3A3848;
   margin: 0 0 9px;
 }
 .sce-fx-row {
@@ -1558,17 +1562,17 @@
 /* Toggle ON/OFF */
 .sce-fx-toggle {
   padding: 3px 12px;
-  border: 1.5px solid rgba(0,0,0,0.12);
+  border: 1.5px solid rgba(255,255,255,0.1);
   border-radius: 20px;
-  background: #f5f5f5;
-  color: #888;
+  background: rgba(255,255,255,0.05);
+  color: #4A4860;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
 }
-.sce-fx-toggle:hover { border-color: #C4526A; color: #C4526A; }
+.sce-fx-toggle:hover { border-color: rgba(196,82,106,0.5); color: #C4526A; }
 .sce-fx-toggle.active { background: #C4526A; border-color: #C4526A; color: #fff; }
 .sce-fx-toggle.loading { opacity: 0.6; cursor: wait; }
 
@@ -1605,7 +1609,7 @@
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  color: #888;
+  color: #3A3848;
 }
 .sce-fx-slider {
   flex: 1;
@@ -1622,17 +1626,17 @@
 .sce-fx-level {
   flex: 1;
   padding: 5px 2px;
-  border: 1.5px solid rgba(0,0,0,0.1);
+  border: 1.5px solid rgba(255,255,255,0.08);
   border-radius: 6px;
-  background: #f5f5f5;
+  background: rgba(255,255,255,0.04);
   font-size: 11px;
   font-weight: 500;
-  color: #777;
+  color: #4A4860;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s;
 }
-.sce-fx-level:hover { border-color: #C4526A; color: #C4526A; }
+.sce-fx-level:hover { border-color: rgba(196,82,106,0.5); color: #C4526A; }
 .sce-fx-level.active { background: #C4526A; border-color: #C4526A; color: #fff; }
 
 /* ── Presets de estilo ─────────────────────────────────────────────────── */
@@ -1648,21 +1652,21 @@
   align-items: center;
   gap: 3px;
   padding: 10px 4px 8px;
-  border: 1.5px solid #e8e4e8;
+  border: 1.5px solid rgba(255,255,255,0.07);
   border-radius: 10px;
-  background: #fafafa;
+  background: rgba(255,255,255,0.03);
   cursor: pointer;
   transition: all .18s;
   font-family: inherit;
 }
-.sce-preset-card:hover { border-color: #C4526A; background: rgba(196,82,106,.05); }
+.sce-preset-card:hover { border-color: rgba(196,82,106,0.5); background: rgba(196,82,106,.08); }
 .sce-preset-card.active {
   border-color: #C4526A;
-  background: rgba(196,82,106,.08);
-  box-shadow: 0 0 0 2px rgba(196,82,106,.18);
+  background: rgba(196,82,106,.12);
+  box-shadow: 0 0 0 2px rgba(196,82,106,.22);
 }
 .sce-preset-icon { font-size: 18px; line-height: 1; }
-.sce-preset-label { font-size: 10px; font-weight: 600; color: #5a4a58; letter-spacing: .02em; }
+.sce-preset-label { font-size: 10px; font-weight: 600; color: #5A5676; letter-spacing: .02em; }
 .sce-preset-card.active .sce-preset-label { color: #C4526A; }
 
 /* ── Ajuste fino (toggle colapsable) ───────────────────────────────────── */
@@ -1670,17 +1674,17 @@
   width: 100%;
   text-align: left;
   padding: 7px 10px;
-  background: #f5f2f5;
-  border: 1px solid #e8e4e8;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #7a6878;
+  color: #5A5676;
   cursor: pointer;
   font-family: inherit;
   transition: background .15s;
 }
-.sce-fine-toggle:hover { background: #ece8ec; }
+.sce-fine-toggle:hover { background: rgba(255,255,255,0.09); }
 
 .sce-fx-reset {
   font-size: 10px;
@@ -1699,23 +1703,161 @@
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: #bbb;
+  color: #3A3848;
   margin-top: 3px;
   padding: 0 2px;
 }
 .sce-fx-hint {
   font-size: 10px;
-  color: #bbb;
+  color: #3A3848;
   margin: 7px 0 0;
   line-height: 1.5;
 }
 .sce-fx-footer {
   padding: 12px 14px 0;
   font-size: 10px;
-  color: #ccc;
+  color: #302E3E;
   line-height: 1.5;
   margin: 0;
 }
+
+/* ── Panel de música ───────────────────────────────────────────────────── */
+.sce-music-panel {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(196,82,106,0.2) transparent;
+  display: flex;
+  flex-direction: column;
+}
+.sce-music-drop {
+  margin: 0 14px 12px;
+  padding: 22px 14px;
+  border: 1.5px dashed rgba(196,82,106,0.25);
+  border-radius: 12px;
+  background: rgba(196,82,106,0.04);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.sce-music-drop:hover,
+.sce-music-drop.over {
+  border-color: #C4526A;
+  background: rgba(196,82,106,0.1);
+}
+.sce-music-icon { font-size: 26px; line-height: 1; }
+.sce-music-drop-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8A86A0;
+  margin: 0;
+}
+.sce-music-drop-hint {
+  font-size: 10px;
+  color: #3A3848;
+  margin: 0;
+}
+.sce-music-loaded {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 14px 12px;
+  padding: 10px 12px;
+  background: rgba(196,82,106,0.1);
+  border: 1px solid rgba(196,82,106,0.25);
+  border-radius: 10px;
+}
+.sce-music-track-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: #C4526A;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sce-music-track-sub {
+  font-size: 9px;
+  color: #3A3848;
+  margin: 2px 0 0;
+}
+.sce-music-clear {
+  background: transparent;
+  border: none;
+  color: #3A3848;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.sce-music-clear:hover { color: #ef4444; }
+.sce-music-controls {
+  padding: 0 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+.sce-music-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: #3A3848;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.sce-music-row-label { flex-shrink: 0; font-size: 10px; font-weight: 600; color: #3A3848; }
+.sce-music-row-val { min-width: 30px; text-align: right; font-size: 11px; color: #5A5676; font-variant-numeric: tabular-nums; }
+.sce-music-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* ── Selectores de posición y tamaño de subtítulos ─────────────────────── */
+.sce-sub-pos-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.sce-sub-pos-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #3A3848;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sce-sub-pos-btns {
+  display: flex;
+  gap: 4px;
+}
+.sce-sub-pos-btn {
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  border: 1.5px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  background: rgba(255,255,255,0.04);
+  color: #5A5676;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.sce-sub-pos-btn:hover { border-color: rgba(196,82,106,0.4); color: #C4526A; }
+.sce-sub-pos-btn.active { background: rgba(196,82,106,0.15); border-color: #C4526A; color: #C4526A; }
 
 /* ── Responsive del editor (pantallas pequeñas) ────────────────────────── */
 
@@ -1738,7 +1880,7 @@
   /* Panel de herramientas en mobile: tabs horizontales */
   .sce-sub-panel {
     border-left: none;
-    border-top: 1px solid rgba(196,82,106,0.1);
+    border-top: 1px solid rgba(255,255,255,0.07);
     max-height: 46vh;
     overflow-y: auto;
   }
@@ -2027,16 +2169,16 @@
   align-items: center;
   gap: 6px;
   padding: 8px 4px;
-  background: #f8f5f8;
-  border: 1.5px solid transparent;
+  background: rgba(255,255,255,0.03);
+  border: 1.5px solid rgba(255,255,255,0.07);
   border-radius: 10px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
   font-size: 11px;
-  color: #555;
+  color: #4A4860;
 }
-.sce-trans-card:hover { background: #f0ebf0; border-color: #C4526A44; }
-.sce-trans-card.active { border-color: #C4526A; background: #fdf0f2; color: #C4526A; }
+.sce-trans-card:hover { background: rgba(196,82,106,0.08); border-color: rgba(196,82,106,0.4); }
+.sce-trans-card.active { border-color: #C4526A; background: rgba(196,82,106,0.14); color: #C4526A; }
 
 /* Preview box for each transition card */
 .sce-trans-preview {
@@ -2047,7 +2189,7 @@
   position: relative;
   display: flex;
   align-items: stretch;
-  border: 1px solid #e0dae0;
+  border: 1px solid rgba(255,255,255,0.1);
 }
 .sce-tprev-a, .sce-tprev-b {
   flex: 1;

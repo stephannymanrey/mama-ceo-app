@@ -398,10 +398,11 @@ async function loadBokehSegmenter() {
 // ── Subtítulos ────────────────────────────────────────────────────────────
 function drawSubtitle(ctx, W, H, time, words, style = {}) {
   if (!words?.length) return;
-  const font    = style.font    || "Poppins";
-  const hlColor = style.hlColor || "#FFE44D";
-  let fs        = Math.max(28, Math.floor(H / 13));
-  const GROUP   = 4;
+  const font      = style.font    || "Poppins";
+  const hlColor   = style.hlColor || "#FFE44D";
+  const sizeScale = style.size === "small" ? 0.72 : style.size === "large" ? 1.35 : 1.0;
+  let fs          = Math.max(22, Math.floor(H / 13 * sizeScale));
+  const GROUP     = 4;
 
   let idx = words.findIndex(w => time >= w.start && time <= w.end);
   if (idx === -1) {
@@ -432,7 +433,8 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
     totalW = wMeasures.reduce((a, b) => a + b, 0);
   }
 
-  const y    = Math.round(H * 0.87);
+  const pos  = style.position || "bottom";
+  const y    = Math.round(pos === "top" ? H * 0.10 : pos === "center" ? H * 0.50 : H * 0.87);
   let x      = W / 2 - totalW / 2;
   const padX = 5, padY = 3;
 
@@ -590,7 +592,7 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
 }
 
 // ── Grabación multi-clip ──────────────────────────────────────────────────
-async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape", effects = {}, clipTransitions = {}) {
+async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape", effects = {}, clipTransitions = {}, music = {}) {
   const firstVid = document.createElement("video");
   const firstUrl = URL.createObjectURL(clips[0].file);
   firstVid.src = firstUrl;
@@ -611,6 +613,22 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
 
   const audioCtx = new AudioContext();
   const destination = audioCtx.createMediaStreamDestination();
+
+  // Música de fondo — se mezcla con el audio del video
+  if (music?.url) {
+    try {
+      const musicEl = new Audio(music.url);
+      musicEl.crossOrigin = "anonymous";
+      musicEl.loop = music.loop ?? true;
+      const musicSrc = audioCtx.createMediaElementSource(musicEl);
+      const musicGain = audioCtx.createGain();
+      musicGain.gain.value = music.duck ? (music.volume ?? 0.35) * 0.3 : (music.volume ?? 0.35);
+      musicSrc.connect(musicGain);
+      musicGain.connect(destination);
+      await musicEl.play();
+    } catch (e) { console.warn("Music export:", e); }
+  }
+
   const canvasStream = canvas.captureStream(30);
   const combinedStream = new MediaStream([
     canvasStream.getVideoTracks()[0],
@@ -875,6 +893,81 @@ function SegmentRow({ line, isActive, onEdit, onSeek }) {
   );
 }
 
+// ── MusicPanel ────────────────────────────────────────────────────────────
+function MusicPanel({ music, onMusicChange }) {
+  const fileRef = useRef(null);
+  const [dragOver, setDragOver] = useState(false);
+  const handleFile = (file) => {
+    if (!file) return;
+    const ok = file.type.startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(file.name);
+    if (!ok) return;
+    if (music.url) URL.revokeObjectURL(music.url);
+    onMusicChange({ ...music, url: URL.createObjectURL(file), name: file.name });
+  };
+  const clearMusic = () => {
+    if (music.url) URL.revokeObjectURL(music.url);
+    onMusicChange({ ...music, url: null, name: "" });
+  };
+  return (
+    <div className="sce-music-panel">
+      {!music.url ? (
+        <div
+          className={`sce-music-drop${dragOver ? " over" : ""}`}
+          onClick={() => fileRef.current?.click()}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}>
+          <span className="sce-music-icon">🎵</span>
+          <p className="sce-music-drop-title">Música de fondo</p>
+          <p className="sce-music-drop-hint">MP3 · WAV · M4A · Arrastra o haz clic</p>
+        </div>
+      ) : (
+        <div className="sce-music-loaded">
+          <span className="sce-music-icon" style={{ fontSize: 20 }}>🎵</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p className="sce-music-track-name">{music.name.replace(/\.[^/.]+$/, "")}</p>
+            <p className="sce-music-track-sub">Cargada · se mezcla al exportar</p>
+          </div>
+          <button className="sce-music-clear" onClick={clearMusic} title="Quitar">✕</button>
+        </div>
+      )}
+      <input ref={fileRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
+        style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
+      {music.url && (
+        <div className="sce-music-controls">
+          <div className="sce-music-row">
+            <span className="sce-music-row-label">🔊 Volumen</span>
+            <input type="range" min="0" max="1" step="0.05" className="sce-fx-slider"
+              value={music.volume}
+              onChange={e => onMusicChange({ ...music, volume: +e.target.value })} />
+            <span className="sce-music-row-val">{Math.round(music.volume * 100)}%</span>
+          </div>
+          <div className="sce-music-toggle-row">
+            <div>
+              <p className="sce-fx-section-label" style={{ marginBottom: 2 }}>AUTO-DUCKING</p>
+              <p className="sce-fx-hint" style={{ margin: 0 }}>Baja la música al hablar</p>
+            </div>
+            <button className={`sce-fx-toggle${music.duck ? " active" : ""}`}
+              onClick={() => onMusicChange({ ...music, duck: !music.duck })}>
+              {music.duck ? "ON" : "OFF"}
+            </button>
+          </div>
+          <div className="sce-music-toggle-row">
+            <p className="sce-fx-section-label">REPETIR EN BUCLE</p>
+            <button className={`sce-fx-toggle${music.loop ? " active" : ""}`}
+              onClick={() => onMusicChange({ ...music, loop: !music.loop })}>
+              {music.loop ? "ON" : "OFF"}
+            </button>
+          </div>
+        </div>
+      )}
+      <p className="sce-fx-footer" style={{ padding: "10px 14px 14px", textAlign: "center" }}>
+        Música libre: <strong>Pixabay Music</strong> · <strong>Free Music Archive</strong>
+      </p>
+    </div>
+  );
+}
+
 // ── SubtitlePanel ─────────────────────────────────────────────────────────
 function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyle, onStyleChange,
     onTranscribe, onSeekInClip, listRef, transcribing, transcribeMsg }) {
@@ -926,6 +1019,26 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
                     <span className="sc-swatch-dot" />{opt.label}
                   </button>
                 ))}
+              </div>
+              <div className="sce-sub-pos-row">
+                <span className="sce-sub-pos-label">Posición</span>
+                <div className="sce-sub-pos-btns">
+                  {[["top","↑ Arriba"],["bottom","↓ Abajo"]].map(([pos, lbl]) => (
+                    <button key={pos}
+                      className={`sce-sub-pos-btn${(subtitleStyle.position || "bottom") === pos ? " active" : ""}`}
+                      onClick={() => onStyleChange({ ...subtitleStyle, position: pos })}>{lbl}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="sce-sub-pos-row">
+                <span className="sce-sub-pos-label">Tamaño</span>
+                <div className="sce-sub-pos-btns">
+                  {[["small","Chico"],["medium","Normal"],["large","Grande"]].map(([s, l]) => (
+                    <button key={s}
+                      className={`sce-sub-pos-btn${(subtitleStyle.size || "medium") === s ? " active" : ""}`}
+                      onClick={() => onStyleChange({ ...subtitleStyle, size: s })}>{l}</button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -1317,7 +1430,10 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const [tab,          setTab]          = useState("subs");
   const [effects,      setEffects]      = useState(() => ({ transition: "none", transitionSecs: 0.4, bokeh: 0, autoZoom: false, zoomInterval: 4, ...VIDEO_PRESETS[0].values, _preset: "natural" }));
   const [bokehLoading, setBokehLoading] = useState(false);
-  const [clipTransitions, setClipTransitions] = useState({}); // { clipId: transitionType }
+  const [clipTransitions, setClipTransitions] = useState({});
+  const [music, setMusic] = useState({ url: null, name: "", volume: 0.35, duck: true, loop: true });
+  const musicRef = useRef({ url: null, name: "", volume: 0.35, duck: true, loop: true });
+  useEffect(() => { musicRef.current = music; }, [music]);
 
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
   useEffect(() => { effectsRef.current = effects; }, [effects]);
@@ -1646,6 +1762,16 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     const uniqueClipIds = [...new Set(keptSegs.map(s => s.clip.id))];
     let etOffset = 0;
 
+    // Música de fondo en preview
+    let musicEl = null;
+    const mu = musicRef.current;
+    if (mu?.url) {
+      musicEl = new Audio(mu.url);
+      musicEl.loop = mu.loop ?? true;
+      musicEl.volume = mu.duck ? (mu.volume ?? 0.35) * 0.28 : (mu.volume ?? 0.35);
+      musicEl.play().catch(() => {});
+    }
+
     for (const clipId of uniqueClipIds) {
       if (!playRef.current) break;
       const clipSegs = keptSegs.filter(s => s.clip.id === clipId);
@@ -1721,6 +1847,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       }
     }
 
+    if (musicEl) { musicEl.pause(); musicEl.src = ""; }
     if (playRef.current) { setDone(true); setEffectiveTime(totalKept); }
     setIsPlaying(false); playRef.current = false;
   }, [keptSegs, outDims, dims, subtitleStyle, totalKept, isPlaying, transcribing, animFade, startZoom, animSlide]);
@@ -1778,7 +1905,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           {onExtractReels && (
             <button className="sce-reel-pill" onClick={onExtractReels} title="Extractor de Reels">🎯 Reels</button>
           )}
-          <button className="sc-btn-primary sc-btn-sm" onClick={() => onExport(effects, clipTransitions)}>✂️ Exportar</button>
+          <button className="sc-btn-primary sc-btn-sm" onClick={() => onExport(effects, clipTransitions, music)}>✂️ Exportar</button>
         </div>
       </div>
 
@@ -1836,8 +1963,9 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         {/* Panel derecho con tabs: Subtítulos | Transiciones | Efectos */}
         <div className="sce-right-panel">
           <div className="sce-tab-bar">
-            <button className={`sce-tab${tab === "subs"  ? " active" : ""}`} onClick={() => setTab("subs")}>💬 Subtítulos</button>
-            <button className={`sce-tab${tab === "trans" ? " active" : ""}`} onClick={() => setTab("trans")}>🎬 Transiciones</button>
+            <button className={`sce-tab${tab === "subs"  ? " active" : ""}`} onClick={() => setTab("subs")}>💬 Subs</button>
+            <button className={`sce-tab${tab === "music" ? " active" : ""}`} onClick={() => setTab("music")}>🎵 Música</button>
+            <button className={`sce-tab${tab === "trans" ? " active" : ""}`} onClick={() => setTab("trans")}>✂️ Cortes</button>
             <button className={`sce-tab${tab === "fx"    ? " active" : ""}`} onClick={() => setTab("fx")}>✨ Efectos</button>
           </div>
           {tab === "subs"
@@ -1850,6 +1978,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
                 listRef={subListRef}
                 transcribing={transcribing} transcribeMsg={transcribeMsg}
               />
+            : tab === "music"
+            ? <MusicPanel music={music} onMusicChange={setMusic} />
             : tab === "trans"
             ? <TransitionsPanel effects={effects} onEffectChange={setEffects} />
             : <EffectsPanel
@@ -2175,13 +2305,13 @@ export default function SilenceCutter() {
   const removeClip = id => setClips(prev => prev.filter(c => c.id !== id));
   const onDrop = (e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); };
 
-  const exportar = async (effects = {}, clipTransitions = {}) => {
+  const exportar = async (effects = {}, clipTransitions = {}, music = {}) => {
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) { setError("Analiza los clips primero."); return; }
     abortRef.current = false;
     setFase("cutting"); setProgress(0); setError("");
     try {
-      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format, effects, clipTransitions);
+      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format, effects, clipTransitions, music);
       const totalOriginal = ready.reduce((t, c) => t + (c.duration || 0), 0);
       const totalCut = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0), 0);
       const totalCuts = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).length, 0);

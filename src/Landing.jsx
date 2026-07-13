@@ -13,8 +13,8 @@ const PLANS = [
       "Calendario y citas familiares",
       "Presupuesto del hogar",
       "Check-in de bienestar diario",
-      "Hasta 15 clientes",
-      "Historial financiero básico",
+      "Hasta 15 clientes con pipeline",
+      "30 movimientos financieros al mes",
     ],
     highlight: false,
   },
@@ -26,9 +26,9 @@ const PLANS = [
     features: [
       "Todo lo del plan Mamá",
       "Hasta 50 clientes con pipeline",
-      "100 movimientos financieros",
-      "Studio de contenido con IA",
-      "Metas y seguimiento de ventas",
+      "100 movimientos financieros al mes",
+      "Studio IA: guiones, hooks e ideas",
+      "Radar de Clientas — seguimiento con IA",
       "Análisis Pareto de negocio",
     ],
     highlight: true,
@@ -41,10 +41,10 @@ const PLANS = [
     features: [
       "Todo lo del plan Emprendedora",
       "Clientes y movimientos ilimitados",
-      "Contenido ilimitado",
+      "200 generaciones de IA al mes",
       "Guiones largos YouTube y Podcast",
-      "Reproposición de contenido IA",
-      "Acceso prioritario a novedades",
+      "Editor de video SilenceCutter",
+      "Reproposición de contenido con IA",
     ],
     highlight: false,
   },
@@ -198,7 +198,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
         <div className="landing-container">
           <div className="landing-stats-inner">
             <div className="lstat-item">
-              <span className="lstat-num">6</span>
+              <span className="lstat-num">7</span>
               <span className="lstat-label">herramientas en 1 app</span>
             </div>
             <div className="lstat-divider" />
@@ -254,8 +254,9 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             <div className="landing-feat-grid">
               {[
                 { icon: "💰", title: "Finanzas claras", desc: "Registra ingresos y gastos, sigue tus metas de venta y entiende el flujo de tu negocio de un vistazo." },
-                { icon: "🤝", title: "Pipeline de clientes", desc: "Sabe exactamente quién está lista para comprar, quién está tibia y a quién debes contactar hoy." },
-                { icon: "✍️", title: "Studio de contenido IA", desc: "Genera guiones para Reels, YouTube, Podcast, posts y correos con IA en segundos. Sin bloqueo creativo." },
+                { icon: "🤝", title: "Radar de Clientas IA", desc: "Tu pipeline prioriza quién necesita atención hoy y te sugiere el mensaje exacto de WhatsApp para retomar el contacto — con IA." },
+                { icon: "✍️", title: "Studio de contenido IA", desc: "Guiones para Reels, YouTube y Podcast, hooks que detienen el scroll, ideas por categoría y lead magnets — todo con IA en segundos." },
+                { icon: "🎬", title: "Editor de video SilenceCutter", desc: "Sube tu video y elimina los silencios automáticamente. Edita en la línea de tiempo, corta con precisión y exporta listo para publicar." },
               ].map((f, i) => (
                 <div key={i} className="landing-feat-card">
                   <span className="landing-feat-icon">{f.icon}</span>
@@ -296,6 +297,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
               { before: "Olvidas hacer seguimiento a clientes potenciales", after: "Tu pipeline te dice quién necesita atención hoy" },
               { before: "Publicas contenido sin estrategia ni constancia", after: "El Studio IA genera tu guión en 30 segundos" },
               { before: "El hogar y el negocio se mezclan en tu cabeza", after: "Cada área tiene su espacio: todo separado y claro" },
+              { before: "No sabes qué escribirle a una clienta tibia", after: "El Radar IA te sugiere el mensaje exacto de WhatsApp" },
               { before: "No sabes qué priorizar cada día", after: "Tu Pareto te dice qué 3 cosas importan hoy" },
               { before: "Terminas el día agotada sin claridad de avance", after: "Claridad, enfoque y progreso visible cada día" },
             ].map((t, i) => (
@@ -356,20 +358,20 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
                   </ul>
                   <button
                     className={`landing-plan-btn${plan.highlight ? " featured" : ""}`}
-                    onClick={() => window.open(link, "_blank")}
+                    onClick={onSignup}
                   >
-                    Empezar ahora
+                    Probar gratis — 14 días
                   </button>
-                  <p className="landing-plan-trial">✨ 14 días gratis incluidos</p>
+                  <p className="landing-plan-trial">Sin tarjeta · Elige tu plan al terminar</p>
                 </div>
               );
             })}
           </div>
 
           <p className="landing-pricing-note">
-            ¿Prefieres explorar primero?{" "}
-            <button className="landing-link-btn" onClick={onSignup}>Crea tu cuenta gratuita aquí</button>{" "}
-            y accede a todos los planes desde la app.
+            ¿Ya tienes cuenta?{" "}
+            <button className="landing-link-btn" onClick={onLogin}>Inicia sesión aquí</button>
+            {" "}y actualiza tu plan desde la app cuando estés lista.
           </p>
         </div>
       </section>
