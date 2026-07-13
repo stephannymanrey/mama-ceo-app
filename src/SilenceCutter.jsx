@@ -37,6 +37,28 @@ const SKIN_FILTERS  = [
 ];
 const BOKEH_BLUR    = [8, 14, 22];
 
+// Biblioteca de música sin derechos de autor (solo instrumental)
+const MUSIC_LIBRARY = [
+  { id: "m1", name: "Impulso",     genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  { id: "m2", name: "Confianza",   genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3" },
+  { id: "m3", name: "Avanza",      genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3" },
+  { id: "t1", name: "Mañana Suave",genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+  { id: "t2", name: "Serenidad",   genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3" },
+  { id: "t3", name: "Calma",       genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3" },
+  { id: "e1", name: "Potencia",    genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+  { id: "e2", name: "Alta Vibra",  genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
+  { id: "e3", name: "Sin Límites", genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" },
+  { id: "f1", name: "Modo Foco",   genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
+  { id: "f2", name: "Flujo",       genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" },
+  { id: "f3", name: "Concentración",genre: "enfocada",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
+];
+const MUSIC_GENRES = [
+  { id: "motivacional", label: "🔥 Motivacional" },
+  { id: "tranquila",    label: "🌙 Tranquila" },
+  { id: "energetica",   label: "⚡ Energética" },
+  { id: "enfocada",     label: "🎯 Enfocada" },
+];
+
 // Presets de edición automática
 const VIDEO_PRESETS = [
   { id: "natural",  icon: "🌿", label: "Natural",  values: { brightness: 8,  contrast: 5,  saturation: 5,   skin: 1, temperature: 0   } },
@@ -895,57 +917,88 @@ function SegmentRow({ line, isActive, onEdit, onSeek }) {
 
 // ── MusicPanel ────────────────────────────────────────────────────────────
 function MusicPanel({ music, onMusicChange }) {
-  const fileRef = useRef(null);
-  const [dragOver, setDragOver] = useState(false);
+  const fileRef    = useRef(null);
+  const previewRef = useRef(null);
+  const [dragOver,    setDragOver]    = useState(false);
+  const [genreFilter, setGenreFilter] = useState("motivacional");
+  const [previewing,  setPreviewing]  = useState(null);
+  const [selecting,   setSelecting]   = useState(null);
+
+  const stopPreview = () => {
+    if (previewRef.current) { previewRef.current.pause(); previewRef.current.src = ""; previewRef.current = null; }
+    setPreviewing(null);
+  };
+  useEffect(() => stopPreview, []);
+
+  const togglePreview = (track) => {
+    if (previewing === track.id) { stopPreview(); return; }
+    stopPreview();
+    const audio = new Audio(track.url);
+    audio.volume = 0.5;
+    audio.play().catch(() => {});
+    audio.onended = () => { setPreviewing(null); previewRef.current = null; };
+    previewRef.current = audio;
+    setPreviewing(track.id);
+  };
+
+  const selectTrack = async (track) => {
+    if (selecting) return;
+    setSelecting(track.id);
+    stopPreview();
+    if (music.url && !music.fromLibrary) URL.revokeObjectURL(music.url);
+    try {
+      const res = await fetch(track.url);
+      if (!res.ok) throw new Error("fetch");
+      const blob = await res.blob();
+      onMusicChange({ ...music, url: URL.createObjectURL(blob), name: track.name, fromLibrary: true });
+    } catch {
+      onMusicChange({ ...music, url: track.url, name: track.name, fromLibrary: true });
+    }
+    setSelecting(null);
+  };
+
   const handleFile = (file) => {
     if (!file) return;
     const ok = file.type.startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(file.name);
     if (!ok) return;
-    if (music.url) URL.revokeObjectURL(music.url);
-    onMusicChange({ ...music, url: URL.createObjectURL(file), name: file.name });
+    stopPreview();
+    if (music.url && !music.fromLibrary) URL.revokeObjectURL(music.url);
+    onMusicChange({ ...music, url: URL.createObjectURL(file), name: file.name.replace(/\.[^/.]+$/, ""), fromLibrary: false });
   };
+
   const clearMusic = () => {
-    if (music.url) URL.revokeObjectURL(music.url);
-    onMusicChange({ ...music, url: null, name: "" });
+    stopPreview();
+    if (music.url && !music.fromLibrary) URL.revokeObjectURL(music.url);
+    onMusicChange({ ...music, url: null, name: "", fromLibrary: false });
   };
+
+  const filtered = MUSIC_LIBRARY.filter(t => t.genre === genreFilter);
+
   return (
     <div className="sce-music-panel">
-      {!music.url ? (
-        <div
-          className={`sce-music-drop${dragOver ? " over" : ""}`}
-          onClick={() => fileRef.current?.click()}
-          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}>
-          <span className="sce-music-icon">🎵</span>
-          <p className="sce-music-drop-title">Música de fondo</p>
-          <p className="sce-music-drop-hint">MP3 · WAV · M4A · Arrastra o haz clic</p>
-        </div>
-      ) : (
+      {/* Track activo */}
+      {music.url && (
         <div className="sce-music-loaded">
-          <span className="sce-music-icon" style={{ fontSize: 20 }}>🎵</span>
+          <span style={{ fontSize: 16 }}>🎵</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <p className="sce-music-track-name">{music.name.replace(/\.[^/.]+$/, "")}</p>
-            <p className="sce-music-track-sub">Cargada · se mezcla al exportar</p>
+            <p className="sce-music-track-name">{music.name}</p>
+            <p className="sce-music-track-sub">Activa · se mezcla al exportar</p>
           </div>
           <button className="sce-music-clear" onClick={clearMusic} title="Quitar">✕</button>
         </div>
       )}
-      <input ref={fileRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
-        style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
       {music.url && (
         <div className="sce-music-controls">
           <div className="sce-music-row">
             <span className="sce-music-row-label">🔊 Volumen</span>
             <input type="range" min="0" max="1" step="0.05" className="sce-fx-slider"
-              value={music.volume}
-              onChange={e => onMusicChange({ ...music, volume: +e.target.value })} />
+              value={music.volume} onChange={e => onMusicChange({ ...music, volume: +e.target.value })} />
             <span className="sce-music-row-val">{Math.round(music.volume * 100)}%</span>
           </div>
           <div className="sce-music-toggle-row">
             <div>
               <p className="sce-fx-section-label" style={{ marginBottom: 2 }}>AUTO-DUCKING</p>
-              <p className="sce-fx-hint" style={{ margin: 0 }}>Baja la música al hablar</p>
+              <p className="sce-fx-hint" style={{ margin: 0 }}>Baja al hablar</p>
             </div>
             <button className={`sce-fx-toggle${music.duck ? " active" : ""}`}
               onClick={() => onMusicChange({ ...music, duck: !music.duck })}>
@@ -953,7 +1006,7 @@ function MusicPanel({ music, onMusicChange }) {
             </button>
           </div>
           <div className="sce-music-toggle-row">
-            <p className="sce-fx-section-label">REPETIR EN BUCLE</p>
+            <p className="sce-fx-section-label">BUCLE</p>
             <button className={`sce-fx-toggle${music.loop ? " active" : ""}`}
               onClick={() => onMusicChange({ ...music, loop: !music.loop })}>
               {music.loop ? "ON" : "OFF"}
@@ -961,9 +1014,55 @@ function MusicPanel({ music, onMusicChange }) {
           </div>
         </div>
       )}
-      <p className="sce-fx-footer" style={{ padding: "10px 14px 14px", textAlign: "center" }}>
-        Música libre: <strong>Pixabay Music</strong> · <strong>Free Music Archive</strong>
-      </p>
+
+      {/* Biblioteca */}
+      <div className="sce-music-lib">
+        <p className="sce-music-lib-title">🎧 Sin derechos · Solo instrumentales</p>
+        <div className="sce-genre-tabs">
+          {MUSIC_GENRES.map(g => (
+            <button key={g.id}
+              className={`sce-genre-tab${genreFilter === g.id ? " active" : ""}`}
+              onClick={() => setGenreFilter(g.id)}>{g.label}</button>
+          ))}
+        </div>
+        <div className="sce-track-list">
+          {filtered.map(track => {
+            const isSelected = music.url && music.name === track.name && music.fromLibrary;
+            const isPrev     = previewing === track.id;
+            const isLoading  = selecting === track.id;
+            return (
+              <div key={track.id} className={`sce-track-item${isSelected ? " selected" : ""}`}>
+                <button className="sce-track-preview-btn" onClick={() => togglePreview(track)}
+                  title={isPrev ? "Detener" : "Escuchar"}>
+                  {isPrev ? "⏸" : "▶"}
+                </button>
+                <span className="sce-track-name">{track.name}</span>
+                <button
+                  className={`sce-track-select-btn${isSelected ? " active" : ""}`}
+                  onClick={() => isSelected ? clearMusic() : selectTrack(track)}
+                  disabled={!!selecting && !isLoading}>
+                  {isLoading ? "···" : isSelected ? "✓ Usando" : "Usar"}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Subir audio propio */}
+      <div className="sce-music-upload-section">
+        <p className="sce-music-upload-label">O sube tu propio audio</p>
+        <div
+          className={`sce-music-drop-mini${dragOver ? " over" : ""}`}
+          onClick={() => fileRef.current?.click()}
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}>
+          ↑ MP3 · WAV · M4A · Arrastra o haz clic
+        </div>
+        <input ref={fileRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
+          style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
+      </div>
     </div>
   );
 }
@@ -1075,7 +1174,7 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
 }
 
 // ── Timeline contraído ────────────────────────────────────────────────────
-function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none" }) {
+function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none", music = null }) {
   const pct = totalKept > 0 ? Math.min(100, (effectiveTime / totalKept) * 100) : 0;
   const [hoveredSeg, setHoveredSeg] = useState(null);
   const [transPickerClipId, setTransPickerClipId] = useState(null);
@@ -1134,9 +1233,21 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
         </div>
       </div>
       <div className="sce-tl-body">
-        {/* Track principal — scroll horizontal + pinch zoom trackpad */}
+        {/* Labels de pista — fijos, no scrollean */}
+        <div className="sce-tl-labels">
+          <div className="sce-tl-label-row"><span>🎬</span><span>Video</span></div>
+          <div className="sce-tl-label-row"><span>🎵</span><span>Música</span></div>
+          <div className="sce-tl-label-row sce-tl-label--dim"><span>🖼</span><span>Imagen</span></div>
+        </div>
+
+        {/* Pistas — scroll horizontal + zoom trackpad */}
         <div ref={trackWrapRef} className="sce-tl-scroll-wrap">
-          <div style={{ position: "relative", width: zoom > 1 ? `${zoom * 100}%` : "100%", height: "100%", display: "flex" }}>
+          <div style={{ position: "relative", width: zoom > 1 ? `${zoom * 100}%` : "100%", display: "flex", flexDirection: "column", gap: 2, padding: "4px 0" }}>
+
+          {/* Playhead que atraviesa todas las pistas */}
+          {totalKept > 0 && <div className="sce-tl-ph-all" style={{ left: `${pct}%` }} />}
+
+          {/* Pista 1 — Video */}
           <div className="sce-tl-track" onClick={handleTrackClick}>
             {keptSegs.length === 0 && (
               <div className="sce-tl-empty">Analiza los clips para ver el timeline</div>
@@ -1163,7 +1274,22 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
                 </div>
               );
             })}
-            {totalKept > 0 && <div className="sce-tl-ph" style={{ left: `${pct}%` }} />}
+          </div>
+
+          {/* Pista 2 — Música */}
+          <div className="sce-tl-music-track" onClick={handleTrackClick}>
+            {music?.url
+              ? <div className="sce-tl-music-bar" title={music.name}>
+                  <span className="sce-tl-music-wave">♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫</span>
+                  <span className="sce-tl-music-name">{music.name}</span>
+                </div>
+              : <span className="sce-tl-track-hint">Agrega música en el panel →</span>
+            }
+          </div>
+
+          {/* Pista 3 — Imagen / B-roll (próximamente) */}
+          <div className="sce-tl-overlay-track">
+            <span className="sce-tl-track-hint">Imagen / B-roll · próximamente</span>
           </div>
 
           {/* Marcadores de transición entre clips */}
@@ -1431,8 +1557,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const [effects,      setEffects]      = useState(() => ({ transition: "none", transitionSecs: 0.4, bokeh: 0, autoZoom: false, zoomInterval: 4, ...VIDEO_PRESETS[0].values, _preset: "natural" }));
   const [bokehLoading, setBokehLoading] = useState(false);
   const [clipTransitions, setClipTransitions] = useState({});
-  const [music, setMusic] = useState({ url: null, name: "", volume: 0.35, duck: true, loop: true });
-  const musicRef = useRef({ url: null, name: "", volume: 0.35, duck: true, loop: true });
+  const [music, setMusic] = useState({ url: null, name: "", volume: 0.35, duck: true, loop: true, fromLibrary: false });
+  const musicRef = useRef({ url: null, name: "", volume: 0.35, duck: true, loop: true, fromLibrary: false });
   useEffect(() => { musicRef.current = music; }, [music]);
 
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
@@ -2003,6 +2129,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         onSetClipTransition={(clipId, type) => setClipTransitions(p => ({ ...p, [clipId]: type }))}
         activePreset={effects._preset}
         defaultTransition={effects.transition}
+        music={music}
       />
     </div>
   );

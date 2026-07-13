@@ -800,7 +800,7 @@
 /* Layout principal: topbar | body | timeline */
 .sce-layout {
   display: grid;
-  grid-template-rows: 52px 1fr 168px;
+  grid-template-rows: 52px 1fr 190px;
   height: 100vh;
   overflow: hidden;
   background: #0C0C16;
@@ -1330,17 +1330,116 @@
 }
 .sce-tl-zoom-reset:hover { background: rgba(196, 82, 106, 0.18); }
 
+/* Labels de pista (columna izquierda fija) */
+.sce-tl-labels {
+  width: 58px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+  background: #080810;
+  border-right: 1px solid rgba(255,255,255,0.04);
+}
+.sce-tl-label-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #3D3B50;
+}
+.sce-tl-label-row:first-child { height: 38px; }
+.sce-tl-label-row:nth-child(2) { height: 26px; }
+.sce-tl-label-row:nth-child(3) { height: 20px; }
+.sce-tl-label-row span:first-child { font-size: 12px; }
+.sce-tl-label--dim { opacity: 0.4; }
+
+/* Playhead que atraviesa todas las pistas */
+.sce-tl-ph-all {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #C4526A;
+  box-shadow: 0 0 6px rgba(196,82,106,0.65);
+  border-radius: 1px;
+  pointer-events: none;
+  z-index: 10;
+}
+
 /* Track contraído — segmentos end-to-end */
 .sce-tl-track {
-  flex: 1;
   display: flex;
   align-items: stretch;
   position: relative;
-  height: 100%;
+  height: 38px;
   cursor: pointer;
-  padding: 8px 14px;
+  padding: 5px 14px;
   gap: 2px;
   overflow: hidden;
+}
+
+/* Pista de música */
+.sce-tl-music-track {
+  height: 26px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  cursor: pointer;
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.02);
+}
+.sce-tl-music-bar {
+  position: absolute;
+  inset: 2px 14px;
+  background: linear-gradient(90deg, rgba(196,82,106,0.35) 0%, rgba(196,82,106,0.18) 100%);
+  border: 1px solid rgba(196,82,106,0.45);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 8px;
+  overflow: hidden;
+}
+.sce-tl-music-wave {
+  font-size: 8px;
+  color: rgba(196,82,106,0.55);
+  letter-spacing: 1px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 40%;
+}
+.sce-tl-music-name {
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(196,82,106,0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Pista overlay (próximamente) */
+.sce-tl-overlay-track {
+  height: 20px;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border: 1px dashed rgba(255,255,255,0.05);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.sce-tl-track-hint {
+  font-size: 9px;
+  color: rgba(255,255,255,0.12);
+  white-space: nowrap;
 }
 .sce-tl-empty {
   font-size: 11px;
@@ -1859,6 +1958,147 @@
 .sce-sub-pos-btn:hover { border-color: rgba(196,82,106,0.4); color: #C4526A; }
 .sce-sub-pos-btn.active { background: rgba(196,82,106,0.15); border-color: #C4526A; color: #C4526A; }
 
+/* ── Biblioteca de música ─────────────────────────────────────────────── */
+.sce-music-lib {
+  padding: 10px 14px 6px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.sce-music-lib-title {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #5E5A78;
+  margin-bottom: 8px;
+}
+.sce-genre-tabs {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.sce-genre-tab {
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(255,255,255,0.05);
+  color: #6B6880;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.sce-genre-tab.active {
+  background: rgba(196,82,106,0.14);
+  color: #C4526A;
+  border-color: rgba(196,82,106,0.35);
+}
+.sce-genre-tab:hover:not(.active) {
+  background: rgba(255,255,255,0.08);
+  color: #9B97A8;
+}
+.sce-track-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.sce-track-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid transparent;
+  transition: all 0.15s;
+}
+.sce-track-item.selected {
+  background: rgba(196,82,106,0.1);
+  border-color: rgba(196,82,106,0.28);
+}
+.sce-track-item:hover:not(.selected) { background: rgba(255,255,255,0.06); }
+.sce-track-preview-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+  color: #C8C4D4;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.sce-track-preview-btn:hover { background: rgba(255,255,255,0.14); }
+.sce-track-name {
+  flex: 1;
+  font-size: 11px;
+  color: #B8B4C8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sce-track-select-btn {
+  padding: 3px 9px;
+  border-radius: 10px;
+  font-size: 9px;
+  font-weight: 700;
+  background: rgba(255,255,255,0.07);
+  color: #6B6880;
+  border: 1px solid rgba(255,255,255,0.09);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.sce-track-select-btn.active {
+  background: rgba(196,82,106,0.18);
+  color: #C4526A;
+  border-color: rgba(196,82,106,0.4);
+}
+.sce-track-select-btn:hover:not(.active):not(:disabled) {
+  background: rgba(255,255,255,0.12);
+  color: #C8C4D4;
+}
+.sce-track-select-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* Upload propio */
+.sce-music-upload-section {
+  padding: 8px 14px 12px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+.sce-music-upload-label {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #5E5A78;
+  margin-bottom: 6px;
+}
+.sce-music-drop-mini {
+  height: 34px;
+  border-radius: 7px;
+  border: 1px dashed rgba(255,255,255,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 10px;
+  color: #5E5A78;
+  transition: all 0.15s;
+  user-select: none;
+}
+.sce-music-drop-mini:hover,
+.sce-music-drop-mini.over {
+  border-color: rgba(196,82,106,0.4);
+  background: rgba(196,82,106,0.06);
+  color: #C4526A;
+}
+
 /* ── Responsive del editor (pantallas pequeñas) ────────────────────────── */
 
 /* 100dvh evita el bug del address bar en iOS Safari (100vh incluye la barra) */
@@ -1884,15 +2124,19 @@
     max-height: 46vh;
     overflow-y: auto;
   }
-  /* Timeline simplificado en mobile (scroll horizontal propio) */
+  /* Timeline simplificado en mobile */
   .sce-timeline {
     display: block;
-    max-height: 90px;
+    max-height: 105px;
     overflow: hidden;
   }
-  .sce-tl-mgmt { display: none; }  /* ocultar sidebar de clips en mobile */
-  .sce-tl-scroll-wrap { height: 60px; }
-  .sce-tl-track { height: 60px; padding: 6px 10px; }
+  .sce-tl-mgmt { display: none; }
+  .sce-tl-labels { width: 44px; }
+  .sce-tl-label-row span:last-child { display: none; }
+  .sce-tl-scroll-wrap { min-height: 88px; }
+  .sce-tl-track { height: 36px; padding: 5px 8px; }
+  .sce-tl-music-track { height: 24px; }
+  .sce-tl-overlay-track { display: none; }
   /* Canvas preview ocupa el máximo en mobile */
   .sce-canvas-wrap {
     flex: 1;
