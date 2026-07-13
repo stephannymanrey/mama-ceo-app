@@ -59,6 +59,19 @@ const MUSIC_GENRES = [
   { id: "enfocada",     label: "🎯 Enfocada" },
 ];
 
+const CARD_BG_OPTIONS = [
+  { idx: 0, bg: "#C4526A", text: "#FFFFFF", kw: "#FFE44D" },
+  { idx: 1, bg: "#4A90BF", text: "#FFFFFF", kw: "#FFE44D" },
+  { idx: 2, bg: "#1a1a2e", text: "#FFFFFF", kw: "#C4526A" },
+  { idx: 3, bg: "#FFE44D", text: "#1a1a2e", kw: "#C4526A" },
+  { idx: 4, bg: "#5FB87A", text: "#1a1a2e", kw: "#FFFFFF" },
+];
+const CARD_ANIMS = [
+  { id: "slideUp",    label: "↑ Subir"   },
+  { id: "fade",       label: "◐ Fade"    },
+  { id: "typewriter", label: "⌨ Máquina" },
+];
+
 // Presets de edición automática
 const VIDEO_PRESETS = [
   { id: "natural",  icon: "🌿", label: "Natural",  values: { brightness: 8,  contrast: 5,  saturation: 5,   skin: 1, temperature: 0   } },
@@ -488,6 +501,87 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
   ctx.restore();
 }
 
+function drawCards(ctx, W, H, effectiveTime, cards) {
+  if (!cards?.length) return;
+  for (const card of cards) {
+    const elapsed = effectiveTime - card.startTime;
+    if (elapsed < 0 || elapsed > card.duration + 0.3) continue;
+    const alpha = Math.min(Math.min(1, elapsed / 0.25), Math.min(1, (card.duration - elapsed + 0.25) / 0.25));
+    if (alpha <= 0) continue;
+
+    const colors = CARD_BG_OPTIONS[card.colorIdx ?? 0] ?? CARD_BG_OPTIONS[0];
+    const font = card.font || "Poppins";
+    const fs = Math.max(18, Math.floor(H / 11));
+    const lh = Math.round(fs * 1.45);
+    const padX = 22, padY = 14, borderR = 14;
+    const maxW = W * 0.86;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.font = `700 ${fs}px "${font}", sans-serif`;
+    ctx.textBaseline = "middle";
+
+    let slideY = 0;
+    if (card.animation === "slideUp") {
+      const ease = 1 - (1 - Math.min(1, elapsed / 0.35)) ** 3;
+      slideY = (1 - ease) * 50;
+    }
+
+    let visibleText = card.text || "";
+    if (card.animation === "typewriter") visibleText = visibleText.slice(0, Math.floor(elapsed * 28));
+
+    const words = visibleText.split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = [], lineW = 0;
+    for (const w of words) {
+      const ww = ctx.measureText(w + " ").width;
+      if (lineW + ww > maxW && line.length) { lines.push([...line]); line = [w]; lineW = ww; }
+      else { line.push(w); lineW += ww; }
+    }
+    if (line.length) lines.push(line);
+    if (!lines.length) { ctx.restore(); continue; }
+
+    const maxLineW = Math.max(...lines.map(l => ctx.measureText(l.join(" ")).width));
+    const cardW = Math.min(maxW, maxLineW) + padX * 2;
+    const totalH = lines.length * lh + padY * 2;
+    const yCenter = card.position === "top" ? H * 0.18 : card.position === "center" ? H * 0.50 : H * 0.78;
+    const cardX = (W - cardW) / 2;
+    const cardY = yCenter - totalH / 2 + slideY;
+
+    ctx.fillStyle = colors.bg;
+    ctx.beginPath();
+    ctx.roundRect(cardX, cardY, cardW, totalH, borderR);
+    ctx.fill();
+
+    const kw = (card.keyword || "").toLowerCase().trim();
+    lines.forEach((lineWords, li) => {
+      const lineW2 = ctx.measureText(lineWords.join(" ")).width;
+      let tx = cardX + (cardW - lineW2) / 2;
+      const ty = cardY + padY + li * lh + lh / 2;
+      for (let wi = 0; wi < lineWords.length; wi++) {
+        const word = lineWords[wi];
+        const clean = word.toLowerCase().replace(/[¿?¡!.,;:]/g, "");
+        const isKw = kw && clean === kw;
+        const wordText = word + (wi < lineWords.length - 1 ? " " : "");
+        const ww = ctx.measureText(wordText).width;
+        if (isKw) {
+          const kwPad = 4;
+          ctx.fillStyle = colors.kw;
+          ctx.beginPath();
+          ctx.roundRect(tx - kwPad, ty - fs / 2 - kwPad + 2, ctx.measureText(word).width + kwPad * 2, fs + kwPad * 2 - 4, 5);
+          ctx.fill();
+          ctx.fillStyle = colors.bg;
+        } else {
+          ctx.fillStyle = colors.text;
+        }
+        ctx.fillText(wordText, tx, ty);
+        tx += ww;
+      }
+    });
+    ctx.restore();
+  }
+}
+
 async function generateThumbnail(file) {
   return new Promise(resolve => {
     const v = document.createElement("video");
@@ -614,7 +708,7 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
 }
 
 // ── Grabación multi-clip ──────────────────────────────────────────────────
-async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape", effects = {}, clipTransitions = {}, music = {}) {
+async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape", effects = {}, clipTransitions = {}, music = {}, cards = []) {
   const firstVid = document.createElement("video");
   const firstUrl = URL.createObjectURL(clips[0].file);
   firstVid.src = firstUrl;
@@ -716,6 +810,7 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
               ctx.restore();
             }
             drawSubtitle(ctx, outW, outH, videoEl.currentTime, clip.segments, subtitleStyle);
+            drawCards(ctx, outW, outH, elapsed + videoEl.currentTime, cards);
           }
           animId = requestAnimationFrame(drawLoop);
         };
@@ -1063,6 +1158,94 @@ function MusicPanel({ music, onMusicChange }) {
         <input ref={fileRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
           style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
       </div>
+    </div>
+  );
+}
+
+// ── CardsPanel ────────────────────────────────────────────────────────────
+function CardsPanel({ cards, onCardsChange, currentTime }) {
+  const addCard = () => {
+    onCardsChange([...cards, {
+      id: uid(), text: "Escribe tu punto clave aquí", keyword: "",
+      startTime: Math.round((currentTime ?? 0) * 10) / 10,
+      duration: 3, colorIdx: 0, font: "Poppins", position: "bottom", animation: "slideUp",
+    }]);
+  };
+  const update = (id, patch) => onCardsChange(cards.map(c => c.id === id ? { ...c, ...patch } : c));
+  const remove = (id) => onCardsChange(cards.filter(c => c.id !== id));
+
+  return (
+    <div className="sce-cards-panel">
+      <button className="sce-add-card-btn" onClick={addCard}>＋ Nueva tarjeta</button>
+      {cards.length === 0 && (
+        <div className="sce-cards-empty">
+          <p>Crea tarjetas animadas con tus puntos clave</p>
+          <p className="sce-cards-hint">Aparecen sobre el video con transición profesional</p>
+        </div>
+      )}
+      {cards.map((card, idx) => (
+        <div key={card.id} className="sce-card-item">
+          <div className="sce-card-item-header">
+            <span>🃏 Tarjeta {idx + 1} · {fmtTime(card.startTime)}</span>
+            <button className="sce-card-remove" onClick={() => remove(card.id)}>✕</button>
+          </div>
+          <div className="sce-card-field">
+            <label className="sce-card-label">Texto</label>
+            <textarea className="sce-card-textarea" rows={2} value={card.text}
+              onChange={e => update(card.id, { text: e.target.value })} />
+          </div>
+          <div className="sce-card-field">
+            <label className="sce-card-label">Palabra clave <span className="sce-card-label--hint">(se resalta)</span></label>
+            <input className="sce-card-input" value={card.keyword} placeholder="ej: 3 pasos"
+              onChange={e => update(card.id, { keyword: e.target.value })} />
+          </div>
+          <div className="sce-card-row">
+            <div className="sce-card-field" style={{ flex: 1 }}>
+              <label className="sce-card-label">Inicio (s)</label>
+              <div className="sce-card-time-row">
+                <input type="number" className="sce-card-input-num" step="0.1" min="0"
+                  value={card.startTime.toFixed(1)} onChange={e => update(card.id, { startTime: +e.target.value })} />
+                <button className="sce-card-now-btn" title="Usar posición actual del video"
+                  onClick={() => update(card.id, { startTime: Math.round((currentTime ?? 0) * 10) / 10 })}>⊙</button>
+              </div>
+            </div>
+            <div className="sce-card-field" style={{ flex: 1 }}>
+              <label className="sce-card-label">Duración (s)</label>
+              <input type="number" className="sce-card-input-num" step="0.5" min="0.5" max="10"
+                value={card.duration} onChange={e => update(card.id, { duration: +e.target.value })} />
+            </div>
+          </div>
+          <div className="sce-card-field">
+            <label className="sce-card-label">Color</label>
+            <div className="sce-card-colors">
+              {CARD_BG_OPTIONS.map(opt => (
+                <button key={opt.idx}
+                  className={`sce-card-color-dot${card.colorIdx === opt.idx ? " active" : ""}`}
+                  style={{ "--dot-bg": opt.bg }}
+                  onClick={() => update(card.id, { colorIdx: opt.idx })} />
+              ))}
+            </div>
+          </div>
+          <div className="sce-card-field">
+            <label className="sce-card-label">Animación</label>
+            <div className="sce-card-pills">
+              {CARD_ANIMS.map(a => (
+                <button key={a.id} className={`sce-card-pill${card.animation === a.id ? " active" : ""}`}
+                  onClick={() => update(card.id, { animation: a.id })}>{a.label}</button>
+              ))}
+            </div>
+          </div>
+          <div className="sce-card-field">
+            <label className="sce-card-label">Posición</label>
+            <div className="sce-card-pills">
+              {[["top","↑ Arriba"],["center","· Centro"],["bottom","↓ Abajo"]].map(([p, l]) => (
+                <button key={p} className={`sce-card-pill${card.position === p ? " active" : ""}`}
+                  onClick={() => update(card.id, { position: p })}>{l}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -1560,6 +1743,9 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const [music, setMusic] = useState({ url: null, name: "", volume: 0.35, duck: true, loop: true, fromLibrary: false });
   const musicRef = useRef({ url: null, name: "", volume: 0.35, duck: true, loop: true, fromLibrary: false });
   useEffect(() => { musicRef.current = music; }, [music]);
+  const [cards, setCards] = useState([]);
+  const cardsRef = useRef([]);
+  useEffect(() => { cardsRef.current = cards; }, [cards]);
 
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
   useEffect(() => { effectsRef.current = effects; }, [effects]);
@@ -1784,7 +1970,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   }, [effectiveTime]);
 
   // Dibujar un frame estático (seek) — aplica efectos en modo blocking
-  const drawFrame = useCallback(async (clip, lt) => {
+  const drawFrame = useCallback(async (clip, lt, et = 0) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -1802,6 +1988,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
           await applyFrame(ctx, vid, dX, dY, dW, dH, W, H, true);
           drawSubtitle(ctx, W, H, lt, clip.segments, subtitleStyle);
+          drawCards(ctx, W, H, et, cardsRef.current);
           URL.revokeObjectURL(url); resolve();
         };
       };
@@ -1816,7 +2003,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     if (!native) return;
     setSeeking(true);
     setEffectiveTime(clamped);
-    await drawFrame(native.clip, native.localTime);
+    await drawFrame(native.clip, native.localTime, clamped);
     setSeeking(false);
   }, [keptSegs, totalKept, drawFrame]);
 
@@ -1912,6 +2099,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           const scale = Math.min(W / vW, H / vH);
           const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
           let animId;
+          let currentEt = etOffset;
           const draw = () => {
             const efx = effectsRef.current;
             if (efx.autoZoom) {
@@ -1919,6 +2107,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             }
             applyFrame(ctx, vid, dX, dY, dW, dH, W, H, false); // no-await, non-blocking
             drawSubtitle(ctx, W, H, vid.currentTime, clip.segments, subtitleStyle);
+            drawCards(ctx, W, H, currentEt, cardsRef.current);
             animId = requestAnimationFrame(draw);
           };
           animId = requestAnimationFrame(draw);
@@ -1937,6 +2126,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
                 if (!playRef.current) { clearInterval(tick); vid.pause(); segDone(); return; }
                 const ct = vid.currentTime;
                 setEffectiveTime(segEtStart + Math.max(0, ct - seg.start));
+                currentEt = segEtStart + Math.max(0, ct - seg.start);
                 if (ct >= seg.end - 0.04 || vid.ended) {
                   clearInterval(tick); vid.pause(); segDone();
                 }
@@ -2000,19 +2190,6 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
               {analyzedClips.length} clip{analyzedClips.length !== 1 ? "s" : ""} · {fmtTime(totalKept)} final
             </span>
           )}
-          {/* Selector de sensibilidad de silencios */}
-          {onReanalyze && (
-            <div className="sce-sens-group">
-              {[["conservadora","Suave"],["normal","Normal"],["agresiva","Agresivo"]].map(([key, label]) => (
-                <button key={key}
-                  className={`sce-sens-btn${sensitivity === key ? " active" : ""}`}
-                  title={key === "conservadora" ? "Corta solo pausas largas (+0.8s)" : key === "normal" ? "Corta pausas medianas (+0.5s)" : "Corta pausas cortas (+0.3s)"}
-                  onClick={() => sensitivity !== key && onReanalyze(key)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Selector de formato de salida */}
@@ -2031,7 +2208,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           {onExtractReels && (
             <button className="sce-reel-pill" onClick={onExtractReels} title="Extractor de Reels">🎯 Reels</button>
           )}
-          <button className="sc-btn-primary sc-btn-sm" onClick={() => onExport(effects, clipTransitions, music)}>✂️ Exportar</button>
+          <button className="sc-btn-primary sc-btn-sm" onClick={() => onExport(effects, clipTransitions, music, cards)}>✂️ Exportar</button>
         </div>
       </div>
 
@@ -2091,6 +2268,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           <div className="sce-tab-bar">
             <button className={`sce-tab${tab === "subs"  ? " active" : ""}`} onClick={() => setTab("subs")}>💬 Subs</button>
             <button className={`sce-tab${tab === "music" ? " active" : ""}`} onClick={() => setTab("music")}>🎵 Música</button>
+            <button className={`sce-tab${tab === "cards" ? " active" : ""}`} onClick={() => setTab("cards")}>🃏 Tarjetas</button>
             <button className={`sce-tab${tab === "trans" ? " active" : ""}`} onClick={() => setTab("trans")}>✂️ Cortes</button>
             <button className={`sce-tab${tab === "fx"    ? " active" : ""}`} onClick={() => setTab("fx")}>✨ Efectos</button>
           </div>
@@ -2106,6 +2284,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
               />
             : tab === "music"
             ? <MusicPanel music={music} onMusicChange={setMusic} />
+            : tab === "cards"
+            ? <CardsPanel cards={cards} onCardsChange={setCards} currentTime={effectiveTime} />
             : tab === "trans"
             ? <TransitionsPanel effects={effects} onEffectChange={setEffects} />
             : <EffectsPanel
@@ -2432,13 +2612,13 @@ export default function SilenceCutter() {
   const removeClip = id => setClips(prev => prev.filter(c => c.id !== id));
   const onDrop = (e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); };
 
-  const exportar = async (effects = {}, clipTransitions = {}, music = {}) => {
+  const exportar = async (effects = {}, clipTransitions = {}, music = {}, cards = []) => {
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) { setError("Analiza los clips primero."); return; }
     abortRef.current = false;
     setFase("cutting"); setProgress(0); setError("");
     try {
-      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format, effects, clipTransitions, music);
+      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format, effects, clipTransitions, music, cards);
       const totalOriginal = ready.reduce((t, c) => t + (c.duration || 0), 0);
       const totalCut = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0), 0);
       const totalCuts = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).length, 0);
