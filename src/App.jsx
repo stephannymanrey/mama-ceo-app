@@ -3839,6 +3839,17 @@ export default function App() {
                     <span className="db-today-appt-name">{a.title}</span>
                   </div>
                 )) : <p className="db-today-nil">Sin citas hoy</p>}
+                {userMode !== "emprendedora" && kidsSchedule[todayDay]?.act && (
+                  <div className="db-today-task-row" style={{marginTop:"8px",alignItems:"flex-start"}}>
+                    <span style={{fontSize:"16px",lineHeight:1,marginTop:"2px"}}>🎒</span>
+                    <div style={{minWidth:0}}>
+                      <span className="db-today-task-title">{kidsSchedule[todayDay].act}</span>
+                      {kidsSchedule[todayDay].time && (
+                        <span style={{display:"block",fontSize:"11px",color:"var(--muted)",marginTop:"2px"}}>{kidsSchedule[todayDay].time}</span>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Hogar */}
@@ -3860,6 +3871,21 @@ export default function App() {
                         </div>
                       ))
                   }
+                  {homeRoutines[todayDay] && (
+                    <div className="db-today-task-row" style={{marginTop:"8px"}}>
+                      <span style={{fontSize:"15px",lineHeight:1}}>🧹</span>
+                      <span className="db-today-task-title">{homeRoutines[todayDay]}</span>
+                    </div>
+                  )}
+                  {allUpcomingPayments.filter(p => p.dayOfMonth === _currentDay).map((p, i) => (
+                    <div key={i} className="db-today-task-row" style={{marginTop: i === 0 ? "8px" : "4px"}}>
+                      <span style={{fontSize:"14px",lineHeight:1}}>💳</span>
+                      <div style={{minWidth:0,flex:1}}>
+                        <span className="db-today-task-title">{p.name}</span>
+                        <span style={{display:"block",fontSize:"11px",color:"var(--muted)",marginTop:"2px"}}>{money.format(p.amount)}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -3882,35 +3908,6 @@ export default function App() {
                         <button type="button" className="db-today-see-more" onClick={() => setActiveView("business")}>Ver negocio →</button>
                       </>
                   }
-                </div>
-              )}
-
-              {/* Hijos hoy — aparece si hay actividad configurada para este día */}
-              {userMode !== "emprendedora" && kidsSchedule[todayDay]?.act && (
-                <div className="db-today-col">
-                  <p className="db-today-label">🎒 Hijos hoy</p>
-                  <div className="db-today-task-row" style={{alignItems:"flex-start"}}>
-                    <span style={{fontSize:"18px",lineHeight:1,marginTop:"1px"}}>🎒</span>
-                    <div style={{minWidth:0}}>
-                      <span className="db-today-task-title">{kidsSchedule[todayDay].act}</span>
-                      {kidsSchedule[todayDay].time && (
-                        <span style={{display:"block",fontSize:"11px",color:"var(--muted)",marginTop:"2px"}}>{kidsSchedule[todayDay].time}</span>
-                      )}
-                    </div>
-                  </div>
-                  <button type="button" className="db-today-see-more" onClick={() => { setActiveView("home"); setHomeTab(1); }}>Ver semana →</button>
-                </div>
-              )}
-
-              {/* Rutina del hogar hoy */}
-              {userMode !== "emprendedora" && homeRoutines[todayDay] && (
-                <div className="db-today-col">
-                  <p className="db-today-label">🧹 Rutina hoy</p>
-                  <div className="db-today-task-row">
-                    <span style={{fontSize:"16px",lineHeight:1}}>🧹</span>
-                    <span className="db-today-task-title">{homeRoutines[todayDay]}</span>
-                  </div>
-                  <button type="button" className="db-today-see-more" onClick={() => { setActiveView("home"); setHomeTab(2); }}>Ver hogar →</button>
                 </div>
               )}
 
