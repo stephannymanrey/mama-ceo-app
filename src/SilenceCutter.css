@@ -1256,6 +1256,20 @@
   line-height: 1.5;
   max-width: 220px;
 }
+.sce-trans-error {
+  margin: 0 12px 10px;
+  padding: 10px 12px;
+  background: rgba(196,82,106,0.12);
+  border: 1px solid rgba(196,82,106,0.25);
+  border-radius: 8px;
+}
+.sce-trans-error p { margin: 0 0 4px; font-size: 12px; color: #e8798e; }
+.sce-trans-error-hint { color: rgba(255,255,255,0.45) !important; font-size: 11px !important; }
+.sce-trans-retry-btn {
+  background: none; border: none;
+  color: #C4526A; font-size: 11px;
+  cursor: pointer; text-decoration: underline; padding: 0;
+}
 .sce-trans-hint {
   font-size: 10px;
   color: #3E3C4E;
@@ -2692,22 +2706,108 @@
 .sce-cards-hint { font-size: 11px !important; color: rgba(255,255,255,0.3) !important; }
 
 .sce-card-item {
-  margin: 0 10px 10px;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  margin: 0 10px 8px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
   border-radius: 12px;
-  padding: 10px 12px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.sce-card-item.open {
+  border-color: rgba(196,82,106,0.35);
 }
 
-.sce-card-item-header {
+/* Fila colapsada */
+.sce-card-collapsed {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  gap: 9px;
+  padding: 9px 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.sce-card-collapsed:hover { background: rgba(255,255,255,0.04); }
+
+.sce-card-color-badge {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.sce-card-collapsed-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sce-card-collapsed-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sce-card-collapsed-meta {
+  font-size: 10px;
+  color: rgba(255,255,255,0.35);
+}
+.sce-card-chevron {
+  font-size: 10px;
+  color: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+
+/* Editor expandido */
+.sce-card-editor {
+  padding: 0 12px 12px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
+
+/* Preview visual */
+.sce-card-preview-wrap {
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin: 10px 0 12px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.sce-card-preview-text {
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
+  margin: 0;
+  line-height: 1.5;
+  font-family: "Poppins", sans-serif;
+}
+
+/* Dos columnas para animación + posición */
+.sce-card-2col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+/* Botón Listo */
+.sce-card-done-btn {
+  display: block;
+  width: 100%;
+  padding: 7px;
+  background: rgba(196,82,106,0.15);
+  border: 1px solid rgba(196,82,106,0.3);
+  border-radius: 8px;
+  color: #C4526A;
   font-size: 12px;
   font-weight: 600;
-  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  transition: all 0.15s;
+  margin-top: 4px;
 }
+.sce-card-done-btn:hover { background: rgba(196,82,106,0.25); }
 
 .sce-card-remove {
   background: transparent;

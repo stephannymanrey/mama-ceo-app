@@ -1164,88 +1164,135 @@ function MusicPanel({ music, onMusicChange }) {
 
 // ── CardsPanel ────────────────────────────────────────────────────────────
 function CardsPanel({ cards, onCardsChange, currentTime }) {
+  const [expandedId, setExpandedId] = useState(null);
+
   const addCard = () => {
-    onCardsChange([...cards, {
+    const c = {
       id: uid(), text: "Escribe tu punto clave aquí", keyword: "",
       startTime: Math.round((currentTime ?? 0) * 10) / 10,
       duration: 3, colorIdx: 0, font: "Poppins", position: "bottom", animation: "slideUp",
-    }]);
+    };
+    onCardsChange([...cards, c]);
+    setExpandedId(c.id);
   };
   const update = (id, patch) => onCardsChange(cards.map(c => c.id === id ? { ...c, ...patch } : c));
-  const remove = (id) => onCardsChange(cards.filter(c => c.id !== id));
+  const remove = (id) => { onCardsChange(cards.filter(c => c.id !== id)); if (expandedId === id) setExpandedId(null); };
+  const toggle = (id) => setExpandedId(prev => prev === id ? null : id);
 
   return (
     <div className="sce-cards-panel">
       <button className="sce-add-card-btn" onClick={addCard}>＋ Nueva tarjeta</button>
+
       {cards.length === 0 && (
         <div className="sce-cards-empty">
           <p>Crea tarjetas animadas con tus puntos clave</p>
           <p className="sce-cards-hint">Aparecen sobre el video con transición profesional</p>
         </div>
       )}
-      {cards.map((card, idx) => (
-        <div key={card.id} className="sce-card-item">
-          <div className="sce-card-item-header">
-            <span>🃏 Tarjeta {idx + 1} · {fmtTime(card.startTime)}</span>
-            <button className="sce-card-remove" onClick={() => remove(card.id)}>✕</button>
-          </div>
-          <div className="sce-card-field">
-            <label className="sce-card-label">Texto</label>
-            <textarea className="sce-card-textarea" rows={2} value={card.text}
-              onChange={e => update(card.id, { text: e.target.value })} />
-          </div>
-          <div className="sce-card-field">
-            <label className="sce-card-label">Palabra clave <span className="sce-card-label--hint">(se resalta)</span></label>
-            <input className="sce-card-input" value={card.keyword} placeholder="ej: 3 pasos"
-              onChange={e => update(card.id, { keyword: e.target.value })} />
-          </div>
-          <div className="sce-card-row">
-            <div className="sce-card-field" style={{ flex: 1 }}>
-              <label className="sce-card-label">Inicio (s)</label>
-              <div className="sce-card-time-row">
-                <input type="number" className="sce-card-input-num" step="0.1" min="0"
-                  value={card.startTime.toFixed(1)} onChange={e => update(card.id, { startTime: +e.target.value })} />
-                <button className="sce-card-now-btn" title="Usar posición actual del video"
-                  onClick={() => update(card.id, { startTime: Math.round((currentTime ?? 0) * 10) / 10 })}>⊙</button>
+
+      {cards.map((card) => {
+        const colors = CARD_BG_OPTIONS[card.colorIdx ?? 0] ?? CARD_BG_OPTIONS[0];
+        const isOpen = expandedId === card.id;
+        const kw = (card.keyword || "").toLowerCase().trim();
+
+        return (
+          <div key={card.id} className={`sce-card-item${isOpen ? " open" : ""}`}>
+
+            {/* Fila colapsada — siempre visible */}
+            <div className="sce-card-collapsed" onClick={() => toggle(card.id)}>
+              <div className="sce-card-color-badge" style={{ background: colors.bg }} />
+              <div className="sce-card-collapsed-info">
+                <span className="sce-card-collapsed-text">{card.text.slice(0, 30)}{card.text.length > 30 ? "…" : ""}</span>
+                <span className="sce-card-collapsed-meta">{fmtTime(card.startTime)} · {card.duration}s · {CARD_ANIMS.find(a => a.id === card.animation)?.label}</span>
               </div>
+              <span className="sce-card-chevron">{isOpen ? "▲" : "▼"}</span>
+              <button className="sce-card-remove" onClick={e => { e.stopPropagation(); remove(card.id); }}>✕</button>
             </div>
-            <div className="sce-card-field" style={{ flex: 1 }}>
-              <label className="sce-card-label">Duración (s)</label>
-              <input type="number" className="sce-card-input-num" step="0.5" min="0.5" max="10"
-                value={card.duration} onChange={e => update(card.id, { duration: +e.target.value })} />
-            </div>
+
+            {/* Editor expandido */}
+            {isOpen && (
+              <div className="sce-card-editor">
+
+                {/* Preview visual */}
+                <div className="sce-card-preview-wrap" style={{ background: colors.bg }}>
+                  <p className="sce-card-preview-text" style={{ color: colors.text }}>
+                    {(card.text || "Texto de la tarjeta").split(/\s+/).map((word, i) => {
+                      const clean = word.toLowerCase().replace(/[¿?¡!.,;:]/g, "");
+                      return kw && clean === kw
+                        ? <mark key={i} style={{ background: colors.kw, color: colors.bg, borderRadius: 3, padding: "0 3px" }}>{word}{" "}</mark>
+                        : <span key={i}>{word}{" "}</span>;
+                    })}
+                  </p>
+                </div>
+
+                <div className="sce-card-field">
+                  <label className="sce-card-label">Texto</label>
+                  <textarea className="sce-card-textarea" rows={2} value={card.text}
+                    onChange={e => update(card.id, { text: e.target.value })} />
+                </div>
+
+                <div className="sce-card-field">
+                  <label className="sce-card-label">Palabra clave <span className="sce-card-label--hint">(se resalta en el preview)</span></label>
+                  <input className="sce-card-input" value={card.keyword} placeholder="ej: 3 pasos"
+                    onChange={e => update(card.id, { keyword: e.target.value })} />
+                </div>
+
+                <div className="sce-card-row">
+                  <div className="sce-card-field" style={{ flex: 1 }}>
+                    <label className="sce-card-label">Inicio</label>
+                    <div className="sce-card-time-row">
+                      <input type="number" className="sce-card-input-num" step="0.1" min="0"
+                        value={card.startTime.toFixed(1)} onChange={e => update(card.id, { startTime: +e.target.value })} />
+                      <button className="sce-card-now-btn" title="Capturar tiempo actual"
+                        onClick={() => update(card.id, { startTime: Math.round((currentTime ?? 0) * 10) / 10 })}>⊙</button>
+                    </div>
+                  </div>
+                  <div className="sce-card-field" style={{ flex: 1 }}>
+                    <label className="sce-card-label">Duración (s)</label>
+                    <input type="number" className="sce-card-input-num" step="0.5" min="0.5" max="10"
+                      value={card.duration} onChange={e => update(card.id, { duration: +e.target.value })} />
+                  </div>
+                </div>
+
+                <div className="sce-card-field">
+                  <label className="sce-card-label">Color</label>
+                  <div className="sce-card-colors">
+                    {CARD_BG_OPTIONS.map(opt => (
+                      <button key={opt.idx}
+                        className={`sce-card-color-dot${card.colorIdx === opt.idx ? " active" : ""}`}
+                        style={{ "--dot-bg": opt.bg }}
+                        onClick={() => update(card.id, { colorIdx: opt.idx })} />
+                    ))}
+                  </div>
+                </div>
+
+                <div className="sce-card-2col">
+                  <div className="sce-card-field">
+                    <label className="sce-card-label">Animación</label>
+                    <div className="sce-card-pills">
+                      {CARD_ANIMS.map(a => (
+                        <button key={a.id} className={`sce-card-pill${card.animation === a.id ? " active" : ""}`}
+                          onClick={() => update(card.id, { animation: a.id })}>{a.label}</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="sce-card-field">
+                    <label className="sce-card-label">Posición</label>
+                    <div className="sce-card-pills">
+                      {[["top","↑"],["center","·"],["bottom","↓"]].map(([p, l]) => (
+                        <button key={p} className={`sce-card-pill${card.position === p ? " active" : ""}`}
+                          onClick={() => update(card.id, { position: p })}>{l}</button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <button className="sce-card-done-btn" onClick={() => setExpandedId(null)}>✓ Listo</button>
+              </div>
+            )}
           </div>
-          <div className="sce-card-field">
-            <label className="sce-card-label">Color</label>
-            <div className="sce-card-colors">
-              {CARD_BG_OPTIONS.map(opt => (
-                <button key={opt.idx}
-                  className={`sce-card-color-dot${card.colorIdx === opt.idx ? " active" : ""}`}
-                  style={{ "--dot-bg": opt.bg }}
-                  onClick={() => update(card.id, { colorIdx: opt.idx })} />
-              ))}
-            </div>
-          </div>
-          <div className="sce-card-field">
-            <label className="sce-card-label">Animación</label>
-            <div className="sce-card-pills">
-              {CARD_ANIMS.map(a => (
-                <button key={a.id} className={`sce-card-pill${card.animation === a.id ? " active" : ""}`}
-                  onClick={() => update(card.id, { animation: a.id })}>{a.label}</button>
-              ))}
-            </div>
-          </div>
-          <div className="sce-card-field">
-            <label className="sce-card-label">Posición</label>
-            <div className="sce-card-pills">
-              {[["top","↑ Arriba"],["center","· Centro"],["bottom","↓ Abajo"]].map(([p, l]) => (
-                <button key={p} className={`sce-card-pill${card.position === p ? " active" : ""}`}
-                  onClick={() => update(card.id, { position: p })}>{l}</button>
-              ))}
-            </div>
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -1254,6 +1301,7 @@ function CardsPanel({ cards, onCardsChange, currentTime }) {
 function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyle, onStyleChange,
     onTranscribe, onSeekInClip, listRef, transcribing, transcribeMsg }) {
   const hasSubtitles = clips.some(c => c.transcribed && c.segments?.length);
+  const failedClips  = clips.filter(c => c.transcribed && c.transcribeError);
   const handleEdit = (clip, line, newText) => {
     const words = newText.trim().split(/\s+/);
     const dur   = line.end - line.start;
@@ -1322,6 +1370,12 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+          {failedClips.length > 0 && (
+            <div className="sce-trans-error">
+              <p>⚠ No se pudo transcribir {failedClips.length > 1 ? `${failedClips.length} clips` : `"${failedClips[0].name.replace(/\.[^/.]+$/, "")}"`}</p>
+              <p className="sce-trans-error-hint">Asegúrate de usar Chrome en escritorio. El video debe tener audio. <button className="sce-trans-retry-btn" onClick={onTranscribe}>Reintentar</button></p>
             </div>
           )}
           <div className="sce-seg-list" ref={listRef}>
@@ -2028,13 +2082,17 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         const segments = await transcribeClip(clip.file, clip.silences, info => {
           if (info.status === "downloading") {
             const p = info.progress ? Math.round(info.progress) : 0;
-            setTranscribeMsg(`Descargando modelo Whisper... ${p}%`);
+            setTranscribeMsg(`Descargando modelo Whisper... ${p}% (solo la primera vez)`);
+          } else if (info.status === "loading") {
+            setTranscribeMsg("Cargando modelo en memoria...");
+          } else if (info.status === "ready") {
+            setTranscribeMsg(`Transcribiendo clip ${i + 1}/${ready.length}...`);
           }
         });
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
-      } catch (_) {
+      } catch (err) {
         setClips(prev => prev.map(c => c.id === clip.id
-          ? { ...c, segments: [], transcribed: true, transcribeError: "No se pudo transcribir" } : c));
+          ? { ...c, segments: [], transcribed: true, transcribeError: err?.message || "Error desconocido" } : c));
       }
     }
     setTranscribing(false);
