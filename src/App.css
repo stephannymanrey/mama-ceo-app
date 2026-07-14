@@ -8887,3 +8887,163 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
   .hogar-sched-day { min-height: auto; }
   .hogar-sched-event-del { opacity: 1; }
 }
+
+/* ── MIS FINANZAS PERSONALES ── */
+.pf-kpi-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.pf-kpi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.pf-kpi-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.pf-kpi-val {
+  font-size: clamp(16px, 4vw, 22px);
+  font-weight: 800;
+  line-height: 1.1;
+}
+.pf-kpi-sub {
+  font-size: 10px;
+  color: var(--muted);
+}
+/* Categorías */
+.pf-cat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+@media (max-width: 720px) {
+  .pf-cat-grid { grid-template-columns: repeat(2, 1fr); }
+  .pf-kpi-row  { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 400px) {
+  .pf-kpi-row  { grid-template-columns: 1fr 1fr; }
+}
+.pf-cat-card {
+  padding: 10px 10px 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-strong);
+  cursor: pointer;
+  transition: border-color 0.14s, background 0.14s;
+}
+.pf-cat-card:hover { background: var(--surface); }
+.pf-cat-card--active {
+  background: var(--surface);
+}
+.pf-over-badge {
+  font-size: 9px;
+  font-weight: 800;
+  color: #DC2626;
+  background: rgba(220,38,38,0.10);
+  border-radius: 4px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+/* Pagos */
+.pf-pay-group {
+  margin-bottom: 12px;
+}
+.pf-pay-group-lbl {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--muted);
+  margin: 0 0 6px;
+  padding: 0 2px;
+}
+.pf-pay-group-lbl--urgent { color: #DC2626; }
+.pf-pay-group-lbl--today  { color: #D97706; }
+.pf-pay-group-lbl--paid   { color: var(--green); }
+.pf-pay-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-strong);
+  margin-bottom: 5px;
+}
+.pf-pay-row--urgent {
+  border-color: rgba(220,38,38,0.25);
+  background: rgba(220,38,38,0.03);
+}
+.pf-pay-row--paid {
+  background: rgba(47,159,112,0.03);
+  border-color: rgba(47,159,112,0.15);
+}
+.pf-pay-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.pf-pay-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pf-pay-status {
+  font-size: 11px;
+  font-weight: 600;
+}
+.pf-pay-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.pf-pay-amt {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+.pf-pay-check {
+  padding: 5px 10px;
+  border: 1.5px solid #C4526A;
+  border-radius: 7px;
+  background: none;
+  color: #C4526A;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  transition: all 0.14s;
+}
+.pf-pay-check:hover { background: rgba(196,82,106,0.08); }
+.pf-pay-check--paid {
+  border-color: var(--green);
+  color: var(--green);
+  background: rgba(47,159,112,0.06);
+}
+/* Deudas */
+.pf-debt-card {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-strong);
+}
+@media (max-width: 480px) {
+  .pf-pay-row { flex-wrap: wrap; }
+  .pf-pay-right { width: 100%; justify-content: flex-end; }
+}

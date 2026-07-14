@@ -56,6 +56,17 @@ const HOGAR_SCHED_CATS = [
   { key: "Arreglos",        emoji: "🔧", label: "Arreglos del hogar",    color: "#D97706", bg: "rgba(217,119,6,0.07)"   },
   { key: "Otro",            emoji: "📌", label: "Otro",                  color: "#8A7F7A", bg: "rgba(138,127,122,0.06)" },
 ];
+const BUDGET_CATS_DEFAULT = [
+  { key: "hogar",           emoji: "🏠", label: "Hogar",           color: "#0EA5E9", budget: 0 },
+  { key: "mercado",         emoji: "🛒", label: "Mercado",          color: "#2f9f70", budget: 0 },
+  { key: "familia",         emoji: "👧", label: "Familia / Hijos",  color: "#C4526A", budget: 0 },
+  { key: "transporte",      emoji: "🚗", label: "Transporte",       color: "#D97706", budget: 0 },
+  { key: "salud",           emoji: "💊", label: "Salud",            color: "#DC2626", budget: 0 },
+  { key: "personal",        emoji: "💅", label: "Personal",         color: "#8B5CF6", budget: 0 },
+  { key: "entretenimiento", emoji: "🎉", label: "Entretenimiento",  color: "#F59E0B", budget: 0 },
+  { key: "educacion",       emoji: "📚", label: "Educación",        color: "#059669", budget: 0 },
+  { key: "ahorro",          emoji: "🐷", label: "Ahorro",           color: "#2563EB", budget: 0 },
+];
 const DEFAULT_BIZ_TASK_DURATION = 30;
 const AWAKE_MINUTES_PER_DAY = 16 * 60;
 const homeTaskEstDuration = (t) => t.duration || HOME_CATEGORY_DURATION[t.category] || DEFAULT_HOME_DURATION;
@@ -770,6 +781,15 @@ export default function App() {
   const [schedForm, setSchedForm] = useState({ title: "", type: "Familia", timeStart: "", timeEnd: "", recurrence: "none" });
   const [schedWeekOffset, setSchedWeekOffset] = useState(0);
   const [schedEditId, setSchedEditId] = useState(null);
+  const [budgetCats, setBudgetCats] = useState(() => {
+    const saved = stored?.budgetCats;
+    if (!saved) return BUDGET_CATS_DEFAULT;
+    return BUDGET_CATS_DEFAULT.map(def => { const f = saved.find(s => s.key === def.key); return f ? { ...def, budget: f.budget } : def; });
+  });
+  const [quickExpModal, setQuickExpModal] = useState(false);
+  const [quickExpForm, setQuickExpForm] = useState({ catKey: "mercado", description: "", amount: "" });
+  const [editBudgetCat, setEditBudgetCat] = useState(null);
+  const [editBudgetAmt, setEditBudgetAmt] = useState("");
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [abiMenuPrefs, setAbiMenuPrefs] = useState({ personas: "4", dieta: "normal", pais: "colombia" });
   const [abiMenuSuggestion, setAbiMenuSuggestion] = useState(null);
@@ -1618,6 +1638,7 @@ export default function App() {
       reminderTime,
       reminderEnabled,
       homeIncomeGoal,
+      budgetCats,
       calcReinvPct,
       userPlan: ADMIN_EMAILS.includes(user?.email || profileSetup?.email || "") ? "ceo" : userPlan,
       premiumExpiresAt,
@@ -6145,387 +6166,262 @@ export default function App() {
         )}
 
         {/* ── TAB 3: MIS FINANZAS ── */}
-        {homeTab === 3 && (
-          <div key="tab-3" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"14px"}}>{(()=>{
-            const homePaymentsBudget = homePayments.reduce((s,p)=>s+p.amount,0);
-            const projectedBalance = homeIncomeGoal > 0 ? homeIncomeGoal - homePaymentsBudget : null;
-            const realBalance = homeBudgetTotals.income - homeSpent;
-            const incomeProgress = homeIncomeGoal > 0 ? Math.min(100, Math.round((homeBudgetTotals.income/homeIncomeGoal)*100)) : 0;
-            const spendProgress = homePaymentsBudget > 0 ? Math.min(100, Math.round((homeSpent/homePaymentsBudget)*100)) : 0;
-            const incomeBarColor = incomeProgress >= 75 ? "#1D9E75" : incomeProgress >= 40 ? "#D97706" : "#C4526A";
-            const spendBarColor = spendProgress >= 100 ? "#DC2626" : spendProgress >= 85 ? "#D97706" : "#1D9E75";
-            return (<>
+        {homeTab === 3 && (()=>{
+          const MONTHS_ES = ["enero","febrero","marzo","abril","mayo","junio","julio","agosto","septiembre","octubre","noviembre","diciembre"];
+          const thisMonthKey = _currentMonthKey;
+          const spentByCat = {};
+          homeBudget.forEach(item => {
+            if (item.catKey && item.type !== "Ingreso") {
+              const m = item.dueDate ? item.dueDate.slice(0,7) : new Date(item.createdAt||Date.now()).toISOString().slice(0,7);
+              if (m === thisMonthKey) spentByCat[item.catKey] = (spentByCat[item.catKey]||0) + item.amount;
+            }
+          });
+          const totalBudgeted = budgetCats.reduce((s,c)=>s+c.budget,0);
+          const totalSpentCats = Object.values(spentByCat).reduce((s,v)=>s+v,0);
+          const realIncome = homeBudgetTotals.income;
+          const disponible = realIncome - totalSpentCats;
+          const healthPct = totalBudgeted>0?Math.min(100,Math.round((totalSpentCats/totalBudgeted)*100)):0;
+          const healthColor = healthPct>=100?"#DC2626":healthPct>=80?"#D97706":"#1D9E75";
+          const payRows = homePayments.map(p=>({...p,isPaid:p.lastPaidMonth===thisMonthKey,daysLeft:p.dayOfMonth-_currentDay}))
+            .sort((a,b)=>a.isPaid!==b.isPaid?(a.isPaid?1:-1):a.daysLeft-b.daysLeft);
+          const overdueRows=payRows.filter(p=>!p.isPaid&&p.daysLeft<0);
+          const todayRows=payRows.filter(p=>!p.isPaid&&p.daysLeft===0);
+          const weekRows=payRows.filter(p=>!p.isPaid&&p.daysLeft>0&&p.daysLeft<=7);
+          const laterRows=payRows.filter(p=>!p.isPaid&&p.daysLeft>7);
+          const paidRows=payRows.filter(p=>p.isPaid);
+          const submitQuickExp = () => {
+            const amount=Number(quickExpForm.amount);
+            if(!quickExpForm.description.trim()||!amount) return;
+            setHomeBudget(prev=>[...prev,{id:Date.now(),type:"Gasto variable",catKey:quickExpForm.catKey,description:quickExpForm.description.trim(),amount,dueDate:toInputDate(),createdAt:Date.now()}]);
+            setQuickExpModal(false);
+            setQuickExpForm(f=>({...f,description:"",amount:""}));
+          };
+          const PayRow=({p,urgency})=>(
+            <div className={`pf-pay-row${urgency==="urgent"?" pf-pay-row--urgent":urgency==="paid"?" pf-pay-row--paid":""}`}>
+              <div className="pf-pay-info">
+                <span className="pf-pay-name" style={urgency==="paid"?{opacity:0.55}:{}}>{p.name}</span>
+                <span className="pf-pay-status" style={{color:urgency==="urgent"?"#DC2626":urgency==="soon"?"#D97706":urgency==="paid"?"var(--green)":"var(--muted)"}}>
+                  {p.isPaid?"Pagado ✓":p.daysLeft<0?`Vencido · día ${p.dayOfMonth}`:p.daysLeft===0?"¡Hoy!":p.daysLeft<=7?`En ${p.daysLeft} día${p.daysLeft>1?"s":""}`:`Día ${p.dayOfMonth}`}
+                </span>
+              </div>
+              <div className="pf-pay-right">
+                <span className="pf-pay-amt" style={urgency==="paid"?{opacity:0.55}:{}}>{money.format(p.amount)}</span>
+                <button type="button" className={`pf-pay-check${p.isPaid?" pf-pay-check--paid":""}`}
+                  onClick={()=>setHomePayments(prev=>prev.map(x=>x.id===p.id?{...x,lastPaidMonth:p.isPaid?null:thisMonthKey}:x))}>
+                  {p.isPaid?"✓":"Pagar"}
+                </button>
+                <button type="button" className="fin-del-btn" onClick={()=>setHomePayments(prev=>prev.filter(x=>x.id!==p.id))}>×</button>
+              </div>
+            </div>
+          );
+          return (
+          <div key="tab-3" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"14px"}}>
 
-            {/* ── Presupuesto mensual ── */}
-            <div className="card" style={{padding:"20px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}>
+            {/* ── RESUMEN ── */}
+            <div className="card" style={{padding:"18px 20px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"14px"}}>
                 <div>
-                  <h3 style={{margin:"0 0 2px",fontSize:"15px",fontWeight:700}}>📊 Mi presupuesto mensual</h3>
-                  <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Proyección vs lo que llevas registrado</p>
+                  <h3 style={{margin:"0 0 2px",fontSize:"15px",fontWeight:800}}>Mi mes · {MONTHS_ES[new Date().getMonth()]}</h3>
+                  <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Finanzas personales del hogar</p>
                 </div>
-                <button type="button" onClick={()=>{setHomeGoalInput(homeIncomeGoal?String(homeIncomeGoal):"");setEditingHomeGoal(true);}}
-                  style={{border:"1px solid var(--line)",background:"var(--surface)",borderRadius:"8px",padding:"5px 10px",fontSize:"12px",fontWeight:600,color:"var(--ink)",cursor:"pointer"}}>
-                  {homeIncomeGoal>0?"Editar meta":"+ Definir meta"}
+                <button type="button" onClick={()=>{setHomeBudgetForm(c=>({...c,type:"Ingreso"}));setShowBudgetModal(true);}}
+                  style={{background:"#1D9E75",color:"#fff",border:"none",borderRadius:"8px",padding:"7px 12px",fontSize:"12px",fontWeight:700,cursor:"pointer",flexShrink:0}}>
+                  + Ingreso
                 </button>
               </div>
-
+              <div className="pf-kpi-row">
+                <div className="pf-kpi">
+                  <span className="pf-kpi-label" style={{color:"#1D9E75"}}>↑ Ingresos</span>
+                  <span className="pf-kpi-val" style={{color:"#1D9E75"}}>{money.format(realIncome)}</span>
+                  {homeIncomeGoal>0&&<span className="pf-kpi-sub">meta {money.format(homeIncomeGoal)}</span>}
+                </div>
+                <div className="pf-kpi">
+                  <span className="pf-kpi-label" style={{color:"#C4526A"}}>↓ Gastado</span>
+                  <span className="pf-kpi-val" style={{color:"#C4526A"}}>{money.format(totalSpentCats)}</span>
+                  {totalBudgeted>0&&<span className="pf-kpi-sub">de {money.format(totalBudgeted)}</span>}
+                </div>
+                <div className="pf-kpi">
+                  <span className="pf-kpi-label" style={{color:disponible>=0?"var(--ink)":"#DC2626"}}>Disponible</span>
+                  <span className="pf-kpi-val" style={{color:disponible>=0?"var(--ink)":"#DC2626"}}>{disponible<0&&"−"}{money.format(Math.abs(disponible))}</span>
+                </div>
+              </div>
+              {totalBudgeted>0&&(
+                <div style={{marginTop:"14px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px",marginBottom:"5px"}}>
+                    <span style={{color:"var(--muted)"}}>Presupuesto del mes usado</span>
+                    <span style={{fontWeight:700,color:healthColor}}>{healthPct}%</span>
+                  </div>
+                  <div style={{height:"7px",background:"rgba(0,0,0,0.07)",borderRadius:"4px",overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${healthPct}%`,background:healthColor,borderRadius:"4px",transition:"width 0.5s"}}/>
+                  </div>
+                </div>
+              )}
+              {homeIncomeGoal===0&&!editingHomeGoal&&(
+                <button type="button" onClick={()=>{setHomeGoalInput("");setEditingHomeGoal(true);}}
+                  style={{marginTop:"12px",background:"none",border:"1px dashed var(--line)",borderRadius:"8px",padding:"7px 12px",fontSize:"12px",color:"var(--muted)",cursor:"pointer",width:"100%"}}>
+                  + Definir meta de ingresos del mes
+                </button>
+              )}
               {editingHomeGoal&&(
-                <div style={{marginBottom:"14px",padding:"12px 14px",background:"rgba(196,82,106,0.04)",borderRadius:"10px",border:"1px solid rgba(196,82,106,0.15)"}}>
+                <div style={{marginTop:"12px",padding:"12px 14px",background:"rgba(29,158,117,0.05)",borderRadius:"10px",border:"1px solid rgba(29,158,117,0.2)"}}>
                   <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Meta de ingresos mensual</label>
                   <div style={{display:"flex",gap:"8px"}}>
                     <MoneyAmountInput placeholder="$ 0" value={homeGoalInput} onChange={v=>setHomeGoalInput(v)} style={{flex:1}}/>
                     <button type="button" onClick={()=>{setHomeIncomeGoal(Number(homeGoalInput)||0);setEditingHomeGoal(false);}}
-                      style={{padding:"10px 16px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontWeight:700,fontSize:"13px"}}>Guardar</button>
+                      style={{padding:"10px 16px",background:"#1D9E75",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontWeight:700,fontSize:"13px"}}>OK</button>
                     <button type="button" onClick={()=>setEditingHomeGoal(false)}
                       style={{padding:"10px 12px",background:"var(--line)",color:"var(--ink)",border:"none",borderRadius:"8px",cursor:"pointer",fontSize:"13px"}}>✕</button>
                   </div>
                 </div>
               )}
-
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
-                {/* Ingresos */}
-                <div style={{padding:"14px",background:"rgba(47,159,112,0.05)",borderRadius:"12px",border:"1px solid rgba(47,159,112,0.18)"}}>
-                  <p style={{margin:"0 0 10px",fontSize:"10px",fontWeight:700,color:"#1D9E75",textTransform:"uppercase",letterSpacing:"0.6px"}}>↑ Entradas</p>
-                  <p style={{margin:"0 0 2px",fontSize:"22px",fontWeight:800,color:"#1D9E75",lineHeight:1}}>{money.format(homeBudgetTotals.income)}</p>
-                  <p style={{margin:"0 0 10px",fontSize:"11px",color:"var(--muted)"}}>registrado este mes</p>
-                  {homeIncomeGoal>0?(
-                    <>
-                      <div style={{height:"6px",background:"rgba(0,0,0,0.07)",borderRadius:"3px",overflow:"hidden",marginBottom:"5px"}}>
-                        <div style={{height:"100%",width:`${incomeProgress}%`,background:incomeBarColor,borderRadius:"3px",transition:"width 0.5s"}}/>
-                      </div>
-                      <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px"}}>
-                        <span style={{color:"var(--muted)"}}>Meta: {money.format(homeIncomeGoal)}</span>
-                        <span style={{fontWeight:700,color:incomeBarColor}}>{incomeProgress}%</span>
-                      </div>
-                      {homeBudgetTotals.income < homeIncomeGoal && (
-                        <p style={{margin:"6px 0 0",fontSize:"11px",color:"#D97706",fontWeight:600}}>Falta {money.format(homeIncomeGoal-homeBudgetTotals.income)}</p>
-                      )}
-                    </>
-                  ):(
-                    <p style={{margin:"4px 0 0",fontSize:"11px",color:"var(--muted)",fontStyle:"italic"}}>Agrega una meta para ver tu avance.</p>
-                  )}
-                </div>
-
-                {/* Gastos */}
-                <div style={{padding:"14px",background:"rgba(220,38,38,0.03)",borderRadius:"12px",border:"1px solid rgba(220,38,38,0.12)"}}>
-                  <p style={{margin:"0 0 10px",fontSize:"10px",fontWeight:700,color:"#DC2626",textTransform:"uppercase",letterSpacing:"0.6px"}}>↓ Salidas</p>
-                  <p style={{margin:"0 0 2px",fontSize:"22px",fontWeight:800,color:"#DC2626",lineHeight:1}}>{money.format(homeSpent)}</p>
-                  <p style={{margin:"0 0 10px",fontSize:"11px",color:"var(--muted)"}}>gastado este mes</p>
-                  {homePaymentsBudget>0?(
-                    <>
-                      <div style={{height:"6px",background:"rgba(0,0,0,0.07)",borderRadius:"3px",overflow:"hidden",marginBottom:"5px"}}>
-                        <div style={{height:"100%",width:`${spendProgress}%`,background:spendBarColor,borderRadius:"3px",transition:"width 0.5s"}}/>
-                      </div>
-                      <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px"}}>
-                        <span style={{color:"var(--muted)"}}>Presupuesto fijo: {money.format(homePaymentsBudget)}</span>
-                        <span style={{fontWeight:700,color:spendBarColor}}>{spendProgress}%</span>
-                      </div>
-                      {homeSpent > homePaymentsBudget && (
-                        <p style={{margin:"6px 0 0",fontSize:"11px",color:"#DC2626",fontWeight:600}}>Excedido en {money.format(homeSpent-homePaymentsBudget)}</p>
-                      )}
-                    </>
-                  ):(
-                    <p style={{margin:"4px 0 0",fontSize:"11px",color:"var(--muted)",fontStyle:"italic"}}>Agrega pagos fijos para ver el presupuesto.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Balance */}
-              <div style={{marginTop:"14px",paddingTop:"14px",borderTop:"1px solid var(--line)",display:"flex",flexWrap:"wrap",gap:"10px",justifyContent:"space-between",alignItems:"center"}}>
-                {projectedBalance !== null && (
-                  <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
-                    <span style={{fontSize:"12px",color:"var(--muted)"}}>Balance proyectado:</span>
-                    <strong style={{fontSize:"14px",color:projectedBalance>=0?"#1D9E75":"#DC2626"}}>{projectedBalance>=0?"+":""}{money.format(projectedBalance)}</strong>
-                  </div>
-                )}
-                <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
-                  <span style={{fontSize:"12px",color:"var(--muted)"}}>Balance real:</span>
-                  <strong style={{fontSize:"14px",color:realBalance>=0?"#1D9E75":"#DC2626"}}>{realBalance>=0?"+":""}{money.format(realBalance)}</strong>
-                </div>
-                {homeBudgetTotals.savings>0&&(
-                  <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
-                    <span style={{fontSize:"12px",color:"var(--muted)"}}>Ahorro:</span>
-                    <strong style={{fontSize:"14px",color:"#2563EB"}}>+{money.format(homeBudgetTotals.savings)}</strong>
-                  </div>
-                )}
-              </div>
             </div>
-            </>);
-          })()}
 
-            {/* Movements list full-width + add button */}
+            {/* ── CATEGORÍAS ── */}
             <div className="card" style={{padding:"18px 20px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
-                <h3 style={{margin:0,fontSize:"15px"}}>Mis movimientos</h3>
-                <button type="button" className="fin-add-btn" onClick={()=>{setHomeBudgetError("");setShowBudgetModal(true);}}>
-                  + Registrar
-                </button>
+                <div>
+                  <h3 style={{margin:"0 0 2px",fontSize:"15px",fontWeight:800}}>Mis categorías</h3>
+                  <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Toca una para fijar su presupuesto</p>
+                </div>
+                <button type="button" style={{background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",padding:"7px 12px",fontSize:"12px",fontWeight:700,cursor:"pointer"}}
+                  onClick={()=>setQuickExpModal(true)}>+ Gasto</button>
               </div>
-              {homeBudget.length===0?(
-                <div style={{textAlign:"center",padding:"24px 16px"}}>
-                  <p style={{fontSize:"28px",margin:"0 0 8px"}}>💸</p>
-                  <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Aún no hay movimientos. Empieza registrando un ingreso.</p>
-                  <button type="button" className="fin-add-btn" onClick={()=>{setHomeBudgetError("");setShowBudgetModal(true);}}>+ Registrar movimiento</button>
-                </div>
-              ):(
-                <div style={{display:"flex",flexDirection:"column",gap:"5px",maxHeight:"340px",overflowY:"auto"}}>
-                  {[...homeBudget].sort((a,b)=>new Date(b.dueDate||b.createdAt)-new Date(a.dueDate||a.createdAt)).map(item=>{
-                    const TYPE_ICONS={"Ingreso":"💰","Gasto fijo":"🏠","Gasto variable":"🛍️","Gasto hormiga":"☕","Deuda":"📋","Ahorro":"🐷"};
-                    return (
-                      <div key={item.id} style={{display:"flex",alignItems:"center",gap:"10px",padding:"9px 12px",borderRadius:"10px",background:item.type==="Ingreso"?"rgba(47,159,112,0.05)":item.type==="Ahorro"?"rgba(37,99,235,0.05)":"rgba(220,38,38,0.025)",border:"1px solid var(--line)"}}>
-                        <span style={{fontSize:"18px",flexShrink:0}}>{TYPE_ICONS[item.type]||"💳"}</span>
-                        <div style={{flex:1,minWidth:0}}>
-                          <p style={{margin:"0 0 1px",fontSize:"13px",fontWeight:600,color:"var(--ink)",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{item.description}</p>
-                          <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>{item.type} · {formatShortDate(item.dueDate||item.createdAt)}</p>
+              <div className="pf-cat-grid">
+                {budgetCats.map(cat=>{
+                  const spent=spentByCat[cat.key]||0;
+                  const pct=cat.budget>0?Math.min(100,Math.round((spent/cat.budget)*100)):0;
+                  const barColor=pct>=100?"#DC2626":pct>=80?"#D97706":cat.color;
+                  const isOver=cat.budget>0&&spent>cat.budget;
+                  const isActive=editBudgetCat===cat.key;
+                  return (
+                    <div key={cat.key} className={`pf-cat-card${isActive?" pf-cat-card--active":""}`}
+                      style={isActive?{borderColor:cat.color}:{}}
+                      onClick={()=>{if(isActive){setEditBudgetCat(null);}else{setEditBudgetCat(cat.key);setEditBudgetAmt(cat.budget?String(cat.budget):"");}}}>
+                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"7px"}}>
+                        <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                          <span style={{fontSize:"15px"}}>{cat.emoji}</span>
+                          <span style={{fontSize:"12px",fontWeight:700,color:"var(--ink)"}}>{cat.label}</span>
                         </div>
-                        <span style={{fontSize:"14px",fontWeight:700,color:item.type==="Ingreso"?"var(--green)":item.type==="Ahorro"?"#2563EB":"#DC2626",flexShrink:0,whiteSpace:"nowrap"}}>{item.type==="Ingreso"?"+":"-"}{money.format(item.amount)}</span>
-                        <button type="button" onClick={()=>setHomeBudget(c=>c.filter(r=>r.id!==item.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"16px",lineHeight:1,padding:"0 2px",flexShrink:0}}>×</button>
+                        {isOver&&<span className="pf-over-badge">!</span>}
                       </div>
-                    );
-                  })}
+                      <div style={{height:"4px",background:"rgba(0,0,0,0.07)",borderRadius:"2px",overflow:"hidden",marginBottom:"6px"}}>
+                        <div style={{height:"100%",width:`${pct}%`,background:barColor,borderRadius:"2px",transition:"width 0.5s"}}/>
+                      </div>
+                      <div style={{display:"flex",justifyContent:"space-between",fontSize:"11px"}}>
+                        <span style={{color:barColor,fontWeight:700}}>{money.format(spent)}</span>
+                        <span style={{color:"var(--muted)"}}>{cat.budget>0?`/${money.format(cat.budget)}`:"Sin límite"}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              {editBudgetCat&&(()=>{
+                const cat=budgetCats.find(c=>c.key===editBudgetCat);
+                if(!cat) return null;
+                return (
+                  <div style={{marginTop:"14px",padding:"14px",background:`${cat.color}0e`,borderRadius:"10px",border:`1px solid ${cat.color}33`}}>
+                    <p style={{margin:"0 0 10px",fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>{cat.emoji} Presupuesto mensual para {cat.label}</p>
+                    <div style={{display:"flex",gap:"8px"}}>
+                      <MoneyAmountInput placeholder="$ 0" value={editBudgetAmt} onChange={v=>setEditBudgetAmt(v)} style={{flex:1}} autoFocus/>
+                      <button type="button" onClick={()=>{setBudgetCats(prev=>prev.map(c=>c.key===editBudgetCat?{...c,budget:Number(editBudgetAmt)||0}:c));setEditBudgetCat(null);}}
+                        style={{padding:"10px 16px",background:cat.color,color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontWeight:700,fontSize:"13px"}}>Guardar</button>
+                      <button type="button" onClick={()=>setEditBudgetCat(null)}
+                        style={{padding:"10px 12px",background:"var(--line)",border:"none",borderRadius:"8px",cursor:"pointer",fontSize:"13px"}}>✕</button>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* ── PAGOS Y DEUDAS ── */}
+            <div className="card" style={{padding:"18px 20px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+                <h3 style={{margin:0,fontSize:"15px",fontWeight:800}}>Pagos y deudas</h3>
+                <div style={{display:"flex",gap:"6px"}}>
+                  <button type="button" className="fin-add-btn" onClick={()=>{setPaymentForm({name:"",amount:"",dayOfMonth:""});setPaymentModal({type:"home"});}}>+ Pago fijo</button>
+                  <button type="button" className="fin-add-btn" onClick={()=>{setDebtForm({name:"",total:"",paid:""});setDebtModal({type:"home"});}}>+ Deuda</button>
                 </div>
+              </div>
+              {homePayments.length===0&&homeDebts.length===0?(
+                <p style={{textAlign:"center",color:"var(--muted)",fontSize:"13px",padding:"16px 0",margin:0}}>Sin pagos ni deudas registradas aún.</p>
+              ):(
+                <>
+                  {overdueRows.length>0&&(<div className="pf-pay-group"><p className="pf-pay-group-lbl pf-pay-group-lbl--urgent">Vencido</p>{overdueRows.map(p=><PayRow key={p.id} p={p} urgency="urgent"/>)}</div>)}
+                  {todayRows.length>0&&(<div className="pf-pay-group"><p className="pf-pay-group-lbl pf-pay-group-lbl--today">Hoy</p>{todayRows.map(p=><PayRow key={p.id} p={p} urgency="urgent"/>)}</div>)}
+                  {weekRows.length>0&&(<div className="pf-pay-group"><p className="pf-pay-group-lbl">Esta semana</p>{weekRows.map(p=><PayRow key={p.id} p={p} urgency="soon"/>)}</div>)}
+                  {laterRows.length>0&&(<div className="pf-pay-group"><p className="pf-pay-group-lbl">Próximamente</p>{laterRows.map(p=><PayRow key={p.id} p={p} urgency="later"/>)}</div>)}
+                  {paidRows.length>0&&(<div className="pf-pay-group"><p className="pf-pay-group-lbl pf-pay-group-lbl--paid">Pagado este mes ✓</p>{paidRows.map(p=><PayRow key={p.id} p={p} urgency="paid"/>)}</div>)}
+                  {homeDebts.length>0&&(
+                    <div style={{marginTop:"14px",paddingTop:"14px",borderTop:"1px solid var(--line)"}}>
+                      <p style={{margin:"0 0 10px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>Deudas activas</p>
+                      <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+                        {homeDebts.map(d=>{
+                          const rem=Math.max(0,d.total-d.paid);
+                          const pct=d.total>0?Math.min(100,Math.round((d.paid/d.total)*100)):0;
+                          return (
+                            <div key={d.id} className="pf-debt-card">
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"6px"}}>
+                                <span style={{fontSize:"13px",fontWeight:700,color:"var(--ink)",cursor:"pointer"}} onClick={()=>{setDebtForm({name:d.name,total:String(d.total),paid:String(d.paid)});setDebtModal({type:"home",item:d});}}>{d.name}</span>
+                                <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
+                                  <span style={{fontSize:"11px",fontWeight:600,color:"#DC2626"}}>Falta {money.format(rem)}</span>
+                                  <button type="button" className="fin-del-btn" onClick={()=>setHomeDebts(prev=>prev.filter(x=>x.id!==d.id))}>×</button>
+                                </div>
+                              </div>
+                              <div style={{height:"6px",background:"rgba(0,0,0,0.07)",borderRadius:"3px",overflow:"hidden",marginBottom:"6px"}}>
+                                <div style={{height:"100%",width:`${pct}%`,background:"#2563EB",borderRadius:"3px",transition:"width 0.5s"}}/>
+                              </div>
+                              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                                <span style={{fontSize:"11px",color:"var(--muted)"}}>Pagado {money.format(d.paid)} · {pct}%</span>
+                                <button type="button" className="fin-abono-btn" onClick={()=>setAbonoModal({type:"home",debtId:d.id,abonoAmt:""})}>+ Abono</button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
-            {/* ── Deudas del hogar ── */}
-            {(()=>{
-              const addDebt  = () => { setDebtForm({name:"",total:"",paid:""}); setDebtModal({type:"home"}); };
-              const editDebt = (d) => { setDebtForm({name:d.name,total:String(d.total),paid:String(d.paid)}); setDebtModal({type:"home",item:d}); };
-              return (
-                <div className="card fin-section">
-                  <div className="fin-section-head">
-                    <h3 className="fin-section-title">📋 Mis deudas</h3>
-                    <button type="button" className="fin-add-btn" onClick={addDebt}>+ Agregar</button>
+            {/* ── MODAL: Registrar gasto rápido ── */}
+            {quickExpModal&&(
+              <div className="hogar-sched-backdrop" onClick={()=>setQuickExpModal(false)}>
+                <div className="hogar-sched-modal" onClick={e=>e.stopPropagation()}>
+                  <div className="hogar-sched-modal-head">
+                    <p className="hogar-sched-modal-title">Registrar gasto</p>
+                    <button type="button" className="hogar-sched-modal-close" onClick={()=>setQuickExpModal(false)}>×</button>
                   </div>
-                  {homeDebts.length === 0 ? (
-                    <p className="fin-empty">Sin deudas registradas. ¡Qué bien!</p>
-                  ) : (
-                    <div className="fin-list-scroll">
-                    {homeDebts.map(d => {
-                      const remaining = Math.max(0, d.total - d.paid);
-                      const pct = d.total > 0 ? Math.min(100, Math.round((d.paid / d.total) * 100)) : 0;
-                      return (
-                        <div key={d.id} className="fin-debt-row">
-                          <div className="fin-debt-top">
-                            <span className="fin-debt-name" onClick={() => editDebt(d)}>{d.name}</span>
-                            <button type="button" className="fin-del-btn" onClick={() => setHomeDebts(prev => prev.filter(x => x.id !== d.id))}>×</button>
-                          </div>
-                          <div className="fin-debt-bar-wrap">
-                            <div className="fin-debt-bar" style={{width:`${pct}%`}}/>
-                          </div>
-                          <div className="fin-debt-stats">
-                            <span className="fin-debt-paid">Abonado {money.format(d.paid)} · {pct}%</span>
-                            <span className="fin-debt-remaining">Falta {money.format(remaining)}</span>
-                          </div>
-                          <button type="button" className="fin-abono-btn" onClick={() => setAbonoModal({type:"home",debtId:d.id,abonoAmt:""})}>+ Registrar abono</button>
-                        </div>
-                      );
-                    })}
+                  <div className="hogar-sched-modal-body">
+                    <p className="app-form-label">Categoría</p>
+                    <div className="hogar-sched-cat-grid">
+                      {budgetCats.map(cat=>(
+                        <button key={cat.key} type="button"
+                          className={`hogar-sched-cat-btn${quickExpForm.catKey===cat.key?" hogar-sched-cat-btn--on":""}`}
+                          style={quickExpForm.catKey===cat.key?{borderColor:cat.color,background:`${cat.color}14`,color:cat.color}:{}}
+                          onClick={()=>setQuickExpForm(f=>({...f,catKey:cat.key}))}>
+                          <span>{cat.emoji}</span><span>{cat.label}</span>
+                        </button>
+                      ))}
                     </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* ── Pagos del mes — Hogar ── */}
-            {(()=>{
-              const addPmt = () => { setPaymentForm({name:"",amount:"",dayOfMonth:""}); setPaymentModal({type:"home"}); };
-              return (
-                <div className="card fin-section">
-                  <div className="fin-section-head">
-                    <h3 className="fin-section-title">📅 Presupuesto básico de salida</h3>
-                    <button type="button" className="fin-add-btn" onClick={addPmt}>+ Agregar</button>
+                    <p className="app-form-label" style={{marginTop:"14px"}}>Descripción</p>
+                    <input className="app-form-input" autoFocus
+                      placeholder="Ej: Supermercado, Colegio, Ropa hijos..."
+                      value={quickExpForm.description}
+                      onChange={e=>setQuickExpForm(f=>({...f,description:e.target.value}))}
+                      onKeyDown={e=>e.key==="Enter"&&submitQuickExp()}/>
+                    <p className="app-form-label" style={{marginTop:"10px"}}>Monto</p>
+                    <MoneyAmountInput placeholder="$ 0" value={quickExpForm.amount} onChange={v=>setQuickExpForm(f=>({...f,amount:v}))}/>
+                    <button type="button" className="hogar-sched-save-btn" style={{marginTop:"18px"}}
+                      disabled={!quickExpForm.description.trim()||!quickExpForm.amount}
+                      onClick={submitQuickExp}>Registrar gasto</button>
                   </div>
-                  {homePayments.length === 0 ? (
-                    <p className="fin-empty">Agrega tus pagos fijos mensuales (arriendo, servicios, colegio…) para calcular tu presupuesto base.</p>
-                  ) : (
-                    <div className="fin-list-scroll">
-                    {homePayments.map(p => {
-                      const isPaid = p.lastPaidMonth === _currentMonthKey;
-                      const daysLeft = p.dayOfMonth - _currentDay;
-                      const isOverdue = !isPaid && daysLeft < 0;
-                      const isToday   = !isPaid && daysLeft === 0;
-                      const isSoon    = !isPaid && daysLeft > 0 && daysLeft <= 3;
-                      const statusLabel = isPaid ? "Pagado ✓" : isOverdue ? `Vencido (día ${p.dayOfMonth})` : isToday ? "¡Hoy!" : isSoon ? `En ${daysLeft} día${daysLeft>1?"s":""}` : `Día ${p.dayOfMonth}`;
-                      const statusColor = isPaid ? "var(--green)" : isOverdue||isToday ? "#DC2626" : isSoon ? "#D97706" : "var(--muted)";
-                      return (
-                        <div key={p.id} className={`fin-pmt-row${isOverdue||isToday?" fin-pmt-row--urgent":""}`}>
-                          <div className="fin-pmt-info">
-                            <span className="fin-pmt-name">{p.name}</span>
-                            <span className="fin-pmt-day" style={{color:statusColor}}>{statusLabel}</span>
-                          </div>
-                          <div className="fin-pmt-right">
-                            <span className="fin-pmt-amt">{money.format(p.amount)}</span>
-                            <button type="button"
-                              className={`fin-pmt-check${isPaid?" paid":""}`}
-                              onClick={() => setHomePayments(prev => prev.map(x => x.id === p.id ? {...x, lastPaidMonth: isPaid ? null : _currentMonthKey} : x))}>
-                              {isPaid ? "✓" : "Pagar"}
-                            </button>
-                            <button type="button" className="fin-del-btn" onClick={() => setHomePayments(prev => prev.filter(x => x.id !== p.id))}>×</button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Weekly analysis */}
-            {homeBudget.length>0&&(()=>{
-              const weeks=[{label:"Sem 1 (1-7)",from:1,to:7},{label:"Sem 2 (8-14)",from:8,to:14},{label:"Sem 3 (15-21)",from:15,to:21},{label:"Sem 4 (22+)",from:22,to:31}];
-              const nowMonth=new Date().getMonth(); const nowYear=new Date().getFullYear();
-              const weekData=weeks.map(w=>{
-                const items=homeBudget.filter(item=>{
-                  const d=new Date(item.dueDate||item.createdAt);
-                  return d.getMonth()===nowMonth&&d.getFullYear()===nowYear&&d.getDate()>=w.from&&d.getDate()<=w.to;
-                });
-                const income=items.filter(i=>i.type==="Ingreso").reduce((s,i)=>s+i.amount,0);
-                const expense=items.filter(i=>i.type!=="Ingreso"&&i.type!=="Ahorro").reduce((s,i)=>s+i.amount,0);
-                return {...w,income,expense,total:income+expense};
-              }).filter(w=>w.total>0);
-              if(!weekData.length) return null;
-              const maxIncome=Math.max(...weekData.map(w=>w.income),1);
-              const maxExpense=Math.max(...weekData.map(w=>w.expense),1);
-              const bestIncomeWeek=weekData.reduce((a,b)=>b.income>a.income?b:a,weekData[0]);
-              const worstExpenseWeek=weekData.reduce((a,b)=>b.expense>a.expense?b:a,weekData[0]);
-              return (
-                <div className="card" style={{padding:"18px 20px"}}>
-                  <h3 style={{margin:"0 0 4px",fontSize:"15px"}}>📅 Por semana este mes</h3>
-                  <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>Cuándo entra y cuándo sale el dinero.</p>
-                  <div style={{display:"grid",gap:"10px"}}>
-                    {weekData.map(w=>(
-                      <div key={w.label}>
-                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
-                          <span style={{fontSize:"12px",fontWeight:700,color:"var(--ink)"}}>{w.label}</span>
-                          <span style={{fontSize:"11px",color:"var(--muted)"}}>
-                            {w.income>0&&<span style={{color:"var(--green)",fontWeight:700}}>+{money.format(w.income)} </span>}
-                            {w.expense>0&&<span style={{color:"#DC2626",fontWeight:700}}>-{money.format(w.expense)}</span>}
-                          </span>
-                        </div>
-                        {w.income>0&&(
-                          <div style={{height:"6px",background:"rgba(0,0,0,0.06)",borderRadius:"3px",overflow:"hidden",marginBottom:"3px"}}>
-                            <div style={{height:"100%",width:`${Math.round((w.income/maxIncome)*100)}%`,background:"var(--green)",borderRadius:"3px",transition:"width 0.5s"}}></div>
-                          </div>
-                        )}
-                        {w.expense>0&&(
-                          <div style={{height:"6px",background:"rgba(0,0,0,0.06)",borderRadius:"3px",overflow:"hidden"}}>
-                            <div style={{height:"100%",width:`${Math.round((w.expense/maxExpense)*100)}%`,background:"#C4526A",borderRadius:"3px",transition:"width 0.5s"}}></div>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  {weekData.length>1&&(
-                    <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginTop:"14px"}}>
-                      {bestIncomeWeek.income>0&&(
-                        <div style={{padding:"10px 12px",background:"rgba(47,159,112,0.06)",borderRadius:"10px",border:"1px solid rgba(47,159,112,0.15)"}}>
-                          <p style={{margin:"0 0 2px",fontSize:"11px",color:"var(--muted)"}}>📈 Más ingresos</p>
-                          <p style={{margin:0,fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>{bestIncomeWeek.label}</p>
-                        </div>
-                      )}
-                      {worstExpenseWeek.expense>0&&(
-                        <div style={{padding:"10px 12px",background:"rgba(220,38,38,0.04)",borderRadius:"10px",border:"1px solid rgba(220,38,38,0.1)"}}>
-                          <p style={{margin:"0 0 2px",fontSize:"11px",color:"var(--muted)"}}>📉 Más gastos</p>
-                          <p style={{margin:0,fontSize:"13px",fontWeight:700,color:"var(--ink)"}}>{worstExpenseWeek.label}</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {homeBudget.length>0&&(
-              <div className="card" style={{padding:"18px 20px"}}>
-                <h3 style={{margin:"0 0 14px",fontSize:"15px"}}>📊 Análisis de mis finanzas</h3>
-                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"14px",marginBottom:"14px"}}>
-                  <div>
-                    <p style={{margin:"0 0 8px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>En qué gasto más</p>
-                    {Object.entries(homeBudgetByType).filter(([t])=>t!=="Ingreso"&&t!=="Ahorro").sort((a,b)=>b[1]-a[1]).map(([type,amt])=>{
-                      const pct=homeBudgetTotals.income>0?Math.round((amt/homeBudgetTotals.income)*100):0;
-                      return (
-                        <div key={type} style={{marginBottom:"6px"}}>
-                          <div style={{display:"flex",justifyContent:"space-between",marginBottom:"2px"}}>
-                            <span style={{fontSize:"12px",color:"var(--ink)"}}>{type}</span>
-                            <span style={{fontSize:"12px",fontWeight:700}}>{pct}%</span>
-                          </div>
-                          <div style={{height:"5px",background:"rgba(0,0,0,0.07)",borderRadius:"3px",overflow:"hidden"}}>
-                            <div style={{height:"100%",width:`${pct}%`,background:"#C4526A",borderRadius:"3px"}}></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
-                    <div style={{padding:"10px 12px",background:"rgba(47,159,112,0.06)",borderRadius:"8px",border:"1px solid rgba(47,159,112,0.15)"}}>
-                      <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>Ingresos totales</p>
-                      <p style={{margin:"2px 0 0",fontSize:"16px",fontWeight:800,color:"var(--green)"}}>{money.format(homeBudgetTotals.income)}</p>
-                    </div>
-                    <div style={{padding:"10px 12px",background:"rgba(37,99,235,0.05)",borderRadius:"8px",border:"1px solid rgba(37,99,235,0.12)"}}>
-                      <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>Ahorro registrado</p>
-                      <p style={{margin:"2px 0 0",fontSize:"16px",fontWeight:800,color:"#2563EB"}}>{money.format(homeBudgetTotals.savings)}</p>
-                    </div>
-                    {biggestHomeLeak[0]&&(
-                      <div style={{padding:"10px 12px",background:"rgba(220,38,38,0.04)",borderRadius:"8px",border:"1px solid rgba(220,38,38,0.1)"}}>
-                        <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>Mayor salida</p>
-                        <p style={{margin:"2px 0 0",fontSize:"13px",fontWeight:700,color:"#DC2626"}}>{biggestHomeLeak[0]} — {money.format(biggestHomeLeak[1])}</p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {homeDebts.length>0&&(()=>{
-                  const totalDeuda=homeDebts.reduce((s,d)=>s+d.total,0);
-                  const totalPagado=homeDebts.reduce((s,d)=>s+d.paid,0);
-                  const totalPendiente=Math.max(0,totalDeuda-totalPagado);
-                  const pctPagado=totalDeuda>0?Math.min(100,Math.round((totalPagado/totalDeuda)*100)):0;
-                  const mayorDeuda=[...homeDebts].sort((a,b)=>Math.max(0,b.total-b.paid)-Math.max(0,a.total-a.paid))[0];
-                  return (
-                    <div style={{borderTop:"1px solid var(--line)",paddingTop:"14px",marginTop:"4px"}}>
-                      <p style={{margin:"0 0 10px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>🏦 Estado de deudas</p>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"8px",marginBottom:"10px"}}>
-                        <div style={{padding:"10px 12px",background:"rgba(220,38,38,0.04)",borderRadius:"8px",border:"1px solid rgba(220,38,38,0.1)"}}>
-                          <p style={{margin:0,fontSize:"10px",color:"var(--muted)"}}>Total deudas</p>
-                          <p style={{margin:"2px 0 0",fontSize:"14px",fontWeight:800,color:"#DC2626"}}>{money.format(totalDeuda)}</p>
-                        </div>
-                        <div style={{padding:"10px 12px",background:"rgba(47,159,112,0.06)",borderRadius:"8px",border:"1px solid rgba(47,159,112,0.15)"}}>
-                          <p style={{margin:0,fontSize:"10px",color:"var(--muted)"}}>Ya pagado</p>
-                          <p style={{margin:"2px 0 0",fontSize:"14px",fontWeight:800,color:"var(--green)"}}>{money.format(totalPagado)}</p>
-                        </div>
-                        <div style={{padding:"10px 12px",background:"rgba(37,99,235,0.05)",borderRadius:"8px",border:"1px solid rgba(37,99,235,0.12)"}}>
-                          <p style={{margin:0,fontSize:"10px",color:"var(--muted)"}}>Por pagar</p>
-                          <p style={{margin:"2px 0 0",fontSize:"14px",fontWeight:800,color:"#2563EB"}}>{money.format(totalPendiente)}</p>
-                        </div>
-                      </div>
-                      <div style={{marginBottom:"6px"}}>
-                        <div style={{display:"flex",justifyContent:"space-between",marginBottom:"4px"}}>
-                          <span style={{fontSize:"11px",color:"var(--muted)"}}>Progreso general de pago</span>
-                          <span style={{fontSize:"11px",fontWeight:700,color:"var(--ink)"}}>{pctPagado}%</span>
-                        </div>
-                        <div style={{height:"7px",background:"rgba(0,0,0,0.07)",borderRadius:"4px",overflow:"hidden"}}>
-                          <div style={{height:"100%",width:`${pctPagado}%`,background:"var(--green)",borderRadius:"4px",transition:"width 0.5s"}}></div>
-                        </div>
-                      </div>
-                      {mayorDeuda&&Math.max(0,mayorDeuda.total-mayorDeuda.paid)>0&&(
-                        <p style={{margin:"8px 0 0",fontSize:"12px",color:"var(--muted)"}}>Mayor pendiente: <strong style={{color:"var(--ink)"}}>{mayorDeuda.name}</strong> — falta {money.format(Math.max(0,mayorDeuda.total-mayorDeuda.paid))}</p>
-                      )}
-                    </div>
-                  );
-                })()}
-                <div style={{borderTop:"1px solid var(--line)",paddingTop:"12px"}}>
-                  <p style={{margin:"0 0 8px",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px"}}>💡 Recomendaciones</p>
-                  {financeRecs.map((rec,i)=>(
-                    <div key={i} style={{display:"flex",gap:"10px",alignItems:"flex-start",padding:"10px 12px",background:"rgba(196,82,106,0.03)",borderRadius:"8px",border:"1px solid rgba(196,82,106,0.1)",marginBottom:"6px"}}>
-                      <span style={{fontSize:"18px",flexShrink:0}}>{rec.icon}</span>
-                      <p style={{margin:0,fontSize:"13px",color:"var(--ink)",lineHeight:1.4}}>{rec.text}</p>
-                    </div>
-                  ))}
                 </div>
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
 
         {/* ── Modal: Registrar movimiento ── */}
         {showBudgetModal&&(
