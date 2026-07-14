@@ -1384,26 +1384,9 @@ button {
     grid-template-columns: 1fr;
   }
 
+  /* El sidebar se oculta en mobile — la navegación la maneja el bottom nav */
   .sidebar {
-    position: sticky;
-    top: 0;
-    z-index: 600;                          /* stacking context encima del <main> */
-    height: auto;
-    padding: 16px;
-    overflow: visible;
-    background: rgba(250, 247, 245, 0.98); /* fondo sólido — no se transparenta */
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(180, 160, 140, 0.15);
-  }
-
-  .brand,
-  .quote-card {
     display: none;
-  }
-
-  .main-menu {
-    grid-template-columns: repeat(6, minmax(120px, 1fr));
-    overflow-x: auto;
   }
 
   .focus-banner,
