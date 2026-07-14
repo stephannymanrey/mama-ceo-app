@@ -1298,60 +1298,84 @@ button {
     bottom: 0;
     left: 0;
     right: 0;
-    height: 62px;
-    background: #fff;
-    border-top: 1px solid rgba(180,160,140,0.2);
-    box-shadow: 0 -2px 12px rgba(0,0,0,0.06);
+    height: 66px;
+    background: rgba(250, 247, 245, 0.94);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(180, 160, 140, 0.18);
+    box-shadow: 0 -4px 28px rgba(140, 110, 90, 0.10);
     z-index: 200;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding: 0 4px env(safe-area-inset-bottom, 0px);
+    align-items: stretch;
   }
 
   .mobile-bottom-nav-item {
     flex: 1;
+    min-width: 0;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
+    gap: 3px;
     border: none;
     background: none;
     cursor: pointer;
     color: var(--muted);
-    padding: 6px 2px 4px;
+    padding: 8px 2px 6px;
     position: relative;
     font-family: inherit;
-    transition: color 0.15s;
+    transition: color 0.18s;
+    -webkit-tap-highlight-color: transparent;
   }
 
   .mobile-bottom-nav-item.active {
-    color: var(--pink);
+    color: var(--purple);
   }
 
-  .mobile-bottom-nav-item.active .mobile-bottom-nav-icon {
-    transform: scale(1.15);
+  .mobile-bottom-nav-item.active::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 30px;
+    background: var(--purple-soft);
+    border-radius: 10px;
   }
 
   .mobile-bottom-nav-icon {
-    font-size: 22px;
+    font-size: 20px;
     line-height: 1;
-    transition: transform 0.15s;
+    position: relative;
+    transition: transform 0.18s;
+  }
+
+  .mobile-bottom-nav-item.active .mobile-bottom-nav-icon {
+    transform: scale(1.08);
   }
 
   .mobile-bottom-nav-label {
-    font-size: 11px;
+    font-size: 10px;
     font-weight: 600;
     line-height: 1;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    position: relative;
   }
 
   .mobile-bottom-nav-lock {
     position: absolute;
     top: 4px;
-    right: 6px;
-    font-size: 11px;
+    right: 4px;
+    font-size: 10px;
   }
 
   .dashboard {
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(82px + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -1410,7 +1434,7 @@ button {
 @media (max-width: 720px) {
   .dashboard {
     /* padding-bottom mantiene espacio sobre el nav móvil + safe-area (home bar iPhone) */
-    padding: 20px 14px calc(80px + env(safe-area-inset-bottom, 0px));
+    padding: 20px 14px calc(82px + env(safe-area-inset-bottom, 0px));
   }
 
   .topbar,
