@@ -316,15 +316,16 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
   });
 }
 
-// ── Transcripción (Whisper Tiny) ──────────────────────────────────────────
-let _asr = null;
-async function loadTranscriber(onProgress) {
-  if (_asr) return _asr;
-  const { pipeline } = await import("@xenova/transformers");
-  _asr = await pipeline("automatic-speech-recognition", "Xenova/whisper-base", {
-    progress_callback: onProgress,
-  });
-  return _asr;
+// ── Transcripción (Whisper Base — Web Worker) ─────────────────────────────
+let _whisperWorker = null;
+function getWhisperWorker() {
+  if (!_whisperWorker) {
+    _whisperWorker = new Worker(
+      new URL("./whisperWorker.js", import.meta.url),
+      { type: "module" }
+    );
+  }
+  return _whisperWorker;
 }
 
 // Extrae solo los segmentos conservados (sin silencios eliminados) y resamplea a 16kHz.
@@ -390,24 +391,36 @@ function mapCondensedToOriginal(t, mappingRanges) {
   return last ? last.originalEnd : t;
 }
 
-// silences: array de silencios del clip — pasarlos siempre para evitar
-// que Whisper alucine sobre zonas de silencio y repita frases.
+// Extrae audio en hilo principal, luego envía al Worker para no bloquear la UI.
 async function transcribeClip(file, silences, onModelProgress) {
-  const asr = await loadTranscriber(onModelProgress);
   const { audio, mappingRanges } = await getKeptAudioMono16k(file, silences);
-  const result = await asr(audio, {
-    language: "spanish", task: "transcribe",
-    return_timestamps: "word", chunk_length_s: 30, stride_length_s: 5,
-  });
-  return (result.chunks || []).map(c => {
-    const cs = c.timestamp[0] ?? 0;
-    const ce = c.timestamp[1] ?? (cs + 0.5);
-    return {
-      word:  c.text.replace(/^\s+/, ""),
-      start: mapCondensedToOriginal(cs, mappingRanges),
-      end:   mapCondensedToOriginal(ce, mappingRanges),
+  return new Promise((resolve, reject) => {
+    const worker = getWhisperWorker();
+    const id = uid();
+    const onMsg = ({ data }) => {
+      if (data.id !== id) return;
+      if (data.type === "progress") {
+        onModelProgress?.(data.info);
+      } else if (data.type === "result") {
+        worker.removeEventListener("message", onMsg);
+        const segs = (data.chunks || []).map(c => {
+          const cs = c.timestamp?.[0] ?? 0;
+          const ce = c.timestamp?.[1] ?? (cs + 0.5);
+          return {
+            word:  c.text.replace(/^\s+/, ""),
+            start: mapCondensedToOriginal(cs, mappingRanges),
+            end:   mapCondensedToOriginal(ce, mappingRanges),
+          };
+        }).filter(s => s.word);
+        resolve(segs);
+      } else if (data.type === "error") {
+        worker.removeEventListener("message", onMsg);
+        reject(new Error(data.message));
+      }
     };
-  }).filter(s => s.word);
+    worker.addEventListener("message", onMsg);
+    worker.postMessage({ id, audio }, [audio.buffer]);
+  });
 }
 
 // ── Bokeh (MediaPipe Selfie Segmentation) ─────────────────────────────────
