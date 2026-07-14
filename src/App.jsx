@@ -5636,6 +5636,7 @@ export default function App() {
     );
   }
   function renderHome() {
+    const todayISO   = toInputDate();
     const todayDay   = ["D","L","M","X","J","V","S"][new Date().getDay()];
     const DAY_LABELS = [["L","Lunes"],["M","Martes"],["X","Miércoles"],["J","Jueves"],["V","Viernes"],["S","Sábado"],["D","Domingo"]];
     const homeProgress  = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
