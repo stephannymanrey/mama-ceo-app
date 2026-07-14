@@ -3857,12 +3857,12 @@ export default function App() {
                 <div className="db-today-col">
                   <div className="db-today-col-head">
                     <p className="db-today-label">🌸 Hogar</p>
-                    {isCustomFocus && <button type="button" className="db-today-reset-btn" onClick={() => setHomeFocusOverride(null)} title="Reiniciar">↺</button>}
+                    {isCustomFocus && pendingHome.length > 0 && <button type="button" className="db-today-reset-btn" onClick={() => setHomeFocusOverride(null)} title="Reiniciar">↺</button>}
                   </div>
-                  {homeTasks.length === 0
-                    ? <button type="button" className="db-today-cta-link" onClick={() => setActiveView("home")}>Agregar primera tarea →</button>
-                    : focusHomeTasks.length === 0
-                    ? <p className="db-today-done">✅ ¡Hiciste las 3 del hogar!</p>
+                  {pendingHome.length === 0 && homeTasks.length > 0
+                    ? null
+                    : homeTasks.length === 0
+                    ? null
                     : focusHomeTasks.map(task => (
                         <div key={task.id} className="db-today-task-row">
                           <input type="checkbox" className="check-sm" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:"var(--green)"}} />
@@ -3872,20 +3872,27 @@ export default function App() {
                       ))
                   }
                   {homeRoutines[todayDay] && (
-                    <div className="db-today-task-row" style={{marginTop:"8px"}}>
+                    <div className="db-today-task-row" style={{marginTop: focusHomeTasks.length > 0 ? "8px" : 0}}>
                       <span style={{fontSize:"15px",lineHeight:1}}>🧹</span>
                       <span className="db-today-task-title">{homeRoutines[todayDay]}</span>
                     </div>
                   )}
-                  {allUpcomingPayments.filter(p => p.dayOfMonth === _currentDay).map((p, i) => (
-                    <div key={i} className="db-today-task-row" style={{marginTop: i === 0 ? "8px" : "4px"}}>
-                      <span style={{fontSize:"14px",lineHeight:1}}>💳</span>
-                      <div style={{minWidth:0,flex:1}}>
-                        <span className="db-today-task-title">{p.name}</span>
-                        <span style={{display:"block",fontSize:"11px",color:"var(--muted)",marginTop:"2px"}}>{money.format(p.amount)}</span>
+                  {upcomingHomePayments.map((p, i) => {
+                    const daysLeft = p.dayOfMonth - _currentDay;
+                    const label = daysLeft < 0 ? "Vencido" : daysLeft === 0 ? "Hoy" : `en ${daysLeft} día${daysLeft > 1 ? "s" : ""}`;
+                    return (
+                      <div key={i} className="db-today-task-row" style={{marginTop: i === 0 ? "8px" : "4px"}}>
+                        <span style={{fontSize:"14px",lineHeight:1}}>💳</span>
+                        <div style={{minWidth:0,flex:1}}>
+                          <span className="db-today-task-title">{p.name}</span>
+                          <span style={{display:"block",fontSize:"11px",color: daysLeft <= 0 ? "var(--purple)" : "var(--muted)",marginTop:"2px"}}>{money.format(p.amount)} · {label}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
+                  {homeTasks.length === 0 && !homeRoutines[todayDay] && upcomingHomePayments.length === 0 && (
+                    <button type="button" className="db-today-cta-link" onClick={() => { setActiveView("home"); }}>Agregar tarea del hogar →</button>
+                  )}
                 </div>
               )}
 
