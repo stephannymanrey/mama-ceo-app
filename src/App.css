@@ -8620,10 +8620,46 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
 }
 
 /* ── Horario semanal Mi Hogar ── */
+.hogar-sched-scroll-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 6px;
+}
 .hogar-sched-grid {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(7, minmax(130px, 1fr));
+  gap: 8px;
+}
+/* Navegación semanal */
+.hogar-sched-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.hogar-sched-nav-btn {
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-strong);
+  color: var(--ink);
+  font-size: 17px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.14s;
+  flex-shrink: 0;
+}
+.hogar-sched-nav-btn:hover { background: var(--line); }
+.hogar-sched-nav-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+  min-width: 90px;
+  text-align: center;
+  cursor: pointer;
 }
 .hogar-sched-day {
   background: var(--surface-strong);
@@ -8638,6 +8674,9 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
 .hogar-sched-day--today {
   border-color: rgba(196,82,106,0.4);
   background: #fdf5f7;
+}
+.hogar-sched-day--weekend {
+  background: rgba(138,127,122,0.04);
 }
 .hogar-sched-day-head {
   display: flex;
@@ -8708,7 +8747,10 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
   border-left: 3px solid;
   border-radius: 6px;
   padding: 5px 7px;
+  cursor: pointer;
+  transition: filter 0.12s;
 }
+.hogar-sched-event:hover { filter: brightness(0.96); }
 .hogar-sched-event-row {
   display: flex;
   align-items: flex-start;
@@ -8726,11 +8768,15 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
 .hogar-sched-event-title {
   font-size: 11px;
   font-weight: 600;
-  color: var(--ink);
   display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.hogar-sched-recur {
+  font-size: 9px;
+  opacity: 0.75;
+  font-style: normal;
 }
 .hogar-sched-event-meta {
   font-size: 10px;
@@ -8834,14 +8880,10 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
 }
 .hogar-sched-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-@media (max-width: 900px) {
-  .hogar-sched-grid {
-    grid-template-columns: repeat(3, 1fr);
-  }
-}
 @media (max-width: 600px) {
   .hogar-sched-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(7, minmax(120px, 1fr));
   }
   .hogar-sched-day { min-height: auto; }
+  .hogar-sched-event-del { opacity: 1; }
 }

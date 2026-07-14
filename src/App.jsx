@@ -768,6 +768,8 @@ export default function App() {
   const [homeTab, setHomeTab] = useState(0);
   const [schedModal, setSchedModal] = useState(null);
   const [schedForm, setSchedForm] = useState({ title: "", type: "Familia", timeStart: "", timeEnd: "", recurrence: "none" });
+  const [schedWeekOffset, setSchedWeekOffset] = useState(0);
+  const [schedEditId, setSchedEditId] = useState(null);
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [abiMenuPrefs, setAbiMenuPrefs] = useState({ personas: "4", dieta: "normal", pais: "colombia" });
   const [abiMenuSuggestion, setAbiMenuSuggestion] = useState(null);
@@ -5877,12 +5879,30 @@ export default function App() {
 
         {/* ── TAB 1: SEMANA ── */}
         {homeTab === 1 && (()=>{
-          const monFriDates = getMonFriDates();
-          const WD_NAMES = ["Lun","Mar","Mié","Jue","Vie"];
+          const _now = new Date();
+          const _day = _now.getDay();
+          const _mon = new Date(_now);
+          _mon.setDate(_now.getDate() - (_day === 0 ? 6 : _day - 1) + schedWeekOffset * 7);
+          const weekDates = Array.from({ length: 7 }, (_, i) => {
+            const d = new Date(_mon); d.setDate(_mon.getDate() + i); return toInputDate(d);
+          });
+          const WD_NAMES = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
           const SCHED_EXCL = new Set(["Trabajo","Reunión"]);
+          const MONTHS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
+          const d0 = new Date(weekDates[0]+"T12:00:00"), d6 = new Date(weekDates[6]+"T12:00:00");
+          const weekLabel = d0.getMonth()===d6.getMonth()
+            ? `${d0.getDate()}–${d6.getDate()} ${MONTHS[d0.getMonth()]}`
+            : `${d0.getDate()} ${MONTHS[d0.getMonth()]} – ${d6.getDate()} ${MONTHS[d6.getMonth()]}`;
+
           const openSched = (dateStr) => {
+            setSchedEditId(null);
             setSchedModal({ date: dateStr });
             setSchedForm({ title:"", type:"Familia", timeStart:"", timeEnd:"", recurrence:"none" });
+          };
+          const openEdit = (appt) => {
+            setSchedEditId(appt.id);
+            setSchedModal({ date: appt.date });
+            setSchedForm({ title: appt.title, type: appt.type, timeStart: appt.time||"", timeEnd: appt.timeEnd||"", recurrence: appt.recurrence||"none" });
           };
           const submitSched = () => {
             if (!schedForm.title.trim()) return;
@@ -5890,80 +5910,100 @@ export default function App() {
             const [eh, em] = (schedForm.timeEnd||"00:00").split(":").map(Number);
             const startM = sh*60+sm, endM = eh*60+em;
             const duration = (schedForm.timeStart && schedForm.timeEnd && endM > startM)
-              ? endM - startM
-              : (APPT_TYPE_DURATION[schedForm.type] || 60);
-            setAppointments(prev => [...prev, {
-              id: Date.now(), title: schedForm.title.trim(),
-              date: schedModal.date, time: schedForm.timeStart,
-              type: schedForm.type, recurrence: schedForm.recurrence, duration,
-            }]);
-            setSchedModal(null);
+              ? endM - startM : (APPT_TYPE_DURATION[schedForm.type] || 60);
+            if (schedEditId) {
+              setAppointments(prev => prev.map(a => a.id === schedEditId
+                ? { ...a, title: schedForm.title.trim(), type: schedForm.type, time: schedForm.timeStart, timeEnd: schedForm.timeEnd, recurrence: schedForm.recurrence, duration }
+                : a));
+            } else {
+              setAppointments(prev => [...prev, {
+                id: Date.now(), title: schedForm.title.trim(),
+                date: schedModal.date, time: schedForm.timeStart, timeEnd: schedForm.timeEnd,
+                type: schedForm.type, recurrence: schedForm.recurrence, duration,
+              }]);
+            }
+            setSchedModal(null); setSchedEditId(null);
           };
           return (
             <div key="tab-1" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"16px"}}>
-              <div className="card" style={{padding:"18px 20px 14px"}}>
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
+              <div className="card" style={{padding:"14px 20px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <div>
                     <h3 style={{margin:0,fontSize:"16px",fontWeight:800}}>Horario semanal</h3>
-                    <p style={{margin:"3px 0 0",fontSize:"13px",color:"var(--muted)"}}>Lunes a viernes · toca el <strong>+</strong> en cualquier día para agendar</p>
+                    <p style={{margin:"2px 0 0",fontSize:"13px",color:"var(--muted)"}}>Toca un evento para editarlo · <strong>+</strong> para agregar</p>
+                  </div>
+                  <div className="hogar-sched-nav">
+                    <button type="button" className="hogar-sched-nav-btn" onClick={()=>setSchedWeekOffset(o=>o-1)}>‹</button>
+                    <span className="hogar-sched-nav-label" onClick={()=>setSchedWeekOffset(0)} title="Volver a esta semana">
+                      {schedWeekOffset===0 ? "Esta semana" : weekLabel}
+                    </span>
+                    <button type="button" className="hogar-sched-nav-btn" onClick={()=>setSchedWeekOffset(o=>o+1)}>›</button>
                   </div>
                 </div>
               </div>
 
-              <div className="hogar-sched-grid">
-                {monFriDates.map((dateStr, i) => {
-                  const dayName = WD_NAMES[i];
-                  const dayNum = new Date(dateStr + "T12:00:00").getDate();
-                  const isToday = dateStr === todayISO;
-                  const dayAppts = appointments
-                    .filter(a => apptMatchesDate(a, dateStr) && !SCHED_EXCL.has(a.type))
-                    .sort((a,b) => (a.time||"").localeCompare(b.time||""));
-                  return (
-                    <div key={dateStr} className={`hogar-sched-day${isToday?" hogar-sched-day--today":""}`}>
-                      <div className="hogar-sched-day-head">
-                        <div className="hogar-sched-day-label">
-                          <span className="hogar-sched-day-name">{dayName}</span>
-                          <span className={`hogar-sched-day-num${isToday?" hogar-sched-day-num--today":""}`}>{dayNum}</span>
+              <div className="hogar-sched-scroll-wrap">
+                <div className="hogar-sched-grid">
+                  {weekDates.map((dateStr, i) => {
+                    const dayName = WD_NAMES[i];
+                    const dayNum = new Date(dateStr + "T12:00:00").getDate();
+                    const isToday = dateStr === todayISO;
+                    const isWeekend = i >= 5;
+                    const dayAppts = appointments
+                      .filter(a => apptMatchesDate(a, dateStr) && !SCHED_EXCL.has(a.type))
+                      .sort((a,b) => (a.time||"").localeCompare(b.time||""));
+                    return (
+                      <div key={dateStr} className={`hogar-sched-day${isToday?" hogar-sched-day--today":""}${isWeekend?" hogar-sched-day--weekend":""}`}>
+                        <div className="hogar-sched-day-head">
+                          <div className="hogar-sched-day-label">
+                            <span className="hogar-sched-day-name">{dayName}</span>
+                            <span className={`hogar-sched-day-num${isToday?" hogar-sched-day-num--today":""}`}>{dayNum}</span>
+                          </div>
+                          <button type="button" className="hogar-sched-add-btn" onClick={()=>openSched(dateStr)} title="Agregar">+</button>
                         </div>
-                        <button type="button" className="hogar-sched-add-btn" onClick={()=>openSched(dateStr)} title="Agregar">+</button>
-                      </div>
-                      <div className="hogar-sched-events">
-                        {dayAppts.length === 0
-                          ? <p className="hogar-sched-empty">Día libre</p>
-                          : dayAppts.map(appt => {
-                              const cat = HOGAR_SCHED_CATS.find(c=>c.key===appt.type) || HOGAR_SCHED_CATS[HOGAR_SCHED_CATS.length-1];
-                              return (
-                                <div key={appt.id} className="hogar-sched-event" style={{borderLeftColor:cat.color,background:cat.bg}}>
-                                  <div className="hogar-sched-event-row">
-                                    <span className="hogar-sched-event-ico">{cat.emoji}</span>
-                                    <div className="hogar-sched-event-info">
-                                      <span className="hogar-sched-event-title">{appt.title}</span>
-                                      {(appt.time||appt.duration) && (
-                                        <span className="hogar-sched-event-meta">
-                                          {appt.time||""}{appt.time&&appt.duration?" · ":""}{appt.duration?`${appt.duration}min`:""}
+                        <div className="hogar-sched-events">
+                          {dayAppts.length === 0
+                            ? <p className="hogar-sched-empty">{isWeekend?"Libre":"Día libre"}</p>
+                            : dayAppts.map(appt => {
+                                const cat = HOGAR_SCHED_CATS.find(c=>c.key===appt.type) || HOGAR_SCHED_CATS[HOGAR_SCHED_CATS.length-1];
+                                const isRecurring = appt.recurrence && appt.recurrence !== "none";
+                                return (
+                                  <div key={appt.id} className="hogar-sched-event"
+                                    style={{borderLeftColor:cat.color,background:cat.bg}}
+                                    onClick={()=>openEdit(appt)}>
+                                    <div className="hogar-sched-event-row">
+                                      <span className="hogar-sched-event-ico">{cat.emoji}</span>
+                                      <div className="hogar-sched-event-info">
+                                        <span className="hogar-sched-event-title" style={{color:cat.color}}>
+                                          {appt.title}{isRecurring&&<span className="hogar-sched-recur"> ↻</span>}
                                         </span>
-                                      )}
+                                        {(appt.time||appt.duration) && (
+                                          <span className="hogar-sched-event-meta">
+                                            {appt.time||""}{appt.time&&appt.duration?" · ":""}{appt.duration?`${appt.duration}min`:""}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <button type="button" className="hogar-sched-event-del"
+                                        onClick={e=>{e.stopPropagation();setAppointments(prev=>prev.filter(a=>a.id!==appt.id))}}>×</button>
                                     </div>
-                                    <button type="button" className="hogar-sched-event-del"
-                                      onClick={()=>setAppointments(prev=>prev.filter(a=>a.id!==appt.id))}>×</button>
                                   </div>
-                                </div>
-                              );
-                            })
-                        }
+                                );
+                              })
+                          }
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
 
-              {/* Modal agregar actividad */}
+              {/* Modal agregar / editar actividad */}
               {schedModal && (
-                <div className="hogar-sched-backdrop" onClick={()=>setSchedModal(null)}>
+                <div className="hogar-sched-backdrop" onClick={()=>{setSchedModal(null);setSchedEditId(null);}}>
                   <div className="hogar-sched-modal" onClick={e=>e.stopPropagation()}>
                     <div className="hogar-sched-modal-head">
-                      <p className="hogar-sched-modal-title">Nueva actividad</p>
-                      <button type="button" className="hogar-sched-modal-close" onClick={()=>setSchedModal(null)}>×</button>
+                      <p className="hogar-sched-modal-title">{schedEditId?"Editar actividad":"Nueva actividad"}</p>
+                      <button type="button" className="hogar-sched-modal-close" onClick={()=>{setSchedModal(null);setSchedEditId(null);}}>×</button>
                     </div>
                     <div className="hogar-sched-modal-body">
                       <p className="app-form-label">Categoría</p>
@@ -6015,7 +6055,7 @@ export default function App() {
                         style={{marginTop:"18px"}}
                         disabled={!schedForm.title.trim()}
                         onClick={submitSched}>
-                        Agregar actividad
+                        {schedEditId?"Guardar cambios":"Agregar actividad"}
                       </button>
                     </div>
                   </div>
