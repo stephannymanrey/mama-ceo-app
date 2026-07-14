@@ -664,7 +664,7 @@ export default function App() {
   const [bankAddMode, setBankAddMode] = useState(false);
   const [annualBudget, setAnnualBudget] = useState(normalizeAnnualBudget(stored?.annualBudget || initialAnnualBudget));
   const [homeBudget, setHomeBudget] = useState(isNewUser ? [] : normalizeHomeBudget(stored?.homeBudget || initialHomeBudget));
-  const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue(), linkedDebtId: "" });
+  const [homeBudgetForm, setHomeBudgetForm] = useState({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue(), linkedDebtId: "", catKey: "hogar" });
   const [homeIncomeGoal, setHomeIncomeGoal] = useState(stored?.homeIncomeGoal || 0);
   const [editingHomeGoal, setEditingHomeGoal] = useState(false);
   const [homeGoalInput, setHomeGoalInput] = useState("");
@@ -772,7 +772,7 @@ export default function App() {
   const [debtModal, setDebtModal] = useState(null); // {type:"home"|"biz", item?}
   const [paymentModal, setPaymentModal] = useState(null); // {type:"home"|"biz", item?}
   const [debtForm, setDebtForm] = useState({ name:"", total:"", paid:"" });
-  const [paymentForm, setPaymentForm] = useState({ name:"", amount:"", dayOfMonth:"" });
+  const [paymentForm, setPaymentForm] = useState({ name:"", amount:"", dayOfMonth:"", catKey:"hogar" });
   const [abonoModal, setAbonoModal] = useState(null); // {type:"home"|"biz", debtId, abonoAmt:""}
   const [modalSaving, setModalSaving] = useState(null); // "debt"|"abono"|"payment" — estado éxito
 
@@ -2004,12 +2004,13 @@ export default function App() {
     if (!amount) { setHomeBudgetError("Ingresa el monto. Puede ser 0 si no aplica."); return; }
     setHomeBudgetError("");
     const dueDate = homeBudgetForm.dueDate || getTodayInputValue();
-    setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount, dueDate, createdAt: timestampFromInputDate(dueDate), linkedDebtId: homeBudgetForm.linkedDebtId || null }, ...current]);
+    const catKeyToSave = !["Ingreso","Ahorro"].includes(homeBudgetForm.type) ? (homeBudgetForm.catKey || "hogar") : null;
+    setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount, dueDate, createdAt: timestampFromInputDate(dueDate), linkedDebtId: homeBudgetForm.linkedDebtId || null, catKey: catKeyToSave }, ...current]);
     // Sincronizar abono con deuda vinculada
     if (homeBudgetForm.linkedDebtId) {
       setHomeDebts(prev => prev.map(d => d.id === Number(homeBudgetForm.linkedDebtId) ? { ...d, paid: Math.min(d.total, d.paid + amount) } : d));
     }
-    setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue(), linkedDebtId: "" });
+    setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue(), linkedDebtId: "", catKey: "hogar" });
     setShowBudgetModal(false);
   };
   const updateHomeBudgetDate = (itemId, dueDate) => {
@@ -3700,7 +3701,7 @@ export default function App() {
           const amount = Number(paymentForm.amount);
           const day    = Number(paymentForm.dayOfMonth);
           if (!paymentForm.name.trim() || !amount || !day || day < 1 || day > 31) return;
-          const entry = { id: Date.now(), name: paymentForm.name.trim(), amount, dayOfMonth: day, lastPaidMonth: null };
+          const entry = { id: Date.now(), name: paymentForm.name.trim(), amount, dayOfMonth: day, lastPaidMonth: null, catKey: paymentForm.catKey || "hogar" };
           if (isHome) setHomePayments(prev => [entry, ...prev]);
           else        setBizPayments(prev  => [entry, ...prev]);
           setModalSaving("payment");
@@ -3719,6 +3720,13 @@ export default function App() {
                     <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Nombre del pago</label>
                     <input placeholder="Ej: Netflix, Arriendo, Internet..." autoFocus value={paymentForm.name} onChange={e=>setPaymentForm(c=>({...c,name:e.target.value}))}
                       style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
+                  </div>
+                  <div>
+                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Categoría presupuesto</label>
+                    <select value={paymentForm.catKey} onChange={e=>setPaymentForm(c=>({...c,catKey:e.target.value}))}
+                      style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}>
+                      {BUDGET_CATS_DEFAULT.map(c=><option key={c.key} value={c.key}>{c.emoji} {c.label}</option>)}
+                    </select>
                   </div>
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
                     <div>
@@ -4826,7 +4834,7 @@ export default function App() {
 
             {/* ── Pagos del mes — Negocio ── */}
             {(()=>{
-              const addPmt = () => { setPaymentForm({name:"",amount:"",dayOfMonth:""}); setPaymentModal({type:"biz"}); };
+              const addPmt = () => { setPaymentForm({name:"",amount:"",dayOfMonth:"",catKey:"hogar"}); setPaymentModal({type:"biz"}); };
               return (
                 <div className="card fin-section">
                   <div className="fin-section-head">
@@ -6186,15 +6194,30 @@ export default function App() {
           const thisMonthKey = _currentMonthKey;
           const spentByCat = {};
           homeBudget.forEach(item => {
-            if (item.catKey && item.type !== "Ingreso") {
+            if (item.catKey && !["Ingreso","Ahorro"].includes(item.type)) {
               const m = item.dueDate ? item.dueDate.slice(0,7) : new Date(item.createdAt||Date.now()).toISOString().slice(0,7);
               if (m === thisMonthKey) spentByCat[item.catKey] = (spentByCat[item.catKey]||0) + item.amount;
             }
           });
+          // Incluir pagos fijos marcados como pagados este mes
+          homePayments.forEach(p => {
+            if (p.lastPaidMonth === thisMonthKey) {
+              const k = p.catKey || "hogar";
+              spentByCat[k] = (spentByCat[k]||0) + p.amount;
+            }
+          });
           const totalBudgeted = budgetCats.reduce((s,c)=>s+c.budget,0);
           const totalSpentCats = Object.values(spentByCat).reduce((s,v)=>s+v,0);
-          const realIncome = homeBudgetTotals.income;
-          const disponible = realIncome - totalSpentCats;
+          // Ingresos solo del mes actual
+          const realIncome = homeBudget
+            .filter(i => i.type === "Ingreso" && (i.dueDate ? i.dueDate.slice(0,7) : new Date(i.createdAt||Date.now()).toISOString().slice(0,7)) === thisMonthKey)
+            .reduce((s,i)=>s+i.amount, 0);
+          // Gastos sin categoría para completar disponible
+          const untaggedSpent = homeBudget
+            .filter(i => !i.catKey && !["Ingreso","Ahorro"].includes(i.type)
+              && (i.dueDate ? i.dueDate.slice(0,7) : new Date(i.createdAt||Date.now()).toISOString().slice(0,7)) === thisMonthKey)
+            .reduce((s,i)=>s+i.amount, 0);
+          const disponible = realIncome - totalSpentCats - untaggedSpent;
           const healthPct = totalBudgeted>0?Math.min(100,Math.round((totalSpentCats/totalBudgeted)*100)):0;
           const healthColor = healthPct>=100?"#DC2626":healthPct>=80?"#D97706":"#1D9E75";
           const payRows = homePayments.map(p=>({...p,isPaid:p.lastPaidMonth===thisMonthKey,daysLeft:p.dayOfMonth-_currentDay}))
@@ -6353,7 +6376,7 @@ export default function App() {
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
                 <h3 style={{margin:0,fontSize:"15px",fontWeight:800}}>Pagos y deudas</h3>
                 <div style={{display:"flex",gap:"6px"}}>
-                  <button type="button" className="fin-add-btn" onClick={()=>{setPaymentForm({name:"",amount:"",dayOfMonth:""});setPaymentModal({type:"home"});}}>+ Pago fijo</button>
+                  <button type="button" className="fin-add-btn" onClick={()=>{setPaymentForm({name:"",amount:"",dayOfMonth:"",catKey:"hogar"});setPaymentModal({type:"home"});}}>+ Pago fijo</button>
                   <button type="button" className="fin-add-btn" onClick={()=>{setDebtForm({name:"",total:"",paid:""});setDebtModal({type:"home"});}}>+ Deuda</button>
                 </div>
               </div>
@@ -6470,6 +6493,15 @@ export default function App() {
                     onChange={e=>{setHomeBudgetForm(c=>({...c,description:e.target.value}));if(homeBudgetError)setHomeBudgetError("");}}
                     style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
                 </div>
+                {!["Ingreso","Ahorro"].includes(homeBudgetForm.type)&&(
+                  <div>
+                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Categoría presupuesto</label>
+                    <select value={homeBudgetForm.catKey} onChange={e=>setHomeBudgetForm(c=>({...c,catKey:e.target.value}))}
+                      style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}>
+                      {BUDGET_CATS_DEFAULT.map(c=><option key={c.key} value={c.key}>{c.emoji} {c.label}</option>)}
+                    </select>
+                  </div>
+                )}
                 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
                   <div>
                     <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Monto</label>
