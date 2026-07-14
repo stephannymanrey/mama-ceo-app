@@ -8618,3 +8618,230 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
   background: rgba(196,82,106,0.05);
   color: #C4526A;
 }
+
+/* ── Horario semanal Mi Hogar ── */
+.hogar-sched-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+.hogar-sched-day {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 160px;
+}
+.hogar-sched-day--today {
+  border-color: rgba(196,82,106,0.4);
+  background: #fdf5f7;
+}
+.hogar-sched-day-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+.hogar-sched-day-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.hogar-sched-day-name {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.hogar-sched-day-num {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.hogar-sched-day-num--today {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #C4526A;
+  color: #fff;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hogar-sched-add-btn {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  border: 1.5px solid rgba(196,82,106,0.3);
+  background: rgba(196,82,106,0.07);
+  color: #C4526A;
+  font-size: 17px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: background 0.14s;
+}
+.hogar-sched-add-btn:hover { background: rgba(196,82,106,0.17); }
+.hogar-sched-events {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  flex: 1;
+}
+.hogar-sched-empty {
+  font-size: 11px;
+  color: var(--muted);
+  font-style: italic;
+  margin: 0;
+}
+.hogar-sched-event {
+  border-left: 3px solid;
+  border-radius: 6px;
+  padding: 5px 7px;
+}
+.hogar-sched-event-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+}
+.hogar-sched-event-ico {
+  font-size: 12px;
+  flex-shrink: 0;
+  line-height: 1.4;
+}
+.hogar-sched-event-info {
+  flex: 1;
+  min-width: 0;
+}
+.hogar-sched-event-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink);
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.hogar-sched-event-meta {
+  font-size: 10px;
+  color: var(--muted);
+  display: block;
+}
+.hogar-sched-event-del {
+  border: none;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0 1px;
+  line-height: 1;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.14s;
+}
+.hogar-sched-event:hover .hogar-sched-event-del { opacity: 1; }
+
+/* Modal agregar actividad */
+.hogar-sched-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.38);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.hogar-sched-modal {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 460px;
+  max-height: 90dvh;
+  overflow-y: auto;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.22);
+}
+.hogar-sched-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 0;
+}
+.hogar-sched-modal-title {
+  font-size: 16px;
+  font-weight: 800;
+  margin: 0;
+  color: var(--ink);
+}
+.hogar-sched-modal-close {
+  border: none;
+  background: none;
+  font-size: 24px;
+  color: var(--muted);
+  cursor: pointer;
+  line-height: 1;
+  padding: 2px 4px;
+}
+.hogar-sched-modal-body {
+  padding: 16px 20px 26px;
+}
+.hogar-sched-cat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin-top: 6px;
+}
+.hogar-sched-cat-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  background: #faf7f5;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-align: left;
+  transition: all 0.14s;
+}
+.hogar-sched-cat-btn--on { font-weight: 700; }
+.hogar-sched-save-btn {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  background: #C4526A;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  transition: opacity 0.14s;
+}
+.hogar-sched-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+@media (max-width: 900px) {
+  .hogar-sched-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .hogar-sched-grid {
+    grid-template-columns: 1fr;
+  }
+  .hogar-sched-day { min-height: auto; }
+}

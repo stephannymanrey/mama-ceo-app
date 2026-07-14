@@ -44,9 +44,18 @@ const initialMovements = [
 // ── Duraciones estimadas (minutos) — usadas para calcular carga del día ──
 const HOME_CATEGORY_DURATION = { "Rutina": 15, "Compras": 45, "Colegio / Ninos": 30, "Salud": 45, "Hogar / Limpieza": 30, "Bienestar": 20 };
 const DEFAULT_HOME_DURATION = 25;
-const APPT_TYPE_DURATION = { "Médico": 45, "Cita": 30, "Colegio": 30, "Dentista": 45, "Extracurricular": 60, "Iglesia": 90, "Pago": 15, "Cumpleaños": 120, "Reunión": 60, "Trabajo": 60 };
+const APPT_TYPE_DURATION = { "Médico": 45, "Cita": 30, "Colegio": 30, "Dentista": 45, "Extracurricular": 60, "Iglesia": 90, "Pago": 15, "Cumpleaños": 120, "Reunión": 60, "Trabajo": 60, "Familia": 60, "Limpieza": 60, "Arreglos": 90, "Compras": 45 };
 const DEFAULT_APPT_DURATION = 30;
-const APPT_HOME_TYPES = new Set(["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños"]);
+const APPT_HOME_TYPES = new Set(["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños","Familia","Limpieza","Arreglos","Compras"]);
+const HOGAR_SCHED_CATS = [
+  { key: "Familia",         emoji: "💛", label: "Tiempo con familia",    color: "#C4526A", bg: "rgba(196,82,106,0.07)"  },
+  { key: "Extracurricular", emoji: "🎒", label: "Extracurricular hijos", color: "#2f9f70", bg: "rgba(47,159,112,0.07)"  },
+  { key: "Médico",          emoji: "🏥", label: "Cita médica / Salud",   color: "#DC2626", bg: "rgba(220,38,38,0.06)"   },
+  { key: "Limpieza",        emoji: "🧹", label: "Limpieza del hogar",    color: "#059669", bg: "rgba(5,150,105,0.07)"   },
+  { key: "Compras",         emoji: "🛒", label: "Compras",               color: "#0EA5E9", bg: "rgba(14,165,233,0.07)"  },
+  { key: "Arreglos",        emoji: "🔧", label: "Arreglos del hogar",    color: "#D97706", bg: "rgba(217,119,6,0.07)"   },
+  { key: "Otro",            emoji: "📌", label: "Otro",                  color: "#8A7F7A", bg: "rgba(138,127,122,0.06)" },
+];
 const DEFAULT_BIZ_TASK_DURATION = 30;
 const AWAKE_MINUTES_PER_DAY = 16 * 60;
 const homeTaskEstDuration = (t) => t.duration || HOME_CATEGORY_DURATION[t.category] || DEFAULT_HOME_DURATION;
@@ -277,6 +286,29 @@ function getWeekDays() {
   });
 }
 const weekDays = getWeekDays();
+
+function getMonFriDates() {
+  const today = new Date();
+  const day = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - (day === 0 ? 6 : day - 1));
+  return Array.from({ length: 5 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return toInputDate(d);
+  });
+}
+
+function apptMatchesDate(appt, dateStr) {
+  if (appt.date === dateStr) return true;
+  if (!appt.recurrence || appt.recurrence === "none") return false;
+  const ad = new Date(appt.date + "T12:00:00");
+  const td = new Date(dateStr + "T12:00:00");
+  if (appt.recurrence === "weekly")  return ad.getDay() === td.getDay();
+  if (appt.recurrence === "monthly") return ad.getDate() === td.getDate();
+  if (appt.recurrence === "yearly")  return ad.getMonth() === td.getMonth() && ad.getDate() === td.getDate();
+  return false;
+}
 
 const currencyLocales = { USD: "en-US", COP: "es-CO", MXN: "es-MX", EUR: "de-DE" };
 const monthShortNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
@@ -734,6 +766,8 @@ export default function App() {
   const [modalSaving, setModalSaving] = useState(null); // "debt"|"abono"|"payment" — estado éxito
 
   const [homeTab, setHomeTab] = useState(0);
+  const [schedModal, setSchedModal] = useState(null);
+  const [schedForm, setSchedForm] = useState({ title: "", type: "Familia", timeStart: "", timeEnd: "", recurrence: "none" });
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [abiMenuPrefs, setAbiMenuPrefs] = useState({ personas: "4", dieta: "normal", pais: "colombia" });
   const [abiMenuSuggestion, setAbiMenuSuggestion] = useState(null);
@@ -2982,7 +3016,7 @@ export default function App() {
           const t0 = new Date(year, month, 1);
           const tEnd = new Date(year, month+1, 0); tEnd.setHours(23,59,59,999);
           const CAL_TRABAJO = new Set(["Trabajo", "Reunión"]);
-          const CAL_TYPES_HOGAR   = ["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños","Otro"];
+          const CAL_TYPES_HOGAR   = ["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños","Familia","Limpieza","Arreglos","Compras","Otro"];
           const CAL_TYPES_TRABAJO = ["Reunión","Trabajo"];
           const allMonthAppts = expandAppts(appointments, 400).filter(a => { const d = new Date(a.date+"T00:00:00"); return d >= t0 && d <= tEnd; });
           const monthAppts = calTab === "hogar"   ? allMonthAppts.filter(a => !CAL_TRABAJO.has(a.type))
@@ -5606,7 +5640,7 @@ export default function App() {
     const DAY_LABELS = [["L","Lunes"],["M","Martes"],["X","Miércoles"],["J","Jueves"],["V","Viernes"],["S","Sábado"],["D","Domingo"]];
     const homeProgress  = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
     const pendingCount  = homeTasks.filter(t => !t.done).length;
-    const TABS = ["Hoy","Semana","Tareas","Mis Finanzas"];
+    const TABS = ["Hoy","Semana","Menú","Mis Finanzas"];
 
     // ── Abi menu database — por país y dieta, 4 comidas por día ──
     const MD=(d,a,c,s)=>({desayuno:d,almuerzo:a,cena:c,snack:s});
@@ -5841,100 +5875,158 @@ export default function App() {
         )}
 
         {/* ── TAB 1: SEMANA ── */}
-        {homeTab === 1 && (
-          <div key="tab-1" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"16px"}}>
-
-            {/* Con mi familia — PRIORITY */}
-            <div className="fam-card">
-              {/* Header */}
-              <div className="fam-card-header">
-                <div>
-                  <h3 className="fam-card-title">Con mi familia 💛</h3>
-                  <p className="fam-card-sub">Presencia real — no perfecta.</p>
-                </div>
-                <div style={{display:"flex",gap:"8px",alignItems:"center",flexWrap:"wrap"}}>
-                  {thisWeekMoments.length>0&&<span className="fam-moments-badge">{thisWeekMoments.length} momento{thisWeekMoments.length>1?"s":""}</span>}
-                  <button type="button" className={`fam-config-btn${showFamilyConfig?" fam-config-btn--active":""}`}
-                    onClick={()=>setShowFamilyConfig(v=>!v)}>
-                    {showFamilyConfig?"✓ Listo":"✏️ Editar familia"}
-                  </button>
+        {homeTab === 1 && (()=>{
+          const monFriDates = getMonFriDates();
+          const WD_NAMES = ["Lun","Mar","Mié","Jue","Vie"];
+          const SCHED_EXCL = new Set(["Trabajo","Reunión"]);
+          const openSched = (dateStr) => {
+            setSchedModal({ date: dateStr });
+            setSchedForm({ title:"", type:"Familia", timeStart:"", timeEnd:"", recurrence:"none" });
+          };
+          const submitSched = () => {
+            if (!schedForm.title.trim()) return;
+            const [sh, sm] = (schedForm.timeStart||"00:00").split(":").map(Number);
+            const [eh, em] = (schedForm.timeEnd||"00:00").split(":").map(Number);
+            const startM = sh*60+sm, endM = eh*60+em;
+            const duration = (schedForm.timeStart && schedForm.timeEnd && endM > startM)
+              ? endM - startM
+              : (APPT_TYPE_DURATION[schedForm.type] || 60);
+            setAppointments(prev => [...prev, {
+              id: Date.now(), title: schedForm.title.trim(),
+              date: schedModal.date, time: schedForm.timeStart,
+              type: schedForm.type, recurrence: schedForm.recurrence, duration,
+            }]);
+            setSchedModal(null);
+          };
+          return (
+            <div key="tab-1" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"16px"}}>
+              <div className="card" style={{padding:"18px 20px 14px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"4px"}}>
+                  <div>
+                    <h3 style={{margin:0,fontSize:"16px",fontWeight:800}}>Horario semanal</h3>
+                    <p style={{margin:"3px 0 0",fontSize:"13px",color:"var(--muted)"}}>Lunes a viernes · toca el <strong>+</strong> en cualquier día para agendar</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Config panel */}
-              {showFamilyConfig&&(
-                <div className="fam-config-panel">
-                  <p className="fam-config-title">Tu familia (sin nombres — solo roles)</p>
-                  <div className="fam-roles-list">
-                    {activeFamilyMembers.map(m=>(
-                      <div key={m.id} className="fam-role-chip">
-                        <span>{m.emoji}</span>
-                        <span>{m.role}</span>
-                        <button type="button" className="fam-role-delete"
-                          onClick={()=>{
-                            const base=familyMembers.length?familyMembers:DEFAULT_ROLES;
-                            setFamilyMembers(base.filter(x=>x.id!==m.id));
-                          }}
-                          title={`Quitar ${m.role}`}>×</button>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="fam-add-roles">
-                    {[["👧","Hija"],["👦","Hijo"],["💑","Pareja"],["👵","Abuela"],["👴","Abuelo"],["🐾","Mascota"],["👶","Bebé"],["👨‍👩‍👦","Familia"]].map(([emoji,role])=>(
-                      activeFamilyMembers.some(m=>m.role===role)?null:
-                      <button key={role} type="button" className="fam-add-btn"
-                        onClick={()=>setFamilyMembers(c=>[...(c.length?c:DEFAULT_ROLES),{id:Date.now()+Math.random(),role,emoji}])}>
-                        + {emoji} {role}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Tarjetas por miembro con gráfica circular */}
-              <div className="fam-member-grid">
-                {activeFamilyMembers.map(m=>{
-                  const mins=minutesByRole[m.role]||0; const hrs=(mins/60).toFixed(1); const goalMins=120;
-                  const pct=Math.min(100,Math.round((mins/goalMins)*100));
-                  const isTop = topFamilyRole && m.role===topFamilyRole && mins>0;
-                  const R=26; const circ=2*Math.PI*R;
-                  const lastMoment=[...thisWeekMoments].reverse().find(mo=>mo.quien.includes(m.role));
+              <div className="hogar-sched-grid">
+                {monFriDates.map((dateStr, i) => {
+                  const dayName = WD_NAMES[i];
+                  const dayNum = new Date(dateStr + "T12:00:00").getDate();
+                  const isToday = dateStr === todayISO;
+                  const dayAppts = appointments
+                    .filter(a => apptMatchesDate(a, dateStr) && !SCHED_EXCL.has(a.type))
+                    .sort((a,b) => (a.time||"").localeCompare(b.time||""));
                   return (
-                    <div key={m.id} className={`fam-member-card${isTop?" fam-member-card--top":""}`}>
-                      {isTop && <span className="fam-member-top-badge">👑 Más tiempo</span>}
-                      <div className="fam-member-ring-wrap">
-                        <svg viewBox="0 0 60 60" className="fam-member-ring-svg">
-                          <circle cx="30" cy="30" r={R} className="fam-member-ring-bg" />
-                          <circle cx="30" cy="30" r={R} className="fam-member-ring-fg"
-                            strokeDasharray={circ} strokeDashoffset={circ*(1-pct/100)}
-                            style={{stroke:pct>=100?"var(--green)":"#C4526A"}}
-                            transform="rotate(-90 30 30)" />
-                        </svg>
-                        <span className="fam-member-ring-emoji">{m.emoji}</span>
+                    <div key={dateStr} className={`hogar-sched-day${isToday?" hogar-sched-day--today":""}`}>
+                      <div className="hogar-sched-day-head">
+                        <div className="hogar-sched-day-label">
+                          <span className="hogar-sched-day-name">{dayName}</span>
+                          <span className={`hogar-sched-day-num${isToday?" hogar-sched-day-num--today":""}`}>{dayNum}</span>
+                        </div>
+                        <button type="button" className="hogar-sched-add-btn" onClick={()=>openSched(dateStr)} title="Agregar">+</button>
                       </div>
-                      <p className="fam-member-role">{m.role}</p>
-                      <p className="fam-member-hrs">{hrs}h <span className="fam-member-hrs-sub">esta semana</span></p>
-                      {lastMoment
-                        ? <p className="fam-member-last">{lastMoment.queHicieron || lastMoment.tiempo}</p>
-                        : <p className="fam-member-last fam-member-last--empty">Sin momentos aún</p>
-                      }
+                      <div className="hogar-sched-events">
+                        {dayAppts.length === 0
+                          ? <p className="hogar-sched-empty">Día libre</p>
+                          : dayAppts.map(appt => {
+                              const cat = HOGAR_SCHED_CATS.find(c=>c.key===appt.type) || HOGAR_SCHED_CATS[HOGAR_SCHED_CATS.length-1];
+                              return (
+                                <div key={appt.id} className="hogar-sched-event" style={{borderLeftColor:cat.color,background:cat.bg}}>
+                                  <div className="hogar-sched-event-row">
+                                    <span className="hogar-sched-event-ico">{cat.emoji}</span>
+                                    <div className="hogar-sched-event-info">
+                                      <span className="hogar-sched-event-title">{appt.title}</span>
+                                      {(appt.time||appt.duration) && (
+                                        <span className="hogar-sched-event-meta">
+                                          {appt.time||""}{appt.time&&appt.duration?" · ":""}{appt.duration?`${appt.duration}min`:""}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <button type="button" className="hogar-sched-event-del"
+                                      onClick={()=>setAppointments(prev=>prev.filter(a=>a.id!==appt.id))}>×</button>
+                                  </div>
+                                </div>
+                              );
+                            })
+                        }
+                      </div>
                     </div>
                   );
                 })}
               </div>
 
-              {/* Celebration o botón para agregar */}
-              {presenceCelebration?(
-                <div className="fam-celebration">
-                  <p style={{fontSize:"28px",margin:"0 0 6px"}}>🌸</p>
-                  <p style={{margin:0,fontWeight:700,fontSize:"15px",color:"var(--ink)"}}>{victoryMsg}</p>
+              {/* Modal agregar actividad */}
+              {schedModal && (
+                <div className="hogar-sched-backdrop" onClick={()=>setSchedModal(null)}>
+                  <div className="hogar-sched-modal" onClick={e=>e.stopPropagation()}>
+                    <div className="hogar-sched-modal-head">
+                      <p className="hogar-sched-modal-title">Nueva actividad</p>
+                      <button type="button" className="hogar-sched-modal-close" onClick={()=>setSchedModal(null)}>×</button>
+                    </div>
+                    <div className="hogar-sched-modal-body">
+                      <p className="app-form-label">Categoría</p>
+                      <div className="hogar-sched-cat-grid">
+                        {HOGAR_SCHED_CATS.map(cat=>(
+                          <button key={cat.key} type="button"
+                            className={`hogar-sched-cat-btn${schedForm.type===cat.key?" hogar-sched-cat-btn--on":""}`}
+                            style={schedForm.type===cat.key?{borderColor:cat.color,background:cat.bg,color:cat.color}:{}}
+                            onClick={()=>setSchedForm(f=>({...f,type:cat.key}))}>
+                            <span>{cat.emoji}</span><span>{cat.label}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      <p className="app-form-label" style={{marginTop:"14px"}}>Nombre / descripción</p>
+                      <input className="app-form-input" autoFocus
+                        placeholder="Ej: Tarde con los hijos, Limpieza cocina..."
+                        value={schedForm.title}
+                        onChange={e=>setSchedForm(f=>({...f,title:e.target.value}))}
+                        onKeyDown={e=>e.key==="Enter"&&submitSched()} />
+
+                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginTop:"10px"}}>
+                        <div>
+                          <p className="app-form-label">Hora inicio</p>
+                          <input type="time" className="app-form-input"
+                            value={schedForm.timeStart}
+                            onChange={e=>setSchedForm(f=>({...f,timeStart:e.target.value}))} />
+                        </div>
+                        <div>
+                          <p className="app-form-label">Hora fin</p>
+                          <input type="time" className="app-form-input"
+                            value={schedForm.timeEnd}
+                            onChange={e=>setSchedForm(f=>({...f,timeEnd:e.target.value}))} />
+                        </div>
+                      </div>
+
+                      <p className="app-form-label" style={{marginTop:"12px"}}>¿Se repite?</p>
+                      <div className="app-pill-row">
+                        {[["none","No se repite"],["weekly","Cada semana"],["monthly","Cada mes"]].map(([val,lbl])=>(
+                          <button key={val} type="button"
+                            className={`app-pill-btn${schedForm.recurrence===val?" app-pill-btn--active":""}`}
+                            onClick={()=>setSchedForm(f=>({...f,recurrence:val}))}>
+                            {lbl}
+                          </button>
+                        ))}
+                      </div>
+
+                      <button type="button" className="hogar-sched-save-btn"
+                        style={{marginTop:"18px"}}
+                        disabled={!schedForm.title.trim()}
+                        onClick={submitSched}>
+                        Agregar actividad
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ):(
-                <button type="button" className="fam-add-time-btn" onClick={()=>setShowFamilyTimeModal(true)}>
-                  💛 Agregar tiempo en familia
-                </button>
               )}
             </div>
+          );
+        })()}
+
+        {/* ── TAB 2: MENÚ ── */}
+        {homeTab === 2 && (
+          <div key="tab-2" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"14px"}}>
 
             {/* Menú semanal */}
             <div className="card" style={{padding:"20px"}}>
@@ -5972,123 +6064,6 @@ export default function App() {
                     </div>
                   );
                 })}
-              </div>
-            </div>
-
-            {/* Hijos esta semana */}
-            <div className="card" style={{padding:"20px"}}>
-              <h3 style={{margin:"0 0 2px",fontSize:"16px"}}>Actividades de tus hijos esta semana 🎒</h3>
-              <p style={{margin:"0 0 12px",fontSize:"13px",color:"var(--muted)"}}>Actividades y horarios — un día a la vez.</p>
-              <div style={{display:"grid",gap:"6px"}}>
-                {DAY_LABELS.map(([key,name])=>(
-                  <div key={key} style={{display:"flex",alignItems:"center",gap:"8px"}}>
-                    <span style={{width:"28px",height:"28px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===key?"#C4526A":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
-                    <input value={kidsSchedule[key]?.act||""} onChange={e=>setKidsSchedule(s=>({...s,[key]:{...s[key],act:e.target.value}}))} placeholder={todayDay===key?"Actividad de hoy...":name+"..."}
-                      style={{flex:2,padding:"7px 10px",font:"inherit",fontSize:"13px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5",minWidth:0,outline:"none"}}/>
-                    <input type="time" value={kidsSchedule[key]?.time||""} onChange={e=>setKidsSchedule(s=>({...s,[key]:{...s[key],time:e.target.value}}))}
-                      style={{flex:"0 0 88px",padding:"7px 8px",font:"inherit",fontSize:"12px",borderRadius:"8px",border:`1px solid ${todayDay===key?"rgba(196,82,106,0.35)":"var(--line)"}`,background:todayDay===key?"#fdf5f7":"#faf7f5",outline:"none"}}/>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── TAB 2: TAREAS ── */}
-        {homeTab === 2 && (
-          <div key="tab-2" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"14px"}}>
-
-            {/* Progress + add button */}
-            <div className="card" style={{padding:"16px 20px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}}>
-                <p style={{margin:0,fontSize:"14px",fontWeight:700,color:"var(--ink)"}}>Tareas del hogar</p>
-                <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-                  <span style={{fontSize:"13px",fontWeight:700,color:homeProgress===100?"var(--green)":"var(--ink)"}}>{homeProgress}%</span>
-                  <button type="button" onClick={()=>setShowTaskModal(true)} style={{background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",padding:"7px 16px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>+ Nueva</button>
-                </div>
-              </div>
-              <div style={{height:"7px",background:"rgba(0,0,0,0.07)",borderRadius:"4px",overflow:"hidden"}}>
-                <div style={{height:"100%",width:`${homeProgress}%`,background:homeProgress===100?"var(--green)":"#C4526A",borderRadius:"4px",transition:"width 0.5s ease"}}></div>
-              </div>
-              <p style={{margin:"5px 0 0",fontSize:"12px",color:"var(--muted)"}}>{completedHomeTasks} de {homeTasks.length} completadas</p>
-            </div>
-
-            {/* Category cards */}
-            {homeTasks.length>0&&(
-              <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(148px,1fr))",gap:"10px"}}>
-                {CAT_CONFIG.map(cat=>{
-                  const catTasks=homeTasks.filter(t=>t.category===cat.key); const catDone=catTasks.filter(t=>t.done).length;
-                  if(!catTasks.length) return null;
-                  return (
-                    <div key={cat.key} style={{padding:"14px",background:cat.bg,borderRadius:"12px",border:`1px solid ${cat.color}22`}}>
-                      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
-                        <span style={{fontSize:"20px"}}>{cat.emoji}</span>
-                        <span style={{fontSize:"10px",fontWeight:700,color:cat.color,background:`${cat.color}18`,padding:"2px 7px",borderRadius:"12px"}}>{catDone}/{catTasks.length}</span>
-                      </div>
-                      <p style={{margin:"0 0 8px",fontSize:"11px",fontWeight:700,color:"var(--ink)"}}>{cat.key}</p>
-                      {catTasks.slice(0,3).map(task=>(
-                        <label key={task.id} style={{display:"flex",alignItems:"center",gap:"5px",marginBottom:"4px",cursor:"pointer"}}>
-                          <input type="checkbox" checked={task.done} onChange={()=>toggleHomeTask(task.id)} style={{accentColor:cat.color,width:"13px",height:"13px",flexShrink:0}}/>
-                          <span style={{fontSize:"12px",color:task.done?"var(--muted)":"var(--ink)",textDecoration:task.done?"line-through":"none",lineHeight:1.3}}>{task.title}</span>
-                        </label>
-                      ))}
-                      {catTasks.length>3&&<p style={{margin:"3px 0 0",fontSize:"11px",color:"var(--muted)"}}>+{catTasks.length-3} más</p>}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Full list by priority */}
-            {homeTasks.length>0&&(
-              <div className="card" style={{padding:"18px 20px"}}>
-                <h3 style={{margin:"0 0 12px",fontSize:"15px"}}>Todos los pendientes</h3>
-                {["Importante","Normal","Sin afán"].map(priority=>{
-                  const tasks=homeTasks.filter(t=>(t.priority||"Normal")===priority); if(!tasks.length) return null;
-                  return (
-                    <div key={priority} style={{marginBottom:"12px"}}>
-                      <p style={{fontSize:"10px",fontWeight:800,textTransform:"uppercase",letterSpacing:"0.6px",color:priority==="Importante"?"#C4526A":"var(--muted)",margin:"0 0 6px"}}>
-                        {priority==="Importante"&&"⭐ "}{priority}
-                      </p>
-                      {tasks.map(task=>(
-                        <div key={task.id} style={{display:"flex",alignItems:"center",gap:"8px",padding:"7px 10px",borderRadius:"8px",background:"#fff",border:"1px solid var(--line)",marginBottom:"4px"}}>
-                          <input type="checkbox" checked={task.done} onChange={()=>toggleHomeTask(task.id)} style={{accentColor:"var(--green)",width:"14px",height:"14px",flexShrink:0,cursor:"pointer"}}/>
-                          <div style={{flex:1,minWidth:0}}>
-                            <span style={{fontSize:"13px",fontWeight:600,color:task.done?"var(--muted)":"var(--ink)",textDecoration:task.done?"line-through":"none"}}>{task.title}</span>
-                            <span style={{marginLeft:"7px",fontSize:"11px",color:"var(--muted)"}}>{task.category}</span>
-                            {task.frequency&&<span style={{marginLeft:"6px",fontSize:"11px",color:"var(--muted)"}}>· {task.frequency}</span>}
-                            {task.delegate&&<span style={{marginLeft:"6px",fontSize:"11px",color:"#C4526A",fontWeight:600}}>→ {task.delegate}</span>}
-                          </div>
-                          <button type="button" onClick={()=>setHomeTasks(c=>c.filter(t=>t.id!==task.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"15px",lineHeight:1,padding:"2px 4px",flexShrink:0}}>×</button>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-
-            {homeTasks.length===0&&(
-              <div className="card" style={{padding:"28px",textAlign:"center",background:"linear-gradient(135deg,#fdf9f6,#fef4f0)",border:"2px dashed #e8d5c4"}}>
-                <p style={{fontSize:"32px",margin:"0 0 10px"}}>🌱</p>
-                <h3 style={{margin:"0 0 6px",fontSize:"16px"}}>Tu lista está vacía</h3>
-                <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Agrega tu primera tarea del hogar.</p>
-                <button type="button" onClick={()=>setShowTaskModal(true)} style={{padding:"10px 24px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:700}}>+ Agregar tarea</button>
-              </div>
-            )}
-
-            {/* Rutinas del hogar */}
-            <div className="card" style={{padding:"18px 20px"}}>
-              <h3 style={{margin:"0 0 2px",fontSize:"15px"}}>Rutinas del hogar 🧹</h3>
-              <p style={{margin:"0 0 10px",fontSize:"13px",color:"var(--muted)"}}>Qué toca hacer cada día.</p>
-              <div style={{display:"grid",gap:"5px"}}>
-                {DAY_LABELS.map(([key,name])=>(
-                  <div key={key} style={{display:"flex",alignItems:"center",gap:"8px"}}>
-                    <span style={{width:"26px",height:"26px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:todayDay===key?"var(--purple)":"var(--line)",color:todayDay===key?"#fff":"var(--muted)"}}>{key}</span>
-                    <input value={homeRoutines[key]||""} onChange={e=>setHomeRoutines(r=>({...r,[key]:e.target.value}))} placeholder={`${name}...`}
-                      style={{flex:1,padding:"6px 10px",font:"inherit",fontSize:"13px",borderRadius:"7px",border:`1px solid ${todayDay===key?"rgba(107,70,193,0.3)":"var(--line)"}`,background:todayDay===key?"#f5f0fc":"#faf7f5",outline:"none"}}/>
-                  </div>
-                ))}
               </div>
             </div>
 
