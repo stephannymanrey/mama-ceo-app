@@ -8888,6 +8888,130 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
   .hogar-sched-event-del { opacity: 1; }
 }
 
+/* ── SEMANA: OPCIÓN B — Strip + detalle ── */
+.sched-strip {
+  display: flex;
+  gap: 2px;
+  margin: 0 -2px;
+}
+.sched-strip-day {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 2px 7px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.13s;
+  min-width: 0;
+}
+.sched-strip-day:hover { background: rgba(0,0,0,0.04); }
+.sched-strip-name {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--muted);
+}
+.sched-strip-day--wknd .sched-strip-name { color: var(--purple); opacity: 0.8; }
+.sched-strip-num {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  transition: all 0.13s;
+}
+.sched-strip-day--today .sched-strip-num {
+  background: #C4526A;
+  color: #fff;
+  font-weight: 800;
+}
+.sched-strip-day--sel:not(.sched-strip-day--today) .sched-strip-num {
+  background: rgba(196,82,106,0.13);
+  color: #C4526A;
+  font-weight: 800;
+}
+.sched-strip-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: transparent;
+  transition: background 0.13s;
+}
+.sched-strip-dot--on { background: rgba(196,82,106,0.45); }
+.sched-strip-day--today .sched-strip-dot--on { background: rgba(196,82,106,0.7); }
+/* Detail */
+.sched-detail {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.sched-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.sched-detail-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.sched-add-day-btn {
+  padding: 6px 12px;
+  background: rgba(196,82,106,0.08);
+  border: 1.5px solid rgba(196,82,106,0.25);
+  border-radius: 8px;
+  color: #C4526A;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.13s;
+}
+.sched-add-day-btn:hover { background: rgba(196,82,106,0.15); }
+.sched-detail-event {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 12px;
+  border-left: 3px solid;
+  border-radius: 0 12px 12px 0;
+  cursor: pointer;
+  transition: filter 0.12s;
+}
+.sched-detail-event:hover { filter: brightness(0.96); }
+.sched-detail-time {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  min-width: 38px;
+  flex-shrink: 0;
+}
+.sched-detail-info {
+  flex: 1;
+  min-width: 0;
+}
+.sched-detail-name {
+  font-size: 13px;
+  font-weight: 700;
+  margin: 0 0 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sched-detail-cat {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0;
+}
+
 /* ── MIS FINANZAS PERSONALES ── */
 .pf-kpi-row {
   display: grid;
