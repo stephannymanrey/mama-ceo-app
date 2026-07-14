@@ -3833,22 +3833,22 @@ export default function App() {
               {/* Agenda */}
               <div className="db-today-col">
                 <p className="db-today-label">📅 Agenda</p>
-                {hasTodayCal ? todayCalAppts.map(a => (
+                {todayCalAppts.map(a => (
                   <div key={a.id} className="db-today-appt-row">
                     {a.time && <span className="db-today-appt-time">{a.time}</span>}
                     <span className="db-today-appt-name">{a.title}</span>
                   </div>
-                )) : <p className="db-today-nil">Sin citas hoy</p>}
+                ))}
                 {userMode !== "emprendedora" && kidsSchedule[todayDay]?.act && (
-                  <div className="db-today-task-row" style={{marginTop:"8px",alignItems:"flex-start"}}>
-                    <span style={{fontSize:"16px",lineHeight:1,marginTop:"2px"}}>🎒</span>
-                    <div style={{minWidth:0}}>
-                      <span className="db-today-task-title">{kidsSchedule[todayDay].act}</span>
-                      {kidsSchedule[todayDay].time && (
-                        <span style={{display:"block",fontSize:"11px",color:"var(--muted)",marginTop:"2px"}}>{kidsSchedule[todayDay].time}</span>
-                      )}
-                    </div>
+                  <div className="db-today-appt-row">
+                    {kidsSchedule[todayDay].time && (
+                      <span className="db-today-appt-time db-today-appt-time--kids">{kidsSchedule[todayDay].time}</span>
+                    )}
+                    <span className="db-today-appt-name">{kidsSchedule[todayDay].act}</span>
                   </div>
+                )}
+                {!hasTodayCal && !kidsSchedule[todayDay]?.act && (
+                  <p className="db-today-nil">Sin citas hoy</p>
                 )}
               </div>
 
