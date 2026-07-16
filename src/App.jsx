@@ -2447,7 +2447,7 @@ export default function App() {
             style={{padding:"10px 18px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700,flexShrink:0}}>
             Instalar
           </button>
-          <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}}>×</button>
+          <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}} aria-label="Cerrar">×</button>
         </div>
       )}
 
@@ -2463,7 +2463,7 @@ export default function App() {
             style={{padding:"10px 18px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700,flexShrink:0}}>
             Cómo hacerlo
           </button>
-          <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}}>×</button>
+          <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}} aria-label="Cerrar">×</button>
         </div>
       )}
 
@@ -2473,7 +2473,7 @@ export default function App() {
           <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",padding:"28px 24px 40px",width:"min(480px,100%)",margin:"auto",marginTop:"40px",marginBottom:"40px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px"}}>
               <h3 style={{margin:0,fontSize:"18px"}}>Instalar MamaCEO 🌸</h3>
-              <button type="button" onClick={() => { setShowIOSGuide(false); dismissInstall(); }} style={{border:"none",background:"none",fontSize:"22px",color:"var(--muted)",cursor:"pointer",lineHeight:1}}>×</button>
+              <button type="button" onClick={() => { setShowIOSGuide(false); dismissInstall(); }} style={{border:"none",background:"none",fontSize:"22px",color:"var(--muted)",cursor:"pointer",lineHeight:1}} aria-label="Cerrar">×</button>
             </div>
             <div style={{display:"grid",gap:"16px"}}>
               {[
@@ -2893,7 +2893,7 @@ export default function App() {
             <p style={{margin:0,fontSize:"13px",color:"#92400e",lineHeight:1.4,flex:1}}>
               <strong>Tus datos se guardan solo en este dispositivo.</strong> Si borras el historial del navegador o cambias de dispositivo, perderás tu información.
             </p>
-            <button onClick={() => { setLocalWarnDismissed(true); localStorage.setItem("localWarnDismissed","1"); }} style={{border:"none",background:"none",fontSize:"20px",color:"#b45309",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}}>×</button>
+            <button onClick={() => { setLocalWarnDismissed(true); localStorage.setItem("localWarnDismissed","1"); }} style={{border:"none",background:"none",fontSize:"20px",color:"#b45309",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}} aria-label="Cerrar">×</button>
           </div>
         )}
         {syncError && (
@@ -3528,7 +3528,7 @@ export default function App() {
                   <button className={`calc-tab${calcMode==="calc"?" active":""}`} onClick={()=>setCalcMode("calc")}>🔢 Calculadora</button>
                   <button className={`calc-tab${calcMode==="reinv"?" active":""}`} onClick={()=>setCalcMode("reinv")}>💸 Reinversión</button>
                 </div>
-                <button className="calc-close" onClick={()=>setShowCalcModal(false)}>✕</button>
+                <button className="calc-close" onClick={()=>setShowCalcModal(false)} aria-label="Cerrar">✕</button>
               </div>
 
               {calcMode === "calc" && (
@@ -3664,7 +3664,7 @@ export default function App() {
               <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
                 <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <p style={{margin:0,fontSize:"18px",fontWeight:800}}>{isEdit?"Editar deuda":"Nueva deuda"}</p>
-                  <button type="button" onClick={()=>setDebtModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                  <button type="button" onClick={()=>setDebtModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}} aria-label="Cerrar">✕</button>
                 </div>
                 <form onSubmit={saveDebt} style={{padding:"22px",display:"flex",flexDirection:"column",gap:"12px"}}>
                   <div>
@@ -3760,7 +3760,7 @@ export default function App() {
               <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
                 <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Nuevo pago del mes</p>
-                  <button type="button" onClick={()=>setPaymentModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                  <button type="button" onClick={()=>setPaymentModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}} aria-label="Cerrar">✕</button>
                 </div>
                 <form onSubmit={savePmt} style={{padding:"22px",display:"flex",flexDirection:"column",gap:"12px"}}>
                   <div>
@@ -4473,7 +4473,7 @@ export default function App() {
                       <p className="app-modal-head-eyebrow">Mi Negocio</p>
                       <p className="app-modal-head-title">Nueva tarea</p>
                     </div>
-                    <button type="button" className="app-modal-close" onClick={() => setShowBizTaskModal(false)}>✕</button>
+                    <button type="button" className="app-modal-close" onClick={() => setShowBizTaskModal(false)} aria-label="Cerrar">✕</button>
                   </div>
                   <form onSubmit={addTask} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"14px"}}>
                     <div>
@@ -4854,7 +4854,7 @@ export default function App() {
                         <div key={d.id} className="fin-debt-row">
                           <div className="fin-debt-top">
                             <span className="fin-debt-name" onClick={() => editDebt(d)}>{d.name}</span>
-                            <button type="button" className="fin-del-btn" onClick={() => setBizDebts(prev => prev.filter(x => x.id !== d.id))}>×</button>
+                            <button type="button" className="fin-del-btn" onClick={() => setBizDebts(prev => prev.filter(x => x.id !== d.id))} aria-label="Cerrar">×</button>
                           </div>
                           <div className="fin-debt-bar-wrap">
                             <div className="fin-debt-bar" style={{width:`${pct}%`}}/>
@@ -4907,7 +4907,7 @@ export default function App() {
                               onClick={() => setBizPayments(prev => prev.map(x => x.id === p.id ? {...x, lastPaidMonth: isPaid ? null : _currentMonthKey} : x))}>
                               {isPaid ? "✓" : "Pagar"}
                             </button>
-                            <button type="button" className="fin-del-btn" onClick={() => setBizPayments(prev => prev.filter(x => x.id !== p.id))}>×</button>
+                            <button type="button" className="fin-del-btn" onClick={() => setBizPayments(prev => prev.filter(x => x.id !== p.id))} aria-label="Cerrar">×</button>
                           </div>
                         </div>
                       );
@@ -4929,7 +4929,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">Mi Negocio</p>
                   <p className="app-modal-head-title">Registrar movimiento</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={() => setShowMovementModal(false)}>✕</button>
+                <button type="button" className="app-modal-close" onClick={() => setShowMovementModal(false)} aria-label="Cerrar">✕</button>
               </div>
               <div style={{padding:"4px 0"}}>
                 {MovementForm()}
@@ -5127,7 +5127,7 @@ export default function App() {
                               <button type="button" key={s} onClick={() => moveClientStatus(client.id, s)}>{stageEmoji[s]} {s.replace("Lead ","")}</button>
                             ))}
                             <button type="button" className="cl-close-btn" onClick={() => moveClientStatus(client.id, "Venta ganada")}>✓ Cerré</button>
-                            <button type="button" className="delete-btn" onClick={() => confirmDelete("¿Eliminar este cliente?", () => setClients(c => c.filter(cl => cl.id !== client.id)))}>×</button>
+                            <button type="button" className="delete-btn" onClick={() => confirmDelete("¿Eliminar este cliente?", () => setClients(c => c.filter(cl => cl.id !== client.id)))} aria-label="Cerrar">×</button>
                           </div>
                         </div>
                       );
@@ -5208,7 +5208,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">Mis Clientes</p>
                   <p className="app-modal-head-title">Nuevo cliente</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={() => setShowClientFormModal(false)}>✕</button>
+                <button type="button" className="app-modal-close" onClick={() => setShowClientFormModal(false)} aria-label="Cerrar">✕</button>
               </div>
               <form onSubmit={addClient} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"12px"}}>
                 {clients.length >= currentLimits.clients && (
@@ -5326,7 +5326,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">Cliente ganado</p>
                   <p className="app-modal-head-title">{editingClient.name}</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={() => setEditingClientId(null)}>✕</button>
+                <button type="button" className="app-modal-close" onClick={() => setEditingClientId(null)} aria-label="Cerrar">✕</button>
               </div>
               <div style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"12px"}}>
                 <div>
@@ -5585,7 +5585,7 @@ export default function App() {
                             <span className="ck-badge ck-badge--format">{fi} {item.format}</span>
                             <span className="ck-badge ck-badge--network">{ni} {item.network}</span>
                           </div>
-                          <button type="button" className="ck-card-del" onClick={(e) => { e.stopPropagation(); confirmDelete("¿Eliminar esta pieza?", () => setContentItems((c) => c.filter((ci) => ci.id !== item.id))); }}>✕</button>
+                          <button type="button" className="ck-card-del" onClick={(e) => { e.stopPropagation(); confirmDelete("¿Eliminar esta pieza?", () => setContentItems((c) => c.filter((ci) => ci.id !== item.id))); }} aria-label="Cerrar">✕</button>
                         </div>
                         <div className="ck-card-body">
                           <p className="ck-card-title">{item.title}</p>
@@ -5621,7 +5621,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">{colByStatus[editingItem.status]?.icon} {colByStatus[editingItem.status]?.label || editingItem.status}</p>
                   <p className="app-modal-head-title">{editingItem.title || "Sin título"}</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={() => setEditingContentId(null)}>✕</button>
+                <button type="button" className="app-modal-close" onClick={() => setEditingContentId(null)} aria-label="Cerrar">✕</button>
               </div>
               <div style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"14px",maxHeight:"70vh",overflowY:"auto"}}>
                 <div>
@@ -6110,7 +6110,7 @@ export default function App() {
                   <div className="hogar-sched-modal" onClick={e=>e.stopPropagation()}>
                     <div className="hogar-sched-modal-head">
                       <p className="hogar-sched-modal-title">{schedEditId?"Editar actividad":"Nueva actividad"}</p>
-                      <button type="button" className="hogar-sched-modal-close" onClick={()=>{setSchedModal(null);setSchedEditId(null);}}>×</button>
+                      <button type="button" className="hogar-sched-modal-close" onClick={()=>{setSchedModal(null);setSchedEditId(null);}} aria-label="Cerrar">×</button>
                     </div>
                     <div className="hogar-sched-modal-body">
                       <p className="app-form-label">Categoría</p>
@@ -6232,7 +6232,7 @@ export default function App() {
                       <input type="checkbox" checked={item.done} onChange={()=>setGroceryList(c=>c.map(g=>g.id===item.id?{...g,done:!g.done}:g))} style={{accentColor:"var(--green)",width:"13px",height:"13px",flexShrink:0}}/>
                       <span style={{flex:1,fontSize:"13px",textDecoration:item.done?"line-through":"none",color:item.done?"var(--muted)":"var(--ink)"}}>{item.text}</span>
                       {item.fromMenu&&<span style={{fontSize:"9px",color:"#0EA5E9",fontWeight:700,background:"rgba(14,165,233,0.1)",padding:"1px 5px",borderRadius:"4px"}}>MENÚ</span>}
-                      <button type="button" onClick={()=>setGroceryList(c=>c.filter(g=>g.id!==item.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",lineHeight:1,padding:"0 2px"}}>×</button>
+                      <button type="button" onClick={()=>setGroceryList(c=>c.filter(g=>g.id!==item.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",lineHeight:1,padding:"0 2px"}} aria-label="Cerrar">×</button>
                     </label>
                   ))}
                 </div>
@@ -6303,7 +6303,7 @@ export default function App() {
                   onClick={()=>setHomePayments(prev=>prev.map(x=>x.id===p.id?{...x,lastPaidMonth:p.isPaid?null:thisMonthKey}:x))}>
                   {p.isPaid?"✓":"Pagar"}
                 </button>
-                <button type="button" className="fin-del-btn" onClick={()=>setHomePayments(prev=>prev.filter(x=>x.id!==p.id))}>×</button>
+                <button type="button" className="fin-del-btn" onClick={()=>setHomePayments(prev=>prev.filter(x=>x.id!==p.id))} aria-label="Cerrar">×</button>
               </div>
             </div>
           );
@@ -6457,7 +6457,7 @@ export default function App() {
                                 <span style={{fontSize:"13px",fontWeight:700,color:"var(--ink)",cursor:"pointer"}} onClick={()=>{setDebtForm({name:d.name,total:String(d.total),paid:String(d.paid)});setDebtModal({type:"home",item:d});}}>{d.name}</span>
                                 <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
                                   <span style={{fontSize:"11px",fontWeight:600,color:"#DC2626"}}>Falta {money.format(rem)}</span>
-                                  <button type="button" className="fin-del-btn" onClick={()=>setHomeDebts(prev=>prev.filter(x=>x.id!==d.id))}>×</button>
+                                  <button type="button" className="fin-del-btn" onClick={()=>setHomeDebts(prev=>prev.filter(x=>x.id!==d.id))} aria-label="Cerrar">×</button>
                                 </div>
                               </div>
                               <div style={{height:"6px",background:"rgba(0,0,0,0.07)",borderRadius:"3px",overflow:"hidden",marginBottom:"6px"}}>
@@ -6483,7 +6483,7 @@ export default function App() {
                 <div className="hogar-sched-modal" onClick={e=>e.stopPropagation()}>
                   <div className="hogar-sched-modal-head">
                     <p className="hogar-sched-modal-title">Registrar gasto</p>
-                    <button type="button" className="hogar-sched-modal-close" onClick={()=>setQuickExpModal(false)}>×</button>
+                    <button type="button" className="hogar-sched-modal-close" onClick={()=>setQuickExpModal(false)} aria-label="Cerrar">×</button>
                   </div>
                   <div className="hogar-sched-modal-body">
                     <p className="app-form-label">Categoría</p>
@@ -6605,7 +6605,7 @@ export default function App() {
                     <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Hola, soy Abi 👋</p>
                   </div>
                 </div>
-                <button type="button" onClick={()=>{setShowMenuModal(false);setAbiMenuSuggestion(null);}} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"8px",width:"30px",height:"30px",cursor:"pointer",color:"#fff",fontSize:"15px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                <button type="button" onClick={()=>{setShowMenuModal(false);setAbiMenuSuggestion(null);}} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"8px",width:"30px",height:"30px",cursor:"pointer",color:"#fff",fontSize:"15px",display:"flex",alignItems:"center",justifyContent:"center"}} aria-label="Cerrar">✕</button>
               </div>
               <div style={{padding:"20px 22px",overflowY:"auto",flex:1}}>
                 {!abiMenuSuggestion?(
@@ -6714,7 +6714,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">Mi Hogar</p>
                   <p className="app-modal-head-title">Nueva tarea</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={()=>{setShowTaskModal(false);setHomeTaskError("");}}>✕</button>
+                <button type="button" className="app-modal-close" onClick={()=>{setShowTaskModal(false);setHomeTaskError("");}} aria-label="Cerrar">✕</button>
               </div>
               <form onSubmit={e=>{addHomeTask(e);if(!homeTaskError)setShowTaskModal(false);}} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"14px"}}>
                 <div>
@@ -6789,7 +6789,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">Con mi familia</p>
                   <p className="app-modal-head-title">Agregar un momento 💛</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={()=>setShowFamilyTimeModal(false)}>✕</button>
+                <button type="button" className="app-modal-close" onClick={()=>setShowFamilyTimeModal(false)} aria-label="Cerrar">✕</button>
               </div>
               <div style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"16px"}}>
                 <div>
@@ -6894,7 +6894,7 @@ export default function App() {
                   value={newBank} onChange={e => setNewBank(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); const b = newBank.trim(); if (b && !banks.includes(b)) { setBanks(c => [...c, b]); updateForm("bank", b); } setNewBank(""); setBankAddMode(false); } if (e.key === "Escape") { setNewBank(""); setBankAddMode(false); } }} />
                 <button type="button" className="bank-inline-ok" onClick={() => { const b = newBank.trim(); if (b && !banks.includes(b)) { setBanks(c => [...c, b]); updateForm("bank", b); } setNewBank(""); setBankAddMode(false); }}>✓</button>
-                <button type="button" className="bank-inline-cancel" onClick={() => { setNewBank(""); setBankAddMode(false); }}>✕</button>
+                <button type="button" className="bank-inline-cancel" onClick={() => { setNewBank(""); setBankAddMode(false); }} aria-label="Cerrar">✕</button>
               </div>
             ) : (
               <div className="bank-inline-actions">
@@ -6965,7 +6965,7 @@ export default function App() {
           {banks.map((bank) => (
             <span key={bank} className="bank-chip">
               {bank}
-              <button type="button" className="bank-remove" onClick={() => removeBank(bank)}>×</button>
+              <button type="button" className="bank-remove" onClick={() => removeBank(bank)} aria-label="Cerrar">×</button>
             </span>
           ))}
         </div>
@@ -7024,7 +7024,7 @@ export default function App() {
             </div>
             <input className="movement-date-input" type="date" value={inputDateFromValue(movement.date || movement.createdAt)} onChange={(event) => updateMovementDate(movement.id, event.target.value)} aria-label={`Fecha de ${movement.description}`} />
             <b>{money.format(movement.amount)}</b>
-            <button className="row-delete" type="button" onClick={() => confirmDelete("¿Eliminar este movimiento?", () => setMovements((current) => current.filter((item) => item.id !== movement.id)))}>×</button>
+            <button className="row-delete" type="button" onClick={() => confirmDelete("¿Eliminar este movimiento?", () => setMovements((current) => current.filter((item) => item.id !== movement.id)))} aria-label="Cerrar">×</button>
           </div>
         ))}
       </div>
@@ -7432,7 +7432,7 @@ export default function App() {
           <div style={{maxWidth:"900px",margin:"0 auto 24px",padding:"14px 20px",borderRadius:"12px",background:paymentMessage.type==="success"?"#ecfdf5":"#fef2f2",border:`1px solid ${paymentMessage.type==="success"?"#86efac":"#fca5a5"}`,color:paymentMessage.type==="success"?"#166534":"#991b1b",fontSize:"15px",fontWeight:600,display:"flex",alignItems:"center",gap:"12px"}}>
             <span style={{fontSize:"22px"}}>{paymentMessage.type==="success"?"✅":"❌"}</span>
             <span style={{flex:1}}>{paymentMessage.text}</span>
-            <button onClick={()=>setPaymentMessage(null)} style={{border:"none",background:"none",fontSize:"20px",cursor:"pointer",color:"inherit",opacity:0.6,lineHeight:1,padding:"2px"}}>×</button>
+            <button onClick={()=>setPaymentMessage(null)} style={{border:"none",background:"none",fontSize:"20px",cursor:"pointer",color:"inherit",opacity:0.6,lineHeight:1,padding:"2px"}} aria-label="Cerrar">×</button>
           </div>
         )}
 
@@ -7904,6 +7904,7 @@ function LineChart({ movements }) {
             <li><strong>Información de cuenta:</strong> Nombre, correo electrónico, contraseña (encriptada)</li>
             <li><strong>Información de perfil:</strong> Nombre del negocio, tipo de negocio, etapa empresarial, metas financieras</li>
             <li><strong>Datos de uso:</strong> Información sobre cómo usas la aplicación, incluyendo movimientos financieros, clientes, contenido, tareas del hogar y objetivos personales que tú ingresas voluntariamente</li>
+            <li><strong>Información sobre tu familia:</strong> Si usas las funciones de organización familiar, puedes registrar nombres o apodos de tus hijos u otros miembros del hogar y sus horarios de actividades (colegio, extracurriculares, citas médicas), únicamente para tu propia organización personal</li>
             <li><strong>Información técnica:</strong> Dirección IP, tipo de navegador, sistema operativo, identificadores de dispositivo</li>
             <li><strong>Cookies y tecnologías similares:</strong> Usamos cookies para mejorar tu experiencia y mantener tu sesión activa</li>
           </ul>
@@ -7956,8 +7957,8 @@ function LineChart({ movements }) {
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Transferencias Internacionales de Datos</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu información puede ser transferida y almacenada en servidores ubicados fuera de Colombia. Cuando transferimos datos internacionalmente, nos aseguramos de que existan garantías adecuadas para proteger tu información de acuerdo con esta Política de Privacidad y las leyes aplicables.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Menores de Edad</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App no está dirigida a menores de 18 años. No recopilamos intencionalmente información personal de menores. Si descubrimos que hemos recopilado información de un menor sin el consentimiento parental verificable, eliminaremos esa información inmediatamente.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Menores de Edad e Información Familiar</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App está dirigida a mayores de 18 años: los menores de edad no pueden crear una cuenta ni usar la aplicación directamente, y no recopilamos información personal proporcionada directamente por un menor. Sin embargo, como parte de las funciones de organización familiar, la titular de la cuenta (una persona adulta) puede registrar voluntariamente información sobre sus hijos u otros menores a su cargo — por ejemplo nombres o apodos y horarios de actividades — con el único fin de organizar su hogar. Esta información es ingresada, controlada y puede ser eliminada en cualquier momento por la titular de la cuenta, se almacena con las mismas medidas de seguridad que el resto de tu información y no se usa para ningún fin distinto a mostrártela a ti dentro de la aplicación. Si eres la titular de una cuenta y deseas eliminar la información de tus hijos o de tu cuenta completa, puedes hacerlo desde la aplicación o escribiéndonos a hola@umpacademy.co.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Cambios a esta Política</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Podemos actualizar esta Política de Privacidad periódicamente. Te notificaremos sobre cambios significativos publicando la nueva Política en la aplicación y actualizará la fecha de "Última actualización" en la parte superior. Te recomendamos revisar esta Política regularmente.</p>

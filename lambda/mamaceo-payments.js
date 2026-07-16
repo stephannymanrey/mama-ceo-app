@@ -33,6 +33,14 @@ function hashBetaCode(str) {
   return crypto.createHash("sha256").update(str).digest("hex");
 }
 
+// CloudWatch retiene logs por tiempo indefinido y cualquiera con acceso de lectura a la
+// cuenta de AWS puede verlos — no hace falta el email completo en texto plano para depurar.
+function maskEmail(email) {
+  if (!email || typeof email !== "string" || !email.includes("@")) return "***";
+  const [user, domain] = email.split("@");
+  return `${user.slice(0, 2)}***@${domain}`;
+}
+
 // IDs de plan de PayPal (públicos) — deben coincidir con PAYPAL_PLAN_IDS en src/App.jsx.
 // Se usan para verificar que el plan_id real de la suscripción activa corresponde al
 // planType que el cliente pide activar, en vez de confiar ciegamente en planType.
@@ -43,12 +51,25 @@ let PAYPAL_PLAN_IDS = {
 };
 try { if (process.env.PAYPAL_PLAN_IDS) PAYPAL_PLAN_IDS = JSON.parse(process.env.PAYPAL_PLAN_IDS); } catch {}
 
-const CORS = {
-  "Content-Type": "application/json",
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type,Authorization",
-  "Access-Control-Allow-Methods": "POST,OPTIONS",
-};
+// Igual que mamaceo-user-data.js/index.mjs: allowlist de orígenes en vez de "*" —
+// los webhooks de Hotmart/PayPal son server-to-server y no llevan Origin de navegador,
+// así que restringir esto no les afecta, solo endurece las llamadas hechas desde el navegador.
+const ALLOWED_ORIGINS = [
+  "https://www.mamaceoapp.co",
+  "https://mamaceoapp.co",
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
+function corsHeaders(event) {
+  const origin = event?.headers?.origin || event?.headers?.Origin || "";
+  const allowed = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": allowed,
+    "Access-Control-Allow-Headers": "Content-Type,Authorization",
+    "Access-Control-Allow-Methods": "POST,OPTIONS",
+  };
+}
 
 function httpsRequest(url, options, body) {
   return new Promise((resolve, reject) => {
@@ -88,7 +109,7 @@ async function findUserIdByEmail(email) {
 
 export const handler = async (event) => {
   const method = event.requestContext?.http?.method || event.httpMethod || "POST";
-  if (method === "OPTIONS") return { statusCode: 200, headers: CORS, body: "" };
+  if (method === "OPTIONS") return { statusCode: 200, headers: corsHeaders(event), body: "" };
 
   let body = {};
   try { body = JSON.parse(event.body || "{}"); } catch {}
@@ -103,7 +124,7 @@ export const handler = async (event) => {
   if (action === "save-email") {
     const { userId: uid, email } = body;
     if (!uid || !email)
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Faltan campos" }) };
+      return { statusCode: 400, headers: corsHeaders(event), body: JSON.stringify({ error: "Faltan campos" }) };
     try {
       await dynamo.send(new UpdateItemCommand({
         TableName: TABLE,
@@ -111,10 +132,10 @@ export const handler = async (event) => {
         UpdateExpression: "SET userEmail = :e",
         ExpressionAttributeValues: { ":e": { S: email.toLowerCase() } },
       }));
-      return { statusCode: 200, headers: CORS, body: JSON.stringify({ ok: true }) };
+      return { statusCode: 200, headers: corsHeaders(event), body: JSON.stringify({ ok: true }) };
     } catch (e) {
       console.error("save-email error:", e.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+      return { statusCode: 500, headers: corsHeaders(event), body: JSON.stringify({ error: e.message }) };
     }
   }
 
@@ -128,7 +149,7 @@ export const handler = async (event) => {
                    event.queryStringParameters?.hottok;
     if (process.env.HOTMART_HOTTOK && hottok !== process.env.HOTMART_HOTTOK) {
       console.error("Hotmart hottok inválido:", hottok);
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "Unauthorized" }) };
+      return { statusCode: 401, headers: corsHeaders(event), body: JSON.stringify({ error: "Unauthorized" }) };
     }
 
     const eventType   = body.event;         // "PURCHASE_APPROVED", "SUBSCRIPTION_CANCELLATION", etc.
@@ -136,7 +157,7 @@ export const handler = async (event) => {
     const offerCode   = body.data?.offer?.code;
     const purchStatus = body.data?.purchase?.status; // "APPROVED", "CANCELED", "REFUNDED"
 
-    console.log(`Hotmart webhook: event=${eventType} email=${buyerEmail} offer=${offerCode} status=${purchStatus}`);
+    console.log(`Hotmart webhook: event=${eventType} email=${maskEmail(buyerEmail)} offer=${offerCode} status=${purchStatus}`);
 
     // Mapear offerCode → planType
     let offerMap = {};
@@ -144,7 +165,7 @@ export const handler = async (event) => {
     const planType = offerMap[offerCode];
 
     if (!buyerEmail)
-      return { statusCode: 200, headers: CORS, body: JSON.stringify({ received: true, note: "sin email" }) };
+      return { statusCode: 200, headers: corsHeaders(event), body: JSON.stringify({ received: true, note: "sin email" }) };
 
     // Activar o desactivar plan según el evento
     const isApproved = ["PURCHASE_APPROVED", "PURCHASE_COMPLETE"].includes(eventType) ||
@@ -157,7 +178,7 @@ export const handler = async (event) => {
 
     if (!foundUserId) {
       // Guardar activación pendiente por email para cuando el usuario inicie sesión
-      console.log(`Usuario no encontrado para email ${buyerEmail} — guardando activación pendiente`);
+      console.log(`Usuario no encontrado para email ${maskEmail(buyerEmail)} — guardando activación pendiente`);
       try {
         await dynamo.send(new UpdateItemCommand({
           TableName: TABLE,
@@ -171,7 +192,7 @@ export const handler = async (event) => {
           },
         }));
       } catch (e) { console.error("pending save error:", e.message); }
-      return { statusCode: 200, headers: CORS, body: JSON.stringify({ received: true, note: "activación pendiente guardada" }) };
+      return { statusCode: 200, headers: corsHeaders(event), body: JSON.stringify({ received: true, note: "activación pendiente guardada" }) };
     }
 
     // Usuario encontrado — actualizar plan directamente
@@ -205,21 +226,21 @@ export const handler = async (event) => {
       console.error("DynamoDB update error:", e.message);
       // 500 para que Hotmart reintente el webhook — si respondemos 200 aquí, Hotmart
       // da por hecho que se activó el plan aunque el pago se cobró y nunca se aplicó.
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ received: false, error: "No se pudo actualizar el plan, reintentar" }) };
+      return { statusCode: 500, headers: corsHeaders(event), body: JSON.stringify({ received: false, error: "No se pudo actualizar el plan, reintentar" }) };
     }
 
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ received: true }) };
+    return { statusCode: 200, headers: corsHeaders(event), body: JSON.stringify({ received: true }) };
   }
 
   // ── 3. Verificar suscripción PayPal (backup) ───────────────────────────────
   if (action === "verify-paypal") {
     const { subscriptionId, planType } = body;
     if (!subscriptionId || !planType)
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Faltan campos" }) };
+      return { statusCode: 400, headers: corsHeaders(event), body: JSON.stringify({ error: "Faltan campos" }) };
 
     let ppToken;
     try { ppToken = await getPayPalToken(); }
-    catch { return { statusCode: 502, headers: CORS, body: JSON.stringify({ error: "Error autenticando PayPal" }) }; }
+    catch { return { statusCode: 502, headers: corsHeaders(event), body: JSON.stringify({ error: "Error autenticando PayPal" }) }; }
 
     const ppRes = await httpsRequest(
       `https://api-m.paypal.com/v1/billing/subscriptions/${subscriptionId}`,
@@ -227,14 +248,14 @@ export const handler = async (event) => {
     );
 
     if (ppRes.status !== 200 || ppRes.body.status !== "ACTIVE")
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ success: false, error: "Suscripción no activa" }) };
+      return { statusCode: 400, headers: corsHeaders(event), body: JSON.stringify({ success: false, error: "Suscripción no activa" }) };
 
     // El cliente elige qué planType activar, pero el precio real pagado lo determina
     // el plan_id de la suscripción en PayPal — sin esta verificación, alguien con una
     // suscripción activa al plan más barato podía pedir activar el plan más caro gratis.
     const expectedPlanId = PAYPAL_PLAN_IDS[planType];
     if (!expectedPlanId || ppRes.body.plan_id !== expectedPlanId)
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ success: false, error: "El plan de la suscripción no coincide con el plan solicitado" }) };
+      return { statusCode: 400, headers: corsHeaders(event), body: JSON.stringify({ success: false, error: "El plan de la suscripción no coincide con el plan solicitado" }) };
 
     const premiumExpiresAt = Date.now() + 35 * 24 * 60 * 60 * 1000;
 
@@ -249,14 +270,14 @@ export const handler = async (event) => {
       } catch (e) { console.error("DynamoDB:", e.message); }
     }
 
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ success: true, planType, premiumExpiresAt }) };
+    return { statusCode: 200, headers: corsHeaders(event), body: JSON.stringify({ success: true, planType, premiumExpiresAt }) };
   }
 
   // ── 4. Activar plan pendiente de Hotmart al iniciar sesión ─────────────────
   if (action === "check-pending-hotmart") {
     const { userId: uid, email } = body;
     if (!uid || !email)
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Faltan campos" }) };
+      return { statusCode: 400, headers: corsHeaders(event), body: JSON.stringify({ error: "Faltan campos" }) };
 
     try {
       const result = await dynamo.send(new GetItemCommand({
@@ -265,13 +286,13 @@ export const handler = async (event) => {
       }));
       const pending = result.Item ? { pendingPlan: result.Item.pendingPlan, pendingExpiresAt: result.Item.pendingExpiresAt } : null;
       if (!pending?.pendingPlan?.S || pending.pendingPlan.S === "free")
-        return { statusCode: 200, headers: CORS, body: JSON.stringify({ pending: false }) };
+        return { statusCode: 200, headers: corsHeaders(event), body: JSON.stringify({ pending: false }) };
 
       const planType       = pending.pendingPlan.S;
       const premiumExpiresAt = Number(pending.pendingExpiresAt?.N || 0);
 
       if (premiumExpiresAt < Date.now())
-        return { statusCode: 200, headers: CORS, body: JSON.stringify({ pending: false }) };
+        return { statusCode: 200, headers: corsHeaders(event), body: JSON.stringify({ pending: false }) };
 
       // Mover activación pendiente al usuario real
       await dynamo.send(new UpdateItemCommand({
@@ -293,28 +314,28 @@ export const handler = async (event) => {
         ExpressionAttributeValues: { ":p": { S: "free" } },
       }));
 
-      return { statusCode: 200, headers: CORS, body: JSON.stringify({ pending: true, planType, premiumExpiresAt }) };
+      return { statusCode: 200, headers: corsHeaders(event), body: JSON.stringify({ pending: true, planType, premiumExpiresAt }) };
     } catch (e) {
       console.error("check-pending error:", e.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+      return { statusCode: 500, headers: corsHeaders(event), body: JSON.stringify({ error: e.message }) };
     }
   }
 
   // ── 5. Activar código beta (validación server-side) ────────────────────────
   if (action === "activate-beta") {
     if (!userId)
-      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "No autorizado. Inicia sesión." }) };
+      return { statusCode: 401, headers: corsHeaders(event), body: JSON.stringify({ error: "No autorizado. Inicia sesión." }) };
 
     const code = String(body.code || "").trim().toUpperCase();
     if (!code)
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Falta el código" }) };
+      return { statusCode: 400, headers: corsHeaders(event), body: JSON.stringify({ error: "Falta el código" }) };
 
     const entered = hashBetaCode(code);
     const match = BETA_CODES.find((c) => c.hash === entered);
     if (!match)
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Código incorrecto. Verifica que lo escribiste exactamente como te lo enviaron." }) };
+      return { statusCode: 400, headers: corsHeaders(event), body: JSON.stringify({ error: "Código incorrecto. Verifica que lo escribiste exactamente como te lo enviaron." }) };
     if (Date.now() > match.expiry)
-      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Este código ya expiró." }) };
+      return { statusCode: 400, headers: corsHeaders(event), body: JSON.stringify({ error: "Este código ya expiró." }) };
 
     const premiumExpiresAt = Date.now() + match.days * 24 * 60 * 60 * 1000;
     try {
@@ -326,11 +347,11 @@ export const handler = async (event) => {
       }));
     } catch (e) {
       console.error("activate-beta error:", e.message);
-      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+      return { statusCode: 500, headers: corsHeaders(event), body: JSON.stringify({ error: e.message }) };
     }
 
-    return { statusCode: 200, headers: CORS, body: JSON.stringify({ success: true, userPlan: "premium", premiumExpiresAt }) };
+    return { statusCode: 200, headers: corsHeaders(event), body: JSON.stringify({ success: true, userPlan: "premium", premiumExpiresAt }) };
   }
 
-  return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: "Acción no reconocida" }) };
+  return { statusCode: 404, headers: corsHeaders(event), body: JSON.stringify({ error: "Acción no reconocida" }) };
 };

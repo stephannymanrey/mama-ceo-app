@@ -536,6 +536,32 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:`;
 
 // ─── Handler público: Plan de Negocio ─────────────────────────────────────
 const PLAN_DAILY_LIMIT = 150;
+const PUBLIC_AI_DAILY_LIMIT = 150;
+
+// Límite diario compartido por las rutas públicas (sin JWT) que llaman a Claude:
+// mejorarSeccion/dofa/extractReels no tenían ningún control, así que cualquiera
+// podía llamarlas en bucle y agotar el presupuesto de ANTHROPIC_KEY.
+async function checkAndIncrDailyLimit(bucket, limit) {
+  const today  = new Date().toISOString().slice(0, 10);
+  const dayKey = `${bucket}_daily#${today}`;
+  try {
+    const dayRes = await dynamoCall("GetItem", { TableName: TABLE, Key: { user_id: { S: dayKey } } });
+    if (dayRes?.Item) {
+      const dayData = unmarshal(dayRes.Item);
+      if ((dayData.count || 0) >= limit) return false;
+    }
+  } catch (err) { console.warn(`[${bucket}] No se pudo leer el contador diario:`, err.message); }
+  try {
+    await dynamoCall("UpdateItem", {
+      TableName: TABLE,
+      Key: { user_id: { S: dayKey } },
+      UpdateExpression: "ADD #c :one SET #t = :type",
+      ExpressionAttributeNames: { "#c": "count", "#t": "type" },
+      ExpressionAttributeValues: { ":one": { N: "1" }, ":type": { S: "daily_counter" } },
+    });
+  } catch (err) { console.warn(`[${bucket}] No se pudo incrementar el contador diario:`, err.message); }
+  return true;
+}
 
 async function handlePlanNegocio(publicEmail, context, event) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
@@ -673,6 +699,9 @@ async function handleMejorarSeccion(body, event) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { texto, seccion, negocio } = body;
   if (!texto?.trim()) return respond(400, { error: "Falta texto" }, event);
+  if (!(await checkAndIncrDailyLimit("mejorarSeccion", PUBLIC_AI_DAILY_LIMIT))) {
+    return respond(429, { error: "limite_diario" }, event);
+  }
 
   const prompt = `Eres redactor especializado en planes de negocio formales para presentar ante inversionistas, fondos de capital semilla y convocatorias gubernamentales en Latinoamérica.
 
@@ -706,6 +735,9 @@ async function handleDofa(body, event) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { plan } = body;
   if (!plan) return respond(400, { error: "Falta plan" }, event);
+  if (!(await checkAndIncrDailyLimit("dofa", PUBLIC_AI_DAILY_LIMIT))) {
+    return respond(429, { error: "limite_diario" }, event);
+  }
 
   const ctx = [
     plan.nombreNegocio         && `Empresa: ${plan.nombreNegocio}`,
@@ -764,6 +796,9 @@ async function handleExtractReels(body, event) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { transcription, duration } = body;
   if (!transcription?.trim()) return respond(400, { error: "Falta transcripción" }, event);
+  if (!(await checkAndIncrDailyLimit("extractReels", PUBLIC_AI_DAILY_LIMIT))) {
+    return respond(429, { error: "limite_diario" }, event);
+  }
 
   const durMin = Math.round((duration || 0) / 60);
 

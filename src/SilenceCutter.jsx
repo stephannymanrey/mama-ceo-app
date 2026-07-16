@@ -2652,10 +2652,19 @@ export default function SilenceCutter() {
     }));
   }, []);
 
+  const MAX_CLIP_SIZE = 500 * 1024 * 1024; // 500MB — el video se decodifica en el navegador (Web Audio API), sin límite un archivo grande puede colgar la pestaña
   const addFiles = useCallback(async (files) => {
-    const valid = Array.from(files).filter(f => /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name) || f.type.startsWith("video/"));
-    if (!valid.length) { setError("No se encontraron archivos de video válidos."); return; }
-    setError("");
+    const isVideo = f => /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name) || f.type.startsWith("video/");
+    const all = Array.from(files);
+    const tooBig = all.filter(f => isVideo(f) && f.size > MAX_CLIP_SIZE);
+    const valid = all.filter(f => isVideo(f) && f.size <= MAX_CLIP_SIZE);
+    if (!valid.length) {
+      setError(tooBig.length
+        ? `${tooBig.length === 1 ? "Ese video pesa" : "Esos videos pesan"} más de 500MB. Comprime el video o córtalo en partes más pequeñas antes de subirlo.`
+        : "No se encontraron archivos de video válidos.");
+      return;
+    }
+    setError(tooBig.length ? `${tooBig.length} video${tooBig.length>1?"s":""} no se subió por pesar más de 500MB.` : "");
     const newClips = valid.map(f => ({
       id: uid(), file: f, name: f.name, size: f.size,
       thumbnail: null, duration: null, waveform: null, silences: [],
