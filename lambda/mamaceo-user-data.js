@@ -82,6 +82,14 @@ export const handler = async (event) => {
 
     if (method === "POST") {
       const body = JSON.parse(event.body || "{}");
+      if (!body.data || typeof body.data !== "object" || Array.isArray(body.data) || Object.keys(body.data).length === 0) {
+        return respond(400, { error: "data inválido o vacío" }, event);
+      }
+      // userPlan/premiumExpiresAt son atributos de solo lectura para el cliente:
+      // solo mamaceo-payments / mamaceo-admin-actions pueden escribirlos (tras un pago real).
+      // Si el cliente los incluye en su guardado normal de estado, se descartan aquí para
+      // que nadie pueda auto-otorgarse premium editando el payload.
+      const { userPlan, premiumExpiresAt, ...safeData } = body.data;
       await dynamo.send(
         new UpdateItemCommand({
           TableName: TABLE,
@@ -89,7 +97,7 @@ export const handler = async (event) => {
           UpdateExpression: "SET #d = :data, updatedAt = :ts",
           ExpressionAttributeNames: { "#d": "data" },
           ExpressionAttributeValues: marshall({
-            ":data": body.data,
+            ":data": safeData,
             ":ts": new Date().toISOString(),
           }),
         })

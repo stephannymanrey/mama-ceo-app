@@ -47,15 +47,27 @@ const DEFAULT_HOME_DURATION = 25;
 const APPT_TYPE_DURATION = { "Médico": 45, "Cita": 30, "Colegio": 30, "Dentista": 45, "Extracurricular": 60, "Iglesia": 90, "Pago": 15, "Cumpleaños": 120, "Reunión": 60, "Trabajo": 60, "Familia": 60, "Limpieza": 60, "Arreglos": 90, "Compras": 45 };
 const DEFAULT_APPT_DURATION = 30;
 const APPT_HOME_TYPES = new Set(["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños","Familia","Limpieza","Arreglos","Compras"]);
+// Fuente única de color/emoji por tipo de cita — usada tanto por el selector de
+// categoría de Mi Hogar → Semana como por el calendario de Agenda (TYPE_COLORS más abajo),
+// para que una cita se vea igual sin importar desde dónde se abra. Antes cada pantalla
+// tenía su propia paleta y sus propios tipos, así que una cita "Dentista" creada en Agenda
+// se veía gris/genérica ("Otro") al abrirla en Mi Hogar → Semana.
 const HOGAR_SCHED_CATS = [
-  { key: "Familia",         emoji: "💛", label: "Tiempo con familia",    color: "#C4526A", bg: "rgba(196,82,106,0.07)"  },
-  { key: "Extracurricular", emoji: "🎒", label: "Extracurricular hijos", color: "#2f9f70", bg: "rgba(47,159,112,0.07)"  },
-  { key: "Médico",          emoji: "🏥", label: "Cita médica / Salud",   color: "#DC2626", bg: "rgba(220,38,38,0.06)"   },
-  { key: "Limpieza",        emoji: "🧹", label: "Limpieza del hogar",    color: "#059669", bg: "rgba(5,150,105,0.07)"   },
-  { key: "Compras",         emoji: "🛒", label: "Compras",               color: "#0EA5E9", bg: "rgba(14,165,233,0.07)"  },
-  { key: "Arreglos",        emoji: "🔧", label: "Arreglos del hogar",    color: "#D97706", bg: "rgba(217,119,6,0.07)"   },
-  { key: "Otro",            emoji: "📌", label: "Otro",                  color: "#8A7F7A", bg: "rgba(138,127,122,0.06)" },
+  { key: "Familia",         emoji: "💛", label: "Tiempo con familia",    color: "#DB2777", bg: "rgba(219,39,119,0.07)"  },
+  { key: "Extracurricular", emoji: "⚽", label: "Extracurricular hijos", color: "#059669", bg: "rgba(5,150,105,0.07)"   },
+  { key: "Médico",          emoji: "🩺", label: "Cita médica / Salud",   color: "#C4526A", bg: "rgba(196,82,106,0.07)" },
+  { key: "Cita",            emoji: "📋", label: "Cita",                  color: "#C4526A", bg: "rgba(196,82,106,0.07)" },
+  { key: "Dentista",        emoji: "🦷", label: "Dentista",              color: "#e87b1e", bg: "rgba(232,123,30,0.07)" },
+  { key: "Colegio",         emoji: "🎒", label: "Colegio",               color: "#6B46C1", bg: "rgba(107,70,193,0.07)" },
+  { key: "Iglesia",         emoji: "🙏", label: "Iglesia",               color: "#7C3AED", bg: "rgba(124,58,237,0.07)" },
+  { key: "Pago",            emoji: "💳", label: "Pago",                  color: "#2563EB", bg: "rgba(37,99,235,0.07)"  },
+  { key: "Cumpleaños",      emoji: "🎂", label: "Cumpleaños",            color: "#D97706", bg: "rgba(217,119,6,0.07)"  },
+  { key: "Limpieza",        emoji: "🧹", label: "Limpieza del hogar",    color: "#0D9488", bg: "rgba(13,148,136,0.07)" },
+  { key: "Compras",         emoji: "🛒", label: "Compras",               color: "#0EA5E9", bg: "rgba(14,165,233,0.07)" },
+  { key: "Arreglos",        emoji: "🔧", label: "Arreglos del hogar",    color: "#92400E", bg: "rgba(146,64,14,0.07)"  },
+  { key: "Otro",            emoji: "📌", label: "Otro",                  color: "#6B7280", bg: "rgba(107,114,128,0.06)" },
 ];
+const HOGAR_SCHED_COLORS = Object.fromEntries(HOGAR_SCHED_CATS.map(c => [c.key, c.color]));
 const BUDGET_CATS_DEFAULT = [
   { key: "hogar",           emoji: "🏠", label: "Hogar",           color: "#0EA5E9", budget: 0 },
   { key: "mercado",         emoji: "🛒", label: "Mercado",          color: "#2f9f70", budget: 0 },
@@ -315,6 +327,7 @@ function apptMatchesDate(appt, dateStr) {
   if (!appt.recurrence || appt.recurrence === "none") return false;
   const ad = new Date(appt.date + "T12:00:00");
   const td = new Date(dateStr + "T12:00:00");
+  if (td < ad) return false; // una cita recurrente no existe antes de su fecha de creación
   if (appt.recurrence === "weekly")  return ad.getDay() === td.getDay();
   if (appt.recurrence === "monthly") return ad.getDate() === td.getDate();
   if (appt.recurrence === "yearly")  return ad.getMonth() === td.getMonth() && ad.getDate() === td.getDate();
@@ -823,6 +836,7 @@ export default function App() {
   const [upgradeReason, setUpgradeReason] = useState("");
   const [betaCode, setBetaCode] = useState("");
   const [betaCodeError, setBetaCodeError] = useState("");
+  const [betaCodeLoading, setBetaCodeLoading] = useState(false);
   const [showBetaInput, setShowBetaInput] = useState(false);
 
   // Temporizador Pomodoro
@@ -1026,16 +1040,6 @@ export default function App() {
     }
   };
 
-  const BETA_CODES = [
-    { hash: "1df2627e3ac0f8268c070acdbf13b0d354f16f2c38bf873dee2d54b86af13440", days: 90, expiry: new Date("2026-12-31T23:59:59").getTime() },
-    { hash: "42f8fdb0a7354c04e994970759b87588906eccb7741c9bc5a7dd52471f7961bf", days: 60, expiry: new Date("2027-12-31T23:59:59").getTime() },
-    { hash: "e838734981031ac5ebe63fc160b956a2b17c3e34768c34d73c4f3b2ff20d71d9", days: 60, expiry: new Date("2027-12-31T23:59:59").getTime() },
-  ];
-  const hashCode = async (str) => {
-    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
-  };
-
   const effectivePlan = useMemo(() => {
     const userEmail = user?.email || profileSetup?.email || "";
     if (ADMIN_EMAILS.includes(userEmail)) return "ceo";
@@ -1086,21 +1090,31 @@ export default function App() {
   const activateBetaCode = async (e) => {
     e.preventDefault();
     setBetaCodeError("");
-    const entered = await hashCode(betaCode.trim().toUpperCase());
-    const match = BETA_CODES.find(c => entered === c.hash);
-    if (!match) {
-      setBetaCodeError("Código incorrecto. Verifica que lo escribiste exactamente como te lo enviaron.");
-      return;
+    if (!user) { setBetaCodeError("Inicia sesión primero para activar tu código."); return; }
+    setBetaCodeLoading(true);
+    try {
+      const token = await getAwsAuthToken();
+      if (!token) { setBetaCodeError("No autenticada. Inicia sesión nuevamente."); return; }
+      const res = await fetch(PAYMENTS_URL, {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "activate-beta", code: betaCode.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        setBetaCodeError(data.error || "No se pudo activar el código. Intenta de nuevo.");
+        return;
+      }
+      setUserPlan(data.userPlan);
+      setPremiumExpiresAt(data.premiumExpiresAt);
+      setShowBetaInput(false);
+      setBetaCode("");
+    } catch (err) {
+      setBetaCodeError(err.message || "Error de red. Intenta de nuevo.");
+    } finally {
+      setBetaCodeLoading(false);
     }
-    if (Date.now() > match.expiry) {
-      setBetaCodeError("Este código ya expiró.");
-      return;
-    }
-    const expiresAt = Date.now() + match.days * 86400000;
-    setUserPlan("premium");
-    setPremiumExpiresAt(expiresAt);
-    setShowBetaInput(false);
-    setBetaCode("");
   };
 
   const money = useMemo(() => new Intl.NumberFormat(currencyLocales[currency] || "en-US", {
@@ -1185,20 +1199,31 @@ export default function App() {
     { classification: "Gastos variables", amount: annualVariableTotal, note: "Publicidad, herramientas y producción" },
     { classification: "Reinversión", amount: Math.round(annualTotals.income * 0.20), note: "Marketing, crecimiento y mejora" }
   ];
+  const _currentMonthKey = `${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,"0")}`;
+  const homeRowMonthKey = (row) => row.dueDate ? row.dueDate.slice(0,7) : new Date(row.createdAt || Date.now()).toISOString().slice(0,7);
+  // "Disponible"/"Gastado" del hogar se calcula por mes actual (igual que el Tab de Mis Finanzas)
+  // para que ambos lugares muestren el mismo número — antes este cálculo sumaba todo el
+  // histórico y se iba desalineando del de Mis Finanzas mes a mes. El ahorro sí se acumula
+  // en el tiempo (es una meta de largo plazo, no un gasto mensual).
   const homeBudgetTotals = homeBudget.reduce((sum, row) => {
-    if (row.type === "Ingreso") return { ...sum, income: sum.income + row.amount };
     if (row.type === "Ahorro") return { ...sum, savings: sum.savings + row.amount };
-    if (row.type === "Deuda") return { ...sum, debt: sum.debt + row.amount };
+    if (homeRowMonthKey(row) !== _currentMonthKey) return sum;
+    if (row.type === "Ingreso") return { ...sum, income: sum.income + row.amount };
+    // Una "Deuda" registrada sin vincular (catKey null) todavía no es un pago real —
+    // solo cuentan como gasto los abonos reales (con catKey).
+    if (row.type === "Deuda") return row.catKey ? { ...sum, debt: sum.debt + row.amount } : sum;
     if (row.type === "Gasto fijo") return { ...sum, fixed: sum.fixed + row.amount };
     if (row.type === "Gasto hormiga") return { ...sum, smallLeaks: sum.smallLeaks + row.amount };
     return { ...sum, variable: sum.variable + row.amount };
   }, { income: 0, fixed: 0, variable: 0, smallLeaks: 0, debt: 0, savings: 0 });
-  const homeSpent = homeBudgetTotals.fixed + homeBudgetTotals.variable + homeBudgetTotals.smallLeaks + homeBudgetTotals.debt;
+  const homePaymentsPaidThisMonth = homePayments
+    .filter(p => p.lastPaidMonth === _currentMonthKey)
+    .reduce((s, p) => s + p.amount, 0);
+  const homeSpent = homeBudgetTotals.fixed + homeBudgetTotals.variable + homeBudgetTotals.smallLeaks + homeBudgetTotals.debt + homePaymentsPaidThisMonth;
   const homeAvailable = homeBudgetTotals.income - homeSpent - homeBudgetTotals.savings;
   const homePaymentsThisWeek = homeBudget
     .filter((item) => !["Ingreso", "Ahorro"].includes(item.type) && isDateThisWeek(item.dueDate || item.createdAt, currentWeekRange))
     .sort((a, b) => timestampFromInputDate(a.dueDate) - timestampFromInputDate(b.dueDate));
-  const _currentMonthKey = `${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,"0")}`;
   const upcomingHomePayments = homePayments.filter(p => p.lastPaidMonth !== _currentMonthKey && (p.dayOfMonth - _currentDay) >= -1 && (p.dayOfMonth - _currentDay) <= 3);
   const upcomingBizPayments  = bizPayments.filter(p  => p.lastPaidMonth !== _currentMonthKey && (p.dayOfMonth - _currentDay) >= -1 && (p.dayOfMonth - _currentDay) <= 3);
   const allUpcomingPayments  = [...upcomingHomePayments.map(p=>({...p,src:"Hogar"})), ...upcomingBizPayments.map(p=>({...p,src:"Negocio"}))];
@@ -1513,6 +1538,9 @@ export default function App() {
     setFamilyMembers(state.familyMembers || []);
     if (state.homeIncomeGoal !== undefined) setHomeIncomeGoal(state.homeIncomeGoal);
     if (state.calcReinvPct !== undefined) setCalcReinvPct(state.calcReinvPct);
+    setBudgetCats(state.budgetCats
+      ? BUDGET_CATS_DEFAULT.map(def => { const f = state.budgetCats.find(s => s.key === def.key); return f ? { ...def, budget: f.budget } : def; })
+      : BUDGET_CATS_DEFAULT);
     setAppointments(state.appointments || []);
     setWeekMenu((() => { const wm=state.weekMenu; const mg=v=>!v?{desayuno:"",almuerzo:"",cena:"",snack:""}:typeof v==="string"?{desayuno:"",almuerzo:v,cena:"",snack:""}:{desayuno:"",almuerzo:"",cena:"",snack:"",...v}; return {L:mg(wm?.L),M:mg(wm?.M),X:mg(wm?.X),J:mg(wm?.J),V:mg(wm?.V),S:mg(wm?.S),D:mg(wm?.D)}; })());
     setHomeRoutines(state.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
@@ -1674,7 +1702,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, homeDebts, homePayments, bizDebts, bizPayments, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride, familyMembers, usage]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, homeDebts, homePayments, bizDebts, bizPayments, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride, familyMembers, usage, budgetCats, homeIncomeGoal, calcReinvPct]);
 
   const expandAppts = (list, limitDays = 90) => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -2004,7 +2032,12 @@ export default function App() {
     if (!amount) { setHomeBudgetError("Ingresa el monto. Puede ser 0 si no aplica."); return; }
     setHomeBudgetError("");
     const dueDate = homeBudgetForm.dueDate || getTodayInputValue();
-    const catKeyToSave = !["Ingreso","Ahorro"].includes(homeBudgetForm.type) ? (homeBudgetForm.catKey || "hogar") : null;
+    // Una "Deuda" sin vincular solo registra que existe la deuda, no un pago real —
+    // no debe contar como gasto en la barra de presupuesto de la categoría (spentByCat
+    // solo suma filas con catKey). Un abono a deuda vinculada sí es dinero que salió
+    // de verdad, así que ese sí conserva su catKey.
+    const isUnlinkedNewDebt = homeBudgetForm.type === "Deuda" && !homeBudgetForm.linkedDebtId;
+    const catKeyToSave = !["Ingreso","Ahorro"].includes(homeBudgetForm.type) && !isUnlinkedNewDebt ? (homeBudgetForm.catKey || "hogar") : null;
     setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount, dueDate, createdAt: timestampFromInputDate(dueDate), linkedDebtId: homeBudgetForm.linkedDebtId || null, catKey: catKeyToSave }, ...current]);
     // Sincronizar abono con deuda vinculada
     if (homeBudgetForm.linkedDebtId) {
@@ -3051,7 +3084,9 @@ export default function App() {
                            : allMonthAppts;
           const apptsByDay = {};
           monthAppts.forEach(a => { const d = new Date(a.date+"T00:00:00").getDate(); if (!apptsByDay[d]) apptsByDay[d] = []; apptsByDay[d].push(a); });
-          const TYPE_COLORS = { "Médico":"#C4526A","Cita":"#C4526A","Colegio":"#6B46C1","Dentista":"#e87b1e","Extracurricular":"#059669","Iglesia":"#7C3AED","Reunión":"#1D9E75","Trabajo":"#0EA5E9","Pago":"#2563EB","Cumpleaños":"#D97706","Otro":"#6B7280" };
+          // Mismos colores que Mi Hogar → Semana (HOGAR_SCHED_COLORS) + los tipos de trabajo,
+          // que no aplican en Mi Hogar.
+          const TYPE_COLORS = { ...HOGAR_SCHED_COLORS, "Reunión":"#1D9E75", "Trabajo":"#0EA5E9" };
           const CAL_TYPES = calTab === "hogar" ? CAL_TYPES_HOGAR : calTab === "trabajo" ? CAL_TYPES_TRABAJO : ["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Reunión","Trabajo","Pago","Cumpleaños","Otro"];
           const defaultType = calTab === "trabajo" ? "Reunión" : "Médico";
           const REC_OPTS = [["none","No se repite"],["weekly","Cada semana"],["monthly","Cada mes"],["yearly","Cada año"]];
@@ -3667,6 +3702,16 @@ export default function App() {
           if (!amt) return;
           const setter = isHome ? setHomeDebts : setBizDebts;
           setter(prev => prev.map(d => d.id === debt.id ? {...d, paid: Math.min(d.total, d.paid + amt)} : d));
+          // Un abono es dinero real que salió del bolsillo — registrarlo también como
+          // movimiento del hogar para que cuente en "Gastado"/"Disponible" del presupuesto,
+          // igual que un abono hecho desde "Registrar movimiento" con deuda vinculada.
+          if (isHome) {
+            const today = getTodayInputValue();
+            setHomeBudget(current => [{
+              id: Date.now(), type: "Deuda", description: `Abono ${debt.name}`, amount: amt,
+              dueDate: today, createdAt: timestampFromInputDate(today), linkedDebtId: debt.id, catKey: "hogar",
+            }, ...current]);
+          }
           setModalSaving("abono");
           setTimeout(() => { setAbonoModal(null); setModalSaving(null); }, 500);
         };
@@ -3701,7 +3746,9 @@ export default function App() {
           const amount = Number(paymentForm.amount);
           const day    = Number(paymentForm.dayOfMonth);
           if (!paymentForm.name.trim() || !amount || !day || day < 1 || day > 31) return;
-          const entry = { id: Date.now(), name: paymentForm.name.trim(), amount, dayOfMonth: day, lastPaidMonth: null, catKey: paymentForm.catKey || "hogar" };
+          // catKey solo tiene efecto real en pagos del hogar (alimenta spentByCat de Mis
+          // Finanzas) — el negocio no tiene presupuesto por categoría, así que no se guarda.
+          const entry = { id: Date.now(), name: paymentForm.name.trim(), amount, dayOfMonth: day, lastPaidMonth: null, ...(isHome ? { catKey: paymentForm.catKey || "hogar" } : {}) };
           if (isHome) setHomePayments(prev => [entry, ...prev]);
           else        setBizPayments(prev  => [entry, ...prev]);
           setModalSaving("payment");
@@ -3721,13 +3768,15 @@ export default function App() {
                     <input placeholder="Ej: Netflix, Arriendo, Internet..." autoFocus value={paymentForm.name} onChange={e=>setPaymentForm(c=>({...c,name:e.target.value}))}
                       style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
                   </div>
-                  <div>
-                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Categoría presupuesto</label>
-                    <select value={paymentForm.catKey} onChange={e=>setPaymentForm(c=>({...c,catKey:e.target.value}))}
-                      style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}>
-                      {BUDGET_CATS_DEFAULT.map(c=><option key={c.key} value={c.key}>{c.emoji} {c.label}</option>)}
-                    </select>
-                  </div>
+                  {isHome && (
+                    <div>
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Categoría presupuesto</label>
+                      <select value={paymentForm.catKey} onChange={e=>setPaymentForm(c=>({...c,catKey:e.target.value}))}
+                        style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}>
+                        {BUDGET_CATS_DEFAULT.map(c=><option key={c.key} value={c.key}>{c.emoji} {c.label}</option>)}
+                      </select>
+                    </div>
+                  )}
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
                     <div>
                       <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Monto mensual</label>
@@ -3907,15 +3956,7 @@ export default function App() {
                     <span className="db-today-appt-name">{a.title}</span>
                   </div>
                 ))}
-                {userMode !== "emprendedora" && kidsSchedule[todayDay]?.act && (
-                  <div className="db-today-appt-row">
-                    {kidsSchedule[todayDay].time && (
-                      <span className="db-today-appt-time db-today-appt-time--kids">{kidsSchedule[todayDay].time}</span>
-                    )}
-                    <span className="db-today-appt-name">{kidsSchedule[todayDay].act}</span>
-                  </div>
-                )}
-                {!hasTodayCal && !kidsSchedule[todayDay]?.act && (
+                {!hasTodayCal && (
                   <p className="db-today-nil">Sin citas hoy</p>
                 )}
               </div>
@@ -3939,12 +3980,12 @@ export default function App() {
                         </div>
                       ))
                   }
-                  {homeRoutines[todayDay] && (
-                    <div className="db-today-task-row" style={{marginTop: focusHomeTasks.length > 0 ? "8px" : 0}}>
+                  {todayHogar.filter(a => a.type === "Limpieza").map(a => (
+                    <div key={a.id} className="db-today-task-row" style={{marginTop: focusHomeTasks.length > 0 ? "8px" : 0}}>
                       <span style={{fontSize:"15px",lineHeight:1}}>🧹</span>
-                      <span className="db-today-task-title">{homeRoutines[todayDay]}</span>
+                      <span className="db-today-task-title">{a.title}</span>
                     </div>
-                  )}
+                  ))}
                   {upcomingHomePayments.map((p, i) => {
                     const daysLeft = p.dayOfMonth - _currentDay;
                     const label = daysLeft < 0 ? "Vencido" : daysLeft === 0 ? "Hoy" : `en ${daysLeft} día${daysLeft > 1 ? "s" : ""}`;
@@ -3958,7 +3999,7 @@ export default function App() {
                       </div>
                     );
                   })}
-                  {homeTasks.length === 0 && !homeRoutines[todayDay] && upcomingHomePayments.length === 0 && (
+                  {homeTasks.length === 0 && !todayHogar.some(a => a.type === "Limpieza") && upcomingHomePayments.length === 0 && (
                     <button type="button" className="db-today-cta-link" onClick={() => { setActiveView("home"); }}>Agregar tarea del hogar →</button>
                   )}
                 </div>
@@ -5887,25 +5928,37 @@ export default function App() {
                 {weekMenu[todayDay]&&Object.values(typeof weekMenu[todayDay]==="string"?{a:weekMenu[todayDay]}:weekMenu[todayDay]).some(Boolean) ? "Cambiar menú" : <><span className="abi-avatar">A</span> Planear con Abi</>}
               </button>
             </div>
-            <div className="home-today-card">
-              <span className="home-today-card-ico">🧹</span>
-              <p className="home-today-card-label">Rutina de hoy</p>
-              {homeRoutines[todayDay] ? <p className="home-today-card-val" style={{color:"var(--purple)"}}>{homeRoutines[todayDay]}</p> : <p className="home-today-card-empty">Sin rutina definida</p>}
-              <button type="button" className="home-today-card-btn" style={{color:"var(--purple)"}} onClick={() => setHomeTab(2)}>
-                {homeRoutines[todayDay] ? "Ver tareas →" : "Definir →"}
-              </button>
-            </div>
-            <div className="home-today-card">
-              <span className="home-today-card-ico">🎒</span>
-              <p className="home-today-card-label">Hijos hoy</p>
-              {kidsSchedule[todayDay]?.act
-                ? <><p className="home-today-card-val" style={{color:"#1D9E75"}}>{kidsSchedule[todayDay].act}</p>{kidsSchedule[todayDay].time&&<p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{kidsSchedule[todayDay].time}</p>}</>
-                : <p className="home-today-card-empty">Sin actividades</p>
-              }
-              <button type="button" className="home-today-card-btn" style={{color:"#1D9E75"}} onClick={() => setHomeTab(1)}>
-                {kidsSchedule[todayDay]?.act ? "Ver semana →" : "Agregar →"}
-              </button>
-            </div>
+            {(()=>{
+              // "Rutina de hoy" y "Hijos hoy" leen de `appointments` (misma fuente que la
+              // pestaña Semana) filtrando por categoría — homeRoutines/kidsSchedule quedaron
+              // huérfanos desde el rediseño de Mi Hogar: ya no hay ningún formulario que los
+              // escriba, así que estas tarjetas nunca podían mostrar datos reales.
+              const todayApts = appointments.filter(a => apptMatchesDate(a, todayISO)).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+              const routineToday = todayApts.filter(a => a.type === "Limpieza");
+              const kidsToday    = todayApts.filter(a => a.type === "Extracurricular");
+              return (<>
+                <div className="home-today-card">
+                  <span className="home-today-card-ico">🧹</span>
+                  <p className="home-today-card-label">Rutina de hoy</p>
+                  {routineToday.length
+                    ? <><p className="home-today-card-val" style={{color:"var(--purple)"}}>{routineToday[0].title}</p>{routineToday[0].time&&<p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{routineToday[0].time}</p>}</>
+                    : <p className="home-today-card-empty">Sin rutina definida</p>}
+                  <button type="button" className="home-today-card-btn" style={{color:"var(--purple)"}} onClick={() => setHomeTab(1)}>
+                    {routineToday.length ? "Ver semana →" : "Definir →"}
+                  </button>
+                </div>
+                <div className="home-today-card">
+                  <span className="home-today-card-ico">🎒</span>
+                  <p className="home-today-card-label">Hijos hoy</p>
+                  {kidsToday.length
+                    ? <><p className="home-today-card-val" style={{color:"#1D9E75"}}>{kidsToday[0].title}</p>{kidsToday[0].time&&<p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{kidsToday[0].time}</p>}</>
+                    : <p className="home-today-card-empty">Sin actividades</p>}
+                  <button type="button" className="home-today-card-btn" style={{color:"#1D9E75"}} onClick={() => setHomeTab(1)}>
+                    {kidsToday.length ? "Ver semana →" : "Agregar →"}
+                  </button>
+                </div>
+              </>);
+            })()}
           </div>
         )}
 
@@ -6212,9 +6265,11 @@ export default function App() {
           const realIncome = homeBudget
             .filter(i => i.type === "Ingreso" && (i.dueDate ? i.dueDate.slice(0,7) : new Date(i.createdAt||Date.now()).toISOString().slice(0,7)) === thisMonthKey)
             .reduce((s,i)=>s+i.amount, 0);
-          // Gastos sin categoría para completar disponible
+          // Gastos sin categoría para completar disponible.
+          // "Deuda" sin catKey es una deuda registrada sin vincular (aún no es un pago
+          // real), así que no debe restar del disponible — solo los abonos reales cuentan.
           const untaggedSpent = homeBudget
-            .filter(i => !i.catKey && !["Ingreso","Ahorro"].includes(i.type)
+            .filter(i => !i.catKey && !["Ingreso","Ahorro","Deuda"].includes(i.type)
               && (i.dueDate ? i.dueDate.slice(0,7) : new Date(i.createdAt||Date.now()).toISOString().slice(0,7)) === thisMonthKey)
             .reduce((s,i)=>s+i.amount, 0);
           const disponible = realIncome - totalSpentCats - untaggedSpent;
@@ -7440,7 +7495,7 @@ export default function App() {
           ):(
             <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
               <input placeholder="Ingresa tu código de acceso" value={betaCode} onChange={(e)=>setBetaCode(e.target.value)} style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
-              <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
+              <button className="primary-button" type="submit" disabled={betaCodeLoading} style={{padding:"0 20px"}}>{betaCodeLoading ? "Activando..." : "Activar"}</button>
               {betaCodeError&&<p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
           )}
@@ -7633,7 +7688,7 @@ export default function App() {
                 style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit",fontSize:"15px"}}
                 autoFocus
               />
-              <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
+              <button className="primary-button" type="submit" disabled={betaCodeLoading} style={{padding:"0 20px"}}>{betaCodeLoading ? "Activando..." : "Activar"}</button>
               {betaCodeError && <p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
           )}

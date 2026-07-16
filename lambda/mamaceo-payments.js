@@ -13,10 +13,35 @@
  */
 
 import https from "https";
+import crypto from "crypto";
 import { DynamoDBClient, UpdateItemCommand, ScanCommand, GetItemCommand } from "@aws-sdk/client-dynamodb";
 
 const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION || "us-east-1" });
 const TABLE  = process.env.DYNAMODB_TABLE || "user_states";
+
+// Códigos beta — viven SOLO aquí (server-side), nunca en el bundle del cliente.
+// Antes el hash y la comparación se hacían en App.jsx, así que cualquiera podía
+// leer los hashes en el JS público y atacarlos offline sin límite de intentos.
+let BETA_CODES = [
+  { hash: "1df2627e3ac0f8268c070acdbf13b0d354f16f2c38bf873dee2d54b86af13440", days: 90, expiry: new Date("2026-12-31T23:59:59").getTime() },
+  { hash: "42f8fdb0a7354c04e994970759b87588906eccb7741c9bc5a7dd52471f7961bf", days: 60, expiry: new Date("2027-12-31T23:59:59").getTime() },
+  { hash: "e838734981031ac5ebe63fc160b956a2b17c3e34768c34d73c4f3b2ff20d71d9", days: 60, expiry: new Date("2027-12-31T23:59:59").getTime() },
+];
+try { if (process.env.BETA_CODES) BETA_CODES = JSON.parse(process.env.BETA_CODES); } catch {}
+
+function hashBetaCode(str) {
+  return crypto.createHash("sha256").update(str).digest("hex");
+}
+
+// IDs de plan de PayPal (públicos) — deben coincidir con PAYPAL_PLAN_IDS en src/App.jsx.
+// Se usan para verificar que el plan_id real de la suscripción activa corresponde al
+// planType que el cliente pide activar, en vez de confiar ciegamente en planType.
+let PAYPAL_PLAN_IDS = {
+  mama:         "P-1JS89076U5207463PNITBXNI",
+  emprendedora: "P-4BJ96851N4568881DNITBYZY",
+  ceo:          "P-4FG244764W7235101NITBZ6Y",
+};
+try { if (process.env.PAYPAL_PLAN_IDS) PAYPAL_PLAN_IDS = JSON.parse(process.env.PAYPAL_PLAN_IDS); } catch {}
 
 const CORS = {
   "Content-Type": "application/json",
@@ -176,7 +201,12 @@ export const handler = async (event) => {
         }));
         console.log(`Plan cancelado: userId=${foundUserId}`);
       }
-    } catch (e) { console.error("DynamoDB update error:", e.message); }
+    } catch (e) {
+      console.error("DynamoDB update error:", e.message);
+      // 500 para que Hotmart reintente el webhook — si respondemos 200 aquí, Hotmart
+      // da por hecho que se activó el plan aunque el pago se cobró y nunca se aplicó.
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ received: false, error: "No se pudo actualizar el plan, reintentar" }) };
+    }
 
     return { statusCode: 200, headers: CORS, body: JSON.stringify({ received: true }) };
   }
@@ -198,6 +228,13 @@ export const handler = async (event) => {
 
     if (ppRes.status !== 200 || ppRes.body.status !== "ACTIVE")
       return { statusCode: 400, headers: CORS, body: JSON.stringify({ success: false, error: "Suscripción no activa" }) };
+
+    // El cliente elige qué planType activar, pero el precio real pagado lo determina
+    // el plan_id de la suscripción en PayPal — sin esta verificación, alguien con una
+    // suscripción activa al plan más barato podía pedir activar el plan más caro gratis.
+    const expectedPlanId = PAYPAL_PLAN_IDS[planType];
+    if (!expectedPlanId || ppRes.body.plan_id !== expectedPlanId)
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ success: false, error: "El plan de la suscripción no coincide con el plan solicitado" }) };
 
     const premiumExpiresAt = Date.now() + 35 * 24 * 60 * 60 * 1000;
 
@@ -261,6 +298,38 @@ export const handler = async (event) => {
       console.error("check-pending error:", e.message);
       return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
     }
+  }
+
+  // ── 5. Activar código beta (validación server-side) ────────────────────────
+  if (action === "activate-beta") {
+    if (!userId)
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: "No autorizado. Inicia sesión." }) };
+
+    const code = String(body.code || "").trim().toUpperCase();
+    if (!code)
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Falta el código" }) };
+
+    const entered = hashBetaCode(code);
+    const match = BETA_CODES.find((c) => c.hash === entered);
+    if (!match)
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Código incorrecto. Verifica que lo escribiste exactamente como te lo enviaron." }) };
+    if (Date.now() > match.expiry)
+      return { statusCode: 400, headers: CORS, body: JSON.stringify({ error: "Este código ya expiró." }) };
+
+    const premiumExpiresAt = Date.now() + match.days * 24 * 60 * 60 * 1000;
+    try {
+      await dynamo.send(new UpdateItemCommand({
+        TableName: TABLE,
+        Key: { user_id: { S: userId } },
+        UpdateExpression: "SET userPlan = :p, premiumExpiresAt = :e",
+        ExpressionAttributeValues: { ":p": { S: "premium" }, ":e": { N: String(premiumExpiresAt) } },
+      }));
+    } catch (e) {
+      console.error("activate-beta error:", e.message);
+      return { statusCode: 500, headers: CORS, body: JSON.stringify({ error: e.message }) };
+    }
+
+    return { statusCode: 200, headers: CORS, body: JSON.stringify({ success: true, userPlan: "premium", premiumExpiresAt }) };
   }
 
   return { statusCode: 404, headers: CORS, body: JSON.stringify({ error: "Acción no reconocida" }) };
