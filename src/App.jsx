@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { awsAuth, getAwsAuthToken, isAwsConfigured, confirmAwsResetPassword, onGoogleRedirectCallback } from "./lib/awsClient";
+import { getUsageLimits, planMeetsMinimum, isToolLocked, toolMinPlan, planLabel } from "./lib/planGating";
 import Logo from "./Logo";
 import Studio from "./Studio";
 import Landing from "./Landing";
@@ -11,12 +12,8 @@ import "./App.css";
 const STORAGE_KEY = "mama-ceo-app-state-v4";
 const ADMIN_EMAILS = ["ysmanrei21@gmail.com"];
 
-// Sistema de planes
-const PLAN_LIMITS = {
-  free:         { movements: 30,       clients: 15,       content: 15,       homeTasks: 30 },
-  emprendedora: { movements: 100,      clients: 50,       content: 50,       homeTasks: 100 },
-  ceo:          { movements: Infinity, clients: Infinity, content: Infinity, homeTasks: Infinity }
-};
+// Sistema de planes — límites de uso y qué plan necesita cada herramienta
+// viven en src/lib/planGating.js (fuente única, ver ese archivo).
 
 const PLAN_PRICES = {
   mama:         { cop: "$19.900", usd: "~$5.5",  copYear: "$199.000", usdYear: "$55"  },
@@ -1054,7 +1051,7 @@ export default function App() {
     return "free";
   }, [userPlan, premiumExpiresAt, user, profileSetup]);
 
-  const currentLimits = PLAN_LIMITS[effectivePlan] || PLAN_LIMITS.free;
+  const currentLimits = getUsageLimits(effectivePlan);
 
   const callGemini = async (type, context) => {
     try {
@@ -2555,8 +2552,7 @@ export default function App() {
                       { mode: "emprendedora", icon: "💼", label: "Solo mi negocio",  plan: "emprendedora", planLabel: "Plan Emprendedora" },
                       { mode: "ambas",        icon: "✨", label: "Hogar y negocio",  plan: "ceo",          planLabel: "Plan CEO" },
                     ].map(({ mode, icon, label, plan, planLabel }) => {
-                      const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
-                      const needsUpgrade = (planOrder[effectivePlan] ?? 0) < (planOrder[plan] ?? 0);
+                      const needsUpgrade = !planMeetsMinimum(effectivePlan, plan);
                       return (
                         <button key={mode} type="button" onClick={() => setUserMode(mode)}
                           style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",border:`2px solid ${userMode===mode?"var(--pink)":"var(--line)"}`,borderRadius:"10px",background:userMode===mode?"rgba(212,104,122,0.06)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:userMode===mode?700:400,color:"var(--ink)"}}>
@@ -2754,14 +2750,12 @@ export default function App() {
         <p className="mobile-menu-section-label">Navegación</p>
         <nav className="main-menu" aria-label="Navegacion principal">
           {menu.map((item) => {
-            const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
-            const itemPlan = ["business","clients","studio"].includes(item.id) ? "emprendedora" : "free";
-            const locked = (planOrder[effectivePlan] ?? 0) < (planOrder[itemPlan] ?? 0);
+            const locked = isToolLocked(effectivePlan, item.id);
             return (
               <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id}
                 title={item.label}
                 onClick={() => {
-                  if (locked) { setUpgradeModal({ feature: item.label, plan: "Emprendedora" }); setMobileMenuOpen(false); return; }
+                  if (locked) { setUpgradeModal({ feature: item.label, plan: planLabel(toolMinPlan(item.id)) }); setMobileMenuOpen(false); return; }
                   setActiveView(item.id); setMobileMenuOpen(false);
                 }}>
                 <span className="menu-icon">{item.icon}</span>
@@ -3388,13 +3382,11 @@ export default function App() {
         {/* Barra de navegación inferior — solo mobile */}
         <nav className="mobile-bottom-nav">
           {menu.slice(0, 5).map((item) => {
-            const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
-            const itemPlan = ["business","clients","studio"].includes(item.id) ? "emprendedora" : "free";
-            const locked = (planOrder[effectivePlan] ?? 0) < (planOrder[itemPlan] ?? 0);
+            const locked = isToolLocked(effectivePlan, item.id);
             return (
               <button key={item.id} className={`mobile-bottom-nav-item${activeView === item.id ? " active" : ""}`}
                 onClick={() => {
-                  if (locked) { setUpgradeModal({ feature: item.label, plan: "Emprendedora" }); return; }
+                  if (locked) { setUpgradeModal({ feature: item.label, plan: planLabel(toolMinPlan(item.id)) }); return; }
                   setActiveView(item.id);
                 }}>
                 <span className="mobile-bottom-nav-icon">{item.icon}</span>
@@ -7532,19 +7524,19 @@ export default function App() {
               <div style={{display:"grid",gap:"12px",marginBottom:"24px"}}>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
-                  <span>{PLAN_LIMITS.free.movements} movimientos financieros/mes</span>
+                  <span>{getUsageLimits("free").movements} movimientos financieros/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
-                  <span>{PLAN_LIMITS.free.clients} clientes</span>
+                  <span>{getUsageLimits("free").clients} clientes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
-                  <span>{PLAN_LIMITS.free.content} contenidos/mes</span>
+                  <span>{getUsageLimits("free").content} contenidos/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
-                  <span>{PLAN_LIMITS.free.homeTasks} tareas del hogar/mes</span>
+                  <span>{getUsageLimits("free").homeTasks} tareas del hogar/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
@@ -7622,30 +7614,30 @@ export default function App() {
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Movimientos financieros</span>
-                <span><strong>{movements.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.movements : "8"}</span>
+                <span><strong>{movements.length}</strong> / {userPlan === "free" ? getUsageLimits("free").movements : "8"}</span>
               </div>
-              <Progress value={userPlan === "free" ? Math.min(Math.round((movements.length / PLAN_LIMITS.free.movements) * 100), 100) : 0} tone={movements.length >= PLAN_LIMITS.free.movements ? "pink" : "green"} />
+              <Progress value={userPlan === "free" ? Math.min(Math.round((movements.length / getUsageLimits("free").movements) * 100), 100) : 0} tone={movements.length >= getUsageLimits("free").movements ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Clientes</span>
-                <span><strong>{clients.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.clients : "8"}</span>
+                <span><strong>{clients.length}</strong> / {userPlan === "free" ? getUsageLimits("free").clients : "8"}</span>
               </div>
-              <Progress value={userPlan === "free" ? Math.min(Math.round((clients.length / PLAN_LIMITS.free.clients) * 100), 100) : 0} tone={clients.length >= PLAN_LIMITS.free.clients ? "pink" : "green"} />
+              <Progress value={userPlan === "free" ? Math.min(Math.round((clients.length / getUsageLimits("free").clients) * 100), 100) : 0} tone={clients.length >= getUsageLimits("free").clients ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Contenidos</span>
-                <span><strong>{contentItems.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.content : "8"}</span>
+                <span><strong>{contentItems.length}</strong> / {userPlan === "free" ? getUsageLimits("free").content : "8"}</span>
               </div>
-              <Progress value={userPlan === "free" ? Math.min(Math.round((contentItems.length / PLAN_LIMITS.free.content) * 100), 100) : 0} tone={contentItems.length >= PLAN_LIMITS.free.content ? "pink" : "green"} />
+              <Progress value={userPlan === "free" ? Math.min(Math.round((contentItems.length / getUsageLimits("free").content) * 100), 100) : 0} tone={contentItems.length >= getUsageLimits("free").content ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Tareas del hogar</span>
-                <span><strong>{homeTasks.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.homeTasks : "8"}</span>
+                <span><strong>{homeTasks.length}</strong> / {userPlan === "free" ? getUsageLimits("free").homeTasks : "8"}</span>
               </div>
-              <Progress value={userPlan === "free" ? Math.min(Math.round((homeTasks.length / PLAN_LIMITS.free.homeTasks) * 100), 100) : 0} tone={homeTasks.length >= PLAN_LIMITS.free.homeTasks ? "pink" : "green"} />
+              <Progress value={userPlan === "free" ? Math.min(Math.round((homeTasks.length / getUsageLimits("free").homeTasks) * 100), 100) : 0} tone={homeTasks.length >= getUsageLimits("free").homeTasks ? "pink" : "green"} />
             </div>
           </div>
         </div>

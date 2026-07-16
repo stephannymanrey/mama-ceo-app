@@ -9,7 +9,13 @@ const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const CLAUDE_MODEL  = "claude-haiku-4-5-20251001";
 const REGION        = process.env.AWS_REGION      || "us-east-1";
-const PLAN_LIMITS = { free: 50, emprendedora: 60, ceo: 200, premium: 200 };
+// Debe reflejar los mismos tiers que src/lib/planGating.js (PLAN_ORDER) — si agregas
+// o renombras un plan ahí, actualízalo también aquí. No se puede compartir el módulo
+// directamente porque esta Lambda es deliberadamente "cero dependencias" (ver
+// lambda/README.md), así que este es el único lugar del backend con este mapa.
+// "mama" faltaba antes: una usuaria con el plan Mamá caía en PLAN_LIMITS.free (50/mes)
+// en vez de tener su propio límite.
+const PLAN_LIMITS = { free: 50, mama: 50, emprendedora: 60, ceo: 200, premium: 200 };
 
 const ALLOWED_ORIGINS = [
   "https://www.mamaceoapp.co",
