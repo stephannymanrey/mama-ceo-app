@@ -8,6 +8,7 @@ import Landing from "./Landing";
 import PlanBuilder from "./PlanBuilder";
 import SilenceCutter from "./SilenceCutter";
 import InvoicingTool from "./tools/invoicing/InvoicingTool";
+import PendingMovementsPanel from "./tools/movements-sync/PendingMovementsPanel";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -2045,6 +2046,35 @@ export default function App() {
     setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue(), linkedDebtId: "", catKey: "hogar" });
     setShowBudgetModal(false);
   };
+  // ── Confirmar un movimiento detectado por correo (ver src/tools/movements-sync) ──
+  // La IA solo propone; esto es lo único que efectivamente crea el movimiento,
+  // y solo se llama cuando la usuaria lo confirma a mano en la bandeja de revisión.
+  const confirmPendingToHome = (item) => {
+    const dueDate = item.date || getTodayInputValue();
+    const type = item.type === "income" ? "Ingreso" : "Gasto hormiga";
+    setHomeBudget((current) => [{
+      id: Date.now(), type, description: item.description || "Movimiento detectado por correo",
+      amount: Number(item.amount) || 0, dueDate, createdAt: timestampFromInputDate(dueDate),
+      linkedDebtId: null, catKey: type === "Ingreso" ? null : "hogar",
+    }, ...current]);
+    return true;
+  };
+  const confirmPendingToBusiness = (item) => {
+    if (movements.length >= currentLimits.movements) {
+      setUpgradeReason(`Has alcanzado el límite de ${currentLimits.movements} movimientos de tu plan.`);
+      setShowUpgradeModal(true);
+      return false;
+    }
+    const date = item.date || getTodayInputValue();
+    setMovements((current) => [{
+      id: Date.now(), type: item.type, classification: item.type === "income" ? "Servicios" : "Gasto variable",
+      description: item.description || "Movimiento detectado por correo", category: "Otro",
+      amount: Number(item.amount) || 0, bank: "Sincronizado por correo", date,
+      createdAt: timestampFromInputDate(date), linkedBizDebtId: null,
+    }, ...current]);
+    return true;
+  };
+
   const updateHomeBudgetDate = (itemId, dueDate) => {
     setHomeBudget((current) => current.map((item) => item.id === itemId ? { ...item, dueDate, createdAt: timestampFromInputDate(dueDate) } : item));
   };
@@ -6315,6 +6345,8 @@ export default function App() {
           );
           return (
           <div key="tab-3" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"14px"}}>
+
+            <PendingMovementsPanel money={money} currency={currency} onConfirmToHome={confirmPendingToHome} onConfirmToBusiness={confirmPendingToBusiness} />
 
             {/* ── RESUMEN ── */}
             <div className="card" style={{padding:"18px 20px"}}>
