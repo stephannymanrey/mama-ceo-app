@@ -7,6 +7,7 @@ import Studio from "./Studio";
 import Landing from "./Landing";
 import PlanBuilder from "./PlanBuilder";
 import SilenceCutter from "./SilenceCutter";
+import InvoicingTool from "./tools/invoicing/InvoicingTool";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -285,14 +286,15 @@ const promesas = [
 ];
 
 const ALL_MENU_ITEMS = [
-  { id: "dashboard", label: "Inicio",          icon: "🏠" },
-  { id: "home",      label: "Mi Hogar",         icon: "🌸" },
-  { id: "business",  label: "Mi Negocio",       icon: "💼" },
-  { id: "clients",   label: "Mis Clientes",     icon: "👩‍💼" },
-  { id: "studio",    label: "Studio ✦",          icon: "🎬" },
+  { id: "dashboard",  label: "Inicio",          icon: "🏠" },
+  { id: "home",       label: "Mi Hogar",         icon: "🌸" },
+  { id: "business",   label: "Mi Negocio",       icon: "💼" },
+  { id: "clients",    label: "Mis Clientes",     icon: "👩‍💼" },
+  { id: "studio",     label: "Studio ✦",          icon: "🎬" },
+  { id: "invoicing",  label: "Facturas ✦",        icon: "🧾" },
 ];
 const MENU_MAMA        = ["dashboard", "home"];
-const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio"];
+const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio", "invoicing"];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 function getWeekDays() {
@@ -2238,6 +2240,18 @@ export default function App() {
           </div>
         )}
       </>
+    );
+  }
+
+  if (activeView === "invoicing") {
+    return (
+      <InvoicingTool
+        onBack={() => setActiveView("dashboard")}
+        clients={clients}
+        currency={currency}
+        money={money}
+        profileSetup={profileSetup}
+      />
     );
   }
 

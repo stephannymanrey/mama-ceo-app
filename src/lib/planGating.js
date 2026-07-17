@@ -51,6 +51,7 @@ export const TOOL_MIN_PLAN = {
   business: "emprendedora",
   clients: "emprendedora",
   studio: "emprendedora",
+  invoicing: "mama",
 };
 
 export function toolMinPlan(toolId) {
