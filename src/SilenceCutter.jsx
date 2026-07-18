@@ -346,9 +346,31 @@ const CARD_ANIMS = [
   { id: "zoom",       label: "⊕ Zoom"    },
 ];
 const CARD_FONTS = [
-  { id: "Poppins",          label: "Redondeada", weight: 800, preview: "Aa" },
-  { id: "Anton",            label: "Impacto",    weight: 400, preview: "Aa" },
-  { id: "Permanent Marker", label: "Manuscrita", weight: 400, preview: "Aa" },
+  // Bold / display
+  { id: "Anton",            label: "Anton",         weight: 400, cat: "bold" },
+  { id: "Bebas Neue",       label: "Bebas",         weight: 400, cat: "bold" },
+  { id: "Oswald",           label: "Oswald",        weight: 700, cat: "bold" },
+  { id: "Bangers",          label: "Bangers",       weight: 400, cat: "bold" },
+  { id: "Russo One",        label: "Russo",         weight: 400, cat: "bold" },
+  { id: "Alfa Slab One",    label: "Alfa Slab",     weight: 400, cat: "bold" },
+  { id: "Abril Fatface",    label: "Abril",         weight: 400, cat: "bold" },
+  { id: "Righteous",        label: "Righteous",     weight: 400, cat: "bold" },
+  // Clean / modern
+  { id: "Poppins",          label: "Poppins",       weight: 800, cat: "clean" },
+  { id: "Montserrat",       label: "Montserrat",    weight: 800, cat: "clean" },
+  { id: "Raleway",          label: "Raleway",       weight: 900, cat: "clean" },
+  { id: "Fredoka One",      label: "Fredoka",       weight: 400, cat: "clean" },
+  { id: "Boogaloo",         label: "Boogaloo",      weight: 400, cat: "clean" },
+  // Cursiva / caligrafía
+  { id: "Dancing Script",   label: "Dancing",       weight: 700, cat: "cursive" },
+  { id: "Lobster",          label: "Lobster",       weight: 400, cat: "cursive" },
+  { id: "Pacifico",         label: "Pacifico",      weight: 400, cat: "cursive" },
+  { id: "Caveat",           label: "Caveat",        weight: 700, cat: "cursive" },
+  { id: "Indie Flower",     label: "Indie",         weight: 400, cat: "cursive" },
+  { id: "Permanent Marker", label: "Marker",        weight: 400, cat: "cursive" },
+  // Elegante / serif
+  { id: "Playfair Display", label: "Playfair",      weight: 900, cat: "elegant" },
+  { id: "Cinzel",           label: "Cinzel",        weight: 900, cat: "elegant" },
 ];
 
 // Estilos de edición predefinidos: eligiendo uno, la herramienta aplica
@@ -684,8 +706,14 @@ async function transcribeClip(file, silences, onModelProgress) {
         reject(new Error(data.message));
       }
     };
+    const onErr = (e) => {
+      worker.removeEventListener("message", onMsg);
+      worker.removeEventListener("error", onErr);
+      _whisperWorker = null; // reset para que el siguiente intento cree un Worker fresco
+      reject(new Error(`Worker error: ${e.message || "fallo al cargar el modelo Whisper"}`));
+    };
     worker.addEventListener("message", onMsg);
-    // File es structured-cloneable → va al Worker sin copiar datos en el heap del main thread
+    worker.addEventListener("error", onErr);
     worker.postMessage({ id, file, silences: silences || [] });
   });
 }
@@ -1818,7 +1846,7 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
 }
 
 // ── Timeline contraído ────────────────────────────────────────────────────
-function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none", music = null, sfxList = [], onSfxChange, cards = [], onCardsChange }) {
+function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none", music = null, sfxList = [], onSfxChange, cards = [], onCardsChange, selectedSeg = null, onSelectSeg }) {
   const pct = totalKept > 0 ? Math.min(100, (effectiveTime / totalKept) * 100) : 0;
   const [hoveredSeg, setHoveredSeg] = useState(null);
   const [transPickerClipId, setTransPickerClipId] = useState(null);
@@ -1955,16 +1983,22 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
               const clipIdx = allClips.findIndex(c => c.id === seg.clip.id);
               const color = CLIP_COLORS[clipIdx % CLIP_COLORS.length] || "#C4526A";
               const isHov = hoveredSeg === i;
+              const isSel = selectedSeg && selectedSeg.clipId === seg.clip.id && selectedSeg.start === seg.start && selectedSeg.end === seg.end;
               return (
-                <div key={i} className={`sce-tl-seg${isHov ? " hovered" : ""}`}
+                <div key={i}
+                  className={`sce-tl-seg${isHov ? " hovered" : ""}${isSel ? " selected" : ""}`}
                   style={{ width: `${w}%`, "--seg-color": color }}
-                  title={`${seg.clip.name.replace(/\.[^/.]+$/, "")} · ${fmtTime(seg.start)}–${fmtTime(seg.end)}`}
+                  title={isSel ? "Seleccionado — pulsa Delete para eliminar" : `${seg.clip.name.replace(/\.[^/.]+$/, "")} · ${fmtTime(seg.start)}–${fmtTime(seg.end)} — clic para seleccionar`}
+                  onClick={e => {
+                    if (e.target.closest(".sce-tl-seg-toolbar")) return;
+                    onSelectSeg?.(isSel ? null : { clipId: seg.clip.id, start: seg.start, end: seg.end });
+                  }}
                   onMouseEnter={() => setHoveredSeg(i)} onMouseLeave={() => setHoveredSeg(null)}>
                   <span className="sce-tl-seg-label">{seg.clip.name.replace(/\.[^/.]+$/, "").slice(0, 14)}</span>
-                  {isHov && onCutSeg && (
+                  {(isHov || isSel) && onCutSeg && (
                     <div className="sce-tl-seg-toolbar">
-                      <button className="sce-tl-seg-del" title="Eliminar este fragmento"
-                        onClick={e => { e.stopPropagation(); onCutSeg(seg.clip.id, seg.start, seg.end); }}>🗑</button>
+                      <button className="sce-tl-seg-del" title="Eliminar fragmento (Delete)"
+                        onClick={e => { e.stopPropagation(); onCutSeg(seg.clip.id, seg.start, seg.end); onSelectSeg?.(null); }}>🗑</button>
                       <button className="sce-tl-seg-play" title="Reproducir desde aquí"
                         onClick={e => { e.stopPropagation(); onSeek(keptSegs.slice(0,i).reduce((t,s)=>t+s.end-s.start,0)); }}>▶</button>
                     </div>
@@ -2091,24 +2125,26 @@ function SfxPanel({ sfxList, onSfxChange, currentTime, onPreview }) {
     const m = Math.floor(t / 60), s = (t % 60).toFixed(1).padStart(4, "0");
     return `${m}:${s}`;
   };
-  const addSfx = (type) => {
+  const addSfx = (type, e) => {
+    e.stopPropagation();
     const cat = SFX_CATALOG.find(c => c.id === type);
     if (!cat) return;
     const id = `sfx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     onSfxChange(prev => [...prev, { id, type, time: currentTime, label: cat.label, emoji: cat.emoji }]);
-    onPreview(type);
   };
   const removeSfx = (id) => onSfxChange(prev => prev.filter(s => s.id !== id));
 
   return (
     <div className="sfx-panel">
       <div className="sfx-catalog">
-        <p className="sfx-hint">Toca un efecto para agregarlo en la posición actual del scrubber</p>
+        <p className="sfx-hint">Toca para escuchar · presiona <strong>+</strong> para agregar en el scrubber</p>
         <div className="sfx-grid">
           {SFX_CATALOG.map(sfx => (
-            <button key={sfx.id} className="sfx-btn" onClick={() => addSfx(sfx.id)} title={sfx.desc}>
+            <button key={sfx.id} className="sfx-btn" onClick={() => onPreview(sfx.id)} title={sfx.desc}>
               <span className="sfx-emoji">{sfx.emoji}</span>
               <span className="sfx-label">{sfx.label}</span>
+              <span className="sfx-add-btn" title={`Agregar ${sfx.label} en ${fmtT(currentTime)}`}
+                onClick={(e) => addSfx(sfx.id, e)}>+</span>
             </button>
           ))}
         </div>
@@ -2340,7 +2376,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const [seeking,      setSeeking]      = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [transcribeMsg, setTranscribeMsg] = useState("");
-  const [cutMark,      setCutMark]      = useState(null);
+  const [selectedSeg,  setSelectedSeg]  = useState(null); // {clipId, start, end} del fragmento seleccionado
   const [dims,         setDims]         = useState({ W: 1280, H: 720 });
   const [tab,          setTab]          = useState("subs");
   const [effects,      setEffects]      = useState(() => ({ transition: "none", transitionSecs: 0.4, bokeh: 0, autoZoom: false, zoomInterval: 4, ...VIDEO_PRESETS[0].values, _preset: "natural" }));
@@ -2381,7 +2417,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       const tracks = MUSIC_LIBRARY.filter(t => t.genre === style.musicGenre);
       if (tracks.length) {
         const track = tracks[Math.floor(Math.random() * tracks.length)];
-        setMusic({ url: track.url, name: track.name, volume: 0.35, duck: true, loop: true, fromLibrary: true });
+        // Volumen bajo (0.12) para no tapar la voz — duck bajará más mientras habla
+        setMusic({ url: track.url, name: track.name, volume: 0.12, duck: true, loop: true, fromLibrary: true });
       }
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -2389,6 +2426,15 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
   useEffect(() => { effectsRef.current = effects; }, [effects]);
   useEffect(() => { formatRef.current = format; }, [format]);
+
+  // Refs para atajos de teclado — evitan re-registrar el listener en cada render
+  const effectiveTimeRef = useRef(0);
+  const totalKeptRef     = useRef(0);
+  const selectedSegRef   = useRef(null);
+  const playbarScrubDrag = useRef(false);
+  useEffect(() => { effectiveTimeRef.current = effectiveTime; }, [effectiveTime]);
+  useEffect(() => { totalKeptRef.current = totalKept; }, [totalKept]);
+  useEffect(() => { selectedSegRef.current = selectedSeg; }, [selectedSeg]);
 
   // Renderiza un frame de `vid` al canvas ctx con todos los efectos activos.
   // blocking=true → espera el mask de bokeh (para seekTo); false → usa último mask (animation loop).
@@ -2560,14 +2606,28 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
 
   useEffect(() => {
     const onKey = (e) => {
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || e.target.isContentEditable) return;
       if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
         splitAtPlayhead();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        togglePlay();
+      } else if (e.key === 'ArrowLeft' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        seekToEffective(Math.max(0, effectiveTimeRef.current - 5));
+      } else if (e.key === 'ArrowRight' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        seekToEffective(Math.min(totalKeptRef.current, effectiveTimeRef.current + 5));
+      } else if (e.key === 'Delete' || e.key === 'Backspace') {
+        const sel = selectedSegRef.current;
+        if (sel) { e.preventDefault(); onCutSeg(sel.clipId, sel.start, sel.end); setSelectedSeg(null); }
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [splitAtPlayhead]);
+  }, [splitAtPlayhead, togglePlay, seekToEffective, onCutSeg]);
 
   // Dimensiones de salida según formato seleccionado (dims = dimensiones nativas del video)
   const outDims = useMemo(() => {
@@ -2720,6 +2780,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
 
     const generated = [];
     let colorStep = 0;
+    let lastError = null;
     for (const clip of ready) {
       let segments = clip.segments?.length ? clip.segments : null;
       if (!segments) {
@@ -2733,7 +2794,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
         } catch (err) {
           console.error("[autoCards] transcription failed:", err?.message || err);
-          setAutoCardMsg(`Error al transcribir: ${err?.message || "verifica tu conexión"}. Reintentando en tarjetas...`);
+          lastError = `Error al transcribir: ${err?.message || "verifica tu conexión"}`;
           continue;
         }
       }
@@ -2761,7 +2822,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         }
         if (!res.ok) {
           console.error("[autoCards] Lambda error", res.status, data);
-          setAutoCardMsg(`Error del servidor (${res.status}). Intenta de nuevo.`);
+          lastError = `Error del servidor (${res.status}${data?.error ? `: ${data.error}` : ""}). Verifica que el Lambda esté desplegado.`;
           continue;
         }
         for (const t of data.tarjetas || []) {
@@ -2793,7 +2854,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         }
       } catch (err) {
         console.error("[autoCards] fetch error:", err?.message || err);
-        setAutoCardMsg("Error de conexión al generar tarjetas. Verifica tu internet.");
+        lastError = `Error de conexión: ${err?.message || "verifica tu internet"}`;
       }
     }
 
@@ -2804,7 +2865,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       setAutoCardMsg(`✨ ${generated.length} tarjeta${generated.length !== 1 ? "s" : ""} generada${generated.length !== 1 ? "s" : ""} con tu estilo — revísalas antes de exportar.`);
     } else {
       setAutoCardState("error");
-      setAutoCardMsg("No se pudieron generar tarjetas automáticas. Puedes crearlas manualmente.");
+      setAutoCardMsg(lastError || "No se pudieron generar tarjetas. Puedes crearlas manualmente.");
     }
   }, [clips, keptSegs, setClips, style]);
 
@@ -2812,6 +2873,16 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     if (!style?.autoCards || cards.length > 0 || autoCardTriedRef.current) return;
     if (clips.some(c => c.analyzed && !c.error)) runAutoCards();
   }, [style, clips, cards.length, runAutoCards]);
+
+  // Auto-transcribir para subtítulos si el estilo lo requiere y no hay segmentos aún
+  const autoSubTriedRef = useRef(false);
+  useEffect(() => {
+    if (!style?.autoCards || autoSubTriedRef.current || transcribing) return;
+    const needsTrans = clips.filter(c => c.analyzed && !c.error && !c.segments?.length);
+    if (!needsTrans.length) return;
+    autoSubTriedRef.current = true;
+    handleTranscribeInline();
+  }, [style, clips, transcribing]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Dibujar primer frame cuando los segmentos están listos → evita canvas negro al abrir editor
   useEffect(() => {
@@ -2822,22 +2893,11 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   }, [keptSegs.length, isPlaying, seekToEffective]);
 
   // Cortador manual
-  const handleMarkStart = useCallback(() => {
-    if (!currentClipId) return;
-    setCutMark({ clipId: currentClipId, time: localTime });
-  }, [currentClipId, localTime]);
-
-  const handleMarkEnd = useCallback(() => {
-    if (!cutMark || !currentClipId || cutMark.clipId !== currentClipId) { setCutMark(null); return; }
-    const start = Math.min(cutMark.time, localTime);
-    const end   = Math.max(cutMark.time, localTime);
-    if (end - start < 0.1) { setCutMark(null); return; }
-    const newSilence = { id: uid(), start, end, cut: true };
-    setClips(prev => prev.map(c => c.id !== cutMark.clipId ? c : {
-      ...c, silences: [...c.silences, newSilence].sort((a, b) => a.start - b.start),
-    }));
-    setCutMark(null);
-  }, [cutMark, currentClipId, localTime, setClips]);
+  // Borrar fragmento seleccionado desde el timeline
+  const deleteSelectedSeg = useCallback(() => {
+    const sel = selectedSegRef.current;
+    if (sel) { onCutSeg(sel.clipId, sel.start, sel.end); setSelectedSeg(null); }
+  }, [onCutSeg]);
 
   // Reproducción
   const runPlay = useCallback(async () => {
@@ -3049,48 +3109,65 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             )}
           </div>
 
-          {/* Playbar con scrubber clicable y cortador manual */}
+          {/* Playbar — estilo CapCut */}
           <div className="sce-playbar">
-            <button className="sce-playbtn" onClick={togglePlay}>
+            <button className="sce-playbtn" onClick={togglePlay} title="Play / Pausa (Espacio)">
               {isPlaying ? "⏸" : done ? "↺" : "▶"}
             </button>
+            <button className="sce-seekstep" onClick={() => seekToEffective(Math.max(0, effectiveTime - 5))} title="Retroceder 5s (←)">‹5s</button>
 
-            {/* Scrubber clicable */}
-            <div className="sce-scrubber" onClick={e => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const p = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-              seekToEffective(p * totalKept);
-            }}>
+            {/* Scrubber con drag en tiempo real */}
+            <div className="sce-scrubber"
+              onPointerDown={e => {
+                playbarScrubDrag.current = true;
+                e.currentTarget.setPointerCapture(e.pointerId);
+                const r = e.currentTarget.getBoundingClientRect();
+                seekToEffective(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * totalKept);
+              }}
+              onPointerMove={e => {
+                if (!playbarScrubDrag.current) return;
+                const r = e.currentTarget.getBoundingClientRect();
+                seekToEffective(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * totalKept);
+              }}
+              onPointerUp={() => { playbarScrubDrag.current = false; }}
+              onPointerCancel={() => { playbarScrubDrag.current = false; }}>
               <div className="sce-scrubber-fill" style={{ width: `${pct}%` }} />
+              <div className="sce-scrubber-thumb" style={{ left: `${pct}%` }} />
             </div>
-            <span className="sce-pct-label">{fmtTime(effectiveTime)}</span>
 
-            {/* Cortador manual */}
-            <div className="sce-cut-mark">
-              {!cutMark ? (
-                <button className="sce-cut-btn" disabled={!currentClipId} onClick={handleMarkStart}
-                  title="Marcar inicio del corte manual">✂ Inicio</button>
-              ) : (
-                <>
-                  <span className="sce-cut-info">desde {fmtTime(cutMark.time)}</span>
-                  <button className="sce-cut-btn sce-cut-btn--end" onClick={handleMarkEnd}
-                    title="Cortar hasta aquí">Cortar</button>
-                  <button className="sce-cut-cancel" onClick={() => setCutMark(null)}>✕</button>
-                </>
-              )}
-            </div>
+            <button className="sce-seekstep" onClick={() => seekToEffective(Math.min(totalKept, effectiveTime + 5))} title="Avanzar 5s (→)">5s›</button>
+            <span className="sce-pct-label">{fmtTime(effectiveTime)}<span className="sce-pct-total"> / {fmtTime(totalKept)}</span></span>
+
+            {/* Botón Dividir — equivalente a Ctrl+B */}
+            <button className="sce-split-btn" onClick={splitAtPlayhead} disabled={!currentClipId}
+              title="Dividir aquí (Ctrl+B) — luego clic en el fragmento + Delete para eliminarlo">
+              ✂ Dividir
+            </button>
+
+            {/* Eliminar fragmento seleccionado */}
+            {selectedSeg && (
+              <button className="sce-delete-seg-btn" onClick={deleteSelectedSeg}
+                title="Eliminar fragmento seleccionado (Delete)">
+                🗑 Eliminar
+              </button>
+            )}
+          </div>
+
+          {/* Atajos de teclado */}
+          <div className="sce-shortcuts-hint">
+            <kbd>Espacio</kbd> play · <kbd>Ctrl+B</kbd> dividir · clic en fragmento y <kbd>Delete</kbd> eliminar · <kbd>← →</kbd> saltar 5s
           </div>
         </div>
 
         {/* Panel derecho con tabs: Subtítulos | Transiciones | Efectos */}
         <div className="sce-right-panel">
           <div className="sce-tab-bar">
-            <button className={`sce-tab${tab === "subs"  ? " active" : ""}`} onClick={() => setTab("subs")}>💬 Subs</button>
-            <button className={`sce-tab${tab === "music" ? " active" : ""}`} onClick={() => setTab("music")}>🎵 Música</button>
-            <button className={`sce-tab${tab === "cards" ? " active" : ""}`} onClick={() => setTab("cards")}>🃏 Tarjetas</button>
-            <button className={`sce-tab${tab === "sfx"   ? " active" : ""}`} onClick={() => setTab("sfx")}>🔊 SFX</button>
-            <button className={`sce-tab${tab === "trans" ? " active" : ""}`} onClick={() => setTab("trans")}>✂️ Cortes</button>
-            <button className={`sce-tab${tab === "fx"    ? " active" : ""}`} onClick={() => setTab("fx")}>✨ Efectos</button>
+            <button className={`sce-tab${tab === "subs"  ? " active" : ""}`} onClick={() => setTab("subs")}  title="Subtítulos">💬 Texto</button>
+            <button className={`sce-tab${tab === "music" ? " active" : ""}`} onClick={() => setTab("music")} title="Música">🎵 Música</button>
+            <button className={`sce-tab${tab === "cards" ? " active" : ""}`} onClick={() => setTab("cards")} title="Tarjetas IA">🃏 Cards</button>
+            <button className={`sce-tab${tab === "sfx"   ? " active" : ""}`} onClick={() => setTab("sfx")}   title="Efectos de sonido">🔊 SFX</button>
+            <button className={`sce-tab${tab === "trans" ? " active" : ""}`} onClick={() => setTab("trans")} title="Transiciones">🎬 Trans.</button>
+            <button className={`sce-tab${tab === "fx"    ? " active" : ""}`} onClick={() => setTab("fx")}    title="Efectos visuales">✨ FX</button>
           </div>
           {tab === "subs"
             ? <SubtitlePanel
@@ -3163,6 +3240,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         onSfxChange={setSfxList}
         cards={cards}
         onCardsChange={setCards}
+        selectedSeg={selectedSeg}
+        onSelectSeg={setSelectedSeg}
       />
     </div>
   );

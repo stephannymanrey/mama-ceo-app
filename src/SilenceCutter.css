@@ -992,86 +992,124 @@
   transition: background 0.15s, transform 0.1s;
 }
 .sce-playbtn:hover { background: #a93f56; transform: scale(1.05); }
-.sce-scrubber {
-  flex: 1;
-  height: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 5px;
-  overflow: hidden;
-  cursor: pointer;
-  transition: height 0.15s;
-}
-.sce-scrubber:hover { height: 14px; }
-.sce-scrubber-fill {
-  height: 100%;
-  background: #C4526A;
-  border-radius: 3px;
-  transition: width 0.18s linear;
-}
-.sce-pct-label {
-  font-size: 11px;
-  color: rgba(255, 255, 255, 0.4);
-  font-variant-numeric: tabular-nums;
-  min-width: 38px;
-  text-align: right;
-  white-space: nowrap;
-}
-
-/* Cortador manual (botones en playbar) */
-.sce-cut-mark {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  flex-shrink: 0;
-}
-.sce-cut-btn {
-  padding: 4px 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+.sce-seekstep {
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
   border-radius: 6px;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(255,255,255,0.55);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
   white-space: nowrap;
+  flex-shrink: 0;
   font-family: inherit;
+  transition: all 0.13s;
 }
-.sce-cut-btn:hover:not(:disabled) {
-  background: rgba(196, 82, 106, 0.15);
-  border-color: #C4526A;
-  color: #C4526A;
-}
-.sce-cut-btn:disabled { opacity: 0.3; cursor: default; }
-.sce-cut-btn--end {
-  background: rgba(196, 82, 106, 0.15) !important;
-  border-color: #C4526A !important;
-  color: #C4526A !important;
-}
-.sce-cut-btn--end:hover {
-  background: rgba(196, 82, 106, 0.28) !important;
-}
-.sce-cut-info {
-  font-size: 10px;
-  color: rgba(255, 255, 255, 0.45);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-.sce-cut-cancel {
-  width: 20px;
-  height: 20px;
-  border: none;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.3);
+.sce-seekstep:hover { background: rgba(255,255,255,0.12); color: #fff; }
+
+.sce-scrubber {
+  flex: 1;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  position: relative;
   cursor: pointer;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.12s;
+  touch-action: none;
+  transition: height 0.13s;
 }
-.sce-cut-cancel:hover { background: rgba(220,60,60,0.15); color: #e05555; }
+.sce-scrubber:hover { height: 16px; }
+.sce-scrubber-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: #C4526A;
+  border-radius: 6px;
+  pointer-events: none;
+}
+.sce-scrubber-thumb {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  pointer-events: none;
+  transition: transform 0.1s;
+}
+.sce-scrubber:hover .sce-scrubber-thumb { transform: translate(-50%, -50%) scale(1.2); }
+
+.sce-pct-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  font-variant-numeric: tabular-nums;
+  min-width: 60px;
+  text-align: right;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.sce-pct-total { color: rgba(255,255,255,0.28); }
+
+/* Botón dividir (✂ Ctrl+B) */
+.sce-split-btn {
+  padding: 5px 12px;
+  background: rgba(196, 82, 106, 0.12);
+  border: 1px solid rgba(196, 82, 106, 0.45);
+  border-radius: 7px;
+  color: #d4788e;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: inherit;
+  transition: all 0.13s;
+}
+.sce-split-btn:hover:not(:disabled) { background: rgba(196,82,106,0.25); color: #e8a0b0; border-color: #C4526A; }
+.sce-split-btn:disabled { opacity: 0.25; cursor: default; }
+
+/* Botón eliminar segmento seleccionado */
+.sce-delete-seg-btn {
+  padding: 5px 10px;
+  background: rgba(220, 60, 60, 0.14);
+  border: 1px solid rgba(220, 60, 60, 0.5);
+  border-radius: 7px;
+  color: #e07070;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-family: inherit;
+  transition: all 0.13s;
+  animation: fadeIn 0.15s ease;
+}
+.sce-delete-seg-btn:hover { background: rgba(220,60,60,0.28); color: #f09090; }
+
+/* Barra de atajos de teclado */
+.sce-shortcuts-hint {
+  padding: 4px 14px;
+  background: #0e0e1c;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  font-size: 10px;
+  color: rgba(255,255,255,0.22);
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sce-shortcuts-hint kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 3px;
+  font-size: 9px;
+  font-family: inherit;
+  color: rgba(255,255,255,0.38);
+  margin: 0 1px;
+}
 
 /* ── Panel de subtítulos — fondo blanco ────────────────────────────────── */
 .sce-sub-panel {
@@ -1473,9 +1511,15 @@
   align-items: center;
   overflow: hidden;
   opacity: 0.85;
-  transition: opacity 0.15s;
+  cursor: pointer;
+  transition: opacity 0.15s, box-shadow 0.15s;
 }
 .sce-tl-seg:hover { opacity: 1; }
+.sce-tl-seg.selected {
+  opacity: 1;
+  box-shadow: 0 0 0 2px #fff, 0 0 0 4px #C4526A;
+  z-index: 2;
+}
 .sce-tl-seg-label {
   font-size: 9px;
   font-weight: 600;
@@ -1621,10 +1665,14 @@
   display: flex;
   flex-shrink: 0;
   border-bottom: 1px solid rgba(255,255,255,0.06);
+  overflow-x: auto;
+  scrollbar-width: none;
 }
+.sce-tab-bar::-webkit-scrollbar { display: none; }
 .sce-tab {
   flex: 1;
-  padding: 10px 4px;
+  min-width: 52px;
+  padding: 10px 6px;
   background: transparent;
   border: none;
   font-size: 10px;
