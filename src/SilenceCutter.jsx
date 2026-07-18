@@ -2165,6 +2165,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
 
   // Estado de generación automática de tarjetas (estilo editorial)
   const autoCardTriedRef = useRef(false);
+  const prevKeptLenRef  = useRef(0); // para el primer dibujado al abrir editor
   const [autoCardState, setAutoCardState] = useState("idle"); // idle|needsAuth|working|done|error
   const [autoCardMsg, setAutoCardMsg] = useState("");
 
@@ -2492,6 +2493,14 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) { autoCardTriedRef.current = false; setAutoCardState("idle"); return; }
 
+    // Si el usuario está previsualizando, esperar a que pare antes de cargar Whisper en memoria
+    if (playRef.current) {
+      setAutoCardMsg("Previsualiza el video — generamos las tarjetas automáticamente cuando pares ⏸");
+      await new Promise(resolve => {
+        const id = setInterval(() => { if (!playRef.current) { clearInterval(id); resolve(); } }, 600);
+      });
+    }
+
     const generated = [];
     let colorStep = 0;
     for (const clip of ready) {
@@ -2556,6 +2565,14 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     if (!style?.autoCards || cards.length > 0 || autoCardTriedRef.current) return;
     if (clips.some(c => c.analyzed && !c.error)) runAutoCards();
   }, [style, clips, cards.length, runAutoCards]);
+
+  // Dibujar primer frame cuando los segmentos están listos → evita canvas negro al abrir editor
+  useEffect(() => {
+    if (keptSegs.length > 0 && prevKeptLenRef.current === 0 && !isPlaying) {
+      seekToEffective(0);
+    }
+    prevKeptLenRef.current = keptSegs.length;
+  }, [keptSegs.length, isPlaying, seekToEffective]);
 
   // Cortador manual
   const handleMarkStart = useCallback(() => {
