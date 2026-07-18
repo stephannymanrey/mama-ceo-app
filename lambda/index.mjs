@@ -798,12 +798,25 @@ Responde SOLO JSON válido:
 }
 
 // ─── Handler: Extraer fragmentos virales para Reels ───────────────────────
-async function handleExtractReels(body, event) {
+// Ruta autenticada (ver dispatch en handler): cuenta contra el límite mensual
+// de generaciones de IA del plan real de la usuaria, igual que guion/hooks/ideas.
+async function handleExtractReels(body, event, userId) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { transcription, duration } = body;
   if (!transcription?.trim()) return respond(400, { error: "Falta transcripción" }, event);
-  if (!(await checkAndIncrDailyLimit("extractReels", PUBLIC_AI_DAILY_LIMIT))) {
-    return respond(429, { error: "limite_diario" }, event);
+
+  const { plan, usage } = await getUserPlanAndUsage(userId);
+  const mk = monthKey();
+  const currentCount = usage[mk] || 0;
+  const limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+  if (currentCount >= limit) {
+    return respond(429, {
+      error: "limite_alcanzado",
+      usage: currentCount,
+      limit,
+      plan,
+      message: `Llegaste al límite de ${limit} generaciones este mes.`,
+    }, event);
   }
 
   const durMin = Math.round((duration || 0) / 60);
@@ -850,7 +863,11 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
     return respond(502, { error: "No se pudo interpretar la respuesta. Intenta de nuevo." }, event);
   }
 
-  return respond(200, { fragmentos }, event);
+  const updatedUsage = { ...usage, [mk]: currentCount + 1 };
+  try { await saveUsage(userId, updatedUsage); }
+  catch (err) { console.warn("No se pudo guardar contador:", err); }
+
+  return respond(200, { fragmentos, usage: currentCount + 1, limit, plan }, event);
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────
@@ -872,12 +889,17 @@ export const handler = async (event) => {
   if (body.type === "dofa" && body.publicEmail) {
     return handleDofa(body, event);
   }
-  if (body.type === "extractReels" && body.publicEmail) {
-    return handleExtractReels(body, event);
-  }
 
   const userId = getUserId(event);
   if (!userId) return respond(401, { error: "No autorizada" }, event);
+
+  // A diferencia de planNegocio/mejorarSeccion/dofa (pensadas para el flujo
+  // público de plan de negocio, sin cuenta), extractReels se usa desde el
+  // editor de video con sesión iniciada — cuenta contra el límite mensual
+  // real del plan de la usuaria en vez de un tope genérico compartido.
+  if (body.type === "extractReels") {
+    return handleExtractReels(body, event, userId);
+  }
 
   const { type, context } = body;
   if (!type || !context) return respond(400, { error: "Faltan campos: type, context" }, event);
