@@ -30,12 +30,15 @@ const TRANSITIONS   = [
   { id: "slideDown",  icon: "↓", label: "Deslizar ↓"   },
   { id: "flash", icon: "✦", label: "Flash blanco"   },
 ];
-const SKIN_FILTERS  = [
-  "blur(0.35px) contrast(1.05) saturate(1.05)",
-  "blur(0.65px) contrast(1.08) saturate(1.07) brightness(1.01)",
-  "blur(1.0px)  contrast(1.10) saturate(1.09) brightness(1.02)",
-];
-const BOKEH_BLUR    = [8, 14, 22];
+// skin: 0–100. Blur escala hasta 5px; contrast/brightness/saturate compensan
+// el efecto lechoso del blur para que la piel luzca luminosa, no empañada.
+function buildSkinFilter(skin) {
+  if (!skin) return null;
+  const t = skin / 100;
+  return `blur(${(t * 5).toFixed(2)}px) contrast(${(1 + t * 0.20).toFixed(3)}) brightness(${(1 + t * 0.05).toFixed(3)}) saturate(${(1 + t * 0.15).toFixed(3)})`;
+}
+// bokeh: 0 = apagado, 1–100 → blur de fondo 4–30px
+function bokehBlurPx(bokeh) { return bokeh > 0 ? 4 + (bokeh / 100) * 26 : 0; }
 
 // Biblioteca de música sin derechos de autor (solo instrumental)
 const MUSIC_LIBRARY = [
@@ -74,12 +77,12 @@ const CARD_ANIMS = [
 
 // Presets de edición automática
 const VIDEO_PRESETS = [
-  { id: "natural",  icon: "🌿", label: "Natural",  values: { brightness: 8,  contrast: 5,  saturation: 5,   skin: 1, temperature: 0   } },
-  { id: "warm",     icon: "☀️", label: "Cálida",   values: { brightness: 5,  contrast: 5,  saturation: 10,  skin: 1, temperature: 35  } },
-  { id: "vibrant",  icon: "✨", label: "Vibrante", values: { brightness: 5,  contrast: 12, saturation: 25,  skin: 1, temperature: 0   } },
-  { id: "fresh",    icon: "❄️", label: "Fresca",   values: { brightness: 5,  contrast: 10, saturation: 5,   skin: 0, temperature: -30 } },
-  { id: "cinema",   icon: "🎬", label: "Cinema",   values: { brightness: -5, contrast: 18, saturation: -12, skin: 0, temperature: -15 } },
-  { id: "none",     icon: "—",  label: "Sin efecto", values: { brightness: 0, contrast: 0,  saturation: 0,   skin: 0, temperature: 0, bokeh: 0 } },
+  { id: "natural",  icon: "🌿", label: "Natural",  values: { brightness: 8,  contrast: 5,  saturation: 5,   skin: 30, temperature: 0   } },
+  { id: "warm",     icon: "☀️", label: "Cálida",   values: { brightness: 5,  contrast: 5,  saturation: 10,  skin: 30, temperature: 35  } },
+  { id: "vibrant",  icon: "✨", label: "Vibrante", values: { brightness: 5,  contrast: 12, saturation: 25,  skin: 30, temperature: 0   } },
+  { id: "fresh",    icon: "❄️", label: "Fresca",   values: { brightness: 5,  contrast: 10, saturation: 5,   skin: 0,  temperature: -30 } },
+  { id: "cinema",   icon: "🎬", label: "Cinema",   values: { brightness: -5, contrast: 18, saturation: -12, skin: 0,  temperature: -15 } },
+  { id: "none",     icon: "—",  label: "Sin efecto", values: { brightness: 0, contrast: 0,  saturation: 0,   skin: 0,  temperature: 0, bokeh: 0 } },
 ];
 
 // ── Utilidades ────────────────────────────────────────────────────────────
@@ -101,7 +104,8 @@ function buildVidFilter(brightness, contrast, saturation, skin) {
   if (brightness) parts.push(`brightness(${(1 + brightness / 100).toFixed(2)})`);
   if (contrast)   parts.push(`contrast(${(1 + contrast / 100).toFixed(2)})`);
   if (saturation) parts.push(`saturate(${(1 + saturation / 100).toFixed(2)})`);
-  if (skin > 0)   parts.push(SKIN_FILTERS[skin - 1]);
+  const sf = buildSkinFilter(skin);
+  if (sf) parts.push(sf);
   return parts.length ? parts.join(" ") : null;
 }
 
@@ -1707,20 +1711,26 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
       <div className="sce-fx-section">
         <div className="sce-fx-row">
           <p className="sce-fx-section-label">✨ SUAVIZANTE DE PIEL</p>
-          <button className={`sce-fx-toggle${effects.skin ? " active" : ""}`}
-            onClick={() => setSkin(effects.skin ? 0 : 1)}>
-            {effects.skin ? "ON" : "OFF"}
-          </button>
+          <span style={{fontSize:"12px",fontWeight:700,color:effects.skin>0?"#C4526A":"#999",minWidth:"34px",textAlign:"right"}}>
+            {effects.skin > 0 ? `${effects.skin}%` : "—"}
+          </span>
         </div>
-        {effects.skin > 0 && (
-          <div className="sce-fx-levels">
-            {["Suave", "Medio", "Fuerte"].map((l, i) => (
-              <button key={i} className={`sce-fx-level${effects.skin === i+1 ? " active" : ""}`}
-                onClick={() => setSkin(i + 1)}>{l}</button>
-            ))}
-          </div>
-        )}
-        <p className="sce-fx-hint">Funciona junto con cualquier estilo de video.</p>
+        <div className="sce-fx-slider-row" style={{marginTop:8}}>
+          <span style={{fontSize:10,color:"#aaa",flexShrink:0}}>0</span>
+          <input type="range" min="0" max="100" step="1"
+            value={effects.skin}
+            onChange={e => setSkin(Number(e.target.value))}
+            className="sce-fx-slider"/>
+          <span style={{fontSize:10,color:"#aaa",flexShrink:0}}>100</span>
+        </div>
+        <p className="sce-fx-hint">
+          {effects.skin === 0
+            ? "Sin efecto · desliza para activar"
+            : effects.skin < 30 ? "Toque natural"
+            : effects.skin < 55 ? "Piel suavizada"
+            : effects.skin < 78 ? "Alta definición"
+            : "Máximo airbrush"}
+        </p>
       </div>
 
       {/* Bokeh */}
@@ -1733,11 +1743,13 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
           </button>
         </div>
         {effects.bokeh > 0 && (
-          <div className="sce-fx-levels">
-            {["Suave", "Medio", "Fuerte"].map((l, i) => (
-              <button key={i} className={`sce-fx-level${effects.bokeh === i+1 ? " active" : ""}`}
-                onClick={() => onEffectChange({ ...effects, bokeh: i + 1 })}>{l}</button>
-            ))}
+          <div className="sce-fx-slider-row" style={{marginTop:8}}>
+            <span style={{fontSize:10,color:"#aaa",flexShrink:0}}>0</span>
+            <input type="range" min="1" max="100" step="1"
+              value={effects.bokeh}
+              onChange={e => onEffectChange({ ...effects, bokeh: Number(e.target.value) })}
+              className="sce-fx-slider"/>
+            <span style={{fontSize:10,color:"#aaa",flexShrink:0,minWidth:34,textAlign:"right"}}>{effects.bokeh}%</span>
           </div>
         )}
         {!bokehReady && !bokehLoading && <p className="sce-fx-hint">Primera activación descarga modelo IA (~2 MB)</p>}
@@ -1823,7 +1835,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const applyFrame = useCallback(async (ctx, vid, dX, dY, dW, dH, W, H, blocking = false) => {
     const { skin, bokeh, brightness = 0, contrast = 0, saturation = 0, temperature = 0 } = effectsRef.current;
     const vidFilter  = buildVidFilter(brightness, contrast, saturation, skin);
-    const bgBlur     = bokeh > 0 ? BOKEH_BLUR[bokeh - 1] : 0;
+    const bgBlur     = bokehBlurPx(bokeh);
     const seg        = segRef.current;
 
     ctx.fillStyle = "#000";
@@ -1906,7 +1918,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   // Inicializar / toggle bokeh
   const initBokeh = useCallback(async () => {
     if (effects.bokeh) { setEffects(e => ({ ...e, bokeh: 0 })); return; }
-    if (segRef.current) { setEffects(e => ({ ...e, bokeh: 1 })); return; }
+    if (segRef.current) { setEffects(e => ({ ...e, bokeh: 50 })); return; }
     setBokehLoading(true);
     try {
       const seg = await loadBokehSegmenter();
@@ -1915,7 +1927,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         if (maskCbRef.current) { maskCbRef.current(r.segmentationMask); maskCbRef.current = null; }
       });
       segRef.current = seg;
-      setEffects(e => ({ ...e, bokeh: 1 }));
+      setEffects(e => ({ ...e, bokeh: 50 }));
     } catch (err) {
       console.error("Bokeh:", err);
     } finally {
