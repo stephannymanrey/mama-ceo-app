@@ -940,6 +940,91 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
   return respond(200, { tarjetas, usage: currentCount + 1, limit, plan }, event);
 }
 
+// ─── Handler: Analizar estilo visual de un video de referencia ───────────
+async function handleAnalyzeStyle(body, event, userId) {
+  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
+  const { frames, format, duration } = body;
+  if (!frames?.length) return respond(400, { error: "Falta frames" }, event);
+
+  const { plan, usage } = await getUserPlanAndUsage(userId);
+  const mk = monthKey();
+  const currentCount = usage[mk] || 0;
+  const limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+  if (currentCount >= limit) {
+    return respond(429, { error: "limite_alcanzado", usage: currentCount, limit, plan,
+      message: `Llegaste al límite de ${limit} generaciones este mes.` }, event);
+  }
+
+  const imageContent = frames.slice(0, 3).map(f => ({
+    type: "image",
+    source: { type: "base64", media_type: "image/jpeg", data: f },
+  }));
+  const formatLabel = format === "portrait" ? "vertical 9:16" : format === "square" ? "cuadrado 1:1" : "horizontal 16:9";
+
+  const messages = [{
+    role: "user",
+    content: [
+      ...imageContent,
+      {
+        type: "text",
+        text: `Analiza el estilo visual de edición de este video de redes sociales. Los ${frames.length} frames son del mismo video.
+
+Formato: ${formatLabel} | Duración: ${Math.round(duration || 0)}s
+
+Devuelve SOLO JSON válido, sin texto extra:
+{"videoPreset":"warm|natural|vibrant|fresh|cinema|none","musicGenre":"motivacional|calmante|energetico|corporativo","hasCards":true/false,"cardPosition":"fullscreen|pill","format":"${format || "portrait"}","editingVibe":"descripción estilo 5-7 palabras español","colorDesc":"descripción colores 3-5 palabras español"}
+
+Criterios videoPreset:
+- warm: tonos dorados/cálidos/naranjas/rosados
+- natural: neutros, limpio, sin filtros exagerados
+- vibrant: muy saturado, brillante, alta energía visual
+- fresh: tonos fríos, azulados/verdes, moderno
+- cinema: oscuro, alto contraste, cinematográfico
+- none: sin filtro visible
+
+Criterios musicGenre:
+- motivacional: upbeat para emprendimiento/fitness/inspiración
+- calmante: suave para lifestyle/bienestar/maternidad
+- energetico: beats rápidos, entretenimiento/humor/baile
+- corporativo: profesional y sutil para negocios/educación
+
+hasCards: true si hay texto/tarjetas sobre el video (NO solo subtítulos en la parte baja)
+cardPosition: fullscreen si las tarjetas cubren toda la pantalla, pill si son pequeñas/acotadas`,
+      },
+    ],
+  }];
+
+  let rawText;
+  try {
+    const res = await fetch(ANTHROPIC_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01", "x-api-key": ANTHROPIC_KEY },
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 400, messages }),
+    });
+    if (!res.ok) throw new Error(`Claude ${res.status}`);
+    const data = await res.json();
+    rawText = data.content?.[0]?.text || "";
+  } catch (err) {
+    console.error("[analyzeStyle] Claude error:", err.message);
+    return respond(502, { error: "No se pudo analizar el video. Intenta de nuevo." }, event);
+  }
+
+  let analysis;
+  try {
+    let txt = rawText.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+    const s = txt.indexOf("{"), e = txt.lastIndexOf("}");
+    if (s === -1 || e === -1) throw new Error("No JSON");
+    analysis = JSON.parse(txt.slice(s, e + 1));
+  } catch (err) {
+    console.error("[analyzeStyle] parse error:", err.message, rawText?.slice(0, 200));
+    return respond(502, { error: "Respuesta no válida. Intenta de nuevo." }, event);
+  }
+
+  const updatedUsage = { ...usage, [mk]: currentCount + 1 };
+  try { await saveUsage(userId, updatedUsage); } catch {}
+  return respond(200, { analysis, usage: currentCount + 1, limit, plan }, event);
+}
+
 // ─── Handler ──────────────────────────────────────────────────────────────
 export const handler = async (event) => {
   const method = event?.requestContext?.http?.method || event?.httpMethod || "POST";
@@ -972,6 +1057,9 @@ export const handler = async (event) => {
   }
   if (body.type === "generateCards") {
     return handleGenerateCards(body, event, userId);
+  }
+  if (body.type === "analyzeStyle") {
+    return handleAnalyzeStyle(body, event, userId);
   }
 
   const { type, context } = body;
