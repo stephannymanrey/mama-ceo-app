@@ -49,30 +49,54 @@ function bokehBlurPx(bokeh) { return bokeh > 0 ? 4 + (bokeh / 100) * 26 : 0; }
 
 // Biblioteca de música sin derechos de autor (solo instrumental)
 const MUSIC_LIBRARY = [
+  // Motivacional
   { id: "m1", name: "Impulso",       genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
   { id: "m2", name: "Confianza",     genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3" },
   { id: "m3", name: "Avanza",        genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3" },
   { id: "m4", name: "Determinación", genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3" },
+  { id: "m5", name: "Empuje",        genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+  // Tranquila
   { id: "t1", name: "Mañana Suave",  genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
   { id: "t2", name: "Serenidad",     genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3" },
   { id: "t3", name: "Calma",         genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3" },
   { id: "t4", name: "Paz Interior",  genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3" },
-  { id: "e1", name: "Potencia",      genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-  { id: "e2", name: "Alta Vibra",    genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
-  { id: "e3", name: "Sin Límites",   genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" },
-  { id: "e4", name: "Chispa",        genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3" },
-  { id: "f1", name: "Modo Foco",     genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
-  { id: "f2", name: "Flujo",         genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" },
-  { id: "f3", name: "Concentración", genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
-  { id: "f4", name: "Claridad",      genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3" },
+  { id: "t5", name: "Descanso",      genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" },
+  // Energética
+  { id: "e1", name: "Potencia",      genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
+  { id: "e2", name: "Alta Vibra",    genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" },
+  { id: "e3", name: "Sin Límites",   genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3" },
+  { id: "e4", name: "Chispa",        genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
+  { id: "e5", name: "Fuego",         genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3" },
+  // Enfocada / lo-fi
+  { id: "f1", name: "Modo Foco",     genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
+  { id: "f2", name: "Flujo",         genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3" },
+  { id: "f3", name: "Concentración", genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" },
+  { id: "f4", name: "Claridad",      genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3" },
+  { id: "f5", name: "Deep Work",     genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+  // Inspiracional
   { id: "i1", name: "Amanecer",      genre: "inspiracional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3" },
+  { id: "i2", name: "Sueños",        genre: "inspiracional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3" },
+  { id: "i3", name: "Esperanza",     genre: "inspiracional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3" },
+  { id: "i4", name: "Posibilidades", genre: "inspiracional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  // Emprendedora
+  { id: "p1", name: "CEO Energy",    genre: "emprendedora", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3" },
+  { id: "p2", name: "Negocio",       genre: "emprendedora", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3" },
+  { id: "p3", name: "Liderazgo",     genre: "emprendedora", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+  { id: "p4", name: "Éxito",         genre: "emprendedora", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
+  // Contenido
+  { id: "c1", name: "Lifestyle",     genre: "contenido",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3" },
+  { id: "c2", name: "Vlog Vibes",    genre: "contenido",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" },
+  { id: "c3", name: "Tutorial",      genre: "contenido",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3" },
+  { id: "c4", name: "Behind Scenes", genre: "contenido",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
 ];
 const MUSIC_GENRES = [
   { id: "motivacional",  label: "🔥 Motivacional" },
   { id: "tranquila",     label: "🌙 Tranquila" },
   { id: "energetica",    label: "⚡ Energética" },
-  { id: "enfocada",      label: "🎯 Enfocada" },
+  { id: "enfocada",      label: "🎯 Lo-fi / Foco" },
   { id: "inspiracional", label: "✨ Inspiracional" },
+  { id: "emprendedora",  label: "💼 Emprendedora" },
+  { id: "contenido",     label: "📱 Contenido" },
 ];
 
 // ── Efectos de sonido (síntesis Web Audio) ────────────────────────────────
@@ -197,11 +221,22 @@ function synthSfx(type, actx, dest, when = 0) {
 }
 
 const CARD_BG_OPTIONS = [
-  { idx: 0, bg: "#C4526A", text: "#FFFFFF", kw: "#FFE44D" },
-  { idx: 1, bg: "#4A90BF", text: "#FFFFFF", kw: "#FFE44D" },
-  { idx: 2, bg: "#1a1a2e", text: "#FFFFFF", kw: "#C4526A" },
-  { idx: 3, bg: "#FFE44D", text: "#1a1a2e", kw: "#C4526A" },
-  { idx: 4, bg: "#5FB87A", text: "#1a1a2e", kw: "#FFFFFF" },
+  { idx: 0,  bg: "#C4526A", text: "#FFFFFF", kw: "#FFE44D" },
+  { idx: 1,  bg: "#4A90BF", text: "#FFFFFF", kw: "#FFE44D" },
+  { idx: 2,  bg: "#1a1a2e", text: "#FFFFFF", kw: "#C4526A" },
+  { idx: 3,  bg: "#FFE44D", text: "#1a1a2e", kw: "#C4526A" },
+  { idx: 4,  bg: "#5FB87A", text: "#1a1a2e", kw: "#FFFFFF" },
+  { idx: 5,  bg: "#FF7043", text: "#FFFFFF", kw: "#FFE44D" },
+  { idx: 6,  bg: "#7C3AED", text: "#FFFFFF", kw: "#FFE44D" },
+  { idx: 7,  bg: "#FFFFFF", text: "#1a1a2e", kw: "#C4526A" },
+  { idx: 8,  bg: "#000000", text: "#FFFFFF", kw: "#FFE44D" },
+  { idx: 9,  bg: "#E91E63", text: "#FFFFFF", kw: "#FFFFFF" },
+  { idx: 10, bg: "#00BCD4", text: "#1a1a2e", kw: "#7C3AED" },
+  { idx: 11, bg: "#3D5A80", text: "#FFFFFF", kw: "#FFE44D" },
+];
+const CARD_KW_COLORS = [
+  "#FFE44D", "#C4526A", "#FF7043", "#5FB87A",
+  "#FFFFFF", "#1a1a2e", "#00BCD4", "#7C3AED", "#E91E63",
 ];
 const CARD_ANIMS = [
   { id: "slideUp",    label: "↑ Subir"   },
@@ -663,6 +698,9 @@ function drawCards(ctx, W, H, effectiveTime, cards) {
     const colors = CARD_BG_OPTIONS[card.colorIdx ?? 0] ?? CARD_BG_OPTIONS[0];
     const font = card.font || "Poppins";
     const fontWeight = CARD_FONTS.find(f => f.id === font)?.weight ?? 800;
+    const kwFont = card.keywordFont || font;
+    const kwFontWeight = CARD_FONTS.find(f => f.id === kwFont)?.weight ?? fontWeight;
+    const kwColor = card.kwColor || colors.kw;
     const isFullscreen = card.position === "fullscreen";
     const kw = (card.keyword || "").toLowerCase().trim();
 
@@ -723,9 +761,11 @@ function drawCards(ctx, W, H, effectiveTime, cards) {
           const clean = word.toLowerCase().replace(/[¿?¡!.,;:]/g, "");
           const isKw = kw && clean === kw;
           const wordText = word + (wi < lineWords.length - 1 ? " " : "");
+          if (isKw && kwFont !== font) ctx.font = `${kwFontWeight} ${fs}px "${kwFont}", sans-serif`;
           const ww = ctx.measureText(wordText).width;
-          ctx.fillStyle = isKw ? colors.kw : colors.text;
+          ctx.fillStyle = isKw ? kwColor : colors.text;
           ctx.fillText(wordText, tx, ty);
+          if (isKw && kwFont !== font) ctx.font = `${fontWeight} ${fs}px "${font}", sans-serif`;
           tx += ww;
         }
       });
@@ -780,12 +820,14 @@ function drawCards(ctx, W, H, effectiveTime, cards) {
         const ww = ctx.measureText(wordText).width;
         if (isKw) {
           const kwPad = 4;
-          ctx.fillStyle = colors.kw;
+          if (kwFont !== font) ctx.font = `${kwFontWeight} ${fs}px "${kwFont}", sans-serif`;
+          ctx.fillStyle = kwColor;
           ctx.beginPath();
           ctx.roundRect(tx - kwPad, ty - fs / 2 - kwPad + 2, ctx.measureText(word).width + kwPad * 2, fs + kwPad * 2 - 4, 5);
           ctx.fill();
           ctx.fillStyle = colors.bg;
         } else {
+          if (kwFont !== font) ctx.font = `${fontWeight} ${fs}px "${font}", sans-serif`;
           ctx.fillStyle = colors.text;
         }
         ctx.fillText(wordText, tx, ty);
@@ -1495,12 +1537,35 @@ function CardsPanel({ cards, onCardsChange, currentTime }) {
                 </div>
 
                 <div className="sce-card-field">
-                  <label className="sce-card-label">Tipografía</label>
+                  <label className="sce-card-label">Tipografía principal</label>
                   <div className="sce-card-pills">
                     {CARD_FONTS.map(f => (
                       <button key={f.id} className={`sce-card-pill${(card.font || "Poppins") === f.id ? " active" : ""}`}
                         style={{ fontFamily: `"${f.id}", sans-serif`, fontWeight: f.weight }}
                         onClick={() => update(card.id, { font: f.id })}>{f.label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="sce-card-field">
+                  <label className="sce-card-label">Tipografía de la palabra clave</label>
+                  <div className="sce-card-pills">
+                    {CARD_FONTS.map(f => (
+                      <button key={f.id} className={`sce-card-pill${(card.keywordFont || card.font || "Poppins") === f.id ? " active" : ""}`}
+                        style={{ fontFamily: `"${f.id}", sans-serif`, fontWeight: f.weight }}
+                        onClick={() => update(card.id, { keywordFont: f.id })}>{f.label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="sce-card-field">
+                  <label className="sce-card-label">Color de resaltado</label>
+                  <div className="sce-card-colors">
+                    {CARD_KW_COLORS.map(color => (
+                      <button key={color}
+                        className={`sce-card-color-dot${(card.kwColor || (CARD_BG_OPTIONS[card.colorIdx ?? 0]?.kw)) === color ? " active" : ""}`}
+                        style={{ "--dot-bg": color }}
+                        onClick={() => update(card.id, { kwColor: color })} />
                     ))}
                   </div>
                 </div>
@@ -1650,12 +1715,15 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
 }
 
 // ── Timeline contraído ────────────────────────────────────────────────────
-function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none", music = null, sfxList = [] }) {
+function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none", music = null, sfxList = [], onSfxChange, cards = [], onCardsChange }) {
   const pct = totalKept > 0 ? Math.min(100, (effectiveTime / totalKept) * 100) : 0;
   const [hoveredSeg, setHoveredSeg] = useState(null);
   const [transPickerClipId, setTransPickerClipId] = useState(null);
   const [zoom, setZoom] = useState(1);
   const trackWrapRef = useRef(null);
+  const seekDragRef  = useRef(false);
+  const cardDragRef  = useRef(null);
+  const sfxDragRef   = useRef(null);
 
   useEffect(() => {
     const el = trackWrapRef.current;
@@ -1670,12 +1738,57 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
     return () => el.removeEventListener('wheel', onWheel);
   }, []);
 
-  const handleTrackClick = e => {
-    if (e.target.closest(".sce-tl-seg-del") || e.target.closest(".sce-tl-trans-btn")) return;
+  // Scrubber drag — se arrastra en tiempo real con el puntero
+  const SKIP_DRAG = [".sce-tl-seg-del",".sce-tl-trans-btn",".sce-tl-card-block",".sce-tl-sfx-dot",".sce-tl-trans-marker",".sce-tl-seg-toolbar"];
+  const doSeek = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const p = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
     onSeek(p * totalKept);
   };
+  const handleSeekDown = (e) => {
+    if (SKIP_DRAG.some(s => e.target.closest(s))) return;
+    seekDragRef.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    doSeek(e);
+  };
+  const handleSeekMove = (e) => { if (seekDragRef.current) doSeek(e); };
+  const handleSeekUp   = ()  => { seekDragRef.current = false; };
+
+  // Card drag — arrastra tarjetas para reposicionarlas en el timeline
+  const handleCardDragStart = (e, card) => {
+    e.stopPropagation();
+    cardDragRef.current = {
+      cardId: card.id, startX: e.clientX, startTime: card.startTime,
+      trackWidth: e.currentTarget.parentElement.getBoundingClientRect().width,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const handleCardDragMove = (e) => {
+    const d = cardDragRef.current;
+    if (!d) return;
+    const dt = ((e.clientX - d.startX) / d.trackWidth) * totalKept;
+    const t  = Math.max(0, Math.min(totalKept - 0.5, d.startTime + dt));
+    onCardsChange(cards.map(c => c.id === d.cardId ? { ...c, startTime: Math.round(t * 10) / 10 } : c));
+  };
+  const handleCardDragEnd = () => { cardDragRef.current = null; };
+
+  // SFX drag
+  const handleSfxDragStart = (e, sfx) => {
+    e.stopPropagation();
+    sfxDragRef.current = {
+      sfxId: sfx.id, startX: e.clientX, startTime: sfx.time,
+      trackWidth: e.currentTarget.parentElement.getBoundingClientRect().width,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const handleSfxDragMove = (e) => {
+    const d = sfxDragRef.current;
+    if (!d) return;
+    const dt = ((e.clientX - d.startX) / d.trackWidth) * totalKept;
+    const t  = Math.max(0, Math.min(totalKept, d.startTime + dt));
+    onSfxChange?.(prev => prev.map(s => s.id === d.sfxId ? { ...s, time: Math.round(t * 10) / 10 } : s));
+  };
+  const handleSfxDragEnd = () => { sfxDragRef.current = null; };
 
   // Agrupar segmentos consecutivos del mismo clip para saber dónde terminan los clips
   const clipBoundaries = useMemo(() => {
@@ -1713,18 +1826,24 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
         <div className="sce-tl-labels">
           <div className="sce-tl-label-row"><span>🎬</span><span>Video</span></div>
           <div className="sce-tl-label-row"><span>🎵</span><span>Música</span></div>
-          <div className="sce-tl-label-row sce-tl-label--dim"><span>🖼</span><span>Imagen</span></div>
+          <div className="sce-tl-label-row"><span>🔊</span><span>SFX</span></div>
+          <div className="sce-tl-label-row"><span>📝</span><span>Tarjetas</span></div>
         </div>
 
         {/* Pistas — scroll horizontal + zoom trackpad */}
         <div ref={trackWrapRef} className="sce-tl-scroll-wrap">
-          <div style={{ position: "relative", width: zoom > 1 ? `${zoom * 100}%` : "100%", display: "flex", flexDirection: "column", gap: 2, padding: "4px 0" }}>
+          <div style={{ position: "relative", width: zoom > 1 ? `${zoom * 100}%` : "100%", display: "flex", flexDirection: "column", gap: 2, padding: "4px 0" }}
+            onPointerDown={handleSeekDown}
+            onPointerMove={handleSeekMove}
+            onPointerUp={handleSeekUp}
+            onPointerCancel={handleSeekUp}
+          >
 
           {/* Playhead que atraviesa todas las pistas */}
           {totalKept > 0 && <div className="sce-tl-ph-all" style={{ left: `${pct}%` }} />}
 
           {/* Pista 1 — Video */}
-          <div className="sce-tl-track" onClick={handleTrackClick}>
+          <div className="sce-tl-track">
             {keptSegs.length === 0 && (
               <div className="sce-tl-empty">Analiza los clips para ver el timeline</div>
             )}
@@ -1753,7 +1872,7 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
           </div>
 
           {/* Pista 2 — Música */}
-          <div className="sce-tl-music-track" onClick={handleTrackClick}>
+          <div className="sce-tl-music-track">
             {music?.url
               ? <div className="sce-tl-music-bar" title={music.name}>
                   <span className="sce-tl-music-wave">♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫</span>
@@ -1763,21 +1882,45 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
             }
           </div>
 
-          {/* Pista 3 — SFX */}
+          {/* Pista 3 — SFX (arrastrables) */}
           <div className="sce-tl-sfx-track">
             {sfxList.length === 0
-              ? <span className="sce-tl-track-hint">Agrega efectos de sonido en el panel 🔊 →</span>
+              ? <span className="sce-tl-track-hint">Agrega SFX en el panel 🔊 →</span>
               : sfxList.map(sfx => {
                   const pctPos = totalKept > 0 ? Math.min(99, (sfx.time / totalKept) * 100) : 0;
                   return (
-                    <span
-                      key={sfx.id}
-                      className="sce-tl-sfx-dot"
+                    <span key={sfx.id} className="sce-tl-sfx-dot"
                       style={{ left: `${pctPos}%` }}
-                      title={`${sfx.emoji} ${sfx.label} @ ${(sfx.time).toFixed(1)}s`}
+                      title={`${sfx.emoji} ${sfx.label} @ ${sfx.time.toFixed(1)}s — arrastra para mover`}
+                      onPointerDown={e => handleSfxDragStart(e, sfx)}
+                      onPointerMove={handleSfxDragMove}
+                      onPointerUp={handleSfxDragEnd}
+                      onPointerCancel={handleSfxDragEnd}
+                    >{sfx.emoji}</span>
+                  );
+                })
+            }
+          </div>
+
+          {/* Pista 4 — Tarjetas (arrastrables) */}
+          <div className="sce-tl-cards-track">
+            {cards.length === 0
+              ? <span className="sce-tl-track-hint">Las tarjetas aparecen aquí — arrástralas para moverlas</span>
+              : cards.map(card => {
+                  const leftPct = totalKept > 0 ? Math.min(97, (card.startTime / totalKept) * 100) : 0;
+                  const widPct  = totalKept > 0 ? Math.max(1.5, (card.duration / totalKept) * 100) : 2;
+                  const clr     = CARD_BG_OPTIONS[card.colorIdx ?? 0] ?? CARD_BG_OPTIONS[0];
+                  return (
+                    <div key={card.id} className="sce-tl-card-block"
+                      style={{ left: `${leftPct}%`, width: `${widPct}%`, background: clr.bg, color: clr.text }}
+                      title={`${card.text.slice(0, 50)} @ ${card.startTime}s — arrastra para mover`}
+                      onPointerDown={e => handleCardDragStart(e, card)}
+                      onPointerMove={handleCardDragMove}
+                      onPointerUp={handleCardDragEnd}
+                      onPointerCancel={handleCardDragEnd}
                     >
-                      {sfx.emoji}
-                    </span>
+                      <span className="sce-tl-card-label">{card.text.slice(0, 22)}</span>
+                    </div>
                   );
                 })
             }
@@ -2862,6 +3005,9 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         defaultTransition={effects.transition}
         music={music}
         sfxList={sfxList}
+        onSfxChange={setSfxList}
+        cards={cards}
+        onCardsChange={setCards}
       />
     </div>
   );

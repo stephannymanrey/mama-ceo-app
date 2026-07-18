@@ -1367,9 +1367,10 @@
   letter-spacing: 0.04em;
   color: #3D3B50;
 }
-.sce-tl-label-row:first-child { height: 38px; }
+.sce-tl-label-row:first-child  { height: 38px; }
 .sce-tl-label-row:nth-child(2) { height: 26px; }
-.sce-tl-label-row:nth-child(3) { height: 20px; }
+.sce-tl-label-row:nth-child(3) { height: 24px; }
+.sce-tl-label-row:nth-child(4) { height: 26px; }
 .sce-tl-label-row span:first-child { font-size: 12px; }
 .sce-tl-label--dim { opacity: 0.4; }
 
@@ -3044,13 +3045,53 @@
   top: 50%;
   transform: translate(-50%, -50%);
   font-size: 14px;
-  cursor: default;
+  cursor: grab;
   pointer-events: auto;
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
   transition: transform 0.1s;
   z-index: 5;
+  user-select: none;
+  touch-action: none;
 }
 .sce-tl-sfx-dot:hover { transform: translate(-50%, -60%) scale(1.3); }
+.sce-tl-sfx-dot:active { cursor: grabbing; transform: translate(-50%, -65%) scale(1.4); }
+
+/* ── Pista de tarjetas ──────────────────────────────────────────────────── */
+.sce-tl-cards-track {
+  position: relative;
+  height: 26px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 4px;
+  overflow: visible;
+}
+.sce-tl-card-block {
+  position: absolute;
+  top: 3px;
+  height: calc(100% - 6px);
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  padding: 0 5px;
+  cursor: grab;
+  overflow: hidden;
+  white-space: nowrap;
+  pointer-events: auto;
+  touch-action: none;
+  user-select: none;
+  transition: box-shadow 0.1s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+  z-index: 5;
+}
+.sce-tl-card-block:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.7); }
+.sce-tl-card-block:active { cursor: grabbing; }
+.sce-tl-card-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
 
 /* ── Badge de estilo seleccionado ───────────────────────────────────────── */
 .sc-badge--style {
