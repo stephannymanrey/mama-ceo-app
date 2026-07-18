@@ -957,6 +957,19 @@
   justify-content: center;
   background: rgba(0, 0, 0, 0.38);
 }
+.sce-canvas-drag-hint {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.55);
+  color: rgba(255,255,255,0.8);
+  font-size: 11px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  pointer-events: none;
+  white-space: nowrap;
+}
 .sce-seeking-spinner {
   width: 36px;
   height: 36px;

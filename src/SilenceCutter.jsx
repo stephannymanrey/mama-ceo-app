@@ -855,11 +855,13 @@ function drawCards(ctx, W, H, effectiveTime, cards) {
       ctx.fillStyle = colors.bg;
       ctx.fillRect(0, 0, W, H);
 
-      const maxW = W * 0.82;
-      const maxBlockH = H * 0.55;
-      let fs = Math.floor(H / 6.2);
+      const fontScale = card.fontScale ?? 1.0;
+      const marginX = Math.round(W * 0.12);   // 12% margin each side = 76% content width
+      const maxW = W - marginX * 2;
+      const maxBlockH = H * 0.65;
+      let fs = Math.max(18, Math.floor(H / 10 * fontScale));
       let lines = [];
-      while (fs > 24) {
+      while (fs > 14) {
         ctx.font = `${fontWeight} ${fs}px "${font}", sans-serif`;
         const words = visibleText.split(/\s+/).filter(Boolean);
         lines = []; let line = [], lineW = 0;
@@ -869,14 +871,17 @@ function drawCards(ctx, W, H, effectiveTime, cards) {
           else { line.push(w); lineW += ww; }
         }
         if (line.length) lines.push(line);
-        const lh2 = fs * 1.18;
+        const lh2 = fs * 1.22;
         if (lines.length * lh2 <= maxBlockH) break;
-        fs -= 4;
+        fs = Math.max(14, fs - 3);
+        if (fs <= 14) break;
       }
       if (!lines.length) { ctx.restore(); continue; }
-      const lh = fs * 1.18;
+      const lh = fs * 1.22;
       const totalH = lines.length * lh;
-      const cx = W / 2, cy = H / 2 + slideY;
+      // yPos: 0=arriba, 0.5=centro (default), 1=abajo
+      const yFrac = card.yPos !== undefined ? Math.max(0.1, Math.min(0.9, card.yPos)) : 0.5;
+      const cx = W / 2, cy = H * yFrac + slideY;
 
       ctx.translate(cx, cy);
       ctx.scale(scale, scale);
@@ -905,7 +910,8 @@ function drawCards(ctx, W, H, effectiveTime, cards) {
     }
 
     // Modo píldora flotante
-    const fs = Math.max(18, Math.floor(H / 11));
+    const fontScalePill = card.fontScale ?? 1.0;
+    const fs = Math.max(14, Math.floor(H / 11 * fontScalePill));
     const lh = Math.round(fs * 1.45);
     const padX = 22, padY = 14, borderR = 14;
     const maxW = W * 0.86;
@@ -925,7 +931,9 @@ function drawCards(ctx, W, H, effectiveTime, cards) {
     const maxLineW = Math.max(...lines.map(l => ctx.measureText(l.join(" ")).width));
     const cardW = Math.min(maxW, maxLineW) + padX * 2;
     const totalH = lines.length * lh + padY * 2;
-    const yCenter = card.position === "top" ? H * 0.18 : card.position === "center" ? H * 0.50 : H * 0.78;
+    const defaultYFrac = card.position === "top" ? 0.18 : card.position === "center" ? 0.50 : 0.78;
+    const yFracPill = card.yPos !== undefined ? Math.max(0.05, Math.min(0.95, card.yPos)) : defaultYFrac;
+    const yCenter = H * yFracPill;
     const cardX = (W - cardW) / 2;
     const cardY = yCenter - totalH / 2 + slideY;
 
@@ -1653,6 +1661,21 @@ function CardsPanel({ cards, onCardsChange, currentTime }) {
                     <input type="number" className="sce-card-input-num" step="0.5" min="0.5" max="10"
                       value={card.duration} onChange={e => update(card.id, { duration: +e.target.value })} />
                   </div>
+                </div>
+
+                <div className="sce-card-field">
+                  <label className="sce-card-label">Tamaño del texto — {Math.round((card.fontScale ?? 1) * 100)}%</label>
+                  <input type="range" min="0.4" max="2.0" step="0.05" className="sce-fx-slider"
+                    value={card.fontScale ?? 1}
+                    onChange={e => update(card.id, { fontScale: +e.target.value })} />
+                </div>
+
+                <div className="sce-card-field">
+                  <label className="sce-card-label">Posición vertical — {Math.round((card.yPos ?? 0.5) * 100)}%</label>
+                  <input type="range" min="0.08" max="0.92" step="0.01" className="sce-fx-slider"
+                    value={card.yPos ?? 0.5}
+                    onChange={e => update(card.id, { yPos: +e.target.value })} />
+                  <p className="sce-fx-hint" style={{marginTop:2}}>También arrastra directamente en el video ↕</p>
                 </div>
 
                 <div className="sce-card-field">
@@ -2432,9 +2455,18 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const totalKeptRef     = useRef(0);
   const selectedSegRef   = useRef(null);
   const playbarScrubDrag = useRef(false);
+  const cardYDragRef     = useRef(null); // { cardId, startY, startYPos, canvasH, moved }
   useEffect(() => { effectiveTimeRef.current = effectiveTime; }, [effectiveTime]);
   useEffect(() => { totalKeptRef.current = totalKept; }, [totalKept]);
   useEffect(() => { selectedSegRef.current = selectedSeg; }, [selectedSeg]);
+
+  // Tarjeta activa en el tiempo actual (para drag Y y cursor)
+  const activeCard = useMemo(() => {
+    return cards.find(c => {
+      const el = effectiveTime - c.startTime;
+      return el >= 0 && el <= c.duration + 0.3;
+    }) || null;
+  }, [cards, effectiveTime]);
 
   // Renderiza un frame de `vid` al canvas ctx con todos los efectos activos.
   // blocking=true → espera el mask de bokeh (para seekTo); false → usa último mask (animation loop).
@@ -2899,6 +2931,44 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     if (sel) { onCutSeg(sel.clipId, sel.start, sel.end); setSelectedSeg(null); }
   }, [onCutSeg]);
 
+  // Drag vertical de tarjetas en el canvas
+  const handleCanvasPointerDown = useCallback((e) => {
+    const ac = cardsRef.current.find(c => {
+      const el = effectiveTimeRef.current - c.startTime;
+      return el >= 0 && el <= c.duration + 0.3;
+    });
+    if (!ac) return; // sin tarjeta activa — click = play/pause
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    cardYDragRef.current = {
+      cardId: ac.id,
+      startY: e.clientY,
+      startYPos: ac.yPos ?? 0.5,
+      canvasH: rect.height,
+      moved: false,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+    e.stopPropagation();
+  }, []);
+
+  const handleCanvasPointerMove = useCallback((e) => {
+    const d = cardYDragRef.current;
+    if (!d) return;
+    const delta = e.clientY - d.startY;
+    if (Math.abs(delta) > 4) d.moved = true;
+    if (!d.moved) return;
+    const newY = Math.max(0.08, Math.min(0.92, d.startYPos + delta / d.canvasH));
+    setCards(prev => prev.map(c => c.id === d.cardId ? { ...c, yPos: newY } : c));
+    seekToEffective(effectiveTimeRef.current); // redibujar
+  }, [setCards, seekToEffective]);
+
+  const handleCanvasPointerUp = useCallback((e) => {
+    const d = cardYDragRef.current;
+    cardYDragRef.current = null;
+    if (!d?.moved) togglePlay(); // fue un tap sin movimiento → play/pause
+  }, [togglePlay]);
+
   // Reproducción
   const runPlay = useCallback(async () => {
     if (isPlaying || transcribing || !keptSegs.length) return;
@@ -3095,14 +3165,23 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       <div className="sce-body">
         {/* Canvas + controles */}
         <div className="sce-canvas-col">
-          <div className="sce-canvas-wrap" onClick={!isPlaying && !seeking ? togglePlay : undefined}>
+          <div className="sce-canvas-wrap"
+            style={{ cursor: !isPlaying && activeCard ? "ns-resize" : "pointer" }}
+            onPointerDown={!isPlaying && !seeking ? handleCanvasPointerDown : undefined}
+            onPointerMove={!isPlaying && !seeking ? handleCanvasPointerMove : undefined}
+            onPointerUp={!isPlaying && !seeking ? handleCanvasPointerUp : undefined}
+            onPointerCancel={() => { cardYDragRef.current = null; }}
+            onClick={!isPlaying && !seeking && !activeCard ? togglePlay : undefined}>
             <canvas ref={canvasRef} className="sce-canvas" width={dims.W} height={dims.H} />
-            {!isPlaying && !seeking && (
+            {!isPlaying && !seeking && !activeCard && (
               <div className="sce-canvas-overlay">
                 <button className="sc-play-big-btn" onClick={e => { e.stopPropagation(); togglePlay(); }}>
                   {done ? "↺" : "▶"}
                 </button>
               </div>
+            )}
+            {!isPlaying && !seeking && activeCard && (
+              <div className="sce-canvas-drag-hint">↕ arrastra para mover</div>
             )}
             {seeking && (
               <div className="sce-canvas-overlay"><div className="sce-seeking-spinner" /></div>
