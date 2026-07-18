@@ -30,12 +30,18 @@ const TRANSITIONS   = [
   { id: "slideDown",  icon: "↓", label: "Deslizar ↓"   },
   { id: "flash", icon: "✦", label: "Flash blanco"   },
 ];
-// skin: 0–100. Blur escala hasta 5px; contrast/brightness/saturate compensan
-// el efecto lechoso del blur para que la piel luzca luminosa, no empañada.
-function buildSkinFilter(skin) {
-  if (!skin) return null;
+// Segundo pass de suavizante: overlay borroso semitransparente sobre el frame
+// ya dibujado. El frame original da definición de bordes (ojos, labios, contorno);
+// este overlay solo suaviza texturas finas (poros, líneas pequeñas).
+// Técnica usada por apps de belleza: blend de versión borrosa a baja opacidad.
+function applySkinOverlay(ctx, source, x, y, w, h, skin) {
+  if (!skin) return;
   const t = skin / 100;
-  return `blur(${(t * 5).toFixed(2)}px) contrast(${(1 + t * 0.20).toFixed(3)}) brightness(${(1 + t * 0.05).toFixed(3)}) saturate(${(1 + t * 0.15).toFixed(3)})`;
+  ctx.save();
+  ctx.globalAlpha = t * 0.55;
+  ctx.filter = `blur(${(1 + t * 1.5).toFixed(1)}px) brightness(${(1 + t * 0.05).toFixed(2)}) saturate(${(1 + t * 0.10).toFixed(2)})`;
+  ctx.drawImage(source, x, y, w, h);
+  ctx.restore();
 }
 // bokeh: 0 = apagado, 1–100 → blur de fondo 4–30px
 function bokehBlurPx(bokeh) { return bokeh > 0 ? 4 + (bokeh / 100) * 26 : 0; }
@@ -98,14 +104,12 @@ function fmtSize(b) {
 }
 function uid() { return Math.random().toString(36).slice(2); }
 
-// Construye el filtro CSS combinado: corrección de color + suavizante de piel
-function buildVidFilter(brightness, contrast, saturation, skin) {
+// Corrección de color — skin es un pass separado (applySkinOverlay)
+function buildVidFilter(brightness, contrast, saturation) {
   const parts = [];
   if (brightness) parts.push(`brightness(${(1 + brightness / 100).toFixed(2)})`);
   if (contrast)   parts.push(`contrast(${(1 + contrast / 100).toFixed(2)})`);
   if (saturation) parts.push(`saturate(${(1 + saturation / 100).toFixed(2)})`);
-  const sf = buildSkinFilter(skin);
-  if (sf) parts.push(sf);
   return parts.length ? parts.join(" ") : null;
 }
 
@@ -811,12 +815,14 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
             // Auto-zoom rítmico
             const z = autoZoom ? 1 + 0.07 * Math.abs(Math.sin(videoEl.currentTime * Math.PI / zoomInterval)) : 1;
             const zdX = (outW - dW * z) / 2, zdY = (outH - dH * z) / 2;
-            // Aplicar corrección de color + skin al frame principal
+            // Pass 1: corrección de color
             const { brightness = 0, contrast = 0, saturation = 0, skin = 0, temperature = 0 } = effects;
-            const vf = buildVidFilter(brightness, contrast, saturation, skin);
+            const vf = buildVidFilter(brightness, contrast, saturation);
             if (vf) { ctx.save(); ctx.filter = vf; }
             ctx.drawImage(videoEl, zdX, zdY, dW * z, dH * z);
             if (vf) ctx.restore();
+            // Pass 2: overlay de suavizante de piel
+            applySkinOverlay(ctx, videoEl, zdX, zdY, dW * z, dH * z, skin);
             // Temperatura
             if (temperature !== 0) {
               ctx.save();
@@ -940,7 +946,7 @@ async function recordSingleFragment(clip, start, end, onProgress, subtitleStyle 
 
   const segDuration = Math.max(0.1, end - start);
   const { brightness = 0, contrast = 0, saturation = 0, skin = 0, temperature = 0 } = effects;
-  const vf = buildVidFilter(brightness, contrast, saturation, skin);
+  const vf = buildVidFilter(brightness, contrast, saturation);
 
   await new Promise(resolve => {
     const vid = document.createElement("video");
@@ -967,6 +973,7 @@ async function recordSingleFragment(clip, start, end, onProgress, subtitleStyle 
           if (vf) { ctx.save(); ctx.filter = vf; }
           ctx.drawImage(vid, dX, dY, dW, dH);
           if (vf) ctx.restore();
+          applySkinOverlay(ctx, vid, dX, dY, dW, dH, skin);
           if (temperature !== 0) {
             ctx.save(); ctx.globalCompositeOperation = "overlay";
             ctx.globalAlpha = Math.abs(temperature) / 250;
@@ -1834,7 +1841,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   // blocking=true → espera el mask de bokeh (para seekTo); false → usa último mask (animation loop).
   const applyFrame = useCallback(async (ctx, vid, dX, dY, dW, dH, W, H, blocking = false) => {
     const { skin, bokeh, brightness = 0, contrast = 0, saturation = 0, temperature = 0 } = effectsRef.current;
-    const vidFilter  = buildVidFilter(brightness, contrast, saturation, skin);
+    const vidFilter  = buildVidFilter(brightness, contrast, saturation);
     const bgBlur     = bokehBlurPx(bokeh);
     const seg        = segRef.current;
 
@@ -1877,12 +1884,13 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         try { seg.send({ image: vid }); } catch (_) {}
       }
 
-      // Persona (sharp + filtros color + skin) recortada con el mask
+      // Persona (sharp + color) + overlay de piel, todo recortado con mask
       const mc = new OffscreenCanvas(W, H);
       const mctx = mc.getContext("2d");
       if (vidFilter) { mctx.save(); mctx.filter = vidFilter; }
       mctx.drawImage(vid, zdX, zdY, zdW, zdH);
       if (vidFilter) mctx.restore();
+      applySkinOverlay(mctx, vid, zdX, zdY, zdW, zdH, skin);
       if (mask) {
         mctx.globalCompositeOperation = "destination-in";
         mctx.drawImage(mask, 0, 0, W, H);
@@ -1890,12 +1898,11 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       }
       ctx.drawImage(mc, 0, 0);
 
-    } else if (vidFilter) {
-      ctx.save(); ctx.filter = vidFilter;
-      ctx.drawImage(vid, zdX, zdY, zdW, zdH);
-      ctx.restore();
     } else {
+      if (vidFilter) { ctx.save(); ctx.filter = vidFilter; }
       ctx.drawImage(vid, zdX, zdY, zdW, zdH);
+      if (vidFilter) ctx.restore();
+      applySkinOverlay(ctx, vid, zdX, zdY, zdW, zdH, skin);
     }
 
     // Temperatura: tinte cálido/frío sobre el frame ya dibujado
