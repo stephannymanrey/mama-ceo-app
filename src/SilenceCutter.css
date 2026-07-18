@@ -2954,3 +2954,100 @@
   border-color: #C4526A;
   color: #fff;
 }
+
+/* ── SFX Panel ────────────────────────────────────────────────────────────── */
+.sfx-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  height: 100%;
+  overflow-y: auto;
+}
+.sfx-hint {
+  font-size: 11px;
+  color: rgba(255,255,255,0.45);
+  margin: 0 0 8px;
+  line-height: 1.4;
+}
+.sfx-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+.sfx-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.12s, border-color 0.12s;
+}
+.sfx-btn:hover {
+  background: rgba(196,82,106,0.18);
+  border-color: rgba(196,82,106,0.5);
+}
+.sfx-btn:active {
+  transform: scale(0.95);
+  background: rgba(196,82,106,0.3);
+}
+.sfx-emoji { font-size: 20px; line-height: 1; }
+.sfx-label { font-size: 10px; color: rgba(255,255,255,0.7); white-space: nowrap; }
+
+.sfx-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 4px 0 6px;
+}
+.sfx-timeline-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sfx-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+  font-size: 12px;
+}
+.sfx-row-emoji { font-size: 14px; flex-shrink: 0; }
+.sfx-row-name  { flex: 1; color: #fff; }
+.sfx-row-time  { color: rgba(255,255,255,0.5); font-size: 11px; font-variant-numeric: tabular-nums; }
+.sfx-row-del   {
+  background: none; border: none; color: rgba(255,255,255,0.35);
+  font-size: 16px; cursor: pointer; padding: 0 2px; line-height: 1;
+  transition: color 0.12s;
+}
+.sfx-row-del:hover { color: #C4526A; }
+
+/* SFX en timeline */
+.sce-tl-sfx-track {
+  position: relative;
+  height: 22px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 4px;
+  overflow: visible;
+}
+.sce-tl-sfx-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  cursor: default;
+  pointer-events: auto;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
+  transition: transform 0.1s;
+  z-index: 5;
+}
+.sce-tl-sfx-dot:hover { transform: translate(-50%, -60%) scale(1.3); }

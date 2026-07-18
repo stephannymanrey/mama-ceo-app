@@ -48,25 +48,152 @@ function bokehBlurPx(bokeh) { return bokeh > 0 ? 4 + (bokeh / 100) * 26 : 0; }
 
 // Biblioteca de música sin derechos de autor (solo instrumental)
 const MUSIC_LIBRARY = [
-  { id: "m1", name: "Impulso",     genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-  { id: "m2", name: "Confianza",   genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3" },
-  { id: "m3", name: "Avanza",      genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3" },
-  { id: "t1", name: "Mañana Suave",genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
-  { id: "t2", name: "Serenidad",   genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3" },
-  { id: "t3", name: "Calma",       genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3" },
-  { id: "e1", name: "Potencia",    genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-  { id: "e2", name: "Alta Vibra",  genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
-  { id: "e3", name: "Sin Límites", genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" },
-  { id: "f1", name: "Modo Foco",   genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
-  { id: "f2", name: "Flujo",       genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" },
-  { id: "f3", name: "Concentración",genre: "enfocada",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
+  { id: "m1", name: "Impulso",       genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  { id: "m2", name: "Confianza",     genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3" },
+  { id: "m3", name: "Avanza",        genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3" },
+  { id: "m4", name: "Determinación", genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3" },
+  { id: "t1", name: "Mañana Suave",  genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+  { id: "t2", name: "Serenidad",     genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3" },
+  { id: "t3", name: "Calma",         genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3" },
+  { id: "t4", name: "Paz Interior",  genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3" },
+  { id: "e1", name: "Potencia",      genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+  { id: "e2", name: "Alta Vibra",    genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
+  { id: "e3", name: "Sin Límites",   genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" },
+  { id: "e4", name: "Chispa",        genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3" },
+  { id: "f1", name: "Modo Foco",     genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
+  { id: "f2", name: "Flujo",         genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" },
+  { id: "f3", name: "Concentración", genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
+  { id: "f4", name: "Claridad",      genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3" },
+  { id: "i1", name: "Amanecer",      genre: "inspiracional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3" },
 ];
 const MUSIC_GENRES = [
-  { id: "motivacional", label: "🔥 Motivacional" },
-  { id: "tranquila",    label: "🌙 Tranquila" },
-  { id: "energetica",   label: "⚡ Energética" },
-  { id: "enfocada",     label: "🎯 Enfocada" },
+  { id: "motivacional",  label: "🔥 Motivacional" },
+  { id: "tranquila",     label: "🌙 Tranquila" },
+  { id: "energetica",    label: "⚡ Energética" },
+  { id: "enfocada",      label: "🎯 Enfocada" },
+  { id: "inspiracional", label: "✨ Inspiracional" },
 ];
+
+// ── Efectos de sonido (síntesis Web Audio) ────────────────────────────────
+const SFX_CATALOG = [
+  { id: "click",      emoji: "🖱️",  label: "Click",      desc: "Clic de UI rápido" },
+  { id: "ding",       emoji: "🔔",  label: "Ding",       desc: "Campanilla positiva" },
+  { id: "pop",        emoji: "💬",  label: "Pop",        desc: "Burbuja / notificación" },
+  { id: "swoosh",     emoji: "💨",  label: "Swoosh",     desc: "Barrido rápido" },
+  { id: "swing",      emoji: "🌊",  label: "Swing",      desc: "Barrido suave" },
+  { id: "cut",        emoji: "✂️",  label: "Corte",      desc: "Sonido de corte" },
+  { id: "failure",    emoji: "❌",  label: "Error",      desc: "Fallo / equivocación" },
+  { id: "success",    emoji: "✅",  label: "Éxito",      desc: "Logro / correcto" },
+  { id: "select",     emoji: "⭐",  label: "Selección",  desc: "Seleccionar opción" },
+  { id: "typewriter", emoji: "⌨️",  label: "Máquina",    desc: "Teclas de máquina de escribir" },
+  { id: "sorry",      emoji: "😬",  label: "Ups",        desc: "Ups / lo siento" },
+  { id: "wind",       emoji: "🍃",  label: "Viento",     desc: "Ráfaga de viento" },
+];
+
+function synthSfx(type, actx, dest, when = 0) {
+  try {
+    const out = dest || actx.destination;
+    const g = actx.createGain();
+    g.connect(out);
+    if (type === "click" || type === "select") {
+      const osc = actx.createOscillator();
+      osc.connect(g);
+      osc.frequency.setValueAtTime(1400, when);
+      osc.frequency.exponentialRampToValueAtTime(600, when + 0.05);
+      g.gain.setValueAtTime(0.45, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.07);
+      osc.start(when); osc.stop(when + 0.08);
+    } else if (type === "ding") {
+      const osc = actx.createOscillator(); osc.type = "sine";
+      osc.connect(g);
+      osc.frequency.setValueAtTime(880, when);
+      g.gain.setValueAtTime(0.55, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 1.1);
+      osc.start(when); osc.stop(when + 1.2);
+    } else if (type === "pop") {
+      const osc = actx.createOscillator();
+      osc.connect(g);
+      osc.frequency.setValueAtTime(280, when);
+      osc.frequency.exponentialRampToValueAtTime(70, when + 0.09);
+      g.gain.setValueAtTime(0.5, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.12);
+      osc.start(when); osc.stop(when + 0.13);
+    } else if (type === "swoosh" || type === "cut") {
+      const bufLen = Math.floor(actx.sampleRate * 0.28);
+      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 1.8);
+      const src = actx.createBufferSource(); src.buffer = buf;
+      const bpf = actx.createBiquadFilter(); bpf.type = "bandpass";
+      bpf.frequency.setValueAtTime(4500, when);
+      bpf.frequency.exponentialRampToValueAtTime(900, when + 0.28);
+      bpf.Q.value = 0.6;
+      src.connect(bpf); bpf.connect(g);
+      g.gain.setValueAtTime(0.38, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.3);
+      src.start(when); src.stop(when + 0.32);
+    } else if (type === "swing") {
+      const bufLen = Math.floor(actx.sampleRate * 0.5);
+      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 2);
+      const src = actx.createBufferSource(); src.buffer = buf;
+      const bpf = actx.createBiquadFilter(); bpf.type = "bandpass";
+      bpf.frequency.setValueAtTime(800, when);
+      bpf.frequency.exponentialRampToValueAtTime(200, when + 0.5);
+      bpf.Q.value = 0.9;
+      src.connect(bpf); bpf.connect(g);
+      g.gain.setValueAtTime(0.35, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.52);
+      src.start(when); src.stop(when + 0.55);
+    } else if (type === "failure" || type === "sorry") {
+      const osc = actx.createOscillator();
+      osc.connect(g);
+      osc.frequency.setValueAtTime(440, when);
+      osc.frequency.setValueAtTime(330, when + 0.15);
+      osc.frequency.setValueAtTime(220, when + 0.3);
+      g.gain.setValueAtTime(0.38, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.5);
+      osc.start(when); osc.stop(when + 0.52);
+    } else if (type === "success") {
+      const osc = actx.createOscillator(); osc.type = "sine";
+      osc.connect(g);
+      osc.frequency.setValueAtTime(660, when);
+      osc.frequency.setValueAtTime(880, when + 0.1);
+      osc.frequency.setValueAtTime(1100, when + 0.2);
+      g.gain.setValueAtTime(0.4, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.5);
+      osc.start(when); osc.stop(when + 0.52);
+    } else if (type === "typewriter") {
+      for (let i = 0; i < 4; i++) {
+        const gg = actx.createGain(); gg.connect(out);
+        const osc = actx.createOscillator();
+        osc.connect(gg);
+        const f = 1800 + Math.random() * 600;
+        osc.frequency.setValueAtTime(f, when + i * 0.09);
+        osc.frequency.exponentialRampToValueAtTime(f * 0.5, when + i * 0.09 + 0.055);
+        gg.gain.setValueAtTime(0.3, when + i * 0.09);
+        gg.gain.exponentialRampToValueAtTime(0.001, when + i * 0.09 + 0.06);
+        osc.start(when + i * 0.09); osc.stop(when + i * 0.09 + 0.07);
+      }
+    } else if (type === "wind") {
+      const bufLen = Math.floor(actx.sampleRate * 0.7);
+      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < bufLen; i++) {
+        const env = Math.sin((i / bufLen) * Math.PI);
+        d[i] = (Math.random() * 2 - 1) * env;
+      }
+      const src = actx.createBufferSource(); src.buffer = buf;
+      const bpf = actx.createBiquadFilter(); bpf.type = "bandpass";
+      bpf.frequency.value = 350; bpf.Q.value = 1.2;
+      src.connect(bpf); bpf.connect(g);
+      g.gain.setValueAtTime(0.32, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.72);
+      src.start(when); src.stop(when + 0.75);
+    }
+  } catch (_) {}
+}
 
 const CARD_BG_OPTIONS = [
   { idx: 0, bg: "#C4526A", text: "#FFFFFF", kw: "#FFE44D" },
@@ -729,7 +856,7 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
 }
 
 // ── Grabación multi-clip ──────────────────────────────────────────────────
-async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape", effects = {}, clipTransitions = {}, music = {}, cards = []) {
+async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape", effects = {}, clipTransitions = {}, music = {}, cards = [], sfxList = []) {
   const firstVid = document.createElement("video");
   const firstUrl = URL.createObjectURL(clips[0].file);
   firstVid.src = firstUrl;
@@ -844,6 +971,7 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
         let inCut = false;
         videoEl.play();
         animId = requestAnimationFrame(drawLoop);
+        let prevExportEt = elapsed;
 
         const interval = setInterval(() => {
           if (abortRef.current) { clearInterval(interval); cancelAnimationFrame(animId); videoEl.pause(); resolve(); return; }
@@ -853,6 +981,16 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
           const inSilence = toRemove.some(s => ct >= s.start && ct < s.end);
           if (inSilence && !inCut) { inCut = true; videoEl.playbackRate = 16; videoEl.volume = 0; }
           else if (!inSilence && inCut) { inCut = false; videoEl.playbackRate = 1; videoEl.volume = 1; }
+
+          // Disparar SFX en export
+          const curExportEt = elapsed + ct;
+          for (const sfx of sfxList) {
+            if (sfx.time > prevExportEt && sfx.time <= curExportEt) {
+              synthSfx(sfx.type, audioCtx, destination, audioCtx.currentTime);
+            }
+          }
+          prevExportEt = curExportEt;
+
           if (videoEl.ended || ct >= dur - 0.1) {
             clearInterval(interval); cancelAnimationFrame(animId); videoEl.pause();
             if (source) try { source.disconnect(); } catch (_) {}
@@ -1435,7 +1573,7 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
 }
 
 // ── Timeline contraído ────────────────────────────────────────────────────
-function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none", music = null }) {
+function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none", music = null, sfxList = [] }) {
   const pct = totalKept > 0 ? Math.min(100, (effectiveTime / totalKept) * 100) : 0;
   const [hoveredSeg, setHoveredSeg] = useState(null);
   const [transPickerClipId, setTransPickerClipId] = useState(null);
@@ -1548,9 +1686,24 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
             }
           </div>
 
-          {/* Pista 3 — Imagen / B-roll (próximamente) */}
-          <div className="sce-tl-overlay-track">
-            <span className="sce-tl-track-hint">Imagen / B-roll · próximamente</span>
+          {/* Pista 3 — SFX */}
+          <div className="sce-tl-sfx-track">
+            {sfxList.length === 0
+              ? <span className="sce-tl-track-hint">Agrega efectos de sonido en el panel 🔊 →</span>
+              : sfxList.map(sfx => {
+                  const pctPos = totalKept > 0 ? Math.min(99, (sfx.time / totalKept) * 100) : 0;
+                  return (
+                    <span
+                      key={sfx.id}
+                      className="sce-tl-sfx-dot"
+                      style={{ left: `${pctPos}%` }}
+                      title={`${sfx.emoji} ${sfx.label} @ ${(sfx.time).toFixed(1)}s`}
+                    >
+                      {sfx.emoji}
+                    </span>
+                  );
+                })
+            }
           </div>
 
           {/* Marcadores de transición entre clips */}
@@ -1605,6 +1758,51 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
           <button className="sce-tl-add-clip" onClick={onAddFiles}>＋ Agregar clip</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── SfxPanel ─────────────────────────────────────────────────────────────
+function SfxPanel({ sfxList, onSfxChange, currentTime, onPreview }) {
+  const fmtT = (t) => {
+    const m = Math.floor(t / 60), s = (t % 60).toFixed(1).padStart(4, "0");
+    return `${m}:${s}`;
+  };
+  const addSfx = (type) => {
+    const cat = SFX_CATALOG.find(c => c.id === type);
+    if (!cat) return;
+    const id = `sfx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    onSfxChange(prev => [...prev, { id, type, time: currentTime, label: cat.label, emoji: cat.emoji }]);
+    onPreview(type);
+  };
+  const removeSfx = (id) => onSfxChange(prev => prev.filter(s => s.id !== id));
+
+  return (
+    <div className="sfx-panel">
+      <div className="sfx-catalog">
+        <p className="sfx-hint">Toca un efecto para agregarlo en la posición actual del scrubber</p>
+        <div className="sfx-grid">
+          {SFX_CATALOG.map(sfx => (
+            <button key={sfx.id} className="sfx-btn" onClick={() => addSfx(sfx.id)} title={sfx.desc}>
+              <span className="sfx-emoji">{sfx.emoji}</span>
+              <span className="sfx-label">{sfx.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      {sfxList.length > 0 && (
+        <div className="sfx-timeline-list">
+          <p className="sfx-section-title">En la línea de tiempo</p>
+          {[...sfxList].sort((a, b) => a.time - b.time).map(sfx => (
+            <div key={sfx.id} className="sfx-row">
+              <span className="sfx-row-emoji">{sfx.emoji}</span>
+              <span className="sfx-row-name">{sfx.label}</span>
+              <span className="sfx-row-time">{fmtT(sfx.time)}</span>
+              <button className="sfx-row-del" onClick={() => removeSfx(sfx.id)} title="Eliminar">×</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -1833,6 +2031,12 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const cardsRef = useRef([]);
   useEffect(() => { cardsRef.current = cards; }, [cards]);
 
+  const [sfxList, setSfxList] = useState([]); // [{id, type, time}]
+  const sfxRef = useRef([]);
+  useEffect(() => { sfxRef.current = sfxList; }, [sfxList]);
+  const [sfxPanelOpen, setSfxPanelOpen] = useState(false);
+  const sfxActxRef = useRef(null);
+
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
   useEffect(() => { effectsRef.current = effects; }, [effects]);
   useEffect(() => { formatRef.current = format; }, [format]);
@@ -1897,6 +2101,22 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         mctx.globalCompositeOperation = "source-over";
       }
       ctx.drawImage(mc, 0, 0);
+
+      // Glow cinemático en el foreground (estilo CapCut bokeh):
+      // version borrosa + brillante del sujeto en modo "screen" → los brillos
+      // se expanden ligeramente y dan aureola/halación de lente de cine.
+      const glowIntensity = (bokeh / 100) * 0.22;
+      if (glowIntensity > 0) {
+        const gc = new OffscreenCanvas(W, H);
+        const gctx = gc.getContext("2d");
+        gctx.filter = `blur(14px) brightness(1.7) saturate(1.25)`;
+        gctx.drawImage(mc, 0, 0);
+        ctx.save();
+        ctx.globalCompositeOperation = "screen";
+        ctx.globalAlpha = glowIntensity;
+        ctx.drawImage(gc, 0, 0);
+        ctx.restore();
+      }
 
     } else {
       if (vidFilter) { ctx.save(); ctx.filter = vidFilter; }
@@ -2165,13 +2385,18 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     const uniqueClipIds = [...new Set(keptSegs.map(s => s.clip.id))];
     let etOffset = 0;
 
+    // Posición desde la que reproducir (respeta scrubbing)
+    const totalEt = keptSegs.reduce((s, seg) => s + seg.end - seg.start, 0);
+    const startEt = effectiveTime >= totalEt ? 0 : effectiveTime;
+
     // Música de fondo en preview
     let musicEl = null;
     const mu = musicRef.current;
     if (mu?.url) {
       musicEl = new Audio(mu.url);
       musicEl.loop = mu.loop ?? true;
-      musicEl.volume = mu.duck ? (mu.volume ?? 0.35) * 0.28 : (mu.volume ?? 0.35);
+      musicEl.volume = mu.duck ? (mu.volume ?? 0.35) * 0.22 : (mu.volume ?? 0.35);
+      if (startEt > 0 && musicEl.duration) musicEl.currentTime = startEt % musicEl.duration;
       musicEl.play().catch(() => {});
     }
 
@@ -2179,6 +2404,13 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       if (!playRef.current) break;
       const clipSegs = keptSegs.filter(s => s.clip.id === clipId);
       const clip = clipSegs[0].clip;
+
+      // Saltar clips que están completamente antes del punto de inicio
+      const clipDur = clipSegs.reduce((sum, s) => sum + s.end - s.start, 0);
+      if (etOffset + clipDur <= startEt) {
+        etOffset += clipDur;
+        continue;
+      }
 
       await new Promise(resolve => {
         const vid = document.createElement("video");
@@ -2206,17 +2438,43 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             if (!playRef.current) break;
             const segEtStart = etOffset;
             const segDur = seg.end - seg.start;
-            vid.currentTime = seg.start;
+
+            // Saltar segmentos completamente antes del punto de inicio
+            if (segEtStart + segDur <= startEt) {
+              etOffset += segDur;
+              continue;
+            }
+
+            // Si startEt cae dentro de este segmento, buscar ahí
+            const skipInSeg = Math.max(0, startEt - segEtStart);
+            vid.currentTime = seg.start + skipInSeg;
             await new Promise(r => { vid.onseeked = r; });
             if (!playRef.current) break;
             vid.playbackRate = 1;
             vid.play().catch(() => {});
+            let prevEt = segEtStart + skipInSeg;
             await new Promise(segDone => {
               const tick = setInterval(() => {
                 if (!playRef.current) { clearInterval(tick); vid.pause(); segDone(); return; }
                 const ct = vid.currentTime;
-                setEffectiveTime(segEtStart + Math.max(0, ct - seg.start));
-                currentEt = segEtStart + Math.max(0, ct - seg.start);
+                const newEt = segEtStart + Math.max(0, ct - seg.start);
+                setEffectiveTime(newEt);
+                currentEt = newEt;
+
+                // Disparar SFX si alguno cae entre prevEt y newEt
+                const sfxes = sfxRef.current;
+                if (sfxes.length) {
+                  for (const sfx of sfxes) {
+                    if (sfx.time > prevEt && sfx.time <= newEt) {
+                      if (!sfxActxRef.current) sfxActxRef.current = new AudioContext();
+                      const a = sfxActxRef.current;
+                      if (a.state === "suspended") a.resume();
+                      synthSfx(sfx.type, a, null, a.currentTime);
+                    }
+                  }
+                }
+                prevEt = newEt;
+
                 if (ct >= seg.end - 0.04 || vid.ended) {
                   clearInterval(tick); vid.pause(); segDone();
                 }
@@ -2256,7 +2514,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     if (musicEl) { musicEl.pause(); musicEl.src = ""; }
     if (playRef.current) { setDone(true); setEffectiveTime(totalKept); }
     setIsPlaying(false); playRef.current = false;
-  }, [keptSegs, outDims, dims, subtitleStyle, totalKept, isPlaying, transcribing, animFade, startZoom, animSlide]);
+  }, [keptSegs, outDims, dims, subtitleStyle, totalKept, isPlaying, transcribing, animFade, startZoom, animSlide, effectiveTime]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) { playRef.current = false; } else { runPlay(); }
@@ -2359,6 +2617,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             <button className={`sce-tab${tab === "subs"  ? " active" : ""}`} onClick={() => setTab("subs")}>💬 Subs</button>
             <button className={`sce-tab${tab === "music" ? " active" : ""}`} onClick={() => setTab("music")}>🎵 Música</button>
             <button className={`sce-tab${tab === "cards" ? " active" : ""}`} onClick={() => setTab("cards")}>🃏 Tarjetas</button>
+            <button className={`sce-tab${tab === "sfx"   ? " active" : ""}`} onClick={() => setTab("sfx")}>🔊 SFX</button>
             <button className={`sce-tab${tab === "trans" ? " active" : ""}`} onClick={() => setTab("trans")}>✂️ Cortes</button>
             <button className={`sce-tab${tab === "fx"    ? " active" : ""}`} onClick={() => setTab("fx")}>✨ Efectos</button>
           </div>
@@ -2376,6 +2635,18 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             ? <MusicPanel music={music} onMusicChange={setMusic} />
             : tab === "cards"
             ? <CardsPanel cards={cards} onCardsChange={setCards} currentTime={effectiveTime} />
+            : tab === "sfx"
+            ? <SfxPanel
+                sfxList={sfxList}
+                onSfxChange={setSfxList}
+                currentTime={effectiveTime}
+                onPreview={(type) => {
+                  if (!sfxActxRef.current) sfxActxRef.current = new AudioContext();
+                  const a = sfxActxRef.current;
+                  if (a.state === "suspended") a.resume();
+                  synthSfx(type, a, null, a.currentTime + 0.05);
+                }}
+              />
             : tab === "trans"
             ? <TransitionsPanel effects={effects} onEffectChange={setEffects} />
             : <EffectsPanel
@@ -2400,6 +2671,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         activePreset={effects._preset}
         defaultTransition={effects.transition}
         music={music}
+        sfxList={sfxList}
       />
     </div>
   );
@@ -2709,7 +2981,7 @@ export default function SilenceCutter() {
     abortRef.current = false;
     setFase("cutting"); setProgress(0); setError("");
     try {
-      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format, effects, clipTransitions, music, cards);
+      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format, effects, clipTransitions, music, cards, sfxList);
       const totalOriginal = ready.reduce((t, c) => t + (c.duration || 0), 0);
       const totalCut = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0), 0);
       const totalCuts = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).length, 0);
