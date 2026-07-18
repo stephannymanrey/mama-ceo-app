@@ -947,8 +947,8 @@ function IdeasTab({ saved, onSave, onDelete, onCrearGuion, brandProfile = {}, ca
         <div className="ideas-thinking">
           <div className="ideas-orbit-container">
             <div className="ideas-brain-orbit">&#x1F9E0;</div>
-            {["&#x1F4A1;","&#x1F3AC;","&#x1F4F1;","&#x1F3A0;","&#x1F4AC;","&#x2728;"].map((s, i) => (
-              <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`} dangerouslySetInnerHTML={{__html: s}} />
+            {["💡","🎬","📱","🎠","💬","✨"].map((s, i) => (
+              <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`}>{s}</div>
             ))}
           </div>
           <p className="ideas-thinking-text">{aiLoading ? "La IA está creando ideas para ti" : "Generando ideas para ti"}<span className="ideas-dots-anim">...</span></p>
@@ -1878,8 +1878,8 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
         <div className="ideas-thinking">
           <div className="ideas-orbit-container">
             <div className="ideas-brain-orbit">&#x1FA9D;</div>
-            {["&#x1F914;","&#x1F629;","&#x2728;","&#x2753;","&#x1F4D6;","&#x1F522;","&#x1F504;","&#x1FA9E;"].map((s, i) => (
-              <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`} dangerouslySetInnerHTML={{__html: s}} />
+            {["🤔","😩","✨","❓","📖","🔢","🔄","🪞"].map((s, i) => (
+              <div key={i} className={`ideas-orbit-item ideas-orbit-${i}`}>{s}</div>
             ))}
           </div>
           <p className="ideas-thinking-text">{aiLoading ? "La IA está escribiendo hooks para ti" : "Creando hooks para tu video"}<span className="ideas-dots-anim">...</span></p>

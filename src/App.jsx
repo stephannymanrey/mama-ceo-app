@@ -1,22 +1,21 @@
 ﻿import React, { useEffect, useMemo, useState } from "react";
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { awsAuth, getAwsAuthToken, isAwsConfigured, confirmAwsResetPassword, onGoogleRedirectCallback } from "./lib/awsClient";
+import { getUsageLimits, planMeetsMinimum, isToolLocked, toolMinPlan, planLabel } from "./lib/planGating";
 import Logo from "./Logo";
 import Studio from "./Studio";
 import Landing from "./Landing";
 import PlanBuilder from "./PlanBuilder";
 import SilenceCutter from "./SilenceCutter";
+import InvoicingTool from "./tools/invoicing/InvoicingTool";
+import PendingMovementsPanel from "./tools/movements-sync/PendingMovementsPanel";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
 const ADMIN_EMAILS = ["ysmanrei21@gmail.com"];
 
-// Sistema de planes
-const PLAN_LIMITS = {
-  free:         { movements: 30,       clients: 15,       content: 15,       homeTasks: 30 },
-  emprendedora: { movements: 100,      clients: 50,       content: 50,       homeTasks: 100 },
-  ceo:          { movements: Infinity, clients: Infinity, content: Infinity, homeTasks: Infinity }
-};
+// Sistema de planes — límites de uso y qué plan necesita cada herramienta
+// viven en src/lib/planGating.js (fuente única, ver ese archivo).
 
 const PLAN_PRICES = {
   mama:         { cop: "$19.900", usd: "~$5.5",  copYear: "$199.000", usdYear: "$55"  },
@@ -47,15 +46,27 @@ const DEFAULT_HOME_DURATION = 25;
 const APPT_TYPE_DURATION = { "Médico": 45, "Cita": 30, "Colegio": 30, "Dentista": 45, "Extracurricular": 60, "Iglesia": 90, "Pago": 15, "Cumpleaños": 120, "Reunión": 60, "Trabajo": 60, "Familia": 60, "Limpieza": 60, "Arreglos": 90, "Compras": 45 };
 const DEFAULT_APPT_DURATION = 30;
 const APPT_HOME_TYPES = new Set(["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños","Familia","Limpieza","Arreglos","Compras"]);
+// Fuente única de color/emoji por tipo de cita — usada tanto por el selector de
+// categoría de Mi Hogar → Semana como por el calendario de Agenda (TYPE_COLORS más abajo),
+// para que una cita se vea igual sin importar desde dónde se abra. Antes cada pantalla
+// tenía su propia paleta y sus propios tipos, así que una cita "Dentista" creada en Agenda
+// se veía gris/genérica ("Otro") al abrirla en Mi Hogar → Semana.
 const HOGAR_SCHED_CATS = [
-  { key: "Familia",         emoji: "💛", label: "Tiempo con familia",    color: "#C4526A", bg: "rgba(196,82,106,0.07)"  },
-  { key: "Extracurricular", emoji: "🎒", label: "Extracurricular hijos", color: "#2f9f70", bg: "rgba(47,159,112,0.07)"  },
-  { key: "Médico",          emoji: "🏥", label: "Cita médica / Salud",   color: "#DC2626", bg: "rgba(220,38,38,0.06)"   },
-  { key: "Limpieza",        emoji: "🧹", label: "Limpieza del hogar",    color: "#059669", bg: "rgba(5,150,105,0.07)"   },
-  { key: "Compras",         emoji: "🛒", label: "Compras",               color: "#0EA5E9", bg: "rgba(14,165,233,0.07)"  },
-  { key: "Arreglos",        emoji: "🔧", label: "Arreglos del hogar",    color: "#D97706", bg: "rgba(217,119,6,0.07)"   },
-  { key: "Otro",            emoji: "📌", label: "Otro",                  color: "#8A7F7A", bg: "rgba(138,127,122,0.06)" },
+  { key: "Familia",         emoji: "💛", label: "Tiempo con familia",    color: "#DB2777", bg: "rgba(219,39,119,0.07)"  },
+  { key: "Extracurricular", emoji: "⚽", label: "Extracurricular hijos", color: "#059669", bg: "rgba(5,150,105,0.07)"   },
+  { key: "Médico",          emoji: "🩺", label: "Cita médica / Salud",   color: "#C4526A", bg: "rgba(196,82,106,0.07)" },
+  { key: "Cita",            emoji: "📋", label: "Cita",                  color: "#C4526A", bg: "rgba(196,82,106,0.07)" },
+  { key: "Dentista",        emoji: "🦷", label: "Dentista",              color: "#e87b1e", bg: "rgba(232,123,30,0.07)" },
+  { key: "Colegio",         emoji: "🎒", label: "Colegio",               color: "#6B46C1", bg: "rgba(107,70,193,0.07)" },
+  { key: "Iglesia",         emoji: "🙏", label: "Iglesia",               color: "#7C3AED", bg: "rgba(124,58,237,0.07)" },
+  { key: "Pago",            emoji: "💳", label: "Pago",                  color: "#2563EB", bg: "rgba(37,99,235,0.07)"  },
+  { key: "Cumpleaños",      emoji: "🎂", label: "Cumpleaños",            color: "#D97706", bg: "rgba(217,119,6,0.07)"  },
+  { key: "Limpieza",        emoji: "🧹", label: "Limpieza del hogar",    color: "#0D9488", bg: "rgba(13,148,136,0.07)" },
+  { key: "Compras",         emoji: "🛒", label: "Compras",               color: "#0EA5E9", bg: "rgba(14,165,233,0.07)" },
+  { key: "Arreglos",        emoji: "🔧", label: "Arreglos del hogar",    color: "#92400E", bg: "rgba(146,64,14,0.07)"  },
+  { key: "Otro",            emoji: "📌", label: "Otro",                  color: "#6B7280", bg: "rgba(107,114,128,0.06)" },
 ];
+const HOGAR_SCHED_COLORS = Object.fromEntries(HOGAR_SCHED_CATS.map(c => [c.key, c.color]));
 const BUDGET_CATS_DEFAULT = [
   { key: "hogar",           emoji: "🏠", label: "Hogar",           color: "#0EA5E9", budget: 0 },
   { key: "mercado",         emoji: "🛒", label: "Mercado",          color: "#2f9f70", budget: 0 },
@@ -276,14 +287,15 @@ const promesas = [
 ];
 
 const ALL_MENU_ITEMS = [
-  { id: "dashboard", label: "Inicio",          icon: "🏠" },
-  { id: "home",      label: "Mi Hogar",         icon: "🌸" },
-  { id: "business",  label: "Mi Negocio",       icon: "💼" },
-  { id: "clients",   label: "Mis Clientes",     icon: "👩‍💼" },
-  { id: "studio",    label: "Studio ✦",          icon: "🎬" },
+  { id: "dashboard",  label: "Inicio",          icon: "🏠" },
+  { id: "home",       label: "Mi Hogar",         icon: "🌸" },
+  { id: "business",   label: "Mi Negocio",       icon: "💼" },
+  { id: "clients",    label: "Mis Clientes",     icon: "👩‍💼" },
+  { id: "studio",     label: "Studio ✦",          icon: "🎬" },
+  { id: "invoicing",  label: "Facturas ✦",        icon: "🧾" },
 ];
 const MENU_MAMA        = ["dashboard", "home"];
-const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio"];
+const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio", "invoicing"];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 function getWeekDays() {
@@ -315,6 +327,7 @@ function apptMatchesDate(appt, dateStr) {
   if (!appt.recurrence || appt.recurrence === "none") return false;
   const ad = new Date(appt.date + "T12:00:00");
   const td = new Date(dateStr + "T12:00:00");
+  if (td < ad) return false; // una cita recurrente no existe antes de su fecha de creación
   if (appt.recurrence === "weekly")  return ad.getDay() === td.getDay();
   if (appt.recurrence === "monthly") return ad.getDate() === td.getDate();
   if (appt.recurrence === "yearly")  return ad.getMonth() === td.getMonth() && ad.getDate() === td.getDate();
@@ -823,6 +836,7 @@ export default function App() {
   const [upgradeReason, setUpgradeReason] = useState("");
   const [betaCode, setBetaCode] = useState("");
   const [betaCodeError, setBetaCodeError] = useState("");
+  const [betaCodeLoading, setBetaCodeLoading] = useState(false);
   const [showBetaInput, setShowBetaInput] = useState(false);
 
   // Temporizador Pomodoro
@@ -1026,16 +1040,6 @@ export default function App() {
     }
   };
 
-  const BETA_CODES = [
-    { hash: "1df2627e3ac0f8268c070acdbf13b0d354f16f2c38bf873dee2d54b86af13440", days: 90, expiry: new Date("2026-12-31T23:59:59").getTime() },
-    { hash: "42f8fdb0a7354c04e994970759b87588906eccb7741c9bc5a7dd52471f7961bf", days: 60, expiry: new Date("2027-12-31T23:59:59").getTime() },
-    { hash: "e838734981031ac5ebe63fc160b956a2b17c3e34768c34d73c4f3b2ff20d71d9", days: 60, expiry: new Date("2027-12-31T23:59:59").getTime() },
-  ];
-  const hashCode = async (str) => {
-    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
-    return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,"0")).join("");
-  };
-
   const effectivePlan = useMemo(() => {
     const userEmail = user?.email || profileSetup?.email || "";
     if (ADMIN_EMAILS.includes(userEmail)) return "ceo";
@@ -1050,7 +1054,7 @@ export default function App() {
     return "free";
   }, [userPlan, premiumExpiresAt, user, profileSetup]);
 
-  const currentLimits = PLAN_LIMITS[effectivePlan] || PLAN_LIMITS.free;
+  const currentLimits = getUsageLimits(effectivePlan);
 
   const callGemini = async (type, context) => {
     try {
@@ -1086,21 +1090,31 @@ export default function App() {
   const activateBetaCode = async (e) => {
     e.preventDefault();
     setBetaCodeError("");
-    const entered = await hashCode(betaCode.trim().toUpperCase());
-    const match = BETA_CODES.find(c => entered === c.hash);
-    if (!match) {
-      setBetaCodeError("Código incorrecto. Verifica que lo escribiste exactamente como te lo enviaron.");
-      return;
+    if (!user) { setBetaCodeError("Inicia sesión primero para activar tu código."); return; }
+    setBetaCodeLoading(true);
+    try {
+      const token = await getAwsAuthToken();
+      if (!token) { setBetaCodeError("No autenticada. Inicia sesión nuevamente."); return; }
+      const res = await fetch(PAYMENTS_URL, {
+        method: "POST",
+        mode: "cors",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ action: "activate-beta", code: betaCode.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        setBetaCodeError(data.error || "No se pudo activar el código. Intenta de nuevo.");
+        return;
+      }
+      setUserPlan(data.userPlan);
+      setPremiumExpiresAt(data.premiumExpiresAt);
+      setShowBetaInput(false);
+      setBetaCode("");
+    } catch (err) {
+      setBetaCodeError(err.message || "Error de red. Intenta de nuevo.");
+    } finally {
+      setBetaCodeLoading(false);
     }
-    if (Date.now() > match.expiry) {
-      setBetaCodeError("Este código ya expiró.");
-      return;
-    }
-    const expiresAt = Date.now() + match.days * 86400000;
-    setUserPlan("premium");
-    setPremiumExpiresAt(expiresAt);
-    setShowBetaInput(false);
-    setBetaCode("");
   };
 
   const money = useMemo(() => new Intl.NumberFormat(currencyLocales[currency] || "en-US", {
@@ -1185,20 +1199,31 @@ export default function App() {
     { classification: "Gastos variables", amount: annualVariableTotal, note: "Publicidad, herramientas y producción" },
     { classification: "Reinversión", amount: Math.round(annualTotals.income * 0.20), note: "Marketing, crecimiento y mejora" }
   ];
+  const _currentMonthKey = `${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,"0")}`;
+  const homeRowMonthKey = (row) => row.dueDate ? row.dueDate.slice(0,7) : new Date(row.createdAt || Date.now()).toISOString().slice(0,7);
+  // "Disponible"/"Gastado" del hogar se calcula por mes actual (igual que el Tab de Mis Finanzas)
+  // para que ambos lugares muestren el mismo número — antes este cálculo sumaba todo el
+  // histórico y se iba desalineando del de Mis Finanzas mes a mes. El ahorro sí se acumula
+  // en el tiempo (es una meta de largo plazo, no un gasto mensual).
   const homeBudgetTotals = homeBudget.reduce((sum, row) => {
-    if (row.type === "Ingreso") return { ...sum, income: sum.income + row.amount };
     if (row.type === "Ahorro") return { ...sum, savings: sum.savings + row.amount };
-    if (row.type === "Deuda") return { ...sum, debt: sum.debt + row.amount };
+    if (homeRowMonthKey(row) !== _currentMonthKey) return sum;
+    if (row.type === "Ingreso") return { ...sum, income: sum.income + row.amount };
+    // Una "Deuda" registrada sin vincular (catKey null) todavía no es un pago real —
+    // solo cuentan como gasto los abonos reales (con catKey).
+    if (row.type === "Deuda") return row.catKey ? { ...sum, debt: sum.debt + row.amount } : sum;
     if (row.type === "Gasto fijo") return { ...sum, fixed: sum.fixed + row.amount };
     if (row.type === "Gasto hormiga") return { ...sum, smallLeaks: sum.smallLeaks + row.amount };
     return { ...sum, variable: sum.variable + row.amount };
   }, { income: 0, fixed: 0, variable: 0, smallLeaks: 0, debt: 0, savings: 0 });
-  const homeSpent = homeBudgetTotals.fixed + homeBudgetTotals.variable + homeBudgetTotals.smallLeaks + homeBudgetTotals.debt;
+  const homePaymentsPaidThisMonth = homePayments
+    .filter(p => p.lastPaidMonth === _currentMonthKey)
+    .reduce((s, p) => s + p.amount, 0);
+  const homeSpent = homeBudgetTotals.fixed + homeBudgetTotals.variable + homeBudgetTotals.smallLeaks + homeBudgetTotals.debt + homePaymentsPaidThisMonth;
   const homeAvailable = homeBudgetTotals.income - homeSpent - homeBudgetTotals.savings;
   const homePaymentsThisWeek = homeBudget
     .filter((item) => !["Ingreso", "Ahorro"].includes(item.type) && isDateThisWeek(item.dueDate || item.createdAt, currentWeekRange))
     .sort((a, b) => timestampFromInputDate(a.dueDate) - timestampFromInputDate(b.dueDate));
-  const _currentMonthKey = `${_today.getFullYear()}-${String(_today.getMonth()+1).padStart(2,"0")}`;
   const upcomingHomePayments = homePayments.filter(p => p.lastPaidMonth !== _currentMonthKey && (p.dayOfMonth - _currentDay) >= -1 && (p.dayOfMonth - _currentDay) <= 3);
   const upcomingBizPayments  = bizPayments.filter(p  => p.lastPaidMonth !== _currentMonthKey && (p.dayOfMonth - _currentDay) >= -1 && (p.dayOfMonth - _currentDay) <= 3);
   const allUpcomingPayments  = [...upcomingHomePayments.map(p=>({...p,src:"Hogar"})), ...upcomingBizPayments.map(p=>({...p,src:"Negocio"}))];
@@ -1513,6 +1538,9 @@ export default function App() {
     setFamilyMembers(state.familyMembers || []);
     if (state.homeIncomeGoal !== undefined) setHomeIncomeGoal(state.homeIncomeGoal);
     if (state.calcReinvPct !== undefined) setCalcReinvPct(state.calcReinvPct);
+    setBudgetCats(state.budgetCats
+      ? BUDGET_CATS_DEFAULT.map(def => { const f = state.budgetCats.find(s => s.key === def.key); return f ? { ...def, budget: f.budget } : def; })
+      : BUDGET_CATS_DEFAULT);
     setAppointments(state.appointments || []);
     setWeekMenu((() => { const wm=state.weekMenu; const mg=v=>!v?{desayuno:"",almuerzo:"",cena:"",snack:""}:typeof v==="string"?{desayuno:"",almuerzo:v,cena:"",snack:""}:{desayuno:"",almuerzo:"",cena:"",snack:"",...v}; return {L:mg(wm?.L),M:mg(wm?.M),X:mg(wm?.X),J:mg(wm?.J),V:mg(wm?.V),S:mg(wm?.S),D:mg(wm?.D)}; })());
     setHomeRoutines(state.homeRoutines || { L:"",M:"",X:"",J:"",V:"",S:"",D:"" });
@@ -1674,7 +1702,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, homeDebts, homePayments, bizDebts, bizPayments, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride, familyMembers, usage]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, homeDebts, homePayments, bizDebts, bizPayments, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride, familyMembers, usage, budgetCats, homeIncomeGoal, calcReinvPct]);
 
   const expandAppts = (list, limitDays = 90) => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -2004,7 +2032,12 @@ export default function App() {
     if (!amount) { setHomeBudgetError("Ingresa el monto. Puede ser 0 si no aplica."); return; }
     setHomeBudgetError("");
     const dueDate = homeBudgetForm.dueDate || getTodayInputValue();
-    const catKeyToSave = !["Ingreso","Ahorro"].includes(homeBudgetForm.type) ? (homeBudgetForm.catKey || "hogar") : null;
+    // Una "Deuda" sin vincular solo registra que existe la deuda, no un pago real —
+    // no debe contar como gasto en la barra de presupuesto de la categoría (spentByCat
+    // solo suma filas con catKey). Un abono a deuda vinculada sí es dinero que salió
+    // de verdad, así que ese sí conserva su catKey.
+    const isUnlinkedNewDebt = homeBudgetForm.type === "Deuda" && !homeBudgetForm.linkedDebtId;
+    const catKeyToSave = !["Ingreso","Ahorro"].includes(homeBudgetForm.type) && !isUnlinkedNewDebt ? (homeBudgetForm.catKey || "hogar") : null;
     setHomeBudget((current) => [{ id: Date.now(), type: homeBudgetForm.type, description: homeBudgetForm.description.trim(), amount, dueDate, createdAt: timestampFromInputDate(dueDate), linkedDebtId: homeBudgetForm.linkedDebtId || null, catKey: catKeyToSave }, ...current]);
     // Sincronizar abono con deuda vinculada
     if (homeBudgetForm.linkedDebtId) {
@@ -2013,6 +2046,35 @@ export default function App() {
     setHomeBudgetForm({ type: "Gasto variable", description: "", amount: "", dueDate: getTodayInputValue(), linkedDebtId: "", catKey: "hogar" });
     setShowBudgetModal(false);
   };
+  // ── Confirmar un movimiento detectado por correo (ver src/tools/movements-sync) ──
+  // La IA solo propone; esto es lo único que efectivamente crea el movimiento,
+  // y solo se llama cuando la usuaria lo confirma a mano en la bandeja de revisión.
+  const confirmPendingToHome = (item) => {
+    const dueDate = item.date || getTodayInputValue();
+    const type = item.type === "income" ? "Ingreso" : "Gasto hormiga";
+    setHomeBudget((current) => [{
+      id: Date.now(), type, description: item.description || "Movimiento detectado por correo",
+      amount: Number(item.amount) || 0, dueDate, createdAt: timestampFromInputDate(dueDate),
+      linkedDebtId: null, catKey: type === "Ingreso" ? null : "hogar",
+    }, ...current]);
+    return true;
+  };
+  const confirmPendingToBusiness = (item) => {
+    if (movements.length >= currentLimits.movements) {
+      setUpgradeReason(`Has alcanzado el límite de ${currentLimits.movements} movimientos de tu plan.`);
+      setShowUpgradeModal(true);
+      return false;
+    }
+    const date = item.date || getTodayInputValue();
+    setMovements((current) => [{
+      id: Date.now(), type: item.type, classification: item.type === "income" ? "Servicios" : "Gasto variable",
+      description: item.description || "Movimiento detectado por correo", category: "Otro",
+      amount: Number(item.amount) || 0, bank: "Sincronizado por correo", date,
+      createdAt: timestampFromInputDate(date), linkedBizDebtId: null,
+    }, ...current]);
+    return true;
+  };
+
   const updateHomeBudgetDate = (itemId, dueDate) => {
     setHomeBudget((current) => current.map((item) => item.id === itemId ? { ...item, dueDate, createdAt: timestampFromInputDate(dueDate) } : item));
   };
@@ -2208,6 +2270,18 @@ export default function App() {
           </div>
         )}
       </>
+    );
+  }
+
+  if (activeView === "invoicing") {
+    return (
+      <InvoicingTool
+        onBack={() => setActiveView("dashboard")}
+        clients={clients}
+        currency={currency}
+        money={money}
+        profileSetup={profileSetup}
+      />
     );
   }
 
@@ -2414,7 +2488,7 @@ export default function App() {
             style={{padding:"10px 18px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700,flexShrink:0}}>
             Instalar
           </button>
-          <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}}>×</button>
+          <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}} aria-label="Cerrar">×</button>
         </div>
       )}
 
@@ -2430,7 +2504,7 @@ export default function App() {
             style={{padding:"10px 18px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700,flexShrink:0}}>
             Cómo hacerlo
           </button>
-          <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}}>×</button>
+          <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}} aria-label="Cerrar">×</button>
         </div>
       )}
 
@@ -2440,7 +2514,7 @@ export default function App() {
           <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",padding:"28px 24px 40px",width:"min(480px,100%)",margin:"auto",marginTop:"40px",marginBottom:"40px"}}>
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px"}}>
               <h3 style={{margin:0,fontSize:"18px"}}>Instalar MamaCEO 🌸</h3>
-              <button type="button" onClick={() => { setShowIOSGuide(false); dismissInstall(); }} style={{border:"none",background:"none",fontSize:"22px",color:"var(--muted)",cursor:"pointer",lineHeight:1}}>×</button>
+              <button type="button" onClick={() => { setShowIOSGuide(false); dismissInstall(); }} style={{border:"none",background:"none",fontSize:"22px",color:"var(--muted)",cursor:"pointer",lineHeight:1}} aria-label="Cerrar">×</button>
             </div>
             <div style={{display:"grid",gap:"16px"}}>
               {[
@@ -2522,8 +2596,7 @@ export default function App() {
                       { mode: "emprendedora", icon: "💼", label: "Solo mi negocio",  plan: "emprendedora", planLabel: "Plan Emprendedora" },
                       { mode: "ambas",        icon: "✨", label: "Hogar y negocio",  plan: "ceo",          planLabel: "Plan CEO" },
                     ].map(({ mode, icon, label, plan, planLabel }) => {
-                      const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
-                      const needsUpgrade = (planOrder[effectivePlan] ?? 0) < (planOrder[plan] ?? 0);
+                      const needsUpgrade = !planMeetsMinimum(effectivePlan, plan);
                       return (
                         <button key={mode} type="button" onClick={() => setUserMode(mode)}
                           style={{display:"flex",alignItems:"center",gap:"10px",padding:"10px 14px",border:`2px solid ${userMode===mode?"var(--pink)":"var(--line)"}`,borderRadius:"10px",background:userMode===mode?"rgba(212,104,122,0.06)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:userMode===mode?700:400,color:"var(--ink)"}}>
@@ -2721,14 +2794,12 @@ export default function App() {
         <p className="mobile-menu-section-label">Navegación</p>
         <nav className="main-menu" aria-label="Navegacion principal">
           {menu.map((item) => {
-            const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
-            const itemPlan = ["business","clients","studio"].includes(item.id) ? "emprendedora" : "free";
-            const locked = (planOrder[effectivePlan] ?? 0) < (planOrder[itemPlan] ?? 0);
+            const locked = isToolLocked(effectivePlan, item.id);
             return (
               <button className={activeView === item.id ? "menu-item active" : "menu-item"} key={item.id}
                 title={item.label}
                 onClick={() => {
-                  if (locked) { setUpgradeModal({ feature: item.label, plan: "Emprendedora" }); setMobileMenuOpen(false); return; }
+                  if (locked) { setUpgradeModal({ feature: item.label, plan: planLabel(toolMinPlan(item.id)) }); setMobileMenuOpen(false); return; }
                   setActiveView(item.id); setMobileMenuOpen(false);
                 }}>
                 <span className="menu-icon">{item.icon}</span>
@@ -2860,7 +2931,7 @@ export default function App() {
             <p style={{margin:0,fontSize:"13px",color:"#92400e",lineHeight:1.4,flex:1}}>
               <strong>Tus datos se guardan solo en este dispositivo.</strong> Si borras el historial del navegador o cambias de dispositivo, perderás tu información.
             </p>
-            <button onClick={() => { setLocalWarnDismissed(true); localStorage.setItem("localWarnDismissed","1"); }} style={{border:"none",background:"none",fontSize:"20px",color:"#b45309",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}}>×</button>
+            <button onClick={() => { setLocalWarnDismissed(true); localStorage.setItem("localWarnDismissed","1"); }} style={{border:"none",background:"none",fontSize:"20px",color:"#b45309",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}} aria-label="Cerrar">×</button>
           </div>
         )}
         {syncError && (
@@ -3051,7 +3122,9 @@ export default function App() {
                            : allMonthAppts;
           const apptsByDay = {};
           monthAppts.forEach(a => { const d = new Date(a.date+"T00:00:00").getDate(); if (!apptsByDay[d]) apptsByDay[d] = []; apptsByDay[d].push(a); });
-          const TYPE_COLORS = { "Médico":"#C4526A","Cita":"#C4526A","Colegio":"#6B46C1","Dentista":"#e87b1e","Extracurricular":"#059669","Iglesia":"#7C3AED","Reunión":"#1D9E75","Trabajo":"#0EA5E9","Pago":"#2563EB","Cumpleaños":"#D97706","Otro":"#6B7280" };
+          // Mismos colores que Mi Hogar → Semana (HOGAR_SCHED_COLORS) + los tipos de trabajo,
+          // que no aplican en Mi Hogar.
+          const TYPE_COLORS = { ...HOGAR_SCHED_COLORS, "Reunión":"#1D9E75", "Trabajo":"#0EA5E9" };
           const CAL_TYPES = calTab === "hogar" ? CAL_TYPES_HOGAR : calTab === "trabajo" ? CAL_TYPES_TRABAJO : ["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Reunión","Trabajo","Pago","Cumpleaños","Otro"];
           const defaultType = calTab === "trabajo" ? "Reunión" : "Médico";
           const REC_OPTS = [["none","No se repite"],["weekly","Cada semana"],["monthly","Cada mes"],["yearly","Cada año"]];
@@ -3353,13 +3426,11 @@ export default function App() {
         {/* Barra de navegación inferior — solo mobile */}
         <nav className="mobile-bottom-nav">
           {menu.slice(0, 5).map((item) => {
-            const planOrder = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
-            const itemPlan = ["business","clients","studio"].includes(item.id) ? "emprendedora" : "free";
-            const locked = (planOrder[effectivePlan] ?? 0) < (planOrder[itemPlan] ?? 0);
+            const locked = isToolLocked(effectivePlan, item.id);
             return (
               <button key={item.id} className={`mobile-bottom-nav-item${activeView === item.id ? " active" : ""}`}
                 onClick={() => {
-                  if (locked) { setUpgradeModal({ feature: item.label, plan: "Emprendedora" }); return; }
+                  if (locked) { setUpgradeModal({ feature: item.label, plan: planLabel(toolMinPlan(item.id)) }); return; }
                   setActiveView(item.id);
                 }}>
                 <span className="mobile-bottom-nav-icon">{item.icon}</span>
@@ -3493,7 +3564,7 @@ export default function App() {
                   <button className={`calc-tab${calcMode==="calc"?" active":""}`} onClick={()=>setCalcMode("calc")}>🔢 Calculadora</button>
                   <button className={`calc-tab${calcMode==="reinv"?" active":""}`} onClick={()=>setCalcMode("reinv")}>💸 Reinversión</button>
                 </div>
-                <button className="calc-close" onClick={()=>setShowCalcModal(false)}>✕</button>
+                <button className="calc-close" onClick={()=>setShowCalcModal(false)} aria-label="Cerrar">✕</button>
               </div>
 
               {calcMode === "calc" && (
@@ -3629,7 +3700,7 @@ export default function App() {
               <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
                 <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <p style={{margin:0,fontSize:"18px",fontWeight:800}}>{isEdit?"Editar deuda":"Nueva deuda"}</p>
-                  <button type="button" onClick={()=>setDebtModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                  <button type="button" onClick={()=>setDebtModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}} aria-label="Cerrar">✕</button>
                 </div>
                 <form onSubmit={saveDebt} style={{padding:"22px",display:"flex",flexDirection:"column",gap:"12px"}}>
                   <div>
@@ -3667,6 +3738,16 @@ export default function App() {
           if (!amt) return;
           const setter = isHome ? setHomeDebts : setBizDebts;
           setter(prev => prev.map(d => d.id === debt.id ? {...d, paid: Math.min(d.total, d.paid + amt)} : d));
+          // Un abono es dinero real que salió del bolsillo — registrarlo también como
+          // movimiento del hogar para que cuente en "Gastado"/"Disponible" del presupuesto,
+          // igual que un abono hecho desde "Registrar movimiento" con deuda vinculada.
+          if (isHome) {
+            const today = getTodayInputValue();
+            setHomeBudget(current => [{
+              id: Date.now(), type: "Deuda", description: `Abono ${debt.name}`, amount: amt,
+              dueDate: today, createdAt: timestampFromInputDate(today), linkedDebtId: debt.id, catKey: "hogar",
+            }, ...current]);
+          }
           setModalSaving("abono");
           setTimeout(() => { setAbonoModal(null); setModalSaving(null); }, 500);
         };
@@ -3701,7 +3782,9 @@ export default function App() {
           const amount = Number(paymentForm.amount);
           const day    = Number(paymentForm.dayOfMonth);
           if (!paymentForm.name.trim() || !amount || !day || day < 1 || day > 31) return;
-          const entry = { id: Date.now(), name: paymentForm.name.trim(), amount, dayOfMonth: day, lastPaidMonth: null, catKey: paymentForm.catKey || "hogar" };
+          // catKey solo tiene efecto real en pagos del hogar (alimenta spentByCat de Mis
+          // Finanzas) — el negocio no tiene presupuesto por categoría, así que no se guarda.
+          const entry = { id: Date.now(), name: paymentForm.name.trim(), amount, dayOfMonth: day, lastPaidMonth: null, ...(isHome ? { catKey: paymentForm.catKey || "hogar" } : {}) };
           if (isHome) setHomePayments(prev => [entry, ...prev]);
           else        setBizPayments(prev  => [entry, ...prev]);
           setModalSaving("payment");
@@ -3713,7 +3796,7 @@ export default function App() {
               <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
                 <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Nuevo pago del mes</p>
-                  <button type="button" onClick={()=>setPaymentModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                  <button type="button" onClick={()=>setPaymentModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}} aria-label="Cerrar">✕</button>
                 </div>
                 <form onSubmit={savePmt} style={{padding:"22px",display:"flex",flexDirection:"column",gap:"12px"}}>
                   <div>
@@ -3721,13 +3804,15 @@ export default function App() {
                     <input placeholder="Ej: Netflix, Arriendo, Internet..." autoFocus value={paymentForm.name} onChange={e=>setPaymentForm(c=>({...c,name:e.target.value}))}
                       style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
                   </div>
-                  <div>
-                    <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Categoría presupuesto</label>
-                    <select value={paymentForm.catKey} onChange={e=>setPaymentForm(c=>({...c,catKey:e.target.value}))}
-                      style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}>
-                      {BUDGET_CATS_DEFAULT.map(c=><option key={c.key} value={c.key}>{c.emoji} {c.label}</option>)}
-                    </select>
-                  </div>
+                  {isHome && (
+                    <div>
+                      <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Categoría presupuesto</label>
+                      <select value={paymentForm.catKey} onChange={e=>setPaymentForm(c=>({...c,catKey:e.target.value}))}
+                        style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}>
+                        {BUDGET_CATS_DEFAULT.map(c=><option key={c.key} value={c.key}>{c.emoji} {c.label}</option>)}
+                      </select>
+                    </div>
+                  )}
                   <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
                     <div>
                       <label style={{display:"block",fontSize:"11px",fontWeight:700,color:"var(--muted)",textTransform:"uppercase",letterSpacing:"0.5px",marginBottom:"7px"}}>Monto mensual</label>
@@ -3907,15 +3992,7 @@ export default function App() {
                     <span className="db-today-appt-name">{a.title}</span>
                   </div>
                 ))}
-                {userMode !== "emprendedora" && kidsSchedule[todayDay]?.act && (
-                  <div className="db-today-appt-row">
-                    {kidsSchedule[todayDay].time && (
-                      <span className="db-today-appt-time db-today-appt-time--kids">{kidsSchedule[todayDay].time}</span>
-                    )}
-                    <span className="db-today-appt-name">{kidsSchedule[todayDay].act}</span>
-                  </div>
-                )}
-                {!hasTodayCal && !kidsSchedule[todayDay]?.act && (
+                {!hasTodayCal && (
                   <p className="db-today-nil">Sin citas hoy</p>
                 )}
               </div>
@@ -3939,12 +4016,12 @@ export default function App() {
                         </div>
                       ))
                   }
-                  {homeRoutines[todayDay] && (
-                    <div className="db-today-task-row" style={{marginTop: focusHomeTasks.length > 0 ? "8px" : 0}}>
+                  {todayHogar.filter(a => a.type === "Limpieza").map(a => (
+                    <div key={a.id} className="db-today-task-row" style={{marginTop: focusHomeTasks.length > 0 ? "8px" : 0}}>
                       <span style={{fontSize:"15px",lineHeight:1}}>🧹</span>
-                      <span className="db-today-task-title">{homeRoutines[todayDay]}</span>
+                      <span className="db-today-task-title">{a.title}</span>
                     </div>
-                  )}
+                  ))}
                   {upcomingHomePayments.map((p, i) => {
                     const daysLeft = p.dayOfMonth - _currentDay;
                     const label = daysLeft < 0 ? "Vencido" : daysLeft === 0 ? "Hoy" : `en ${daysLeft} día${daysLeft > 1 ? "s" : ""}`;
@@ -3958,7 +4035,7 @@ export default function App() {
                       </div>
                     );
                   })}
-                  {homeTasks.length === 0 && !homeRoutines[todayDay] && upcomingHomePayments.length === 0 && (
+                  {homeTasks.length === 0 && !todayHogar.some(a => a.type === "Limpieza") && upcomingHomePayments.length === 0 && (
                     <button type="button" className="db-today-cta-link" onClick={() => { setActiveView("home"); }}>Agregar tarea del hogar →</button>
                   )}
                 </div>
@@ -4432,7 +4509,7 @@ export default function App() {
                       <p className="app-modal-head-eyebrow">Mi Negocio</p>
                       <p className="app-modal-head-title">Nueva tarea</p>
                     </div>
-                    <button type="button" className="app-modal-close" onClick={() => setShowBizTaskModal(false)}>✕</button>
+                    <button type="button" className="app-modal-close" onClick={() => setShowBizTaskModal(false)} aria-label="Cerrar">✕</button>
                   </div>
                   <form onSubmit={addTask} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"14px"}}>
                     <div>
@@ -4813,7 +4890,7 @@ export default function App() {
                         <div key={d.id} className="fin-debt-row">
                           <div className="fin-debt-top">
                             <span className="fin-debt-name" onClick={() => editDebt(d)}>{d.name}</span>
-                            <button type="button" className="fin-del-btn" onClick={() => setBizDebts(prev => prev.filter(x => x.id !== d.id))}>×</button>
+                            <button type="button" className="fin-del-btn" onClick={() => setBizDebts(prev => prev.filter(x => x.id !== d.id))} aria-label="Cerrar">×</button>
                           </div>
                           <div className="fin-debt-bar-wrap">
                             <div className="fin-debt-bar" style={{width:`${pct}%`}}/>
@@ -4866,7 +4943,7 @@ export default function App() {
                               onClick={() => setBizPayments(prev => prev.map(x => x.id === p.id ? {...x, lastPaidMonth: isPaid ? null : _currentMonthKey} : x))}>
                               {isPaid ? "✓" : "Pagar"}
                             </button>
-                            <button type="button" className="fin-del-btn" onClick={() => setBizPayments(prev => prev.filter(x => x.id !== p.id))}>×</button>
+                            <button type="button" className="fin-del-btn" onClick={() => setBizPayments(prev => prev.filter(x => x.id !== p.id))} aria-label="Cerrar">×</button>
                           </div>
                         </div>
                       );
@@ -4888,7 +4965,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">Mi Negocio</p>
                   <p className="app-modal-head-title">Registrar movimiento</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={() => setShowMovementModal(false)}>✕</button>
+                <button type="button" className="app-modal-close" onClick={() => setShowMovementModal(false)} aria-label="Cerrar">✕</button>
               </div>
               <div style={{padding:"4px 0"}}>
                 {MovementForm()}
@@ -5086,7 +5163,7 @@ export default function App() {
                               <button type="button" key={s} onClick={() => moveClientStatus(client.id, s)}>{stageEmoji[s]} {s.replace("Lead ","")}</button>
                             ))}
                             <button type="button" className="cl-close-btn" onClick={() => moveClientStatus(client.id, "Venta ganada")}>✓ Cerré</button>
-                            <button type="button" className="delete-btn" onClick={() => confirmDelete("¿Eliminar este cliente?", () => setClients(c => c.filter(cl => cl.id !== client.id)))}>×</button>
+                            <button type="button" className="delete-btn" onClick={() => confirmDelete("¿Eliminar este cliente?", () => setClients(c => c.filter(cl => cl.id !== client.id)))} aria-label="Cerrar">×</button>
                           </div>
                         </div>
                       );
@@ -5167,7 +5244,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">Mis Clientes</p>
                   <p className="app-modal-head-title">Nuevo cliente</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={() => setShowClientFormModal(false)}>✕</button>
+                <button type="button" className="app-modal-close" onClick={() => setShowClientFormModal(false)} aria-label="Cerrar">✕</button>
               </div>
               <form onSubmit={addClient} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"12px"}}>
                 {clients.length >= currentLimits.clients && (
@@ -5285,7 +5362,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">Cliente ganado</p>
                   <p className="app-modal-head-title">{editingClient.name}</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={() => setEditingClientId(null)}>✕</button>
+                <button type="button" className="app-modal-close" onClick={() => setEditingClientId(null)} aria-label="Cerrar">✕</button>
               </div>
               <div style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"12px"}}>
                 <div>
@@ -5544,7 +5621,7 @@ export default function App() {
                             <span className="ck-badge ck-badge--format">{fi} {item.format}</span>
                             <span className="ck-badge ck-badge--network">{ni} {item.network}</span>
                           </div>
-                          <button type="button" className="ck-card-del" onClick={(e) => { e.stopPropagation(); confirmDelete("¿Eliminar esta pieza?", () => setContentItems((c) => c.filter((ci) => ci.id !== item.id))); }}>✕</button>
+                          <button type="button" className="ck-card-del" onClick={(e) => { e.stopPropagation(); confirmDelete("¿Eliminar esta pieza?", () => setContentItems((c) => c.filter((ci) => ci.id !== item.id))); }} aria-label="Cerrar">✕</button>
                         </div>
                         <div className="ck-card-body">
                           <p className="ck-card-title">{item.title}</p>
@@ -5580,7 +5657,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">{colByStatus[editingItem.status]?.icon} {colByStatus[editingItem.status]?.label || editingItem.status}</p>
                   <p className="app-modal-head-title">{editingItem.title || "Sin título"}</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={() => setEditingContentId(null)}>✕</button>
+                <button type="button" className="app-modal-close" onClick={() => setEditingContentId(null)} aria-label="Cerrar">✕</button>
               </div>
               <div style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"14px",maxHeight:"70vh",overflowY:"auto"}}>
                 <div>
@@ -5887,25 +5964,37 @@ export default function App() {
                 {weekMenu[todayDay]&&Object.values(typeof weekMenu[todayDay]==="string"?{a:weekMenu[todayDay]}:weekMenu[todayDay]).some(Boolean) ? "Cambiar menú" : <><span className="abi-avatar">A</span> Planear con Abi</>}
               </button>
             </div>
-            <div className="home-today-card">
-              <span className="home-today-card-ico">🧹</span>
-              <p className="home-today-card-label">Rutina de hoy</p>
-              {homeRoutines[todayDay] ? <p className="home-today-card-val" style={{color:"var(--purple)"}}>{homeRoutines[todayDay]}</p> : <p className="home-today-card-empty">Sin rutina definida</p>}
-              <button type="button" className="home-today-card-btn" style={{color:"var(--purple)"}} onClick={() => setHomeTab(2)}>
-                {homeRoutines[todayDay] ? "Ver tareas →" : "Definir →"}
-              </button>
-            </div>
-            <div className="home-today-card">
-              <span className="home-today-card-ico">🎒</span>
-              <p className="home-today-card-label">Hijos hoy</p>
-              {kidsSchedule[todayDay]?.act
-                ? <><p className="home-today-card-val" style={{color:"#1D9E75"}}>{kidsSchedule[todayDay].act}</p>{kidsSchedule[todayDay].time&&<p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{kidsSchedule[todayDay].time}</p>}</>
-                : <p className="home-today-card-empty">Sin actividades</p>
-              }
-              <button type="button" className="home-today-card-btn" style={{color:"#1D9E75"}} onClick={() => setHomeTab(1)}>
-                {kidsSchedule[todayDay]?.act ? "Ver semana →" : "Agregar →"}
-              </button>
-            </div>
+            {(()=>{
+              // "Rutina de hoy" y "Hijos hoy" leen de `appointments` (misma fuente que la
+              // pestaña Semana) filtrando por categoría — homeRoutines/kidsSchedule quedaron
+              // huérfanos desde el rediseño de Mi Hogar: ya no hay ningún formulario que los
+              // escriba, así que estas tarjetas nunca podían mostrar datos reales.
+              const todayApts = appointments.filter(a => apptMatchesDate(a, todayISO)).sort((a,b)=>(a.time||"").localeCompare(b.time||""));
+              const routineToday = todayApts.filter(a => a.type === "Limpieza");
+              const kidsToday    = todayApts.filter(a => a.type === "Extracurricular");
+              return (<>
+                <div className="home-today-card">
+                  <span className="home-today-card-ico">🧹</span>
+                  <p className="home-today-card-label">Rutina de hoy</p>
+                  {routineToday.length
+                    ? <><p className="home-today-card-val" style={{color:"var(--purple)"}}>{routineToday[0].title}</p>{routineToday[0].time&&<p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{routineToday[0].time}</p>}</>
+                    : <p className="home-today-card-empty">Sin rutina definida</p>}
+                  <button type="button" className="home-today-card-btn" style={{color:"var(--purple)"}} onClick={() => setHomeTab(1)}>
+                    {routineToday.length ? "Ver semana →" : "Definir →"}
+                  </button>
+                </div>
+                <div className="home-today-card">
+                  <span className="home-today-card-ico">🎒</span>
+                  <p className="home-today-card-label">Hijos hoy</p>
+                  {kidsToday.length
+                    ? <><p className="home-today-card-val" style={{color:"#1D9E75"}}>{kidsToday[0].title}</p>{kidsToday[0].time&&<p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{kidsToday[0].time}</p>}</>
+                    : <p className="home-today-card-empty">Sin actividades</p>}
+                  <button type="button" className="home-today-card-btn" style={{color:"#1D9E75"}} onClick={() => setHomeTab(1)}>
+                    {kidsToday.length ? "Ver semana →" : "Agregar →"}
+                  </button>
+                </div>
+              </>);
+            })()}
           </div>
         )}
 
@@ -6057,7 +6146,7 @@ export default function App() {
                   <div className="hogar-sched-modal" onClick={e=>e.stopPropagation()}>
                     <div className="hogar-sched-modal-head">
                       <p className="hogar-sched-modal-title">{schedEditId?"Editar actividad":"Nueva actividad"}</p>
-                      <button type="button" className="hogar-sched-modal-close" onClick={()=>{setSchedModal(null);setSchedEditId(null);}}>×</button>
+                      <button type="button" className="hogar-sched-modal-close" onClick={()=>{setSchedModal(null);setSchedEditId(null);}} aria-label="Cerrar">×</button>
                     </div>
                     <div className="hogar-sched-modal-body">
                       <p className="app-form-label">Categoría</p>
@@ -6179,7 +6268,7 @@ export default function App() {
                       <input type="checkbox" checked={item.done} onChange={()=>setGroceryList(c=>c.map(g=>g.id===item.id?{...g,done:!g.done}:g))} style={{accentColor:"var(--green)",width:"13px",height:"13px",flexShrink:0}}/>
                       <span style={{flex:1,fontSize:"13px",textDecoration:item.done?"line-through":"none",color:item.done?"var(--muted)":"var(--ink)"}}>{item.text}</span>
                       {item.fromMenu&&<span style={{fontSize:"9px",color:"#0EA5E9",fontWeight:700,background:"rgba(14,165,233,0.1)",padding:"1px 5px",borderRadius:"4px"}}>MENÚ</span>}
-                      <button type="button" onClick={()=>setGroceryList(c=>c.filter(g=>g.id!==item.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",lineHeight:1,padding:"0 2px"}}>×</button>
+                      <button type="button" onClick={()=>setGroceryList(c=>c.filter(g=>g.id!==item.id))} style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"14px",lineHeight:1,padding:"0 2px"}} aria-label="Cerrar">×</button>
                     </label>
                   ))}
                 </div>
@@ -6212,9 +6301,11 @@ export default function App() {
           const realIncome = homeBudget
             .filter(i => i.type === "Ingreso" && (i.dueDate ? i.dueDate.slice(0,7) : new Date(i.createdAt||Date.now()).toISOString().slice(0,7)) === thisMonthKey)
             .reduce((s,i)=>s+i.amount, 0);
-          // Gastos sin categoría para completar disponible
+          // Gastos sin categoría para completar disponible.
+          // "Deuda" sin catKey es una deuda registrada sin vincular (aún no es un pago
+          // real), así que no debe restar del disponible — solo los abonos reales cuentan.
           const untaggedSpent = homeBudget
-            .filter(i => !i.catKey && !["Ingreso","Ahorro"].includes(i.type)
+            .filter(i => !i.catKey && !["Ingreso","Ahorro","Deuda"].includes(i.type)
               && (i.dueDate ? i.dueDate.slice(0,7) : new Date(i.createdAt||Date.now()).toISOString().slice(0,7)) === thisMonthKey)
             .reduce((s,i)=>s+i.amount, 0);
           const disponible = realIncome - totalSpentCats - untaggedSpent;
@@ -6248,12 +6339,14 @@ export default function App() {
                   onClick={()=>setHomePayments(prev=>prev.map(x=>x.id===p.id?{...x,lastPaidMonth:p.isPaid?null:thisMonthKey}:x))}>
                   {p.isPaid?"✓":"Pagar"}
                 </button>
-                <button type="button" className="fin-del-btn" onClick={()=>setHomePayments(prev=>prev.filter(x=>x.id!==p.id))}>×</button>
+                <button type="button" className="fin-del-btn" onClick={()=>setHomePayments(prev=>prev.filter(x=>x.id!==p.id))} aria-label="Cerrar">×</button>
               </div>
             </div>
           );
           return (
           <div key="tab-3" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"14px"}}>
+
+            <PendingMovementsPanel money={money} currency={currency} onConfirmToHome={confirmPendingToHome} onConfirmToBusiness={confirmPendingToBusiness} />
 
             {/* ── RESUMEN ── */}
             <div className="card" style={{padding:"18px 20px"}}>
@@ -6402,7 +6495,7 @@ export default function App() {
                                 <span style={{fontSize:"13px",fontWeight:700,color:"var(--ink)",cursor:"pointer"}} onClick={()=>{setDebtForm({name:d.name,total:String(d.total),paid:String(d.paid)});setDebtModal({type:"home",item:d});}}>{d.name}</span>
                                 <div style={{display:"flex",alignItems:"center",gap:"6px"}}>
                                   <span style={{fontSize:"11px",fontWeight:600,color:"#DC2626"}}>Falta {money.format(rem)}</span>
-                                  <button type="button" className="fin-del-btn" onClick={()=>setHomeDebts(prev=>prev.filter(x=>x.id!==d.id))}>×</button>
+                                  <button type="button" className="fin-del-btn" onClick={()=>setHomeDebts(prev=>prev.filter(x=>x.id!==d.id))} aria-label="Cerrar">×</button>
                                 </div>
                               </div>
                               <div style={{height:"6px",background:"rgba(0,0,0,0.07)",borderRadius:"3px",overflow:"hidden",marginBottom:"6px"}}>
@@ -6428,7 +6521,7 @@ export default function App() {
                 <div className="hogar-sched-modal" onClick={e=>e.stopPropagation()}>
                   <div className="hogar-sched-modal-head">
                     <p className="hogar-sched-modal-title">Registrar gasto</p>
-                    <button type="button" className="hogar-sched-modal-close" onClick={()=>setQuickExpModal(false)}>×</button>
+                    <button type="button" className="hogar-sched-modal-close" onClick={()=>setQuickExpModal(false)} aria-label="Cerrar">×</button>
                   </div>
                   <div className="hogar-sched-modal-body">
                     <p className="app-form-label">Categoría</p>
@@ -6550,7 +6643,7 @@ export default function App() {
                     <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Hola, soy Abi 👋</p>
                   </div>
                 </div>
-                <button type="button" onClick={()=>{setShowMenuModal(false);setAbiMenuSuggestion(null);}} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"8px",width:"30px",height:"30px",cursor:"pointer",color:"#fff",fontSize:"15px",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button>
+                <button type="button" onClick={()=>{setShowMenuModal(false);setAbiMenuSuggestion(null);}} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"8px",width:"30px",height:"30px",cursor:"pointer",color:"#fff",fontSize:"15px",display:"flex",alignItems:"center",justifyContent:"center"}} aria-label="Cerrar">✕</button>
               </div>
               <div style={{padding:"20px 22px",overflowY:"auto",flex:1}}>
                 {!abiMenuSuggestion?(
@@ -6659,7 +6752,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">Mi Hogar</p>
                   <p className="app-modal-head-title">Nueva tarea</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={()=>{setShowTaskModal(false);setHomeTaskError("");}}>✕</button>
+                <button type="button" className="app-modal-close" onClick={()=>{setShowTaskModal(false);setHomeTaskError("");}} aria-label="Cerrar">✕</button>
               </div>
               <form onSubmit={e=>{addHomeTask(e);if(!homeTaskError)setShowTaskModal(false);}} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"14px"}}>
                 <div>
@@ -6734,7 +6827,7 @@ export default function App() {
                   <p className="app-modal-head-eyebrow">Con mi familia</p>
                   <p className="app-modal-head-title">Agregar un momento 💛</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={()=>setShowFamilyTimeModal(false)}>✕</button>
+                <button type="button" className="app-modal-close" onClick={()=>setShowFamilyTimeModal(false)} aria-label="Cerrar">✕</button>
               </div>
               <div style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"16px"}}>
                 <div>
@@ -6839,7 +6932,7 @@ export default function App() {
                   value={newBank} onChange={e => setNewBank(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); const b = newBank.trim(); if (b && !banks.includes(b)) { setBanks(c => [...c, b]); updateForm("bank", b); } setNewBank(""); setBankAddMode(false); } if (e.key === "Escape") { setNewBank(""); setBankAddMode(false); } }} />
                 <button type="button" className="bank-inline-ok" onClick={() => { const b = newBank.trim(); if (b && !banks.includes(b)) { setBanks(c => [...c, b]); updateForm("bank", b); } setNewBank(""); setBankAddMode(false); }}>✓</button>
-                <button type="button" className="bank-inline-cancel" onClick={() => { setNewBank(""); setBankAddMode(false); }}>✕</button>
+                <button type="button" className="bank-inline-cancel" onClick={() => { setNewBank(""); setBankAddMode(false); }} aria-label="Cerrar">✕</button>
               </div>
             ) : (
               <div className="bank-inline-actions">
@@ -6910,7 +7003,7 @@ export default function App() {
           {banks.map((bank) => (
             <span key={bank} className="bank-chip">
               {bank}
-              <button type="button" className="bank-remove" onClick={() => removeBank(bank)}>×</button>
+              <button type="button" className="bank-remove" onClick={() => removeBank(bank)} aria-label="Cerrar">×</button>
             </span>
           ))}
         </div>
@@ -6969,7 +7062,7 @@ export default function App() {
             </div>
             <input className="movement-date-input" type="date" value={inputDateFromValue(movement.date || movement.createdAt)} onChange={(event) => updateMovementDate(movement.id, event.target.value)} aria-label={`Fecha de ${movement.description}`} />
             <b>{money.format(movement.amount)}</b>
-            <button className="row-delete" type="button" onClick={() => confirmDelete("¿Eliminar este movimiento?", () => setMovements((current) => current.filter((item) => item.id !== movement.id)))}>×</button>
+            <button className="row-delete" type="button" onClick={() => confirmDelete("¿Eliminar este movimiento?", () => setMovements((current) => current.filter((item) => item.id !== movement.id)))} aria-label="Cerrar">×</button>
           </div>
         ))}
       </div>
@@ -7377,7 +7470,7 @@ export default function App() {
           <div style={{maxWidth:"900px",margin:"0 auto 24px",padding:"14px 20px",borderRadius:"12px",background:paymentMessage.type==="success"?"#ecfdf5":"#fef2f2",border:`1px solid ${paymentMessage.type==="success"?"#86efac":"#fca5a5"}`,color:paymentMessage.type==="success"?"#166534":"#991b1b",fontSize:"15px",fontWeight:600,display:"flex",alignItems:"center",gap:"12px"}}>
             <span style={{fontSize:"22px"}}>{paymentMessage.type==="success"?"✅":"❌"}</span>
             <span style={{flex:1}}>{paymentMessage.text}</span>
-            <button onClick={()=>setPaymentMessage(null)} style={{border:"none",background:"none",fontSize:"20px",cursor:"pointer",color:"inherit",opacity:0.6,lineHeight:1,padding:"2px"}}>×</button>
+            <button onClick={()=>setPaymentMessage(null)} style={{border:"none",background:"none",fontSize:"20px",cursor:"pointer",color:"inherit",opacity:0.6,lineHeight:1,padding:"2px"}} aria-label="Cerrar">×</button>
           </div>
         )}
 
@@ -7440,7 +7533,7 @@ export default function App() {
           ):(
             <form onSubmit={activateBetaCode} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"10px",maxWidth:"480px"}}>
               <input placeholder="Ingresa tu código de acceso" value={betaCode} onChange={(e)=>setBetaCode(e.target.value)} style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit"}} autoFocus />
-              <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
+              <button className="primary-button" type="submit" disabled={betaCodeLoading} style={{padding:"0 20px"}}>{betaCodeLoading ? "Activando..." : "Activar"}</button>
               {betaCodeError&&<p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
           )}
@@ -7477,19 +7570,19 @@ export default function App() {
               <div style={{display:"grid",gap:"12px",marginBottom:"24px"}}>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
-                  <span>{PLAN_LIMITS.free.movements} movimientos financieros/mes</span>
+                  <span>{getUsageLimits("free").movements} movimientos financieros/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
-                  <span>{PLAN_LIMITS.free.clients} clientes</span>
+                  <span>{getUsageLimits("free").clients} clientes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
-                  <span>{PLAN_LIMITS.free.content} contenidos/mes</span>
+                  <span>{getUsageLimits("free").content} contenidos/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
-                  <span>{PLAN_LIMITS.free.homeTasks} tareas del hogar/mes</span>
+                  <span>{getUsageLimits("free").homeTasks} tareas del hogar/mes</span>
                 </div>
                 <div style={{display:"flex",alignItems:"center",gap:"10px"}}>
                   <span style={{color:"var(--green)",fontSize:"18px"}}>?</span>
@@ -7567,30 +7660,30 @@ export default function App() {
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Movimientos financieros</span>
-                <span><strong>{movements.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.movements : "8"}</span>
+                <span><strong>{movements.length}</strong> / {userPlan === "free" ? getUsageLimits("free").movements : "8"}</span>
               </div>
-              <Progress value={userPlan === "free" ? Math.min(Math.round((movements.length / PLAN_LIMITS.free.movements) * 100), 100) : 0} tone={movements.length >= PLAN_LIMITS.free.movements ? "pink" : "green"} />
+              <Progress value={userPlan === "free" ? Math.min(Math.round((movements.length / getUsageLimits("free").movements) * 100), 100) : 0} tone={movements.length >= getUsageLimits("free").movements ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Clientes</span>
-                <span><strong>{clients.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.clients : "8"}</span>
+                <span><strong>{clients.length}</strong> / {userPlan === "free" ? getUsageLimits("free").clients : "8"}</span>
               </div>
-              <Progress value={userPlan === "free" ? Math.min(Math.round((clients.length / PLAN_LIMITS.free.clients) * 100), 100) : 0} tone={clients.length >= PLAN_LIMITS.free.clients ? "pink" : "green"} />
+              <Progress value={userPlan === "free" ? Math.min(Math.round((clients.length / getUsageLimits("free").clients) * 100), 100) : 0} tone={clients.length >= getUsageLimits("free").clients ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Contenidos</span>
-                <span><strong>{contentItems.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.content : "8"}</span>
+                <span><strong>{contentItems.length}</strong> / {userPlan === "free" ? getUsageLimits("free").content : "8"}</span>
               </div>
-              <Progress value={userPlan === "free" ? Math.min(Math.round((contentItems.length / PLAN_LIMITS.free.content) * 100), 100) : 0} tone={contentItems.length >= PLAN_LIMITS.free.content ? "pink" : "green"} />
+              <Progress value={userPlan === "free" ? Math.min(Math.round((contentItems.length / getUsageLimits("free").content) * 100), 100) : 0} tone={contentItems.length >= getUsageLimits("free").content ? "pink" : "green"} />
             </div>
             <div>
               <div style={{display:"flex",justifyContent:"space-between",marginBottom:"8px"}}>
                 <span>Tareas del hogar</span>
-                <span><strong>{homeTasks.length}</strong> / {userPlan === "free" ? PLAN_LIMITS.free.homeTasks : "8"}</span>
+                <span><strong>{homeTasks.length}</strong> / {userPlan === "free" ? getUsageLimits("free").homeTasks : "8"}</span>
               </div>
-              <Progress value={userPlan === "free" ? Math.min(Math.round((homeTasks.length / PLAN_LIMITS.free.homeTasks) * 100), 100) : 0} tone={homeTasks.length >= PLAN_LIMITS.free.homeTasks ? "pink" : "green"} />
+              <Progress value={userPlan === "free" ? Math.min(Math.round((homeTasks.length / getUsageLimits("free").homeTasks) * 100), 100) : 0} tone={homeTasks.length >= getUsageLimits("free").homeTasks ? "pink" : "green"} />
             </div>
           </div>
         </div>
@@ -7633,7 +7726,7 @@ export default function App() {
                 style={{minHeight:"44px",border:"1px solid var(--line)",borderRadius:"10px",padding:"0 14px",font:"inherit",fontSize:"15px"}}
                 autoFocus
               />
-              <button className="primary-button" type="submit" style={{padding:"0 20px"}}>Activar</button>
+              <button className="primary-button" type="submit" disabled={betaCodeLoading} style={{padding:"0 20px"}}>{betaCodeLoading ? "Activando..." : "Activar"}</button>
               {betaCodeError && <p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
           )}
@@ -7849,6 +7942,7 @@ function LineChart({ movements }) {
             <li><strong>Información de cuenta:</strong> Nombre, correo electrónico, contraseña (encriptada)</li>
             <li><strong>Información de perfil:</strong> Nombre del negocio, tipo de negocio, etapa empresarial, metas financieras</li>
             <li><strong>Datos de uso:</strong> Información sobre cómo usas la aplicación, incluyendo movimientos financieros, clientes, contenido, tareas del hogar y objetivos personales que tú ingresas voluntariamente</li>
+            <li><strong>Información sobre tu familia:</strong> Si usas las funciones de organización familiar, puedes registrar nombres o apodos de tus hijos u otros miembros del hogar y sus horarios de actividades (colegio, extracurriculares, citas médicas), únicamente para tu propia organización personal</li>
             <li><strong>Información técnica:</strong> Dirección IP, tipo de navegador, sistema operativo, identificadores de dispositivo</li>
             <li><strong>Cookies y tecnologías similares:</strong> Usamos cookies para mejorar tu experiencia y mantener tu sesión activa</li>
           </ul>
@@ -7901,8 +7995,8 @@ function LineChart({ movements }) {
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Transferencias Internacionales de Datos</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu información puede ser transferida y almacenada en servidores ubicados fuera de Colombia. Cuando transferimos datos internacionalmente, nos aseguramos de que existan garantías adecuadas para proteger tu información de acuerdo con esta Política de Privacidad y las leyes aplicables.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Menores de Edad</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App no está dirigida a menores de 18 años. No recopilamos intencionalmente información personal de menores. Si descubrimos que hemos recopilado información de un menor sin el consentimiento parental verificable, eliminaremos esa información inmediatamente.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Menores de Edad e Información Familiar</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App está dirigida a mayores de 18 años: los menores de edad no pueden crear una cuenta ni usar la aplicación directamente, y no recopilamos información personal proporcionada directamente por un menor. Sin embargo, como parte de las funciones de organización familiar, la titular de la cuenta (una persona adulta) puede registrar voluntariamente información sobre sus hijos u otros menores a su cargo — por ejemplo nombres o apodos y horarios de actividades — con el único fin de organizar su hogar. Esta información es ingresada, controlada y puede ser eliminada en cualquier momento por la titular de la cuenta, se almacena con las mismas medidas de seguridad que el resto de tu información y no se usa para ningún fin distinto a mostrártela a ti dentro de la aplicación. Si eres la titular de una cuenta y deseas eliminar la información de tus hijos o de tu cuenta completa, puedes hacerlo desde la aplicación o escribiéndonos a hola@umpacademy.co.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Cambios a esta Política</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Podemos actualizar esta Política de Privacidad periódicamente. Te notificaremos sobre cambios significativos publicando la nueva Política en la aplicación y actualizará la fecha de "Última actualización" en la parte superior. Te recomendamos revisar esta Política regularmente.</p>

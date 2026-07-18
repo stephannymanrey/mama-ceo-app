@@ -9,7 +9,13 @@ const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY;
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
 const CLAUDE_MODEL  = "claude-haiku-4-5-20251001";
 const REGION        = process.env.AWS_REGION      || "us-east-1";
-const PLAN_LIMITS = { free: 50, emprendedora: 60, ceo: 200, premium: 200 };
+// Debe reflejar los mismos tiers que src/lib/planGating.js (PLAN_ORDER) — si agregas
+// o renombras un plan ahí, actualízalo también aquí. No se puede compartir el módulo
+// directamente porque esta Lambda es deliberadamente "cero dependencias" (ver
+// lambda/README.md), así que este es el único lugar del backend con este mapa.
+// "mama" faltaba antes: una usuaria con el plan Mamá caía en PLAN_LIMITS.free (50/mes)
+// en vez de tener su propio límite.
+const PLAN_LIMITS = { free: 50, mama: 50, emprendedora: 60, ceo: 200, premium: 200 };
 
 const ALLOWED_ORIGINS = [
   "https://www.mamaceoapp.co",
@@ -536,6 +542,32 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:`;
 
 // ─── Handler público: Plan de Negocio ─────────────────────────────────────
 const PLAN_DAILY_LIMIT = 150;
+const PUBLIC_AI_DAILY_LIMIT = 150;
+
+// Límite diario compartido por las rutas públicas (sin JWT) que llaman a Claude:
+// mejorarSeccion/dofa/extractReels no tenían ningún control, así que cualquiera
+// podía llamarlas en bucle y agotar el presupuesto de ANTHROPIC_KEY.
+async function checkAndIncrDailyLimit(bucket, limit) {
+  const today  = new Date().toISOString().slice(0, 10);
+  const dayKey = `${bucket}_daily#${today}`;
+  try {
+    const dayRes = await dynamoCall("GetItem", { TableName: TABLE, Key: { user_id: { S: dayKey } } });
+    if (dayRes?.Item) {
+      const dayData = unmarshal(dayRes.Item);
+      if ((dayData.count || 0) >= limit) return false;
+    }
+  } catch (err) { console.warn(`[${bucket}] No se pudo leer el contador diario:`, err.message); }
+  try {
+    await dynamoCall("UpdateItem", {
+      TableName: TABLE,
+      Key: { user_id: { S: dayKey } },
+      UpdateExpression: "ADD #c :one SET #t = :type",
+      ExpressionAttributeNames: { "#c": "count", "#t": "type" },
+      ExpressionAttributeValues: { ":one": { N: "1" }, ":type": { S: "daily_counter" } },
+    });
+  } catch (err) { console.warn(`[${bucket}] No se pudo incrementar el contador diario:`, err.message); }
+  return true;
+}
 
 async function handlePlanNegocio(publicEmail, context, event) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
@@ -673,6 +705,9 @@ async function handleMejorarSeccion(body, event) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { texto, seccion, negocio } = body;
   if (!texto?.trim()) return respond(400, { error: "Falta texto" }, event);
+  if (!(await checkAndIncrDailyLimit("mejorarSeccion", PUBLIC_AI_DAILY_LIMIT))) {
+    return respond(429, { error: "limite_diario" }, event);
+  }
 
   const prompt = `Eres redactor especializado en planes de negocio formales para presentar ante inversionistas, fondos de capital semilla y convocatorias gubernamentales en Latinoamérica.
 
@@ -706,6 +741,9 @@ async function handleDofa(body, event) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { plan } = body;
   if (!plan) return respond(400, { error: "Falta plan" }, event);
+  if (!(await checkAndIncrDailyLimit("dofa", PUBLIC_AI_DAILY_LIMIT))) {
+    return respond(429, { error: "limite_diario" }, event);
+  }
 
   const ctx = [
     plan.nombreNegocio         && `Empresa: ${plan.nombreNegocio}`,
@@ -764,6 +802,9 @@ async function handleExtractReels(body, event) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { transcription, duration } = body;
   if (!transcription?.trim()) return respond(400, { error: "Falta transcripción" }, event);
+  if (!(await checkAndIncrDailyLimit("extractReels", PUBLIC_AI_DAILY_LIMIT))) {
+    return respond(429, { error: "limite_diario" }, event);
+  }
 
   const durMin = Math.round((duration || 0) / 60);
 
