@@ -101,18 +101,26 @@ const MUSIC_GENRES = [
 
 // ── Efectos de sonido (síntesis Web Audio) ────────────────────────────────
 const SFX_CATALOG = [
-  { id: "click",      emoji: "🖱️",  label: "Click",      desc: "Clic de UI rápido" },
-  { id: "ding",       emoji: "🔔",  label: "Ding",       desc: "Campanilla positiva" },
-  { id: "pop",        emoji: "💬",  label: "Pop",        desc: "Burbuja / notificación" },
-  { id: "swoosh",     emoji: "💨",  label: "Swoosh",     desc: "Barrido rápido" },
-  { id: "swing",      emoji: "🌊",  label: "Swing",      desc: "Barrido suave" },
-  { id: "cut",        emoji: "✂️",  label: "Corte",      desc: "Sonido de corte" },
-  { id: "failure",    emoji: "❌",  label: "Error",      desc: "Fallo / equivocación" },
-  { id: "success",    emoji: "✅",  label: "Éxito",      desc: "Logro / correcto" },
-  { id: "select",     emoji: "⭐",  label: "Selección",  desc: "Seleccionar opción" },
-  { id: "typewriter", emoji: "⌨️",  label: "Máquina",    desc: "Teclas de máquina de escribir" },
-  { id: "sorry",      emoji: "😬",  label: "Ups",        desc: "Ups / lo siento" },
-  { id: "wind",       emoji: "🍃",  label: "Viento",     desc: "Ráfaga de viento" },
+  { id: "click",        emoji: "🖱️",  label: "Click",       desc: "Clic de UI rápido" },
+  { id: "ding",         emoji: "🔔",  label: "Ding",        desc: "Campanilla positiva" },
+  { id: "pop",          emoji: "💬",  label: "Pop",         desc: "Burbuja / notificación" },
+  { id: "swoosh",       emoji: "💨",  label: "Swoosh",      desc: "Barrido rápido" },
+  { id: "whoosh",       emoji: "🌪️",  label: "Whoosh",      desc: "Velocidad / transición" },
+  { id: "swing",        emoji: "🌊",  label: "Swing",       desc: "Barrido suave" },
+  { id: "cut",          emoji: "✂️",  label: "Corte",       desc: "Sonido de corte" },
+  { id: "camera",       emoji: "📷",  label: "Cámara",      desc: "Obturador de cámara" },
+  { id: "drum",         emoji: "🥁",  label: "Drum hit",    desc: "Golpe de caja / snare" },
+  { id: "bass",         emoji: "🎵",  label: "Bass hit",    desc: "Golpe de bajo profundo" },
+  { id: "heartbeat",    emoji: "💓",  label: "Latido",      desc: "Corazón / tensión dramática" },
+  { id: "countdown",    emoji: "⏱️",  label: "Tick",        desc: "Tick de cuenta regresiva" },
+  { id: "notification", emoji: "🛎️",  label: "Notif.",      desc: "Notificación suave" },
+  { id: "failure",      emoji: "❌",  label: "Error",       desc: "Fallo / equivocación" },
+  { id: "success",      emoji: "✅",  label: "Éxito",       desc: "Logro / correcto" },
+  { id: "select",       emoji: "⭐",  label: "Selección",   desc: "Seleccionar opción" },
+  { id: "typewriter",   emoji: "⌨️",  label: "Máquina",     desc: "Teclas de máquina de escribir" },
+  { id: "sorry",        emoji: "😬",  label: "Ups",         desc: "Ups / lo siento" },
+  { id: "wind",         emoji: "🍃",  label: "Viento",      desc: "Ráfaga de viento" },
+  { id: "glitch",       emoji: "⚡",  label: "Glitch",      desc: "Efecto digital distorsionado" },
 ];
 
 function synthSfx(type, actx, dest, when = 0) {
@@ -216,6 +224,99 @@ function synthSfx(type, actx, dest, when = 0) {
       g.gain.setValueAtTime(0.32, when);
       g.gain.exponentialRampToValueAtTime(0.001, when + 0.72);
       src.start(when); src.stop(when + 0.75);
+    } else if (type === "whoosh") {
+      const bufLen = Math.floor(actx.sampleRate * 0.4);
+      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(i / bufLen, 0.4) * Math.pow(1 - i / bufLen, 0.8);
+      const src = actx.createBufferSource(); src.buffer = buf;
+      const hpf = actx.createBiquadFilter(); hpf.type = "highpass";
+      hpf.frequency.setValueAtTime(6000, when);
+      hpf.frequency.exponentialRampToValueAtTime(300, when + 0.4);
+      src.connect(hpf); hpf.connect(g);
+      g.gain.setValueAtTime(0.42, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.42);
+      src.start(when); src.stop(when + 0.44);
+    } else if (type === "camera") {
+      const osc = actx.createOscillator();
+      osc.connect(g);
+      osc.frequency.setValueAtTime(2800, when);
+      osc.frequency.exponentialRampToValueAtTime(400, when + 0.04);
+      g.gain.setValueAtTime(0.55, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.06);
+      osc.start(when); osc.stop(when + 0.07);
+      const bufLen = Math.floor(actx.sampleRate * 0.05);
+      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
+      const bd = buf.getChannelData(0);
+      for (let i = 0; i < bufLen; i++) bd[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
+      const nsrc = actx.createBufferSource(); nsrc.buffer = buf;
+      const ng = actx.createGain(); ng.gain.value = 0.2;
+      nsrc.connect(ng); ng.connect(out);
+      nsrc.start(when); nsrc.stop(when + 0.06);
+    } else if (type === "drum") {
+      const bufLen = Math.floor(actx.sampleRate * 0.14);
+      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 1.3);
+      const src = actx.createBufferSource(); src.buffer = buf;
+      src.connect(g);
+      g.gain.setValueAtTime(0.6, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.15);
+      src.start(when); src.stop(when + 0.16);
+      const osc = actx.createOscillator(); osc.type = "sine";
+      const gg = actx.createGain(); gg.connect(out);
+      osc.connect(gg);
+      osc.frequency.setValueAtTime(200, when);
+      osc.frequency.exponentialRampToValueAtTime(60, when + 0.09);
+      gg.gain.setValueAtTime(0.5, when);
+      gg.gain.exponentialRampToValueAtTime(0.001, when + 0.1);
+      osc.start(when); osc.stop(when + 0.12);
+    } else if (type === "bass") {
+      const osc = actx.createOscillator(); osc.type = "sine";
+      osc.connect(g);
+      osc.frequency.setValueAtTime(80, when);
+      osc.frequency.exponentialRampToValueAtTime(35, when + 0.3);
+      g.gain.setValueAtTime(0.75, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.45);
+      osc.start(when); osc.stop(when + 0.5);
+    } else if (type === "heartbeat") {
+      for (let i = 0; i < 2; i++) {
+        const t0 = when + i * 0.38;
+        const gg = actx.createGain(); gg.connect(out);
+        const osc = actx.createOscillator(); osc.type = "sine";
+        osc.connect(gg);
+        osc.frequency.setValueAtTime(65, t0);
+        osc.frequency.exponentialRampToValueAtTime(28, t0 + 0.12);
+        gg.gain.setValueAtTime(0.55, t0);
+        gg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
+        osc.start(t0); osc.stop(t0 + 0.22);
+      }
+    } else if (type === "countdown") {
+      const osc = actx.createOscillator(); osc.type = "square";
+      osc.connect(g);
+      osc.frequency.setValueAtTime(1100, when);
+      g.gain.setValueAtTime(0.22, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.06);
+      osc.start(when); osc.stop(when + 0.07);
+    } else if (type === "notification") {
+      const osc = actx.createOscillator(); osc.type = "sine";
+      osc.connect(g);
+      osc.frequency.setValueAtTime(900, when);
+      osc.frequency.setValueAtTime(1200, when + 0.09);
+      g.gain.setValueAtTime(0.32, when);
+      g.gain.exponentialRampToValueAtTime(0.001, when + 0.38);
+      osc.start(when); osc.stop(when + 0.42);
+    } else if (type === "glitch") {
+      for (let i = 0; i < 5; i++) {
+        const t0 = when + i * 0.048;
+        const gg = actx.createGain(); gg.connect(out);
+        const osc = actx.createOscillator(); osc.type = "sawtooth";
+        osc.connect(gg);
+        osc.frequency.setValueAtTime(200 + Math.random() * 2800, t0);
+        gg.gain.setValueAtTime(0.22, t0);
+        gg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.04);
+        osc.start(t0); osc.stop(t0 + 0.05);
+      }
     }
   } catch (_) {}
 }
@@ -273,6 +374,8 @@ const STYLE_TEMPLATES = [
     cardPosition: "fullscreen",
     cardColorCycle: [2, 0, 1, 3],
     cardDuration: 3,
+    musicGenre: "motivacional",
+    videoPreset: "warm",
   },
 ];
 
@@ -1604,7 +1707,7 @@ function CardsPanel({ cards, onCardsChange, currentTime }) {
 // ── SubtitlePanel ─────────────────────────────────────────────────────────
 function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyle, onStyleChange,
     onTranscribe, onSeekInClip, listRef, transcribing, transcribeMsg }) {
-  const hasSubtitles = clips.some(c => c.transcribed && c.segments?.length);
+  const hasSubtitles = clips.some(c => c.segments?.length > 0);
   const failedClips  = clips.filter(c => c.transcribed && c.transcribeError);
   const handleEdit = (clip, line, newText) => {
     const words = newText.trim().split(/\s+/);
@@ -1616,7 +1719,7 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
       ...c, segments: [...(c.segments || []).slice(0, line.startIdx), ...newWords, ...(c.segments || []).slice(line.endIdx)],
     }));
   };
-  const transcribedClips = clips.filter(c => c.transcribed && c.segments?.length);
+  const transcribedClips = clips.filter(c => c.segments?.length > 0);
 
   return (
     <div className="sce-sub-panel">
@@ -2262,6 +2365,27 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const [autoCardState, setAutoCardState] = useState("idle"); // idle|needsAuth|working|done|error
   const [autoCardMsg, setAutoCardMsg] = useState("");
 
+  // Aplicar preset de color y música del estilo elegido — solo una vez al montar
+  const styleAutoApplied = useRef(false);
+  useEffect(() => {
+    if (!style || styleAutoApplied.current) return;
+    styleAutoApplied.current = true;
+    if (style.videoPreset) {
+      const preset = VIDEO_PRESETS.find(p => p.id === style.videoPreset);
+      if (preset) {
+        setEffects(e => ({ ...e, ...preset.values, _preset: preset.id }));
+        effectsRef.current = { ...effectsRef.current, ...preset.values, _preset: preset.id };
+      }
+    }
+    if (style.musicGenre) {
+      const tracks = MUSIC_LIBRARY.filter(t => t.genre === style.musicGenre);
+      if (tracks.length) {
+        const track = tracks[Math.floor(Math.random() * tracks.length)];
+        setMusic({ url: track.url, name: track.name, volume: 0.35, duck: true, loop: true, fromLibrary: true });
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
   useEffect(() => { effectsRef.current = effects; }, [effects]);
   useEffect(() => { formatRef.current = format; }, [format]);
@@ -2603,11 +2727,20 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         try {
           segments = await transcribeClip(clip.file, clip.silences || [], info => {
             if (info.status === "downloading") setAutoCardMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
+            else if (info.status === "loading") setAutoCardMsg("Cargando modelo en memoria...");
+            else if (info.status === "ready") setAutoCardMsg(`Transcribiendo ${clip.name.slice(0, 30)}...`);
           });
           setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
-        } catch { continue; }
+        } catch (err) {
+          console.error("[autoCards] transcription failed:", err?.message || err);
+          setAutoCardMsg(`Error al transcribir: ${err?.message || "verifica tu conexión"}. Reintentando en tarjetas...`);
+          continue;
+        }
       }
-      if (!segments?.length) continue;
+      if (!segments?.length) {
+        console.warn("[autoCards] segments vacíos para clip", clip.id);
+        continue;
+      }
 
       setAutoCardMsg("Generando tarjetas con IA para tu estilo...");
       try {
@@ -2620,14 +2753,32 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             duration: clip.duration || 0,
           }),
         });
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         if (res.status === 429) {
           setAutoCardState("error");
           setAutoCardMsg(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
           return;
         }
+        if (!res.ok) {
+          console.error("[autoCards] Lambda error", res.status, data);
+          setAutoCardMsg(`Error del servidor (${res.status}). Intenta de nuevo.`);
+          continue;
+        }
         for (const t of data.tarjetas || []) {
-          const et = nativeToEffective(keptSegs, clip.id, t.startTime);
+          // nativeToEffective puede fallar si el timestamp cae en un silencio cortado —
+          // en ese caso buscamos el segmento más cercano para no perder la tarjeta.
+          let et = nativeToEffective(keptSegs, clip.id, t.startTime);
+          if (et === null) {
+            let elapsed = 0;
+            for (const seg of keptSegs) {
+              const d = seg.end - seg.start;
+              if (seg.clip.id === clip.id && t.startTime <= seg.end) {
+                et = elapsed + Math.max(0, Math.min(d, t.startTime - seg.start));
+                break;
+              }
+              elapsed += d;
+            }
+          }
           if (et === null) continue;
           generated.push({
             id: uid(), text: t.texto, keyword: t.keyword || "",
@@ -2640,7 +2791,10 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           });
           colorStep++;
         }
-      } catch (err) { console.error("[autoCards]", err.message); }
+      } catch (err) {
+        console.error("[autoCards] fetch error:", err?.message || err);
+        setAutoCardMsg("Error de conexión al generar tarjetas. Verifica tu internet.");
+      }
     }
 
     if (generated.length) {
@@ -2784,8 +2938,9 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
                     if (sfx.time > prevEt && sfx.time <= newEt) {
                       if (!sfxActxRef.current) sfxActxRef.current = new AudioContext();
                       const a = sfxActxRef.current;
-                      if (a.state === "suspended") a.resume();
-                      synthSfx(sfx.type, a, null, a.currentTime);
+                      const fire = () => synthSfx(sfx.type, a, null, a.currentTime);
+                      if (a.state === "suspended") a.resume().then(fire);
+                      else fire();
                     }
                   }
                 }
@@ -3269,8 +3424,10 @@ export default function SilenceCutter() {
   const [format, setFormat] = useState("landscape"); // "landscape" | "portrait" | "square"
   const [showReels, setShowReels] = useState(false);
   const [selectedStyle, setSelectedStyle] = useState(null);
+  const selectedStyleRef = useRef(null);
   const chooseStyle = useCallback((tmpl) => {
     setSelectedStyle(tmpl);
+    selectedStyleRef.current = tmpl;
     if (tmpl.format) setFormat(tmpl.format);
   }, []);
   const [sensitivity, setSensitivity] = useState("conservadora");
@@ -3299,6 +3456,13 @@ export default function SilenceCutter() {
           }
         );
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
+        // Pre-transcribir en paralelo si el estilo lo necesita — así cuando el editor abra
+        // ya tiene segmentos listos y runAutoCards va directo al paso de IA (sin esperar Whisper).
+        if (selectedStyleRef.current?.autoCards && !clip.segments?.length) {
+          transcribeClip(clip.file, silences).then(segs => {
+            if (segs?.length) setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments: segs, transcribed: true } : c));
+          }).catch(err => console.warn("[pre-transcribe]", err?.message));
+        }
       } catch (err) {
         console.error("Error analizando audio:", err);
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, analyzed: true, error: "No se pudo analizar el audio" } : c));
