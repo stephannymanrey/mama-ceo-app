@@ -1571,6 +1571,40 @@ function MusicPanel({ music, onMusicChange }) {
   );
 }
 
+// ── FontCarousel ─────────────────────────────────────────────────────────────
+const FONT_CATS = [
+  { id: "bold",    label: "Negrita" },
+  { id: "clean",   label: "Limpia"  },
+  { id: "cursive", label: "Script"  },
+  { id: "elegant", label: "Elegante"},
+];
+
+function FontCarousel({ value, onChange, label }) {
+  const initCat = CARD_FONTS.find(f => f.id === value)?.cat || "bold";
+  const [cat, setCat] = useState(initCat);
+  const filtered = CARD_FONTS.filter(f => f.cat === cat);
+  return (
+    <div className="sce-font-carousel">
+      {label && <label className="sce-card-label">{label}</label>}
+      <div className="sce-font-cat-tabs">
+        {FONT_CATS.map(c => (
+          <button key={c.id} className={`sce-font-cat-tab${cat === c.id ? " active" : ""}`}
+            onClick={() => setCat(c.id)}>{c.label}</button>
+        ))}
+      </div>
+      <div className="sce-font-scroll">
+        {filtered.map(f => (
+          <button key={f.id} className={`sce-font-card${value === f.id ? " active" : ""}`}
+            onClick={() => onChange(f.id)}>
+            <span className="sce-font-preview" style={{ fontFamily: `"${f.id}", sans-serif`, fontWeight: f.weight }}>Aa</span>
+            <span className="sce-font-name">{f.label}</span>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── CardsPanel ────────────────────────────────────────────────────────────
 function CardsPanel({ cards, onCardsChange, currentTime }) {
   const [expandedId, setExpandedId] = useState(null);
@@ -1690,27 +1724,15 @@ function CardsPanel({ cards, onCardsChange, currentTime }) {
                   </div>
                 </div>
 
-                <div className="sce-card-field">
-                  <label className="sce-card-label">Tipografía principal</label>
-                  <div className="sce-card-pills">
-                    {CARD_FONTS.map(f => (
-                      <button key={f.id} className={`sce-card-pill${(card.font || "Poppins") === f.id ? " active" : ""}`}
-                        style={{ fontFamily: `"${f.id}", sans-serif`, fontWeight: f.weight }}
-                        onClick={() => update(card.id, { font: f.id })}>{f.label}</button>
-                    ))}
-                  </div>
-                </div>
+                <FontCarousel
+                  label="Tipografía principal"
+                  value={card.font || "Poppins"}
+                  onChange={v => update(card.id, { font: v })} />
 
-                <div className="sce-card-field">
-                  <label className="sce-card-label">Tipografía de la palabra clave</label>
-                  <div className="sce-card-pills">
-                    {CARD_FONTS.map(f => (
-                      <button key={f.id} className={`sce-card-pill${(card.keywordFont || card.font || "Poppins") === f.id ? " active" : ""}`}
-                        style={{ fontFamily: `"${f.id}", sans-serif`, fontWeight: f.weight }}
-                        onClick={() => update(card.id, { keywordFont: f.id })}>{f.label}</button>
-                    ))}
-                  </div>
-                </div>
+                <FontCarousel
+                  label="Tipografía de la palabra clave"
+                  value={card.keywordFont || card.font || "Poppins"}
+                  onChange={v => update(card.id, { keywordFont: v })} />
 
                 <div className="sce-card-field">
                   <label className="sce-card-label">Color de resaltado</label>
@@ -3242,7 +3264,9 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         <div className="sce-right-panel">
           <div className="sce-tab-bar">
             <button className={`sce-tab${tab === "subs"  ? " active" : ""}`} onClick={() => setTab("subs")}  title="Subtítulos">💬 Texto</button>
-            <button className={`sce-tab${tab === "music" ? " active" : ""}`} onClick={() => setTab("music")} title="Música">🎵 Música</button>
+            <button className={`sce-tab${tab === "music" ? " active" : ""}`} onClick={() => setTab("music")} title="Música">
+              🎵 Música{music.url && tab !== "music" && <span className="sce-tab-dot" />}
+            </button>
             <button className={`sce-tab${tab === "cards" ? " active" : ""}`} onClick={() => setTab("cards")} title="Tarjetas IA">🃏 Cards</button>
             <button className={`sce-tab${tab === "sfx"   ? " active" : ""}`} onClick={() => setTab("sfx")}   title="Efectos de sonido">🔊 SFX</button>
             <button className={`sce-tab${tab === "trans" ? " active" : ""}`} onClick={() => setTab("trans")} title="Transiciones">🎬 Trans.</button>

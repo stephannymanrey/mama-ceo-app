@@ -3017,6 +3017,101 @@
   color: #fff;
 }
 
+/* ── Font Carousel ────────────────────────────────────────────────────────── */
+.sce-font-carousel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.sce-font-cat-tabs {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+.sce-font-cat-tab {
+  padding: 3px 11px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: transparent;
+  color: rgba(255,255,255,0.5);
+  font-size: 10px;
+  font-family: "Poppins", sans-serif;
+  cursor: pointer;
+  transition: all 0.12s;
+  white-space: nowrap;
+}
+.sce-font-cat-tab:hover { color: #fff; background: rgba(255,255,255,0.07); }
+.sce-font-cat-tab.active {
+  background: rgba(196,82,106,0.22);
+  border-color: #C4526A;
+  color: #fff;
+}
+.sce-font-scroll {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.12) transparent;
+}
+.sce-font-scroll::-webkit-scrollbar { height: 3px; }
+.sce-font-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+.sce-font-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 62px;
+  padding: 8px 6px 6px;
+  border-radius: 10px;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  cursor: pointer;
+  transition: all 0.12s;
+  flex-shrink: 0;
+}
+.sce-font-card:hover {
+  border-color: rgba(255,255,255,0.28);
+  background: rgba(255,255,255,0.08);
+}
+.sce-font-card.active {
+  border-color: #C4526A;
+  background: rgba(196,82,106,0.15);
+}
+.sce-font-preview {
+  font-size: 22px;
+  color: #fff;
+  line-height: 1;
+  display: block;
+}
+.sce-font-name {
+  font-size: 9px;
+  color: rgba(255,255,255,0.48);
+  font-family: "Poppins", sans-serif;
+  white-space: nowrap;
+  letter-spacing: 0.2px;
+}
+.sce-font-card.active .sce-font-name { color: #C4526A; }
+
+/* dot badge en tab de música cuando hay música activa */
+.sce-tab-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #C4526A;
+  margin-left: 4px;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+  animation: dotPulse 1.8s ease-in-out infinite;
+}
+@keyframes dotPulse {
+  0%,100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 /* ── SFX Panel ────────────────────────────────────────────────────────────── */
 .sfx-panel {
   display: flex;
