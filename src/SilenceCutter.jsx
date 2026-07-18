@@ -2479,7 +2479,6 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const playbarScrubDrag = useRef(false);
   const cardYDragRef     = useRef(null); // { cardId, startY, startYPos, canvasH, moved }
   useEffect(() => { effectiveTimeRef.current = effectiveTime; }, [effectiveTime]);
-  useEffect(() => { totalKeptRef.current = totalKept; }, [totalKept]);
   useEffect(() => { selectedSegRef.current = selectedSeg; }, [selectedSeg]);
 
   // Tarjeta activa en el tiempo actual (para drag Y y cursor)
@@ -2641,6 +2640,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   // Valores derivados
   const keptSegs   = useMemo(() => buildKeptSegments(clips), [clips]);
   const totalKept  = useMemo(() => Math.max(0.001, keptSegs.reduce((t, s) => t + s.end - s.start, 0)), [keptSegs]);
+  totalKeptRef.current = totalKept; // sync ref durante render (definición antes que uso)
   const nativePos  = useMemo(() => effectiveToNative(keptSegs, effectiveTime), [keptSegs, effectiveTime]);
 
   // Ctrl+B: divide el segmento actual en la posición del playhead (como CapCut)
