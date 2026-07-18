@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Logo from "./Logo";
+import { getAwsAuthToken } from "./lib/awsClient";
 import "./SilenceCutter.css";
 
 const REELS_API = "https://lq3avrfazlfuyaakkt5iwz54ym0aqxvv.lambda-url.us-east-1.on.aws/";
@@ -338,7 +339,7 @@ async function analyzeClip(file, noiseDb, minDuration, onProgress) {
       waveform: buildWaveform(channelData, 900),
       silences: detectSilences(channelData, audioBuf.sampleRate, noiseDb, minDuration, audioBuf.duration),
     };
-  } catch (_) {
+  } catch {
     // PATH MOBILE: análisis en tiempo real vía <video> + AnalyserNode
     // Funciona en iOS Safari — el video.muted=true permite autoplay sin gesto adicional
     return analyzeViaVideoElement(file, noiseDb, minDuration, onProgress);
@@ -365,7 +366,7 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
         return;
       }
 
-      try { await audioCtx.resume(); } catch (_) {}
+      try { await audioCtx.resume(); } catch {}
 
       // Conectar video → AnalyserNode (silencioso, sin speakers)
       const source = audioCtx.createMediaElementSource(video);
@@ -921,10 +922,10 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
 
       videoEl.addEventListener("loadedmetadata", async () => {
         let source;
-        try { source = audioCtx.createMediaElementSource(videoEl); source.connect(destination); } catch (_) {}
+        try { source = audioCtx.createMediaElementSource(videoEl); source.connect(destination); } catch {}
         const vW = videoEl.videoWidth || W, vH = videoEl.videoHeight || H;
         const scale = Math.min(outW / vW, outH / vH);
-        const dW = vW * scale, dH = vH * scale, dX = (outW - dW) / 2, dY = (outH - dH) / 2;
+        const dW = vW * scale, dH = vH * scale;
 
         const { autoZoom = false, zoomInterval = 4 } = effects;
         let animId;
@@ -993,7 +994,7 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
 
           if (videoEl.ended || ct >= dur - 0.1) {
             clearInterval(interval); cancelAnimationFrame(animId); videoEl.pause();
-            if (source) try { source.disconnect(); } catch (_) {}
+            if (source) try { source.disconnect(); } catch {}
             URL.revokeObjectURL(url); resolve();
           }
         }, 60);
@@ -1092,7 +1093,7 @@ async function recordSingleFragment(clip, start, end, onProgress, subtitleStyle 
     vid.src = url; vid.crossOrigin = "anonymous";
     vid.addEventListener("loadedmetadata", async () => {
       let src;
-      try { src = audioCtx.createMediaElementSource(vid); src.connect(destination); } catch (_) {}
+      try { src = audioCtx.createMediaElementSource(vid); src.connect(destination); } catch {}
       const vW = vid.videoWidth || W, vH = vid.videoHeight || H;
       const scale = Math.min(outW / vW, outH / vH);
       const dW = vW * scale, dH = vH * scale, dX = (outW - dW) / 2, dY = (outH - dH) / 2;
@@ -1133,7 +1134,7 @@ async function recordSingleFragment(clip, start, end, onProgress, subtitleStyle 
         if (onProgress) onProgress(Math.min(1, (ct - start) / segDuration));
         if (ct >= end - 0.05 || vid.ended) {
           clearInterval(interval); cancelAnimationFrame(animId); vid.pause();
-          if (src) try { src.disconnect(); } catch (_) {}
+          if (src) try { src.disconnect(); } catch {}
           URL.revokeObjectURL(url); resolve();
         }
       }, 50);
@@ -1881,9 +1882,8 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
     onEffectChange({
       transition: effects.transition, transitionSecs: effects.transitionSecs,
       bokeh: effects.bokeh,
-      skin: effects.skin,              // piel es independiente del preset
       ...preset.values,
-      skin: effects.skin,              // asegurar que piel no la pise el preset
+      skin: effects.skin,              // piel es independiente del preset — el preset nunca la pisa
       _preset: preset.id,
     });
   };
@@ -1995,7 +1995,7 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
 }
 
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, toggleSilence, onAnalyze, format, onFormatChange, onExtractReels, sensitivity, onReanalyze, onCutSeg }) {
+function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg }) {
   const canvasRef    = useRef(null);
   const playRef      = useRef(false);
   const subListRef   = useRef(null);
@@ -2081,11 +2081,11 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       if (blocking) {
         mask = await new Promise(res => {
           maskCbRef.current = res;
-          try { seg.send({ image: vid }); } catch (_) { res(null); }
+          try { seg.send({ image: vid }); } catch { res(null); }
         });
       } else {
         mask = maskRef.current;
-        try { seg.send({ image: vid }); } catch (_) {}
+        try { seg.send({ image: vid }); } catch {}
       }
 
       // Persona (sharp + color) + overlay de piel, todo recortado con mask
@@ -2695,24 +2695,24 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
 
   const run = useCallback(async () => {
     if (!clip) return;
+    // Extraer Reels llama a un modelo de IA que cuesta dinero por uso — a
+    // diferencia de cortar silencios/exportar (100% en el navegador, gratis
+    // para nosotros), esto sí requiere sesión para que cuente contra el
+    // límite mensual real del plan de la usuaria, no un tope genérico
+    // compartido entre cualquiera que abra la app.
+    const token = await getAwsAuthToken();
+    if (!token) { setPhase("needsAuth"); return; }
     setPhase("transcribing"); setMsg("Transcribiendo video con IA...");
 
     // 1. Transcribir si no hay segmentos
     let segments = clip.segments?.length ? clip.segments : null;
     if (!segments) {
       try {
-        const asr = await loadTranscriber(info => {
+        setMsg("Transcribiendo...");
+        segments = await transcribeClip(clip.file, clip.silences || [], info => {
           if (info.status === "downloading")
             setMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
         });
-        setMsg("Transcribiendo...");
-        const { audio, mappingRanges } = await getKeptAudioMono16k(clip.file, clip.silences || []);
-        const result = await asr(audio, { language: "spanish", task: "transcribe", return_timestamps: "word", chunk_length_s: 30, stride_length_s: 5 });
-        segments = (result.chunks || []).map(c => ({
-          word: c.text.replace(/^\s+/, ""),
-          start: mapCondensedToOriginal(c.timestamp[0] ?? 0, mappingRanges),
-          end:   mapCondensedToOriginal(c.timestamp[1] ?? ((c.timestamp[0] ?? 0) + 0.5), mappingRanges),
-        })).filter(s => s.word);
       } catch {
         setPhase("error"); setMsg("Error en la transcripción. Intenta de nuevo."); return;
       }
@@ -2731,15 +2731,15 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
     try {
       const res = await fetch(REELS_API, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           type: "extractReels",
-          publicEmail: "app@mamaceo.co",
           transcription: parts.join(" "),
           duration: clip.duration || 0,
         }),
       });
       const data = await res.json();
+      if (res.status === 429) throw new Error(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
       if (!data.fragmentos?.length) throw new Error("Sin fragmentos");
       // Clamp timestamps to clip duration
       const dur = clip.duration || Infinity;
@@ -2749,8 +2749,8 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
         fin:    Math.max(f.inicio + 5, Math.min(f.fin, dur)),
       })));
       setPhase("ready"); setMsg("");
-    } catch {
-      setPhase("error"); setMsg("Error al analizar. Intenta de nuevo.");
+    } catch (err) {
+      setPhase("error"); setMsg(err.message || "Error al analizar. Intenta de nuevo.");
     }
   }, [clip]);
 
@@ -2808,6 +2808,25 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
             ✨ Analizar con IA
           </button>
           {!clip && <p style={{ color: "#C4526A", marginTop: 8, fontSize: 13 }}>Analiza un clip en el editor primero.</p>}
+        </div>
+      )}
+
+      {/* Requiere sesión — Extraer Reels usa IA que cuesta por uso, a diferencia
+          del resto del editor que es gratis y corre en tu navegador */}
+      {phase === "needsAuth" && (
+        <div className="sce-reel-intro">
+          <div className="sce-reel-intro-icon">🔒</div>
+          <h3 className="sce-reel-intro-h">Inicia sesión para usar Extraer Reels con IA</h3>
+          <p className="sce-reel-intro-p">
+            Cortar silencios y exportar tu video siguen siendo gratis. Extraer Reels con IA es parte de tu cuenta de MamáCEO —
+            inicia sesión (se abre en una pestaña nueva para no perder tu edición actual) y vuelve a intentarlo.
+          </p>
+          <a className="sce-reel-start-btn" href="/" target="_blank" rel="noopener noreferrer" style={{ textDecoration: "none", display: "inline-block" }}>
+            Iniciar sesión →
+          </a>
+          <button type="button" onClick={() => setPhase("idle")} style={{ display: "block", margin: "12px auto 0", border: "none", background: "none", color: "var(--muted)", cursor: "pointer", fontSize: 13 }}>
+            Volver
+          </button>
         </div>
       )}
 
@@ -2917,6 +2936,7 @@ export default function SilenceCutter() {
         );
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
       } catch (err) {
+        console.error("Error analizando audio:", err);
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, analyzed: true, error: "No se pudo analizar el audio" } : c));
       }
     }
