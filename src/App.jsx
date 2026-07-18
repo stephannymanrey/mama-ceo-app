@@ -7871,8 +7871,8 @@ function LineChart({ movements }) {
           <button type="button" onClick={() => onBack ? onBack() : setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Volver</button>
         </div>
         <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
-          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 5 de junio de 2026</p>
-          
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 18 de julio de 2026</p>
+
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Aceptación de los Términos</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Al acceder y utilizar Mamá CEO App, aceptas estar sujeto a estos Términos y Condiciones. Si no estás de acuerdo con alguna parte de estos términos, no deberías usar la aplicación.</p>
 
@@ -7913,7 +7913,16 @@ function LineChart({ movements }) {
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Ley Aplicable y Jurisdicción</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Estos Términos se regirán e interpretarán de acuerdo con las leyes de la República de Colombia. Cualquier disputa relacionada con estos Términos estará sujeta a la jurisdicción exclusiva del Centro de Arbitraje y Conciliación de la Cámara de Comercio de Bogotá.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Herramienta de Análisis de Estilo Visual</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Mamá CEO App ofrece una función que permite analizar el estilo visual de edición de un video de referencia mediante inteligencia artificial. Al usar esta función, aceptas lo siguiente:</p>
+          <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
+            <li><strong>Responsabilidad sobre el contenido cargado:</strong> Eres la única responsable de contar con los permisos, licencias o derechos necesarios sobre cualquier archivo de video que cargues para análisis. UMP S.A.S no se hace responsable por el uso de material de terceros sin autorización.</li>
+            <li><strong>No se almacenan videos de referencia:</strong> Los archivos de video que subas para análisis de estilo son procesados en memoria y no son almacenados, distribuidos ni conservados en nuestros servidores. Los fotogramas extraídos se envían cifrados a nuestro servicio de IA y se descartan una vez finalizado el análisis.</li>
+            <li><strong>Análisis de patrones estéticos, no de contenido:</strong> La herramienta detecta únicamente elementos abstractos de estilo visual —como paleta de color, ritmo de edición, tipo de transiciones y uso de desenfoque— que no están protegidos por derechos de autor. No se reproduce, copia ni redistribuye ningún fragmento del video original.</li>
+            <li><strong>Uso legítimo:</strong> Esta función está diseñada para inspiración creativa y aprendizaje. No debes usarla para infringir derechos de propiedad intelectual, vulnerar la privacidad de terceros ni para cualquier fin que contravenga las leyes aplicables.</li>
+          </ul>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>13. Contacto</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre estos Términos y Condiciones, puedes contactarnos a través de:</p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S</strong></p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
@@ -7931,8 +7940,8 @@ function LineChart({ movements }) {
           <button type="button" onClick={() => onBack ? onBack() : setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Volver</button>
         </div>
         <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
-          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 5 de junio de 2026</p>
-          
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 18 de julio de 2026</p>
+
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Introducción</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>En UMP S.A.S, operadores de Mamá CEO App, nos comprometemos a proteger tu privacidad y tus datos personales. Esta Política de Privacidad explica cómo recopilamos, usamos, compartimos y protegemos tu información personal de acuerdo con la Ley 1581 de 2012 de Protección de Datos Personales de Colombia y el Reglamento General de Protección de Datos (GDPR) cuando aplique.</p>
 
