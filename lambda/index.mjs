@@ -946,13 +946,17 @@ async function handleAnalyzeStyle(body, event, userId) {
   const { frames, format, duration } = body;
   if (!frames?.length) return respond(400, { error: "Falta frames" }, event);
 
-  const { plan, usage } = await getUserPlanAndUsage(userId);
-  const mk = monthKey();
-  const currentCount = usage[mk] || 0;
-  const limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
-  if (currentCount >= limit) {
-    return respond(429, { error: "limite_alcanzado", usage: currentCount, limit, plan,
-      message: `Llegaste al límite de ${limit} generaciones este mes.` }, event);
+  let plan = "free", usage = {}, currentCount = 0, limit = 99999;
+  if (userId) {
+    const r = await getUserPlanAndUsage(userId);
+    plan = r.plan; usage = r.usage;
+    const mk = monthKey();
+    currentCount = usage[mk] || 0;
+    limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+    if (currentCount >= limit) {
+      return respond(429, { error: "limite_alcanzado", usage: currentCount, limit, plan,
+        message: `Llegaste al límite de ${limit} generaciones este mes.` }, event);
+    }
   }
 
   const imageContent = frames.slice(0, 3).map(f => ({
@@ -972,7 +976,7 @@ async function handleAnalyzeStyle(body, event, userId) {
 Formato: ${formatLabel} | Duración: ${Math.round(duration || 0)}s
 
 Devuelve SOLO JSON válido, sin texto extra:
-{"videoPreset":"warm|natural|vibrant|fresh|cinema|none","musicGenre":"motivacional|calmante|energetico|corporativo","hasCards":true/false,"cardPosition":"fullscreen|pill","format":"${format || "portrait"}","editingVibe":"descripción estilo 5-7 palabras español","colorDesc":"descripción colores 3-5 palabras español"}
+{"videoPreset":"warm|natural|vibrant|fresh|cinema|none","musicGenre":"motivacional|calmante|energetico|corporativo","hasCards":true/false,"cardPosition":"fullscreen|pill","format":"${format || "portrait"}","editingVibe":"descripción estilo 5-7 palabras español","colorDesc":"descripción colores 3-5 palabras español","bokeh":true/false,"transition":"cut|smooth|zoom|fade","editingPace":"fast|medium|slow"}
 
 Criterios videoPreset:
 - warm: tonos dorados/cálidos/naranjas/rosados
@@ -989,7 +993,11 @@ Criterios musicGenre:
 - corporativo: profesional y sutil para negocios/educación
 
 hasCards: true si hay texto/tarjetas sobre el video (NO solo subtítulos en la parte baja)
-cardPosition: fullscreen si las tarjetas cubren toda la pantalla, pill si son pequeñas/acotadas`,
+cardPosition: fullscreen si las tarjetas cubren toda la pantalla, pill si son pequeñas/acotadas
+
+bokeh: true si el fondo aparece borroso/difuminado (efecto depth-of-field/bokeh)
+transition: cut=cortes directos sin transición, smooth=fundidos suaves, zoom=zoom in/out entre clips, fade=fundido a negro
+editingPace: fast=clips muy cortos (<2s, ritmo rápido), slow=clips largos (>5s, reflexivo), medium=ritmo normal`,
       },
     ],
   }];
@@ -1020,9 +1028,11 @@ cardPosition: fullscreen si las tarjetas cubren toda la pantalla, pill si son pe
     return respond(502, { error: "Respuesta no válida. Intenta de nuevo." }, event);
   }
 
-  const updatedUsage = { ...usage, [mk]: currentCount + 1 };
-  try { await saveUsage(userId, updatedUsage); } catch {}
-  return respond(200, { analysis, usage: currentCount + 1, limit, plan }, event);
+  if (userId) {
+    const mk = monthKey();
+    try { await saveUsage(userId, { ...usage, [mk]: currentCount + 1 }); } catch {}
+  }
+  return respond(200, { analysis }, event);
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────
@@ -1044,6 +1054,10 @@ export const handler = async (event) => {
   if (body.type === "dofa" && body.publicEmail) {
     return handleDofa(body, event);
   }
+  // Ruta semi-pública: análisis de estilo visual — funciona sin JWT, tracking opcional
+  if (body.type === "analyzeStyle") {
+    return handleAnalyzeStyle(body, event, getUserId(event) || null);
+  }
 
   const userId = getUserId(event);
   if (!userId) return respond(401, { error: "No autorizada" }, event);
@@ -1057,9 +1071,6 @@ export const handler = async (event) => {
   }
   if (body.type === "generateCards") {
     return handleGenerateCards(body, event, userId);
-  }
-  if (body.type === "analyzeStyle") {
-    return handleAnalyzeStyle(body, event, userId);
   }
 
   const { type, context } = body;

@@ -381,23 +381,8 @@ const STYLE_TEMPLATES = [
     id: "none",
     emoji: "✂️",
     label: "Editor libre",
-    desc: "Corta silencios y edita todo a tu manera, sin tarjetas automáticas.",
+    desc: "Corta silencios y edita todo a tu manera. Sin tarjetas automáticas — tú controlas cada ajuste.",
     autoCards: false,
-  },
-  {
-    id: "editorial",
-    emoji: "📰",
-    label: "Editorial / Documental",
-    desc: "Tarjetas de texto a pantalla completa entre cada punto clave, tipografía bold y sonido de clic — como una revista.",
-    autoCards: true,
-    format: "portrait",
-    cardFont: "Anton",
-    cardAnimation: "zoom",
-    cardPosition: "fullscreen",
-    cardColorCycle: [2, 0, 1, 3],
-    cardDuration: 3,
-    musicGenre: "motivacional",
-    videoPreset: "warm",
   },
 ];
 
@@ -2462,9 +2447,16 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       const tracks = MUSIC_LIBRARY.filter(t => t.genre === style.musicGenre);
       if (tracks.length) {
         const track = tracks[Math.floor(Math.random() * tracks.length)];
-        // Volumen bajo (0.12) para no tapar la voz — duck bajará más mientras habla
         setMusic({ url: track.url, name: track.name, volume: 0.12, duck: true, loop: true, fromLibrary: true });
       }
+    }
+    if (style.isCloned) {
+      const bokehVal = style.bokeh === true ? 50 : (typeof style.bokeh === "number" ? style.bokeh : 0);
+      const transVal = style.transition && style.transition !== "none" ? style.transition : undefined;
+      const extra = { bokeh: bokehVal };
+      if (transVal) extra.transition = transVal;
+      setEffects(e => ({ ...e, ...extra }));
+      effectsRef.current = { ...effectsRef.current, ...extra };
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -3642,13 +3634,12 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
       setMsg("Extrayendo frames del video...");
       const { frames, format, duration } = await extractVideoFrames(file);
 
-      const token = await getAwsAuthToken();
-      if (!token) { setPhase("needsAuth"); return; }
-
       setMsg("Analizando estilo con IA...");
+      const reqHeaders = { "Content-Type": "application/json" };
+      try { const t = await getAwsAuthToken(); if (t) reqHeaders.Authorization = `Bearer ${t}`; } catch {}
       const res = await fetch(REELS_API, {
         method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        headers: reqHeaders,
         body: JSON.stringify({ type: "analyzeStyle", frames, format, duration }),
       });
       const data = await res.json();
@@ -3671,12 +3662,15 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
       emoji: "📱",
       label: "Estilo clonado",
       desc: analysis.editingVibe || "Estilo detectado automáticamente",
-      videoPreset: analysis.videoPreset || "natural",
-      musicGenre:  analysis.musicGenre  || "motivacional",
-      autoCards:   analysis.hasCards    || false,
-      cardPosition: analysis.cardPosition || "pill",
-      format:      analysis.format      || "portrait",
-      isCloned:    true,
+      videoPreset:   analysis.videoPreset   || "natural",
+      musicGenre:    analysis.musicGenre    || "motivacional",
+      autoCards:     analysis.hasCards      || false,
+      cardPosition:  analysis.cardPosition  || "pill",
+      format:        analysis.format        || "portrait",
+      bokeh:         analysis.bokeh         || false,
+      transition:    analysis.transition    || "none",
+      sensitivity:   analysis.editingPace === "fast" ? "agresiva" : analysis.editingPace === "slow" ? "relajada" : "conservadora",
+      isCloned:      true,
     };
     onAnalyzed(style);
   };
@@ -3787,6 +3781,33 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
                       <p className="sce-ref-result-val">{analysis.hasCards ? `Tarjetas ${analysis.cardPosition === "fullscreen" ? "a pantalla completa" : "superpuestas"}` : "Solo subtítulos"}</p>
                     </div>
                   </div>
+                  {analysis.editingPace && (
+                    <div className="sce-ref-result-item">
+                      <span className="sce-ref-result-icon">{analysis.editingPace === "fast" ? "⚡" : analysis.editingPace === "slow" ? "🐢" : "🎬"}</span>
+                      <div>
+                        <p className="sce-ref-result-key">Ritmo</p>
+                        <p className="sce-ref-result-val">{analysis.editingPace === "fast" ? "Rápido / dinámico" : analysis.editingPace === "slow" ? "Pausado / reflexivo" : "Moderado"}</p>
+                      </div>
+                    </div>
+                  )}
+                  {analysis.transition && analysis.transition !== "cut" && (
+                    <div className="sce-ref-result-item">
+                      <span className="sce-ref-result-icon">🔀</span>
+                      <div>
+                        <p className="sce-ref-result-key">Transiciones</p>
+                        <p className="sce-ref-result-val">{{ smooth: "Suaves / fundidos", zoom: "Zoom in/out", fade: "Fade to black" }[analysis.transition] || analysis.transition}</p>
+                      </div>
+                    </div>
+                  )}
+                  {analysis.bokeh && (
+                    <div className="sce-ref-result-item">
+                      <span className="sce-ref-result-icon">🌸</span>
+                      <div>
+                        <p className="sce-ref-result-key">Fondo</p>
+                        <p className="sce-ref-result-val">Bokeh / fondo difuminado</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <button className="sce-ref-apply-btn" onClick={applyStyle}>
                   Aplicar este estilo a mi video →
@@ -4055,6 +4076,7 @@ export default function SilenceCutter() {
           setSelectedStyle(styleConfig);
           selectedStyleRef.current = styleConfig;
           if (styleConfig.format) setFormat(styleConfig.format);
+          if (styleConfig.sensitivity) setSensitivity(styleConfig.sensitivity);
           setCloneMode(false);
         }}
         onBack={() => setCloneMode(false)}

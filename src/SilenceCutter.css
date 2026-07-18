@@ -3362,8 +3362,8 @@
   padding: 20px;
 }
 .sce-ref-drop:hover { border-color: #C4526A; background: #fef5f7; }
-.sce-ref-drop.has-file { padding: 0; border-style: solid; border-color: #C4526A; }
-.sce-ref-video-preview { width: 100%; height: 100%; object-fit: cover; max-height: 320px; border-radius: 14px; }
+.sce-ref-drop.has-file { padding: 0; border-style: solid; border-color: #C4526A; min-height: unset; }
+.sce-ref-video-preview { width: 100%; height: auto; object-fit: contain; max-height: 480px; border-radius: 14px; display: block; }
 .sce-ref-drop-icon { font-size: 40px; }
 .sce-ref-drop-text { font-size: 15px; font-weight: 600; color: #1a1a2e; }
 .sce-ref-drop-hint { font-size: 12px; color: #999; }
