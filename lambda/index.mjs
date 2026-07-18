@@ -870,6 +870,76 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
   return respond(200, { fragmentos, usage: currentCount + 1, limit, plan }, event);
 }
 
+async function handleGenerateCards(body, event, userId) {
+  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
+  const { transcription, duration } = body;
+  if (!transcription?.trim()) return respond(400, { error: "Falta transcripción" }, event);
+
+  const { plan, usage } = await getUserPlanAndUsage(userId);
+  const mk = monthKey();
+  const currentCount = usage[mk] || 0;
+  const limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+  if (currentCount >= limit) {
+    return respond(429, { error: "limite_alcanzado", usage: currentCount, limit, plan,
+      message: `Llegaste al límite de ${limit} generaciones este mes.` }, event);
+  }
+
+  const durSec = Math.round(duration || 0);
+  const maxCards = durSec < 60 ? 3 : durSec < 180 ? 4 : 6;
+
+  const prompt = `Eres editora de video experta en el estilo "editorial/documental" para Reels y TikTok: video de una persona hablando a cámara, interrumpido por tarjetas de texto a pantalla completa que marcan cada punto o capítulo clave (como un titular de revista).
+
+Video de ${durSec} segundos. Transcripción con timestamps en segundos:
+
+${transcription}
+
+Sugiere entre 3 y ${maxCards} tarjetas de texto para este video. Criterios:
+- Cada tarjeta marca el inicio de un punto, idea o capítulo nuevo — no un resumen genérico
+- Texto corto y directo: máximo 6 palabras, como un titular
+- keyword: UNA palabra o frase corta dentro de "texto" que se debe destacar visualmente (o "" si no aplica)
+- startTime: el segundo exacto (según los timestamps) donde debe aparecer la tarjeta, coincidiendo con el inicio de esa idea
+- Deja al menos 4 segundos entre el startTime de una tarjeta y la siguiente
+- No pongas una tarjeta en los primeros 2 segundos del video
+
+Responde SOLO JSON válido, sin texto extra, sin markdown:
+[{"texto":"string (máx 6 palabras)","keyword":"string o vacío","startTime":number}]`;
+
+  let rawText;
+  try {
+    rawText = await callClaude(prompt, 800, "[");
+  } catch (err) {
+    console.error("[generateCards] callClaude error:", err.message);
+    return respond(502, { error: "Error al generar las tarjetas. Intenta de nuevo." }, event);
+  }
+
+  let tarjetas;
+  try {
+    let txt = rawText.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+    const si = txt.indexOf("["), ei = txt.lastIndexOf("]");
+    if (si === -1 || ei === -1) throw new Error("No JSON array");
+    tarjetas = JSON.parse(txt.slice(si, ei + 1));
+    tarjetas = tarjetas.filter(t =>
+      typeof t.texto === "string" && t.texto.trim() &&
+      typeof t.startTime === "number" && t.startTime >= 0 &&
+      (!duration || t.startTime < duration)
+    ).map(t => ({
+      texto: t.texto.trim().slice(0, 80),
+      keyword: typeof t.keyword === "string" ? t.keyword.trim().slice(0, 40) : "",
+      startTime: Math.round(t.startTime * 10) / 10,
+    }));
+    if (!tarjetas.length) throw new Error("Sin tarjetas válidas");
+  } catch (err) {
+    console.error("[generateCards] parse error:", err.message, rawText?.slice(0, 300));
+    return respond(502, { error: "No se pudo interpretar la respuesta. Intenta de nuevo." }, event);
+  }
+
+  const updatedUsage = { ...usage, [mk]: currentCount + 1 };
+  try { await saveUsage(userId, updatedUsage); }
+  catch (err) { console.warn("No se pudo guardar contador:", err); }
+
+  return respond(200, { tarjetas, usage: currentCount + 1, limit, plan }, event);
+}
+
 // ─── Handler ──────────────────────────────────────────────────────────────
 export const handler = async (event) => {
   const method = event?.requestContext?.http?.method || event?.httpMethod || "POST";
@@ -899,6 +969,9 @@ export const handler = async (event) => {
   // real del plan de la usuaria en vez de un tope genérico compartido.
   if (body.type === "extractReels") {
     return handleExtractReels(body, event, userId);
+  }
+  if (body.type === "generateCards") {
+    return handleGenerateCards(body, event, userId);
   }
 
   const { type, context } = body;

@@ -207,7 +207,50 @@ const CARD_ANIMS = [
   { id: "slideUp",    label: "↑ Subir"   },
   { id: "fade",       label: "◐ Fade"    },
   { id: "typewriter", label: "⌨ Máquina" },
+  { id: "zoom",       label: "⊕ Zoom"    },
 ];
+const CARD_FONTS = [
+  { id: "Poppins",          label: "Redondeada", weight: 800, preview: "Aa" },
+  { id: "Anton",            label: "Impacto",    weight: 400, preview: "Aa" },
+  { id: "Permanent Marker", label: "Manuscrita", weight: 400, preview: "Aa" },
+];
+
+// Estilos de edición predefinidos: eligiendo uno, la herramienta aplica
+// automáticamente tarjetas (vía IA) con la tipografía/color/animación del
+// estilo. "none" preserva el editor 100% manual.
+const STYLE_TEMPLATES = [
+  {
+    id: "none",
+    emoji: "✂️",
+    label: "Editor libre",
+    desc: "Corta silencios y edita todo a tu manera, sin tarjetas automáticas.",
+    autoCards: false,
+  },
+  {
+    id: "editorial",
+    emoji: "📰",
+    label: "Editorial / Documental",
+    desc: "Tarjetas de texto a pantalla completa entre cada punto clave, tipografía bold y sonido de clic — como una revista.",
+    autoCards: true,
+    format: "portrait",
+    cardFont: "Anton",
+    cardAnimation: "zoom",
+    cardPosition: "fullscreen",
+    cardColorCycle: [2, 0, 1, 3],
+    cardDuration: 3,
+  },
+];
+
+// Formatea transcripción con timestamp cada 8 palabras — formato que espera
+// el prompt del backend para generar tarjetas automáticas.
+function buildTimestampedTranscript(segments) {
+  const parts = [];
+  segments.forEach((s, i) => {
+    if (i % 8 === 0) parts.push(`[${Math.round(s.start)}s]`);
+    parts.push(s.word);
+  });
+  return parts.join(" ");
+}
 
 // Presets de edición automática
 const VIDEO_PRESETS = [
@@ -650,6 +693,15 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
   ctx.restore();
 }
 
+// Envolvente de zoom: entra en "pop" (0.85→1.0) y se contrae un poco antes
+// de salir — imita el estilo "tarjeta editorial".
+function cardZoomScale(elapsed, duration) {
+  const growEase = 1 - (1 - Math.min(1, elapsed / 0.3)) ** 3;
+  const shrinkStart = duration - 0.3;
+  const shrinkT = elapsed > shrinkStart ? Math.min(1, (elapsed - shrinkStart) / 0.3) : 0;
+  return (0.85 + growEase * 0.15) * (1 - shrinkT * 0.08);
+}
+
 function drawCards(ctx, W, H, effectiveTime, cards) {
   if (!cards?.length) return;
   for (const card of cards) {
@@ -660,24 +712,83 @@ function drawCards(ctx, W, H, effectiveTime, cards) {
 
     const colors = CARD_BG_OPTIONS[card.colorIdx ?? 0] ?? CARD_BG_OPTIONS[0];
     const font = card.font || "Poppins";
+    const fontWeight = CARD_FONTS.find(f => f.id === font)?.weight ?? 800;
+    const isFullscreen = card.position === "fullscreen";
+    const kw = (card.keyword || "").toLowerCase().trim();
+
+    let visibleText = card.text || "";
+    if (card.animation === "typewriter") visibleText = visibleText.slice(0, Math.floor(elapsed * 28));
+    if (!visibleText.trim()) continue;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.textBaseline = "middle";
+
+    let slideY = 0, scale = 1;
+    if (card.animation === "slideUp") {
+      const ease = 1 - (1 - Math.min(1, elapsed / 0.35)) ** 3;
+      slideY = (1 - ease) * 50;
+    } else if (card.animation === "zoom") {
+      scale = cardZoomScale(elapsed, card.duration);
+    }
+
+    if (isFullscreen) {
+      ctx.fillStyle = colors.bg;
+      ctx.fillRect(0, 0, W, H);
+
+      const maxW = W * 0.82;
+      const maxBlockH = H * 0.55;
+      let fs = Math.floor(H / 6.2);
+      let lines = [];
+      while (fs > 24) {
+        ctx.font = `${fontWeight} ${fs}px "${font}", sans-serif`;
+        const words = visibleText.split(/\s+/).filter(Boolean);
+        lines = []; let line = [], lineW = 0;
+        for (const w of words) {
+          const ww = ctx.measureText(w + " ").width;
+          if (lineW + ww > maxW && line.length) { lines.push(line); line = [w]; lineW = ww; }
+          else { line.push(w); lineW += ww; }
+        }
+        if (line.length) lines.push(line);
+        const lh2 = fs * 1.18;
+        if (lines.length * lh2 <= maxBlockH) break;
+        fs -= 4;
+      }
+      if (!lines.length) { ctx.restore(); continue; }
+      const lh = fs * 1.18;
+      const totalH = lines.length * lh;
+      const cx = W / 2, cy = H / 2 + slideY;
+
+      ctx.translate(cx, cy);
+      ctx.scale(scale, scale);
+      ctx.translate(-cx, -cy);
+
+      lines.forEach((lineWords, li) => {
+        const lineText = lineWords.join(" ");
+        const lineW2 = ctx.measureText(lineText).width;
+        let tx = cx - lineW2 / 2;
+        const ty = cy - totalH / 2 + li * lh + lh / 2;
+        for (let wi = 0; wi < lineWords.length; wi++) {
+          const word = lineWords[wi];
+          const clean = word.toLowerCase().replace(/[¿?¡!.,;:]/g, "");
+          const isKw = kw && clean === kw;
+          const wordText = word + (wi < lineWords.length - 1 ? " " : "");
+          const ww = ctx.measureText(wordText).width;
+          ctx.fillStyle = isKw ? colors.kw : colors.text;
+          ctx.fillText(wordText, tx, ty);
+          tx += ww;
+        }
+      });
+      ctx.restore();
+      continue;
+    }
+
+    // Modo píldora flotante
     const fs = Math.max(18, Math.floor(H / 11));
     const lh = Math.round(fs * 1.45);
     const padX = 22, padY = 14, borderR = 14;
     const maxW = W * 0.86;
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.font = `700 ${fs}px "${font}", sans-serif`;
-    ctx.textBaseline = "middle";
-
-    let slideY = 0;
-    if (card.animation === "slideUp") {
-      const ease = 1 - (1 - Math.min(1, elapsed / 0.35)) ** 3;
-      slideY = (1 - ease) * 50;
-    }
-
-    let visibleText = card.text || "";
-    if (card.animation === "typewriter") visibleText = visibleText.slice(0, Math.floor(elapsed * 28));
+    ctx.font = `${fontWeight} ${fs}px "${font}", sans-serif`;
 
     const words = visibleText.split(/\s+/).filter(Boolean);
     const lines = [];
@@ -697,12 +808,16 @@ function drawCards(ctx, W, H, effectiveTime, cards) {
     const cardX = (W - cardW) / 2;
     const cardY = yCenter - totalH / 2 + slideY;
 
+    if (scale !== 1) {
+      const scx = cardX + cardW / 2, scy = cardY + totalH / 2;
+      ctx.translate(scx, scy); ctx.scale(scale, scale); ctx.translate(-scx, -scy);
+    }
+
     ctx.fillStyle = colors.bg;
     ctx.beginPath();
     ctx.roundRect(cardX, cardY, cardW, totalH, borderR);
     ctx.fill();
 
-    const kw = (card.keyword || "").toLowerCase().trim();
     lines.forEach((lineWords, li) => {
       const lineW2 = ctx.measureText(lineWords.join(" ")).width;
       let tx = cardX + (cardW - lineW2) / 2;
@@ -1377,8 +1492,8 @@ function CardsPanel({ cards, onCardsChange, currentTime }) {
               <div className="sce-card-editor">
 
                 {/* Preview visual */}
-                <div className="sce-card-preview-wrap" style={{ background: colors.bg }}>
-                  <p className="sce-card-preview-text" style={{ color: colors.text }}>
+                <div className={`sce-card-preview-wrap${card.position === "fullscreen" ? " sce-card-preview-wrap--full" : ""}`} style={{ background: colors.bg }}>
+                  <p className="sce-card-preview-text" style={{ color: colors.text, fontFamily: `"${card.font || "Poppins"}", sans-serif`, fontWeight: CARD_FONTS.find(f => f.id === (card.font || "Poppins"))?.weight ?? 800 }}>
                     {(card.text || "Texto de la tarjeta").split(/\s+/).map((word, i) => {
                       const clean = word.toLowerCase().replace(/[¿?¡!.,;:]/g, "");
                       return kw && clean === kw
@@ -1429,6 +1544,17 @@ function CardsPanel({ cards, onCardsChange, currentTime }) {
                   </div>
                 </div>
 
+                <div className="sce-card-field">
+                  <label className="sce-card-label">Tipografía</label>
+                  <div className="sce-card-pills">
+                    {CARD_FONTS.map(f => (
+                      <button key={f.id} className={`sce-card-pill${(card.font || "Poppins") === f.id ? " active" : ""}`}
+                        style={{ fontFamily: `"${f.id}", sans-serif`, fontWeight: f.weight }}
+                        onClick={() => update(card.id, { font: f.id })}>{f.label}</button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="sce-card-2col">
                   <div className="sce-card-field">
                     <label className="sce-card-label">Animación</label>
@@ -1442,7 +1568,7 @@ function CardsPanel({ cards, onCardsChange, currentTime }) {
                   <div className="sce-card-field">
                     <label className="sce-card-label">Posición</label>
                     <div className="sce-card-pills">
-                      {[["top","↑"],["center","·"],["bottom","↓"]].map(([p, l]) => (
+                      {[["top","↑"],["center","·"],["bottom","↓"],["fullscreen","⛶ Completa"]].map(([p, l]) => (
                         <button key={p} className={`sce-card-pill${card.position === p ? " active" : ""}`}
                           onClick={() => update(card.id, { position: p })}>{l}</button>
                       ))}
@@ -1995,7 +2121,7 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
 }
 
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg }) {
+function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg, style }) {
   const canvasRef    = useRef(null);
   const playRef      = useRef(false);
   const subListRef   = useRef(null);
@@ -2036,6 +2162,11 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   useEffect(() => { sfxRef.current = sfxList; }, [sfxList]);
   const [sfxPanelOpen, setSfxPanelOpen] = useState(false);
   const sfxActxRef = useRef(null);
+
+  // Estado de generación automática de tarjetas (estilo editorial)
+  const autoCardTriedRef = useRef(false);
+  const [autoCardState, setAutoCardState] = useState("idle"); // idle|needsAuth|working|done|error
+  const [autoCardMsg, setAutoCardMsg] = useState("");
 
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
   useEffect(() => { effectsRef.current = effects; }, [effects]);
@@ -2351,6 +2482,81 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     setTranscribeMsg("");
   }, [clips, setClips]);
 
+  // Genera tarjetas automáticas con IA según el estilo elegido
+  const runAutoCards = useCallback(async () => {
+    autoCardTriedRef.current = true;
+    setAutoCardState("working"); setAutoCardMsg("Comprobando tu sesión...");
+    const token = await getAwsAuthToken();
+    if (!token) { setAutoCardState("needsAuth"); setAutoCardMsg(""); return; }
+
+    const ready = clips.filter(c => c.analyzed && !c.error);
+    if (!ready.length) { autoCardTriedRef.current = false; setAutoCardState("idle"); return; }
+
+    const generated = [];
+    let colorStep = 0;
+    for (const clip of ready) {
+      let segments = clip.segments?.length ? clip.segments : null;
+      if (!segments) {
+        setAutoCardMsg(`Transcribiendo ${clip.name.slice(0, 30)}...`);
+        try {
+          segments = await transcribeClip(clip.file, clip.silences || [], info => {
+            if (info.status === "downloading") setAutoCardMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
+          });
+          setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
+        } catch { continue; }
+      }
+      if (!segments?.length) continue;
+
+      setAutoCardMsg("Generando tarjetas con IA para tu estilo...");
+      try {
+        const res = await fetch(REELS_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            type: "generateCards",
+            transcription: buildTimestampedTranscript(segments),
+            duration: clip.duration || 0,
+          }),
+        });
+        const data = await res.json();
+        if (res.status === 429) {
+          setAutoCardState("error");
+          setAutoCardMsg(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
+          return;
+        }
+        for (const t of data.tarjetas || []) {
+          const et = nativeToEffective(keptSegs, clip.id, t.startTime);
+          if (et === null) continue;
+          generated.push({
+            id: uid(), text: t.texto, keyword: t.keyword || "",
+            startTime: Math.round(et * 10) / 10,
+            duration: style?.cardDuration || 3,
+            colorIdx: style?.cardColorCycle?.[colorStep % style.cardColorCycle.length] ?? 0,
+            font: style?.cardFont || "Poppins",
+            position: style?.cardPosition || "bottom",
+            animation: style?.cardAnimation || "slideUp",
+          });
+          colorStep++;
+        }
+      } catch (err) { console.error("[autoCards]", err.message); }
+    }
+
+    if (generated.length) {
+      generated.sort((a, b) => a.startTime - b.startTime);
+      setCards(generated);
+      setAutoCardState("done");
+      setAutoCardMsg(`✨ ${generated.length} tarjeta${generated.length !== 1 ? "s" : ""} generada${generated.length !== 1 ? "s" : ""} con tu estilo — revísalas antes de exportar.`);
+    } else {
+      setAutoCardState("error");
+      setAutoCardMsg("No se pudieron generar tarjetas automáticas. Puedes crearlas manualmente.");
+    }
+  }, [clips, keptSegs, setClips, style]);
+
+  useEffect(() => {
+    if (!style?.autoCards || cards.length > 0 || autoCardTriedRef.current) return;
+    if (clips.some(c => c.analyzed && !c.error)) runAutoCards();
+  }, [style, clips, cards.length, runAutoCards]);
+
   // Cortador manual
   const handleMarkStart = useCallback(() => {
     if (!currentClipId) return;
@@ -2634,7 +2840,24 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             : tab === "music"
             ? <MusicPanel music={music} onMusicChange={setMusic} />
             : tab === "cards"
-            ? <CardsPanel cards={cards} onCardsChange={setCards} currentTime={effectiveTime} />
+            ? <>
+                {style?.autoCards && autoCardState !== "idle" && (
+                  <div className={`sce-autocards-banner sce-autocards-banner--${autoCardState}`}>
+                    {autoCardState === "working" && <><span className="sce-autocards-spinner" />{autoCardMsg}</>}
+                    {autoCardState === "done" && <span>{autoCardMsg}</span>}
+                    {autoCardState === "error" && <span>{autoCardMsg}</span>}
+                    {autoCardState === "needsAuth" && (
+                      <span>
+                        ✨ Tu estilo incluye tarjetas automáticas con IA — inicia sesión para generarlas.{" "}
+                        <a href="/" target="_blank" rel="noopener noreferrer">Iniciar sesión →</a>
+                        {" · "}
+                        <button className="sce-autocards-retry" onClick={() => { autoCardTriedRef.current = false; runAutoCards(); }}>Ya inicié sesión, reintentar</button>
+                      </span>
+                    )}
+                  </div>
+                )}
+                <CardsPanel cards={cards} onCardsChange={setCards} currentTime={effectiveTime} />
+              </>
             : tab === "sfx"
             ? <SfxPanel
                 sfxList={sfxList}
@@ -2897,6 +3120,29 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
   );
 }
 
+// ── Selector de estilo (pantalla previa a subir el video) ─────────────────
+function StylePickerScreen({ onSelect }) {
+  return (
+    <div className="sc-page">
+      <nav className="sc-nav"><Logo width={110} /><a href="/" className="sc-nav-link">Ir a la app →</a></nav>
+      <div className="sce-style-wrap">
+        <h1 className="sc-editor-title">¿Qué estilo quieres para tu video?</h1>
+        <p className="sc-editor-sub">Elige un estilo y el editor lo aplicará automáticamente a tu clip. Puedes ajustar todo después.</p>
+        <div className="sce-style-grid">
+          {STYLE_TEMPLATES.map(tmpl => (
+            <button key={tmpl.id} className="sce-style-card" onClick={() => onSelect(tmpl)}>
+              <span className="sce-style-emoji">{tmpl.emoji}</span>
+              <span className="sce-style-label">{tmpl.label}</span>
+              <span className="sce-style-desc">{tmpl.desc}</span>
+              {tmpl.autoCards && <span className="sce-style-badge">✨ Requiere cuenta (IA)</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Componente principal ──────────────────────────────────────────────────
 export default function SilenceCutter() {
   const [clips, setClips]           = useState([]);
@@ -2909,6 +3155,11 @@ export default function SilenceCutter() {
   const [subtitleStyle, setSubtitleStyle] = useState({ font: "Poppins", hlColor: "#FFE44D" });
   const [format, setFormat] = useState("landscape"); // "landscape" | "portrait" | "square"
   const [showReels, setShowReels] = useState(false);
+  const [selectedStyle, setSelectedStyle] = useState(null);
+  const chooseStyle = useCallback((tmpl) => {
+    setSelectedStyle(tmpl);
+    if (tmpl.format) setFormat(tmpl.format);
+  }, []);
   const [sensitivity, setSensitivity] = useState("conservadora");
   const inputRef = useRef(null);
   const abortRef = useRef(false);
@@ -3084,8 +3335,13 @@ export default function SilenceCutter() {
       format={format} onFormatChange={setFormat}
       onExtractReels={() => setShowReels(true)}
       sensitivity={sensitivity} onReanalyze={reanalizar}
-      onCutSeg={cutSeg} />
+      onCutSeg={cutSeg} style={selectedStyle} />
   );
+
+  // Selector de estilo — antes de subir el primer video
+  if (fase === "editor" && clips.length === 0 && !selectedStyle) {
+    return <StylePickerScreen onSelect={chooseStyle} />;
+  }
 
   // Pantalla de subida
   return (
@@ -3097,7 +3353,13 @@ export default function SilenceCutter() {
             <h1 className="sc-editor-title">Editor de video</h1>
             <p className="sc-editor-sub">Agrega tus clips, detecta silencios automáticamente y exporta un solo video limpio.</p>
           </div>
-          <span className="sc-badge">Herramienta gratuita · En tu dispositivo</span>
+          {selectedStyle && selectedStyle.id !== "none" ? (
+            <button className="sc-badge sc-badge--style" onClick={() => setSelectedStyle(null)} title="Cambiar estilo">
+              {selectedStyle.emoji} {selectedStyle.label} · cambiar
+            </button>
+          ) : (
+            <span className="sc-badge">Herramienta gratuita · En tu dispositivo</span>
+          )}
         </div>
         <div className={`sc-drop sc-drop--compact${dragOver ? " sc-drop--over" : ""}`}
           onClick={() => inputRef.current?.click()}
