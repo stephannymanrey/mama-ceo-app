@@ -3621,7 +3621,7 @@ const GENRE_INFO = {
 function ReferenceVideoScreen({ onAnalyzed, onBack }) {
   const [file,      setFile]      = useState(null);
   const [previewUrl, setPreview]  = useState(null);
-  const [phase,     setPhase]     = useState("upload"); // upload|analyzing|result|needsAuth
+  const [phase,     setPhase]     = useState("upload"); // upload|analyzing|result|applying
   const [msg,       setMsg]       = useState("");
   const [analysis,  setAnalysis]  = useState(null);
   const [error,     setError]     = useState("");
@@ -3655,7 +3655,7 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        if (res.status === 429) { setError("Límite de IA alcanzado este mes."); setPhase("upload"); return; }
+        if (res.status === 429) { setError(data?.message || "Límite de IA alcanzado."); setPhase("upload"); return; }
         throw new Error(data?.error || `Error ${res.status}`);
       }
       setAnalysis(data.analysis);
@@ -3683,7 +3683,8 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
       sensitivity:   analysis.editingPace === "fast" ? "agresiva" : "conservadora",
       isCloned:      true,
     };
-    onAnalyzed(style);
+    setPhase("applying");
+    setTimeout(() => onAnalyzed(style), 900);
   };
 
   const onDrop = (e) => {
@@ -3738,7 +3739,7 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
 
           {/* Columna derecha: resultado o instrucciones */}
           <div className="sce-ref-right">
-            {!file && phase !== "needsAuth" && (
+            {!file && (
               <div className="sce-ref-tips">
                 <p className="sce-ref-tips-title">¿Cómo descargar el video?</p>
                 <div className="sce-ref-tip"><span>📲</span><span><strong>TikTok:</strong> Toca "Compartir" → "Guardar video"</span></div>
@@ -3770,11 +3771,15 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
               </div>
             )}
 
-            {phase === "needsAuth" && (
-              <div className="sce-ref-tips">
-                <p className="sce-ref-tips-title">Inicia sesión para continuar</p>
-                <p className="sce-ref-tips-note">El análisis de estilo con IA requiere una cuenta. Es gratis.</p>
-                <a href="/" className="sce-ref-login-btn">Crear cuenta / Iniciar sesión →</a>
+            {phase === "applying" && (
+              <div className="sce-ref-applying">
+                <span className="sce-ref-applying-check">✅</span>
+                <p className="sce-ref-applying-title">Estilo capturado</p>
+                <div className="sce-ref-applying-chips">
+                  <span className="sce-ref-applying-chip">{presetI.icon} {presetI.label}</span>
+                  <span className="sce-ref-applying-chip">{genreI.icon} {genreI.label}</span>
+                </div>
+                <p className="sce-ref-applying-sub">Preparando tu editor para copiarlo en tu video…</p>
               </div>
             )}
 
