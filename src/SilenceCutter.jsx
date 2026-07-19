@@ -2436,11 +2436,12 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   useEffect(() => {
     if (!style || styleAutoApplied.current) return;
     styleAutoApplied.current = true;
+    let needsRedraw = false;
     if (style.videoPreset) {
       const preset = VIDEO_PRESETS.find(p => p.id === style.videoPreset);
       if (preset) {
         setEffects(e => ({ ...e, ...preset.values, _preset: preset.id }));
-        effectsRef.current = { ...effectsRef.current, ...preset.values, _preset: preset.id };
+        needsRedraw = true;
       }
     }
     if (style.musicGenre) {
@@ -2456,7 +2457,13 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       const extra = { bokeh: bokehVal };
       if (transVal) extra.transition = transVal;
       setEffects(e => ({ ...e, ...extra }));
-      effectsRef.current = { ...effectsRef.current, ...extra };
+      needsRedraw = true;
+    }
+    // El sync effect de effectsRef corre en el mismo ciclo y sobreescribe con el estado
+    // viejo antes de que React procese el setEffects. Forzamos redibujado en el ciclo
+    // siguiente cuando effectsRef ya tiene los valores actualizados.
+    if (needsRedraw) {
+      setTimeout(() => seekToEffectiveRef.current?.(effectiveTimeRef.current || 0), 60);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
