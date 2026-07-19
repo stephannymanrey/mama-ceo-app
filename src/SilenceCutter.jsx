@@ -2470,6 +2470,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const selectedSegRef   = useRef(null);
   const playbarScrubDrag = useRef(false);
   const cardYDragRef     = useRef(null); // { cardId, startY, startYPos, canvasH, moved }
+  const togglePlayRef    = useRef(null); // sincronizado durante render — evita TDZ en deps del useEffect de teclado
   useEffect(() => { effectiveTimeRef.current = effectiveTime; }, [effectiveTime]);
   useEffect(() => { selectedSegRef.current = selectedSeg; }, [selectedSeg]);
 
@@ -2659,7 +2660,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         splitAtPlayhead();
       } else if (e.key === ' ') {
         e.preventDefault();
-        togglePlay();
+        togglePlayRef.current?.();
       } else if (e.key === 'ArrowLeft' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
         seekToEffective(Math.max(0, effectiveTimeRef.current - 5));
@@ -2673,7 +2674,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [splitAtPlayhead, togglePlay, seekToEffective, onCutSeg]);
+  }, [splitAtPlayhead, seekToEffective, onCutSeg]); // togglePlay removido — se accede via togglePlayRef para evitar TDZ
 
   // Dimensiones de salida según formato seleccionado (dims = dimensiones nativas del video)
   const outDims = useMemo(() => {
@@ -3134,6 +3135,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const togglePlay = useCallback(() => {
     if (isPlaying) { playRef.current = false; } else { runPlay(); }
   }, [isPlaying, runPlay]);
+  togglePlayRef.current = togglePlay; // sync ref durante render (declaración antes que uso en teclado)
 
   return (
     <div className="sce-layout">
@@ -3660,7 +3662,7 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
     const style = {
       id: "clone",
       emoji: "📱",
-      label: "Estilo clonado",
+      label: "Estilo inspirado",
       desc: analysis.editingVibe || "Estilo detectado automáticamente",
       videoPreset:   analysis.videoPreset   || "natural",
       musicGenre:    analysis.musicGenre    || "motivacional",
@@ -3669,7 +3671,7 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
       format:        analysis.format        || "portrait",
       bokeh:         analysis.bokeh         || false,
       transition:    analysis.transition    || "none",
-      sensitivity:   analysis.editingPace === "fast" ? "agresiva" : analysis.editingPace === "slow" ? "relajada" : "conservadora",
+      sensitivity:   analysis.editingPace === "fast" ? "agresiva" : "conservadora",
       isCloned:      true,
     };
     onAnalyzed(style);
@@ -3689,10 +3691,10 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
       <nav className="sc-nav"><Logo width={110} /><a href="/" className="sc-nav-link">Ir a la app →</a></nav>
       <div className="sce-ref-wrap">
         <button className="sce-ref-back" onClick={onBack}>← Volver</button>
-        <h1 className="sc-editor-title">Copiar estilo de un video</h1>
+        <h1 className="sc-editor-title">Analizar estilo de un video</h1>
         <p className="sc-editor-sub">
-          Descarga el Reel o TikTok que te inspiró, súbelo aquí y la IA detectará
-          automáticamente su estilo de edición.
+          Descarga el Reel o TikTok que te inspiró y súbelo aquí. La IA leerá
+          en detalle su estilo de edición y te dirá todo lo que ve.
         </p>
 
         <div className="sce-ref-cols">
@@ -3727,7 +3729,7 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
                 <div className="sce-ref-tip"><span>📲</span><span><strong>TikTok:</strong> Toca "Compartir" → "Guardar video"</span></div>
                 <div className="sce-ref-tip"><span>📸</span><span><strong>Instagram:</strong> Usa SnapTik, SaveIG u otra app de descarga</span></div>
                 <div className="sce-ref-tip"><span>▶️</span><span><strong>YouTube Shorts:</strong> Usa yt-dlp o un downloader online</span></div>
-                <p className="sce-ref-tips-note">La IA analiza: color, formato, tarjetas de texto, energía visual y musical.</p>
+                <p className="sce-ref-tips-note">La IA describe todo lo que ve: color, ritmo, efectos, transiciones, tipografía, cámara y más.</p>
               </div>
             )}
 
@@ -3748,8 +3750,11 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
 
             {phase === "result" && analysis && (
               <div className="sce-ref-result">
-                <p className="sce-ref-result-title">✅ Estilo detectado</p>
-                {analysis.editingVibe && (
+                <p className="sce-ref-result-title">✅ Estilo analizado</p>
+                {analysis.description && (
+                  <p className="sce-ref-result-desc">{analysis.description}</p>
+                )}
+                {!analysis.description && analysis.editingVibe && (
                   <p className="sce-ref-result-vibe">"{analysis.editingVibe}"</p>
                 )}
                 <div className="sce-ref-result-grid">
@@ -3809,8 +3814,16 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
                     </div>
                   )}
                 </div>
+                {analysis.extras?.length > 0 && (
+                  <div className="sce-ref-extras">
+                    <p className="sce-ref-extras-title">También detecté:</p>
+                    <div className="sce-ref-extras-list">
+                      {analysis.extras.map((ex, i) => <span key={i} className="sce-ref-extra-tag">{ex}</span>)}
+                    </div>
+                  </div>
+                )}
                 <button className="sce-ref-apply-btn" onClick={applyStyle}>
-                  Aplicar este estilo a mi video →
+                  Aplicar lo que puedo a mi video →
                 </button>
                 <button className="sce-ref-retry" onClick={() => { setPhase("upload"); setAnalysis(null); }}>
                   Probar con otro video
@@ -3843,10 +3856,10 @@ function StylePickerScreen({ onSelect }) {
         <div className="sce-style-grid">
           {/* Tarjeta especial: copiar estilo de un video de referencia */}
           <button className="sce-style-card sce-style-card--clone" onClick={() => onSelect({ id: "clone" })}>
-            <span className="sce-style-emoji">📱</span>
-            <span className="sce-style-label">Copiar estilo de un video</span>
-            <span className="sce-style-desc">Sube un Reel o TikTok que te guste y la IA detectará su estilo automáticamente.</span>
-            <span className="sce-style-badge sce-style-badge--new">✨ Nuevo · Requiere cuenta</span>
+            <span className="sce-style-emoji">🔍</span>
+            <span className="sce-style-label">Inspirarme en un video</span>
+            <span className="sce-style-desc">Sube el Reel o TikTok que te inspiró y la IA analiza su estilo en detalle.</span>
+            <span className="sce-style-badge sce-style-badge--new">✨ Nuevo · IA Vision</span>
           </button>
           {STYLE_TEMPLATES.map(tmpl => (
             <button key={tmpl.id} className="sce-style-card" onClick={() => onSelect(tmpl)}>

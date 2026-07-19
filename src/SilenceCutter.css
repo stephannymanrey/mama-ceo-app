@@ -3393,6 +3393,19 @@
 
 .sce-ref-result { display: flex; flex-direction: column; gap: 12px; }
 .sce-ref-result-title { font-size: 15px; font-weight: 700; color: #2e7d32; }
+.sce-ref-result-desc {
+  font-size: 13px;
+  color: #333;
+  line-height: 1.6;
+  background: #fdf5f7;
+  border-left: 3px solid #C4526A;
+  border-radius: 0 8px 8px 0;
+  padding: 10px 14px;
+}
+.sce-ref-extras { display: flex; flex-direction: column; gap: 6px; }
+.sce-ref-extras-title { font-size: 12px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
+.sce-ref-extras-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.sce-ref-extra-tag { font-size: 12px; background: #f0e8fc; color: #6b46c1; border-radius: 20px; padding: 3px 10px; font-weight: 500; }
 .sce-ref-result-vibe {
   font-size: 13px;
   color: #555;

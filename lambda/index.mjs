@@ -952,11 +952,17 @@ async function handleAnalyzeStyle(body, event, userId) {
     plan = r.plan; usage = r.usage;
     const mk = monthKey();
     currentCount = usage[mk] || 0;
-    limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+    // Límite por plan: free/mama=10, emprendedora=20, ceo/premium=50 análisis de estilo/mes
+    const styleLimits = { free: 10, mama: 10, emprendedora: 20, ceo: 50, premium: 50 };
+    limit = styleLimits[plan] ?? 10;
     if (currentCount >= limit) {
       return respond(429, { error: "limite_alcanzado", usage: currentCount, limit, plan,
-        message: `Llegaste al límite de ${limit} generaciones este mes.` }, event);
+        message: `Llegaste al límite de ${limit} análisis de estilo este mes. Actualiza tu plan para más.` }, event);
     }
+  } else {
+    // Sin JWT: límite diario compartido de 30 análisis (protege el budget sin bloquear el flujo)
+    const ok = await checkAndIncrDailyLimit("analyzeStyle_pub", 30);
+    if (!ok) return respond(429, { error: "limite_diario", message: "Límite diario de análisis alcanzado. Intenta mañana o inicia sesión." }, event);
   }
 
   const imageContent = frames.slice(0, 3).map(f => ({
@@ -971,33 +977,35 @@ async function handleAnalyzeStyle(body, event, userId) {
       ...imageContent,
       {
         type: "text",
-        text: `Analiza el estilo visual de edición de este video de redes sociales. Los ${frames.length} frames son del mismo video.
+        text: `Eres un editor de video experto analizando el estilo de edición de contenido para redes sociales. Los ${frames.length} frames son del mismo video.
 
 Formato: ${formatLabel} | Duración: ${Math.round(duration || 0)}s
 
+Analiza TODO lo que ves con libertad — no te limites a categorías predefinidas. Describe el estilo real del video.
+
 Devuelve SOLO JSON válido, sin texto extra:
-{"videoPreset":"warm|natural|vibrant|fresh|cinema|none","musicGenre":"motivacional|calmante|energetico|corporativo","hasCards":true/false,"cardPosition":"fullscreen|pill","format":"${format || "portrait"}","editingVibe":"descripción estilo 5-7 palabras español","colorDesc":"descripción colores 3-5 palabras español","bokeh":true/false,"transition":"cut|smooth|zoom|fade","editingPace":"fast|medium|slow"}
+{
+  "videoPreset":"warm|natural|vibrant|fresh|cinema|none",
+  "musicGenre":"motivacional|calmante|energetico|corporativo",
+  "hasCards":true/false,
+  "cardPosition":"fullscreen|pill",
+  "format":"${format || "portrait"}",
+  "editingVibe":"frase 5-7 palabras que captura la esencia del estilo",
+  "colorDesc":"descripción colores 3-5 palabras",
+  "bokeh":true/false,
+  "transition":"cut|smooth|zoom|fade",
+  "editingPace":"fast|medium|slow",
+  "description":"Descripción libre y detallada de TODO lo que ves en el estilo (60-90 palabras en español). Menciona: tipo de planos, movimiento de cámara, efectos especiales, tipografía/texto, overlays, stickers, filtros, ritmo de corte, energía, narración, si hay música visible en pantalla, uso del espacio, cualquier característica visual o técnica notable.",
+  "extras":["hasta 5 strings con características adicionales detectadas que no caben en los campos anteriores — efectos concretos, técnicas, elementos visuales únicos"]
+}
 
-Criterios videoPreset:
-- warm: tonos dorados/cálidos/naranjas/rosados
-- natural: neutros, limpio, sin filtros exagerados
-- vibrant: muy saturado, brillante, alta energía visual
-- fresh: tonos fríos, azulados/verdes, moderno
-- cinema: oscuro, alto contraste, cinematográfico
-- none: sin filtro visible
-
-Criterios musicGenre:
-- motivacional: upbeat para emprendimiento/fitness/inspiración
-- calmante: suave para lifestyle/bienestar/maternidad
-- energetico: beats rápidos, entretenimiento/humor/baile
-- corporativo: profesional y sutil para negocios/educación
-
-hasCards: true si hay texto/tarjetas sobre el video (NO solo subtítulos en la parte baja)
-cardPosition: fullscreen si las tarjetas cubren toda la pantalla, pill si son pequeñas/acotadas
-
-bokeh: true si el fondo aparece borroso/difuminado (efecto depth-of-field/bokeh)
-transition: cut=cortes directos sin transición, smooth=fundidos suaves, zoom=zoom in/out entre clips, fade=fundido a negro
-editingPace: fast=clips muy cortos (<2s, ritmo rápido), slow=clips largos (>5s, reflexivo), medium=ritmo normal`,
+Criterios campos estructurados:
+- videoPreset: warm=tonos cálidos/dorados, natural=neutro/limpio, vibrant=muy saturado, fresh=tonos fríos/azules, cinema=oscuro/alto contraste, none=sin filtro notable
+- musicGenre: motivacional=upbeat inspiracional, calmante=suave/lifestyle, energetico=beats rápidos/baile, corporativo=profesional/negocios
+- hasCards: true si hay texto/tarjetas superpuestas al video (NO solo subtítulos en la parte baja)
+- bokeh: true si hay fondo borroso/depth-of-field visible
+- transition: cut=cortes directos, smooth=fundidos suaves, zoom=zoom in/out, fade=fundido a negro
+- editingPace: fast=clips <2s muy dinámico, slow=clips >5s pausado, medium=ritmo normal`,
       },
     ],
   }];
@@ -1007,7 +1015,7 @@ editingPace: fast=clips muy cortos (<2s, ritmo rápido), slow=clips largos (>5s,
     const res = await fetch(ANTHROPIC_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01", "x-api-key": ANTHROPIC_KEY },
-      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 400, messages }),
+      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 800, messages }),
     });
     if (!res.ok) throw new Error(`Claude ${res.status}`);
     const data = await res.json();
