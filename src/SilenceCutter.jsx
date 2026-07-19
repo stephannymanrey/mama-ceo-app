@@ -2981,8 +2981,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const handleCanvasPointerUp = useCallback((e) => {
     const d = cardYDragRef.current;
     cardYDragRef.current = null;
-    if (!d?.moved) togglePlay(); // fue un tap sin movimiento → play/pause
-  }, [togglePlay]);
+    if (!d?.moved) togglePlayRef.current?.(); // tap sin movimiento → play/pause
+  }, []); // togglePlay removido — accedido via togglePlayRef para evitar TDZ
 
   // Reproducción
   const runPlay = useCallback(async () => {
@@ -3716,14 +3716,20 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
                 </>
               )}
             </div>
-            {file && (
-              <p className="sce-ref-filename">📎 {file.name}</p>
+            {file && <p className="sce-ref-filename">📎 {file.name}</p>}
+            {file && phase !== "result" && (
+              <button
+                className="sce-ref-analyze-btn"
+                onClick={analyze}
+                disabled={phase === "analyzing"}>
+                {phase === "analyzing" ? "Analizando…" : "✨ Analizar estilo con IA"}
+              </button>
             )}
           </div>
 
           {/* Columna derecha: resultado o instrucciones */}
           <div className="sce-ref-right">
-            {phase === "upload" && !analysis && (
+            {!file && phase !== "needsAuth" && (
               <div className="sce-ref-tips">
                 <p className="sce-ref-tips-title">¿Cómo descargar el video?</p>
                 <div className="sce-ref-tip"><span>📲</span><span><strong>TikTok:</strong> Toca "Compartir" → "Guardar video"</span></div>
@@ -3732,11 +3738,26 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
                 <p className="sce-ref-tips-note">La IA describe todo lo que ve: color, ritmo, efectos, transiciones, tipografía, cámara y más.</p>
               </div>
             )}
+            {phase === "upload" && file && !analysis && (
+              <div className="sce-ref-ready">
+                <p className="sce-ref-ready-title">Video listo para analizar</p>
+                <p className="sce-ref-ready-desc">La IA leerá 3 momentos del video y detectará color, ritmo, efectos, transiciones, tipografía y más.</p>
+              </div>
+            )}
 
             {phase === "analyzing" && (
               <div className="sce-ref-analyzing">
                 <div className="sce-ref-spinner" />
-                <p className="sce-ref-analyzing-msg">{msg}</p>
+                <div className="sce-ref-progress-steps">
+                  <div className={`sce-ref-progress-step${!msg.includes("IA") ? " active" : " done"}`}>
+                    <span className="sce-ref-step-dot" />
+                    Extrayendo frames del video
+                  </div>
+                  <div className={`sce-ref-progress-step${msg.includes("IA") ? " active" : ""}`}>
+                    <span className="sce-ref-step-dot" />
+                    Analizando estilo con IA Vision
+                  </div>
+                </div>
               </div>
             )}
 
@@ -3832,12 +3853,6 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
             )}
 
             {error && <p className="sce-ref-error">{error}</p>}
-
-            {phase === "upload" && file && (
-              <button className="sce-ref-analyze-btn" onClick={analyze}>
-                ✨ Analizar estilo con IA
-              </button>
-            )}
           </div>
         </div>
       </div>

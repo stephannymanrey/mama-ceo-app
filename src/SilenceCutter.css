@@ -3342,6 +3342,7 @@
 }
 @media (max-width: 640px) {
   .sce-ref-cols { grid-template-columns: 1fr; }
+  .sce-ref-result-grid { grid-template-columns: 1fr; }
 }
 .sce-ref-left { display: flex; flex-direction: column; gap: 10px; }
 .sce-ref-right { display: flex; flex-direction: column; gap: 14px; }
@@ -3378,8 +3379,8 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding: 32px 0;
+  gap: 16px;
+  padding: 28px 0;
 }
 .sce-ref-spinner {
   width: 36px; height: 36px;
@@ -3389,9 +3390,63 @@
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-.sce-ref-analyzing-msg { font-size: 14px; color: #666; }
+.sce-ref-progress-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+.sce-ref-progress-step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #ccc;
+  transition: color 0.3s;
+}
+.sce-ref-progress-step.active {
+  color: #C4526A;
+  font-weight: 600;
+}
+.sce-ref-progress-step.done {
+  color: #2e7d32;
+}
+.sce-ref-step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.sce-ref-progress-step.active .sce-ref-step-dot {
+  animation: pulse-dot 1s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.6); }
+}
 
-.sce-ref-result { display: flex; flex-direction: column; gap: 12px; }
+@keyframes sce-fadein-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sce-ref-result {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: sce-fadein-up 0.3s ease;
+}
+.sce-ref-ready {
+  background: #f0faf1;
+  border: 1px solid rgba(46,125,50,0.2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sce-ref-ready-title { font-size: 13px; font-weight: 700; color: #2e7d32; margin: 0; }
+.sce-ref-ready-desc  { font-size: 12px; color: #555; line-height: 1.5; margin: 0; }
 .sce-ref-result-title { font-size: 15px; font-weight: 700; color: #2e7d32; }
 .sce-ref-result-desc {
   font-size: 13px;
