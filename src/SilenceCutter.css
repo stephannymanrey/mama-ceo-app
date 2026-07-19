@@ -3342,7 +3342,6 @@
 }
 @media (max-width: 640px) {
   .sce-ref-cols { grid-template-columns: 1fr; }
-  .sce-ref-result-grid { grid-template-columns: 1fr; }
 }
 .sce-ref-left { display: flex; flex-direction: column; gap: 10px; }
 .sce-ref-right { display: flex; flex-direction: column; gap: 14px; }

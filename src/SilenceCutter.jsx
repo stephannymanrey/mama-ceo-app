@@ -2470,7 +2470,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const selectedSegRef   = useRef(null);
   const playbarScrubDrag = useRef(false);
   const cardYDragRef     = useRef(null); // { cardId, startY, startYPos, canvasH, moved }
-  const togglePlayRef    = useRef(null); // sincronizado durante render — evita TDZ en deps del useEffect de teclado
+  const togglePlayRef       = useRef(null); // sincronizado durante render — evita TDZ en deps del useEffect de teclado
+  const seekToEffectiveRef  = useRef(null); // ídem — seekToEffective se declara más abajo (línea ~2762)
   useEffect(() => { effectiveTimeRef.current = effectiveTime; }, [effectiveTime]);
   useEffect(() => { selectedSegRef.current = selectedSeg; }, [selectedSeg]);
 
@@ -2663,10 +2664,10 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         togglePlayRef.current?.();
       } else if (e.key === 'ArrowLeft' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
-        seekToEffective(Math.max(0, effectiveTimeRef.current - 5));
+        seekToEffectiveRef.current?.(Math.max(0, effectiveTimeRef.current - 5));
       } else if (e.key === 'ArrowRight' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
-        seekToEffective(Math.min(totalKeptRef.current, effectiveTimeRef.current + 5));
+        seekToEffectiveRef.current?.(Math.min(totalKeptRef.current, effectiveTimeRef.current + 5));
       } else if (e.key === 'Delete' || e.key === 'Backspace') {
         const sel = selectedSegRef.current;
         if (sel) { e.preventDefault(); onCutSeg(sel.clipId, sel.start, sel.end); setSelectedSeg(null); }
@@ -2674,7 +2675,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [splitAtPlayhead, seekToEffective, onCutSeg]); // togglePlay removido — se accede via togglePlayRef para evitar TDZ
+  }, [splitAtPlayhead, onCutSeg]); // togglePlay y seekToEffective removidos — accedidos via refs para evitar TDZ
 
   // Dimensiones de salida según formato seleccionado (dims = dimensiones nativas del video)
   const outDims = useMemo(() => {
@@ -2768,6 +2769,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     await drawFrame(native.clip, native.localTime, clamped);
     setSeeking(false);
   }, [keptSegs, totalKept, drawFrame]);
+  seekToEffectiveRef.current = seekToEffective; // sync ref durante render
 
   // Seek desde panel de subtítulos (clip + localTime)
   const handleSeekInClip = useCallback((clipId, lt) => {
@@ -3783,7 +3785,7 @@ function ReferenceVideoScreen({ onAnalyzed, onBack }) {
                     <span className="sce-ref-result-icon">{presetI.icon}</span>
                     <div>
                       <p className="sce-ref-result-key">Color</p>
-                      <p className="sce-ref-result-val">{presetI.label}{analysis.colorDesc ? ` · ${analysis.colorDesc}` : ""}</p>
+                      <p className="sce-ref-result-val">{presetI.label}</p>
                     </div>
                   </div>
                   <div className="sce-ref-result-item">
