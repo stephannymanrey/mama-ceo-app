@@ -2481,22 +2481,25 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
 }
 
 // ── Panel guiado de Abi: qué hacer después de cortar ───────────────────────
-function AbiGuidePanel({ hasSubtitles, hasCards, hasTransitions, onGoTo }) {
+function AbiGuidePanel({ hasSubtitles, hasCards, hasTransitions, onGoTo, onCreateCards }) {
   const steps = [
     {
       id: "subs", emoji: "💬", title: "Subtítulos",
       desc: "Elige tipografía y estilo, y genera subtítulos minimalistas sincronizados palabra por palabra — se entiende todo aunque vean el video sin sonido.",
       cta: "Elegir estilo y generar →", done: hasSubtitles,
+      onClick: () => onGoTo("subs"), // necesita elegir tipografía/estilo primero
     },
     {
       id: "cards", emoji: "🃏", title: "Tarjetas de texto",
       desc: "Leo todo lo que dices y coloco tarjetas en los momentos con las ideas más importantes — como titulares de revista.",
       cta: "Crear tarjetas automáticas →", done: hasCards,
+      onClick: onCreateCards, // un clic — no necesita elegir nada antes
     },
     {
       id: "trans", emoji: "🎬", title: "Música, transiciones y efectos",
       desc: "Detecto los cambios de sección de tu video (intro, contenido, cierre) y aplico transiciones con efectos de sonido — el toque profesional automático.",
       cta: "Aplicar automáticamente →", done: hasTransitions,
+      onClick: () => onGoTo("trans"),
     },
   ];
   return (
@@ -2512,7 +2515,7 @@ function AbiGuidePanel({ hasSubtitles, hasCards, hasTransitions, onGoTo }) {
               {s.done && <span className="sce-abi-step-badge">✓ Hecho</span>}
             </div>
             <p className="sce-abi-step-desc">{s.desc}</p>
-            <button className="sce-abi-step-cta" onClick={() => onGoTo(s.id)}>
+            <button className="sce-abi-step-cta" onClick={s.done ? () => onGoTo(s.id) : s.onClick}>
               {s.done ? "Revisar / ajustar →" : s.cta}
             </button>
           </div>
@@ -2965,7 +2968,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         continue;
       }
 
-      setAutoCardMsg("Generando tarjetas con IA para tu estilo...");
+      setAutoCardMsg("Generando tarjetas con IA...");
       try {
         const res = await fetch(REELS_API, {
           method: "POST",
@@ -3022,8 +3025,20 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     if (generated.length) {
       generated.sort((a, b) => a.startTime - b.startTime);
       setCards(generated);
+      // Efecto de sonido automático en cada tarjeta — así se siente editado
+      // por una profesional, no solo texto pegado encima del video.
+      const cat = SFX_CATALOG.find(c => c.id === "pop");
+      if (cat) {
+        setSfxList(prev => [
+          ...prev,
+          ...generated.map(c => ({
+            id: `sfx_${c.id}`, type: "pop", time: c.startTime,
+            label: cat.label, emoji: cat.emoji,
+          })),
+        ]);
+      }
       setAutoCardState("done");
-      setAutoCardMsg(`✨ ${generated.length} tarjeta${generated.length !== 1 ? "s" : ""} generada${generated.length !== 1 ? "s" : ""} con tu estilo — revísalas antes de exportar.`);
+      setAutoCardMsg(`✨ ${generated.length} tarjeta${generated.length !== 1 ? "s" : ""} generada${generated.length !== 1 ? "s" : ""} — revísalas antes de exportar.`);
     } else {
       setAutoCardState("error");
       setAutoCardMsg(lastError || "No se pudieron generar tarjetas. Puedes crearlas manualmente.");
@@ -3372,6 +3387,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
                 hasCards={cards.length > 0}
                 hasTransitions={Object.keys(clipTransitions).length > 0}
                 onGoTo={setTab}
+                onCreateCards={() => { runAutoCards(); setTab("cards"); }}
               />
             : tab === "subs"
             ? <SubtitlePanel
@@ -3394,7 +3410,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
                     {autoCardState === "error" && <span>{autoCardMsg}</span>}
                     {autoCardState === "needsAuth" && (
                       <span>
-                        ✨ Tu estilo incluye tarjetas automáticas con IA — inicia sesión para generarlas.{" "}
+                        ✨ Las tarjetas automáticas con IA requieren una cuenta — inicia sesión para generarlas.{" "}
                         <a href="/" target="_blank" rel="noopener noreferrer">Iniciar sesión →</a>
                         {" · "}
                         <button className="sce-autocards-retry" onClick={() => { autoCardTriedRef.current = false; runAutoCards(); }}>Ya inicié sesión, reintentar</button>
