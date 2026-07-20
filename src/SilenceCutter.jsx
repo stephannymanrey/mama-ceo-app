@@ -2481,7 +2481,7 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
 }
 
 // ── Panel guiado de Abi: qué hacer después de cortar ───────────────────────
-function AbiGuidePanel({ hasSubtitles, hasCards, hasTransitions, onGoTo, onCreateCards }) {
+function AbiGuidePanel({ hasSubtitles, hasCards, hasSections, onGoTo, onCreateCards, onCreateSections }) {
   const steps = [
     {
       id: "subs", emoji: "💬", title: "Subtítulos",
@@ -2496,10 +2496,10 @@ function AbiGuidePanel({ hasSubtitles, hasCards, hasTransitions, onGoTo, onCreat
       onClick: onCreateCards, // un clic — no necesita elegir nada antes
     },
     {
-      id: "trans", emoji: "🎬", title: "Música, transiciones y efectos",
-      desc: "Detecto los cambios de sección de tu video (intro, contenido, cierre) y aplico transiciones con efectos de sonido — el toque profesional automático.",
-      cta: "Aplicar automáticamente →", done: hasTransitions,
-      onClick: () => onGoTo("trans"),
+      id: "sfx", emoji: "🔊", title: "Efectos de sonido por sección",
+      desc: "Detecto los cambios de sección de tu video (intro, contenido, cierre) y pongo un efecto de sonido en cada uno — el remate que aplicaría una editora profesional.",
+      cta: "Detectar y aplicar →", done: hasSections,
+      onClick: onCreateSections, // un clic — no necesita elegir nada antes
     },
   ];
   return (
@@ -2573,6 +2573,11 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const prevKeptLenRef  = useRef(0); // para el primer dibujado al abrir editor
   const [autoCardState, setAutoCardState] = useState("idle"); // idle|needsAuth|working|done|error
   const [autoCardMsg, setAutoCardMsg] = useState("");
+
+  // Estado de detección automática de secciones (SFX en cambios de tema)
+  const autoSectionTriedRef = useRef(false);
+  const [autoSectionState, setAutoSectionState] = useState("idle"); // idle|needsAuth|working|done|error
+  const [autoSectionMsg, setAutoSectionMsg] = useState("");
 
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
   useEffect(() => { effectsRef.current = effects; }, [effects]);
@@ -3045,6 +3050,100 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     }
   }, [clips, keptSegs, setClips]);
 
+  // Detecta cambios de sección (intro/contenido/cierre) y pone un efecto de
+  // sonido en cada uno — el mismo remate que aplicaría una editora profesional
+  // cuando el video cambia de tema. (Las transiciones automáticas en un solo
+  // video largo quedan para más adelante — hoy solo existen entre clips
+  // distintos que subiste por separado.)
+  const runAutoSections = useCallback(async () => {
+    autoSectionTriedRef.current = true;
+    setAutoSectionState("working"); setAutoSectionMsg("Comprobando tu sesión...");
+    const token = await getAwsAuthToken();
+    if (!token) { setAutoSectionState("needsAuth"); setAutoSectionMsg(""); return; }
+
+    const ready = clips.filter(c => c.analyzed && !c.error);
+    if (!ready.length) { autoSectionTriedRef.current = false; setAutoSectionState("idle"); return; }
+
+    const newSfx = [];
+    let lastError = null;
+    for (const clip of ready) {
+      let segments = clip.segments?.length ? clip.segments : null;
+      if (!segments) {
+        setAutoSectionMsg(`Transcribiendo ${clip.name.slice(0, 30)}...`);
+        try {
+          segments = await transcribeClip(clip.file, clip.silences || [], info => {
+            if (info.status === "extracting") setAutoSectionMsg(`Extrayendo audio... ${info.progress}%`);
+            else if (info.status === "downloading") setAutoSectionMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
+            else if (info.status === "loading") setAutoSectionMsg("Cargando modelo en memoria...");
+            else if (info.status === "ready") setAutoSectionMsg(`Transcribiendo ${clip.name.slice(0, 30)}...`);
+          }, clip.duration);
+          setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
+        } catch (err) {
+          console.error("[autoSections] transcription failed:", err?.message || err);
+          lastError = `Error al transcribir: ${err?.message || "verifica tu conexión"}`;
+          continue;
+        }
+      }
+      if (!segments?.length) continue;
+
+      setAutoSectionMsg("Detectando cambios de sección con IA...");
+      try {
+        const res = await fetch(REELS_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            type: "generateSections",
+            transcription: buildTimestampedTranscript(segments),
+            duration: clip.duration || 0,
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 429) {
+          setAutoSectionState("error");
+          setAutoSectionMsg(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
+          return;
+        }
+        if (!res.ok) {
+          console.error("[autoSections] Lambda error", res.status, data);
+          lastError = `Error del servidor (${res.status}${data?.error ? `: ${data.error}` : ""}).`;
+          continue;
+        }
+        const cat = SFX_CATALOG.find(c => c.id === "whoosh");
+        for (const s of data.sections || []) {
+          let et = nativeToEffective(keptSegs, clip.id, s.startTime);
+          if (et === null) {
+            let elapsed = 0;
+            for (const seg of keptSegs) {
+              const d = seg.end - seg.start;
+              if (seg.clip.id === clip.id && s.startTime <= seg.end) {
+                et = elapsed + Math.max(0, Math.min(d, s.startTime - seg.start));
+                break;
+              }
+              elapsed += d;
+            }
+          }
+          if (et === null || !cat) continue;
+          newSfx.push({
+            id: uid(), type: "whoosh", time: Math.round(et * 10) / 10,
+            label: cat.label, emoji: cat.emoji,
+          });
+        }
+      } catch (err) {
+        console.error("[autoSections] fetch error:", err?.message || err);
+        lastError = `Error de conexión: ${err?.message || "verifica tu internet"}`;
+      }
+    }
+
+    if (newSfx.length) {
+      setSfxList(prev => [...prev, ...newSfx]);
+      setAutoSectionState("done");
+      setAutoSectionMsg(`✨ ${newSfx.length} cambio${newSfx.length !== 1 ? "s" : ""} de sección detectado${newSfx.length !== 1 ? "s" : ""} — se agregó un efecto de sonido en cada uno.`);
+    } else {
+      setAutoSectionState("error");
+      setAutoSectionMsg(lastError || "No se detectaron cambios de sección claros en este video.");
+    }
+  }, [clips, keptSegs, setClips]);
+
   // Dibujar primer frame cuando los segmentos están listos → evita canvas negro al abrir editor
   useEffect(() => {
     if (keptSegs.length > 0 && prevKeptLenRef.current === 0 && !isPlaying) {
@@ -3385,9 +3484,10 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             ? <AbiGuidePanel
                 hasSubtitles={clips.some(c => c.segments?.length > 0)}
                 hasCards={cards.length > 0}
-                hasTransitions={Object.keys(clipTransitions).length > 0}
+                hasSections={autoSectionState === "done"}
                 onGoTo={setTab}
                 onCreateCards={() => { runAutoCards(); setTab("cards"); }}
+                onCreateSections={() => { runAutoSections(); setTab("sfx"); }}
               />
             : tab === "subs"
             ? <SubtitlePanel
@@ -3421,17 +3521,34 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
                 <CardsPanel cards={cards} onCardsChange={setCards} currentTime={effectiveTime} />
               </>
             : tab === "sfx"
-            ? <SfxPanel
-                sfxList={sfxList}
-                onSfxChange={setSfxList}
-                currentTime={effectiveTime}
-                onPreview={(type) => {
-                  if (!sfxActxRef.current) sfxActxRef.current = new AudioContext();
-                  const a = sfxActxRef.current;
-                  if (a.state === "suspended") a.resume();
-                  synthSfx(type, a, null, a.currentTime + 0.05);
-                }}
-              />
+            ? <>
+                {autoSectionState !== "idle" && (
+                  <div className={`sce-autocards-banner sce-autocards-banner--${autoSectionState}`}>
+                    {autoSectionState === "working" && <><span className="sce-autocards-spinner" />{autoSectionMsg}</>}
+                    {autoSectionState === "done" && <span>{autoSectionMsg}</span>}
+                    {autoSectionState === "error" && <span>{autoSectionMsg}</span>}
+                    {autoSectionState === "needsAuth" && (
+                      <span>
+                        ✨ La detección automática de secciones requiere una cuenta — inicia sesión para usarla.{" "}
+                        <a href="/" target="_blank" rel="noopener noreferrer">Iniciar sesión →</a>
+                        {" · "}
+                        <button className="sce-autocards-retry" onClick={() => { autoSectionTriedRef.current = false; runAutoSections(); }}>Ya inicié sesión, reintentar</button>
+                      </span>
+                    )}
+                  </div>
+                )}
+                <SfxPanel
+                  sfxList={sfxList}
+                  onSfxChange={setSfxList}
+                  currentTime={effectiveTime}
+                  onPreview={(type) => {
+                    if (!sfxActxRef.current) sfxActxRef.current = new AudioContext();
+                    const a = sfxActxRef.current;
+                    if (a.state === "suspended") a.resume();
+                    synthSfx(type, a, null, a.currentTime + 0.05);
+                  }}
+                />
+              </>
             : tab === "trans"
             ? <TransitionsPanel effects={effects} onEffectChange={setEffects} />
             : <EffectsPanel

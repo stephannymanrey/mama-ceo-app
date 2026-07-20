@@ -953,6 +953,69 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
   return respond(200, { tarjetas, usage: currentCount + 1, limit, plan }, event);
 }
 
+// ─── Handler: Detectar secciones (intro/contenido/cierre) para colocar SFX ─
+async function handleGenerateSections(body, event, userId) {
+  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
+  const { transcription, duration } = body;
+  if (!transcription?.trim()) return respond(400, { error: "Falta transcripción" }, event);
+  if (transcription.length > MAX_TRANSCRIPT_LEN) return respond(400, { error: "Transcripción demasiado larga" }, event);
+
+  const { plan, usage } = await getUserPlanAndUsage(userId);
+  const mk = monthKey();
+  const currentCount = usage[mk] || 0;
+  const limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+  if (currentCount >= limit) {
+    return respond(429, { error: "limite_alcanzado", usage: currentCount, limit, plan,
+      message: `Llegaste al límite de ${limit} generaciones este mes.` }, event);
+  }
+
+  const durSec = Math.round(duration || 0);
+  const maxSections = durSec < 60 ? 2 : durSec < 180 ? 3 : 5;
+
+  const prompt = `Eres editora de video experta identificando la estructura narrativa de un video para redes sociales (intro, desarrollo de contenido, cierre/llamada a la acción).
+
+Video de ${durSec} segundos. Transcripción con timestamps en segundos:
+
+${transcription}
+
+Identifica entre 1 y ${maxSections} cambios de sección — momentos donde el video pasa de una parte narrativa a otra (ej: termina el saludo/gancho y empieza el contenido, cambia de un tip a otro, empieza el cierre). No marques el segundo 0.
+
+Responde SOLO JSON válido, sin texto extra, sin markdown:
+[{"label":"string corto (2-4 palabras, ej: 'Empieza el tip 1', 'Cierre')","startTime":number}]`;
+
+  let rawText;
+  try {
+    rawText = await callClaude(prompt, 500, "[");
+  } catch (err) {
+    console.error("[generateSections] callClaude error:", err.message);
+    return respond(502, { error: "Error al analizar las secciones. Intenta de nuevo." }, event);
+  }
+
+  let sections;
+  try {
+    let txt = rawText.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+    const si = txt.indexOf("["), ei = txt.lastIndexOf("]");
+    if (si === -1 || ei === -1) throw new Error("No JSON array");
+    sections = JSON.parse(txt.slice(si, ei + 1));
+    sections = sections.filter(s =>
+      typeof s.startTime === "number" && s.startTime > 1 &&
+      (!duration || s.startTime < duration)
+    ).map(s => ({
+      label: typeof s.label === "string" ? s.label.trim().slice(0, 40) : "Sección",
+      startTime: Math.round(s.startTime * 10) / 10,
+    }));
+  } catch (err) {
+    console.error("[generateSections] parse error:", err.message, rawText?.slice(0, 300));
+    return respond(502, { error: "No se pudo interpretar la respuesta. Intenta de nuevo." }, event);
+  }
+
+  const updatedUsage = { ...usage, [mk]: currentCount + 1 };
+  try { await saveUsage(userId, updatedUsage); }
+  catch (err) { console.warn("No se pudo guardar contador:", err); }
+
+  return respond(200, { sections, usage: currentCount + 1, limit, plan }, event);
+}
+
 // ─── Handler ──────────────────────────────────────────────────────────────
 export const handler = async (event) => {
   const method = event?.requestContext?.http?.method || event?.httpMethod || "POST";
@@ -984,6 +1047,9 @@ export const handler = async (event) => {
   }
   if (body.type === "generateCards") {
     return handleGenerateCards(body, event, userId);
+  }
+  if (body.type === "generateSections") {
+    return handleGenerateSections(body, event, userId);
   }
 
   const { type, context } = body;
