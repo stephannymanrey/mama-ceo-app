@@ -1743,6 +1743,14 @@
   transition: background 0.15s;
 }
 .sce-abi-step-cta:hover { background: rgba(196,82,106,0.24); }
+.sce-abi-step-cta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(255,255,255,0.04);
+  border-color: rgba(255,255,255,0.1);
+  color: #8A86A0;
+}
+.sce-abi-step-cta:disabled:hover { background: rgba(255,255,255,0.04); }
 
 /* ── Panel de efectos ──────────────────────────────────────────────────── */
 .sce-effects-panel {

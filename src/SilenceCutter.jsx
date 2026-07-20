@@ -2481,45 +2481,52 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
 }
 
 // ── Panel guiado de Abi: qué hacer después de cortar ───────────────────────
-function AbiGuidePanel({ hasSubtitles, hasCards, hasSections, onGoTo, onCreateCards, onCreateSections }) {
+function AbiGuidePanel({ hasSubtitles, hasCards, hasSections, onGoTo, onCreateCards, onCreateSections, busy }) {
   const steps = [
     {
       id: "subs", emoji: "💬", title: "Subtítulos",
       desc: "Elige tipografía y estilo, y genera subtítulos minimalistas sincronizados palabra por palabra — se entiende todo aunque vean el video sin sonido.",
       cta: "Elegir estilo y generar →", done: hasSubtitles,
-      onClick: () => onGoTo("subs"), // necesita elegir tipografía/estilo primero
+      onClick: () => onGoTo("subs"), // solo navega — no dispara nada, se puede hacer aunque otra tarea esté corriendo
+      lockable: false,
     },
     {
       id: "cards", emoji: "🃏", title: "Tarjetas de texto",
       desc: "Leo todo lo que dices y coloco tarjetas en los momentos con las ideas más importantes — como titulares de revista.",
       cta: "Crear tarjetas automáticas →", done: hasCards,
       onClick: onCreateCards, // un clic — no necesita elegir nada antes
+      lockable: true,
     },
     {
       id: "sfx", emoji: "🔊", title: "Efectos de sonido por sección",
       desc: "Detecto los cambios de sección de tu video (intro, contenido, cierre) y pongo un efecto de sonido en cada uno — el remate que aplicaría una editora profesional.",
       cta: "Detectar y aplicar →", done: hasSections,
       onClick: onCreateSections, // un clic — no necesita elegir nada antes
+      lockable: true,
     },
   ];
   return (
     <div className="sce-abi-panel">
       <p className="sce-abi-title">✨ ¿Qué quieres hacer con tu video?</p>
-      <p className="sce-abi-sub">Ya cortaste los silencios — ahora déjame ayudarte con lo que haría una editora profesional: comunicación clara, rapidez y un acabado que se ve cuidado.</p>
+      <p className="sce-abi-sub">Ya cortaste los silencios — ahora déjame ayudarte con lo que haría una editora profesional: comunicación clara, rapidez y un acabado que se ve cuidado. Mientras trabajo puedes seguir viendo o ajustando tu video normalmente.</p>
       <div className="sce-abi-steps">
-        {steps.map(s => (
-          <div key={s.id} className={`sce-abi-step${s.done ? " sce-abi-step--done" : ""}`}>
-            <div className="sce-abi-step-head">
-              <span className="sce-abi-step-emoji">{s.emoji}</span>
-              <span className="sce-abi-step-title">{s.title}</span>
-              {s.done && <span className="sce-abi-step-badge">✓ Hecho</span>}
+        {steps.map(s => {
+          const locked = s.lockable && busy && !s.done;
+          return (
+            <div key={s.id} className={`sce-abi-step${s.done ? " sce-abi-step--done" : ""}`}>
+              <div className="sce-abi-step-head">
+                <span className="sce-abi-step-emoji">{s.emoji}</span>
+                <span className="sce-abi-step-title">{s.title}</span>
+                {s.done && <span className="sce-abi-step-badge">✓ Hecho</span>}
+              </div>
+              <p className="sce-abi-step-desc">{s.desc}</p>
+              <button className="sce-abi-step-cta" disabled={locked}
+                onClick={s.done ? () => onGoTo(s.id) : s.onClick}>
+                {locked ? "Espera a que termine lo anterior…" : s.done ? "Revisar / ajustar →" : s.cta}
+              </button>
             </div>
-            <p className="sce-abi-step-desc">{s.desc}</p>
-            <button className="sce-abi-step-cta" onClick={s.done ? () => onGoTo(s.id) : s.onClick}>
-              {s.done ? "Revisar / ajustar →" : s.cta}
-            </button>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -3199,7 +3206,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
 
   // Reproducción
   const runPlay = useCallback(async () => {
-    if (isPlaying || transcribing || !keptSegs.length) return;
+    if (isPlaying || !keptSegs.length) return;
     setIsPlaying(true); setDone(false);
     playRef.current = true;
     const canvas = canvasRef.current;
@@ -3343,7 +3350,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     if (musicEl) { musicEl.pause(); musicEl.src = ""; }
     if (playRef.current) { setDone(true); setEffectiveTime(totalKept); }
     setIsPlaying(false); playRef.current = false;
-  }, [keptSegs, outDims, dims, subtitleStyle, totalKept, isPlaying, transcribing, animFade, startZoom, animSlide, effectiveTime]);
+  }, [keptSegs, outDims, dims, subtitleStyle, totalKept, isPlaying, animFade, startZoom, animSlide, effectiveTime]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) { playRef.current = false; } else { runPlay(); }
@@ -3485,6 +3492,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
                 hasSubtitles={clips.some(c => c.segments?.length > 0)}
                 hasCards={cards.length > 0}
                 hasSections={autoSectionState === "done"}
+                busy={transcribing || autoCardState === "working" || autoSectionState === "working"}
                 onGoTo={setTab}
                 onCreateCards={() => { runAutoCards(); setTab("cards"); }}
                 onCreateSections={() => { runAutoSections(); setTab("sfx"); }}
