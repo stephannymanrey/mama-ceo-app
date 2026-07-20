@@ -654,7 +654,7 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
 // en recordAllClips) — así heredamos el decoder mucho más tolerante que usa
 // el elemento <video>, y solo al final decodificamos el audio ya grabado
 // (webm/opus), que sí es un formato que decodeAudioData maneja sin problema.
-async function extractAudioViaPlayback(file, onProgress) {
+async function extractAudioViaPlayback(file, onProgress, knownDuration) {
   const url = URL.createObjectURL(file);
   const videoEl = document.createElement("video");
   videoEl.src = url;
@@ -663,7 +663,10 @@ async function extractAudioViaPlayback(file, onProgress) {
     videoEl.onloadedmetadata = resolve;
     videoEl.onerror = () => reject(new Error("No se pudo abrir el video para extraer el audio"));
   });
-  const dur = videoEl.duration || 0;
+  // Algunos videos de celular reportan duration=Infinity hasta que el navegador
+  // termina de escanear el archivo — usamos la duración que la app ya conoce
+  // (calculada antes, al analizar silencios) para que el progreso no se quede en 0%.
+  const dur = knownDuration || (Number.isFinite(videoEl.duration) ? videoEl.duration : 0);
 
   const audioCtx = new AudioContext();
   const source = audioCtx.createMediaElementSource(videoEl);
@@ -701,9 +704,9 @@ async function extractAudioViaPlayback(file, onProgress) {
   return decoded;
 }
 
-async function getKeptAudioMono16k(file, silences, onExtractProgress) {
+async function getKeptAudioMono16k(file, silences, onExtractProgress, knownDuration) {
   const TARGET_SR = 16000;
-  const decoded = await extractAudioViaPlayback(file, onExtractProgress);
+  const decoded = await extractAudioViaPlayback(file, onExtractProgress, knownDuration);
   const dur = decoded.duration;
 
   // Rangos conservados = todo lo que NO está marcado como cut
@@ -771,10 +774,10 @@ function mapCondensedToOriginal(t, mappingRanges) {
 
 // Extrae y resamplea el audio en el hilo principal, luego envía solo el
 // Float32Array (transferible) al Worker — este ya no toca OfflineAudioContext.
-async function transcribeClip(file, silences, onModelProgress) {
+async function transcribeClip(file, silences, onModelProgress, knownDuration) {
   onModelProgress?.({ status: "extracting", progress: 0 });
   const { audio, mappingRanges } = await getKeptAudioMono16k(file, silences,
-    pct => onModelProgress?.({ status: "extracting", progress: pct }));
+    pct => onModelProgress?.({ status: "extracting", progress: pct }), knownDuration);
   return new Promise((resolve, reject) => {
     const worker = getWhisperWorker();
     const id = uid();
@@ -2915,7 +2918,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           } else if (info.status === "ready") {
             setTranscribeMsg(`Transcribiendo clip ${i + 1}/${ready.length}...`);
           }
-        });
+        }, clip.duration);
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
       } catch (err) {
         setClips(prev => prev.map(c => c.id === clip.id
@@ -2957,7 +2960,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             else if (info.status === "downloading") setAutoCardMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
             else if (info.status === "loading") setAutoCardMsg("Cargando modelo en memoria...");
             else if (info.status === "ready") setAutoCardMsg(`Transcribiendo ${clip.name.slice(0, 30)}...`);
-          });
+          }, clip.duration);
           setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
         } catch (err) {
           console.error("[autoCards] transcription failed:", err?.message || err);
@@ -3500,7 +3503,7 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
           if (info.status === "extracting") setMsg(`Extrayendo audio... ${info.progress}%`);
           else if (info.status === "downloading")
             setMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
-        });
+        }, clip.duration);
       } catch {
         setPhase("error"); setMsg("Error en la transcripción. Intenta de nuevo."); return;
       }
@@ -4066,7 +4069,7 @@ export default function SilenceCutter() {
         // Pre-transcribir en paralelo si el estilo lo necesita — así cuando el editor abra
         // ya tiene segmentos listos y runAutoCards va directo al paso de IA (sin esperar Whisper).
         if (selectedStyleRef.current?.autoCards && !clip.segments?.length) {
-          transcribeClip(clip.file, silences).then(segs => {
+          transcribeClip(clip.file, silences, null, duration).then(segs => {
             if (segs?.length) setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments: segs, transcribed: true } : c));
           }).catch(err => console.warn("[pre-transcribe]", err?.message));
         }
