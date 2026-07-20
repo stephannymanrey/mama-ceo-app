@@ -641,6 +641,59 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
 }
 
 // ── Transcripción (Whisper Base — Web Worker) ─────────────────────────────
+// El decode/resample de audio corre aquí en el hilo principal: OfflineAudioContext
+// no está garantizado dentro de un Worker (rompía la transcripción con
+// "OfflineAudioContext is not defined" en Chrome desktop). Solo el modelo Whisper
+// —la parte realmente pesada— corre en el Worker.
+async function getKeptAudioMono16k(file, silences) {
+  const TARGET_SR = 16000;
+  const buf = await file.arrayBuffer();
+  const audioCtx = new AudioContext();
+  const decoded = await audioCtx.decodeAudioData(buf);
+  audioCtx.close();
+  const dur = decoded.duration;
+
+  // Rangos conservados = todo lo que NO está marcado como cut
+  const cuts = (silences || []).filter(s => s.cut).sort((a, b) => a.start - b.start);
+  const keptRanges = [];
+  let pos = 0;
+  for (const s of cuts) {
+    if (s.start > pos + 0.05) keptRanges.push({ start: pos, end: s.start });
+    pos = s.end;
+  }
+  if (pos < dur - 0.05) keptRanges.push({ start: pos, end: dur });
+  if (!keptRanges.length) keptRanges.push({ start: 0, end: dur });
+
+  // Resamplear el audio completo a 16 kHz
+  const offline = new OfflineAudioContext(1, Math.ceil(dur * TARGET_SR), TARGET_SR);
+  const src = offline.createBufferSource();
+  src.buffer = decoded;
+  src.connect(offline.destination);
+  src.start();
+  const resampled = await offline.startRendering();
+  const fullData = resampled.getChannelData(0);
+
+  // Concatenar solo los tramos conservados
+  const parts = [];
+  let condensedSamples = 0;
+  for (const r of keptRanges) {
+    const from = Math.floor(r.start * TARGET_SR);
+    const to   = Math.min(Math.ceil(r.end * TARGET_SR), fullData.length);
+    parts.push({ data: fullData.slice(from, to), originalStart: r.start, condensedStart: condensedSamples / TARGET_SR });
+    condensedSamples += to - from;
+  }
+  const combined = new Float32Array(condensedSamples);
+  let off = 0;
+  for (const p of parts) { combined.set(p.data, off); off += p.data.length; }
+
+  const mappingRanges = parts.map(p => ({
+    originalStart:  p.originalStart,
+    originalEnd:    p.originalStart + p.data.length / TARGET_SR,
+    condensedStart: p.condensedStart,
+  }));
+  return { audio: combined, mappingRanges };
+}
+
 let _whisperWorker = null;
 function getWhisperWorker() {
   if (!_whisperWorker) {
@@ -663,9 +716,10 @@ function mapCondensedToOriginal(t, mappingRanges) {
   return last ? last.originalEnd : t;
 }
 
-// Envía el File directamente al Worker — el preproceso (arrayBuffer + decode + resample)
-// ocurre off-thread para no congelar la UI.
+// Extrae y resamplea el audio en el hilo principal, luego envía solo el
+// Float32Array (transferible) al Worker — este ya no toca OfflineAudioContext.
 async function transcribeClip(file, silences, onModelProgress) {
+  const { audio, mappingRanges } = await getKeptAudioMono16k(file, silences);
   return new Promise((resolve, reject) => {
     const worker = getWhisperWorker();
     const id = uid();
@@ -675,14 +729,13 @@ async function transcribeClip(file, silences, onModelProgress) {
         onModelProgress?.(data.info);
       } else if (data.type === "result") {
         worker.removeEventListener("message", onMsg);
-        const mr = data.mappingRanges;
         const segs = (data.chunks || []).map(c => {
           const cs = c.timestamp?.[0] ?? 0;
           const ce = c.timestamp?.[1] ?? (cs + 0.5);
           return {
             word:  c.text.replace(/^\s+/, ""),
-            start: mr ? mapCondensedToOriginal(cs, mr) : cs,
-            end:   mr ? mapCondensedToOriginal(ce, mr) : ce,
+            start: mapCondensedToOriginal(cs, mappingRanges),
+            end:   mapCondensedToOriginal(ce, mappingRanges),
           };
         }).filter(s => s.word);
         resolve(segs);
@@ -699,7 +752,7 @@ async function transcribeClip(file, silences, onModelProgress) {
     };
     worker.addEventListener("message", onMsg);
     worker.addEventListener("error", onErr);
-    worker.postMessage({ id, file, silences: silences || [] });
+    worker.postMessage({ id, audio }, [audio.buffer]);
   });
 }
 
