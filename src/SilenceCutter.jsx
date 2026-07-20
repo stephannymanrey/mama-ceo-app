@@ -2780,7 +2780,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
 
   // Seek desde panel de subtítulos (clip + localTime)
   const handleSeekInClip = useCallback((clipId, lt) => {
-    if (isPlaying) { playRef.current = false; setTimeout(() => {}, 80); }
+    if (isPlaying) { playRef.current = false; setIsPlaying(false); }
     const et = nativeToEffective(keptSegs, clipId, lt);
     if (et !== null) seekToEffective(et);
   }, [isPlaying, keptSegs, seekToEffective]);
@@ -3182,7 +3182,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           {onExtractReels && (
             <button className="sce-reel-pill" onClick={onExtractReels} title="Extractor de Reels">🎯 Reels</button>
           )}
-          <button className="sc-btn-primary sc-btn-sm" onClick={() => onExport(effects, clipTransitions, music, cards)}>✂️ Exportar</button>
+          <button className="sc-btn-primary sc-btn-sm" onClick={() => onExport(effects, clipTransitions, music, cards, sfxList)}>✂️ Exportar</button>
         </div>
       </div>
 
@@ -4018,7 +4018,7 @@ export default function SilenceCutter() {
   const removeClip = id => setClips(prev => prev.filter(c => c.id !== id));
   const onDrop = (e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); };
 
-  const exportar = async (effects = {}, clipTransitions = {}, music = {}, cards = []) => {
+  const exportar = async (effects = {}, clipTransitions = {}, music = {}, cards = [], sfxList = []) => {
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) { setError("Analiza los clips primero."); return; }
     abortRef.current = false;
