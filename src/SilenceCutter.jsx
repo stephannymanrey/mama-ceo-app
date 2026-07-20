@@ -2480,6 +2480,48 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
   );
 }
 
+// ── Panel guiado de Abi: qué hacer después de cortar ───────────────────────
+function AbiGuidePanel({ hasSubtitles, hasCards, hasTransitions, onGoTo }) {
+  const steps = [
+    {
+      id: "subs", emoji: "💬", title: "Subtítulos",
+      desc: "Elige tipografía y estilo, y genera subtítulos minimalistas sincronizados palabra por palabra — se entiende todo aunque vean el video sin sonido.",
+      cta: "Elegir estilo y generar →", done: hasSubtitles,
+    },
+    {
+      id: "cards", emoji: "🃏", title: "Tarjetas de texto",
+      desc: "Leo todo lo que dices y coloco tarjetas en los momentos con las ideas más importantes — como titulares de revista.",
+      cta: "Crear tarjetas automáticas →", done: hasCards,
+    },
+    {
+      id: "trans", emoji: "🎬", title: "Música, transiciones y efectos",
+      desc: "Detecto los cambios de sección de tu video (intro, contenido, cierre) y aplico transiciones con efectos de sonido — el toque profesional automático.",
+      cta: "Aplicar automáticamente →", done: hasTransitions,
+    },
+  ];
+  return (
+    <div className="sce-abi-panel">
+      <p className="sce-abi-title">✨ ¿Qué quieres hacer con tu video?</p>
+      <p className="sce-abi-sub">Ya cortaste los silencios — ahora déjame ayudarte con lo que haría una editora profesional: comunicación clara, rapidez y un acabado que se ve cuidado.</p>
+      <div className="sce-abi-steps">
+        {steps.map(s => (
+          <div key={s.id} className={`sce-abi-step${s.done ? " sce-abi-step--done" : ""}`}>
+            <div className="sce-abi-step-head">
+              <span className="sce-abi-step-emoji">{s.emoji}</span>
+              <span className="sce-abi-step-title">{s.title}</span>
+              {s.done && <span className="sce-abi-step-badge">✓ Hecho</span>}
+            </div>
+            <p className="sce-abi-step-desc">{s.desc}</p>
+            <button className="sce-abi-step-cta" onClick={() => onGoTo(s.id)}>
+              {s.done ? "Revisar / ajustar →" : s.cta}
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── EditorScreen ──────────────────────────────────────────────────────────
 function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg }) {
   const canvasRef    = useRef(null);
@@ -2506,7 +2548,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const [transcribeMsg, setTranscribeMsg] = useState("");
   const [selectedSeg,  setSelectedSeg]  = useState(null); // {clipId, start, end} del fragmento seleccionado
   const [dims,         setDims]         = useState({ W: 1280, H: 720 });
-  const [tab,          setTab]          = useState("subs");
+  const [tab,          setTab]          = useState("abi");
   const [effects,      setEffects]      = useState(() => ({ transition: "none", transitionSecs: 0.4, bokeh: 0, autoZoom: false, zoomInterval: 4, ...VIDEO_PRESETS[0].values, _preset: "natural" }));
   const [bokehLoading, setBokehLoading] = useState(false);
   const [clipTransitions, setClipTransitions] = useState({});
@@ -3314,6 +3356,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         {/* Panel derecho con tabs: Subtítulos | Transiciones | Efectos */}
         <div className="sce-right-panel">
           <div className="sce-tab-bar">
+            <button className={`sce-tab${tab === "abi"   ? " active" : ""}`} onClick={() => setTab("abi")}   title="Abi">✨ Abi</button>
             <button className={`sce-tab${tab === "subs"  ? " active" : ""}`} onClick={() => setTab("subs")}  title="Subtítulos">💬 Texto</button>
             <button className={`sce-tab${tab === "music" ? " active" : ""}`} onClick={() => setTab("music")} title="Música">
               🎵 Música{music.url && tab !== "music" && <span className="sce-tab-dot" />}
@@ -3323,7 +3366,14 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             <button className={`sce-tab${tab === "trans" ? " active" : ""}`} onClick={() => setTab("trans")} title="Transiciones">🎬 Trans.</button>
             <button className={`sce-tab${tab === "fx"    ? " active" : ""}`} onClick={() => setTab("fx")}    title="Efectos visuales">✨ FX</button>
           </div>
-          {tab === "subs"
+          {tab === "abi"
+            ? <AbiGuidePanel
+                hasSubtitles={clips.some(c => c.segments?.length > 0)}
+                hasCards={cards.length > 0}
+                hasTransitions={Object.keys(clipTransitions).length > 0}
+                onGoTo={setTab}
+              />
+            : tab === "subs"
             ? <SubtitlePanel
                 clips={clips} setClips={setClips}
                 currentClipId={currentClipId} localTime={localTime}
