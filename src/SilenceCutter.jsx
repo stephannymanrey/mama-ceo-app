@@ -645,12 +645,65 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
 // no está garantizado dentro de un Worker (rompía la transcripción con
 // "OfflineAudioContext is not defined" en Chrome desktop). Solo el modelo Whisper
 // —la parte realmente pesada— corre en el Worker.
-async function getKeptAudioMono16k(file, silences) {
-  const TARGET_SR = 16000;
-  const buf = await file.arrayBuffer();
+//
+// decodeAudioData(arrayBuffer) directo sobre el archivo original falla con
+// "Unable to decode audio data" en varios videos grabados con celular (MOV/MP4
+// con estructuras de contenedor que el decoder estricto de Web Audio rechaza,
+// aunque el mismo archivo se reproduzca perfecto en un <video>). Reproducimos
+// el video real y grabamos su audio (misma técnica que ya usa la exportación
+// en recordAllClips) — así heredamos el decoder mucho más tolerante que usa
+// el elemento <video>, y solo al final decodificamos el audio ya grabado
+// (webm/opus), que sí es un formato que decodeAudioData maneja sin problema.
+async function extractAudioViaPlayback(file, onProgress) {
+  const url = URL.createObjectURL(file);
+  const videoEl = document.createElement("video");
+  videoEl.src = url;
+  videoEl.preload = "auto";
+  await new Promise((resolve, reject) => {
+    videoEl.onloadedmetadata = resolve;
+    videoEl.onerror = () => reject(new Error("No se pudo abrir el video para extraer el audio"));
+  });
+  const dur = videoEl.duration || 0;
+
   const audioCtx = new AudioContext();
-  const decoded = await audioCtx.decodeAudioData(buf);
-  audioCtx.close();
+  const source = audioCtx.createMediaElementSource(videoEl);
+  const destination = audioCtx.createMediaStreamDestination();
+  source.connect(destination);
+
+  const mimeType = ["audio/webm;codecs=opus", "audio/webm", "audio/ogg;codecs=opus"]
+    .find(t => window.MediaRecorder?.isTypeSupported(t)) || "audio/webm";
+  const recorder = new MediaRecorder(destination.stream, { mimeType });
+  const chunks = [];
+  recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+  const stopped = new Promise(resolve => { recorder.onstop = resolve; });
+
+  const progressTimer = dur ? setInterval(() => {
+    onProgress?.(Math.min(99, Math.round((videoEl.currentTime / dur) * 100)));
+  }, 250) : null;
+
+  recorder.start(250);
+  await videoEl.play();
+  await new Promise(resolve => { videoEl.onended = resolve; });
+  recorder.stop();
+  await stopped;
+  if (progressTimer) clearInterval(progressTimer);
+  onProgress?.(100);
+
+  try { source.disconnect(); } catch {}
+  URL.revokeObjectURL(url);
+  await audioCtx.close();
+
+  const blob = new Blob(chunks, { type: mimeType });
+  const buf = await blob.arrayBuffer();
+  const decodeCtx = new AudioContext();
+  const decoded = await decodeCtx.decodeAudioData(buf);
+  await decodeCtx.close();
+  return decoded;
+}
+
+async function getKeptAudioMono16k(file, silences, onExtractProgress) {
+  const TARGET_SR = 16000;
+  const decoded = await extractAudioViaPlayback(file, onExtractProgress);
   const dur = decoded.duration;
 
   // Rangos conservados = todo lo que NO está marcado como cut
@@ -719,7 +772,9 @@ function mapCondensedToOriginal(t, mappingRanges) {
 // Extrae y resamplea el audio en el hilo principal, luego envía solo el
 // Float32Array (transferible) al Worker — este ya no toca OfflineAudioContext.
 async function transcribeClip(file, silences, onModelProgress) {
-  const { audio, mappingRanges } = await getKeptAudioMono16k(file, silences);
+  onModelProgress?.({ status: "extracting", progress: 0 });
+  const { audio, mappingRanges } = await getKeptAudioMono16k(file, silences,
+    pct => onModelProgress?.({ status: "extracting", progress: pct }));
   return new Promise((resolve, reject) => {
     const worker = getWhisperWorker();
     const id = uid();
@@ -2850,7 +2905,9 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       setTranscribeMsg(`Clip ${i + 1}/${ready.length}: ${clip.name.slice(0, 30)}...`);
       try {
         const segments = await transcribeClip(clip.file, clip.silences, info => {
-          if (info.status === "downloading") {
+          if (info.status === "extracting") {
+            setTranscribeMsg(`Extrayendo audio del video... ${info.progress}%`);
+          } else if (info.status === "downloading") {
             const p = info.progress ? Math.round(info.progress) : 0;
             setTranscribeMsg(`Descargando modelo Whisper... ${p}% (solo la primera vez)`);
           } else if (info.status === "loading") {
@@ -2896,7 +2953,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         setAutoCardMsg(`Transcribiendo ${clip.name.slice(0, 30)}...`);
         try {
           segments = await transcribeClip(clip.file, clip.silences || [], info => {
-            if (info.status === "downloading") setAutoCardMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
+            if (info.status === "extracting") setAutoCardMsg(`Extrayendo audio... ${info.progress}%`);
+            else if (info.status === "downloading") setAutoCardMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
             else if (info.status === "loading") setAutoCardMsg("Cargando modelo en memoria...");
             else if (info.status === "ready") setAutoCardMsg(`Transcribiendo ${clip.name.slice(0, 30)}...`);
           });
@@ -3439,7 +3497,8 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
       try {
         setMsg("Transcribiendo...");
         segments = await transcribeClip(clip.file, clip.silences || [], info => {
-          if (info.status === "downloading")
+          if (info.status === "extracting") setMsg(`Extrayendo audio... ${info.progress}%`);
+          else if (info.status === "downloading")
             setMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
         });
       } catch {
