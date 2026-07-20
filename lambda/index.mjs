@@ -17,6 +17,16 @@ const REGION        = process.env.AWS_REGION      || "us-east-1";
 // en vez de tener su propio límite.
 const PLAN_LIMITS = { free: 50, mama: 50, emprendedora: 60, ceo: 200, premium: 200 };
 
+// Techos de tamaño para texto libre que se interpola en prompts de Claude.
+// Sin esto, una sola request dentro de la cuota permitida podía mandar
+// megabytes de texto (costo desproporcionado + superficie de prompt injection
+// más grande de lo necesario). Generosos a propósito: el límite real de
+// abuso es la cuota diaria/mensual, esto solo evita un request individual
+// absurdo.
+const MAX_TEXT_LEN     = 20000;  // ~ una sección larga de plan de negocio
+const MAX_TRANSCRIPT_LEN = 150000; // ~ transcripción con timestamps de un video de hasta ~1h
+const MAX_FRAME_LEN    = 2_000_000; // base64 de un frame JPEG 512px real pesa muchísimo menos
+
 const ALLOWED_ORIGINS = [
   "https://www.mamaceoapp.co",
   "https://mamaceoapp.co",
@@ -705,6 +715,7 @@ async function handleMejorarSeccion(body, event) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { texto, seccion, negocio } = body;
   if (!texto?.trim()) return respond(400, { error: "Falta texto" }, event);
+  if (texto.length > MAX_TEXT_LEN) return respond(400, { error: "Texto demasiado largo" }, event);
   if (!(await checkAndIncrDailyLimit("mejorarSeccion", PUBLIC_AI_DAILY_LIMIT))) {
     return respond(429, { error: "limite_diario" }, event);
   }
@@ -741,6 +752,7 @@ async function handleDofa(body, event) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { plan } = body;
   if (!plan) return respond(400, { error: "Falta plan" }, event);
+  if (JSON.stringify(plan).length > MAX_TEXT_LEN) return respond(400, { error: "Plan demasiado largo" }, event);
   if (!(await checkAndIncrDailyLimit("dofa", PUBLIC_AI_DAILY_LIMIT))) {
     return respond(429, { error: "limite_diario" }, event);
   }
@@ -804,6 +816,7 @@ async function handleExtractReels(body, event, userId) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { transcription, duration } = body;
   if (!transcription?.trim()) return respond(400, { error: "Falta transcripción" }, event);
+  if (transcription.length > MAX_TRANSCRIPT_LEN) return respond(400, { error: "Transcripción demasiado larga" }, event);
 
   const { plan, usage } = await getUserPlanAndUsage(userId);
   const mk = monthKey();
@@ -874,6 +887,7 @@ async function handleGenerateCards(body, event, userId) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { transcription, duration } = body;
   if (!transcription?.trim()) return respond(400, { error: "Falta transcripción" }, event);
+  if (transcription.length > MAX_TRANSCRIPT_LEN) return respond(400, { error: "Transcripción demasiado larga" }, event);
 
   const { plan, usage } = await getUserPlanAndUsage(userId);
   const mk = monthKey();
@@ -945,6 +959,9 @@ async function handleAnalyzeStyle(body, event, userId) {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
   const { frames, format, duration } = body;
   if (!frames?.length) return respond(400, { error: "Falta frames" }, event);
+  if (frames.some(f => typeof f !== "string" || f.length > MAX_FRAME_LEN)) {
+    return respond(400, { error: "Frame demasiado pesado" }, event);
+  }
 
   let plan = "free", usage = {}, currentCount = 0, limit = 99999;
   if (userId) {
