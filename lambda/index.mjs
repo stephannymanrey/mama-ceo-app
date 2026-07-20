@@ -25,7 +25,6 @@ const PLAN_LIMITS = { free: 50, mama: 50, emprendedora: 60, ceo: 200, premium: 2
 // absurdo.
 const MAX_TEXT_LEN     = 20000;  // ~ una sección larga de plan de negocio
 const MAX_TRANSCRIPT_LEN = 150000; // ~ transcripción con timestamps de un video de hasta ~1h
-const MAX_FRAME_LEN    = 2_000_000; // base64 de un frame JPEG 512px real pesa muchísimo menos
 
 const ALLOWED_ORIGINS = [
   "https://www.mamaceoapp.co",
@@ -954,112 +953,6 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
   return respond(200, { tarjetas, usage: currentCount + 1, limit, plan }, event);
 }
 
-// ─── Handler: Analizar estilo visual de un video de referencia ───────────
-async function handleAnalyzeStyle(body, event, userId) {
-  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
-  const { frames, format, duration } = body;
-  if (!frames?.length) return respond(400, { error: "Falta frames" }, event);
-  if (frames.some(f => typeof f !== "string" || f.length > MAX_FRAME_LEN)) {
-    return respond(400, { error: "Frame demasiado pesado" }, event);
-  }
-
-  let plan = "free", usage = {}, currentCount = 0, limit = 99999;
-  if (userId) {
-    const r = await getUserPlanAndUsage(userId);
-    plan = r.plan; usage = r.usage;
-    const mk = monthKey();
-    currentCount = usage[mk] || 0;
-    // Límite por plan: free/mama=10, emprendedora=20, ceo/premium=50 análisis de estilo/mes
-    const styleLimits = { free: 10, mama: 10, emprendedora: 20, ceo: 50, premium: 50 };
-    limit = styleLimits[plan] ?? 10;
-    if (currentCount >= limit) {
-      return respond(429, { error: "limite_alcanzado", usage: currentCount, limit, plan,
-        message: `Llegaste al límite de ${limit} análisis de estilo este mes. Actualiza tu plan para más.` }, event);
-    }
-  } else {
-    // Sin JWT: límite diario compartido de 30 análisis (protege el budget sin bloquear el flujo)
-    const ok = await checkAndIncrDailyLimit("analyzeStyle_pub", 30);
-    if (!ok) return respond(429, { error: "limite_diario", message: "Límite diario de análisis alcanzado. Intenta mañana o inicia sesión." }, event);
-  }
-
-  const imageContent = frames.slice(0, 3).map(f => ({
-    type: "image",
-    source: { type: "base64", media_type: "image/jpeg", data: f },
-  }));
-  const formatLabel = format === "portrait" ? "vertical 9:16" : format === "square" ? "cuadrado 1:1" : "horizontal 16:9";
-
-  const messages = [{
-    role: "user",
-    content: [
-      ...imageContent,
-      {
-        type: "text",
-        text: `Eres un editor de video experto analizando el estilo de edición de contenido para redes sociales. Los ${frames.length} frames son del mismo video.
-
-Formato: ${formatLabel} | Duración: ${Math.round(duration || 0)}s
-
-Analiza TODO lo que ves con libertad — no te limites a categorías predefinidas. Describe el estilo real del video.
-
-Devuelve SOLO JSON válido, sin texto extra:
-{
-  "videoPreset":"warm|natural|vibrant|fresh|cinema|none",
-  "musicGenre":"motivacional|calmante|energetico|corporativo",
-  "hasCards":true/false,
-  "cardPosition":"fullscreen|pill",
-  "format":"${format || "portrait"}",
-  "editingVibe":"frase 5-7 palabras que captura la esencia del estilo",
-  "colorDesc":"descripción colores 3-5 palabras",
-  "bokeh":true/false,
-  "transition":"cut|smooth|zoom|fade",
-  "editingPace":"fast|medium|slow",
-  "description":"Descripción libre y detallada de TODO lo que ves en el estilo (60-90 palabras en español). Menciona: tipo de planos, movimiento de cámara, efectos especiales, tipografía/texto, overlays, stickers, filtros, ritmo de corte, energía, narración, si hay música visible en pantalla, uso del espacio, cualquier característica visual o técnica notable.",
-  "extras":["hasta 5 strings con características adicionales detectadas que no caben en los campos anteriores — efectos concretos, técnicas, elementos visuales únicos"]
-}
-
-Criterios campos estructurados:
-- videoPreset: warm=tonos cálidos/dorados, natural=neutro/limpio, vibrant=muy saturado, fresh=tonos fríos/azules, cinema=oscuro/alto contraste, none=sin filtro notable
-- musicGenre: motivacional=upbeat inspiracional, calmante=suave/lifestyle, energetico=beats rápidos/baile, corporativo=profesional/negocios
-- hasCards: true si hay texto/tarjetas superpuestas al video (NO solo subtítulos en la parte baja)
-- bokeh: true si hay fondo borroso/depth-of-field visible
-- transition: cut=cortes directos, smooth=fundidos suaves, zoom=zoom in/out, fade=fundido a negro
-- editingPace: fast=clips <2s muy dinámico, slow=clips >5s pausado, medium=ritmo normal`,
-      },
-    ],
-  }];
-
-  let rawText;
-  try {
-    const res = await fetch(ANTHROPIC_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "anthropic-version": "2023-06-01", "x-api-key": ANTHROPIC_KEY },
-      body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 800, messages }),
-    });
-    if (!res.ok) throw new Error(`Claude ${res.status}`);
-    const data = await res.json();
-    rawText = data.content?.[0]?.text || "";
-  } catch (err) {
-    console.error("[analyzeStyle] Claude error:", err.message);
-    return respond(502, { error: "No se pudo analizar el video. Intenta de nuevo." }, event);
-  }
-
-  let analysis;
-  try {
-    let txt = rawText.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
-    const s = txt.indexOf("{"), e = txt.lastIndexOf("}");
-    if (s === -1 || e === -1) throw new Error("No JSON");
-    analysis = JSON.parse(txt.slice(s, e + 1));
-  } catch (err) {
-    console.error("[analyzeStyle] parse error:", err.message, rawText?.slice(0, 200));
-    return respond(502, { error: "Respuesta no válida. Intenta de nuevo." }, event);
-  }
-
-  if (userId) {
-    const mk = monthKey();
-    try { await saveUsage(userId, { ...usage, [mk]: currentCount + 1 }); } catch {}
-  }
-  return respond(200, { analysis }, event);
-}
-
 // ─── Handler ──────────────────────────────────────────────────────────────
 export const handler = async (event) => {
   const method = event?.requestContext?.http?.method || event?.httpMethod || "POST";
@@ -1079,11 +972,6 @@ export const handler = async (event) => {
   if (body.type === "dofa" && body.publicEmail) {
     return handleDofa(body, event);
   }
-  // Ruta semi-pública: análisis de estilo visual — funciona sin JWT, tracking opcional
-  if (body.type === "analyzeStyle") {
-    return handleAnalyzeStyle(body, event, getUserId(event) || null);
-  }
-
   const userId = getUserId(event);
   if (!userId) return respond(401, { error: "No autorizada" }, event);
 

@@ -373,19 +373,6 @@ const CARD_FONTS = [
   { id: "Cinzel",           label: "Cinzel",        weight: 900, cat: "elegant" },
 ];
 
-// Estilos de edición predefinidos: eligiendo uno, la herramienta aplica
-// automáticamente tarjetas (vía IA) con la tipografía/color/animación del
-// estilo. "none" preserva el editor 100% manual.
-const STYLE_TEMPLATES = [
-  {
-    id: "none",
-    emoji: "✂️",
-    label: "Editor libre",
-    desc: "Corta silencios y edita todo a tu manera. Sin tarjetas automáticas — tú controlas cada ajuste.",
-    autoCards: false,
-  },
-];
-
 // Formatea transcripción con timestamp cada 8 palabras — formato que espera
 // el prompt del backend para generar tarjetas automáticas.
 function buildTimestampedTranscript(segments) {
@@ -2494,7 +2481,7 @@ function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bo
 }
 
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg, style }) {
+function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg }) {
   const canvasRef    = useRef(null);
   const playRef      = useRef(false);
   const subListRef   = useRef(null);
@@ -2541,42 +2528,6 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const prevKeptLenRef  = useRef(0); // para el primer dibujado al abrir editor
   const [autoCardState, setAutoCardState] = useState("idle"); // idle|needsAuth|working|done|error
   const [autoCardMsg, setAutoCardMsg] = useState("");
-
-  // Aplicar preset de color y música del estilo elegido — solo una vez al montar
-  const styleAutoApplied = useRef(false);
-  useEffect(() => {
-    if (!style || styleAutoApplied.current) return;
-    styleAutoApplied.current = true;
-    let needsRedraw = false;
-    if (style.videoPreset) {
-      const preset = VIDEO_PRESETS.find(p => p.id === style.videoPreset);
-      if (preset) {
-        setEffects(e => ({ ...e, ...preset.values, _preset: preset.id }));
-        needsRedraw = true;
-      }
-    }
-    if (style.musicGenre) {
-      const tracks = MUSIC_LIBRARY.filter(t => t.genre === style.musicGenre);
-      if (tracks.length) {
-        const track = tracks[Math.floor(Math.random() * tracks.length)];
-        setMusic({ url: track.url, name: track.name, volume: 0.12, duck: true, loop: true, fromLibrary: true });
-      }
-    }
-    if (style.isCloned) {
-      const bokehVal = style.bokeh === true ? 50 : (typeof style.bokeh === "number" ? style.bokeh : 0);
-      const transVal = style.transition && style.transition !== "none" ? style.transition : undefined;
-      const extra = { bokeh: bokehVal };
-      if (transVal) extra.transition = transVal;
-      setEffects(e => ({ ...e, ...extra }));
-      needsRedraw = true;
-    }
-    // El sync effect de effectsRef corre en el mismo ciclo y sobreescribe con el estado
-    // viejo antes de que React procese el setEffects. Forzamos redibujado en el ciclo
-    // siguiente cuando effectsRef ya tiene los valores actualizados.
-    if (needsRedraw) {
-      setTimeout(() => seekToEffectiveRef.current?.(effectiveTimeRef.current || 0), 60);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Sync effects state → ref (para que callbacks estables lo lean sin deps)
   useEffect(() => { effectsRef.current = effects; }, [effects]);
@@ -2948,7 +2899,6 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     }
 
     const generated = [];
-    let colorStep = 0;
     let lastError = null;
     for (const clip of ready) {
       let segments = clip.segments?.length ? clip.segments : null;
@@ -3014,13 +2964,12 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           generated.push({
             id: uid(), text: t.texto, keyword: t.keyword || "",
             startTime: Math.round(et * 10) / 10,
-            duration: style?.cardDuration || 3,
-            colorIdx: style?.cardColorCycle?.[colorStep % style.cardColorCycle.length] ?? 0,
-            font: style?.cardFont || "Poppins",
-            position: style?.cardPosition || "bottom",
-            animation: style?.cardAnimation || "slideUp",
+            duration: 3,
+            colorIdx: 0,
+            font: "Poppins",
+            position: "bottom",
+            animation: "slideUp",
           });
-          colorStep++;
         }
       } catch (err) {
         console.error("[autoCards] fetch error:", err?.message || err);
@@ -3037,22 +2986,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       setAutoCardState("error");
       setAutoCardMsg(lastError || "No se pudieron generar tarjetas. Puedes crearlas manualmente.");
     }
-  }, [clips, keptSegs, setClips, style]);
-
-  useEffect(() => {
-    if (!style?.autoCards || cards.length > 0 || autoCardTriedRef.current) return;
-    if (clips.some(c => c.analyzed && !c.error)) runAutoCards();
-  }, [style, clips, cards.length, runAutoCards]);
-
-  // Auto-transcribir para subtítulos si el estilo lo requiere y no hay segmentos aún
-  const autoSubTriedRef = useRef(false);
-  useEffect(() => {
-    if (!style?.autoCards || autoSubTriedRef.current || transcribing) return;
-    const needsTrans = clips.filter(c => c.analyzed && !c.error && !c.segments?.length);
-    if (!needsTrans.length) return;
-    autoSubTriedRef.current = true;
-    handleTranscribeInline();
-  }, [style, clips, transcribing]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [clips, keptSegs, setClips]);
 
   // Dibujar primer frame cuando los segmentos están listos → evita canvas negro al abrir editor
   useEffect(() => {
@@ -3403,7 +3337,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             ? <MusicPanel music={music} onMusicChange={setMusic} />
             : tab === "cards"
             ? <>
-                {style?.autoCards && autoCardState !== "idle" && (
+                {autoCardState !== "idle" && (
                   <div className={`sce-autocards-banner sce-autocards-banner--${autoCardState}`}>
                     {autoCardState === "working" && <><span className="sce-autocards-spinner" />{autoCardMsg}</>}
                     {autoCardState === "done" && <span>{autoCardMsg}</span>}
@@ -3688,337 +3622,6 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
   );
 }
 
-// ── Helper: extrae frames de un video como base64 JPEG ────────────────────
-async function extractVideoFrames(file, positions = [0.15, 0.5, 0.85]) {
-  const url = URL.createObjectURL(file);
-  const vid = document.createElement("video");
-  vid.muted = true;
-  vid.src = url;
-  await new Promise((res, rej) => {
-    vid.onloadedmetadata = res;
-    vid.onerror = () => rej(new Error("No se pudo leer el video de referencia"));
-  });
-  const MAX_DIM = 512;
-  const scale = Math.min(1, MAX_DIM / Math.max(vid.videoWidth || 1, vid.videoHeight || 1));
-  const W = Math.round(vid.videoWidth * scale);
-  const H = Math.round(vid.videoHeight * scale);
-  const format = vid.videoWidth >= vid.videoHeight ? "landscape" : "portrait";
-  const duration = vid.duration;
-  const frames = [];
-  for (const pos of positions) {
-    vid.currentTime = duration * pos;
-    await new Promise(res => { vid.onseeked = res; });
-    const c = document.createElement("canvas");
-    c.width = W; c.height = H;
-    c.getContext("2d").drawImage(vid, 0, 0, W, H);
-    frames.push(c.toDataURL("image/jpeg", 0.72).split(",")[1]);
-  }
-  URL.revokeObjectURL(url);
-  return { frames, format, duration };
-}
-
-// ── Pantalla de análisis de estilo desde video de referencia ──────────────
-const PRESET_INFO = {
-  warm:    { icon: "☀️", label: "Cálido" },
-  natural: { icon: "🌿", label: "Natural" },
-  vibrant: { icon: "✨", label: "Vibrante" },
-  fresh:   { icon: "❄️", label: "Fresco" },
-  cinema:  { icon: "🎬", label: "Cinema" },
-  none:    { icon: "—",  label: "Sin filtro" },
-};
-const GENRE_INFO = {
-  motivacional: { icon: "🚀", label: "Motivacional" },
-  calmante:     { icon: "🌊", label: "Calmante" },
-  energetico:   { icon: "⚡", label: "Energético" },
-  corporativo:  { icon: "💼", label: "Corporativo" },
-};
-
-function ReferenceVideoScreen({ onAnalyzed, onBack }) {
-  const [file,      setFile]      = useState(null);
-  const [previewUrl, setPreview]  = useState(null);
-  const [phase,     setPhase]     = useState("upload"); // upload|analyzing|result|applying
-  const [msg,       setMsg]       = useState("");
-  const [analysis,  setAnalysis]  = useState(null);
-  const [error,     setError]     = useState("");
-  const dropRef = useRef(null);
-
-  const handleFile = (f) => {
-    if (!f || !f.type.startsWith("video/")) return;
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
-    setAnalysis(null);
-    setError("");
-    setPhase("upload");
-  };
-
-  const analyze = async () => {
-    if (!file) return;
-    setPhase("analyzing");
-    setError("");
-    try {
-      setMsg("Extrayendo frames del video...");
-      const { frames, format, duration } = await extractVideoFrames(file);
-
-      setMsg("Analizando estilo con IA...");
-      const reqHeaders = { "Content-Type": "application/json" };
-      try { const t = await getAwsAuthToken(); if (t) reqHeaders.Authorization = `Bearer ${t}`; } catch {}
-      const res = await fetch(REELS_API, {
-        method: "POST",
-        headers: reqHeaders,
-        body: JSON.stringify({ type: "analyzeStyle", frames, format, duration }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        if (res.status === 429) { setError(data?.message || "Límite de IA alcanzado."); setPhase("upload"); return; }
-        throw new Error(data?.error || `Error ${res.status}`);
-      }
-      setAnalysis(data.analysis);
-      setPhase("result");
-    } catch (err) {
-      setError(`No se pudo analizar: ${err.message}`);
-      setPhase("upload");
-    }
-  };
-
-  const applyStyle = () => {
-    if (!analysis) return;
-    const style = {
-      id: "clone",
-      emoji: "📱",
-      label: "Estilo inspirado",
-      desc: analysis.editingVibe || "Estilo detectado automáticamente",
-      videoPreset:   analysis.videoPreset   || "natural",
-      musicGenre:    analysis.musicGenre    || "motivacional",
-      autoCards:     analysis.hasCards      || false,
-      cardPosition:  analysis.cardPosition  || "pill",
-      format:        analysis.format        || "portrait",
-      bokeh:         analysis.bokeh         || false,
-      transition:    analysis.transition    || "none",
-      sensitivity:   analysis.editingPace === "fast" ? "agresiva" : "conservadora",
-      isCloned:      true,
-    };
-    setPhase("applying");
-    setTimeout(() => onAnalyzed(style), 900);
-  };
-
-  const onDrop = (e) => {
-    e.preventDefault();
-    const f = e.dataTransfer.files?.[0];
-    if (f) handleFile(f);
-  };
-
-  const presetI  = PRESET_INFO[analysis?.videoPreset]  || PRESET_INFO.natural;
-  const genreI   = GENRE_INFO[analysis?.musicGenre]    || GENRE_INFO.motivacional;
-
-  return (
-    <div className="sc-page">
-      <nav className="sc-nav"><Logo width={110} /><a href="/" className="sc-nav-link">Ir a la app →</a></nav>
-      <div className="sce-ref-wrap">
-        <button className="sce-ref-back" onClick={onBack}>← Volver</button>
-        <h1 className="sc-editor-title">Analizar estilo de un video</h1>
-        <p className="sc-editor-sub">
-          Descarga el Reel o TikTok que te inspiró y súbelo aquí. La IA leerá
-          en detalle su estilo de edición y te dirá todo lo que ve.
-        </p>
-
-        <div className="sce-ref-cols">
-          {/* Columna izquierda: subir */}
-          <div className="sce-ref-left">
-            <div
-              ref={dropRef}
-              className={`sce-ref-drop${file ? " has-file" : ""}`}
-              onDragOver={e => e.preventDefault()}
-              onDrop={onDrop}
-              onClick={() => { const i = document.createElement("input"); i.type = "file"; i.accept = "video/*"; i.onchange = e => handleFile(e.target.files[0]); i.click(); }}>
-              {file ? (
-                <video src={previewUrl} className="sce-ref-video-preview" controls muted />
-              ) : (
-                <>
-                  <span className="sce-ref-drop-icon">📱</span>
-                  <p className="sce-ref-drop-text">Arrastra el video de referencia</p>
-                  <p className="sce-ref-drop-hint">o haz clic para buscar · MP4, MOV, WebM</p>
-                </>
-              )}
-            </div>
-            {file && <p className="sce-ref-filename">📎 {file.name}</p>}
-            {file && phase !== "result" && (
-              <button
-                className="sce-ref-analyze-btn"
-                onClick={analyze}
-                disabled={phase === "analyzing"}>
-                {phase === "analyzing" ? "Analizando…" : "✨ Analizar estilo con IA"}
-              </button>
-            )}
-          </div>
-
-          {/* Columna derecha: resultado o instrucciones */}
-          <div className="sce-ref-right">
-            {!file && (
-              <div className="sce-ref-tips">
-                <p className="sce-ref-tips-title">¿Cómo descargar el video?</p>
-                <div className="sce-ref-tip"><span>📲</span><span><strong>TikTok:</strong> Toca "Compartir" → "Guardar video"</span></div>
-                <div className="sce-ref-tip"><span>📸</span><span><strong>Instagram:</strong> Usa SnapTik, SaveIG u otra app de descarga</span></div>
-                <div className="sce-ref-tip"><span>▶️</span><span><strong>YouTube Shorts:</strong> Usa yt-dlp o un downloader online</span></div>
-                <p className="sce-ref-tips-note">La IA describe todo lo que ve: color, ritmo, efectos, transiciones, tipografía, cámara y más.</p>
-              </div>
-            )}
-            {phase === "upload" && file && !analysis && (
-              <div className="sce-ref-ready">
-                <p className="sce-ref-ready-title">Video listo para analizar</p>
-                <p className="sce-ref-ready-desc">La IA leerá 3 momentos del video y detectará color, ritmo, efectos, transiciones, tipografía y más.</p>
-              </div>
-            )}
-
-            {phase === "analyzing" && (
-              <div className="sce-ref-analyzing">
-                <div className="sce-ref-spinner" />
-                <div className="sce-ref-progress-steps">
-                  <div className={`sce-ref-progress-step${!msg.includes("IA") ? " active" : " done"}`}>
-                    <span className="sce-ref-step-dot" />
-                    Extrayendo frames del video
-                  </div>
-                  <div className={`sce-ref-progress-step${msg.includes("IA") ? " active" : ""}`}>
-                    <span className="sce-ref-step-dot" />
-                    Analizando estilo con IA Vision
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {phase === "applying" && (
-              <div className="sce-ref-applying">
-                <span className="sce-ref-applying-check">✅</span>
-                <p className="sce-ref-applying-title">Estilo capturado</p>
-                <div className="sce-ref-applying-chips">
-                  <span className="sce-ref-applying-chip">{presetI.icon} {presetI.label}</span>
-                  <span className="sce-ref-applying-chip">{genreI.icon} {genreI.label}</span>
-                </div>
-                <p className="sce-ref-applying-sub">Preparando tu editor para copiarlo en tu video…</p>
-              </div>
-            )}
-
-            {phase === "result" && analysis && (
-              <div className="sce-ref-result">
-                <p className="sce-ref-result-title">✅ Estilo analizado</p>
-                {analysis.description && (
-                  <p className="sce-ref-result-desc">{analysis.description}</p>
-                )}
-                {!analysis.description && analysis.editingVibe && (
-                  <p className="sce-ref-result-vibe">"{analysis.editingVibe}"</p>
-                )}
-                <div className="sce-ref-result-grid">
-                  <div className="sce-ref-result-item">
-                    <span className="sce-ref-result-icon">{presetI.icon}</span>
-                    <div>
-                      <p className="sce-ref-result-key">Color</p>
-                      <p className="sce-ref-result-val">{presetI.label}</p>
-                    </div>
-                  </div>
-                  <div className="sce-ref-result-item">
-                    <span className="sce-ref-result-icon">{genreI.icon}</span>
-                    <div>
-                      <p className="sce-ref-result-key">Música</p>
-                      <p className="sce-ref-result-val">{genreI.label}</p>
-                    </div>
-                  </div>
-                  <div className="sce-ref-result-item">
-                    <span className="sce-ref-result-icon">{analysis.format === "portrait" ? "📱" : "🖥️"}</span>
-                    <div>
-                      <p className="sce-ref-result-key">Formato</p>
-                      <p className="sce-ref-result-val">{analysis.format === "portrait" ? "Vertical 9:16" : analysis.format === "square" ? "Cuadrado" : "Horizontal"}</p>
-                    </div>
-                  </div>
-                  <div className="sce-ref-result-item">
-                    <span className="sce-ref-result-icon">{analysis.hasCards ? "🃏" : "💬"}</span>
-                    <div>
-                      <p className="sce-ref-result-key">Texto</p>
-                      <p className="sce-ref-result-val">{analysis.hasCards ? `Tarjetas ${analysis.cardPosition === "fullscreen" ? "a pantalla completa" : "superpuestas"}` : "Solo subtítulos"}</p>
-                    </div>
-                  </div>
-                  {analysis.editingPace && (
-                    <div className="sce-ref-result-item">
-                      <span className="sce-ref-result-icon">{analysis.editingPace === "fast" ? "⚡" : analysis.editingPace === "slow" ? "🐢" : "🎬"}</span>
-                      <div>
-                        <p className="sce-ref-result-key">Ritmo</p>
-                        <p className="sce-ref-result-val">{analysis.editingPace === "fast" ? "Rápido / dinámico" : analysis.editingPace === "slow" ? "Pausado / reflexivo" : "Moderado"}</p>
-                      </div>
-                    </div>
-                  )}
-                  {analysis.transition && analysis.transition !== "cut" && (
-                    <div className="sce-ref-result-item">
-                      <span className="sce-ref-result-icon">🔀</span>
-                      <div>
-                        <p className="sce-ref-result-key">Transiciones</p>
-                        <p className="sce-ref-result-val">{{ smooth: "Suaves / fundidos", zoom: "Zoom in/out", fade: "Fade to black" }[analysis.transition] || analysis.transition}</p>
-                      </div>
-                    </div>
-                  )}
-                  {analysis.bokeh && (
-                    <div className="sce-ref-result-item">
-                      <span className="sce-ref-result-icon">🌸</span>
-                      <div>
-                        <p className="sce-ref-result-key">Fondo</p>
-                        <p className="sce-ref-result-val">Bokeh / fondo difuminado</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-                {analysis.extras?.length > 0 && (
-                  <div className="sce-ref-extras">
-                    <p className="sce-ref-extras-title">También detecté:</p>
-                    <div className="sce-ref-extras-list">
-                      {analysis.extras.map((ex, i) => <span key={i} className="sce-ref-extra-tag">{ex}</span>)}
-                    </div>
-                  </div>
-                )}
-                <button className="sce-ref-apply-btn" onClick={applyStyle}>
-                  Aplicar lo que puedo a mi video →
-                </button>
-                <button className="sce-ref-retry" onClick={() => { setPhase("upload"); setAnalysis(null); }}>
-                  Probar con otro video
-                </button>
-              </div>
-            )}
-
-            {error && <p className="sce-ref-error">{error}</p>}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Selector de estilo (pantalla previa a subir el video) ─────────────────
-function StylePickerScreen({ onSelect }) {
-  return (
-    <div className="sc-page">
-      <nav className="sc-nav"><Logo width={110} /><a href="/" className="sc-nav-link">Ir a la app →</a></nav>
-      <div className="sce-style-wrap">
-        <h1 className="sc-editor-title">¿Qué estilo quieres para tu video?</h1>
-        <p className="sc-editor-sub">Elige un estilo y el editor lo aplicará automáticamente a tu clip. Puedes ajustar todo después.</p>
-        <div className="sce-style-grid">
-          {/* Tarjeta especial: copiar estilo de un video de referencia */}
-          <button className="sce-style-card sce-style-card--clone" onClick={() => onSelect({ id: "clone" })}>
-            <span className="sce-style-emoji">🔍</span>
-            <span className="sce-style-label">Inspirarme en un video</span>
-            <span className="sce-style-desc">Sube el Reel o TikTok que te inspiró y la IA analiza su estilo en detalle.</span>
-            <span className="sce-style-badge sce-style-badge--new">✨ Nuevo · IA Vision</span>
-          </button>
-          {STYLE_TEMPLATES.map(tmpl => (
-            <button key={tmpl.id} className="sce-style-card" onClick={() => onSelect(tmpl)}>
-              <span className="sce-style-emoji">{tmpl.emoji}</span>
-              <span className="sce-style-label">{tmpl.label}</span>
-              <span className="sce-style-desc">{tmpl.desc}</span>
-              {tmpl.autoCards && <span className="sce-style-badge">✨ Requiere cuenta (IA)</span>}
-            </button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Componente principal ──────────────────────────────────────────────────
 export default function SilenceCutter() {
   const [clips, setClips]           = useState([]);
@@ -4031,15 +3634,6 @@ export default function SilenceCutter() {
   const [subtitleStyle, setSubtitleStyle] = useState({ font: "Poppins", hlColor: "#FFE44D" });
   const [format, setFormat] = useState("landscape"); // "landscape" | "portrait" | "square"
   const [showReels, setShowReels] = useState(false);
-  const [selectedStyle, setSelectedStyle] = useState(null);
-  const selectedStyleRef = useRef(null);
-  const [cloneMode, setCloneMode] = useState(false);
-  const chooseStyle = useCallback((tmpl) => {
-    if (tmpl.id === "clone") { setCloneMode(true); return; }
-    setSelectedStyle(tmpl);
-    selectedStyleRef.current = tmpl;
-    if (tmpl.format) setFormat(tmpl.format);
-  }, []);
   const [sensitivity, setSensitivity] = useState("conservadora");
   const inputRef = useRef(null);
   const abortRef = useRef(false);
@@ -4066,13 +3660,6 @@ export default function SilenceCutter() {
           }
         );
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
-        // Pre-transcribir en paralelo si el estilo lo necesita — así cuando el editor abra
-        // ya tiene segmentos listos y runAutoCards va directo al paso de IA (sin esperar Whisper).
-        if (selectedStyleRef.current?.autoCards && !clip.segments?.length) {
-          transcribeClip(clip.file, silences, null, duration).then(segs => {
-            if (segs?.length) setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments: segs, transcribed: true } : c));
-          }).catch(err => console.warn("[pre-transcribe]", err?.message));
-        }
       } catch (err) {
         console.error("Error analizando audio:", err);
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, analyzed: true, error: "No se pudo analizar el audio" } : c));
@@ -4222,29 +3809,8 @@ export default function SilenceCutter() {
       format={format} onFormatChange={setFormat}
       onExtractReels={() => setShowReels(true)}
       sensitivity={sensitivity} onReanalyze={reanalizar}
-      onCutSeg={cutSeg} style={selectedStyle} />
+      onCutSeg={cutSeg} />
   );
-
-  // Pantalla de análisis de video de referencia
-  if (fase === "editor" && clips.length === 0 && cloneMode) {
-    return (
-      <ReferenceVideoScreen
-        onAnalyzed={(styleConfig) => {
-          setSelectedStyle(styleConfig);
-          selectedStyleRef.current = styleConfig;
-          if (styleConfig.format) setFormat(styleConfig.format);
-          if (styleConfig.sensitivity) setSensitivity(styleConfig.sensitivity);
-          setCloneMode(false);
-        }}
-        onBack={() => setCloneMode(false)}
-      />
-    );
-  }
-
-  // Selector de estilo — antes de subir el primer video
-  if (fase === "editor" && clips.length === 0 && !selectedStyle) {
-    return <StylePickerScreen onSelect={chooseStyle} />;
-  }
 
   // Pantalla de subida
   return (
@@ -4256,13 +3822,7 @@ export default function SilenceCutter() {
             <h1 className="sc-editor-title">Editor de video</h1>
             <p className="sc-editor-sub">Agrega tus clips, detecta silencios automáticamente y exporta un solo video limpio.</p>
           </div>
-          {selectedStyle && selectedStyle.id !== "none" ? (
-            <button className="sc-badge sc-badge--style" onClick={() => setSelectedStyle(null)} title="Cambiar estilo">
-              {selectedStyle.emoji} {selectedStyle.label} · cambiar
-            </button>
-          ) : (
-            <span className="sc-badge">Herramienta gratuita · En tu dispositivo</span>
-          )}
+          <span className="sc-badge">Herramienta gratuita · En tu dispositivo</span>
         </div>
         <div className={`sc-drop sc-drop--compact${dragOver ? " sc-drop--over" : ""}`}
           onClick={() => inputRef.current?.click()}
