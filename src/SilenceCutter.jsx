@@ -19,6 +19,12 @@ const HL_COLORS = [
   { label: "Blanco",   c: "#FFFFFF" },
   { label: "Verde",    c: "#4ADE80" },
 ];
+const SUB_VARIANTS = [
+  { id: "highlight", label: "Caja de color",  desc: "La palabra activa se resalta con una caja de color — el estilo clásico de subtítulos de Reels." },
+  { id: "classic",   label: "Clásico",        desc: "Texto blanco simple con sombra, sin ningún resaltado por palabra — minimalista." },
+  { id: "bold",      label: "Color en texto", desc: "La palabra activa cambia de color (sin caja) — más sutil que la caja de color." },
+  { id: "outline",   label: "Contorno",       desc: "Texto con contorno negro y relleno blanco — la palabra activa toma el color elegido." },
+];
 const CLIP_COLORS   = ["#C4526A","#4A90BF","#5FB87A","#B07FD4","#D4955F","#5FB8B0"];
 const TRANSITIONS   = [
   { id: "none",       icon: "—", label: "Sin efecto"    },
@@ -667,21 +673,48 @@ async function extractAudioViaPlayback(file, onProgress, knownDuration) {
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   const stopped = new Promise(resolve => { recorder.onstop = resolve; });
 
-  const progressTimer = dur ? setInterval(() => {
-    onProgress?.(Math.min(99, Math.round((videoEl.currentTime / dur) * 100)));
-  }, 250) : null;
+  // Vigía anti-cuelgue: si currentTime deja de avanzar (pestaña en segundo
+  // plano, política de autoplay que "resuelve" sin reproducir de verdad,
+  // etc.), esto fallaba en silencio para siempre esperando "ended". Si no
+  // avanza nada en 10s seguidos, abortamos con un error claro en vez de
+  // dejar a la usuaria esperando indefinidamente.
+  const STALL_MS = 10000;
+  let lastCurrentTime = -1;
+  let lastAdvanceAt = Date.now();
+  const progressTimer = setInterval(() => {
+    if (videoEl.currentTime !== lastCurrentTime) {
+      lastCurrentTime = videoEl.currentTime;
+      lastAdvanceAt = Date.now();
+    }
+    if (dur) onProgress?.(Math.min(99, Math.round((videoEl.currentTime / dur) * 100)));
+  }, 250);
 
-  recorder.start(250);
-  await videoEl.play();
-  await new Promise(resolve => { videoEl.onended = resolve; });
-  recorder.stop();
-  await stopped;
-  if (progressTimer) clearInterval(progressTimer);
-  onProgress?.(100);
-
-  try { source.disconnect(); } catch {}
-  URL.revokeObjectURL(url);
-  await audioCtx.close();
+  let watchdog;
+  try {
+    recorder.start(250);
+    await videoEl.play();
+    await Promise.race([
+      new Promise(resolve => { videoEl.onended = resolve; }),
+      new Promise((_, reject) => {
+        watchdog = setInterval(() => {
+          if (Date.now() - lastAdvanceAt > STALL_MS) {
+            reject(new Error("El video dejó de reproducirse (¿la pestaña estaba en segundo plano?). Mantén esta pestaña visible mientras se procesa e intenta de nuevo."));
+          }
+        }, 1000);
+      }),
+    ]);
+    recorder.stop();
+    await stopped;
+    onProgress?.(100);
+  } finally {
+    clearInterval(progressTimer);
+    clearInterval(watchdog);
+    if (recorder.state !== "inactive") { try { recorder.stop(); } catch {} }
+    try { videoEl.pause(); } catch {}
+    try { source.disconnect(); } catch {}
+    URL.revokeObjectURL(url);
+    try { await audioCtx.close(); } catch {}
+  }
 
   const blob = new Blob(chunks, { type: mimeType });
   const buf = await blob.arrayBuffer();
@@ -693,7 +726,22 @@ async function extractAudioViaPlayback(file, onProgress, knownDuration) {
 
 async function getKeptAudioMono16k(file, silences, onExtractProgress, knownDuration) {
   const TARGET_SR = 16000;
-  const decoded = await extractAudioViaPlayback(file, onExtractProgress, knownDuration);
+
+  // Camino rápido primero: decodeAudioData directo es instantáneo y funciona
+  // para la mayoría de videos. Solo si falla (algunos MOV/MP4 de celular con
+  // contenedores que el decoder estricto de Web Audio rechaza) caemos al
+  // método lento pero tolerante de reproducir + grabar en tiempo real.
+  let decoded;
+  try {
+    const buf = await file.arrayBuffer();
+    const fastCtx = new AudioContext();
+    decoded = await fastCtx.decodeAudioData(buf);
+    await fastCtx.close();
+    onExtractProgress?.(100);
+  } catch (err) {
+    console.warn("[getKeptAudioMono16k] decodeAudioData directo falló, usando extracción por reproducción:", err?.message);
+    decoded = await extractAudioViaPlayback(file, onExtractProgress, knownDuration);
+  }
   const dur = decoded.duration;
 
   // Rangos conservados = todo lo que NO está marcado como cut
@@ -826,6 +874,7 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
   if (!words?.length) return;
   const font      = style.font    || "Poppins";
   const hlColor   = style.hlColor || "#FFE44D";
+  const variant   = style.variant || "highlight"; // highlight|classic|bold|outline
   const sizeScale = style.size === "small" ? 0.72 : style.size === "large" ? 1.35 : 1.0;
   let fs          = Math.max(22, Math.floor(H / 13 * sizeScale));
   const GROUP     = 4;
@@ -864,26 +913,41 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
   let x      = W / 2 - totalW / 2;
   const padX = 5, padY = 3;
 
-  // Franja semitransparente detrás de todas las palabras
-  ctx.fillStyle = "rgba(0,0,0,0.52)";
-  ctx.beginPath();
-  ctx.roundRect(x - padX - 5, y - fs - padY - 5, totalW + (padX + 5) * 2, fs + (padY + 5) * 2, 12);
-  ctx.fill();
-
   group.forEach((w, i) => {
     const isCurrent = time >= w.start && time <= w.end;
     const wordText  = w.word + (i < group.length - 1 ? " " : "");
     const wordW     = ctx.measureText(w.word).width;
-    if (isCurrent) {
-      ctx.fillStyle = hlColor;
-      ctx.beginPath();
-      ctx.roundRect(x - padX, y - fs - padY, wordW + padX * 2, fs + padY * 2, 6);
-      ctx.fill();
-      ctx.fillStyle = "#1a1a2e";
-    } else {
+
+    if (variant === "outline") {
+      // Contorno negro + relleno blanco (color en la palabra activa) — sin caja de fondo.
+      ctx.lineWidth = Math.max(2, fs * 0.09);
+      ctx.strokeStyle = "rgba(0,0,0,0.85)";
+      ctx.lineJoin = "round";
+      ctx.strokeText(wordText, x, y);
+      ctx.fillStyle = isCurrent ? hlColor : "#fff";
+    } else if (variant === "bold") {
+      // La palabra activa cambia de color (sin caja) en vez de resaltarse con fondo.
+      ctx.shadowColor = "rgba(0,0,0,0.9)";
+      ctx.shadowBlur = isCurrent ? 8 : 4;
+      ctx.fillStyle = isCurrent ? hlColor : "rgba(255,255,255,0.95)";
+    } else if (variant === "classic") {
+      // Texto blanco simple con sombra — sin ningún resaltado por palabra.
       ctx.shadowColor = "rgba(0,0,0,0.9)";
       ctx.shadowBlur = 4;
       ctx.fillStyle = "rgba(255,255,255,0.95)";
+    } else {
+      // "highlight" (default): caja de color detrás de la palabra activa.
+      if (isCurrent) {
+        ctx.fillStyle = hlColor;
+        ctx.beginPath();
+        ctx.roundRect(x - padX, y - fs - padY, wordW + padX * 2, fs + padY * 2, 6);
+        ctx.fill();
+        ctx.fillStyle = "#1a1a2e";
+      } else {
+        ctx.shadowColor = "rgba(0,0,0,0.9)";
+        ctx.shadowBlur = 4;
+        ctx.fillStyle = "rgba(255,255,255,0.95)";
+      }
     }
     ctx.fillText(wordText, x, y);
     ctx.shadowBlur = 0;
@@ -1899,6 +1963,17 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
         <>
           {hasSubtitles && (
             <div className="sce-sub-style">
+              <div className="sce-sub-pos-row">
+                <span className="sce-sub-pos-label">Efecto</span>
+                <div className="sce-sub-pos-btns sce-sub-variant-btns">
+                  {SUB_VARIANTS.map(v => (
+                    <button key={v.id}
+                      className={`sce-sub-pos-btn${(subtitleStyle.variant || "highlight") === v.id ? " active" : ""}`}
+                      title={v.desc}
+                      onClick={() => onStyleChange({ ...subtitleStyle, variant: v.id })}>{v.label}</button>
+                  ))}
+                </div>
+              </div>
               <div className="sc-font-pills">
                 {FONTS.map(f => (
                   <button key={f} className={`sc-font-pill${subtitleStyle.font === f ? " active" : ""}`}
@@ -1974,7 +2049,7 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
 }
 
 // ── Timeline contraído ────────────────────────────────────────────────────
-function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none", music = null, sfxList = [], onSfxChange, cards = [], onCardsChange, selectedSeg = null, onSelectSeg }) {
+function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none", music = null, sfxList = [], onSfxChange, cards = [], onCardsChange, selectedSeg = null, onSelectSeg, onClearSubtitles }) {
   const pct = totalKept > 0 ? Math.min(100, (effectiveTime / totalKept) * 100) : 0;
   const [hoveredSeg, setHoveredSeg] = useState(null);
   const [transPickerClipId, setTransPickerClipId] = useState(null);
@@ -2084,6 +2159,7 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
         {/* Labels de pista — fijos, no scrollean */}
         <div className="sce-tl-labels">
           <div className="sce-tl-label-row"><span>🎬</span><span>Video</span></div>
+          <div className="sce-tl-label-row"><span>💬</span><span>Subtítulos</span></div>
           <div className="sce-tl-label-row"><span>🎵</span><span>Música</span></div>
           <div className="sce-tl-label-row"><span>🔊</span><span>SFX</span></div>
           <div className="sce-tl-label-row"><span>📝</span><span>Tarjetas</span></div>
@@ -2136,7 +2212,27 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
             })}
           </div>
 
-          {/* Pista 2 — Música */}
+          {/* Pista 2 — Subtítulos */}
+          <div className="sce-tl-subs-track">
+            {keptSegs.length === 0 ? null : !keptSegs.some(s => s.clip.segments?.length > 0)
+              ? <span className="sce-tl-track-hint">Los subtítulos aparecen aquí una vez generados →</span>
+              : keptSegs.map((seg, i) => {
+                  if (!seg.clip.segments?.length) return null;
+                  const w = (seg.end - seg.start) / (totalKept || 1) * 100;
+                  const leftPct = keptSegs.slice(0, i).reduce((t, s) => t + (s.end - s.start) / (totalKept || 1) * 100, 0);
+                  return (
+                    <div key={i} className="sce-tl-subs-bar" style={{ left: `${leftPct}%`, width: `${w}%` }}
+                      title={`Subtítulos: ${seg.clip.name.replace(/\.[^/.]+$/, "")} — clic en 🗑 para quitarlos`}>
+                      <span className="sce-tl-subs-label">💬 {seg.clip.name.replace(/\.[^/.]+$/, "").slice(0, 16)}</span>
+                      <button className="sce-tl-subs-del" title="Quitar subtítulos de este clip"
+                        onClick={e => { e.stopPropagation(); onClearSubtitles?.(seg.clip.id); }}>🗑</button>
+                    </div>
+                  );
+                })
+            }
+          </div>
+
+          {/* Pista 3 — Música */}
           <div className="sce-tl-music-track">
             {music?.url
               ? <div className="sce-tl-music-bar" title={music.name}>
@@ -2897,6 +2993,15 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   }, [keptSegs, totalKept, drawFrame]);
   seekToEffectiveRef.current = seekToEffective; // sync ref durante render
 
+  // Redibuja el frame actual cuando cambia el estilo de subtítulos (fuente,
+  // color, tamaño, posición, efecto) mientras el video está en pausa — sin
+  // esto el cambio solo se veía reflejado al darle play de nuevo.
+  const firstSubtitleStyleRender = useRef(true);
+  useEffect(() => {
+    if (firstSubtitleStyleRender.current) { firstSubtitleStyleRender.current = false; return; }
+    if (!isPlaying) seekToEffective(effectiveTimeRef.current || 0);
+  }, [subtitleStyle]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Seek desde panel de subtítulos (clip + localTime)
   const handleSeekInClip = useCallback((clipId, lt) => {
     if (isPlaying) { playRef.current = false; setIsPlaying(false); }
@@ -2997,9 +3102,14 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           setAutoCardMsg(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
           return;
         }
+        if (res.status === 401) {
+          setAutoCardState("error");
+          setAutoCardMsg("Tu sesión expiró (pasó demasiado tiempo). Recarga la página, inicia sesión de nuevo e intenta otra vez.");
+          return;
+        }
         if (!res.ok) {
           console.error("[autoCards] Lambda error", res.status, data);
-          lastError = `Error del servidor (${res.status}${data?.error ? `: ${data.error}` : ""}). Verifica que el Lambda esté desplegado.`;
+          lastError = `Error del servidor (${res.status}${data?.error ? `: ${data.error}` : ""}).`;
           continue;
         }
         for (const t of data.tarjetas || []) {
@@ -3108,6 +3218,11 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         if (res.status === 429) {
           setAutoSectionState("error");
           setAutoSectionMsg(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
+          return;
+        }
+        if (res.status === 401) {
+          setAutoSectionState("error");
+          setAutoSectionMsg("Tu sesión expiró (pasó demasiado tiempo). Recarga la página, inicia sesión de nuevo e intenta otra vez.");
           return;
         }
         if (!res.ok) {
@@ -3587,6 +3702,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         onCardsChange={setCards}
         selectedSeg={selectedSeg}
         onSelectSeg={setSelectedSeg}
+        onClearSubtitles={(clipId) => setClips(prev => prev.map(c => c.id === clipId ? { ...c, segments: [], transcribed: false } : c))}
       />
     </div>
   );
