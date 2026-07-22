@@ -88,9 +88,16 @@ Antes de dar por lista una herramienta nueva, confirma:
 
 1. **Backend**: `lambda/mamaceo-<herramienta>.js`, sigue el checklist de
    arriba, usa `_shared/`. Tabla propia en DynamoDB si el dato no encaja en
-   `user_states` (ver ejemplo en `mamaceo-invoicing.js`).
+   `user_states` (ver ejemplo en `mamaceo-invoicing.js`). Si SÍ necesita leer/
+   guardar un campo puntual de `user_states` (ej. `brandProfile`), usa el modo
+   de actualización parcial de `mamaceo-user-data.js` (`body.field`/
+   `body.value`, agregando el campo a `ALLOWED_PARTIAL_FIELDS` ahí mismo) en
+   vez del guardado completo — ese reemplaza todo el documento y solo debe
+   usarlo el dashboard principal.
 2. **Frontend**: `src/tools/<herramienta>/` — ver `src/tools/README.md` para
-   el contrato de props/contexto que recibe del resto de la app.
+   el contrato de props/contexto que recibe del resto de la app, y la regla
+   de que toda herramienta nueva es una ruta independiente (`src/main.jsx`),
+   nunca un tab montado dentro de `App.jsx`.
 3. **Gating de plan**: agrega la herramienta a `src/lib/planGating.js` en vez
    de escribir un `if (userPlan === ...)` suelto dentro del componente.
 4. **Deploy**: sigue "Cómo desplegar" de arriba, agrega la ruta en API

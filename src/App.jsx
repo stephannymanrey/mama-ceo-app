@@ -2,12 +2,9 @@
 import { useRegisterSW } from 'virtual:pwa-register/react';
 import { awsAuth, getAwsAuthToken, isAwsConfigured, confirmAwsResetPassword, onGoogleRedirectCallback } from "./lib/awsClient";
 import { getUsageLimits, planMeetsMinimum, isToolLocked, toolMinPlan, planLabel } from "./lib/planGating";
+import { callGemini as callGeminiShared } from "./lib/callGemini";
 import Logo from "./Logo";
-import Studio from "./Studio";
 import Landing from "./Landing";
-import PlanBuilder from "./PlanBuilder";
-import SilenceCutter from "./SilenceCutter";
-import InvoicingTool from "./tools/invoicing/InvoicingTool";
 import PendingMovementsPanel from "./tools/movements-sync/PendingMovementsPanel";
 import "./App.css";
 
@@ -286,16 +283,21 @@ const promesas = [
   "Toda abundancia que vale tiene raíces. Cuida las raíces antes que los frutos."
 ];
 
+// Studio (generación de ideas con IA) y Facturas se movieron a la sección
+// "Mini Apps" del sidebar como rutas independientes (/studio, /facturas —
+// ver src/main.jsx), para que no dependan de que App() esté montado.
+// "Mi Contenido" (el tablero de piezas ya agendadas/publicadas) SÍ se queda
+// como tab del dashboard: vive en contentItems, el mismo estado que el
+// resto del negocio, así que no tenía sentido volverlo independiente.
 const ALL_MENU_ITEMS = [
   { id: "dashboard",  label: "Inicio",          icon: "🏠" },
   { id: "home",       label: "Mi Hogar",         icon: "🌸" },
   { id: "business",   label: "Mi Negocio",       icon: "💼" },
   { id: "clients",    label: "Mis Clientes",     icon: "👩‍💼" },
-  { id: "studio",     label: "Studio ✦",          icon: "🎬" },
-  { id: "invoicing",  label: "Facturas ✦",        icon: "🧾" },
+  { id: "content",    label: "Mi Contenido",     icon: "📋" },
 ];
 const MENU_MAMA        = ["dashboard", "home"];
-const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio", "invoicing"];
+const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "content"];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 function getWeekDays() {
@@ -559,7 +561,6 @@ function createBlankUserState(currency = "USD") {
 }
 
 const API_URL      = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-user-data";
-const GEMINI_URL   = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-gemini";
 const PAYMENTS_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-payments";
 
 const HOTMART_LINKS = {
@@ -1056,23 +1057,9 @@ export default function App() {
 
   const currentLimits = getUsageLimits(effectivePlan);
 
-  const callGemini = async (type, context) => {
-    try {
-      const token = await getAwsAuthToken();
-      if (!token) return { error: "No autenticada. Inicia sesión." };
-      const res = await fetch(GEMINI_URL, {
-        method: "POST",
-        mode: "cors",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type, context }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) return { error: data.error || data.message || `Error ${res.status}`, ...data };
-      return data;
-    } catch (err) {
-      return { error: err.message || "Error de red. Intenta de nuevo." };
-    }
-  };
+  // Extraído a src/lib/callGemini.js para que Studio pueda usar exactamente
+  // la misma llamada tanto montado en el dashboard como en su ruta /studio.
+  const callGemini = callGeminiShared;
 
   const betaDaysLeft = useMemo(() => {
     if (userPlan !== "premium" || !premiumExpiresAt) return null;
@@ -1846,32 +1833,6 @@ export default function App() {
     setShowContentForm(false);
   };
 
-  const addContentFromIdea = (title, meta = {}) => {
-    if (!title || !title.trim()) return { ok: false, message: "" };
-    if (contentItems.length >= currentLimits.content) {
-      return { ok: false, message: `Llegaste al límite de ${currentLimits.content} contenidos de tu plan.` };
-    }
-    const now = Date.now();
-    const guion = meta.guion || "";
-    setContentItems((current) => [{
-      id: now,
-      title: title.trim(),
-      hook: "",
-      format: meta.format || "Reel",
-      network: meta.network || "Instagram",
-      week: "Semana 1",
-      status: meta.status || (guion.trim() ? "Por grabar" : "Idea"),
-      goal: "Vender",
-      publishDate: "",
-      guion,
-      caption: meta.caption || "",
-      keywords: meta.keywords || "",
-      responsable: meta.responsable || "",
-      createdAt: now,
-    }, ...current]);
-    return { ok: true };
-  };
-
   const addGoal = (event) => {
     event.preventDefault();
     const amount = Number(goalForm.amount);
@@ -2230,9 +2191,8 @@ export default function App() {
     setUserPlan(plan);
   };
 
-  // Rutas públicas — sin autenticación, antes de cualquier chequeo de sesión
-  if (window.location.pathname === "/plan-de-negocio") return <PlanBuilder />;
-  if (window.location.pathname === "/editor") return <SilenceCutter />;
+  // /editor, /plan-de-negocio, /studio y /facturas ya se resuelven en
+  // src/main.jsx, antes de que App() se monte — nunca llegan hasta acá.
 
   if (!ready || isRestoringRemote) {
     return (
@@ -2247,41 +2207,6 @@ export default function App() {
           </p>
         </div>
       </div>
-    );
-  }
-
-  if (activeView === "studio") {
-    return (
-      <>
-        <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} onAddToContent={addContentFromIdea} onUpdateContentGuion={updateContentGuion} contentBoard={renderContent} />
-        {confirmModal && (
-          <div className="confirm-overlay" onClick={() => setConfirmModal(null)}>
-            <div className="confirm-modal" onClick={e => e.stopPropagation()}>
-              <div className="confirm-icon">{confirmModal.danger ? "⚠️" : "🗑️"}</div>
-              <p className="confirm-msg">{confirmModal.msg}</p>
-              <div className="confirm-actions">
-                <button className="confirm-cancel" onClick={() => setConfirmModal(null)}>Cancelar</button>
-                <button className={confirmModal.danger ? "confirm-ok confirm-ok--danger" : "confirm-ok"}
-                  onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }}>
-                  {confirmModal.danger ? "Sí, eliminar" : "Eliminar"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </>
-    );
-  }
-
-  if (activeView === "invoicing") {
-    return (
-      <InvoicingTool
-        onBack={() => setActiveView("dashboard")}
-        clients={clients}
-        currency={currency}
-        money={money}
-        profileSetup={profileSetup}
-      />
     );
   }
 
@@ -2881,6 +2806,32 @@ export default function App() {
             </span>
             <span className="sidebar-miniapp-arrow">↗</span>
           </a>
+          <a
+            className="sidebar-tool-btn sidebar-miniapp-btn"
+            href="/studio"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Studio — Genera ideas, hooks, guiones y más con IA">
+            <span className="sidebar-tool-icon">🎬</span>
+            <span className="sidebar-tool-label">
+              Studio
+              <span className="sidebar-miniapp-sub">Ideas, hooks y guiones con IA</span>
+            </span>
+            <span className="sidebar-miniapp-arrow">↗</span>
+          </a>
+          <a
+            className="sidebar-tool-btn sidebar-miniapp-btn"
+            href="/facturas"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Facturas — Crea facturas y cotizaciones para tus clientas">
+            <span className="sidebar-tool-icon">🧾</span>
+            <span className="sidebar-tool-label">
+              Facturas
+              <span className="sidebar-miniapp-sub">Facturas y cotizaciones</span>
+            </span>
+            <span className="sidebar-miniapp-arrow">↗</span>
+          </a>
 
           {/* Mi Plan */}
           <div className="sidebar-miniapps-divider">
@@ -2959,6 +2910,7 @@ export default function App() {
         {activeView === "business" && renderBusiness()}
         {activeView === "clients" && renderClients()}
         {activeView === "home" && renderHome()}
+        {activeView === "content" && renderContent()}
         {/* report tab merged into business */}
         {activeView === "pricing" && renderPricing()}
         {activeView === "terminos" && renderTerminos()}
@@ -4183,7 +4135,7 @@ export default function App() {
                 );
               })()}
               {daysSincePublish !== null && daysSincePublish > 5 && (
-                <button className="db-nudge db-nudge--neutral" onClick={() => setActiveView("studio")}>
+                <button className="db-nudge db-nudge--neutral" onClick={() => setActiveView("content")}>
                   ✦ {daysSincePublish} días sin publicar
                 </button>
               )}
