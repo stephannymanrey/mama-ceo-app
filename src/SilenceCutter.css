@@ -1,4 +1,4 @@
-/* ─ SilenceCutter ──────────────────────────────────────────────────────── */
+﻿/* ─ SilenceCutter ──────────────────────────────────────────────────────── */
 
 /* Página base */
 .sc-page {
@@ -794,9 +794,34 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   EDITOR SCREEN — Tema claro con acentos #C4526A (salmon/rosa de marca)
-   Canvas column permanece oscuro (contexto de reproducción de video)
+   EDITOR SCREEN — acentos #C4526A (salmon/rosa de marca)
+   Canvas y timeline permanecen oscuros siempre (contexto de reproducción de
+   video, como en cualquier editor profesional) — solo la "chrome" (topbar,
+   tabs, paneles de la derecha) responde al modo claro/oscuro.
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Variables de tema — "chrome" (topbar + paneles). El canvas/timeline no las
+   usa, se quedan con sus colores oscuros fijos de siempre. */
+.sce-layout {
+  --chrome-bg:        #0C0C16;
+  --chrome-bg-2:      rgba(255,255,255,0.06);
+  --chrome-bg-3:      rgba(255,255,255,0.1);
+  --chrome-border:    rgba(255,255,255,0.08);
+  --chrome-text:      #E8E4F4;
+  --chrome-text-dim:  #5E5A78;
+  --chrome-text-dim2: rgba(255,255,255,0.5);
+  --accent-text:      #FF9DB2; /* texto rosa sobre fondo acentuado (ej. CTA de Abi) */
+}
+.sce-layout[data-theme="light"] {
+  --chrome-bg:        #f2f0f4;
+  --chrome-bg-2:      rgba(0,0,0,0.045);
+  --chrome-bg-3:      rgba(0,0,0,0.07);
+  --chrome-border:    rgba(0,0,0,0.1);
+  --accent-text:      #a93f56;
+  --chrome-text:      #2a2740;
+  --chrome-text-dim:  #726d8a;
+  --chrome-text-dim2: rgba(42,39,64,0.6);
+}
 
 /* Layout principal: topbar | body | timeline */
 .sce-layout {
@@ -804,8 +829,8 @@
   grid-template-rows: 52px 1fr 190px;
   height: 100vh;
   overflow: hidden;
-  background: #0C0C16;
-  color: #E8E4F4;
+  background: var(--chrome-bg);
+  color: var(--chrome-text);
   font-family: "Inter", "Segoe UI", sans-serif;
 }
 
@@ -815,8 +840,8 @@
   align-items: center;
   gap: 12px;
   padding: 0 16px;
-  background: #12121E;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: var(--chrome-bg-2, #12121E);
+  border-bottom: 1px solid var(--chrome-border);
   z-index: 20;
 }
 .sce-topbar-center {
@@ -833,10 +858,23 @@
 }
 .sce-clip-info-tag {
   font-size: 12px;
-  color: #5E5A78;
+  color: var(--chrome-text-dim);
   font-weight: 500;
   letter-spacing: 0.02em;
 }
+.sce-theme-toggle {
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  border: 1px solid var(--chrome-border);
+  background: var(--chrome-bg-2);
+  color: var(--chrome-text);
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.sce-theme-toggle:hover { background: var(--chrome-bg-3); }
 .sce-analyze-pill {
   display: inline-flex;
   align-items: center;
@@ -860,7 +898,7 @@
 .sce-sens-group {
   display: flex;
   gap: 2px;
-  background: rgba(255,255,255,0.06);
+  background: var(--chrome-bg-2);
   border-radius: 8px;
   padding: 3px;
   flex-shrink: 0;
@@ -871,14 +909,14 @@
   font-weight: 600;
   border: none;
   background: transparent;
-  color: #5E5A78;
+  color: var(--chrome-text-dim);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s;
   white-space: nowrap;
 }
 .sce-sens-btn.active {
-  background: rgba(255,255,255,0.1);
+  background: var(--chrome-bg-3);
   color: #C4526A;
   box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
@@ -888,7 +926,7 @@
 .sce-fmt-group {
   display: flex;
   gap: 2px;
-  background: rgba(255,255,255,0.06);
+  background: var(--chrome-bg-2);
   border-radius: 8px;
   padding: 3px;
   flex-shrink: 0;
@@ -899,7 +937,7 @@
   font-weight: 600;
   border: none;
   background: transparent;
-  color: #5E5A78;
+  color: var(--chrome-text-dim);
   border-radius: 6px;
   cursor: pointer;
   transition: background .15s, color .15s;
@@ -907,7 +945,7 @@
   letter-spacing: 0.02em;
 }
 .sce-fmt-btn.active {
-  background: rgba(255,255,255,0.1);
+  background: var(--chrome-bg-3);
   color: #C4526A;
   box-shadow: 0 1px 3px rgba(0,0,0,.3);
 }
@@ -1125,14 +1163,15 @@
   margin: 0 1px;
 }
 
-/* ── Panel de subtítulos — fondo blanco ────────────────────────────────── */
+/* ── Panel lateral derecho (tabs: Abi/Texto/Música/Cards/SFX/Trans/FX) ──── */
 .sce-sub-panel {
   display: flex;
   flex-direction: column;
-  background: #12121E;
+  background: var(--chrome-bg-2, #12121E);
   border-left: none;
   overflow: hidden;
   min-height: 0;
+  color: var(--chrome-text);
 }
 .sce-panel-header {
   display: flex;
@@ -1140,7 +1179,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 11px 13px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid var(--chrome-border);
   flex-shrink: 0;
 }
 .sce-panel-title {
@@ -1148,7 +1187,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #3E3C4C;
+  color: var(--chrome-text-dim);
 }
 .sce-regen-btn {
   font-size: 11px !important;
@@ -1168,9 +1207,9 @@
 .sce-sub-style .sc-font-pill {
   padding: 3px 9px;
   font-size: 11px;
-  border-color: rgba(255,255,255,0.1);
-  background: rgba(255,255,255,0.05);
-  color: #7A769A;
+  border-color: var(--chrome-border);
+  background: var(--chrome-bg-2);
+  color: var(--chrome-text-dim2);
 }
 .sce-sub-style .sc-font-pill:hover { border-color: #C4526A; color: #C4526A; }
 .sce-sub-style .sc-font-pill.active {
@@ -1182,12 +1221,12 @@
 .sce-sub-style .sc-color-swatch {
   padding: 3px 8px;
   font-size: 10px;
-  border-color: rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.04);
-  color: #7A769A;
+  border-color: var(--chrome-border);
+  background: var(--chrome-bg-2);
+  color: var(--chrome-text-dim2);
 }
-.sce-sub-style .sc-color-swatch:hover { border-color: rgba(255,255,255,0.25); color: #B0ACD0; }
-.sce-sub-style .sc-color-swatch.active { border-color: var(--sw); background: rgba(255,255,255,0.07); color: #D0CCEE; }
+.sce-sub-style .sc-color-swatch:hover { border-color: rgba(196,82,106,0.4); color: var(--chrome-text); }
+.sce-sub-style .sc-color-swatch.active { border-color: var(--sw); background: var(--chrome-bg-3); color: var(--chrome-text); }
 
 /* Lista de segmentos */
 .sce-seg-list {
@@ -1382,6 +1421,34 @@
 }
 .sce-tl-scroll-wrap::-webkit-scrollbar-track { background: transparent; }
 
+/* Controles de zoom del timeline (antes solo existía Ctrl+rueda, difícil
+   de descubrir — esto lo hace visible y clicable) */
+.sce-tl-zoom-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.sce-tl-zoom-btn {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; line-height: 1;
+  border: 1px solid rgba(196, 82, 106, 0.35);
+  border-radius: 5px;
+  background: rgba(196, 82, 106, 0.08);
+  color: #C4526A;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s;
+}
+.sce-tl-zoom-btn:hover:not(:disabled) { background: rgba(196, 82, 106, 0.2); }
+.sce-tl-zoom-btn:disabled { opacity: 0.35; cursor: default; }
+.sce-tl-zoom-value {
+  font-size: 9px;
+  color: #38364A;
+  min-width: 26px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
 /* Badge de nivel de zoom en el header */
 .sce-tl-zoom-reset {
   font-size: 10px; font-weight: 700;
@@ -1711,15 +1778,16 @@
 .sce-right-panel {
   display: flex;
   flex-direction: column;
-  background: #12121E;
-  border-left: 1px solid rgba(255,255,255,0.06);
+  background: var(--chrome-bg-2, #12121E);
+  border-left: 1px solid var(--chrome-border);
   overflow: hidden;
   min-height: 0;
+  color: var(--chrome-text);
 }
 .sce-tab-bar {
   display: flex;
   flex-shrink: 0;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  border-bottom: 1px solid var(--chrome-border);
   overflow-x: auto;
   scrollbar-width: none;
 }
@@ -1732,7 +1800,7 @@
   border: none;
   font-size: 10px;
   font-weight: 600;
-  color: #42404E;
+  color: var(--chrome-text-dim);
   cursor: pointer;
   font-family: inherit;
   transition: color 0.15s, background 0.15s;
@@ -1741,7 +1809,7 @@
   white-space: nowrap;
   letter-spacing: 0.01em;
 }
-.sce-tab:hover { color: #8A86A0; background: rgba(255,255,255,0.03); }
+.sce-tab:hover { color: var(--chrome-text); background: var(--chrome-bg-2); }
 .sce-tab.active { color: #C4526A; border-bottom-color: #C4526A; }
 
 /* El SubtitlePanel ya tiene su clase sce-sub-panel, pero cuando está
@@ -1750,19 +1818,19 @@
 
 /* ── Panel guiado de Abi ─────────────────────────────────────────────────── */
 .sce-abi-panel { padding: 16px 14px; overflow-y: auto; }
-.sce-abi-title { font-size: 15px; font-weight: 700; color: #F4F0F8; margin: 0 0 6px; }
-.sce-abi-sub   { font-size: 12.5px; color: #8A86A0; line-height: 1.5; margin: 0 0 16px; }
+.sce-abi-title { font-size: 15px; font-weight: 700; color: var(--chrome-text); margin: 0 0 6px; }
+.sce-abi-sub   { font-size: 12.5px; color: var(--chrome-text-dim2); line-height: 1.5; margin: 0 0 16px; }
 .sce-abi-steps { display: flex; flex-direction: column; gap: 10px; }
 .sce-abi-step {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
+  background: var(--chrome-bg-2);
+  border: 1px solid var(--chrome-border);
   border-radius: 12px;
   padding: 12px 14px;
 }
 .sce-abi-step--done { border-color: rgba(95,184,122,0.35); background: rgba(95,184,122,0.06); }
 .sce-abi-step-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
 .sce-abi-step-emoji { font-size: 16px; }
-.sce-abi-step-title { font-size: 13.5px; font-weight: 700; color: #F4F0F8; }
+.sce-abi-step-title { font-size: 13.5px; font-weight: 700; color: var(--chrome-text); }
 .sce-abi-step-badge {
   margin-left: auto;
   font-size: 10.5px; font-weight: 700;
@@ -1771,12 +1839,12 @@
   border-radius: 20px;
   padding: 2px 8px;
 }
-.sce-abi-step-desc { font-size: 12px; color: #8A86A0; line-height: 1.5; margin: 0 0 10px; }
+.sce-abi-step-desc { font-size: 12px; color: var(--chrome-text-dim2); line-height: 1.5; margin: 0 0 10px; }
 .sce-abi-step-cta {
   width: 100%;
   background: rgba(196,82,106,0.14);
   border: 1px solid rgba(196,82,106,0.35);
-  color: #FF9DB2;
+  color: var(--accent-text);
   font-size: 12px; font-weight: 700;
   padding: 8px 10px;
   border-radius: 8px;
@@ -1787,11 +1855,11 @@
 .sce-abi-step-cta:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: rgba(255,255,255,0.04);
-  border-color: rgba(255,255,255,0.1);
-  color: #8A86A0;
+  background: var(--chrome-bg-2);
+  border-color: var(--chrome-border);
+  color: var(--chrome-text-dim2);
 }
-.sce-abi-step-cta:disabled:hover { background: rgba(255,255,255,0.04); }
+.sce-abi-step-cta:disabled:hover { background: var(--chrome-bg-2); }
 
 /* ── Panel de efectos ──────────────────────────────────────────────────── */
 .sce-effects-panel {
@@ -1810,7 +1878,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #3A3848;
+  color: var(--chrome-text-dim);
   margin: 0 0 9px;
 }
 .sce-fx-row {
@@ -1871,7 +1939,7 @@
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  color: #3A3848;
+  color: var(--chrome-text-dim);
 }
 .sce-fx-slider {
   flex: 1;
@@ -1965,13 +2033,13 @@
   display: flex;
   justify-content: space-between;
   font-size: 10px;
-  color: #3A3848;
+  color: var(--chrome-text-dim);
   margin-top: 3px;
   padding: 0 2px;
 }
 .sce-fx-hint {
   font-size: 10px;
-  color: #3A3848;
+  color: var(--chrome-text-dim);
   margin: 7px 0 0;
   line-height: 1.5;
 }
@@ -2016,12 +2084,12 @@
 .sce-music-drop-title {
   font-size: 12px;
   font-weight: 600;
-  color: #8A86A0;
+  color: var(--chrome-text-dim2);
   margin: 0;
 }
 .sce-music-drop-hint {
   font-size: 10px;
-  color: #3A3848;
+  color: var(--chrome-text-dim);
   margin: 0;
 }
 .sce-music-loaded {
@@ -2045,13 +2113,13 @@
 }
 .sce-music-track-sub {
   font-size: 9px;
-  color: #3A3848;
+  color: var(--chrome-text-dim);
   margin: 2px 0 0;
 }
 .sce-music-clear {
   background: transparent;
   border: none;
-  color: #3A3848;
+  color: var(--chrome-text-dim);
   cursor: pointer;
   font-size: 12px;
   padding: 4px;
@@ -2071,11 +2139,11 @@
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  color: #3A3848;
+  color: var(--chrome-text-dim);
   padding: 10px 0;
   border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-.sce-music-row-label { flex-shrink: 0; font-size: 10px; font-weight: 600; color: #3A3848; }
+.sce-music-row-label { flex-shrink: 0; font-size: 10px; font-weight: 600; color: var(--chrome-text-dim); }
 .sce-music-row-val { min-width: 30px; text-align: right; font-size: 11px; color: #5A5676; font-variant-numeric: tabular-nums; }
 .sce-music-toggle-row {
   display: flex;
@@ -2097,7 +2165,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #3A3848;
+  color: var(--chrome-text-dim);
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -2132,7 +2200,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #5E5A78;
+  color: var(--chrome-text-dim);
   margin-bottom: 8px;
 }
 .sce-genre-tabs {
@@ -2240,7 +2308,7 @@
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.07em;
-  color: #5E5A78;
+  color: var(--chrome-text-dim);
   margin-bottom: 6px;
 }
 .sce-music-drop-mini {
@@ -2252,7 +2320,7 @@
   justify-content: center;
   cursor: pointer;
   font-size: 10px;
-  color: #5E5A78;
+  color: var(--chrome-text-dim);
   transition: all 0.15s;
   user-select: none;
 }
@@ -2751,31 +2819,34 @@
 /* Marcador de transición entre clips */
 .sce-tl-trans-marker {
   position: absolute;
-  top: 50%;
+  top: 23px; /* alineado con el centro vertical de la pista de Video (primera fila) */
   transform: translate(-50%, -50%);
   z-index: 10;
 }
 .sce-tl-trans-btn {
-  width: 22px; height: 22px;
+  width: 26px; height: 26px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.25);
-  background: rgba(30,30,50,0.9);
-  color: rgba(255,255,255,0.5);
-  font-size: 10px;
+  border: 2px dashed rgba(255,255,255,0.55);
+  background: rgba(30,30,50,0.95);
+  color: rgba(255,255,255,0.75);
+  font-size: 12px;
   cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
   padding: 0;
+  box-shadow: 0 0 0 3px rgba(20,20,35,0.9);
 }
 .sce-tl-trans-btn:hover {
-  border-color: rgba(255,255,255,0.7);
+  border-color: #fff;
+  border-style: solid;
   color: #fff;
-  transform: scale(1.15);
+  transform: scale(1.2);
 }
 .sce-tl-trans-btn.has-trans {
   border-color: #C4526A;
+  border-style: solid;
   color: #fff;
-  background: rgba(196,82,106,0.7);
+  background: #C4526A;
 }
 
 /* Mini picker de transición */
@@ -2850,10 +2921,10 @@
 .sce-cards-empty {
   text-align: center;
   padding: 28px 20px;
-  color: rgba(255,255,255,0.45);
+  color: var(--chrome-text-dim2);
 }
 .sce-cards-empty p { margin: 0 0 6px; font-size: 13px; }
-.sce-cards-hint { font-size: 11px !important; color: rgba(255,255,255,0.3) !important; }
+.sce-cards-hint { font-size: 11px !important; color: var(--chrome-text-dim2) !important; }
 
 .sce-card-item {
   margin: 0 10px 8px;
@@ -2894,18 +2965,18 @@
 .sce-card-collapsed-text {
   font-size: 12px;
   font-weight: 500;
-  color: rgba(255,255,255,0.85);
+  color: var(--chrome-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .sce-card-collapsed-meta {
   font-size: 10px;
-  color: rgba(255,255,255,0.35);
+  color: var(--chrome-text-dim2);
 }
 .sce-card-chevron {
   font-size: 10px;
-  color: rgba(255,255,255,0.3);
+  color: var(--chrome-text-dim2);
   flex-shrink: 0;
 }
 
@@ -2962,7 +3033,7 @@
 .sce-card-remove {
   background: transparent;
   border: none;
-  color: rgba(255,255,255,0.35);
+  color: var(--chrome-text-dim2);
   cursor: pointer;
   font-size: 13px;
   padding: 2px 4px;
@@ -2977,7 +3048,7 @@
   display: block;
   font-size: 10px;
   font-weight: 600;
-  color: rgba(255,255,255,0.45);
+  color: var(--chrome-text-dim2);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-bottom: 4px;
@@ -2987,7 +3058,7 @@
   text-transform: none;
   letter-spacing: 0;
   font-size: 10px;
-  color: rgba(255,255,255,0.3);
+  color: var(--chrome-text-dim2);
 }
 
 .sce-card-textarea {
@@ -3018,7 +3089,7 @@
   transition: border-color 0.15s;
 }
 .sce-card-input:focus { outline: none; border-color: rgba(196,82,106,0.5); }
-.sce-card-input::placeholder { color: rgba(255,255,255,0.25); }
+.sce-card-input::placeholder { color: var(--chrome-text-dim2); }
 
 .sce-card-row {
   display: flex;
@@ -3091,7 +3162,7 @@
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.15);
   background: transparent;
-  color: rgba(255,255,255,0.55);
+  color: var(--chrome-text-dim2);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -3122,7 +3193,7 @@
   border-radius: 20px;
   border: 1px solid rgba(255,255,255,0.15);
   background: transparent;
-  color: rgba(255,255,255,0.5);
+  color: var(--chrome-text-dim2);
   font-size: 10px;
   font-family: "Poppins", sans-serif;
   cursor: pointer;
@@ -3175,7 +3246,7 @@
 }
 .sce-font-name {
   font-size: 9px;
-  color: rgba(255,255,255,0.48);
+  color: var(--chrome-text-dim2);
   font-family: "Poppins", sans-serif;
   white-space: nowrap;
   letter-spacing: 0.2px;
@@ -3211,7 +3282,7 @@
 }
 .sfx-hint {
   font-size: 11px;
-  color: rgba(255,255,255,0.45);
+  color: var(--chrome-text-dim2);
   margin: 0 0 8px;
   line-height: 1.4;
 }
@@ -3242,12 +3313,12 @@
   background: rgba(196,82,106,0.3);
 }
 .sfx-emoji { font-size: 20px; line-height: 1; }
-.sfx-label { font-size: 10px; color: rgba(255,255,255,0.7); white-space: nowrap; }
+.sfx-label { font-size: 10px; color: var(--chrome-text-dim2); white-space: nowrap; }
 
 .sfx-section-title {
   font-size: 11px;
   font-weight: 600;
-  color: rgba(255,255,255,0.5);
+  color: var(--chrome-text-dim2);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   margin: 4px 0 6px;
@@ -3267,14 +3338,94 @@
   font-size: 12px;
 }
 .sfx-row-emoji { font-size: 14px; flex-shrink: 0; }
-.sfx-row-name  { flex: 1; color: #fff; }
-.sfx-row-time  { color: rgba(255,255,255,0.5); font-size: 11px; font-variant-numeric: tabular-nums; }
+.sfx-row-name  { flex: 1; color: var(--chrome-text); }
+.sfx-row-time  { color: var(--chrome-text-dim2); font-size: 11px; font-variant-numeric: tabular-nums; }
 .sfx-row-del   {
-  background: none; border: none; color: rgba(255,255,255,0.35);
+  background: none; border: none; color: var(--chrome-text-dim2);
   font-size: 16px; cursor: pointer; padding: 0 2px; line-height: 1;
   transition: color 0.12s;
 }
 .sfx-row-del:hover { color: #C4526A; }
+
+/* Buscador de efectos reales (Freesound, licencia CC0) */
+.sfx-search-section {
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.sfx-search-row { display: flex; gap: 6px; }
+.sfx-search-input {
+  flex: 1;
+  padding: 8px 10px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 8px;
+  color: #fff;
+  font-size: 13px;
+  font-family: inherit;
+}
+.sfx-search-input::placeholder { color: var(--chrome-text-dim2); }
+.sfx-search-btn {
+  padding: 8px 14px;
+  background: #C4526A;
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sfx-search-btn:disabled { opacity: 0.5; cursor: default; }
+.sfx-search-error {
+  font-size: 11px;
+  color: #e8a34d;
+  margin: 8px 0 0;
+}
+.sfx-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.sfx-search-row-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 6px;
+}
+.sfx-search-play {
+  width: 26px; height: 26px; flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.sfx-search-play:hover { border-color: #C4526A; }
+.sfx-search-meta { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sfx-search-name {
+  font-size: 12px; color: var(--chrome-text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.sfx-search-sub { font-size: 10px; color: var(--chrome-text-dim2); }
+.sfx-search-add {
+  width: 26px; height: 26px; flex-shrink: 0;
+  border-radius: 50%;
+  border: none;
+  background: #C4526A;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.sfx-search-add:disabled { opacity: 0.5; cursor: default; }
 
 /* SFX en timeline */
 .sce-tl-sfx-track {

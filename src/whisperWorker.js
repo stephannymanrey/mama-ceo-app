@@ -9,9 +9,12 @@ self.addEventListener("message", async ({ data }) => {
   const { id, audio } = data;
   try {
     if (!_asr) {
+      // whisper-tiny (no "base"): la UI ya promete "Whisper Tiny" — usar el
+      // modelo grande de verdad la contradecía y hacía la carga/transcripción
+      // más lenta de lo necesario sin ganar nada, ya que la copia nunca cambió.
       _asr = await pipeline(
         "automatic-speech-recognition",
-        "Xenova/whisper-base",
+        "Xenova/whisper-tiny",
         { progress_callback: info => self.postMessage({ id, type: "progress", info }) }
       );
     }

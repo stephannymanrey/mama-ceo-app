@@ -1,5 +1,7 @@
 /**
- * Lambda: mamaceo-claude  (ES module, Node.js 22.x)
+ * Lambda: mamaceo-gemini  (ES module, Node.js 22.x)
+ * Nombre histórico (se armó originalmente con Gemini, luego se migró a Claude
+ * sin renombrar la función en AWS) — ver lambda/README.md.
  * Sin dependencias externas — usa fetch nativo + AWS SigV4 manual para DynamoDB.
  */
 import { createHmac, createHash } from "node:crypto";
@@ -25,6 +27,17 @@ const PLAN_LIMITS = { free: 50, mama: 50, emprendedora: 60, ceo: 200, premium: 2
 // absurdo.
 const MAX_TEXT_LEN     = 20000;  // ~ una sección larga de plan de negocio
 const MAX_TRANSCRIPT_LEN = 150000; // ~ transcripción con timestamps de un video de hasta ~1h
+
+// ─── Freesound (búsqueda de efectos de sonido CC0) ────────────────────────
+const FREESOUND_API_KEY = process.env.FREESOUND_API_KEY;
+const MAX_SFX_QUERY_LEN = 100;
+// El preview de audio se re-descarga acá (no se manda la URL de Freesound
+// directo al navegador) porque el CDN de Freesound tiene problemas conocidos
+// de CORS con Web Audio API: el audio SE ESCUCHA bien en el editor pero queda
+// en silencio en el video exportado (MediaRecorder no puede capturar una
+// fuente cross-origin sin CORS correcto). Al pasar los bytes por acá y
+// devolverlos como blob propio, se evita ese problema de raíz.
+const FREESOUND_HOSTS = ["cdn.freesound.org", "freesound.org"];
 
 const ALLOWED_ORIGINS = [
   "https://www.mamaceoapp.co",
@@ -160,7 +173,10 @@ function getUserId(event) {
 }
 
 // ─── Claude (Anthropic) ───────────────────────────────────────────────────
-async function callClaude(prompt, maxTokens = 4096, prefill = null) {
+// `route` es solo para el log de uso — identifica de qué handler vino la
+// llamada, para poder sumar tokens/costo por ruta en CloudWatch Logs Insights
+// sin tener que adivinar dónde se va la plata.
+async function callClaude(prompt, maxTokens = 4096, prefill = null, route = "unknown") {
   const messages = [{ role: "user", content: prompt }];
   if (prefill) messages.push({ role: "assistant", content: prefill });
   const res = await fetch(ANTHROPIC_URL, {
@@ -180,6 +196,11 @@ async function callClaude(prompt, maxTokens = 4096, prefill = null) {
   if (res.status === 429) throw new Error("rate_limit");
   if (!res.ok) throw new Error(`Claude ${res.status}: ${await res.text()}`);
   const data = await res.json();
+  const u = data.usage || {};
+  console.log(JSON.stringify({
+    metric: "claude_usage", route, model: CLAUDE_MODEL,
+    input_tokens: u.input_tokens || 0, output_tokens: u.output_tokens || 0,
+  }));
   const text = data.content?.[0]?.text || "";
   return prefill ? prefill + text : text;
 }
@@ -609,7 +630,7 @@ async function handlePlanNegocio(publicEmail, context, event) {
   const prompt = buildPlanNegocioPrompt(context);
   let rawText;
   try {
-    rawText = await callClaude(prompt, 6000, "{");
+    rawText = await callClaude(prompt, 6000, "{", "planNegocio");
   } catch (err) {
     console.error("[planNegocio] Claude error:", err.message);
     if (err.message === "rate_limit") return respond(429, { error: "rate_limit" }, event);
@@ -738,7 +759,7 @@ Instrucciones:
 Responde ÚNICAMENTE con el texto mejorado. Sin explicaciones, sin comillas al inicio o al final, sin markdown.`;
 
   try {
-    const resultado = await callClaude(prompt, 1200);
+    const resultado = await callClaude(prompt, 1200, null, "mejorarSeccion");
     return respond(200, { resultado: resultado.trim() }, event);
   } catch (err) {
     console.error("[mejorarSeccion] error:", err.message);
@@ -787,7 +808,7 @@ Responde SOLO JSON válido:
 
   let rawText;
   try {
-    rawText = await callClaude(prompt, 800, "{");
+    rawText = await callClaude(prompt, 800, "{", "dofa");
   } catch (err) {
     console.error("[dofa] error:", err.message);
     return respond(502, { error: "Error al generar el análisis DOFA. Intenta de nuevo." }, event);
@@ -854,7 +875,7 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
 
   let rawText;
   try {
-    rawText = await callClaude(prompt, 1200, "[");
+    rawText = await callClaude(prompt, 1200, "[", "extractReels");
   } catch (err) {
     console.error("[extractReels] callClaude error:", err.message);
     return respond(502, { error: "Error al analizar el video. Intenta de nuevo." }, event);
@@ -919,7 +940,7 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
 
   let rawText;
   try {
-    rawText = await callClaude(prompt, 800, "[");
+    rawText = await callClaude(prompt, 800, "[", "generateCards");
   } catch (err) {
     console.error("[generateCards] callClaude error:", err.message);
     return respond(502, { error: "Error al generar las tarjetas. Intenta de nuevo." }, event);
@@ -985,7 +1006,7 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
 
   let rawText;
   try {
-    rawText = await callClaude(prompt, 500, "[");
+    rawText = await callClaude(prompt, 500, "[", "generateSections");
   } catch (err) {
     console.error("[generateSections] callClaude error:", err.message);
     return respond(502, { error: "Error al analizar las secciones. Intenta de nuevo." }, event);
@@ -1014,6 +1035,77 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
   catch (err) { console.warn("No se pudo guardar contador:", err); }
 
   return respond(200, { sections, usage: currentCount + 1, limit, plan }, event);
+}
+
+// ─── Handler: Buscar efectos de sonido reales en Freesound (licencia CC0) ──
+async function handleSearchSfx(body, event) {
+  if (!FREESOUND_API_KEY) return respond(500, { error: "Freesound no configurado" }, event);
+  const q = String(body.query || "").trim().slice(0, MAX_SFX_QUERY_LEN);
+  if (!q) return respond(400, { error: "Falta el término de búsqueda" }, event);
+
+  const params = new URLSearchParams({
+    query: q,
+    filter: 'license:"Creative Commons 0" duration:[0.1 TO 20]',
+    fields: "id,name,previews,duration,license,username",
+    page_size: "12",
+    token: FREESOUND_API_KEY,
+  });
+
+  let res;
+  try {
+    res = await fetch(`https://freesound.org/apiv2/search/text/?${params}`);
+  } catch (err) {
+    console.error("[searchSfx] fetch error:", err.message);
+    return respond(502, { error: "No se pudo conectar con Freesound. Intenta de nuevo." }, event);
+  }
+  if (!res.ok) {
+    console.error("[searchSfx] Freesound respondió", res.status, (await res.text().catch(() => "")).slice(0, 300));
+    return respond(502, { error: "Freesound no respondió correctamente." }, event);
+  }
+  const data = await res.json();
+  const results = (data.results || [])
+    .map(s => ({
+      id: s.id,
+      name: s.name,
+      duration: s.duration,
+      previewUrl: s.previews?.["preview-hq-mp3"] || s.previews?.["preview-lq-mp3"] || null,
+      author: s.username,
+    }))
+    .filter(s => s.previewUrl);
+
+  return respond(200, { results }, event);
+}
+
+// ─── Handler: Traer los bytes de un preview de Freesound (evita el problema
+// de CORS del CDN — ver comentario junto a FREESOUND_HOSTS) ────────────────
+async function handleFetchSfxAudio(body, event) {
+  const url = String(body.previewUrl || "");
+  let parsed;
+  try { parsed = new URL(url); } catch { return respond(400, { error: "URL inválida" }, event); }
+  if (!FREESOUND_HOSTS.includes(parsed.hostname)) {
+    return respond(400, { error: "Origen no permitido" }, event);
+  }
+
+  let res;
+  try {
+    res = await fetch(url);
+  } catch (err) {
+    console.error("[fetchSfxAudio] fetch error:", err.message);
+    return respond(502, { error: "No se pudo descargar el audio." }, event);
+  }
+  if (!res.ok) return respond(502, { error: "Freesound no respondió correctamente." }, event);
+
+  const contentType = res.headers.get("content-type") || "audio/mpeg";
+  const buf = Buffer.from(await res.arrayBuffer());
+  // Techo de seguridad — un preview de Freesound normal pesa unos cientos de KB.
+  if (buf.length > 5 * 1024 * 1024) return respond(413, { error: "Audio demasiado grande" }, event);
+
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": contentType, ...corsHeaders(event) },
+    body: buf.toString("base64"),
+    isBase64Encoded: true,
+  };
 }
 
 // ─── Handler ──────────────────────────────────────────────────────────────
@@ -1051,6 +1143,14 @@ export const handler = async (event) => {
   if (body.type === "generateSections") {
     return handleGenerateSections(body, event, userId);
   }
+  // searchSfx/fetchSfxAudio no consumen la cuota mensual de IA — es una
+  // búsqueda en una librería, no una generación con Claude.
+  if (body.type === "searchSfx") {
+    return handleSearchSfx(body, event);
+  }
+  if (body.type === "fetchSfxAudio") {
+    return handleFetchSfxAudio(body, event);
+  }
 
   const { type, context } = body;
   if (!type || !context) return respond(400, { error: "Faltan campos: type, context" }, event);
@@ -1084,7 +1184,7 @@ export const handler = async (event) => {
 
   let rawText;
   try {
-    rawText = await callClaude(prompt, maxTokens);
+    rawText = await callClaude(prompt, maxTokens, null, type);
   } catch (err) {
     if (err.message === "rate_limit") {
       return respond(429, { error: "rate_limit" }, event);
@@ -1102,7 +1202,7 @@ export const handler = async (event) => {
     console.warn("Parse error, reintentando. Raw:", rawText);
     try {
       const retryPrompt = `${prompt}\n\nTu respuesta anterior NO fue JSON válido. Corrígelo: responde EXCLUSIVAMENTE el objeto JSON (sin texto antes/después, sin markdown), escapa toda comilla doble dentro de los textos como \\", y no incluyas saltos de línea literales dentro de ningún string.`;
-      const rawText2 = await callClaude(retryPrompt, maxTokens);
+      const rawText2 = await callClaude(retryPrompt, maxTokens, null, `${type}_retry`);
       result = parseJSON(rawText2);
     } catch (err) {
       console.error("Parse error tras reintento:", err);

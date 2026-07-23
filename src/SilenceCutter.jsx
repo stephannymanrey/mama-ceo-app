@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import Logo from "./Logo";
 import { getAwsAuthToken } from "./lib/awsClient";
 import "./SilenceCutter.css";
@@ -327,6 +328,19 @@ function synthSfx(type, actx, dest, when = 0) {
   } catch (_) {}
 }
 
+// Reproduce un SFX real (blob: URL local, ya descargado vía el proxy del
+// Lambda — nunca una URL cross-origin, para no toparse con el problema de
+// CORS/Web Audio API silencioso al exportar). Espejo de cómo se conecta la
+// música de fondo (createMediaElementSource + connect a destination).
+function playSfxAudioUrl(url, actx, dest) {
+  try {
+    const el = new Audio(url);
+    const src = actx.createMediaElementSource(el);
+    src.connect(dest || actx.destination);
+    el.play().catch(() => {});
+  } catch (_) {}
+}
+
 const CARD_BG_OPTIONS = [
   { idx: 0,  bg: "#C4526A", text: "#FFFFFF", kw: "#FFE44D" },
   { idx: 1,  bg: "#4A90BF", text: "#FFFFFF", kw: "#FFE44D" },
@@ -446,6 +460,13 @@ function buildKeptSegments(clips) {
     });
 }
 
+// Identifica de forma estable un límite entre dos segmentos conservados
+// consecutivos (para poder asignarle una transición aunque el índice del
+// segmento cambie al editar otros clips).
+function segBoundaryKey(seg) {
+  return `${seg.clip.id}::${seg.end.toFixed(3)}`;
+}
+
 function effectiveToNative(keptSegs, et) {
   let elapsed = 0;
   for (const seg of keptSegs) {
@@ -469,21 +490,34 @@ function nativeToEffective(keptSegs, clipId, lt) {
 }
 
 // ── Audio / análisis ──────────────────────────────────────────────────────
-function buildWaveform(channelData, points = 900) {
-  const step = Math.floor(channelData.length / points);
+// Ambas funciones ceden el hilo cada cierto número de ventanas: con un video
+// de 30-40 min hay decenas de millones de muestras, y recorrerlas en un solo
+// bloque síncrono congela la pestaña varios segundos. Cediendo con
+// setTimeout(0) cada tantas ventanas, la UI (barra de progreso, botones)
+// sigue respondiendo mientras se analiza.
+async function buildWaveform(channelData, points = 900, onProgress) {
+  const step = Math.floor(channelData.length / points) || 1;
   const w = new Float32Array(points);
+  const CHUNK_POINTS = 40;
   for (let i = 0; i < points; i++) {
     let max = 0;
     const from = i * step, to = Math.min(from + step, channelData.length);
-    for (let j = from; j < to; j++) max = Math.max(max, Math.abs(channelData[j]));
+    for (let j = from; j < to; j++) { const v = channelData[j]; const av = v < 0 ? -v : v; if (av > max) max = av; }
     w[i] = max;
+    if (i % CHUNK_POINTS === 0) {
+      onProgress?.(i / points);
+      await new Promise(r => setTimeout(r, 0));
+    }
   }
   return w;
 }
-function detectSilences(channelData, sampleRate, noiseDb, minDuration, duration) {
+async function detectSilences(channelData, sampleRate, noiseDb, minDuration, duration, onProgress) {
   const ws = Math.floor(sampleRate * 0.04);
   const silences = [];
   let inSilence = false, silenceStart = 0;
+  const totalWindows = Math.ceil(channelData.length / ws) || 1;
+  const CHUNK_WINDOWS = 3000;
+  let windowIdx = 0;
   for (let i = 0; i < channelData.length; i += ws) {
     let sumSq = 0;
     const count = Math.min(ws, channelData.length - i);
@@ -497,6 +531,11 @@ function detectSilences(channelData, sampleRate, noiseDb, minDuration, duration)
       const dur = t - silenceStart;
       if (dur >= minDuration)
         silences.push({ id: uid(), start: Math.max(0, silenceStart + PADDING), end: Math.min(duration, t - PADDING), cut: true });
+    }
+    windowIdx++;
+    if (windowIdx % CHUNK_WINDOWS === 0) {
+      onProgress?.(windowIdx / totalWindows);
+      await new Promise(r => setTimeout(r, 0));
     }
   }
   if (inSilence && duration - silenceStart >= minDuration)
@@ -514,12 +553,14 @@ async function analyzeClip(file, noiseDb, minDuration, onProgress) {
     const audioBuf = await new Promise((res, rej) => audioCtx.decodeAudioData(arrayBuffer, res, rej));
     audioCtx.close();
     const channelData = audioBuf.getChannelData(0);
-    if (onProgress) onProgress(1);
-    return {
-      duration: audioBuf.duration,
-      waveform: buildWaveform(channelData, 900),
-      silences: detectSilences(channelData, audioBuf.sampleRate, noiseDb, minDuration, audioBuf.duration),
-    };
+    onProgress?.(0.1);
+    const silences = await detectSilences(
+      channelData, audioBuf.sampleRate, noiseDb, minDuration, audioBuf.duration,
+      (p) => onProgress?.(0.1 + p * 0.55)
+    );
+    const waveform = await buildWaveform(channelData, 900, (p) => onProgress?.(0.65 + p * 0.35));
+    onProgress?.(1);
+    return { duration: audioBuf.duration, waveform, silences };
   } catch {
     // PATH MOBILE: análisis en tiempo real vía <video> + AnalyserNode
     // Funciona en iOS Safari — el video.muted=true permite autoplay sin gesto adicional
@@ -633,7 +674,7 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
   });
 }
 
-// ── Transcripción (Whisper Base — Web Worker) ─────────────────────────────
+// ── Transcripción (Whisper Tiny — Web Worker) ─────────────────────────────
 // El decode/resample de audio corre aquí en el hilo principal: OfflineAudioContext
 // no está garantizado dentro de un Worker (rompía la transcripción con
 // "OfflineAudioContext is not defined" en Chrome desktop). Solo el modelo Whisper
@@ -1251,8 +1292,12 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
 
 // ── Grabación multi-clip ──────────────────────────────────────────────────
 async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape", effects = {}, clipTransitions = {}, music = {}, cards = [], sfxList = []) {
+  const keptSegs = buildKeptSegments(clips);
+  const uniqueClipIds = [...new Set(keptSegs.map(s => s.clip.id))];
+  const firstClip = keptSegs[0]?.clip || clips[0];
+
   const firstVid = document.createElement("video");
-  const firstUrl = URL.createObjectURL(clips[0].file);
+  const firstUrl = URL.createObjectURL(firstClip.file);
   firstVid.src = firstUrl;
   await new Promise(r => { firstVid.onloadedmetadata = r; firstVid.onerror = r; });
   const W = firstVid.videoWidth || 1280, H = firstVid.videoHeight || 720;
@@ -1300,13 +1345,77 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   recorder.start(100);
 
-  const totalDuration = clips.reduce((t, c) => t + (c.duration || 0), 0);
-  let elapsed = 0;
+  const totalKept = keptSegs.reduce((t, s) => t + s.end - s.start, 0) || 1;
+  let elapsed = 0;        // tiempo efectivo (post-corte) ya grabado
+  let prevExportEt = 0;   // para saber qué SFX ya dispararon
+  let transZoom = 1.0;    // escala de zoom mientras dura una transición "zoom"
 
-  for (let ci = 0; ci < clips.length; ci++) {
+  // Congela el dibujo (fade a negro/blanco o deslizar) dibujando directo sobre
+  // ctx — solo es seguro llamarla cuando ningún drawLoop esté corriendo a la vez.
+  const runOneShotTransition = (transition, transitionSecs) => new Promise(resolve => {
+    if (transition === "fade") {
+      const t0 = performance.now();
+      const dur = transitionSecs / 2;
+      const step = () => {
+        const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
+        ctx.fillStyle = `rgba(0,0,0,${t})`; ctx.fillRect(0, 0, outW, outH);
+        if (t < 1) requestAnimationFrame(step); else resolve();
+      };
+      requestAnimationFrame(step);
+    } else if (transition === "flash") {
+      const t0 = performance.now();
+      const step = () => {
+        const t = Math.min(1, (performance.now() - t0) / 1000 / 0.12);
+        ctx.fillStyle = `rgba(255,255,255,${t})`; ctx.fillRect(0, 0, outW, outH);
+        if (t < 1) requestAnimationFrame(step); else resolve();
+      };
+      requestAnimationFrame(step);
+    } else if (transition.startsWith("slide")) {
+      createImageBitmap(canvas).then(bitmap => {
+        const t0 = performance.now();
+        const dur = transitionSecs * 0.6;
+        const step = () => {
+          const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
+          const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+          ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
+          const ox = transition === "slideLeft" ? -outW * ease : transition === "slideRight" ? outW * ease : 0;
+          const oy = transition === "slideUp"   ? -outH * ease : transition === "slideDown"  ? outH * ease : 0;
+          ctx.drawImage(bitmap, ox, oy, outW, outH);
+          if (t < 1) requestAnimationFrame(step);
+          else { bitmap.close(); resolve(); }
+        };
+        requestAnimationFrame(step);
+      });
+    } else {
+      resolve();
+    }
+  });
+  const startZoomExport = (dur) => {
+    transZoom = 1.08;
+    const t0 = performance.now();
+    const tick = () => {
+      const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
+      transZoom = 1.08 - 0.08 * t;
+      if (t < 1) requestAnimationFrame(tick); else transZoom = 1.0;
+    };
+    requestAnimationFrame(tick);
+  };
+  // Resuelve la transición para el límite después de `seg` — mismo criterio
+  // que en la vista previa: override por punto de corte si existe; si no,
+  // el default global solo aplica entre clips distintos.
+  const resolveTransition = (seg, crossClip) => {
+    const key = segBoundaryKey(seg);
+    const fallback = crossClip ? (effects.transition ?? "none") : "none";
+    return clipTransitions[key] ?? fallback;
+  };
+
+  for (let ci = 0; ci < uniqueClipIds.length; ci++) {
     if (abortRef.current) break;
-    const clip = clips[ci];
-    onProgress(elapsed / totalDuration, `Procesando clip ${ci + 1} de ${clips.length}: ${clip.name}`);
+    const clipId = uniqueClipIds[ci];
+    const clipSegs = keptSegs.filter(s => s.clip.id === clipId);
+    const clip = clipSegs[0].clip;
+    const isLastClip = ci === uniqueClipIds.length - 1;
+    onProgress(elapsed / totalKept, `Procesando clip ${ci + 1} de ${uniqueClipIds.length}: ${clip.name}`);
 
     await new Promise(resolve => {
       const videoEl = document.createElement("video");
@@ -1322,6 +1431,7 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
 
         const { autoZoom = false, zoomInterval = 4 } = effects;
         let animId;
+        let currentEt = elapsed;
         const drawLoop = () => {
           ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
           if (!videoEl.paused && !videoEl.ended) {
@@ -1333,8 +1443,8 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
               ctx.drawImage(videoEl, bgX, bgY, bgW, bgH);
               ctx.restore();
             }
-            // Auto-zoom rítmico
-            const z = autoZoom ? 1 + 0.07 * Math.abs(Math.sin(videoEl.currentTime * Math.PI / zoomInterval)) : 1;
+            // Auto-zoom rítmico, o zoom de transición si está activo
+            const z = autoZoom ? 1 + 0.07 * Math.abs(Math.sin(videoEl.currentTime * Math.PI / zoomInterval)) : transZoom;
             const zdX = (outW - dW * z) / 2, zdY = (outH - dH * z) / 2;
             // Pass 1: corrección de color
             const { brightness = 0, contrast = 0, saturation = 0, skin = 0, temperature = 0 } = effects;
@@ -1354,92 +1464,85 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
               ctx.restore();
             }
             drawSubtitle(ctx, outW, outH, videoEl.currentTime, clip.segments, subtitleStyle);
-            drawCards(ctx, outW, outH, elapsed + videoEl.currentTime, cards);
+            drawCards(ctx, outW, outH, currentEt, cards);
           }
           animId = requestAnimationFrame(drawLoop);
         };
-
-        videoEl.currentTime = 0;
-        await new Promise(r => { videoEl.onseeked = r; });
-        const toRemove = (clip.silences || []).filter(s => s.cut);
-        let inCut = false;
-        videoEl.play();
         animId = requestAnimationFrame(drawLoop);
-        let prevExportEt = elapsed;
 
-        const interval = setInterval(() => {
-          if (abortRef.current) { clearInterval(interval); cancelAnimationFrame(animId); videoEl.pause(); resolve(); return; }
-          const ct = videoEl.currentTime;
-          const dur = clip.duration || videoEl.duration;
-          onProgress((elapsed + ct) / totalDuration, `Procesando clip ${ci + 1} de ${clips.length}: ${clip.name}`);
-          const inSilence = toRemove.some(s => ct >= s.start && ct < s.end);
-          if (inSilence && !inCut) { inCut = true; videoEl.playbackRate = 16; videoEl.volume = 0; }
-          else if (!inSilence && inCut) { inCut = false; videoEl.playbackRate = 1; videoEl.volume = 1; }
+        let preSeeked = false; // el segmento ya quedó posicionado por una transición previa
+        for (let si = 0; si < clipSegs.length; si++) {
+          if (abortRef.current) break;
+          const seg = clipSegs[si];
+          const segEtStart = elapsed;
 
-          // Disparar SFX en export
-          const curExportEt = elapsed + ct;
-          for (const sfx of sfxList) {
-            if (sfx.time > prevExportEt && sfx.time <= curExportEt) {
-              synthSfx(sfx.type, audioCtx, destination, audioCtx.currentTime);
+          if (!preSeeked) {
+            videoEl.currentTime = seg.start;
+            await new Promise(r => { videoEl.onseeked = r; });
+          }
+          preSeeked = false;
+          if (abortRef.current) break;
+          videoEl.playbackRate = 1; videoEl.volume = 1;
+          videoEl.play().catch(() => {});
+
+          await new Promise(segDone => {
+            const interval = setInterval(() => {
+              if (abortRef.current) { clearInterval(interval); videoEl.pause(); segDone(); return; }
+              const ct = videoEl.currentTime;
+              const newEt = segEtStart + Math.max(0, ct - seg.start);
+              currentEt = newEt;
+              onProgress(newEt / totalKept, `Procesando clip ${ci + 1} de ${uniqueClipIds.length}: ${clip.name}`);
+
+              // Disparar SFX en export
+              for (const sfx of sfxList) {
+                if (sfx.time > prevExportEt && sfx.time <= newEt) {
+                  if (sfx.audioUrl) playSfxAudioUrl(sfx.audioUrl, audioCtx, destination);
+                  else synthSfx(sfx.type, audioCtx, destination, audioCtx.currentTime);
+                }
+              }
+              prevExportEt = newEt;
+
+              if (videoEl.ended || ct >= seg.end - 0.05) {
+                clearInterval(interval); videoEl.pause(); segDone();
+              }
+            }, 60);
+          });
+          elapsed = segEtStart + (seg.end - seg.start);
+          currentEt = elapsed;
+
+          // Transición en un corte manual dentro del MISMO clip (✂ Dividir)
+          const nextSeg = clipSegs[si + 1];
+          if (nextSeg && !abortRef.current) {
+            const transition = resolveTransition(seg, false);
+            const { transitionSecs = 0.4 } = effects;
+            if (transition === "zoom") {
+              startZoomExport(transitionSecs);
+            } else if (transition !== "none") {
+              cancelAnimationFrame(animId);
+              await runOneShotTransition(transition, transitionSecs);
+              videoEl.currentTime = nextSeg.start;
+              await new Promise(r => { videoEl.onseeked = r; });
+              preSeeked = true;
+              animId = requestAnimationFrame(drawLoop);
             }
           }
-          prevExportEt = curExportEt;
+        }
 
-          if (videoEl.ended || ct >= dur - 0.1) {
-            clearInterval(interval); cancelAnimationFrame(animId); videoEl.pause();
-            if (source) try { source.disconnect(); } catch {}
-            URL.revokeObjectURL(url); resolve();
-          }
-        }, 60);
+        cancelAnimationFrame(animId);
+        if (source) try { source.disconnect(); } catch {}
+        URL.revokeObjectURL(url);
+        resolve();
       });
       videoEl.onerror = () => { URL.revokeObjectURL(url); resolve(); };
     });
-    elapsed += clip.duration || 0;
 
-    // Transición entre clips en exportación (per-clip override o global)
-    const clipTrans = clipTransitions[clip.id] ?? effects.transition ?? "none";
+    // Transición hacia el siguiente clip (archivo distinto)
+    const lastSeg = clipSegs[clipSegs.length - 1];
+    const transition = resolveTransition(lastSeg, true);
     const { transitionSecs = 0.4 } = effects;
-    const transition = clipTrans;
-    if (!abortRef.current && transition !== "none" && ci < clips.length - 1) {
-      await new Promise(resolve => {
-        if (transition === "fade") {
-          // Fade a negro
-          const t0 = performance.now();
-          const dur = transitionSecs / 2;
-          const step = () => {
-            const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
-            ctx.fillStyle = `rgba(0,0,0,${t})`; ctx.fillRect(0, 0, outW, outH);
-            if (t < 1) requestAnimationFrame(step); else resolve();
-          };
-          requestAnimationFrame(step);
-        } else if (transition === "flash") {
-          const t0 = performance.now();
-          const step = () => {
-            const t = Math.min(1, (performance.now() - t0) / 1000 / 0.12);
-            ctx.fillStyle = `rgba(255,255,255,${t})`; ctx.fillRect(0, 0, outW, outH);
-            if (t < 1) requestAnimationFrame(step); else resolve();
-          };
-          requestAnimationFrame(step);
-        } else if (transition.startsWith("slide")) {
-          createImageBitmap(canvas).then(bitmap => {
-            const t0 = performance.now();
-            const dur = transitionSecs * 0.6;
-            const step = () => {
-              const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
-              const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-              ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
-              const ox = transition === "slideLeft" ? -outW * ease : transition === "slideRight" ? outW * ease : 0;
-              const oy = transition === "slideUp"   ? -outH * ease : transition === "slideDown"  ? outH * ease : 0;
-              ctx.drawImage(bitmap, ox, oy, outW, outH);
-              if (t < 1) requestAnimationFrame(step);
-              else { bitmap.close(); resolve(); }
-            };
-            requestAnimationFrame(step);
-          });
-        } else {
-          resolve();
-        }
-      });
+    if (!abortRef.current && transition !== "none" && !isLastClip) {
+      if (transition === "zoom") startZoomExport(transitionSecs);
+      else await runOneShotTransition(transition, transitionSecs);
     }
   }
 
@@ -1957,7 +2060,7 @@ function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyl
         <div className="sce-transcribing">
           <div className="sce-trans-spinner" />
           <p className="sce-trans-msg">{transcribeMsg || "Generando subtítulos..."}</p>
-          <p className="sce-trans-hint">Whisper Base · Español · Primera vez ~145 MB</p>
+          <p className="sce-trans-hint">Whisper Tiny · Español · Primera vez ~40 MB</p>
         </div>
       ) : (
         <>
@@ -2053,6 +2156,7 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
   const pct = totalKept > 0 ? Math.min(100, (effectiveTime / totalKept) * 100) : 0;
   const [hoveredSeg, setHoveredSeg] = useState(null);
   const [transPickerClipId, setTransPickerClipId] = useState(null);
+  const [transPickerPos, setTransPickerPos] = useState(null); // {left, top} en coords de viewport
   const [zoom, setZoom] = useState(1);
   const trackWrapRef = useRef(null);
   const seekDragRef  = useRef(false);
@@ -2073,7 +2177,7 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
   }, []);
 
   // Scrubber drag — se arrastra en tiempo real con el puntero
-  const SKIP_DRAG = [".sce-tl-seg-del",".sce-tl-trans-btn",".sce-tl-card-block",".sce-tl-sfx-dot",".sce-tl-trans-marker",".sce-tl-seg-toolbar"];
+  const SKIP_DRAG = [".sce-tl-seg-del",".sce-tl-trans-btn",".sce-tl-card-block",".sce-tl-sfx-dot",".sce-tl-trans-marker",".sce-tl-seg-toolbar",".sce-tl-trans-picker"];
   const doSeek = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const p = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -2124,7 +2228,10 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
   };
   const handleSfxDragEnd = () => { sfxDragRef.current = null; };
 
-  // Agrupar segmentos consecutivos del mismo clip para saber dónde terminan los clips
+  // Límites donde se puede poner una transición: entre dos clips distintos,
+  // o en un punto donde la usuaria dividió manualmente con "✂ Dividir"
+  // (los cortes automáticos de silencio NO cuentan — serían decenas de
+  // marcadores sin sentido para transiciones).
   const clipBoundaries = useMemo(() => {
     const bounds = [];
     let cumW = 0;
@@ -2132,9 +2239,13 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
       const seg = keptSegs[i];
       const w = (seg.end - seg.start) / (totalKept || 1) * 100;
       const nextSeg = keptSegs[i + 1];
-      const isLastOfClip = !nextSeg || nextSeg.clip.id !== seg.clip.id;
-      if (isLastOfClip && nextSeg) {
-        bounds.push({ clipId: seg.clip.id, leftPct: cumW + w });
+      if (nextSeg) {
+        const crossClip = nextSeg.clip.id !== seg.clip.id;
+        const manualSplit = !crossClip &&
+          (seg.clip.silences || []).some(s => s.cut && s.manual && Math.abs(s.start - seg.end) < 0.05);
+        if (crossClip || manualSplit) {
+          bounds.push({ key: segBoundaryKey(seg), leftPct: cumW + w, crossClip });
+        }
       }
       cumW += w;
     }
@@ -2152,7 +2263,14 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
             <span className="sce-tl-preset-badge">{presetInfo.icon} {presetInfo.label}</span>
           )}
           <span className="sce-tl-duration">{fmtTime(effectiveTime)} / {fmtTime(totalKept)}</span>
-          {zoom > 1.05 && <button className="sce-tl-zoom-reset" onClick={() => setZoom(1)} title="Restablecer zoom">×{zoom.toFixed(1)}</button>}
+          <div className="sce-tl-zoom-controls">
+            <button className="sce-tl-zoom-btn" title="Alejar (Ctrl + rueda del mouse)"
+              onClick={() => setZoom(z => Math.max(1, z * 0.8))} disabled={zoom <= 1.05}>−</button>
+            <span className="sce-tl-zoom-value">×{zoom.toFixed(1)}</span>
+            <button className="sce-tl-zoom-btn" title="Acercar para cortar con más precisión (Ctrl + rueda del mouse)"
+              onClick={() => setZoom(z => Math.min(10, z * 1.25))} disabled={zoom >= 10}>+</button>
+            {zoom > 1.05 && <button className="sce-tl-zoom-reset" onClick={() => setZoom(1)} title="Restablecer zoom">Reset</button>}
+          </div>
         </div>
       </div>
       <div className="sce-tl-body">
@@ -2287,33 +2405,45 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
             }
           </div>
 
-          {/* Marcadores de transición entre clips */}
-          {clipBoundaries.map(({ clipId, leftPct }) => {
-            const transType = clipTransitions[clipId] ?? defaultTransition;
+          {/* Marcadores de transición: entre clips distintos o en un corte manual */}
+          {clipBoundaries.map(({ key, leftPct, crossClip }) => {
+            const fallback = crossClip ? defaultTransition : "none";
+            const transType = clipTransitions[key] ?? fallback;
             const transInfo = TRANSITIONS.find(t => t.id === transType) || TRANSITIONS[0];
-            const showPicker = transPickerClipId === clipId;
+            const showPicker = transPickerClipId === key;
             return (
-              <div key={clipId} className="sce-tl-trans-marker" style={{ left: `${leftPct}%` }}>
+              <div key={key} className="sce-tl-trans-marker" style={{ left: `${leftPct}%` }}>
                 <button
                   className={`sce-tl-trans-btn${transType !== "none" ? " has-trans" : ""}`}
-                  title={`Transición: ${transInfo.label}`}
-                  onClick={e => { e.stopPropagation(); setTransPickerClipId(showPicker ? null : clipId); }}>
+                  title={`Transición ${crossClip ? "entre clips" : "en el corte"}: ${transInfo.label} — clic para cambiar`}
+                  onClick={e => {
+                    e.stopPropagation();
+                    if (showPicker) { setTransPickerClipId(null); setTransPickerPos(null); return; }
+                    const r = e.currentTarget.getBoundingClientRect();
+                    setTransPickerPos({ left: r.left + r.width / 2, top: r.top - 8 });
+                    setTransPickerClipId(key);
+                  }}>
                   {transInfo.icon}
                 </button>
-                {showPicker && (
-                  <div className="sce-tl-trans-picker" onClick={e => e.stopPropagation()}>
+                {showPicker && transPickerPos && createPortal(
+                  <div className="sce-tl-trans-picker" onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}
+                    style={{ position: "fixed", left: transPickerPos.left, top: transPickerPos.top, transform: "translate(-50%, -100%)" }}>
                     <p className="sce-tl-trans-picker-title">Transición aquí</p>
                     <div className="sce-tl-trans-picker-grid">
                       {TRANSITIONS.filter((t,i,a) => a.findIndex(x=>x.id===t.id)===i).map(t => (
                         <button key={t.id}
-                          className={`sce-tl-trans-option${(clipTransitions[clipId] ?? defaultTransition) === t.id ? " active" : ""}`}
-                          onClick={() => { onSetClipTransition(clipId, t.id); setTransPickerClipId(null); }}>
+                          className={`sce-tl-trans-option${transType === t.id ? " active" : ""}`}
+                          onClick={() => { onSetClipTransition(key, t.id); setTransPickerClipId(null); setTransPickerPos(null); }}>
                           <span>{t.icon}</span>
                           <span>{t.label}</span>
                         </button>
                       ))}
                     </div>
-                  </div>
+                  </div>,
+                  // Portal dentro de #root (no document.body): React 17+ delega
+                  // eventos desde el contenedor raíz, así que portalear fuera de
+                  // él rompe el burbujeo de clics aunque el elemento sea visible.
+                  document.getElementById("root") || document.body
                 )}
               </div>
             );
@@ -2345,6 +2475,14 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
 
 // ── SfxPanel ─────────────────────────────────────────────────────────────
 function SfxPanel({ sfxList, onSfxChange, currentTime, onPreview }) {
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [playingId, setPlayingId] = useState(null);
+  const [addingId, setAddingId] = useState(null);
+  const previewAudioRef = useRef(null);
+
   const fmtT = (t) => {
     const m = Math.floor(t / 60), s = (t % 60).toFixed(1).padStart(4, "0");
     return `${m}:${s}`;
@@ -2356,10 +2494,105 @@ function SfxPanel({ sfxList, onSfxChange, currentTime, onPreview }) {
     const id = `sfx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     onSfxChange(prev => [...prev, { id, type, time: currentTime, label: cat.label, emoji: cat.emoji }]);
   };
-  const removeSfx = (id) => onSfxChange(prev => prev.filter(s => s.id !== id));
+  const removeSfx = (id) => onSfxChange(prev => {
+    const target = prev.find(s => s.id === id);
+    if (target?.audioUrl) { try { URL.revokeObjectURL(target.audioUrl); } catch {} }
+    return prev.filter(s => s.id !== id);
+  });
+
+  const runSearch = async (e) => {
+    e?.preventDefault();
+    const q = query.trim();
+    if (!q || searching) return;
+    setSearching(true); setSearchError(""); setResults([]);
+    try {
+      const token = await getAwsAuthToken();
+      if (!token) { setSearchError("Tu sesión expiró. Recarga la página e inicia sesión de nuevo."); return; }
+      const res = await fetch(REELS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type: "searchSfx", query: q }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setSearchError(data.error || "No se pudo buscar. Intenta de nuevo."); return; }
+      setResults(data.results || []);
+      if (!data.results?.length) setSearchError("Sin resultados — prueba con otra palabra.");
+    } catch (err) {
+      setSearchError("No se pudo conectar. Revisa tu conexión.");
+    } finally {
+      setSearching(false);
+    }
+  };
+
+  const togglePreview = (result) => {
+    const el = previewAudioRef.current;
+    if (!el) return;
+    if (playingId === result.id) { el.pause(); setPlayingId(null); return; }
+    el.src = result.previewUrl;
+    el.play().catch(() => {});
+    setPlayingId(result.id);
+  };
+
+  const addFreesoundResult = async (result) => {
+    if (addingId) return;
+    setAddingId(result.id);
+    try {
+      const token = await getAwsAuthToken();
+      if (!token) { setSearchError("Tu sesión expiró. Recarga la página e inicia sesión de nuevo."); return; }
+      const res = await fetch(REELS_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type: "fetchSfxAudio", previewUrl: result.previewUrl }),
+      });
+      if (!res.ok) { setSearchError("No se pudo agregar ese sonido. Intenta de nuevo."); return; }
+      const blob = await res.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      const id = `sfx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      onSfxChange(prev => [...prev, {
+        id, time: currentTime, label: result.name.slice(0, 24), emoji: "🔊", audioUrl,
+      }]);
+    } catch (err) {
+      setSearchError("No se pudo agregar ese sonido. Intenta de nuevo.");
+    } finally {
+      setAddingId(null);
+    }
+  };
 
   return (
     <div className="sfx-panel">
+      <audio ref={previewAudioRef} onEnded={() => setPlayingId(null)} style={{ display: "none" }} />
+
+      <div className="sfx-search-section">
+        <p className="sfx-section-title">Buscar más efectos (Freesound · licencia libre)</p>
+        <form className="sfx-search-row" onSubmit={runSearch}>
+          <input type="text" className="sfx-search-input" placeholder="ej: aplausos, notificación, risa..."
+            value={query} onChange={e => setQuery(e.target.value)} />
+          <button type="submit" className="sfx-search-btn" disabled={searching || !query.trim()}>
+            {searching ? "Buscando..." : "Buscar"}
+          </button>
+        </form>
+        {searchError && <p className="sfx-search-error">{searchError}</p>}
+        {results.length > 0 && (
+          <div className="sfx-search-results">
+            {results.map(r => (
+              <div key={r.id} className="sfx-search-row-item">
+                <button type="button" className="sfx-search-play" onClick={() => togglePreview(r)} title="Escuchar">
+                  {playingId === r.id ? "⏸" : "▶"}
+                </button>
+                <div className="sfx-search-meta">
+                  <span className="sfx-search-name">{r.name}</span>
+                  <span className="sfx-search-sub">{r.author} · {r.duration?.toFixed(1)}s · CC0</span>
+                </div>
+                <button type="button" className="sfx-search-add" disabled={addingId === r.id}
+                  onClick={() => addFreesoundResult(r)} title={`Agregar en ${fmtT(currentTime)}`}>
+                  {addingId === r.id ? "..." : "+"}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="sfx-catalog">
         <p className="sfx-hint">Toca para escuchar · presiona <strong>+</strong> para agregar en el scrubber</p>
         <div className="sfx-grid">
@@ -2630,6 +2863,10 @@ function AbiGuidePanel({ hasSubtitles, hasCards, hasSections, onGoTo, onCreateCa
 
 // ── EditorScreen ──────────────────────────────────────────────────────────
 function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg }) {
+  const [theme, setTheme] = useState(() => {
+    try { return localStorage.getItem("sce-theme") || "dark"; } catch { return "dark"; }
+  });
+  useEffect(() => { try { localStorage.setItem("sce-theme", theme); } catch {} }, [theme]);
   const canvasRef    = useRef(null);
   const playRef      = useRef(false);
   const subListRef   = useRef(null);
@@ -2658,6 +2895,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const [effects,      setEffects]      = useState(() => ({ transition: "none", transitionSecs: 0.4, bokeh: 0, autoZoom: false, zoomInterval: 4, ...VIDEO_PRESETS[0].values, _preset: "natural" }));
   const [bokehLoading, setBokehLoading] = useState(false);
   const [clipTransitions, setClipTransitions] = useState({});
+  const clipTransitionsRef = useRef({});
+  useEffect(() => { clipTransitionsRef.current = clipTransitions; }, [clipTransitions]);
   const [music, setMusic] = useState({ url: null, name: "", volume: 0.35, duck: true, loop: true, fromLibrary: false });
   const musicRef = useRef({ url: null, name: "", volume: 0.35, duck: true, loop: true, fromLibrary: false });
   useEffect(() => { musicRef.current = music; }, [music]);
@@ -2868,7 +3107,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     if (!seg || localTime - seg.start < 0.06 || seg.end - localTime < 0.06) return;
     setClips(prev => prev.map(c => {
       if (c.id !== clip.id) return c;
-      const newSilences = [...(c.silences || []), { id: uid(), start: localTime, end: localTime + 0.001, cut: true }]
+      const newSilences = [...(c.silences || []), { id: uid(), start: localTime, end: localTime + 0.001, cut: true, manual: true }]
         .sort((a, b) => a.start - b.start);
       return { ...c, silences: newSilences };
     }));
@@ -3350,10 +3589,22 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       musicEl.play().catch(() => {});
     }
 
+    // Resuelve la transición para el límite justo después de `seg`. El
+    // override por punto de corte (clipTransitionsRef) manda; si no hay uno,
+    // el default global solo aplica entre clips distintos — los cortes de
+    // silencio automáticos nunca llevan transición aunque haya un default.
+    const resolveTransition = (seg, crossClip) => {
+      const key = segBoundaryKey(seg);
+      const fallback = crossClip ? effectsRef.current.transition : "none";
+      return clipTransitionsRef.current[key] ?? fallback;
+    };
+
     for (const clipId of uniqueClipIds) {
       if (!playRef.current) break;
       const clipSegs = keptSegs.filter(s => s.clip.id === clipId);
       const clip = clipSegs[0].clip;
+      const clipIdx = uniqueClipIds.indexOf(clipId);
+      const isLastClip = clipIdx === uniqueClipIds.length - 1;
 
       // Saltar clips que están completamente antes del punto de inicio
       const clipDur = clipSegs.reduce((sum, s) => sum + s.end - s.start, 0);
@@ -3384,8 +3635,10 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           };
           animId = requestAnimationFrame(draw);
 
-          for (const seg of clipSegs) {
+          let preSeeked = false; // el segmento ya quedó posicionado por una transición previa
+          for (let si = 0; si < clipSegs.length; si++) {
             if (!playRef.current) break;
+            const seg = clipSegs[si];
             const segEtStart = etOffset;
             const segDur = seg.end - seg.start;
 
@@ -3395,14 +3648,17 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
               continue;
             }
 
-            // Si startEt cae dentro de este segmento, buscar ahí
-            const skipInSeg = Math.max(0, startEt - segEtStart);
-            vid.currentTime = seg.start + skipInSeg;
-            await new Promise(r => { vid.onseeked = r; });
+            if (!preSeeked) {
+              // Si startEt cae dentro de este segmento, buscar ahí
+              const skipInSeg = Math.max(0, startEt - segEtStart);
+              vid.currentTime = seg.start + skipInSeg;
+              await new Promise(r => { vid.onseeked = r; });
+            }
+            preSeeked = false;
             if (!playRef.current) break;
             vid.playbackRate = 1;
             vid.play().catch(() => {});
-            let prevEt = segEtStart + skipInSeg;
+            let prevEt = segEtStart + Math.max(0, startEt - segEtStart);
             await new Promise(segDone => {
               const tick = setInterval(() => {
                 if (!playRef.current) { clearInterval(tick); vid.pause(); segDone(); return; }
@@ -3418,7 +3674,10 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
                     if (sfx.time > prevEt && sfx.time <= newEt) {
                       if (!sfxActxRef.current) sfxActxRef.current = new AudioContext();
                       const a = sfxActxRef.current;
-                      const fire = () => synthSfx(sfx.type, a, null, a.currentTime);
+                      const fire = () => {
+                        if (sfx.audioUrl) playSfxAudioUrl(sfx.audioUrl, a, null);
+                        else synthSfx(sfx.type, a, null, a.currentTime);
+                      };
                       if (a.state === "suspended") a.resume().then(fire);
                       else fire();
                     }
@@ -3432,14 +3691,40 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
               }, 50);
             });
             etOffset += segDur;
+
+            // Transición en un corte manual dentro del MISMO clip (✂ Dividir)
+            const nextSeg = clipSegs[si + 1];
+            if (nextSeg && playRef.current) {
+              const transition = resolveTransition(seg, false);
+              if (transition !== "none") {
+                const { transitionSecs } = effectsRef.current;
+                if (transition === "zoom") {
+                  startZoom(transitionSecs); // se anima en vivo, sin pausar el dibujo
+                } else {
+                  cancelAnimationFrame(animId);
+                  if (transition === "fade") await animFade(0, 1, transitionSecs / 2);
+                  else if (transition === "flash") await animFade(0, 1, 0.08, "255,255,255");
+                  else if (transition.startsWith("slide")) await animSlide(transition, transitionSecs * 0.6);
+
+                  vid.currentTime = nextSeg.start;
+                  await new Promise(r => { vid.onseeked = r; });
+                  preSeeked = true;
+                  animId = requestAnimationFrame(draw);
+
+                  if (transition === "fade") await animFade(1, 0, transitionSecs / 2);
+                  else if (transition === "flash") await animFade(1, 0, 0.08, "255,255,255");
+                }
+              }
+            }
           }
 
           cancelAnimationFrame(animId);
 
-          // Transición de salida (solo si hay otro clip después y se sigue reproduciendo)
-          const clipIdx = uniqueClipIds.indexOf(clipId);
-          const { transition, transitionSecs } = effectsRef.current;
-          if (playRef.current && transition !== "none" && clipIdx < uniqueClipIds.length - 1) {
+          // Transición de salida hacia el siguiente clip (archivo distinto)
+          const lastSeg = clipSegs[clipSegs.length - 1];
+          const transition = resolveTransition(lastSeg, true);
+          const { transitionSecs } = effectsRef.current;
+          if (playRef.current && transition !== "none" && !isLastClip) {
             if (transition === "fade") await animFade(0, 1, transitionSecs / 2);
             else if (transition === "flash") await animFade(0, 1, 0.08, "255,255,255");
             else if (transition.startsWith("slide")) await animSlide(transition, transitionSecs * 0.6);
@@ -3452,9 +3737,10 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       });
 
       // Transición de entrada al clip siguiente
-      const clipIdx = uniqueClipIds.indexOf(clipId);
-      const { transition, transitionSecs } = effectsRef.current;
-      if (playRef.current && transition !== "none" && clipIdx < uniqueClipIds.length - 1) {
+      const lastSeg = clipSegs[clipSegs.length - 1];
+      const transition = resolveTransition(lastSeg, true);
+      const { transitionSecs } = effectsRef.current;
+      if (playRef.current && transition !== "none" && !isLastClip) {
         if (transition === "fade") await animFade(1, 0, transitionSecs / 2);
         else if (transition === "flash") await animFade(1, 0, 0.08, "255,255,255");
         else if (transition === "zoom") startZoom(transitionSecs);
@@ -3473,7 +3759,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   togglePlayRef.current = togglePlay; // sync ref durante render (declaración antes que uso en teclado)
 
   return (
-    <div className="sce-layout">
+    <div className="sce-layout" data-theme={theme}>
       <input ref={fileInputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple
         style={{ display: "none" }} onChange={e => onAddFiles(e.target.files)} />
 
@@ -3505,6 +3791,10 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         </div>
 
         <div className="sce-topbar-right">
+          <button className="sce-theme-toggle" onClick={() => setTheme(t => t === "dark" ? "light" : "dark")}
+            title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
           {onExtractReels && (
             <button className="sce-reel-pill" onClick={onExtractReels} title="Extractor de Reels">🎯 Reels</button>
           )}
@@ -3938,7 +4228,7 @@ export default function SilenceCutter() {
   const [result, setResult]         = useState(null);
   const [error, setError]           = useState("");
   const [dragOver, setDragOver]     = useState(false);
-  const [subtitleStyle, setSubtitleStyle] = useState({ font: "Poppins", hlColor: "#FFE44D" });
+  const [subtitleStyle, setSubtitleStyle] = useState({ font: "Poppins", hlColor: "#FFE44D", size: "small" });
   const [format, setFormat] = useState("landscape"); // "landscape" | "portrait" | "square"
   const [showReels, setShowReels] = useState(false);
   const [sensitivity, setSensitivity] = useState("conservadora");
