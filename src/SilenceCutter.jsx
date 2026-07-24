@@ -2169,7 +2169,7 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
     const onWheel = (e) => {
       if (e.ctrlKey) {
         e.preventDefault();
-        setZoom(z => Math.max(1, Math.min(10, z * (e.deltaY > 0 ? 0.85 : 1.18))));
+        setZoom(z => Math.max(1, Math.min(60, z * (e.deltaY > 0 ? 0.85 : 1.18))));
       }
     };
     el.addEventListener('wheel', onWheel, { passive: false });
@@ -2268,7 +2268,7 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
               onClick={() => setZoom(z => Math.max(1, z * 0.8))} disabled={zoom <= 1.05}>−</button>
             <span className="sce-tl-zoom-value">×{zoom.toFixed(1)}</span>
             <button className="sce-tl-zoom-btn" title="Acercar para cortar con más precisión (Ctrl + rueda del mouse)"
-              onClick={() => setZoom(z => Math.min(10, z * 1.25))} disabled={zoom >= 10}>+</button>
+              onClick={() => setZoom(z => Math.min(60, z * 1.25))} disabled={zoom >= 60}>+</button>
             {zoom > 1.05 && <button className="sce-tl-zoom-reset" onClick={() => setZoom(1)} title="Restablecer zoom">Reset</button>}
           </div>
         </div>
@@ -2513,6 +2513,10 @@ function SfxPanel({ sfxList, onSfxChange, currentTime, onPreview }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ type: "searchSfx", query: q }),
       });
+      if (res.status === 401) {
+        setSearchError("Tu sesión expiró (pasó demasiado tiempo). Recarga la página, inicia sesión de nuevo e intenta otra vez.");
+        return;
+      }
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setSearchError(data.error || "No se pudo buscar. Intenta de nuevo."); return; }
       setResults(data.results || []);
@@ -2544,6 +2548,10 @@ function SfxPanel({ sfxList, onSfxChange, currentTime, onPreview }) {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ type: "fetchSfxAudio", previewUrl: result.previewUrl }),
       });
+      if (res.status === 401) {
+        setSearchError("Tu sesión expiró (pasó demasiado tiempo). Recarga la página, inicia sesión de nuevo e intenta otra vez.");
+        return;
+      }
       if (!res.ok) { setSearchError("No se pudo agregar ese sonido. Intenta de nuevo."); return; }
       const blob = await res.blob();
       const audioUrl = URL.createObjectURL(blob);
@@ -2931,6 +2939,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   const selectedSegRef   = useRef(null);
   const playbarScrubDrag = useRef(false);
   const cardYDragRef     = useRef(null); // { cardId, startY, startYPos, canvasH, moved }
+  const dragVideoRef     = useRef(null); // { vid, url, clip, localTime } — video cargado UNA vez al iniciar el arrastre, reusado en cada pointermove
   const togglePlayRef       = useRef(null); // sincronizado durante render — evita TDZ en deps del useEffect de teclado
   const seekToEffectiveRef  = useRef(null); // ídem — seekToEffective se declara más abajo (línea ~2762)
   useEffect(() => { effectiveTimeRef.current = effectiveTime; }, [effectiveTime]);
@@ -3521,6 +3530,23 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   }, [onCutSeg]);
 
   // Drag vertical de tarjetas en el canvas
+  // Redibuja usando el video YA cargado en dragVideoRef (sin recrearlo) — solo
+  // el overlay (tarjetas/subtítulos) cambia durante el arrastre, el frame de
+  // video de fondo es el mismo todo el tiempo.
+  const redrawDragFrame = useCallback(() => {
+    const d = dragVideoRef.current;
+    const canvas = canvasRef.current;
+    if (!d || !canvas) return;
+    const ctx = canvas.getContext("2d");
+    const { W, H } = outDims;
+    const vW = d.vid.videoWidth || dims.W, vH = d.vid.videoHeight || dims.H;
+    const scale = Math.min(W / vW, H / vH);
+    const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
+    applyFrame(ctx, d.vid, dX, dY, dW, dH, W, H, false);
+    drawSubtitle(ctx, W, H, d.localTime, d.clip.segments, subtitleStyle);
+    drawCards(ctx, W, H, effectiveTimeRef.current, cardsRef.current);
+  }, [outDims, dims, subtitleStyle, applyFrame]);
+
   const handleCanvasPointerDown = useCallback((e) => {
     const ac = cardsRef.current.find(c => {
       const el = effectiveTimeRef.current - c.startTime;
@@ -3537,9 +3563,26 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       canvasH: rect.height,
       moved: false,
     };
+    // Cargar el video UNA sola vez al iniciar el arrastre — antes se recreaba
+    // en cada pointermove (docenas de veces por segundo), lo que hacía que el
+    // canvas se pusiera en negro y "cargando" mientras se arrastraba la tarjeta.
+    const native = effectiveToNative(keptSegs, effectiveTimeRef.current);
+    if (native) {
+      const vid = document.createElement("video");
+      const url = URL.createObjectURL(native.clip.file);
+      vid.src = url;
+      vid.onloadedmetadata = () => {
+        vid.currentTime = Math.min(native.localTime, Math.max(0, vid.duration - 0.01));
+        vid.onseeked = () => {
+          dragVideoRef.current = { vid, url, clip: native.clip, localTime: native.localTime };
+          redrawDragFrame();
+        };
+      };
+      vid.onerror = () => { URL.revokeObjectURL(url); };
+    }
     e.currentTarget.setPointerCapture(e.pointerId);
     e.stopPropagation();
-  }, []);
+  }, [keptSegs, redrawDragFrame]);
 
   const handleCanvasPointerMove = useCallback((e) => {
     const d = cardYDragRef.current;
@@ -3549,12 +3592,20 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     if (!d.moved) return;
     const newY = Math.max(0.08, Math.min(0.92, d.startYPos + delta / d.canvasH));
     setCards(prev => prev.map(c => c.id === d.cardId ? { ...c, yPos: newY } : c));
-    seekToEffective(effectiveTimeRef.current); // redibujar
-  }, [setCards, seekToEffective]);
+    redrawDragFrame(); // liviano: reusa el video ya cargado, no lo recrea
+  }, [setCards, redrawDragFrame]);
+
+  const cleanupDragVideo = () => {
+    if (dragVideoRef.current) {
+      try { URL.revokeObjectURL(dragVideoRef.current.url); } catch {}
+      dragVideoRef.current = null;
+    }
+  };
 
   const handleCanvasPointerUp = useCallback((e) => {
     const d = cardYDragRef.current;
     cardYDragRef.current = null;
+    cleanupDragVideo();
     if (!d?.moved) togglePlayRef.current?.(); // tap sin movimiento → play/pause
   }, []); // togglePlay removido — accedido via togglePlayRef para evitar TDZ
 
@@ -3811,7 +3862,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             onPointerDown={!isPlaying && !seeking ? handleCanvasPointerDown : undefined}
             onPointerMove={!isPlaying && !seeking ? handleCanvasPointerMove : undefined}
             onPointerUp={!isPlaying && !seeking ? handleCanvasPointerUp : undefined}
-            onPointerCancel={() => { cardYDragRef.current = null; }}
+            onPointerCancel={() => { cardYDragRef.current = null; cleanupDragVideo(); }}
             onClick={!isPlaying && !seeking && !activeCard ? togglePlay : undefined}>
             <canvas ref={canvasRef} className="sce-canvas" width={dims.W} height={dims.H} />
             {!isPlaying && !seeking && !activeCard && (

@@ -609,7 +609,13 @@ async function saveRemoteState(data) {
     headers,
     body: JSON.stringify({ data })
   });
-  if (!res.ok) throw new Error(`AWS respondió ${res.status}`);
+  if (!res.ok) {
+    let body = null;
+    try { body = await res.json(); } catch {}
+    const err = new Error(body?.message || `AWS respondió ${res.status}`);
+    err.code = body?.error;
+    throw err;
+  }
 }
 
 async function deleteRemoteState() {
@@ -1686,6 +1692,14 @@ export default function App() {
         .then(() => setSyncError(""))
         .catch((err) => {
           console.error("Error guardando en la nube:", err);
+          if (err?.code === "guardado_sospechoso") {
+            // El servidor rechazó el guardado a propósito porque parece un
+            // vaciado accidental de todo el estado. NO deshabilitamos la nube
+            // ni guardamos esta versión en localStorage — los datos reales
+            // siguen intactos donde estaban, sin tocar.
+            setSyncError(err.message || "Guardado bloqueado por seguridad — tus datos en la nube están a salvo. Recarga la página.");
+            return;
+          }
           setRemoteStorageEnabled(false);
           setSyncError("No se pudo guardar en la nube de forma segura. Usando almacenamiento local por ahora.");
           try {

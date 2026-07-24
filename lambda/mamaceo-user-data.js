@@ -14,6 +14,20 @@ const dynamo = new DynamoDBClient({ region: "us-east-1" });
 const TABLE = process.env.TABLE_NAME || "user_states";
 const METHODS = "GET,POST,DELETE,OPTIONS";
 
+// Las secciones que más le duelen a una usuaria si desaparecen de golpe
+// (finanzas, clientes, tareas, contenido, metas). Si TODAS estas quedan en
+// cero de un guardado a otro, habiendo tenido contenido real antes, es casi
+// seguro un bug del cliente (ej. un reset de estado accidental) y no una
+// acción real de la usuaria — nadie borra finanzas+clientes+tareas+metas
+// de un tirón en un solo guardado.
+const CORE_ARRAY_KEYS = ["movements", "clients", "tasks", "contentItems", "goals"];
+function looksLikeAccidentalWipe(oldData, newData) {
+  if (!oldData) return false; // sin estado previo — nada que proteger
+  const oldTotal = CORE_ARRAY_KEYS.reduce((t, k) => t + (Array.isArray(oldData[k]) ? oldData[k].length : 0), 0);
+  const newTotal = CORE_ARRAY_KEYS.reduce((t, k) => t + (Array.isArray(newData[k]) ? newData[k].length : 0), 0);
+  return oldTotal > 3 && newTotal === 0;
+}
+
 export const handler = async (event) => {
   const method = getMethod(event);
 
@@ -55,16 +69,47 @@ export const handler = async (event) => {
       // Si el cliente los incluye en su guardado normal de estado, se descartan aquí para
       // que nadie pueda auto-otorgarse premium editando el payload.
       const { userPlan, premiumExpiresAt, ...safeData } = body.data;
+
+      // Traer el estado actual ANTES de sobrescribir: sirve para (a) dejar un
+      // respaldo de una generación por si hay que recuperar algo a mano, y
+      // (b) detectar un guardado que borraría todo de golpe (ver looksLikeAccidentalWipe).
+      let previousData = null, previousUpdatedAt = null;
+      try {
+        const existing = await dynamo.send(
+          new GetItemCommand({ TableName: TABLE, Key: marshall({ user_id: userId }) })
+        );
+        if (existing.Item) {
+          const item = unmarshall(existing.Item);
+          previousData = item.data ?? null;
+          previousUpdatedAt = item.updatedAt ?? null;
+        }
+      } catch (err) {
+        console.warn("[mamaceo-user-data] No se pudo leer el estado anterior:", err.message);
+      }
+
+      if (looksLikeAccidentalWipe(previousData, safeData)) {
+        console.error(JSON.stringify({ metric: "suspicious_wipe_blocked", userId }));
+        return respond(409, {
+          error: "guardado_sospechoso",
+          message: "Este guardado borraría de golpe datos existentes (finanzas, clientes, tareas). Por seguridad no se guardó — recarga la página e intenta de nuevo. Si de verdad quieres borrar todo, contáctanos.",
+        }, event, METHODS);
+      }
+
+      const exprValues = { ":data": safeData, ":ts": new Date().toISOString() };
+      let updateExpr = "SET #d = :data, updatedAt = :ts";
+      if (previousData) {
+        updateExpr += ", previousData = :prevData, previousUpdatedAt = :prevTs";
+        exprValues[":prevData"] = previousData;
+        exprValues[":prevTs"] = previousUpdatedAt || new Date().toISOString();
+      }
+
       await dynamo.send(
         new UpdateItemCommand({
           TableName: TABLE,
           Key: marshall({ user_id: userId }),
-          UpdateExpression: "SET #d = :data, updatedAt = :ts",
+          UpdateExpression: updateExpr,
           ExpressionAttributeNames: { "#d": "data" },
-          ExpressionAttributeValues: marshall({
-            ":data": safeData,
-            ":ts": new Date().toISOString(),
-          }),
+          ExpressionAttributeValues: marshall(exprValues),
         })
       );
       return respond(200, { ok: true }, event, METHODS);
