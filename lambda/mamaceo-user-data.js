@@ -70,19 +70,17 @@ export const handler = async (event) => {
       // que nadie pueda auto-otorgarse premium editando el payload.
       const { userPlan, premiumExpiresAt, ...safeData } = body.data;
 
-      // Traer el estado actual ANTES de sobrescribir: sirve para (a) dejar un
-      // respaldo de una generación por si hay que recuperar algo a mano, y
-      // (b) detectar un guardado que borraría todo de golpe (ver looksLikeAccidentalWipe).
-      let previousData = null, previousUpdatedAt = null;
+      // Traer el estado actual SOLO para comparar (nunca se vuelve a escribir
+      // una copia de esto — el respaldo real ya lo da Point-in-Time Recovery
+      // de DynamoDB, activado en la tabla). Esta lectura nunca hace crecer el
+      // registro ni cambia lo que se guarda; si falla, seguimos sin bloquear
+      // el guardado (mejor guardar sin la validación que no guardar nada).
+      let previousData = null;
       try {
         const existing = await dynamo.send(
           new GetItemCommand({ TableName: TABLE, Key: marshall({ user_id: userId }) })
         );
-        if (existing.Item) {
-          const item = unmarshall(existing.Item);
-          previousData = item.data ?? null;
-          previousUpdatedAt = item.updatedAt ?? null;
-        }
+        if (existing.Item) previousData = unmarshall(existing.Item).data ?? null;
       } catch (err) {
         console.warn("[mamaceo-user-data] No se pudo leer el estado anterior:", err.message);
       }
@@ -95,21 +93,20 @@ export const handler = async (event) => {
         }, event, METHODS);
       }
 
-      const exprValues = { ":data": safeData, ":ts": new Date().toISOString() };
-      let updateExpr = "SET #d = :data, updatedAt = :ts";
-      if (previousData) {
-        updateExpr += ", previousData = :prevData, previousUpdatedAt = :prevTs";
-        exprValues[":prevData"] = previousData;
-        exprValues[":prevTs"] = previousUpdatedAt || new Date().toISOString();
-      }
-
       await dynamo.send(
         new UpdateItemCommand({
           TableName: TABLE,
           Key: marshall({ user_id: userId }),
-          UpdateExpression: updateExpr,
+          UpdateExpression: "SET #d = :data, updatedAt = :ts",
           ExpressionAttributeNames: { "#d": "data" },
-          ExpressionAttributeValues: marshall(exprValues),
+          // removeUndefinedValues: sin esto, marshall() LANZA una excepción
+          // si cualquier campo anidado del estado de la usuaria llega en
+          // undefined (algo normal en JS, ej. un campo opcional nunca
+          // seteado) — eso tumbaba el guardado entero por un solo campo.
+          ExpressionAttributeValues: marshall({
+            ":data": safeData,
+            ":ts": new Date().toISOString(),
+          }, { removeUndefinedValues: true }),
         })
       );
       return respond(200, { ok: true }, event, METHODS);
