@@ -286,16 +286,17 @@ const promesas = [
   "Toda abundancia que vale tiene raíces. Cuida las raíces antes que los frutos."
 ];
 
+// Studio y Facturas viven ahora como botones dentro de "Mini Apps" en el
+// sidebar (no como pestañas del menú principal) — siguen usando activeView
+// para navegar, solo cambió dónde aparece el botón. Ver sidebar-tools.
 const ALL_MENU_ITEMS = [
   { id: "dashboard",  label: "Inicio",          icon: "🏠" },
   { id: "home",       label: "Mi Hogar",         icon: "🌸" },
   { id: "business",   label: "Mi Negocio",       icon: "💼" },
   { id: "clients",    label: "Mis Clientes",     icon: "👩‍💼" },
-  { id: "studio",     label: "Studio ✦",          icon: "🎬" },
-  { id: "invoicing",  label: "Facturas ✦",        icon: "🧾" },
 ];
 const MENU_MAMA        = ["dashboard", "home"];
-const MENU_EMPRENDEDORA = ["dashboard", "business", "clients", "studio", "invoicing"];
+const MENU_EMPRENDEDORA = ["dashboard", "business", "clients"];
 
 const diasSemana = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
 function getWeekDays() {
@@ -2234,7 +2235,11 @@ export default function App() {
     return ALL_MENU_ITEMS.filter(i => MENU_EMPRENDEDORA.includes(i.id));
   }, [userMode]);
 
-  const activeLabel = menu.find((item) => item.id === activeView)?.label || "Inicio";
+  // Studio/Facturas ya no están en ALL_MENU_ITEMS (viven como botones en
+  // Mini Apps), pero activeView sí puede tomar esos valores — sin esto la
+  // etiqueta de la vista activa mostraba "Inicio" por error al entrar ahí.
+  const EXTRA_VIEW_LABELS = { studio: "Studio ✦", invoicing: "Facturas ✦" };
+  const activeLabel = menu.find((item) => item.id === activeView)?.label || EXTRA_VIEW_LABELS[activeView] || "Inicio";
 
   const selectUserMode = (mode) => {
     setUserMode(mode);
@@ -2824,38 +2829,41 @@ export default function App() {
           })}
         </nav>
 
-        {/* Herramientas en sidebar */}
+        {/* Mini Apps — Studio y Facturas viven acá (siguen en desarrollo,
+            se sacaron del menú principal para no competir con lo que ya
+            está terminado: Inicio/Hogar/Negocio/Clientes) */}
         <div className="sidebar-tools">
-          <div className="sidebar-miniapps-divider">
-            <span className="sidebar-miniapps-label">Herramientas</span>
-          </div>
-          <button
-            className={`sidebar-tool-btn${pomodoroRunning ? " sidebar-tool-btn--active" : ""}${pomodoroOpen ? " sidebar-tool-btn--on" : ""}`}
-            onClick={() => setPomodoroOpen(v => !v)}
-            title="Temporizador de foco">
-            <span className="sidebar-tool-icon">⏱️</span>
-            <span className="sidebar-tool-label">Temporizador</span>
-            {pomodoroRunning && <span className="sidebar-tool-badge">{String(pomodoroMinutes).padStart(2,"0")}:{String(pomodoroSeconds).padStart(2,"0")}</span>}
-          </button>
-          <button
-            className="sidebar-tool-btn"
-            onClick={() => { setShowCalendar(true); setCalMorningDismissed(true); }}
-            title="Calendario">
-            <span className="sidebar-tool-icon">📅</span>
-            <span className="sidebar-tool-label">Calendario</span>
-          </button>
-          <button
-            className="sidebar-tool-btn"
-            onClick={() => setShowCalcModal(true)}
-            title="Calculadora & Reinversión">
-            <span className="sidebar-tool-icon">🧮</span>
-            <span className="sidebar-tool-label">Calculadora</span>
-          </button>
-
-          {/* Mini Apps */}
           <div className="sidebar-miniapps-divider">
             <span className="sidebar-miniapps-label">Mini Apps</span>
           </div>
+          <button
+            className="sidebar-tool-btn sidebar-miniapp-btn"
+            onClick={() => {
+              if (isToolLocked(effectivePlan, "studio")) { setUpgradeModal({ feature: "Studio ✦", plan: planLabel(toolMinPlan("studio")) }); return; }
+              setActiveView("studio"); setMobileMenuOpen(false);
+            }}
+            title="Studio — Guiones, hooks e ideas con IA">
+            <span className="sidebar-tool-icon">🎬</span>
+            <span className="sidebar-tool-label">
+              Studio ✦
+              <span className="sidebar-miniapp-sub">Guiones, hooks e ideas con IA</span>
+            </span>
+            {isToolLocked(effectivePlan, "studio") ? <span className="menu-lock">🔒</span> : <span className="sidebar-miniapp-arrow">↗</span>}
+          </button>
+          <button
+            className="sidebar-tool-btn sidebar-miniapp-btn"
+            onClick={() => {
+              if (isToolLocked(effectivePlan, "invoicing")) { setUpgradeModal({ feature: "Facturas ✦", plan: planLabel(toolMinPlan("invoicing")) }); return; }
+              setActiveView("invoicing"); setMobileMenuOpen(false);
+            }}
+            title="Facturas — Crea y envía facturas a tus clientas">
+            <span className="sidebar-tool-icon">🧾</span>
+            <span className="sidebar-tool-label">
+              Facturas ✦
+              <span className="sidebar-miniapp-sub">Crea y envía facturas a tus clientas</span>
+            </span>
+            {isToolLocked(effectivePlan, "invoicing") ? <span className="menu-lock">🔒</span> : <span className="sidebar-miniapp-arrow">↗</span>}
+          </button>
           <a
             className="sidebar-tool-btn sidebar-miniapp-btn"
             href="https://www.umpacademy.co"
@@ -2895,6 +2903,33 @@ export default function App() {
             </span>
             <span className="sidebar-miniapp-arrow">↗</span>
           </a>
+
+          {/* Herramientas */}
+          <div className="sidebar-miniapps-divider">
+            <span className="sidebar-miniapps-label">Herramientas</span>
+          </div>
+          <button
+            className={`sidebar-tool-btn${pomodoroRunning ? " sidebar-tool-btn--active" : ""}${pomodoroOpen ? " sidebar-tool-btn--on" : ""}`}
+            onClick={() => setPomodoroOpen(v => !v)}
+            title="Temporizador de foco">
+            <span className="sidebar-tool-icon">⏱️</span>
+            <span className="sidebar-tool-label">Temporizador</span>
+            {pomodoroRunning && <span className="sidebar-tool-badge">{String(pomodoroMinutes).padStart(2,"0")}:{String(pomodoroSeconds).padStart(2,"0")}</span>}
+          </button>
+          <button
+            className="sidebar-tool-btn"
+            onClick={() => { setShowCalendar(true); setCalMorningDismissed(true); }}
+            title="Calendario">
+            <span className="sidebar-tool-icon">📅</span>
+            <span className="sidebar-tool-label">Calendario</span>
+          </button>
+          <button
+            className="sidebar-tool-btn"
+            onClick={() => setShowCalcModal(true)}
+            title="Calculadora & Reinversión">
+            <span className="sidebar-tool-icon">🧮</span>
+            <span className="sidebar-tool-label">Calculadora</span>
+          </button>
 
           {/* Mi Plan */}
           <div className="sidebar-miniapps-divider">
