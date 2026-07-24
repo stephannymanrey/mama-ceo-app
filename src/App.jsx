@@ -2249,8 +2249,10 @@ export default function App() {
     setUserPlan(plan);
   };
 
-  // Rutas públicas — sin autenticación, antes de cualquier chequeo de sesión
-  if (window.location.pathname === "/plan-de-negocio") return <PlanBuilder />;
+  // Rutas públicas — sin autenticación, antes de cualquier chequeo de sesión.
+  // "/plan-de-negocio" se mantiene como alias por si ya quedó compartido en
+  // algún lado — la URL nueva para lead magnets es "/businessplan".
+  if (window.location.pathname === "/businessplan" || window.location.pathname === "/plan-de-negocio") return <PlanBuilder />;
   if (window.location.pathname === "/editor") return <SilenceCutter />;
 
   if (!ready || isRestoringRemote) {
@@ -2879,7 +2881,7 @@ export default function App() {
           </a>
           <a
             className="sidebar-tool-btn sidebar-miniapp-btn"
-            href="/plan-de-negocio"
+            href="/businessplan"
             target="_blank"
             rel="noopener noreferrer"
             title="UMP Business Plan — Construye tu plan de negocio gratis">

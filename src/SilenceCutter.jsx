@@ -1,7 +1,8 @@
 import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 import Logo from "./Logo";
-import { getAwsAuthToken } from "./lib/awsClient";
+import { getAwsAuthToken, awsAuth } from "./lib/awsClient";
+import RegisterGate from "./RegisterGate";
 import "./SilenceCutter.css";
 
 const REELS_API = "https://lq3avrfazlfuyaakkt5iwz54ym0aqxvv.lambda-url.us-east-1.on.aws/";
@@ -4287,6 +4288,15 @@ export default function SilenceCutter() {
   const abortRef = useRef(false);
   const { noise: noiseDb, duration: minDur } = PRESETS[sensitivity];
 
+  // Gate de cuenta: cortar/previsualizar es libre (gancho de lead magnet);
+  // solo al EXPORTAR se pide crear cuenta si no hay sesión iniciada.
+  const [hasAccount, setHasAccount] = useState(false);
+  const [showRegisterGate, setShowRegisterGate] = useState(false);
+  const pendingExportArgsRef = useRef(null);
+  useEffect(() => {
+    awsAuth.getSession().then(({ data }) => setHasAccount(!!data?.session));
+  }, []);
+
   const analyzingRef = useRef(false);
 
   const analizarClips = useCallback(async (toAnalyze) => {
@@ -4371,6 +4381,13 @@ export default function SilenceCutter() {
   const exportar = async (effects = {}, clipTransitions = {}, music = {}, cards = [], sfxList = []) => {
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) { setError("Analiza los clips primero."); return; }
+    if (!hasAccount) {
+      // Cortar y previsualizar es libre — el gate solo aparece al querer
+      // exportar de verdad, para no perder a quien solo está probando.
+      pendingExportArgsRef.current = [effects, clipTransitions, music, cards, sfxList];
+      setShowRegisterGate(true);
+      return;
+    }
     abortRef.current = false;
     setFase("cutting"); setProgress(0); setError("");
     try {
@@ -4449,15 +4466,31 @@ export default function SilenceCutter() {
   );
 
   if (fase === "editor" && analyzedCount > 0) return (
-    <EditorScreen clips={clips} setClips={setClips}
-      subtitleStyle={subtitleStyle} onStyleChange={setSubtitleStyle}
-      onExport={exportar} onAddFiles={addFiles}
-      moveClip={moveClip} removeClip={removeClip} toggleSilence={toggleSilence}
-      onAnalyze={analizarTodos}
-      format={format} onFormatChange={setFormat}
-      onExtractReels={() => setShowReels(true)}
-      sensitivity={sensitivity} onReanalyze={reanalizar}
-      onCutSeg={cutSeg} />
+    <>
+      <EditorScreen clips={clips} setClips={setClips}
+        subtitleStyle={subtitleStyle} onStyleChange={setSubtitleStyle}
+        onExport={exportar} onAddFiles={addFiles}
+        moveClip={moveClip} removeClip={removeClip} toggleSilence={toggleSilence}
+        onAnalyze={analizarTodos}
+        format={format} onFormatChange={setFormat}
+        onExtractReels={() => setShowReels(true)}
+        sensitivity={sensitivity} onReanalyze={reanalizar}
+        onCutSeg={cutSeg} />
+      {showRegisterGate && (
+        <RegisterGate
+          title="Crea tu cuenta para exportar tu video"
+          subtitle="Cortar y previsualizar es libre — crea tu cuenta gratis (14 días, sin tarjeta) para exportar tu video editado."
+          ctaLabel="Crear cuenta y exportar"
+          onClose={() => setShowRegisterGate(false)}
+          onSuccess={() => {
+            setHasAccount(true); setShowRegisterGate(false);
+            const args = pendingExportArgsRef.current;
+            pendingExportArgsRef.current = null;
+            if (args) exportar(...args);
+          }}
+        />
+      )}
+    </>
   );
 
   // Pantalla de subida

@@ -703,7 +703,7 @@ async function handlePlanNegocio(publicEmail, context, event) {
               <p style="margin:0;font-size:14px;line-height:1.7;color:#374151">${resumen.slice(0, 500)}${resumen.length > 500 ? "..." : ""}</p>
             </div>
             <p style="margin:0 0 20px;color:#6b7280;font-size:14px">Para ver tu plan completo con todas las secciones, ve a:</p>
-            <a href="https://www.mamaceoapp.co/plan-de-negocio" style="display:inline-block;background:#C4526A;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Ver mi plan completo →</a>
+            <a href="https://www.mamaceoapp.co/businessplan" style="display:inline-block;background:#C4526A;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:15px">Ver mi plan completo →</a>
             <hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0">
             <p style="margin:0;font-size:13px;color:#9ca3af">Mamá CEO · <a href="https://www.mamaceoapp.co" style="color:#C4526A">mamaceoapp.co</a></p>
           </div>

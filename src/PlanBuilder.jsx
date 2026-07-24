@@ -1,5 +1,7 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Logo from "./Logo";
+import RegisterGate from "./RegisterGate";
+import { awsAuth } from "./lib/awsClient";
 import "./PlanBuilder.css";
 
 const API_URL = "https://lq3avrfazlfuyaakkt5iwz54ym0aqxvv.lambda-url.us-east-1.on.aws/";
@@ -674,6 +676,19 @@ export default function PlanBuilder() {
   const [dofaLoading, setDofaLoading] = useState(false);
   const resultRef = useRef(null);
 
+  // Gate de cuenta: el plan se genera y se ve en pantalla gratis y sin
+  // registro (ese es el gancho como lead magnet); solo al querer DESCARGARLO
+  // se pide crear cuenta — así no se pierde a quien solo quiere probar.
+  const [hasAccount, setHasAccount] = useState(false);
+  const [showRegisterGate, setShowRegisterGate] = useState(false);
+  useEffect(() => {
+    awsAuth.getSession().then(({ data }) => setHasAccount(!!data?.session));
+  }, []);
+  const handleDownloadClick = () => {
+    if (hasAccount) { window.print(); return; }
+    setShowRegisterGate(true);
+  };
+
   const pregunta = PREGUNTAS[paso];
   const total    = PREGUNTAS.length;
   const progreso = Math.round(((paso + 1) / total) * 100);
@@ -865,9 +880,19 @@ export default function PlanBuilder() {
             <span className="pb-badge">Plan de Negocio · Generado con IA</span>
             {emailSent && <p className="pb-email-sent">✓ Te lo enviamos a <strong>{email}</strong></p>}
           </div>
-          <button className="pb-btn-outline" onClick={() => window.print()}>⬇ Descargar PDF</button>
+          <button className="pb-btn-outline" onClick={handleDownloadClick}>⬇ Descargar PDF</button>
         </div>
       </div>
+
+      {showRegisterGate && (
+        <RegisterGate
+          title="Crea tu cuenta para descargar tu plan"
+          subtitle="Tu plan ya está listo — crea tu cuenta gratis (14 días, sin tarjeta) para descargarlo en PDF y seguir usando Mamá CEO."
+          ctaLabel="Crear cuenta y descargar"
+          onClose={() => setShowRegisterGate(false)}
+          onSuccess={() => { setHasAccount(true); setShowRegisterGate(false); setTimeout(() => window.print(), 300); }}
+        />
+      )}
 
       <div className="pb-plan-wrap">
         {/* Portada PDF */}
