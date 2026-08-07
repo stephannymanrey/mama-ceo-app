@@ -64,6 +64,8 @@ const HOGAR_SCHED_CATS = [
   { key: "Limpieza",        emoji: "🧹", label: "Limpieza del hogar",    color: "#0D9488", bg: "rgba(13,148,136,0.07)" },
   { key: "Compras",         emoji: "🛒", label: "Compras",               color: "#0EA5E9", bg: "rgba(14,165,233,0.07)" },
   { key: "Arreglos",        emoji: "🔧", label: "Arreglos del hogar",    color: "#92400E", bg: "rgba(146,64,14,0.07)"  },
+  { key: "Desarrollo",      emoji: "🌱", label: "Desarrollo personal",   color: "#1D9E75", bg: "rgba(29,158,117,0.07)" },
+  { key: "Formacion",       emoji: "📚", label: "Formación personal",    color: "#7C3AED", bg: "rgba(124,58,237,0.07)" },
   { key: "Otro",            emoji: "📌", label: "Otro",                  color: "#6B7280", bg: "rgba(107,114,128,0.06)" },
 ];
 const HOGAR_SCHED_COLORS = Object.fromEntries(HOGAR_SCHED_CATS.map(c => [c.key, c.color]));
@@ -2074,6 +2076,12 @@ export default function App() {
   // marcó desde este checkbox o desde el Pomodoro (ver completeFocusTask).
   const toggleTask = (taskId) => setTasks((current) => current.map((task) => (task.id === taskId ? { ...task, done: !task.done, completedAt: !task.done ? Date.now() : null } : task)));
   const toggleHomeTask = (taskId) => setHomeTasks((current) => current.map((task) => (task.id === taskId ? { ...task, done: !task.done, completedAt: !task.done ? Date.now() : null } : task)));
+  const toggleHogarApptDone = (apptId, todayISO) => setAppointments((cur) => cur.map((a) => {
+    if (a.id !== apptId) return a;
+    const dates = a.doneApptDates || [];
+    const isDone = dates.includes(todayISO);
+    return { ...a, doneApptDates: isDone ? dates.filter(d => d !== todayISO) : [...dates, todayISO] };
+  }));
   const updateAnnualBudget = (month, field, value) => {
     setAnnualBudget((current) => current.map((row) => {
       if (row.month !== month) return row;
@@ -4238,12 +4246,15 @@ export default function App() {
                         </div>
                       ))
                   }
-                  {todayHogar.filter(a => a.type === "Limpieza").map(a => (
-                    <div key={a.id} className="db-today-task-row" style={{marginTop: focusHomeTasks.length > 0 ? "8px" : 0}}>
-                      <span style={{fontSize:"15px",lineHeight:1}}>🧹</span>
-                      <span className="db-today-task-title">{a.title}</span>
-                    </div>
-                  ))}
+                  {todayHogar.filter(a => ["Limpieza","Arreglos","Compras"].includes(a.type)).map((a, i) => {
+                    const _apptDone = (a.doneApptDates || []).includes(todayISO);
+                    return (
+                      <div key={a.id} className="db-today-task-row" style={{marginTop: i === 0 && focusHomeTasks.length > 0 ? "8px" : 0}}>
+                        <input type="checkbox" className="check-sm" checked={_apptDone} onChange={() => toggleHogarApptDone(a.id, todayISO)} style={{accentColor:"var(--green)"}} />
+                        <span className={`db-today-task-title${_apptDone ? " db-today-task--done" : ""}`}>{a.title}</span>
+                      </div>
+                    );
+                  })}
                   {upcomingHomePayments.map((p, i) => {
                     const daysLeft = p.dayOfMonth - _currentDay;
                     const label = daysLeft < 0 ? "Vencido" : daysLeft === 0 ? "Hoy" : `en ${daysLeft} día${daysLeft > 1 ? "s" : ""}`;
