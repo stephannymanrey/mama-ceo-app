@@ -3235,25 +3235,9 @@ export default function App() {
                 </div>
               )}
               {/* Calculadora FAB */}
-              <div className={`tools-fab-row tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}`} style={{ position: "fixed", bottom: "252px", right: "28px", zIndex: 1400 }}>
+              <div className={`tools-fab-row tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}`} style={{ position: "fixed", bottom: "196px", right: "28px", zIndex: 1400 }}>
                 <span className="tools-fab-tag">Calculadora</span>
                 <button type="button" className="calc-hub-fab" onClick={() => { setShowCalcModal(true); setToolsFabOpen(false); }} title="Calculadora & Reinversión" tabIndex={toolsFabOpen ? 0 : -1}>🧮</button>
-              </div>
-
-              {/* FAB icono */}
-              <div className={`tools-fab-row tools-fab-item${toolsFabOpen ? " tools-fab-item--open" : ""}`} style={{ position: "fixed", bottom: "196px", right: "28px", zIndex: 1400 }}>
-                <span className="tools-fab-tag">Temporizador</span>
-                <button
-                  className={`pomo-fab${pomodoroRunning ? " pomo-fab--active" : ""}${pomodoroOpen ? " pomo-fab--open" : ""}`}
-                  style={{ position: "static" }}
-                  onClick={() => setPomodoroOpen(v => !v)}
-                  title="Temporizador de foco"
-                  tabIndex={toolsFabOpen ? 0 : -1}
-                >
-                  <span className="pomo-fab-ico">&#x23F1;</span>
-                  {pomodoroRunning && <span className="pomo-fab-time">{_mm}:{_ss}</span>}
-                  {!pomodoroRunning && pomodoroBlocks > 0 && <span className="pomo-fab-stars">&#x2B50;{pomodoroBlocks}</span>}
-                </button>
               </div>
             </>
           );

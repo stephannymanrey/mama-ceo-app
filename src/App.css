@@ -5219,7 +5219,7 @@ button {
 @keyframes upgrade-glow { 0%,100%{box-shadow:0 4px 16px rgba(196,82,106,0.12)} 50%{box-shadow:0 6px 22px rgba(196,82,106,0.2)} }
 
 @media (max-width:720px) {
-  .upgrade-fab, .pomo-fab { right:16px; }
+  .upgrade-fab { right:16px; }
   .pomo-panel { right:16px; width:calc(100vw - 32px); max-width:320px; }
 }
 
@@ -5895,9 +5895,23 @@ button {
 .today-focus-empty { font-size: 12px; color: var(--muted); text-align: center; margin: 8px 0 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .focus-discover-btn-sm { font-size: 12px; padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; font-weight: 500; }
 .focus-discover-btn-sm:hover { background: var(--accent); color: #fff; }
-.db-top-bar { display: flex; justify-content: flex-end; margin-bottom: 4px; }
-.db-focus-shortcut { display: inline-flex; align-items: center; gap: 6px; background: #C4526A; color: #fff; border: none; border-radius: 20px; padding: 8px 18px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; transition: opacity 0.18s, transform 0.18s; box-shadow: 0 2px 8px rgba(196,82,106,0.25); letter-spacing: 0.01em; }
-.db-focus-shortcut:hover { opacity: 0.88; transform: translateY(-1px); }
+.db-top-bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.db-focus-shortcut {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: linear-gradient(135deg, #C4526A, #e0708a);
+  color: #fff; border: none; border-radius: 999px;
+  padding: 13px 26px; font-size: 15px; font-weight: 700;
+  cursor: pointer; font-family: inherit; letter-spacing: 0.01em;
+  transition: transform 0.18s, box-shadow 0.18s;
+  box-shadow: 0 6px 20px rgba(196,82,106,0.38);
+  animation: dbFocusShortcutPulse 2.6s ease-in-out infinite;
+}
+.db-focus-shortcut:hover { transform: translateY(-2px) scale(1.02); box-shadow: 0 8px 26px rgba(196,82,106,0.5); }
+.db-focus-shortcut:active { transform: translateY(0) scale(0.98); }
+@keyframes dbFocusShortcutPulse {
+  0%, 100% { box-shadow: 0 6px 20px rgba(196,82,106,0.38); }
+  50% { box-shadow: 0 6px 26px rgba(196,82,106,0.6); }
+}
 .today-focus-chart { display: flex; flex-direction: column; gap: 10px; }
 .focus-hist-count { font-size: 11px; opacity: 0.55; }
 .db-progress-donut-row { display: flex; align-items: center; gap: 20px; }
@@ -6847,44 +6861,8 @@ button {
 }
 
 /* ============================================================
-   POMODORO — FAB + panel fijo (.pomo-*)
+   POMODORO — panel fijo (.pomo-*)
    ============================================================ */
-
-/* FAB icono */
-.pomo-fab {
-  position: fixed;
-  right: 28px;
-  z-index: 1400;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  border-radius: 999px;
-  border: 1px solid rgba(111,73,196,0.2);
-  background: rgba(255,255,255,0.95);
-  backdrop-filter: blur(12px);
-  color: var(--purple);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba(111,73,196,0.10);
-  transition: box-shadow 200ms ease, transform 200ms ease;
-  font-family: inherit;
-}
-.pomo-fab:hover { box-shadow: 0 8px 24px rgba(111,73,196,0.20); transform: translateY(-2px); }
-.pomo-fab--active {
-  border-color: var(--purple);
-  background: #f5f0fe;
-  animation: pomo-pulse 2s infinite;
-}
-.pomo-fab--open { background: #f5f0fe; border-color: var(--purple); }
-.pomo-fab-ico { font-size: 16px; }
-.pomo-fab-time { font-size: 13px; letter-spacing: -0.5px; }
-.pomo-fab-stars { font-size: 11px; color: #e8a020; }
-@keyframes pomo-pulse {
-  0%, 100% { box-shadow: 0 4px 16px rgba(111,73,196,0.10); }
-  50%       { box-shadow: 0 4px 22px rgba(111,73,196,0.30); }
-}
 
 /* Panel */
 .pomo-panel {
@@ -7928,11 +7906,6 @@ button {
   animation: none !important;
   box-shadow: 0 6px 18px rgba(196, 82, 106, 0.45) !important;
   border: 2px solid #fff;
-}
-.tools-fab-item--open .pomo-fab {
-  box-shadow: 0 6px 20px rgba(111, 73, 196, 0.35);
-  border-color: var(--purple);
-  background: #fff;
 }
 .upgrade-fab.tools-fab-item--open {
   background: #fff;
