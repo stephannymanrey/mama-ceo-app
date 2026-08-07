@@ -4172,11 +4172,6 @@ export default function App() {
               <p className="db-load-card-label">Tiempo libre</p>
               <p className="db-load-card-val" style={{color:"#1D9E75"}}>{fmtHrs(freeMinutes)}</p>
               <p className="db-load-card-msg">para tu familia o para ti</p>
-              {loadPct>=60&&(
-                <button type="button" className="db-load-pomo-btn" onClick={()=>{setToolsFabOpen(true);setPomodoroOpen(true);}}>
-                  ⏱️ Probar Pomodoro
-                </button>
-              )}
             </div>
           </div>
 
