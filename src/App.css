@@ -5897,6 +5897,14 @@ button {
 .focus-discover-btn-sm:hover { background: var(--accent); color: #fff; }
 .today-focus-chart { display: flex; flex-direction: column; gap: 10px; }
 .focus-hist-count { font-size: 11px; opacity: 0.55; }
+.db-progress-donut-row { display: flex; align-items: center; gap: 20px; }
+.db-progress-time-side { flex: 1; min-width: 0; }
+.db-progress-time-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin: 0 0 10px; }
+.tasks-donut-wrap { display: flex; flex-direction: column; align-items: center; gap: 4px; flex-shrink: 0; }
+.tasks-donut-pending { font-size: 11px; color: var(--muted); margin: 0; }
+.db-focus-discover--compact { border-radius: 12px; padding: 14px; gap: 8px; }
+.db-focus-discover--compact .db-focus-discover-title { font-size: 13px; }
+.db-focus-discover--compact .db-focus-discover-desc { font-size: 11px; }
 .donut-focus-wrap { display: flex; align-items: center; gap: 16px; padding: 4px 0; }
 .donut-legend { display: flex; flex-direction: column; gap: 7px; flex: 1; min-width: 0; }
 .donut-legend-row { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: background 0.15s; }

@@ -4169,41 +4169,30 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── Progreso de hoy: hechas/pendientes + tiempo real por tarea ── */}
+          {/* ── Progreso de hoy + tiempo por tarea ── */}
           <div className="db-today-panel">
             <p className="db-today-heading">Progreso de hoy</p>
-            <div className="db-progress-grid">
-              <div className="db-progress-card">
-                <span className="db-progress-val" style={{color:"#1D9E75"}}>{todayDoneCount}</span>
-                <span className="db-progress-label">Hechas hoy</span>
-              </div>
-              <div className="db-progress-card">
-                <span className="db-progress-val" style={{color:"#C4526A"}}>{todayPendingCount}</span>
-                <span className="db-progress-label">Pendientes</span>
-              </div>
-              <div className="db-progress-card">
-                <span className="db-progress-val">{avgMinPerTask !== null ? `${avgMinPerTask} min` : "—"}</span>
-                <span className="db-progress-label">Promedio por tarea</span>
+            <div className="db-progress-donut-row">
+              <TodayTasksDonut done={todayDoneCount} pending={todayPendingCount} />
+              <div className="db-progress-time-side">
+                {taskTimeLogs.length === 0 ? (
+                  <div className="db-focus-discover db-focus-discover--compact">
+                    <span className="db-focus-discover-ico">⏱️</span>
+                    <div className="db-focus-discover-text">
+                      <p className="db-focus-discover-title">¿Cuánto tardas en cada tarea?</p>
+                      <p className="db-focus-discover-desc">Activa el Temporizador y vincula una tarea para ver tus tiempos reales aquí.</p>
+                    </div>
+                    <button className="db-focus-discover-btn" onClick={() => setPomodoroOpen(true)}>⏱️ Activar</button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="db-progress-time-label">Tiempo promedio por tarea</p>
+                    <DonutFocusChart logs={taskTimeLogs} />
+                  </>
+                )}
               </div>
             </div>
           </div>
-
-          {/* ── Tiempo promedio por tarea ── */}
-          {taskTimeLogs.length === 0 ? (
-            <div className="db-focus-discover">
-              <span className="db-focus-discover-ico">⏱️</span>
-              <div className="db-focus-discover-text">
-                <p className="db-focus-discover-title">¿Cuánto tardas realmente en cada tarea?</p>
-                <p className="db-focus-discover-desc">Activa el Temporizador, vincula una tarea y empieza a medir. Aquí verás tus promedios reales acumulados.</p>
-              </div>
-              <button className="db-focus-discover-btn" onClick={() => setPomodoroOpen(true)}>⏱️ Activar Temporizador</button>
-            </div>
-          ) : (
-            <div className="db-today-panel">
-              <p className="db-today-heading">Tiempo promedio por tarea</p>
-              <DonutFocusChart logs={taskTimeLogs} />
-            </div>
-          )}
 
           {/* ── Panel de Hoy ── */}
           <div className="db-today-panel">
@@ -8078,6 +8067,32 @@ function LineChart({ movements }) {
       {last7.map((_, i) => <circle className="income-dot" cx={toX(i)} cy={toY(incomes[i])} r="6" key={`i-${i}`} />)}
       {last7.map((_, i) => <circle className="expense-dot" cx={toX(i)} cy={toY(expenses[i])} r="6" key={`e-${i}`} />)}
     </svg>
+  );
+}
+
+// Donut de tareas completadas hoy vs pendientes.
+function TodayTasksDonut({ done, pending }) {
+  const total = done + pending;
+  const R = 40, cx = 52, cy = 52, C = 2 * Math.PI * R;
+  const doneLen = total > 0 ? (done / total) * C : 0;
+  return (
+    <div className="tasks-donut-wrap">
+      <svg width="104" height="104" viewBox="0 0 104 104">
+        <circle cx={cx} cy={cy} r={R} fill="none" stroke="var(--border)" strokeWidth={12} />
+        {doneLen > 0 && (
+          <circle cx={cx} cy={cy} r={R} fill="none" stroke="#1D9E75" strokeWidth={12}
+            strokeDasharray={`${doneLen} ${C - doneLen}`}
+            strokeDashoffset={C}
+            style={{ transform: 'rotate(-90deg)', transformOrigin: `${cx}px ${cy}px` }}
+          />
+        )}
+        <text x={cx} y={cy - 3} textAnchor="middle" style={{ fontSize: '22px', fontWeight: 700, fill: 'var(--text)' }}>{done}</text>
+        <text x={cx} y={cy + 14} textAnchor="middle" style={{ fontSize: '10px', fill: 'var(--muted)' }}>
+          {done === 1 ? 'tarea hecha' : 'tareas hechas'}
+        </text>
+      </svg>
+      {pending > 0 && <p className="tasks-donut-pending">{pending} pendiente{pending !== 1 ? 's' : ''}</p>}
+    </div>
   );
 }
 
