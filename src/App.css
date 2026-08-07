@@ -5892,8 +5892,19 @@ button {
   .db-progress-grid { grid-template-columns: 1fr; }
 }
 
-.today-focus-empty { font-size: 12px; color: var(--muted); text-align: center; margin: 8px 0 0; }
+.today-focus-empty { font-size: 12px; color: var(--muted); text-align: center; margin: 8px 0 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.focus-discover-btn-sm { font-size: 12px; padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; font-weight: 500; }
+.focus-discover-btn-sm:hover { background: var(--accent); color: #fff; }
 .today-focus-chart { display: flex; flex-direction: column; gap: 10px; }
+.focus-hist-count { font-size: 11px; opacity: 0.55; }
+
+/* Banner de descubrimiento del Temporizador */
+.db-focus-discover { display: flex; flex-direction: column; align-items: center; gap: 12px; background: var(--card); border: 1.5px dashed var(--border); border-radius: 16px; padding: 20px 18px; margin-bottom: 12px; text-align: center; }
+.db-focus-discover-ico { font-size: 28px; line-height: 1; }
+.db-focus-discover-title { font-size: 14px; font-weight: 600; color: var(--text); margin: 0 0 4px; }
+.db-focus-discover-desc { font-size: 12px; color: var(--muted); margin: 0; line-height: 1.5; }
+.db-focus-discover-btn { padding: 9px 20px; border-radius: 22px; border: none; background: var(--accent); color: #fff; font-size: 13px; font-weight: 600; cursor: pointer; }
+.db-focus-discover-btn:hover { opacity: 0.88; }
 .today-focus-row {
   display: flex;
   align-items: center;

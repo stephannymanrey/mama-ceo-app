@@ -4186,8 +4186,25 @@ export default function App() {
                 <span className="db-progress-label">Promedio por tarea</span>
               </div>
             </div>
-            <TodayFocusChart logs={todayTimeLogs} />
+            <TodayFocusChart logs={todayTimeLogs} onOpenTimer={() => setPomodoroOpen(true)} />
           </div>
+
+          {/* ── Tiempo promedio por tarea ── */}
+          {taskTimeLogs.length === 0 ? (
+            <div className="db-focus-discover">
+              <span className="db-focus-discover-ico">⏱️</span>
+              <div className="db-focus-discover-text">
+                <p className="db-focus-discover-title">¿Cuánto tardas realmente en cada tarea?</p>
+                <p className="db-focus-discover-desc">Activa el Temporizador, vincula una tarea y empieza a medir. Aquí verás tus promedios reales acumulados.</p>
+              </div>
+              <button className="db-focus-discover-btn" onClick={() => setPomodoroOpen(true)}>⏱️ Activar Temporizador</button>
+            </div>
+          ) : (
+            <div className="db-today-panel">
+              <p className="db-today-heading">Tiempo promedio por tarea</p>
+              <HistoricalFocusChart logs={taskTimeLogs} />
+            </div>
+          )}
 
           {/* ── Panel de Hoy ── */}
           <div className="db-today-panel">
@@ -8066,9 +8083,16 @@ function LineChart({ movements }) {
 }
 
 // Barras horizontales con lo que se enfocó hoy (vía Pomodoro) y cuánto tardó cada tarea.
-function TodayFocusChart({ logs }) {
+function TodayFocusChart({ logs, onOpenTimer }) {
   if (!logs.length) {
-    return <p className="today-focus-empty">Usa el Pomodoro vinculado a una tarea para ver aquí cuánto te demoras en cada una.</p>;
+    return (
+      <div className="today-focus-empty">
+        <p>Vincula el Temporizador a una tarea para ver cuánto tardas en cada una hoy.</p>
+        {onOpenTimer && (
+          <button className="focus-discover-btn-sm" onClick={onOpenTimer}>⏱️ Activar ahora</button>
+        )}
+      </div>
+    );
   }
   const maxMin = Math.max(...logs.map((l) => l.durationMin), 1);
   return (
@@ -8081,6 +8105,38 @@ function TodayFocusChart({ logs }) {
             <div className="today-focus-bar-fill" style={{ width: `${Math.max(6, (l.durationMin / maxMin) * 100)}%` }} />
           </div>
           <span className="today-focus-min">{l.durationMin} min</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Promedios históricos por tarea (todas las sesiones acumuladas).
+function HistoricalFocusChart({ logs }) {
+  const byTitle = {};
+  logs.forEach((l) => {
+    if (!byTitle[l.title]) byTitle[l.title] = { total: 0, count: 0, taskType: l.taskType };
+    byTitle[l.title].total += l.durationMin;
+    byTitle[l.title].count += 1;
+  });
+  const items = Object.entries(byTitle)
+    .map(([title, { total, count, taskType }]) => ({ title, avg: Math.round(total / count), count, taskType }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 6);
+  const maxAvg = Math.max(...items.map((i) => i.avg), 1);
+  return (
+    <div className="today-focus-chart">
+      {items.map((item, i) => (
+        <div className="today-focus-row" key={i}>
+          <span className="today-focus-icon">{item.taskType === "home" ? "🌸" : "💼"}</span>
+          <span className="today-focus-title" title={item.title}>{item.title}</span>
+          <div className="today-focus-bar-track">
+            <div className="today-focus-bar-fill" style={{ width: `${Math.max(6, (item.avg / maxAvg) * 100)}%` }} />
+          </div>
+          <span className="today-focus-min">
+            {item.avg} min
+            {item.count > 1 && <span className="focus-hist-count"> · {item.count}×</span>}
+          </span>
         </div>
       ))}
     </div>
