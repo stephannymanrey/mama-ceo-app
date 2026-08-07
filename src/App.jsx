@@ -633,7 +633,15 @@ async function deleteRemoteState() {
 }
 
 export default function App() {
-  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW();
+  // Revisa cada 30 min si hay una versión nueva desplegada — necesario porque
+  // el navegador solo chequea el service worker al cargar la página, y una
+  // app instalada (PWA) puede quedar abierta días sin recargarse nunca.
+  const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW({
+    onRegisteredSW(_url, registration) {
+      if (!registration) return;
+      setInterval(() => { registration.update(); }, 30 * 60 * 1000);
+    },
+  });
   const [installPrompt, setInstallPrompt] = useState(null);
   const [showIOSGuide, setShowIOSGuide] = useState(false);
   const [installBannerDismissed, setInstallBannerDismissed] = useState(() => !!localStorage.getItem("installDismissed"));
