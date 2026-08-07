@@ -5869,6 +5869,67 @@ button {
   gap: 20px;
 }
 .db-today-grid--2col { grid-template-columns: repeat(2, 1fr); }
+
+/* Progreso de hoy: hechas/pendientes/promedio + gráfica de foco */
+.db-progress-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+.db-progress-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: #faf7f5;
+  border-radius: 12px;
+  padding: 14px 8px;
+}
+.db-progress-val { font-size: 22px; font-weight: 800; color: var(--ink); }
+.db-progress-label { font-size: 11px; color: var(--muted); text-align: center; }
+@media (max-width: 640px) {
+  .db-progress-grid { grid-template-columns: 1fr; }
+}
+
+.today-focus-empty { font-size: 12px; color: var(--muted); text-align: center; margin: 8px 0 0; }
+.today-focus-chart { display: flex; flex-direction: column; gap: 10px; }
+.today-focus-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.today-focus-icon { flex-shrink: 0; font-size: 13px; }
+.today-focus-title {
+  width: 110px;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.today-focus-bar-track {
+  flex: 1;
+  height: 10px;
+  background: var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.today-focus-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #C4526A, #e08a9d);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+.today-focus-min {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--muted);
+  width: 46px;
+  text-align: right;
+}
 .db-today-col {
   display: flex;
   flex-direction: column;
@@ -6912,6 +6973,58 @@ button {
 }
 .pomo-dur-sep { color: var(--muted); }
 .pomo-blocks-row { font-size: 12px; color: var(--muted); text-align: center; margin: 0; }
+
+/* Selector de tarea a enfocar */
+.pomo-task-picker {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  background: #faf7f5;
+  color: var(--ink);
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+.pomo-focus-task {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(196,82,106,0.07);
+  border: 1px solid rgba(196,82,106,0.2);
+  border-radius: 8px;
+  padding: 7px 9px;
+  margin-bottom: 10px;
+}
+.pomo-focus-task-label { font-size: 10px; color: var(--muted); flex-shrink: 0; }
+.pomo-focus-task-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pomo-focus-task-clear {
+  background: none; border: none; color: var(--muted);
+  font-size: 15px; cursor: pointer; padding: 0 2px; line-height: 1; flex-shrink: 0;
+}
+.pomo-finish-btn {
+  padding: 9px 10px;
+  border: none;
+  border-radius: 10px;
+  background: var(--green);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.pomo-finish-btn:hover { opacity: 0.85; }
 
 /* Celebration */
 .pomo-party { text-align: center; padding: 6px 0; animation: pomo-pop 0.35s ease; }

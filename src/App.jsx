@@ -538,6 +538,7 @@ function createBlankUserState(currency = "USD") {
     contentItems: [],
     goals: [],
     homeTasks: [],
+    taskTimeLogs: [],
     systemTasks: cloneList(initialSystemTasks),
     maternalTasks: cloneList(initialHomeMaternalTasks),
     wellnessTasks: cloneList(initialHomeWellnessTasks),
@@ -667,6 +668,9 @@ export default function App() {
   const [contentItems, setContentItems] = useState(isNewUser ? [] : (stored?.contentItems || initialContent));
   const [goals, setGoals] = useState(isNewUser ? [] : (stored?.goals || initialGoals));
   const [homeTasks, setHomeTasks] = useState(isNewUser ? [] : migratePriorityList(stored?.homeTasks || initialHomeTasks));
+  // Registro de tiempo real por tarea, generado al terminar un bloque de
+  // enfoque del Pomodoro vinculado a una tarea. {id, taskId, taskType, title, date, durationMin, completedAt}
+  const [taskTimeLogs, setTaskTimeLogs] = useState(isNewUser ? [] : (stored?.taskTimeLogs || []));
   const [systemTasks, setSystemTasks] = useState(stored?.systemTasks || initialSystemTasks);
   const [systemSlide, setSystemSlide] = useState(0);
   const [newSystemTask, setNewSystemTask] = useState("");
@@ -860,39 +864,97 @@ export default function App() {
   const [clockNow, setClockNow] = useState(() => new Date());
   const pomodoroRef = React.useRef(null);
   const audioCtxRef = React.useRef(null);
+  // Tarea en la que se está enfocando este bloque (o null). {id, type: "home"|"biz", title}
+  const [pomodoroFocusTask, setPomodoroFocusTask] = useState(null);
+  // Hora real (epoch ms) en la que debería terminar la fase actual — se usa
+  // para calcular el tiempo restante a partir del reloj real en cada tick,
+  // en vez de solo restar de a un segundo. Así, si el navegador pausa el
+  // intervalo (pestaña en segundo plano, celular bloqueado), al volver el
+  // conteo se pone al día solo en vez de quedar atrasado.
+  const pomodoroEndAtRef = React.useRef(null);
+  const pomodoroStartedAtRef = React.useRef(null);
+
+  // Registra el tiempo real de enfoque en una tarea y la marca como hecha.
+  const completeFocusTask = (elapsedMin) => {
+    const ft = pomodoroFocusTask;
+    if (!ft) return;
+    const durationMin = Math.max(1, Math.round(elapsedMin));
+    const todayISO = new Date().toISOString().slice(0, 10);
+    setTaskTimeLogs((prev) => [...prev, {
+      id: Date.now(), taskId: ft.id, taskType: ft.type, title: ft.title,
+      date: todayISO, durationMin, completedAt: Date.now(),
+    }]);
+    if (ft.type === "home") setHomeTasks((cur) => cur.map((t) => t.id === ft.id ? { ...t, done: true, completedAt: Date.now() } : t));
+    else setTasks((cur) => cur.map((t) => t.id === ft.id ? { ...t, done: true, completedAt: Date.now() } : t));
+    if (Notification.permission === "granted") {
+      new Notification("✅ Tarea completada", { body: `"${ft.title}" — ${durationMin} min de enfoque`, icon: "/logo.png" });
+    }
+    setPomodoroFocusTask(null);
+  };
 
   useEffect(() => {
     if (pomodoroRunning) {
+      if (!pomodoroEndAtRef.current) {
+        pomodoroEndAtRef.current = Date.now() + (pomodoroMinutes * 60 + pomodoroSeconds) * 1000;
+        // Solo se pone en null al empezar una fase nueva de verdad (ver más
+        // abajo) — así, si pausas y reanudas el MISMO bloque de enfoque, el
+        // tiempo registrado sigue contando desde el inicio real, no desde
+        // que reanudaste.
+        if (!pomodoroStartedAtRef.current) pomodoroStartedAtRef.current = Date.now();
+      }
       pomodoroRef.current = setInterval(() => {
-        setPomodoroSeconds((s) => {
-          if (s > 0) return s - 1;
-          setPomodoroMinutes((m) => {
-            if (m > 0) return m - 1;
-            setPomodoroRunning(false);
-            if (pomodoroMode === "work") {
-              setPomodoroBlocks((b) => b + 1);
-              setPomodoroMode("break");
-              setPomodoroMinutes(pomodoroBreakDuration);
-              playChime();
-              if (Notification.permission === "granted") new Notification("🍅 Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)], icon: "/logo.png" });
-            } else {
-              setPomodoroMode("work");
-              setPomodoroMinutes(pomodoroWorkDuration);
-              playChime();
-              if (Notification.permission === "granted") new Notification("💪 ¡A trabajar!", { body: "¡Nuevo bloque de enfoque!", icon: "/logo.png" });
+        const remainingSec = Math.max(0, Math.round((pomodoroEndAtRef.current - Date.now()) / 1000));
+        setPomodoroMinutes(Math.floor(remainingSec / 60));
+        setPomodoroSeconds(remainingSec % 60);
+        if (remainingSec <= 0) {
+          setPomodoroRunning(false);
+          pomodoroEndAtRef.current = null;
+          if (pomodoroMode === "work") {
+            setPomodoroBlocks((b) => b + 1);
+            if (pomodoroFocusTask) {
+              const elapsedMin = pomodoroStartedAtRef.current ? (Date.now() - pomodoroStartedAtRef.current) / 60000 : pomodoroWorkDuration;
+              completeFocusTask(elapsedMin);
             }
-            return 0;
-          });
-          return 59;
-        });
+            setPomodoroMode("break");
+            setPomodoroMinutes(pomodoroBreakDuration);
+            setPomodoroSeconds(0);
+            pomodoroStartedAtRef.current = null;
+            playChime();
+            if (Notification.permission === "granted") new Notification("🍅 Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)], icon: "/logo.png" });
+          } else {
+            setPomodoroMode("work");
+            setPomodoroMinutes(pomodoroWorkDuration);
+            setPomodoroSeconds(0);
+            pomodoroStartedAtRef.current = null;
+            playChime();
+            if (Notification.permission === "granted") new Notification("💪 ¡A trabajar!", { body: "¡Nuevo bloque de enfoque!", icon: "/logo.png" });
+          }
+        }
       }, 1000);
     } else {
       clearInterval(pomodoroRef.current);
+      pomodoroEndAtRef.current = null;
     }
     return () => clearInterval(pomodoroRef.current);
-  }, [pomodoroRunning, pomodoroMode, pomodoroWorkDuration, pomodoroBreakDuration]);
+  }, [pomodoroRunning, pomodoroMode, pomodoroWorkDuration, pomodoroBreakDuration, pomodoroFocusTask]);
 
-  const pomodoroReset = () => { setPomodoroRunning(false); setPomodoroMode("work"); setPomodoroMinutes(pomodoroWorkDuration); setPomodoroSeconds(0); };
+  // Termina el bloque de enfoque YA (antes de que se acabe el tiempo) y marca
+  // la tarea vinculada como hecha con el tiempo real transcurrido.
+  const finishFocusNow = () => {
+    if (!pomodoroFocusTask) return;
+    const elapsedMin = pomodoroStartedAtRef.current ? (Date.now() - pomodoroStartedAtRef.current) / 60000 : 0;
+    setPomodoroRunning(false);
+    pomodoroEndAtRef.current = null;
+    pomodoroStartedAtRef.current = null;
+    setPomodoroBlocks((b) => b + 1);
+    completeFocusTask(elapsedMin);
+    setPomodoroMode("break");
+    setPomodoroMinutes(pomodoroBreakDuration);
+    setPomodoroSeconds(0);
+    playChime();
+  };
+
+  const pomodoroReset = () => { setPomodoroRunning(false); setPomodoroMode("work"); setPomodoroMinutes(pomodoroWorkDuration); setPomodoroSeconds(0); setPomodoroFocusTask(null); pomodoroEndAtRef.current = null; pomodoroStartedAtRef.current = null; };
   const requestNotificationPermission = () => { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); };
 
   useEffect(() => {
@@ -1517,6 +1579,7 @@ export default function App() {
     setContentItems(state.contentItems || []);
     setGoals(state.goals || []);
     setHomeTasks(migratePriorityList(state.homeTasks || []));
+    setTaskTimeLogs(state.taskTimeLogs || []);
     setSystemTasks(state.systemTasks || cloneList(initialSystemTasks));
     setMaternalTasks(state.maternalTasks || cloneList(initialHomeMaternalTasks));
     setWellnessTasks(state.wellnessTasks || cloneList(initialHomeWellnessTasks));
@@ -1649,6 +1712,7 @@ export default function App() {
       contentItems,
       goals,
       homeTasks,
+      taskTimeLogs,
       systemTasks,
       maternalTasks,
       wellnessTasks,
@@ -1717,7 +1781,7 @@ export default function App() {
         console.error("Error guardando en localStorage:", err);
       }
     }
-  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, businessSettings, banks, annualBudget, homeBudget, homeDebts, homePayments, bizDebts, bizPayments, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride, familyMembers, usage, budgetCats, homeIncomeGoal, calcReinvPct]);
+  }, [ready, user, awsActive, isRestoringRemote, cloudReadyUserId, activeView, currency, movements, tasks, clients, contentItems, goals, homeTasks, taskTimeLogs, businessSettings, banks, annualBudget, homeBudget, homeDebts, homePayments, bizDebts, bizPayments, purpose, incomeSources, salesGoal, contactLog, groceryList, userPlan, premiumExpiresAt, userMode, profileSetup, brandProfile, systemTasks, maternalTasks, wellnessTasks, weekBlocks, appointments, weekMenu, homeRoutines, kidsSchedule, quickNotes, reminderTime, reminderEnabled, homeFocusOverride, familyMembers, usage, budgetCats, homeIncomeGoal, calcReinvPct]);
 
   const expandAppts = (list, limitDays = 90) => {
     const t0 = new Date(); t0.setHours(0, 0, 0, 0);
@@ -1978,8 +2042,11 @@ export default function App() {
       dailyGoal: Math.round(monthly / 20)
     }));
   };
-  const toggleTask = (taskId) => setTasks((current) => current.map((task) => (task.id === taskId ? { ...task, done: !task.done } : task)));
-  const toggleHomeTask = (taskId) => setHomeTasks((current) => current.map((task) => (task.id === taskId ? { ...task, done: !task.done } : task)));
+  // completedAt: se guarda al marcar hecha (y se limpia al desmarcar) para
+  // poder mostrar "cuántas tareas se completaron hoy" sin importar si se
+  // marcó desde este checkbox o desde el Pomodoro (ver completeFocusTask).
+  const toggleTask = (taskId) => setTasks((current) => current.map((task) => (task.id === taskId ? { ...task, done: !task.done, completedAt: !task.done ? Date.now() : null } : task)));
+  const toggleHomeTask = (taskId) => setHomeTasks((current) => current.map((task) => (task.id === taskId ? { ...task, done: !task.done, completedAt: !task.done ? Date.now() : null } : task)));
   const updateAnnualBudget = (month, field, value) => {
     setAnnualBudget((current) => current.map((row) => {
       if (row.month !== month) return row;
@@ -3020,6 +3087,11 @@ export default function App() {
 
         {/* Pomodoro — FAB fijo + panel */}
         {(function() {
+          const _todayISO = new Date().toISOString().slice(0, 10);
+          const _focusOptions = [
+            ...homeTasks.filter(t => !t.done).map(t => ({ id: t.id, type: "home", title: t.title })),
+            ...tasks.filter(t => !t.done && (!t.dueDate || t.dueDate <= _todayISO)).map(t => ({ id: t.id, type: "biz", title: t.text })),
+          ];
           const _total = pomodoroMode === "work" ? pomodoroWorkDuration * 60 : pomodoroBreakDuration * 60;
           const _elapsed = _total - (pomodoroMinutes * 60 + pomodoroSeconds);
           const _progress = _total > 0 ? (_elapsed / _total) : 0;
@@ -3048,6 +3120,30 @@ export default function App() {
                       </div>
                     ) : (
                       <>
+                        {pomodoroMode === "work" && (
+                          pomodoroFocusTask ? (
+                            <div className="pomo-focus-task">
+                              <span className="pomo-focus-task-label">Enfocada en:</span>
+                              <span className="pomo-focus-task-title">{pomodoroFocusTask.title}</span>
+                              {!pomodoroRunning && (
+                                <button className="pomo-focus-task-clear" onClick={() => setPomodoroFocusTask(null)} title="Quitar tarea">&#x00D7;</button>
+                              )}
+                            </div>
+                          ) : (
+                            _focusOptions.length > 0 && (
+                              <select className="pomo-task-picker" defaultValue=""
+                                onChange={(e) => {
+                                  const opt = _focusOptions.find(o => String(o.id) === e.target.value);
+                                  if (opt) setPomodoroFocusTask(opt);
+                                }}>
+                                <option value="" disabled>¿En qué tarea te vas a enfocar?</option>
+                                {_focusOptions.map(o => (
+                                  <option key={`${o.type}-${o.id}`} value={o.id}>{o.type === "home" ? "🌸" : "💼"} {o.title}</option>
+                                ))}
+                              </select>
+                            )
+                          )
+                        )}
                         <div className="pomo-ring-wrap">
                           <svg viewBox="0 0 80 80" className="pomo-ring-svg">
                             <circle cx="40" cy="40" r={R} className="pomo-ring-bg" />
@@ -3066,6 +3162,11 @@ export default function App() {
                           >
                             {pomodoroRunning ? "Pausar" : pomodoroMode === "break" ? "Descansar" : "Iniciar foco"}
                           </button>
+                          {pomodoroRunning && pomodoroMode === "work" && pomodoroFocusTask && (
+                            <button className="pomo-finish-btn" onClick={finishFocusNow} title="Marcar la tarea como hecha ahora">
+                              &#x2713; Terminar ahora
+                            </button>
+                          )}
                           <button className="pomo-reset-btn" onClick={pomodoroReset} title="Reiniciar">&#x21BA;</button>
                         </div>
                         <div className="pomo-durations">
@@ -3964,6 +4065,17 @@ export default function App() {
       ? { label: "Ocupada", emoji: "💪", color: "#e87b1e", bg: "rgba(232,123,30,0.08)", msg: "Hoy requiere enfoque, pero es manejable. Prueba el temporizador Pomodoro para avanzar sin agobiarte." }
       : { label: "Saturada", emoji: "😮‍💨", color: "#C4526A", bg: "rgba(196,82,106,0.08)", msg: "Tu día está muy cargado. Considera delegar algo o mover lo que pueda esperar a otro día." };
 
+    // ── Progreso de hoy: hechas vs. no hechas + tiempo real por tarea ──
+    const isToday = (ts) => ts && new Date(ts).toISOString().slice(0, 10) === todayISO;
+    const todayDoneHome = homeTasks.filter((t) => t.done && isToday(t.completedAt));
+    const todayDoneBiz  = tasks.filter((t) => t.done && isToday(t.completedAt));
+    const todayDoneCount = todayDoneHome.length + todayDoneBiz.length;
+    const todayPendingCount = pendingHomeAll.length + pendingBizAll.length;
+    const todayTimeLogs = taskTimeLogs.filter((l) => l.date === todayISO);
+    const avgMinPerTask = todayTimeLogs.length
+      ? Math.round(todayTimeLogs.reduce((s, l) => s + l.durationMin, 0) / todayTimeLogs.length)
+      : null;
+
     // ── Hogar: "Tus 3 de hoy" ──
     const pendingHome = homeTasks.filter((t) => !t.done);
     const homePriorityRank = { "Importante": 0, "Normal": 1, "Sin afán": 2 };
@@ -4027,6 +4139,26 @@ export default function App() {
                 </button>
               )}
             </div>
+          </div>
+
+          {/* ── Progreso de hoy: hechas/pendientes + tiempo real por tarea ── */}
+          <div className="db-today-panel">
+            <p className="db-today-heading">Progreso de hoy</p>
+            <div className="db-progress-grid">
+              <div className="db-progress-card">
+                <span className="db-progress-val" style={{color:"#1D9E75"}}>{todayDoneCount}</span>
+                <span className="db-progress-label">Hechas hoy</span>
+              </div>
+              <div className="db-progress-card">
+                <span className="db-progress-val" style={{color:"#C4526A"}}>{todayPendingCount}</span>
+                <span className="db-progress-label">Pendientes</span>
+              </div>
+              <div className="db-progress-card">
+                <span className="db-progress-val">{avgMinPerTask !== null ? `${avgMinPerTask} min` : "—"}</span>
+                <span className="db-progress-label">Promedio por tarea</span>
+              </div>
+            </div>
+            <TodayFocusChart logs={todayTimeLogs} />
           </div>
 
           {/* ── Panel de Hoy ── */}
@@ -7902,6 +8034,28 @@ function LineChart({ movements }) {
       {last7.map((_, i) => <circle className="income-dot" cx={toX(i)} cy={toY(incomes[i])} r="6" key={`i-${i}`} />)}
       {last7.map((_, i) => <circle className="expense-dot" cx={toX(i)} cy={toY(expenses[i])} r="6" key={`e-${i}`} />)}
     </svg>
+  );
+}
+
+// Barras horizontales con lo que se enfocó hoy (vía Pomodoro) y cuánto tardó cada tarea.
+function TodayFocusChart({ logs }) {
+  if (!logs.length) {
+    return <p className="today-focus-empty">Usa el Pomodoro vinculado a una tarea para ver aquí cuánto te demoras en cada una.</p>;
+  }
+  const maxMin = Math.max(...logs.map((l) => l.durationMin), 1);
+  return (
+    <div className="today-focus-chart">
+      {logs.map((l) => (
+        <div className="today-focus-row" key={l.id}>
+          <span className="today-focus-icon">{l.taskType === "home" ? "🌸" : "💼"}</span>
+          <span className="today-focus-title" title={l.title}>{l.title}</span>
+          <div className="today-focus-bar-track">
+            <div className="today-focus-bar-fill" style={{ width: `${Math.max(6, (l.durationMin / maxMin) * 100)}%` }} />
+          </div>
+          <span className="today-focus-min">{l.durationMin} min</span>
+        </div>
+      ))}
+    </div>
   );
 }
 
