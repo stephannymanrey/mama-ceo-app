@@ -892,6 +892,8 @@ export default function App() {
       date: todayISO, durationMin, completedAt: Date.now(),
     }]);
     if (ft.type === "home") setHomeTasks((cur) => cur.map((t) => t.id === ft.id ? { ...t, done: true, completedAt: Date.now() } : t));
+    else if (ft.type === "maternal") setMaternalTasks((cur) => cur.map((t) => t.id === ft.id ? { ...t, done: true, completedAt: Date.now() } : t));
+    else if (ft.type === "wellness") setWellnessTasks((cur) => cur.map((t) => t.id === ft.id ? { ...t, done: true, completedAt: Date.now() } : t));
     else setTasks((cur) => cur.map((t) => t.id === ft.id ? { ...t, done: true, completedAt: Date.now() } : t));
     if (Notification.permission === "granted") {
       new Notification("✅ Tarea completada", { body: `"${ft.title}" — ${durationMin} min de enfoque`, icon: "/logo.png" });
@@ -3115,6 +3117,8 @@ export default function App() {
           const _todayISO = new Date().toISOString().slice(0, 10);
           const _focusOptions = [
             ...homeTasks.filter(t => !t.done).map(t => ({ id: t.id, type: "home", title: t.title })),
+            ...maternalTasks.filter(t => !t.done).map(t => ({ id: t.id, type: "maternal", title: t.title })),
+            ...wellnessTasks.filter(t => !t.done).map(t => ({ id: t.id, type: "wellness", title: t.title })),
             ...tasks.filter(t => !t.done && (!t.dueDate || t.dueDate <= _todayISO)).map(t => ({ id: t.id, type: "biz", title: t.text })),
           ];
           const _total = pomodoroMode === "work" ? pomodoroWorkDuration * 60 : pomodoroBreakDuration * 60;
@@ -3163,7 +3167,7 @@ export default function App() {
                                 }}>
                                 <option value="" disabled>¿En qué tarea te vas a enfocar?</option>
                                 {_focusOptions.map(o => (
-                                  <option key={`${o.type}-${o.id}`} value={o.id}>{o.type === "home" ? "🌸" : "💼"} {o.title}</option>
+                                  <option key={`${o.type}-${o.id}`} value={o.id}>{o.type === "biz" ? "💼" : o.type === "maternal" ? "👶" : o.type === "wellness" ? "💆" : "🌸"} {o.title}</option>
                                 ))}
                               </select>
                             )
@@ -4131,6 +4135,13 @@ export default function App() {
     return (
       <section className="panel workspace-panel">
         <div className="db-wrap">
+
+          {/* ── Barra superior con acceso rápido al temporizador ── */}
+          <div className="db-top-bar">
+            <button className="db-focus-shortcut" onClick={() => { setPomodoroOpen(true); setToolsFabOpen(false); }}>
+              ⏱ Enfocarme ahora
+            </button>
+          </div>
 
           {/* ── Carga del día ── */}
           <div className="db-load-grid">
