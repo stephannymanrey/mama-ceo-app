@@ -4186,7 +4186,6 @@ export default function App() {
                 <span className="db-progress-label">Promedio por tarea</span>
               </div>
             </div>
-            <TodayFocusChart logs={todayTimeLogs} onOpenTimer={() => setPomodoroOpen(true)} />
           </div>
 
           {/* ── Tiempo promedio por tarea ── */}
@@ -4202,7 +4201,7 @@ export default function App() {
           ) : (
             <div className="db-today-panel">
               <p className="db-today-heading">Tiempo promedio por tarea</p>
-              <HistoricalFocusChart logs={taskTimeLogs} />
+              <DonutFocusChart logs={taskTimeLogs} />
             </div>
           )}
 
@@ -8111,8 +8110,10 @@ function TodayFocusChart({ logs, onOpenTimer }) {
   );
 }
 
-// Promedios históricos por tarea (todas las sesiones acumuladas).
-function HistoricalFocusChart({ logs }) {
+// Donut chart de promedios históricos por tarea.
+function DonutFocusChart({ logs }) {
+  const [hovered, setHovered] = React.useState(null);
+
   const byTitle = {};
   logs.forEach((l) => {
     if (!byTitle[l.title]) byTitle[l.title] = { total: 0, count: 0, taskType: l.taskType };
@@ -8121,24 +8122,59 @@ function HistoricalFocusChart({ logs }) {
   });
   const items = Object.entries(byTitle)
     .map(([title, { total, count, taskType }]) => ({ title, avg: Math.round(total / count), count, taskType }))
-    .sort((a, b) => b.count - a.count)
+    .sort((a, b) => b.avg - a.avg)
     .slice(0, 6);
-  const maxAvg = Math.max(...items.map((i) => i.avg), 1);
+
+  const totalAvg = items.reduce((s, i) => s + i.avg, 0);
+  const COLORS = ['#C4526A', '#e87b1e', '#1D9E75', '#6B46C1', '#C9A96E', '#0EA5E9'];
+  const R = 52, cx = 68, cy = 68;
+  const C = 2 * Math.PI * R;
+
+  let cumLen = 0;
+  const slices = items.map((item, i) => {
+    const sliceLen = (item.avg / totalAvg) * C;
+    const dashoffset = C - cumLen;
+    cumLen += sliceLen;
+    return { ...item, sliceLen, dashoffset, color: COLORS[i % COLORS.length] };
+  });
+
+  const hov = hovered !== null ? slices[hovered] : null;
+
   return (
-    <div className="today-focus-chart">
-      {items.map((item, i) => (
-        <div className="today-focus-row" key={i}>
-          <span className="today-focus-icon">{item.taskType === "home" ? "🌸" : "💼"}</span>
-          <span className="today-focus-title" title={item.title}>{item.title}</span>
-          <div className="today-focus-bar-track">
-            <div className="today-focus-bar-fill" style={{ width: `${Math.max(6, (item.avg / maxAvg) * 100)}%` }} />
+    <div className="donut-focus-wrap">
+      <svg width="136" height="136" viewBox="0 0 136 136">
+        {slices.map((s, i) => (
+          <circle key={i} cx={cx} cy={cy} r={R} fill="none"
+            stroke={s.color}
+            strokeWidth={hovered === i ? 20 : 16}
+            strokeDasharray={`${s.sliceLen} ${C - s.sliceLen}`}
+            strokeDashoffset={s.dashoffset}
+            style={{ transform: `rotate(-90deg)`, transformOrigin: `${cx}px ${cy}px`, cursor: 'pointer', transition: 'stroke-width 0.15s' }}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered(null)}
+            onTouchStart={() => setHovered(hovered === i ? null : i)}
+          />
+        ))}
+        <text x={cx} y={cy - 5} textAnchor="middle" style={{ fontSize: '17px', fontWeight: 700, fill: 'var(--text)' }}>
+          {hov ? `${hov.avg}m` : `${items.length}`}
+        </text>
+        <text x={cx} y={cy + 13} textAnchor="middle" style={{ fontSize: '10px', fill: 'var(--muted)' }}>
+          {hov ? hov.title.slice(0, 11) : 'tareas'}
+        </text>
+      </svg>
+      <div className="donut-legend">
+        {slices.map((s, i) => (
+          <div key={i}
+            className={`donut-legend-row${hovered === i ? ' donut-legend-row--on' : ''}`}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            <span className="donut-legend-dot" style={{ background: s.color }} />
+            <span className="donut-legend-title">{s.title}</span>
+            <span className="donut-legend-val">{s.avg} min</span>
           </div>
-          <span className="today-focus-min">
-            {item.avg} min
-            {item.count > 1 && <span className="focus-hist-count"> · {item.count}×</span>}
-          </span>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }

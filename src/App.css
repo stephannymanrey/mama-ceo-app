@@ -5897,6 +5897,13 @@ button {
 .focus-discover-btn-sm:hover { background: var(--accent); color: #fff; }
 .today-focus-chart { display: flex; flex-direction: column; gap: 10px; }
 .focus-hist-count { font-size: 11px; opacity: 0.55; }
+.donut-focus-wrap { display: flex; align-items: center; gap: 16px; padding: 4px 0; }
+.donut-legend { display: flex; flex-direction: column; gap: 7px; flex: 1; min-width: 0; }
+.donut-legend-row { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 4px 6px; border-radius: 8px; transition: background 0.15s; }
+.donut-legend-row--on { background: var(--hover, rgba(0,0,0,0.06)); }
+.donut-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.donut-legend-title { flex: 1; font-size: 12px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.donut-legend-val { font-size: 12px; font-weight: 600; color: var(--text); flex-shrink: 0; }
 
 /* Banner de descubrimiento del Temporizador */
 .db-focus-discover { display: flex; flex-direction: column; align-items: center; gap: 12px; background: var(--card); border: 1.5px dashed var(--border); border-radius: 16px; padding: 20px 18px; margin-bottom: 12px; text-align: center; }
