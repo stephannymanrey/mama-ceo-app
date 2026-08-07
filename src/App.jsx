@@ -873,6 +873,13 @@ export default function App() {
   // conteo se pone al día solo en vez de quedar atrasado.
   const pomodoroEndAtRef = React.useRef(null);
   const pomodoroStartedAtRef = React.useRef(null);
+  // Para el modo "Libre" (sin límite, cuenta hacia arriba): tiempo activo
+  // acumulado antes del tramo actual + cuándo empezó el tramo actual. Se
+  // separan del pomodoroStartedAtRef (que sigue midiendo desde el inicio
+  // real para el registro de la tarea) para que, al pausar y reanudar, el
+  // reloj en pantalla no salte — solo cuenta el tiempo realmente activo.
+  const pomodoroFreeBaseMsRef = React.useRef(0);
+  const pomodoroFreeSegStartRef = React.useRef(null);
 
   // Registra el tiempo real de enfoque en una tarea y la marca como hecha.
   const completeFocusTask = (elapsedMin) => {
@@ -892,69 +899,87 @@ export default function App() {
     setPomodoroFocusTask(null);
   };
 
+  const isFreeFocus = pomodoroMode === "work" && pomodoroWorkDuration === 0;
+
   useEffect(() => {
     if (pomodoroRunning) {
-      if (!pomodoroEndAtRef.current) {
-        pomodoroEndAtRef.current = Date.now() + (pomodoroMinutes * 60 + pomodoroSeconds) * 1000;
-        // Solo se pone en null al empezar una fase nueva de verdad (ver más
-        // abajo) — así, si pausas y reanudas el MISMO bloque de enfoque, el
-        // tiempo registrado sigue contando desde el inicio real, no desde
-        // que reanudaste.
+      if (isFreeFocus) {
         if (!pomodoroStartedAtRef.current) pomodoroStartedAtRef.current = Date.now();
-      }
-      pomodoroRef.current = setInterval(() => {
-        const remainingSec = Math.max(0, Math.round((pomodoroEndAtRef.current - Date.now()) / 1000));
-        setPomodoroMinutes(Math.floor(remainingSec / 60));
-        setPomodoroSeconds(remainingSec % 60);
-        if (remainingSec <= 0) {
-          setPomodoroRunning(false);
-          pomodoroEndAtRef.current = null;
-          if (pomodoroMode === "work") {
-            setPomodoroBlocks((b) => b + 1);
-            if (pomodoroFocusTask) {
-              const elapsedMin = pomodoroStartedAtRef.current ? (Date.now() - pomodoroStartedAtRef.current) / 60000 : pomodoroWorkDuration;
-              completeFocusTask(elapsedMin);
-            }
-            setPomodoroMode("break");
-            setPomodoroMinutes(pomodoroBreakDuration);
-            setPomodoroSeconds(0);
-            pomodoroStartedAtRef.current = null;
-            playChime();
-            if (Notification.permission === "granted") new Notification("🍅 Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)], icon: "/logo.png" });
-          } else {
-            setPomodoroMode("work");
-            setPomodoroMinutes(pomodoroWorkDuration);
-            setPomodoroSeconds(0);
-            pomodoroStartedAtRef.current = null;
-            playChime();
-            if (Notification.permission === "granted") new Notification("💪 ¡A trabajar!", { body: "¡Nuevo bloque de enfoque!", icon: "/logo.png" });
-          }
+        if (!pomodoroFreeSegStartRef.current) pomodoroFreeSegStartRef.current = Date.now();
+        pomodoroRef.current = setInterval(() => {
+          const elapsedMs = pomodoroFreeBaseMsRef.current + (Date.now() - pomodoroFreeSegStartRef.current);
+          const elapsedSec = Math.max(0, Math.round(elapsedMs / 1000));
+          setPomodoroMinutes(Math.floor(elapsedSec / 60));
+          setPomodoroSeconds(elapsedSec % 60);
+        }, 1000);
+      } else {
+        if (!pomodoroEndAtRef.current) {
+          pomodoroEndAtRef.current = Date.now() + (pomodoroMinutes * 60 + pomodoroSeconds) * 1000;
+          // Solo se pone en null al empezar una fase nueva de verdad (ver más
+          // abajo) — así, si pausas y reanudas el MISMO bloque de enfoque, el
+          // tiempo registrado sigue contando desde el inicio real, no desde
+          // que reanudaste.
+          if (!pomodoroStartedAtRef.current) pomodoroStartedAtRef.current = Date.now();
         }
-      }, 1000);
+        pomodoroRef.current = setInterval(() => {
+          const remainingSec = Math.max(0, Math.round((pomodoroEndAtRef.current - Date.now()) / 1000));
+          setPomodoroMinutes(Math.floor(remainingSec / 60));
+          setPomodoroSeconds(remainingSec % 60);
+          if (remainingSec <= 0) {
+            setPomodoroRunning(false);
+            pomodoroEndAtRef.current = null;
+            if (pomodoroMode === "work") {
+              setPomodoroBlocks((b) => b + 1);
+              if (pomodoroFocusTask) {
+                const elapsedMin = pomodoroStartedAtRef.current ? (Date.now() - pomodoroStartedAtRef.current) / 60000 : pomodoroWorkDuration;
+                completeFocusTask(elapsedMin);
+              }
+              setPomodoroMode("break");
+              setPomodoroMinutes(pomodoroBreakDuration);
+              setPomodoroSeconds(0);
+              pomodoroStartedAtRef.current = null;
+              playChime();
+              if (Notification.permission === "granted") new Notification("🍅 Bloque completado", { body: POMODORO_MESSAGES[Math.floor(Math.random() * POMODORO_MESSAGES.length)], icon: "/logo.png" });
+            } else {
+              setPomodoroMode("work");
+              setPomodoroMinutes(pomodoroWorkDuration);
+              setPomodoroSeconds(0);
+              pomodoroStartedAtRef.current = null;
+              playChime();
+              if (Notification.permission === "granted") new Notification("💪 ¡A trabajar!", { body: "¡Nuevo bloque de enfoque!", icon: "/logo.png" });
+            }
+          }
+        }, 1000);
+      }
     } else {
+      if (pomodoroFreeSegStartRef.current) {
+        pomodoroFreeBaseMsRef.current += Date.now() - pomodoroFreeSegStartRef.current;
+        pomodoroFreeSegStartRef.current = null;
+      }
       clearInterval(pomodoroRef.current);
       pomodoroEndAtRef.current = null;
     }
     return () => clearInterval(pomodoroRef.current);
-  }, [pomodoroRunning, pomodoroMode, pomodoroWorkDuration, pomodoroBreakDuration, pomodoroFocusTask]);
+  }, [pomodoroRunning, pomodoroMode, pomodoroWorkDuration, pomodoroBreakDuration, pomodoroFocusTask, isFreeFocus]);
 
   // Termina el bloque de enfoque YA (antes de que se acabe el tiempo) y marca
   // la tarea vinculada como hecha con el tiempo real transcurrido.
   const finishFocusNow = () => {
-    if (!pomodoroFocusTask) return;
     const elapsedMin = pomodoroStartedAtRef.current ? (Date.now() - pomodoroStartedAtRef.current) / 60000 : 0;
     setPomodoroRunning(false);
     pomodoroEndAtRef.current = null;
     pomodoroStartedAtRef.current = null;
+    pomodoroFreeBaseMsRef.current = 0;
+    pomodoroFreeSegStartRef.current = null;
     setPomodoroBlocks((b) => b + 1);
-    completeFocusTask(elapsedMin);
+    if (pomodoroFocusTask) completeFocusTask(elapsedMin);
     setPomodoroMode("break");
     setPomodoroMinutes(pomodoroBreakDuration);
     setPomodoroSeconds(0);
     playChime();
   };
 
-  const pomodoroReset = () => { setPomodoroRunning(false); setPomodoroMode("work"); setPomodoroMinutes(pomodoroWorkDuration); setPomodoroSeconds(0); setPomodoroFocusTask(null); pomodoroEndAtRef.current = null; pomodoroStartedAtRef.current = null; };
+  const pomodoroReset = () => { setPomodoroRunning(false); setPomodoroMode("work"); setPomodoroMinutes(pomodoroWorkDuration); setPomodoroSeconds(0); setPomodoroFocusTask(null); pomodoroEndAtRef.current = null; pomodoroStartedAtRef.current = null; pomodoroFreeBaseMsRef.current = 0; pomodoroFreeSegStartRef.current = null; };
   const requestNotificationPermission = () => { if ("Notification" in window && Notification.permission === "default") Notification.requestPermission(); };
 
   useEffect(() => {
@@ -3094,7 +3119,7 @@ export default function App() {
           ];
           const _total = pomodoroMode === "work" ? pomodoroWorkDuration * 60 : pomodoroBreakDuration * 60;
           const _elapsed = _total - (pomodoroMinutes * 60 + pomodoroSeconds);
-          const _progress = _total > 0 ? (_elapsed / _total) : 0;
+          const _progress = isFreeFocus ? 1 : (_total > 0 ? (_elapsed / _total) : 0);
           const R = 32; const _circ = 2 * Math.PI * R;
           const _msgs = ["Excelente sesion!", "Eres imparable.", "Pura concentracion.", "Que consistencia!"];
           const _mm = String(pomodoroMinutes).padStart(2,"0");
@@ -3147,7 +3172,7 @@ export default function App() {
                         <div className="pomo-ring-wrap">
                           <svg viewBox="0 0 80 80" className="pomo-ring-svg">
                             <circle cx="40" cy="40" r={R} className="pomo-ring-bg" />
-                            <circle cx="40" cy="40" r={R} className="pomo-ring-fg"
+                            <circle cx="40" cy="40" r={R} className={`pomo-ring-fg${isFreeFocus ? " pomo-ring-fg--free" : ""}`}
                               strokeDasharray={_circ}
                               strokeDashoffset={_circ * (1 - _progress)}
                               transform="rotate(-90 40 40)"
@@ -3155,6 +3180,9 @@ export default function App() {
                           </svg>
                           <div className="pomo-time-disp">{_mm}:{_ss}</div>
                         </div>
+                        {isFreeFocus && (
+                          <p className="pomo-free-hint">Sesión libre — sin límite de tiempo. Dale "Terminar" cuando quieras parar.</p>
+                        )}
                         <div className="pomo-ctrls">
                           <button
                             className={`pomo-main-btn${pomodoroRunning ? " pomo-main-btn--pause" : " pomo-main-btn--start"}`}
@@ -3162,16 +3190,16 @@ export default function App() {
                           >
                             {pomodoroRunning ? "Pausar" : pomodoroMode === "break" ? "Descansar" : "Iniciar foco"}
                           </button>
-                          {pomodoroRunning && pomodoroMode === "work" && pomodoroFocusTask && (
-                            <button className="pomo-finish-btn" onClick={finishFocusNow} title="Marcar la tarea como hecha ahora">
-                              &#x2713; Terminar ahora
+                          {pomodoroRunning && pomodoroMode === "work" && (pomodoroFocusTask || isFreeFocus) && (
+                            <button className="pomo-finish-btn" onClick={finishFocusNow} title={pomodoroFocusTask ? "Marcar la tarea como hecha ahora" : "Terminar esta sesión"}>
+                              &#x2713; {pomodoroFocusTask ? "Terminar ahora" : "Terminar"}
                             </button>
                           )}
                           <button className="pomo-reset-btn" onClick={pomodoroReset} title="Reiniciar">&#x21BA;</button>
                         </div>
                         <div className="pomo-durations">
-                          <select value={pomodoroWorkDuration} onChange={(e) => { const v=Number(e.target.value); setPomodoroWorkDuration(v); if(!pomodoroRunning&&pomodoroMode==="work") setPomodoroMinutes(v); }}>
-                            <option value={15}>15 min</option><option value={25}>25 min</option><option value={45}>45 min</option><option value={60}>60 min</option>
+                          <select value={pomodoroWorkDuration} onChange={(e) => { const v=Number(e.target.value); setPomodoroWorkDuration(v); if(!pomodoroRunning&&pomodoroMode==="work"){ setPomodoroMinutes(v); setPomodoroSeconds(0);} }}>
+                            <option value={15}>15 min</option><option value={25}>25 min</option><option value={45}>45 min</option><option value={60}>60 min</option><option value={0}>Libre (sin límite)</option>
                           </select>
                           <span className="pomo-dur-sep">&#x2022;</span>
                           <select value={pomodoroBreakDuration} onChange={(e) => { const v=Number(e.target.value); setPomodoroBreakDuration(v); if(!pomodoroRunning&&pomodoroMode==="break") setPomodoroMinutes(v); }}>

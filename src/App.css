@@ -6917,6 +6917,9 @@ button {
   transition: stroke-dashoffset 1s linear;
 }
 .pomo-panel--break .pomo-ring-fg { stroke: var(--green); }
+.pomo-ring-fg--free { animation: pomoFreePulse 2.2s ease-in-out infinite; }
+@keyframes pomoFreePulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+.pomo-free-hint { font-size: 11px; color: var(--muted); text-align: center; margin: -6px 0 10px; }
 .pomo-time-disp {
   position: absolute;
   inset: 0;
