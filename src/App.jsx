@@ -4172,26 +4172,21 @@ export default function App() {
           {/* ── Progreso de hoy + tiempo por tarea ── */}
           <div className="db-today-panel">
             <p className="db-today-heading">Progreso de hoy</p>
-            <div className="db-progress-donut-row">
-              <TodayTasksDonut done={todayDoneCount} pending={todayPendingCount} />
-              <div className="db-progress-time-side">
-                {taskTimeLogs.length === 0 ? (
-                  <div className="db-focus-discover db-focus-discover--compact">
-                    <span className="db-focus-discover-ico">⏱️</span>
-                    <div className="db-focus-discover-text">
-                      <p className="db-focus-discover-title">¿Cuánto tardas en cada tarea?</p>
-                      <p className="db-focus-discover-desc">Activa el Temporizador y vincula una tarea para ver tus tiempos reales aquí.</p>
-                    </div>
-                    <button className="db-focus-discover-btn" onClick={() => setPomodoroOpen(true)}>⏱️ Activar</button>
-                  </div>
-                ) : (
-                  <>
-                    <p className="db-progress-time-label">Tiempo promedio por tarea</p>
-                    <DonutFocusChart logs={taskTimeLogs} />
-                  </>
-                )}
+            {taskTimeLogs.length === 0 ? (
+              <div className="db-focus-discover db-focus-discover--compact">
+                <span className="db-focus-discover-ico">⏱️</span>
+                <div className="db-focus-discover-text">
+                  <p className="db-focus-discover-title">¿Cuánto tardas en cada tarea?</p>
+                  <p className="db-focus-discover-desc">Activa el Temporizador y vincula una tarea para ver tus tiempos reales aquí.</p>
+                </div>
+                <button className="db-focus-discover-btn" onClick={() => setPomodoroOpen(true)}>⏱️ Activar</button>
               </div>
-            </div>
+            ) : (
+              <>
+                <p className="db-progress-time-label">Tiempo promedio por tarea</p>
+                <DonutFocusChart logs={taskTimeLogs} />
+              </>
+            )}
           </div>
 
           {/* ── Panel de Hoy ── */}
