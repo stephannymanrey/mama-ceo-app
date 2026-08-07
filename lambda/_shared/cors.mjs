@@ -12,6 +12,7 @@
 export const ALLOWED_ORIGINS = [
   "https://www.mamaceoapp.co",
   "https://mamaceoapp.co",
+  "https://staging.d304ma29h32fnw.amplifyapp.com",
   "http://localhost:5173",
   "http://localhost:5174",
 ];

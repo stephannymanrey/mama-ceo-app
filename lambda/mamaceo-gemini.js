@@ -14,6 +14,7 @@ const PLAN_LIMITS = { free: 50, emprendedora: 60, ceo: 200, premium: 200 };
 const ALLOWED_ORIGINS = [
   "https://www.mamaceoapp.co",
   "https://mamaceoapp.co",
+  "https://staging.d304ma29h32fnw.amplifyapp.com",
   "http://localhost:5173",
   "http://localhost:5174",
 ];

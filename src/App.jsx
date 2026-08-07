@@ -6394,7 +6394,7 @@ export default function App() {
                         ))}
                       </div>
                       <p className="app-form-label" style={{marginTop:"14px"}}>Nombre / descripción</p>
-                      <input className="app-form-input" autoFocus
+                      <input className="app-form-input"
                         placeholder="Ej: Tarde con los hijos, Limpieza cocina..."
                         value={schedForm.title}
                         onChange={e=>setSchedForm(f=>({...f,title:e.target.value}))}
