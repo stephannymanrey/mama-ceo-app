@@ -2769,6 +2769,7 @@ button {
   }
 
   .clients-pipeline-wrap {
+    width: 100%;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 8px;
@@ -7683,6 +7684,31 @@ button {
   letter-spacing: 0.5px;
   margin-bottom: 6px;
 }
+.dur-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.dur-pill {
+  flex: none;
+  padding: 7px 13px;
+  border-radius: 20px;
+  border: 1.5px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.dur-pill--sel {
+  border-color: var(--purple);
+  background: var(--purple-soft);
+  color: var(--purple);
+  font-weight: 700;
+}
 .app-form-input {
   width: 100%;
   padding: 10px 12px;
@@ -8452,11 +8478,11 @@ button {
 }
 @keyframes modalCardEnter {
   from { opacity: 0; transform: scale(0.93) translateY(14px); }
-  to   { opacity: 1; transform: scale(1)    translateY(0); }
+  to   { opacity: 1; }
 }
 @keyframes cardSlideUp {
   from { opacity: 0; transform: translateY(22px); }
-  to   { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; }
 }
 @keyframes sectionFadeUp {
   from { opacity: 0; transform: translateY(12px); }
