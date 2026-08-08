@@ -1110,17 +1110,17 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Guardar email en DynamoDB al abrir precios (para webhook de Hotmart)
+  // Guardar email en DynamoDB al iniciar sesión (y como respaldo al abrir precios)
   useEffect(() => {
-    if (activeView !== "pricing" || !user) return;
-    const email = user.email || profileSetup?.email;
-    if (!email) return;
+    const email = user?.email;
+    const userId = user?.id;
+    if (!email || !userId) return;
     fetch(PAYMENTS_URL, {
       method: "POST", mode: "cors",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "save-email", userId: user.id, email })
+      body: JSON.stringify({ action: "save-email", userId, email })
     }).catch(() => {});
-  }, [activeView, user]);
+  }, [user?.id]); // solo cuando cambia la usuaria (login/cambio de cuenta)
 
 
   const startMPSubscription = async (planId) => {
