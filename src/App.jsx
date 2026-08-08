@@ -3623,6 +3623,17 @@ export default function App() {
               </button>
             );
           })}
+          {userMode !== "mama" && (
+            <button className={`mobile-bottom-nav-item${activeView === "studio" ? " active" : ""}`}
+              onClick={() => {
+                if (isToolLocked(effectivePlan, "studio")) { setUpgradeModal({ feature: "Studio ✦", plan: planLabel(toolMinPlan("studio")) }); return; }
+                setActiveView("studio");
+              }}>
+              <span className="mobile-bottom-nav-icon">🎬</span>
+              <span className="mobile-bottom-nav-label">Studio</span>
+              {isToolLocked(effectivePlan, "studio") && <span className="mobile-bottom-nav-lock">🔒</span>}
+            </button>
+          )}
           <button className={`mobile-bottom-nav-item${activeView === "pricing" ? " active" : ""}`}
             onClick={() => setActiveView("pricing")}>
             <span className="mobile-bottom-nav-icon">⭐</span>
