@@ -7031,10 +7031,19 @@ export default function App() {
                 </div>
 
                 <div>
-                  <label className="app-form-label">Duración estimada <span style={{fontWeight:400,textTransform:"none"}}>(minutos, opcional)</span></label>
-                  <input type="number" min="0" step="5" placeholder={`Auto: ${HOME_CATEGORY_DURATION[homeForm.category]||DEFAULT_HOME_DURATION} min`}
-                    value={homeForm.duration} onChange={e=>updateHomeForm("duration",e.target.value)}
-                    className="app-form-input"/>
+                  <label className="app-form-label">Duración estimada <span style={{fontWeight:400,textTransform:"none"}}>(opcional)</span></label>
+                  <div className="dur-pills">
+                    {[
+                      {label:"15 min",val:15},{label:"30 min",val:30},{label:"45 min",val:45},
+                      {label:"1 h",val:60},{label:"2 h",val:120},{label:"🍅 Libre",val:"libre"},
+                    ].map(({label,val})=>(
+                      <button key={label} type="button"
+                        className={`dur-pill${homeForm.duration===val?" dur-pill--sel":""}`}
+                        onClick={()=>updateHomeForm("duration", homeForm.duration===val?"":val)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
 
                 <div>
