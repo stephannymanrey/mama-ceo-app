@@ -7564,6 +7564,58 @@ button {
   .db-load-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ── Banner de actualización PWA ── */
+.pwa-update-banner {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  background: #C4526A;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.22);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: calc(100vw - 32px);
+}
+.pwa-update-btn {
+  background: #fff;
+  color: #C4526A;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+/* En móvil el banner va arriba para no quedar tapado por el bottom nav */
+@media (max-width: 1180px) {
+  .pwa-update-banner {
+    bottom: auto;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    transform: none;
+    white-space: normal;
+    border-radius: 14px;
+  }
+}
+
+/* ── Dashboard: botón temporizador top-right ── */
+@media (max-width: 700px) {
+  .db-top-bar { margin-bottom: 2px; }
+  .db-focus-shortcut { font-size: 12px; padding: 7px 14px; }
+}
+
 /* ── Modales unificados de popup (toda la app) ── */
 .app-modal-backdrop {
   position: fixed;

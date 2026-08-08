@@ -2601,9 +2601,9 @@ export default function App() {
   return (
     <div className="app-shell">
       {needRefresh && (
-        <div style={{position:"fixed",bottom:"16px",left:"50%",transform:"translateX(-50%)",zIndex:9999,background:"#C4526A",color:"#fff",padding:"12px 20px",borderRadius:"12px",display:"flex",alignItems:"center",gap:"12px",boxShadow:"0 4px 20px rgba(0,0,0,0.2)",fontSize:"14px",fontWeight:600,whiteSpace:"nowrap"}}>
+        <div className="pwa-update-banner">
           <span>🌸 Nueva versión disponible</span>
-          <button type="button" onClick={() => updateServiceWorker(true)} style={{background:"#fff",color:"#C4526A",border:"none",borderRadius:"8px",padding:"6px 14px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>Actualizar</button>
+          <button type="button" className="pwa-update-btn" onClick={() => updateServiceWorker(true)}>Actualizar</button>
         </div>
       )}
 
