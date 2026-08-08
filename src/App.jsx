@@ -3067,7 +3067,10 @@ export default function App() {
           <div>
             <p className="view-label">{activeLabel}</p>
             <h1>{clockNow.getHours() < 12 ? "Buenos días" : clockNow.getHours() < 19 ? "Buenas tardes" : "Buenas noches"}, {(profileSetup?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mamá").split(" ")[0]}</h1>
-            <p>Enfocada · Organizada · en Calma</p>
+            <p>
+              {clockNow.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" })}
+              {profileSetup?.businessName && <> · <span style={{color:"var(--purple)",fontWeight:600}}>{profileSetup.businessName}</span></>}
+            </p>
           </div>
           <div className="profile-area">
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
@@ -4147,8 +4150,13 @@ export default function App() {
       <section className="panel workspace-panel">
         <div className="db-wrap">
 
-          {/* ── Barra superior con acceso rápido al temporizador ── */}
+          {/* ── Barra superior ── */}
           <div className="db-top-bar">
+            {todayDoneCount > 0 ? (
+              <span className="db-top-done-chip">✓ {todayDoneCount} completada{todayDoneCount !== 1 ? "s" : ""} hoy</span>
+            ) : (
+              <span className="db-top-done-chip db-top-done-chip--empty">Empieza marcando tu primera tarea</span>
+            )}
             <button className="db-focus-shortcut" onClick={() => { setPomodoroOpen(true); setToolsFabOpen(false); }}>
               ⏱ Enfocarme ahora
             </button>

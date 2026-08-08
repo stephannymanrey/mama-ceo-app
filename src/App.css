@@ -6,6 +6,7 @@
   --surface-strong: #ffffff;
   --purple: #D4687A;
   --purple-soft: #faeef0;
+  --accent: #D4687A;
   --pink: #C9A96E;
   --pink-soft: #faf3e7;
   --green: #2f9f70;
@@ -5898,7 +5899,28 @@ button {
 .today-focus-empty { font-size: 12px; color: var(--muted); text-align: center; margin: 8px 0 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .focus-discover-btn-sm { font-size: 12px; padding: 5px 14px; border-radius: 20px; border: 1.5px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; font-weight: 500; }
 .focus-discover-btn-sm:hover { background: var(--accent); color: #fff; }
-.db-top-bar { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.db-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.db-top-done-chip {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green);
+  background: var(--green-soft);
+  border-radius: 20px;
+  padding: 4px 12px;
+  letter-spacing: 0.1px;
+}
+
+.db-top-done-chip--empty {
+  color: var(--muted);
+  background: transparent;
+  font-weight: 400;
+}
 .db-focus-shortcut {
   display: inline-flex; align-items: center; gap: 8px;
   background: linear-gradient(135deg, #C4526A, #e0708a);
