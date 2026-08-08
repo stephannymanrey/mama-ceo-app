@@ -566,6 +566,13 @@ const API_URL      = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/def
 const GEMINI_URL   = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-gemini";
 const PAYMENTS_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-payments";
 
+const VAPID_PUBLIC_KEY = "BINOW9l20bWcrxQrKGise-5tzw5kblFIqskpCTiqeWscNIwp5qoZEnTI45letfo3qXCHnzKzBPQXH9_2ghxDhB4";
+function urlBase64ToUint8Array(b64) {
+  const pad = "=".repeat((4 - b64.length % 4) % 4);
+  const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
+  return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+}
+
 const HOTMART_LINKS = {
   mama:         "https://pay.hotmart.com/O106234254M?off=x324h3to",
   emprendedora: "https://pay.hotmart.com/O106234254M?off=p2i17fh0",
@@ -723,6 +730,8 @@ export default function App() {
   const [showAuthPasswordConfirm, setShowAuthPasswordConfirm] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [resetPassword, setResetPassword] = useState(false);
@@ -1011,6 +1020,42 @@ export default function App() {
     document.addEventListener("click", unlock, { once: true });
     return () => document.removeEventListener("click", unlock);
   }, []);
+
+  // ── Push subscription: detectar si ya está activa ─────────────────────────
+  useEffect(() => {
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+    navigator.serviceWorker.ready.then((reg) => {
+      reg.pushManager.getSubscription().then((sub) => setPushEnabled(!!sub));
+    }).catch(() => {});
+  }, []);
+
+  async function togglePushSubscription() {
+    if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
+    setPushLoading(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (pushEnabled) {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) await sub.unsubscribe();
+        const headers = await getRemoteAuthHeaders(true);
+        await fetch(API_URL, { method: "POST", headers, body: JSON.stringify({ action: "delete-push" }) });
+        setPushEnabled(false);
+      } else {
+        const permission = await Notification.requestPermission();
+        if (permission !== "granted") { setPushLoading(false); return; }
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+        const headers = await getRemoteAuthHeaders(true);
+        await fetch(API_URL, { method: "POST", headers, body: JSON.stringify({ action: "save-push", subscription: sub.toJSON() }) });
+        setPushEnabled(true);
+      }
+    } catch (e) {
+      console.error("Push error:", e);
+    }
+    setPushLoading(false);
+  }
 
   useEffect(() => {
     if (!("Notification" in window)) return;
@@ -3042,6 +3087,19 @@ export default function App() {
             <span className="sidebar-tool-icon">🧮</span>
             <span className="sidebar-tool-label">Calculadora</span>
           </button>
+          {"Notification" in window && (
+            <button
+              className={`sidebar-tool-btn${pushEnabled ? " sidebar-tool-btn--on" : ""}`}
+              onClick={togglePushSubscription}
+              disabled={pushLoading}
+              title={pushEnabled ? "Recordatorio diario activo — clic para desactivar" : "Activar recordatorio diario"}>
+              <span className="sidebar-tool-icon">{pushEnabled ? "🔔" : "🔕"}</span>
+              <span className="sidebar-tool-label">
+                {pushLoading ? "Activando…" : pushEnabled ? "Recordatorio diario" : "Activar recordatorio"}
+              </span>
+              {pushEnabled && <span className="sidebar-tool-badge" style={{background:"#2f9f70"}}>ON</span>}
+            </button>
+          )}
 
           {/* Mi Plan */}
           <div className="sidebar-miniapps-divider">

@@ -61,6 +61,28 @@ export const handler = async (event) => {
 
     if (method === "POST") {
       const body = JSON.parse(event.body || "{}");
+
+      // ── Push subscription ─────────────────────────────────────────────────
+      if (body.action === "save-push") {
+        const sub = body.subscription;
+        if (!sub?.endpoint) return respond(400, { error: "subscription inválida" }, event, METHODS);
+        await dynamo.send(new UpdateItemCommand({
+          TableName: TABLE,
+          Key: marshall({ user_id: userId }),
+          UpdateExpression: "SET push_sub = :sub",
+          ExpressionAttributeValues: marshall({ ":sub": sub }, { removeUndefinedValues: true }),
+        }));
+        return respond(200, { ok: true }, event, METHODS);
+      }
+      if (body.action === "delete-push") {
+        await dynamo.send(new UpdateItemCommand({
+          TableName: TABLE,
+          Key: marshall({ user_id: userId }),
+          UpdateExpression: "REMOVE push_sub",
+        }));
+        return respond(200, { ok: true }, event, METHODS);
+      }
+
       if (!body.data || typeof body.data !== "object" || Array.isArray(body.data) || Object.keys(body.data).length === 0) {
         return respond(400, { error: "data inválido o vacío" }, event, METHODS);
       }
