@@ -54,8 +54,8 @@ const APPT_HOME_TYPES = new Set(["Médico","Cita","Colegio","Dentista","Extracur
 const HOGAR_SCHED_CATS = [
   { key: "Familia",         emoji: "💛", label: "Tiempo con familia",    color: "#DB2777", bg: "rgba(219,39,119,0.07)"  },
   { key: "Extracurricular", emoji: "⚽", label: "Extracurricular hijos", color: "#059669", bg: "rgba(5,150,105,0.07)"   },
-  { key: "Médico",          emoji: "🩺", label: "Cita médica / Salud",   color: "#C4526A", bg: "rgba(196,82,106,0.07)" },
-  { key: "Cita",            emoji: "📋", label: "Cita",                  color: "#C4526A", bg: "rgba(196,82,106,0.07)" },
+  { key: "Médico",          emoji: "🩺", label: "Cita médica / Salud",   color: "#EFA576", bg: "rgba(239,165,118,0.07)" },
+  { key: "Cita",            emoji: "📋", label: "Cita",                  color: "#EFA576", bg: "rgba(239,165,118,0.07)" },
   { key: "Dentista",        emoji: "🦷", label: "Dentista",              color: "#e87b1e", bg: "rgba(232,123,30,0.07)" },
   { key: "Colegio",         emoji: "🎒", label: "Colegio",               color: "#6B46C1", bg: "rgba(107,70,193,0.07)" },
   { key: "Iglesia",         emoji: "🙏", label: "Iglesia",               color: "#7C3AED", bg: "rgba(124,58,237,0.07)" },
@@ -72,7 +72,7 @@ const HOGAR_SCHED_COLORS = Object.fromEntries(HOGAR_SCHED_CATS.map(c => [c.key, 
 const BUDGET_CATS_DEFAULT = [
   { key: "hogar",           emoji: "🏠", label: "Hogar",           color: "#0EA5E9", budget: 0 },
   { key: "mercado",         emoji: "🛒", label: "Mercado",          color: "#2f9f70", budget: 0 },
-  { key: "familia",         emoji: "👧", label: "Familia / Hijos",  color: "#C4526A", budget: 0 },
+  { key: "familia",         emoji: "👧", label: "Familia / Hijos",  color: "#EFA576", budget: 0 },
   { key: "transporte",      emoji: "🚗", label: "Transporte",       color: "#D97706", budget: 0 },
   { key: "salud",           emoji: "💊", label: "Salud",            color: "#DC2626", budget: 0 },
   { key: "personal",        emoji: "💅", label: "Personal",         color: "#8B5CF6", budget: 0 },
@@ -93,7 +93,7 @@ const EXPENSE_CATEGORIES = ["Marketing y publicidad", "Herramientas y software",
 const BIZ_CAT_CONFIG = [
   { key: "Ventas y clientes",       emoji: "🤝", color: "#1D9E75", bg: "#F0FDF7" },
   { key: "Marketing y contenido",   emoji: "📣", color: "#0EA5E9", bg: "#F0F9FF" },
-  { key: "Contabilidad y finanzas", emoji: "💰", color: "#C4526A", bg: "#FDF2F5" },
+  { key: "Contabilidad y finanzas", emoji: "💰", color: "#EFA576", bg: "#FDF2F5" },
   { key: "Operación y servicio",    emoji: "⚙️", color: "#D97706", bg: "#FFFBEB" },
   { key: "Administrativo y legal",  emoji: "📋", color: "#6B46C1", bg: "#F5F0FC" },
   { key: "Otro",                    emoji: "🌱", color: "#6B7280", bg: "#F5F5F5" },
@@ -2661,7 +2661,7 @@ export default function App() {
             <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Accede más rápido, sin abrir el navegador.</p>
           </div>
           <button type="button" onClick={handleInstallAndroid}
-            style={{padding:"10px 18px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700,flexShrink:0}}>
+            style={{padding:"10px 18px",background:"#EFA576",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700,flexShrink:0}}>
             Instalar
           </button>
           <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}} aria-label="Cerrar">×</button>
@@ -2677,7 +2677,7 @@ export default function App() {
             <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Accede como app, sin abrir Safari.</p>
           </div>
           <button type="button" onClick={() => setShowIOSGuide(true)}
-            style={{padding:"10px 18px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700,flexShrink:0}}>
+            style={{padding:"10px 18px",background:"#EFA576",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700,flexShrink:0}}>
             Cómo hacerlo
           </button>
           <button type="button" onClick={dismissInstall} style={{border:"none",background:"none",fontSize:"20px",color:"var(--muted)",cursor:"pointer",flexShrink:0,lineHeight:1,padding:"4px"}} aria-label="Cerrar">×</button>
@@ -2699,7 +2699,7 @@ export default function App() {
                 { num:"3", icon:"✅", title:'Toca "Agregar"', desc:'En la esquina superior derecha. ¡Listo!' },
               ].map(step => (
                 <div key={step.num} style={{display:"flex",alignItems:"flex-start",gap:"14px",padding:"14px 16px",background:"#fdf9f6",borderRadius:"12px",border:"1px solid #f0e8e0"}}>
-                  <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"#C4526A",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"14px",flexShrink:0}}>{step.num}</div>
+                  <div style={{width:"32px",height:"32px",borderRadius:"50%",background:"#EFA576",color:"#fff",display:"flex",alignItems:"center",justifyContent:"center",fontWeight:800,fontSize:"14px",flexShrink:0}}>{step.num}</div>
                   <div>
                     <p style={{margin:"0 0 3px",fontWeight:700,fontSize:"14px",color:"var(--ink)"}}>{step.icon} {step.title}</p>
                     <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>{step.desc}</p>
@@ -2742,7 +2742,7 @@ export default function App() {
                       <button type="button" className="profile-photo-remove" onClick={() => setProfileForm(c => ({ ...c, photo: "" }))}>Quitar</button>
                     )}
                   </div>
-                  {profilePhotoError && <p style={{margin:"6px 0 0",fontSize:"12px",color:"#C4526A",fontWeight:600}}>{profilePhotoError}</p>}
+                  {profilePhotoError && <p style={{margin:"6px 0 0",fontSize:"12px",color:"#EFA576",fontWeight:600}}>{profilePhotoError}</p>}
                 </div>
               </div>
 
@@ -3451,7 +3451,7 @@ export default function App() {
                       <button key={id} type="button" onClick={() => { setCalTab(id); setCalendarAddDate(null); }}
                         style={{padding:"7px 14px",borderRadius:"8px 8px 0 0",border:"none",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:calTab===id?700:500,
                           background:calTab===id?"#fff":"transparent",color:calTab===id?"var(--ink)":"var(--muted)",
-                          borderBottom:calTab===id?"2px solid #C4526A":"2px solid transparent",transition:"all 0.15s"}}>
+                          borderBottom:calTab===id?"2px solid #EFA576":"2px solid transparent",transition:"all 0.15s"}}>
                         {label}
                       </button>
                     ))}
@@ -3475,9 +3475,9 @@ export default function App() {
                       const dayAppts = isThisMonth ? (apptsByDay[dayNum] || []) : [];
                       return (
                         <div key={i} className={isThisMonth?"_cal-day":""} onClick={() => { if (!isThisMonth) return; setCalendarAddDate(isSelected?null:dateStr); if (!isSelected) setCalendarNewAppt(p => ({...p, type: defaultType})); }}
-                          style={{borderRadius:"8px",padding:"4px 3px",background:isSelected?"rgba(196,82,106,0.11)":isToday?"#FEF3E0":"transparent",border:isSelected?"2px solid #C4526A":"2px solid transparent",display:"flex",flexDirection:"column",gap:"2px",overflow:"hidden",cursor:isThisMonth?"pointer":"default",transition:"all 0.12s"}}>
+                          style={{borderRadius:"8px",padding:"4px 3px",background:isSelected?"rgba(239,165,118,0.11)":isToday?"#FEF3E0":"transparent",border:isSelected?"2px solid #EFA576":"2px solid transparent",display:"flex",flexDirection:"column",gap:"2px",overflow:"hidden",cursor:isThisMonth?"pointer":"default",transition:"all 0.12s"}}>
                           {isThisMonth && (<>
-                            <span style={{fontSize:"13px",fontWeight:isToday||isSelected?800:500,color:isSelected?"#C4526A":isToday?"#A0722A":"var(--ink)",alignSelf:"center",lineHeight:1.3}}>{dayNum}</span>
+                            <span style={{fontSize:"13px",fontWeight:isToday||isSelected?800:500,color:isSelected?"#EFA576":isToday?"#A0722A":"var(--ink)",alignSelf:"center",lineHeight:1.3}}>{dayNum}</span>
                             {dayAppts.slice(0,3).map((a,ai) => (
                               <div key={ai} className="_cal-chip"
                                 onClick={e => { e.stopPropagation(); openEdit(a); }}
@@ -3509,7 +3509,7 @@ export default function App() {
                   <div className="_cal-back" onClick={e => { if(e.target===e.currentTarget) setCalendarAddDate(null); }}
                     style={{position:"absolute",inset:0,display:"flex",alignItems:"center",justifyContent:"center",background:"rgba(0,0,0,0.22)",zIndex:10}}>
                     <div className="_cal-mini" style={{background:"#fff",borderRadius:"20px",width:"min(380px,92vw)",boxShadow:"0 24px 64px rgba(0,0,0,0.2)",overflow:"hidden"}}>
-                      <div style={{background:"linear-gradient(135deg,#C4526A,#a33a54)",padding:"18px 20px 16px",color:"#fff",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"8px"}}>
+                      <div style={{background:"linear-gradient(135deg,#EFA576,#BF573C)",padding:"18px 20px 16px",color:"#fff",display:"flex",alignItems:"flex-start",justifyContent:"space-between",gap:"8px"}}>
                         <div>
                           <p style={{margin:"0 0 3px",fontSize:"11px",fontWeight:700,opacity:0.8,textTransform:"uppercase",letterSpacing:"0.8px"}}>Nuevo evento</p>
                           <p style={{margin:0,fontSize:"16px",fontWeight:800,textTransform:"capitalize",lineHeight:1.2}}>
@@ -3568,7 +3568,7 @@ export default function App() {
                           <button type="button" onClick={() => setCalendarAddDate(null)}
                             style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"12px",padding:"11px",fontSize:"14px",fontWeight:600,cursor:"pointer",color:"var(--ink)"}}>Cancelar</button>
                           <button type="button" onClick={saveCalendarAppt}
-                            style={{border:"none",background:"#C4526A",borderRadius:"12px",padding:"11px",fontSize:"14px",fontWeight:700,cursor:"pointer",color:"#fff"}}>Guardar evento</button>
+                            style={{border:"none",background:"#EFA576",borderRadius:"12px",padding:"11px",fontSize:"14px",fontWeight:700,cursor:"pointer",color:"#fff"}}>Guardar evento</button>
                         </div>
                       </div>
                     </div>
@@ -3641,7 +3641,7 @@ export default function App() {
                           <button type="button" onClick={() => setCalendarEditAppt(null)}
                             style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"12px",padding:"11px",fontSize:"14px",fontWeight:600,cursor:"pointer",color:"var(--ink)"}}>Cancelar</button>
                           <button type="button" onClick={saveCalendarEdit}
-                            style={{border:"none",background:"#C4526A",borderRadius:"12px",padding:"11px",fontSize:"14px",fontWeight:700,cursor:"pointer",color:"#fff"}}>Guardar</button>
+                            style={{border:"none",background:"#EFA576",borderRadius:"12px",padding:"11px",fontSize:"14px",fontWeight:700,cursor:"pointer",color:"#fff"}}>Guardar</button>
                         </div>
                       </div>
                     </div>
@@ -3954,7 +3954,7 @@ export default function App() {
           <div className="modal-overlay-anim" style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
             <div style={{display:"flex",minHeight:"100%",alignItems:"center",justifyContent:"center",padding:"20px 16px"}} onClick={e=>e.target===e.currentTarget&&setDebtModal(null)}>
               <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
-                <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{background:"linear-gradient(135deg,#EFA576,#BF573C)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <p style={{margin:0,fontSize:"18px",fontWeight:800}}>{isEdit?"Editar deuda":"Nueva deuda"}</p>
                   <button type="button" onClick={()=>setDebtModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}} aria-label="Cerrar">✕</button>
                 </div>
@@ -3974,7 +3974,7 @@ export default function App() {
                       <MoneyAmountInput placeholder="$ 0" value={debtForm.paid} onChange={v=>setDebtForm(c=>({...c,paid:v}))}/>
                     </div>
                   </div>
-                  <button type="submit" className={modalSaving==="debt"?"btn-success":""} style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>{modalSaving==="debt"?"✓ Guardado":"Guardar deuda"}</button>
+                  <button type="submit" className={modalSaving==="debt"?"btn-success":""} style={{padding:"14px",background:"#EFA576",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>{modalSaving==="debt"?"✓ Guardado":"Guardar deuda"}</button>
                 </form>
               </div>
             </div>
@@ -4021,7 +4021,7 @@ export default function App() {
                   </div>
                   <div style={{display:"flex",gap:"8px"}}>
                     <button type="button" onClick={()=>setAbonoModal(null)} style={{flex:1,padding:"14px",background:"var(--line)",color:"var(--ink)",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:600}}>Cancelar</button>
-                    <button type="submit" className={modalSaving==="abono"?"btn-success":""} style={{flex:2,padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>{modalSaving==="abono"?"✓ Guardado":"Guardar abono"}</button>
+                    <button type="submit" className={modalSaving==="abono"?"btn-success":""} style={{flex:2,padding:"14px",background:"#EFA576",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>{modalSaving==="abono"?"✓ Guardado":"Guardar abono"}</button>
                   </div>
                 </form>
               </div>
@@ -4050,7 +4050,7 @@ export default function App() {
           <div className="modal-overlay-anim" style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.5)",zIndex:8000,overflowY:"auto",WebkitOverflowScrolling:"touch"}}>
             <div style={{display:"flex",minHeight:"100%",alignItems:"center",justifyContent:"center",padding:"20px 16px"}} onClick={e=>e.target===e.currentTarget&&setPaymentModal(null)}>
               <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",width:"min(480px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
-                <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                <div style={{background:"linear-gradient(135deg,#EFA576,#BF573C)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                   <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Nuevo pago del mes</p>
                   <button type="button" onClick={()=>setPaymentModal(null)} style={{border:"none",background:"rgba(255,255,255,0.2)",borderRadius:"10px",width:"32px",height:"32px",cursor:"pointer",color:"#fff",fontSize:"16px",display:"flex",alignItems:"center",justifyContent:"center"}} aria-label="Cerrar">✕</button>
                 </div>
@@ -4080,7 +4080,7 @@ export default function App() {
                         style={{width:"100%",padding:"11px 14px",border:"1px solid var(--line)",borderRadius:"10px",font:"inherit",fontSize:"14px",background:"#faf7f5",outline:"none",boxSizing:"border-box"}}/>
                     </div>
                   </div>
-                  <button type="submit" className={modalSaving==="payment"?"btn-success":""} style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>{modalSaving==="payment"?"✓ Guardado":"Guardar pago"}</button>
+                  <button type="submit" className={modalSaving==="payment"?"btn-success":""} style={{padding:"14px",background:"#EFA576",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>{modalSaving==="payment"?"✓ Guardado":"Guardar pago"}</button>
                 </form>
               </div>
             </div>
@@ -4167,7 +4167,7 @@ export default function App() {
       ? { label: "Equilibrada", emoji: "😊", color: "#C9A96E", bg: "rgba(201,169,110,0.08)", msg: "Tienes una carga razonable hoy. Vas bien." }
       : loadPct < 85
       ? { label: "Ocupada", emoji: "💪", color: "#e87b1e", bg: "rgba(232,123,30,0.08)", msg: "Hoy requiere enfoque, pero es manejable. Prueba el temporizador Pomodoro para avanzar sin agobiarte." }
-      : { label: "Saturada", emoji: "😮‍💨", color: "#C4526A", bg: "rgba(196,82,106,0.08)", msg: "Tu día está muy cargado. Considera delegar algo o mover lo que pueda esperar a otro día." };
+      : { label: "Saturada", emoji: "😮‍💨", color: "#EFA576", bg: "rgba(239,165,118,0.08)", msg: "Tu día está muy cargado. Considera delegar algo o mover lo que pueda esperar a otro día." };
 
     // ── Progreso de hoy: hechas vs. no hechas + tiempo real por tarea ──
     const isToday = (ts) => ts && new Date(ts).toISOString().slice(0, 10) === todayISO;
@@ -4502,7 +4502,7 @@ export default function App() {
 
     // Salud del mes — un solo numero + una frase humana + una accion
     const healthColor = totals.profit >= 0 && monthlyProgress >= 75 ? "#2DBE8C"
-      : totals.profit >= 0 || monthlyProgress >= 50 ? "#e87b1e" : "#C4526A";
+      : totals.profit >= 0 || monthlyProgress >= 50 ? "#e87b1e" : "#EFA576";
     const heroStatus = totals.profit >= 0 && monthlyProgress >= 75
       ? { emoji: "💚", msg: "Vas muy bien este mes. Sigue así." }
       : totals.profit >= 0
@@ -4725,7 +4725,7 @@ export default function App() {
                       </div>
                       <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
                         <span className="biz-upcoming-amount">{money.format(c.amount)}</span>
-                        <span className="biz-upcoming-day" style={{color: daysUntil === 0 ? "#C4526A" : daysUntil <= 2 ? "#D97706" : "#1D9E75"}}>
+                        <span className="biz-upcoming-day" style={{color: daysUntil === 0 ? "#EFA576" : daysUntil <= 2 ? "#D97706" : "#1D9E75"}}>
                           {daysUntil === 0 ? "Hoy" : daysUntil === 1 ? "Mañana" : `Día ${day}`}
                         </span>
                       </div>
@@ -4773,7 +4773,7 @@ export default function App() {
                       <div style={{display:"grid",gap:"4px"}}>
                         {catTasks.map(task => {
                           const days = task.dueDate ? Math.floor((timestampFromInputDate(task.dueDate) - Date.now()) / 86400000) : null;
-                          const dueColor = days === null ? "var(--muted)" : days < 0 ? "#C4526A" : days === 0 ? "#e87b1e" : "var(--muted)";
+                          const dueColor = days === null ? "var(--muted)" : days < 0 ? "#EFA576" : days === 0 ? "#e87b1e" : "var(--muted)";
                           const dueLabel = days === null ? null : days < 0 ? `Vencida ${Math.abs(days)}d` : days === 0 ? "Hoy" : days === 1 ? "Mañana" : `En ${days}d`;
                           return (
                             <div key={task.id} className="biz-task-area-row">
@@ -4781,7 +4781,7 @@ export default function App() {
                               <div style={{flex:1, minWidth:0}}>
                                 <span style={{fontSize:"13px", fontWeight:600, color:task.done?"var(--muted)":"var(--ink)", textDecoration:task.done?"line-through":"none"}}>{task.text}</span>
                                 <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
-                                  {task.priority === "Importante" && <small style={{color:"#C4526A",fontWeight:700}}>⭐</small>}
+                                  {task.priority === "Importante" && <small style={{color:"#EFA576",fontWeight:700}}>⭐</small>}
                                   {dueLabel && <small style={{color:dueColor,fontWeight:600}}>{dueLabel}</small>}
                                 </div>
                               </div>
@@ -4854,7 +4854,7 @@ export default function App() {
             const incomeTarget = monthlyGoal;
             const incomeProgress2 = incomeTarget>0?Math.min(100,Math.round((totals.income/incomeTarget)*100)):0;
             const spendProgress2 = bizPaymentsBudget>0?Math.min(100,Math.round((totals.expenses/bizPaymentsBudget)*100)):0;
-            const incomeBarColor2 = incomeProgress2>=75?"#1D9E75":incomeProgress2>=40?"#D97706":"#C4526A";
+            const incomeBarColor2 = incomeProgress2>=75?"#1D9E75":incomeProgress2>=40?"#D97706":"#EFA576";
             const spendBarColor2 = spendProgress2>=100?"#DC2626":spendProgress2>=85?"#D97706":"#1D9E75";
             const projBalance = incomeTarget>0&&bizPaymentsBudget>0 ? incomeTarget-bizPaymentsBudget : null;
             return (<>
@@ -5039,7 +5039,7 @@ export default function App() {
               )}
 
               {incomeBySource.map(src => {
-                const barColor = src.progress >= 75 ? "#1D9E75" : src.progress >= 25 ? "#e87b1e" : "#C4526A";
+                const barColor = src.progress >= 75 ? "#1D9E75" : src.progress >= 25 ? "#e87b1e" : "#EFA576";
                 const isEditing = editingSourceId === src.id;
                 return (
                   <div key={src.id} className="biz-source-row">
@@ -5437,7 +5437,7 @@ export default function App() {
                     {filteredClients(stage).map((client) => {
                       const alert = getAlert(client);
                       const days = daysSince(client.lastContact);
-                      const daysColor = days > 7 ? "#C4526A" : days > 3 ? "#e87b1e" : "#1D9E75";
+                      const daysColor = days > 7 ? "#EFA576" : days > 3 ? "#e87b1e" : "#1D9E75";
                       return (
                         <div className={`lead-card lead-alert-${alert}`} key={client.id}>
                           <div className="lead-card-top">
@@ -5506,7 +5506,7 @@ export default function App() {
               <div className="paid-client-grid">
                 {paidClients.map((client) => {
                   const days = daysSince(client.lastContact);
-                  const daysColor = days > 30 ? "#C4526A" : days > 14 ? "#e87b1e" : "#1D9E75";
+                  const daysColor = days > 30 ? "#EFA576" : days > 14 ? "#e87b1e" : "#1D9E75";
                   return (
                     <article className="paid-client-card" key={client.id} onClick={() => setEditingClientId(client.id)} style={{cursor:"pointer"}}>
                       <div className="paid-client-header">
@@ -5764,7 +5764,7 @@ export default function App() {
     // Columnas tipo semáforo: gris (idea) → rojo → naranja → azul → verde (publicado)
     const COLUMNAS = [
       { status: "Idea",         label: "Ideas",        icon: "💡", color: "#8a7f7a", bg: "#F4F1F8", next: "Por grabar",   nextLabel: "Listo para grabar →" },
-      { status: "Por grabar",   label: "Por grabar",   icon: "🎥", color: "#C4526A", bg: "#FDF0F2", next: "Por editar",   nextLabel: "✅ Grabado →" },
+      { status: "Por grabar",   label: "Por grabar",   icon: "🎥", color: "#EFA576", bg: "#FDF0F2", next: "Por editar",   nextLabel: "✅ Grabado →" },
       { status: "Por editar",   label: "Por editar",   icon: "✂️", color: "#D97706", bg: "#FFF6E9", next: "Por publicar", nextLabel: "✅ Editado →" },
       { status: "Por publicar", label: "Por publicar", icon: "📤", color: "#0EA5E9", bg: "#EEF8FF", next: "Publicado",    nextLabel: "🚀 Publicar" },
       { status: "Publicado",    label: "Publicado",    icon: "✅", color: "#1D9E75", bg: "#EAFBF2", next: null,           nextLabel: null },
@@ -5823,7 +5823,7 @@ export default function App() {
           </div>
           <div className="ck-kpi">
             <span className="ck-kpi-label">Consistencia</span>
-            <strong className="ck-kpi-val" style={{color: publishedContent >= 3 ? "var(--green)" : publishedContent >= 1 ? "var(--orange)" : "#C4526A"}}>
+            <strong className="ck-kpi-val" style={{color: publishedContent >= 3 ? "var(--green)" : publishedContent >= 1 ? "var(--orange)" : "#EFA576"}}>
               {publishedContent >= 3 ? "Buena" : publishedContent >= 1 ? "Regular" : "Baja"}
             </strong>
             <small>{daysSincePublish !== null ? `hace ${daysSincePublish}d` : "sin publicar"}</small>
@@ -5949,7 +5949,7 @@ export default function App() {
         {editingItem && (
           <div className="app-modal-backdrop" onClick={e => e.target===e.currentTarget && setEditingContentId(null)}>
             <div className="app-modal-card" style={{width:"min(560px,100%)"}}>
-              <div className="app-modal-head" style={{background: `linear-gradient(135deg, ${colByStatus[editingItem.status]?.color || "#C4526A"}, ${colByStatus[editingItem.status]?.color || "#C4526A"}cc)`}}>
+              <div className="app-modal-head" style={{background: `linear-gradient(135deg, ${colByStatus[editingItem.status]?.color || "#EFA576"}, ${colByStatus[editingItem.status]?.color || "#EFA576"}cc)`}}>
                 <div>
                   <p className="app-modal-head-eyebrow">{colByStatus[editingItem.status]?.icon} {colByStatus[editingItem.status]?.label || editingItem.status}</p>
                   <p className="app-modal-head-title">{editingItem.title || "Sin título"}</p>
@@ -6221,7 +6221,7 @@ export default function App() {
       {key:"Colegio / Ninos",emoji:"🎒",color:"#D97706",bg:"#FFFBEB"},
       {key:"Salud",emoji:"💊",color:"#DC2626",bg:"#FEF2F2"},
       {key:"Hogar / Limpieza",emoji:"🏠",color:"#059669",bg:"#F0FDF4"},
-      {key:"Bienestar",emoji:"💆",color:"#C4526A",bg:"#FDF2F5"},
+      {key:"Bienestar",emoji:"💆",color:"#EFA576",bg:"#FDF2F5"},
     ];
 
     return (
@@ -6394,7 +6394,7 @@ export default function App() {
                     <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
                       <span className="sched-detail-title">{WD_FULL[selIdx]} {new Date(selDate+"T12:00:00").getDate()}</span>
                       {selDate===todayISO&&(
-                        <span style={{fontSize:"10px",fontWeight:700,color:"#C4526A",background:"rgba(196,82,106,0.10)",padding:"2px 8px",borderRadius:"20px"}}>HOY</span>
+                        <span style={{fontSize:"10px",fontWeight:700,color:"#EFA576",background:"rgba(239,165,118,0.10)",padding:"2px 8px",borderRadius:"20px"}}>HOY</span>
                       )}
                     </div>
                     <button type="button" className="sched-add-day-btn" onClick={()=>openSched(selDate)}>+ Agregar</button>
@@ -6507,7 +6507,7 @@ export default function App() {
                   <p style={{margin:0,fontSize:"13px",color:"var(--muted)"}}>Saber qué cocinar elimina la decisión diaria.</p>
                 </div>
                 <button type="button" onClick={()=>setShowMenuModal(true)}
-                  style={{padding:"7px 14px",background:"rgba(196,82,106,0.09)",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700,color:"#C4526A",whiteSpace:"nowrap"}}>
+                  style={{padding:"7px 14px",background:"rgba(239,165,118,0.09)",border:"none",borderRadius:"8px",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:700,color:"#EFA576",whiteSpace:"nowrap"}}>
                   <span className="abi-avatar">A</span> Planear con Abi
                 </button>
               </div>
@@ -6516,10 +6516,10 @@ export default function App() {
                   const dm=weekMenu[key]||{}; const isToday=todayDay===key;
                   const upd=(field,val)=>setWeekMenu(m=>({...m,[key]:{...(typeof m[key]==="string"?{almuerzo:m[key]}:m[key]||{}),desayuno:"",almuerzo:"",cena:"",snack:"",...(typeof m[key]==="string"?{almuerzo:m[key]}:m[key]||{}),[field]:val}}));
                   return (
-                    <div key={key} style={{padding:"10px 12px",borderRadius:"12px",border:`1px solid ${isToday?"rgba(196,82,106,0.35)":"var(--line)"}`,background:isToday?"#fdf5f7":"#faf7f5"}}>
+                    <div key={key} style={{padding:"10px 12px",borderRadius:"12px",border:`1px solid ${isToday?"rgba(239,165,118,0.35)":"var(--line)"}`,background:isToday?"#fdf5f7":"#faf7f5"}}>
                       <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"8px"}}>
-                        <span style={{width:"26px",height:"26px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:isToday?"#C4526A":"var(--line)",color:isToday?"#fff":"var(--muted)"}}>{key}</span>
-                        <span style={{fontSize:"12px",fontWeight:700,color:isToday?"#C4526A":"var(--muted)"}}>{name}{isToday?" — Hoy":""}</span>
+                        <span style={{width:"26px",height:"26px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:isToday?"#EFA576":"var(--line)",color:isToday?"#fff":"var(--muted)"}}>{key}</span>
+                        <span style={{fontSize:"12px",fontWeight:700,color:isToday?"#EFA576":"var(--muted)"}}>{name}{isToday?" — Hoy":""}</span>
                       </div>
                       <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"5px"}}>
                         {[["desayuno","🌅","Desayuno"],["almuerzo","🍽️","Almuerzo"],["cena","🌙","Cena"],["snack","🍎","Snack"]].map(([field,ico,label])=>(
@@ -6555,7 +6555,7 @@ export default function App() {
               <form onSubmit={e=>{e.preventDefault();if(!groceryForm.trim())return;setGroceryList(c=>[...c,{id:Date.now(),text:groceryForm.trim(),done:false}]);setGroceryForm("");}} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px",marginBottom:"10px"}}>
                 <input placeholder="Agregar item..." value={groceryForm} onChange={e=>setGroceryForm(e.target.value)}
                   style={{padding:"8px 12px",border:"1px solid var(--line)",borderRadius:"8px",font:"inherit",fontSize:"13px",background:"#FAF7F5",outline:"none"}}/>
-                <button type="submit" style={{padding:"8px 14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontSize:"15px",fontWeight:700}}>+</button>
+                <button type="submit" style={{padding:"8px 14px",background:"#EFA576",color:"#fff",border:"none",borderRadius:"8px",cursor:"pointer",fontSize:"15px",fontWeight:700}}>+</button>
               </form>
               {groceryList.length===0
                 ?<p style={{margin:0,fontSize:"13px",color:"var(--muted)",fontStyle:"italic"}}>Lista vacía — agrega items o importa del menú.</p>
@@ -6664,8 +6664,8 @@ export default function App() {
                   {homeIncomeGoal>0&&<span className="pf-kpi-sub">meta {money.format(homeIncomeGoal)}</span>}
                 </div>
                 <div className="pf-kpi">
-                  <span className="pf-kpi-label" style={{color:"#C4526A"}}>↓ Gastado</span>
-                  <span className="pf-kpi-val" style={{color:"#C4526A"}}>{money.format(totalSpentCats)}</span>
+                  <span className="pf-kpi-label" style={{color:"#EFA576"}}>↓ Gastado</span>
+                  <span className="pf-kpi-val" style={{color:"#EFA576"}}>{money.format(totalSpentCats)}</span>
                   {totalBudgeted>0&&<span className="pf-kpi-sub">de {money.format(totalBudgeted)}</span>}
                 </div>
                 <div className="pf-kpi">
@@ -6711,7 +6711,7 @@ export default function App() {
                   <h3 style={{margin:"0 0 2px",fontSize:"15px",fontWeight:800}}>Mis categorías</h3>
                   <p style={{margin:0,fontSize:"12px",color:"var(--muted)"}}>Toca una para fijar su presupuesto</p>
                 </div>
-                <button type="button" style={{background:"#C4526A",color:"#fff",border:"none",borderRadius:"8px",padding:"7px 12px",fontSize:"12px",fontWeight:700,cursor:"pointer"}}
+                <button type="button" style={{background:"#EFA576",color:"#fff",border:"none",borderRadius:"8px",padding:"7px 12px",fontSize:"12px",fontWeight:700,cursor:"pointer"}}
                   onClick={()=>setQuickExpModal(true)}>+ Gasto</button>
               </div>
               <div className="pf-cat-grid">
@@ -6857,7 +6857,7 @@ export default function App() {
             onClick={e=>e.target===e.currentTarget&&(setShowBudgetModal(false),setHomeBudgetError(""))}>
             <div style={{display:"flex",minHeight:"100%",alignItems:"center",justifyContent:"center",padding:"20px 16px"}} onClick={e=>e.target===e.currentTarget&&(setShowBudgetModal(false),setHomeBudgetError(""))}>
             <div className="modal-card-anim" style={{background:"#fff",borderRadius:"20px",width:"min(520px,100%)",boxShadow:"0 20px 60px rgba(0,0,0,0.25)"}}>
-              <div style={{background:"linear-gradient(135deg,#C4526A,#9e3a52)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+              <div style={{background:"linear-gradient(135deg,#EFA576,#BF573C)",padding:"20px 22px 18px",color:"#fff",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
                 <div>
                   <p style={{margin:"0 0 2px",fontSize:"11px",fontWeight:700,opacity:0.8,letterSpacing:"0.8px",textTransform:"uppercase"}}>Mis Finanzas</p>
                   <p style={{margin:0,fontSize:"18px",fontWeight:800}}>Registrar movimiento</p>
@@ -6871,7 +6871,7 @@ export default function App() {
                   <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"7px"}}>
                     {[["Ingreso","💰"],["Gasto fijo","🏠"],["Gasto variable","🛍️"],["Gasto hormiga","☕"],["Deuda","📋"],["Ahorro","🐷"]].map(([t,ico])=>(
                       <button key={t} type="button" onClick={()=>setHomeBudgetForm(c=>({...c,type:t}))}
-                        style={{padding:"9px 6px",borderRadius:"10px",border:`2px solid ${homeBudgetForm.type===t?"#C4526A":"var(--line)"}`,background:homeBudgetForm.type===t?"rgba(196,82,106,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:homeBudgetForm.type===t?700:400,display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",transition:"all 0.15s"}}>
+                        style={{padding:"9px 6px",borderRadius:"10px",border:`2px solid ${homeBudgetForm.type===t?"#EFA576":"var(--line)"}`,background:homeBudgetForm.type===t?"rgba(239,165,118,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"12px",fontWeight:homeBudgetForm.type===t?700:400,display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",transition:"all 0.15s"}}>
                         <span style={{fontSize:"16px"}}>{ico}</span>{t}
                       </button>
                     ))}
@@ -6918,8 +6918,8 @@ export default function App() {
                     {homeBudgetForm.linkedDebtId&&<p style={{margin:"5px 0 0",fontSize:"11px",color:"var(--green)"}}>✓ El abono se sumará automáticamente al progreso de esta deuda.</p>}
                   </div>
                 )}
-                {homeBudgetError&&<p style={{margin:0,fontSize:"12px",color:"#C4526A",fontWeight:600}}>{homeBudgetError}</p>}
-                <button type="submit" style={{padding:"14px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>
+                {homeBudgetError&&<p style={{margin:0,fontSize:"12px",color:"#EFA576",fontWeight:600}}>{homeBudgetError}</p>}
+                <button type="submit" style={{padding:"14px",background:"#EFA576",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700,marginTop:"2px"}}>
                   {homeBudgetForm.type==="Deuda"&&homeBudgetForm.linkedDebtId?"Registrar abono":"Guardar movimiento"}
                 </button>
               </form>
@@ -6932,7 +6932,7 @@ export default function App() {
         {showMenuModal&&(
           <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.45)",zIndex:8000,display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}} onClick={e=>e.target===e.currentTarget&&(setShowMenuModal(false),setAbiMenuSuggestion(null))}>
             <div style={{background:"#fff",borderRadius:"20px",width:"min(500px,100%)",maxHeight:"88vh",overflow:"hidden",display:"flex",flexDirection:"column",boxShadow:"0 24px 80px rgba(0,0,0,0.22)"}}>
-              <div style={{background:"linear-gradient(135deg,#C4526A,#a33a54)",padding:"20px 22px",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexShrink:0}}>
+              <div style={{background:"linear-gradient(135deg,#EFA576,#BF573C)",padding:"20px 22px",color:"#fff",display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexShrink:0}}>
                 <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
                   <div className="abi-avatar-lg">A</div>
                   <div>
@@ -6962,7 +6962,7 @@ export default function App() {
                           ["internacional","🌎","Internacional"],
                         ].map(([key,flag,name])=>(
                           <button key={key} type="button" onClick={()=>setAbiMenuPrefs(p=>({...p,pais:key}))}
-                            style={{padding:"9px 6px",borderRadius:"10px",border:`2px solid ${abiMenuPrefs.pais===key?"#C4526A":"var(--line)"}`,background:abiMenuPrefs.pais===key?"rgba(196,82,106,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:abiMenuPrefs.pais===key?700:400,display:"flex",alignItems:"center",justifyContent:"center",gap:"5px",transition:"all 0.15s"}}>
+                            style={{padding:"9px 6px",borderRadius:"10px",border:`2px solid ${abiMenuPrefs.pais===key?"#EFA576":"var(--line)"}`,background:abiMenuPrefs.pais===key?"rgba(239,165,118,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:abiMenuPrefs.pais===key?700:400,display:"flex",alignItems:"center",justifyContent:"center",gap:"5px",transition:"all 0.15s"}}>
                             <span style={{fontSize:"16px"}}>{flag}</span>{name}
                           </button>
                         ))}
@@ -6974,7 +6974,7 @@ export default function App() {
                       <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
                         {["2","3","4","5","6+"].map(n=>(
                           <button key={n} type="button" onClick={()=>setAbiMenuPrefs(p=>({...p,personas:n}))}
-                            style={{padding:"8px 18px",borderRadius:"20px",border:`2px solid ${abiMenuPrefs.personas===n?"#C4526A":"var(--line)"}`,background:abiMenuPrefs.personas===n?"rgba(196,82,106,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:abiMenuPrefs.personas===n?700:400}}>
+                            style={{padding:"8px 18px",borderRadius:"20px",border:`2px solid ${abiMenuPrefs.personas===n?"#EFA576":"var(--line)"}`,background:abiMenuPrefs.personas===n?"rgba(239,165,118,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:abiMenuPrefs.personas===n?700:400}}>
                             {n}
                           </button>
                         ))}
@@ -6986,7 +6986,7 @@ export default function App() {
                       <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
                         {[["normal","🍖 Normal"],["vegetariano","🥦 Vegetariano"],["economico","💰 Económico"]].map(([key,label])=>(
                           <button key={key} type="button" onClick={()=>setAbiMenuPrefs(p=>({...p,dieta:key}))}
-                            style={{padding:"8px 16px",borderRadius:"20px",border:`2px solid ${abiMenuPrefs.dieta===key?"#C4526A":"var(--line)"}`,background:abiMenuPrefs.dieta===key?"rgba(196,82,106,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:abiMenuPrefs.dieta===key?700:400}}>
+                            style={{padding:"8px 16px",borderRadius:"20px",border:`2px solid ${abiMenuPrefs.dieta===key?"#EFA576":"var(--line)"}`,background:abiMenuPrefs.dieta===key?"rgba(239,165,118,0.08)":"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"14px",fontWeight:abiMenuPrefs.dieta===key?700:400}}>
                             {label}
                           </button>
                         ))}
@@ -6994,7 +6994,7 @@ export default function App() {
                     </div>
 
                     <button type="button" onClick={()=>setAbiMenuSuggestion(generateAbiMenu())}
-                      style={{marginTop:"2px",padding:"13px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>
+                      style={{marginTop:"2px",padding:"13px",background:"#EFA576",color:"#fff",border:"none",borderRadius:"12px",cursor:"pointer",fontFamily:"inherit",fontSize:"15px",fontWeight:700}}>
                       ✨ Generar mi menú
                     </button>
                   </div>
@@ -7005,10 +7005,10 @@ export default function App() {
                       const dm=abiMenuSuggestion[key]||{}; const isToday=todayDay===key;
                       const upd=(field,val)=>setAbiMenuSuggestion(p=>({...p,[key]:{...(p[key]||{}),[field]:val}}));
                       return (
-                        <div key={key} style={{padding:"10px 12px",borderRadius:"12px",border:`1px solid ${isToday?"rgba(196,82,106,0.35)":"var(--line)"}`,background:isToday?"#fdf5f7":"#faf7f5"}}>
+                        <div key={key} style={{padding:"10px 12px",borderRadius:"12px",border:`1px solid ${isToday?"rgba(239,165,118,0.35)":"var(--line)"}`,background:isToday?"#fdf5f7":"#faf7f5"}}>
                           <div style={{display:"flex",alignItems:"center",gap:"7px",marginBottom:"7px"}}>
-                            <span style={{width:"24px",height:"24px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:isToday?"#C4526A":"#e0d9d1",color:isToday?"#fff":"var(--muted)"}}>{key}</span>
-                            <span style={{fontSize:"11px",fontWeight:700,color:isToday?"#C4526A":"var(--muted)"}}>{name}{isToday?" — Hoy":""}</span>
+                            <span style={{width:"24px",height:"24px",borderRadius:"50%",flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center",fontSize:"10px",fontWeight:800,background:isToday?"#EFA576":"#e0d9d1",color:isToday?"#fff":"var(--muted)"}}>{key}</span>
+                            <span style={{fontSize:"11px",fontWeight:700,color:isToday?"#EFA576":"var(--muted)"}}>{name}{isToday?" — Hoy":""}</span>
                           </div>
                           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"4px"}}>
                             {[["desayuno","🌅","Desayuno"],["almuerzo","🍽️","Almuerzo"],["cena","🌙","Cena"],["snack","🍎","Snack"]].map(([field,ico,label])=>(
@@ -7029,7 +7029,7 @@ export default function App() {
                         🔄 Otra sugerencia
                       </button>
                       <button type="button" onClick={()=>{setWeekMenu(abiMenuSuggestion);setAbiMenuSuggestion(null);setShowMenuModal(false);}}
-                        style={{padding:"11px",background:"#C4526A",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>
+                        style={{padding:"11px",background:"#EFA576",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>
                         ✓ Usar este menú
                       </button>
                     </div>
@@ -7057,7 +7057,7 @@ export default function App() {
                   <input autoFocus placeholder="¿Qué hay que hacer?" value={homeForm.title}
                     onChange={e=>{updateHomeForm("title",e.target.value);if(homeTaskError)setHomeTaskError("");}}
                     className="app-form-input"/>
-                  {homeTaskError&&<p style={{margin:"4px 0 0",fontSize:"12px",color:"#C4526A",fontWeight:600}}>{homeTaskError}</p>}
+                  {homeTaskError&&<p style={{margin:"4px 0 0",fontSize:"12px",color:"#EFA576",fontWeight:600}}>{homeTaskError}</p>}
                 </div>
 
                 <div>
@@ -7087,7 +7087,7 @@ export default function App() {
                 <div>
                   <label className="app-form-label">Prioridad</label>
                   <div style={{display:"flex",gap:"6px"}}>
-                    {[["Importante","⭐","#C4526A"],["Normal","🟡","#D97706"],["Sin afán","🌿","#1D9E75"]].map(([p,ico,color])=>(
+                    {[["Importante","⭐","#EFA576"],["Normal","🟡","#D97706"],["Sin afán","🌿","#1D9E75"]].map(([p,ico,color])=>(
                       <button key={p} type="button" onClick={()=>updateHomeForm("priority",p)}
                         style={{flex:1,padding:"9px 4px",borderRadius:"10px",border:`2px solid ${homeForm.priority===p?color:"var(--line)"}`,background:homeForm.priority===p?`${color}14`:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"11px",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",transition:"all 0.15s"}}>
                         <span>{ico}</span><span style={{color:homeForm.priority===p?color:"var(--muted)",textAlign:"center"}}>{p}</span>
@@ -8231,7 +8231,7 @@ function DonutFocusChart({ logs }) {
     .slice(0, 6);
 
   const totalAvg = items.reduce((s, i) => s + i.avg, 0);
-  const COLORS = ['#C4526A', '#e87b1e', '#1D9E75', '#6B46C1', '#C9A96E', '#0EA5E9'];
+  const COLORS = ['#EFA576', '#e87b1e', '#1D9E75', '#6B46C1', '#C9A96E', '#0EA5E9'];
   const R = 52, cx = 68, cy = 68;
   const C = 2 * Math.PI * R;
 

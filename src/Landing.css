@@ -1,23 +1,28 @@
 /* ── Landing Page Styles ────────────────────────────────── */
 
 :root {
-  --l-brand: #C4526A;
-  --l-brand-dark: #a83f57;
-  --l-gold: #F0C84A;
-  --l-gold-hover: #D4A830;
-  --l-gold-light: #FEF9E7;
-  --l-bg: #FDF9F6;
+  /* Paleta oficial UMP — acento Papaya de Mamá CEO App + Dorado de marca
+     como segundo acento (antes eran un rosa y un amarillo genéricos). */
+  --l-brand: #EFA576;
+  --l-brand-dark: #BF573C;
+  --l-gold: #D4A23C;
+  --l-gold-hover: #b98a2e;
+  --l-gold-light: #FBF3E3;
+  --l-bg: #FFFAF4;
   --l-bg-alt: #fff;
   --l-border: #eee5de;
   --l-muted: #666;
-  --l-text: #1a1a1a;
+  --l-text: #3A3742;
 }
 
 .landing {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color: var(--l-text);
   background: var(--l-bg);
   overflow-x: hidden;
+}
+.landing h1, .landing h2, .landing h3 {
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 /* ── Containers ── */
@@ -124,7 +129,7 @@
 /* ── Badge ── */
 .landing-badge {
   display: inline-block;
-  background: #F9E8EC;
+  background: #FCEADD;
   color: var(--l-brand);
   border-radius: 30px;
   padding: 6px 16px;
@@ -248,7 +253,7 @@
   border-radius: 50%;
   display: inline-block;
 }
-.lhv-dot.pink   { background: #C4526A; }
+.lhv-dot.pink   { background: #EFA576; }
 .lhv-dot.yellow { background: #F59E0B; }
 .lhv-dot.green  { background: #10B981; }
 .lhv-phone-title {
@@ -283,7 +288,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #F9E8EC;
+  background: #FCEADD;
   color: var(--l-brand);
   border-radius: 10px;
   padding: 9px 13px;
@@ -314,7 +319,7 @@
 
 /* ── STATS BAR ── */
 .landing-stats-bar {
-  background: linear-gradient(135deg, #C4526A 0%, #E8725C 60%, #F0A458 100%);
+  background: linear-gradient(135deg, #EFA576 0%, #E8725C 60%, #F0A458 100%);
   padding: 26px 0;
 }
 .landing-stats-inner {
@@ -379,7 +384,7 @@
   color: var(--l-brand);
   margin-bottom: 18px;
   padding: 6px 14px;
-  background: #F9E8EC;
+  background: #FCEADD;
   border-radius: 30px;
   display: inline-block;
 }
@@ -396,7 +401,7 @@
   transition: box-shadow 0.15s, transform 0.15s;
 }
 .landing-feat-card:hover {
-  box-shadow: 0 6px 24px rgba(196,82,106,0.1);
+  box-shadow: 0 6px 24px rgba(239, 165, 118,0.1);
   transform: translateY(-2px);
 }
 .landing-feat-icon { font-size: 30px; display: block; margin-bottom: 12px; }
@@ -489,7 +494,7 @@
 .landing-plan-card:hover { box-shadow: 0 8px 32px rgba(0,0,0,0.07); }
 .landing-plan-featured {
   border-color: var(--l-brand);
-  box-shadow: 0 8px 36px rgba(196,82,106,0.16);
+  box-shadow: 0 8px 36px rgba(239, 165, 118,0.16);
   transform: translateY(-6px);
 }
 .landing-plan-badge {
@@ -696,7 +701,7 @@
   text-align: center;
   margin-top: 28px;
   font-size: 14px;
-  background: #F9E8EC;
+  background: #FCEADD;
   border-radius: 12px;
   padding: 14px 20px;
   font-weight: 600;
@@ -705,7 +710,7 @@
 
 /* ── FINAL CTA ── */
 .landing-final-cta {
-  background: linear-gradient(135deg, #C4526A 0%, #8B3049 100%);
+  background: linear-gradient(135deg, #EFA576 0%, #8B3049 100%);
   color: #fff;
   text-align: center;
   padding: 80px 20px;
