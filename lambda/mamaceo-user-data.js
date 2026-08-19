@@ -83,6 +83,60 @@ export const handler = async (event) => {
         return respond(200, { ok: true }, event, METHODS);
       }
 
+      // Modo "campo parcial" — para herramientas independientes (Studio, Facturas
+      // standalone, y las que vengan) que NO montan el dashboard completo y por lo
+      // tanto no tienen todo el estado en memoria. Actualiza solo esa clave dentro
+      // de `data` sin tocar el resto, a diferencia del guardado completo de abajo
+      // que reemplaza todo el objeto — así una tool independiente nunca puede
+      // pisar datos de otras partes de la app aunque tenga un bug.
+      if (body.field) {
+        const ALLOWED_PARTIAL_FIELDS = new Set(["brandProfile", "contentItems"]);
+        if (!ALLOWED_PARTIAL_FIELDS.has(body.field)) {
+          return respond(400, { error: "Campo no permitido para actualización parcial" }, event, METHODS);
+        }
+        if (body.value === undefined) {
+          return respond(400, { error: "Falta value" }, event, METHODS);
+        }
+        // contentItems es también uno de los CORE_ARRAY_KEYS que protege
+        // looksLikeAccidentalWipe en el guardado completo — aplicamos el mismo
+        // criterio acá para que una tool independiente no pueda vaciarlo de
+        // golpe por un bug propio, sea cual sea el camino de guardado.
+        if (body.field === "contentItems" && Array.isArray(body.value) && body.value.length === 0) {
+          try {
+            const existing = await dynamo.send(
+              new GetItemCommand({ TableName: TABLE, Key: marshall({ user_id: userId }) })
+            );
+            const prevContentItems = existing.Item ? unmarshall(existing.Item).data?.contentItems : null;
+            if (Array.isArray(prevContentItems) && prevContentItems.length > 3) {
+              console.error(JSON.stringify({ metric: "suspicious_wipe_blocked_partial", userId, field: "contentItems" }));
+              return respond(409, {
+                error: "guardado_sospechoso",
+                message: "Este guardado borraría de golpe tu contenido existente. Por seguridad no se guardó — recarga la página e intenta de nuevo.",
+              }, event, METHODS);
+            }
+          } catch (err) {
+            console.warn("[mamaceo-user-data] No se pudo validar wipe parcial:", err.message);
+          }
+        }
+        await dynamo.send(
+          new UpdateItemCommand({
+            TableName: TABLE,
+            Key: marshall({ user_id: userId }),
+            // if_not_exists crea el mapa `data` vacío si esta es la primera escritura
+            // de la cuenta (p.ej. alguien que entra directo a /studio sin haber
+            // abierto nunca el dashboard principal), sin sobreescribir nada si ya existe.
+            UpdateExpression: "SET #d = if_not_exists(#d, :empty), #d.#f = :v, updatedAt = :ts",
+            ExpressionAttributeNames: { "#d": "data", "#f": body.field },
+            ExpressionAttributeValues: marshall({
+              ":empty": {},
+              ":v": body.value,
+              ":ts": new Date().toISOString(),
+            }),
+          })
+        );
+        return respond(200, { ok: true }, event, METHODS);
+      }
+
       if (!body.data || typeof body.data !== "object" || Array.isArray(body.data) || Object.keys(body.data).length === 0) {
         return respond(400, { error: "data inválido o vacío" }, event, METHODS);
       }

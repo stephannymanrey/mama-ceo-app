@@ -50,6 +50,14 @@ export function getUsageLimits(plan) {
 export const TOOL_MIN_PLAN = {
   business: "emprendedora",
   clients: "emprendedora",
+  // "content" es el tablero "Mi Contenido" dentro del dashboard — antes vivía
+  // adentro del tab "studio" y heredaba su candado; al separarse en su propio
+  // tab (ver App.jsx) necesita su propia entrada para no quedar gratis.
+  content: "emprendedora",
+  // studio e invoicing ahora son rutas independientes (/studio, /facturas —
+  // ver src/main.jsx) en vez de tabs del dashboard, pero el mínimo de plan
+  // sigue viviendo acá: StudioStandalone/InvoicingStandalone lo leen con
+  // toolMinPlan() para mostrar el mismo candado fuera del dashboard.
   studio: "emprendedora",
   invoicing: "mama",
 };

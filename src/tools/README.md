@@ -1,33 +1,68 @@
 # Convención para herramientas nuevas (`src/tools/`)
 
-`App.jsx` ya tiene ~8000 líneas y 200+ `useState`. Cada herramienta nueva
-(facturas, contratos, CRM avanzado, lo que siga) vive en su propia carpeta
-aquí — **no** dentro de `App.jsx` — con su propio estado local y su propio
-archivo CSS. `App.jsx` solo la monta y le pasa lo que necesita, igual que ya
-hace con `Studio` y `SilenceCutter`.
+`App.jsx` ya tiene ~8000 líneas y 200+ `useState`, con un único `useEffect`
+que guarda TODO el estado de negocio/hogar en cada cambio, reemplazando el
+documento completo en DynamoDB (no un merge parcial). Montar `App.jsx` solo
+para mostrar otra cosa arriba dispara esa maquinaria de carga/guardado sin
+necesidad, con riesgo real de pisar datos si algo falla en el timing —
+esto pasó de verdad con `/editor` antes de aislarlo. Por eso toda
+herramienta nueva **debe** vivir en su propia carpeta acá, ser una ruta
+independiente que jamás monta `App.jsx`, y leer/guardar solo lo suyo.
+
+## Regla no negociable: ruta independiente, nunca dentro de App()
+
+1. La herramienta se monta en `src/main.jsx`, **antes** de `<App />`, vía el
+   mapa `STANDALONE_ROUTES` — no como un `activeView` del dashboard:
+   ```js
+   // src/main.jsx
+   const STANDALONE_ROUTES = {
+     '/editor': SilenceCutter,
+     '/studio': StudioStandalone,
+     '/facturas': InvoicingStandalone,
+     '/tu-herramienta': TuHerramientaStandalone,   // ← agregar acá
+   };
+   ```
+2. Si necesita datos del perfil de la usuaria (marca, clientas, moneda...),
+   los pide ella misma al montar con `getUserData()` de
+   `src/lib/userDataClient.js` (una lectura, de solo lectura). **Nunca**
+   recibe esos datos como prop desde `App.jsx` ni depende de que el
+   dashboard esté abierto.
+3. Si necesita guardar algo del perfil de la usuaria (no de su propia
+   tabla/Lambda), usa `saveUserField(field, value)` — una actualización
+   parcial de un solo campo en DynamoDB, no el guardado completo. El campo
+   debe agregarse primero a `ALLOWED_PARTIAL_FIELDS` en
+   `lambda/mamaceo-user-data.js`.
+4. Maneja su propia autenticación con `getAwsAuthToken()` — si no hay
+   sesión, muestra una pantalla simple de "inicia sesión" con link a `/`
+   (ver `StudioStandalone.jsx`/`InvoicingStandalone.jsx` como ejemplo),
+   nunca asume que ya hay un usuario logueado.
+5. Si tiene su propio backend de datos (facturas, contratos...), esa parte
+   ya estaba bien resuelta: su propia Lambda + tabla, ver abajo.
 
 ## Estructura de una herramienta
 
 ```
 src/tools/<id>/
-  <Nombre>Tool.jsx     ← componente principal, exportado default
+  <Nombre>Tool.jsx        ← componente principal, exportado default
+  <Nombre>StandAlone.jsx  ← wrapper que resuelve auth + datos propios y monta <Nombre>Tool
   <Nombre>Tool.css
-  api.js                ← llamadas a su Lambda (usa src/lib/apiClient.js)
+  api.js                   ← llamadas a su Lambda propia (usa src/lib/apiClient.js)
 ```
 
-## Contrato: qué le pasa `App.jsx` a la herramienta
+## Contrato: qué le pasa el wrapper standalone a la herramienta
 
-Una herramienta recibe **solo** lo que necesita, no el estado completo de
-la app. Props típicas (usa las que apliquen, no todas):
+La herramienta en sí (`<Nombre>Tool.jsx`) sigue recibiendo **solo** lo que
+necesita como props simples — el wrapper standalone es quien las resuelve:
 
 ```jsx
+// src/tools/invoicing/InvoicingStandalone.jsx
 <InvoicingTool
-  onBack={() => setActiveView("dashboard")}
-  plan={effectivePlan}                 // string: "free" | "mama" | "emprendedora" | "ceo"
-  clients={clients}                    // array de clientas ya existente, para vincular documentos
+  onBack={() => { window.location.href = "/"; }}
+  plan={effectivePlan}                 // calculado localmente desde getUserData()
+  clients={clients}                    // leído con getUserData(), no recibido de App.jsx
   currency={currency}
-  money={money}                        // Intl.NumberFormat ya configurado, para formato consistente
-  brandProfile={brandProfile}          // nombre/logo del negocio, para membretes/PDFs
+  money={money}
+  profileSetup={profileSetup}
 />
 ```
 
@@ -74,19 +109,32 @@ export const TOOL_MIN_PLAN = {
 };
 ```
 
-Y en `App.jsx`, el menú principal ya usa `isToolLocked(effectivePlan, item.id)`
-— solo hace falta agregar la entrada del menú con el `id` correspondiente.
+Como ahora la herramienta se abre por su propia URL (no por el menú del
+dashboard), el candado hay que replicarlo en el wrapper standalone mismo,
+leyendo el plan real desde `getUserData()` y comparando con
+`toolMinPlan(id)` antes de renderizar la herramienta (ver el bloque
+`if (!planMeetsMinimum(...))` en `StudioStandalone.jsx`).
 
-**Recuerda**: el gate de plan en el frontend es solo UX (mostrar el candado).
-La Lambda de la herramienta debe volver a verificar el plan real antes de
-hacer algo costoso — nunca confíes en que el candado del cliente es
-suficiente (ver `lambda/README.md`, checklist de seguridad, punto 2).
+**Recuerda**: el gate de plan en el frontend es solo UX (mostrar el candado
+o el mensaje de upgrade). La Lambda de la herramienta debe volver a
+verificar el plan real antes de hacer algo costoso — nunca confíes en que
+el candado del cliente es suficiente (ver `lambda/README.md`, checklist de
+seguridad, punto 2).
 
 ## Checklist para dar por lista una herramienta nueva
 
 - [ ] Vive en `src/tools/<id>/`, no dentro de `App.jsx`.
-- [ ] Usa `callToolApi` para hablar con su Lambda.
-- [ ] Registrada en `TOOL_MIN_PLAN` si requiere un plan pago.
+- [ ] Tiene su propio `<Nombre>StandAlone.jsx` y está registrada en
+      `STANDALONE_ROUTES` de `src/main.jsx` — se puede abrir en una pestaña
+      nueva sin haber abierto antes el dashboard.
+- [ ] Maneja su propia autenticación (`getAwsAuthToken()`), con pantalla de
+      "inicia sesión" si no hay token — no asume que ya hay sesión.
+- [ ] Lee datos del perfil de la usuaria con `getUserData()` y los guarda
+      (si aplica) con `saveUserField()` — nunca recibe/reenvía el estado
+      completo del dashboard.
+- [ ] Usa `callToolApi` para hablar con su propia Lambda de datos.
+- [ ] Registrada en `TOOL_MIN_PLAN`, y el wrapper standalone valida el plan
+      antes de mostrar la herramienta.
 - [ ] Su Lambda sigue el checklist de `lambda/README.md` (CORS, auth, rate
       limit, validación de input, rol IAM propio).
 - [ ] `npm run build` pasa sin errores nuevos.
