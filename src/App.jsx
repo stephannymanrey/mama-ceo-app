@@ -41,19 +41,36 @@ const initialMovements = [
 ];
 
 // ── Duraciones estimadas (minutos) — usadas para calcular carga del día ──
-const HOME_CATEGORY_DURATION = { "Rutina": 15, "Compras": 45, "Colegio / Ninos": 30, "Salud": 45, "Hogar / Limpieza": 30, "Bienestar": 20, "Maternidad": 20 };
+const HOME_CATEGORY_DURATION = {
+  "Rutina": 15, "Compras": 45, "Colegio / Ninos": 30, "Salud": 45, "Hogar / Limpieza": 30,
+  "Bienestar": 20, "Maternidad": 20, "Tiempo con familia": 60, "Extracurricular hijos": 60,
+  "Dentista": 45, "Iglesia": 90, "Pago": 15, "Cumpleaños": 120, "Arreglos del hogar": 90,
+  "Desarrollo personal": 30, "Formación personal": 30,
+};
 const DEFAULT_HOME_DURATION = 25;
 
 // Áreas de tareas del hogar — mismo patrón que BIZ_CAT_CONFIG, para que
 // Mi Hogar use el mismo diseño de tarjetas por área + checkbox que Mi Negocio.
+// Incluye las categorías que antes vivían solo en el modal "Nueva actividad"
+// (Semana), ahora unificadas en un solo formulario de tareas.
 const HOME_CAT_CONFIG = [
-  { key: "Rutina",           emoji: "🧹", color: "#6B46C1", bg: "#F5F0FC" },
-  { key: "Compras",          emoji: "🛒", color: "#0EA5E9", bg: "#F0F9FF" },
-  { key: "Colegio / Ninos",  emoji: "🎒", color: "#D97706", bg: "#FFFBEB" },
-  { key: "Salud",            emoji: "💊", color: "#DC2626", bg: "#FEF2F2" },
-  { key: "Hogar / Limpieza", emoji: "🏠", color: "#059669", bg: "#F0FDF4" },
-  { key: "Bienestar",        emoji: "💆", color: "#EFA576", bg: "#FDF2F5" },
-  { key: "Maternidad",       emoji: "👶", color: "#DB2777", bg: "#FDF2F8" },
+  { key: "Rutina",               emoji: "🧹", color: "#6B46C1", bg: "#F5F0FC" },
+  { key: "Tiempo con familia",   emoji: "💛", color: "#B45309", bg: "#FFFBEB" },
+  { key: "Compras",              emoji: "🛒", color: "#0EA5E9", bg: "#F0F9FF" },
+  { key: "Colegio / Ninos",      emoji: "🎒", color: "#D97706", bg: "#FFFBEB" },
+  { key: "Extracurricular hijos",emoji: "⚽", color: "#0D9488", bg: "#F0FDFA" },
+  { key: "Salud",                emoji: "💊", color: "#DC2626", bg: "#FEF2F2" },
+  { key: "Dentista",             emoji: "🦷", color: "#e87b1e", bg: "#FFF7ED" },
+  { key: "Iglesia",              emoji: "🙏", color: "#7C3AED", bg: "#F5F3FF" },
+  { key: "Pago",                 emoji: "💳", color: "#2563EB", bg: "#EFF6FF" },
+  { key: "Cumpleaños",           emoji: "🎂", color: "#CA8A04", bg: "#FEFCE8" },
+  { key: "Hogar / Limpieza",     emoji: "🏠", color: "#059669", bg: "#F0FDF4" },
+  { key: "Arreglos del hogar",   emoji: "🔧", color: "#92400E", bg: "#FFF7ED" },
+  { key: "Desarrollo personal",  emoji: "🌱", color: "#1D9E75", bg: "#F0FDF7" },
+  { key: "Formación personal",   emoji: "📚", color: "#4F46E5", bg: "#EEF2FF" },
+  { key: "Bienestar",            emoji: "💆", color: "#EFA576", bg: "#FDF2F5" },
+  { key: "Maternidad",           emoji: "👶", color: "#DB2777", bg: "#FDF2F8" },
+  { key: "Otro",                 emoji: "📌", color: "#6B7280", bg: "#F5F5F5" },
 ];
 const APPT_TYPE_DURATION = { "Médico": 45, "Cita": 30, "Colegio": 30, "Dentista": 45, "Extracurricular": 60, "Iglesia": 90, "Pago": 15, "Cumpleaños": 120, "Reunión": 60, "Trabajo": 60, "Familia": 60, "Limpieza": 60, "Arreglos": 90, "Compras": 45 };
 const DEFAULT_APPT_DURATION = 30;
@@ -856,13 +873,6 @@ export default function App() {
   const [modalSaving, setModalSaving] = useState(null); // "debt"|"abono"|"payment" — estado éxito
 
   const [homeTab, setHomeTab] = useState(0);
-  const [schedModal, setSchedModal] = useState(null);
-  const [schedForm, setSchedForm] = useState({ title: "", type: "Familia", timeStart: "", timeEnd: "", recurrence: "none" });
-  const [schedWeekOffset, setSchedWeekOffset] = useState(0);
-  const [schedEditId, setSchedEditId] = useState(null);
-  const [schedSelectedDay, setSchedSelectedDay] = useState(() => {
-    const d = new Date().getDay(); return d === 0 ? 6 : d - 1;
-  });
   const [budgetCats, setBudgetCats] = useState(() => {
     const saved = stored?.budgetCats;
     if (!saved) return BUDGET_CATS_DEFAULT;
@@ -3409,8 +3419,8 @@ export default function App() {
                            : allMonthAppts;
           const apptsByDay = {};
           monthAppts.forEach(a => { const d = new Date(a.date+"T00:00:00").getDate(); if (!apptsByDay[d]) apptsByDay[d] = []; apptsByDay[d].push(a); });
-          // Mismos colores que Mi Hogar → Semana (HOGAR_SCHED_COLORS) + los tipos de trabajo,
-          // que no aplican en Mi Hogar.
+          // Mismos colores que las categorías de tareas del hogar (HOGAR_SCHED_COLORS)
+          // + los tipos de trabajo, que no aplican en Mi Hogar.
           const TYPE_COLORS = { ...HOGAR_SCHED_COLORS, "Reunión":"#1D9E75", "Trabajo":"#0EA5E9" };
           const CAL_TYPES = calTab === "hogar" ? CAL_TYPES_HOGAR : calTab === "trabajo" ? CAL_TYPES_TRABAJO : ["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Reunión","Trabajo","Pago","Cumpleaños","Otro"];
           const defaultType = calTab === "trabajo" ? "Reunión" : "Médico";
@@ -4809,7 +4819,7 @@ export default function App() {
                         <span className="biz-task-area-count" style={{color:cat.color, background:`${cat.color}1c`}}>{catDone}/{catTasks.length}</span>
                       </div>
                       <p className="biz-task-area-title">{cat.key}</p>
-                      <div style={{display:"grid",gap:"4px"}}>
+                      <div className="biz-task-area-list">
                         {catTasks.map(task => {
                           const days = task.dueDate ? Math.floor((timestampFromInputDate(task.dueDate) - Date.now()) / 86400000) : null;
                           const dueColor = days === null ? "var(--muted)" : days < 0 ? "#EFA576" : days === 0 ? "#e87b1e" : "var(--muted)";
@@ -6088,7 +6098,7 @@ export default function App() {
     const DAY_LABELS = [["L","Lunes"],["M","Martes"],["X","Miércoles"],["J","Jueves"],["V","Viernes"],["S","Sábado"],["D","Domingo"]];
     const homeProgress  = homeTasks.length ? Math.round((completedHomeTasks / homeTasks.length) * 100) : 0;
     const pendingCount  = homeTasks.filter(t => !t.done).length;
-    const TABS = ["Hoy","Semana","Menú","Mis Finanzas"];
+    const TABS = ["Hoy","Tareas","Menú","Mis Finanzas"];
 
     // ── Abi menu database — por país y dieta, 4 comidas por día ──
     const MD=(d,a,c,s)=>({desayuno:d,almuerzo:a,cena:c,snack:s});
@@ -6307,7 +6317,7 @@ export default function App() {
                     ? <><p className="home-today-card-val" style={{color:"var(--purple)"}}>{routineToday[0].title}</p>{routineToday[0].time&&<p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{routineToday[0].time}</p>}</>
                     : <p className="home-today-card-empty">Sin rutina definida</p>}
                   <button type="button" className="home-today-card-btn" style={{color:"var(--purple)"}} onClick={() => setHomeTab(1)}>
-                    {routineToday.length ? "Ver semana →" : "Definir →"}
+                    {routineToday.length ? "Ver tareas →" : "Definir →"}
                   </button>
                 </div>
                 <div className="home-today-card">
@@ -6317,15 +6327,18 @@ export default function App() {
                     ? <><p className="home-today-card-val" style={{color:"#1D9E75"}}>{kidsToday[0].title}</p>{kidsToday[0].time&&<p style={{margin:0,fontSize:"12px",color:"var(--muted)",fontWeight:600}}>{kidsToday[0].time}</p>}</>
                     : <p className="home-today-card-empty">Sin actividades</p>}
                   <button type="button" className="home-today-card-btn" style={{color:"#1D9E75"}} onClick={() => setHomeTab(1)}>
-                    {kidsToday.length ? "Ver semana →" : "Agregar →"}
+                    {kidsToday.length ? "Ver tareas →" : "Agregar →"}
                   </button>
                 </div>
               </>);
             })()}
           </div>
+          </div>
+        )}
 
-          {/* ── Tareas por área (mismo diseño que Mi Negocio) ── */}
-          <div style={{marginTop:"20px"}}>
+        {/* ── TAB 1: TAREAS ── */}
+        {homeTab === 1 && (
+          <div key="tab-1" className="tab-content-anim">
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexWrap:"wrap",gap:"8px"}}>
               <div>
                 <h3 style={{margin:"0 0 2px"}}>Tareas por área</h3>
@@ -6354,7 +6367,7 @@ export default function App() {
                         <span className="biz-task-area-count" style={{color:cat.color, background:`${cat.color}1c`}}>{catDone}/{catTasks.length}</span>
                       </div>
                       <p className="biz-task-area-title">{cat.key}</p>
-                      <div style={{display:"grid",gap:"4px"}}>
+                      <div className="biz-task-area-list">
                         {catTasks.map(task => (
                           <div key={task.id} className="biz-task-area-row">
                             <input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:cat.color, flexShrink:0}} />
@@ -6373,208 +6386,7 @@ export default function App() {
               </div>
             )}
           </div>
-          </div>
         )}
-
-        {/* ── TAB 1: SEMANA ── */}
-        {homeTab === 1 && (()=>{
-          const _now = new Date();
-          const _day = _now.getDay();
-          const _mon = new Date(_now);
-          _mon.setDate(_now.getDate() - (_day === 0 ? 6 : _day - 1) + schedWeekOffset * 7);
-          const weekDates = Array.from({ length: 7 }, (_, i) => {
-            const d = new Date(_mon); d.setDate(_mon.getDate() + i); return toInputDate(d);
-          });
-          const WD_SHORT = ["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"];
-          const WD_FULL  = ["Lunes","Martes","Miércoles","Jueves","Viernes","Sábado","Domingo"];
-          const SCHED_EXCL = new Set(["Trabajo","Reunión"]);
-          const MONTHS = ["ene","feb","mar","abr","may","jun","jul","ago","sep","oct","nov","dic"];
-          const d0 = new Date(weekDates[0]+"T12:00:00"), d6 = new Date(weekDates[6]+"T12:00:00");
-          const weekLabel = d0.getMonth()===d6.getMonth()
-            ? `${d0.getDate()}–${d6.getDate()} ${MONTHS[d0.getMonth()]}`
-            : `${d0.getDate()} ${MONTHS[d0.getMonth()]} – ${d6.getDate()} ${MONTHS[d6.getMonth()]}`;
-          const selIdx   = Math.min(schedSelectedDay, 6);
-          const selDate  = weekDates[selIdx];
-          const selAppts = appointments
-            .filter(a => apptMatchesDate(a, selDate) && !SCHED_EXCL.has(a.type))
-            .sort((a,b)=>(a.time||"").localeCompare(b.time||""));
-
-          const openSched = (dateStr) => {
-            setSchedEditId(null);
-            setSchedModal({ date: dateStr });
-            setSchedForm({ title:"", type:"Familia", timeStart:"", timeEnd:"", recurrence:"none" });
-          };
-          const openEdit = (appt) => {
-            setSchedEditId(appt.id);
-            setSchedModal({ date: appt.date });
-            setSchedForm({ title: appt.title, type: appt.type, timeStart: appt.time||"", timeEnd: appt.timeEnd||"", recurrence: appt.recurrence||"none" });
-          };
-          const submitSched = () => {
-            if (!schedForm.title.trim()) return;
-            const [sh, sm] = (schedForm.timeStart||"00:00").split(":").map(Number);
-            const [eh, em] = (schedForm.timeEnd||"00:00").split(":").map(Number);
-            const startM = sh*60+sm, endM = eh*60+em;
-            const duration = (schedForm.timeStart && schedForm.timeEnd && endM > startM)
-              ? endM - startM : (APPT_TYPE_DURATION[schedForm.type] || 60);
-            if (schedEditId) {
-              setAppointments(prev => prev.map(a => a.id === schedEditId
-                ? { ...a, title: schedForm.title.trim(), type: schedForm.type, time: schedForm.timeStart, timeEnd: schedForm.timeEnd, recurrence: schedForm.recurrence, duration }
-                : a));
-            } else {
-              setAppointments(prev => [...prev, {
-                id: Date.now(), title: schedForm.title.trim(),
-                date: schedModal.date, time: schedForm.timeStart, timeEnd: schedForm.timeEnd,
-                type: schedForm.type, recurrence: schedForm.recurrence, duration,
-              }]);
-            }
-            setSchedModal(null); setSchedEditId(null);
-          };
-          return (
-            <div key="tab-1" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"16px"}}>
-              <div className="card" style={{padding:"16px 18px 20px"}}>
-
-                {/* Navegación semana */}
-                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}>
-                  <div className="hogar-sched-nav">
-                    <button type="button" className="hogar-sched-nav-btn"
-                      onClick={()=>{setSchedWeekOffset(o=>o-1);setSchedSelectedDay(0);}}>‹</button>
-                    <span className="hogar-sched-nav-label"
-                      onClick={()=>{setSchedWeekOffset(0);const td=new Date().getDay();setSchedSelectedDay(td===0?6:td-1);}}
-                      title="Volver a hoy">
-                      {schedWeekOffset===0?"Esta semana":weekLabel}
-                    </span>
-                    <button type="button" className="hogar-sched-nav-btn"
-                      onClick={()=>{setSchedWeekOffset(o=>o+1);setSchedSelectedDay(0);}}>›</button>
-                  </div>
-                  <p style={{margin:0,fontSize:"11px",color:"var(--muted)"}}>Toca un día</p>
-                </div>
-
-                {/* Strip de 7 días */}
-                <div className="sched-strip">
-                  {weekDates.map((dateStr, i) => {
-                    const isToday   = dateStr === todayISO;
-                    const isSel     = i === selIdx;
-                    const isWeekend = i >= 5;
-                    const dayNum    = new Date(dateStr+"T12:00:00").getDate();
-                    const hasEvents = appointments.some(a=>apptMatchesDate(a,dateStr)&&!SCHED_EXCL.has(a.type));
-                    return (
-                      <div key={dateStr}
-                        className={`sched-strip-day${isToday?" sched-strip-day--today":""}${isSel?" sched-strip-day--sel":""}${isWeekend?" sched-strip-day--wknd":""}`}
-                        onClick={()=>setSchedSelectedDay(i)}>
-                        <span className="sched-strip-name">{WD_SHORT[i]}</span>
-                        <span className="sched-strip-num">{dayNum}</span>
-                        <span className={`sched-strip-dot${hasEvents?" sched-strip-dot--on":""}`}/>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                {/* Detalle del día seleccionado */}
-                <div className="sched-detail">
-                  <div className="sched-detail-head">
-                    <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
-                      <span className="sched-detail-title">{WD_FULL[selIdx]} {new Date(selDate+"T12:00:00").getDate()}</span>
-                      {selDate===todayISO&&(
-                        <span style={{fontSize:"10px",fontWeight:700,color:"#EFA576",background:"rgba(239,165,118,0.10)",padding:"2px 8px",borderRadius:"20px"}}>HOY</span>
-                      )}
-                    </div>
-                    <button type="button" className="sched-add-day-btn" onClick={()=>openSched(selDate)}>+ Agregar</button>
-                  </div>
-
-                  {selAppts.length===0?(
-                    <div style={{textAlign:"center",padding:"20px 0 4px"}}>
-                      <p style={{margin:"0 0 4px",fontSize:"24px"}}>{selIdx>=5?"🌿":"✨"}</p>
-                      <p style={{margin:"0 0 14px",fontSize:"13px",color:"var(--muted)"}}>
-                        {selIdx>=5?"Fin de semana libre":"Día libre · sin actividades"}
-                      </p>
-                      <button type="button" className="sched-add-day-btn" onClick={()=>openSched(selDate)}>
-                        + Agregar actividad
-                      </button>
-                    </div>
-                  ):(
-                    <div style={{display:"flex",flexDirection:"column",gap:"7px"}}>
-                      {selAppts.map(appt=>{
-                        const cat=HOGAR_SCHED_CATS.find(c=>c.key===appt.type)||HOGAR_SCHED_CATS[HOGAR_SCHED_CATS.length-1];
-                        const isRec=appt.recurrence&&appt.recurrence!=="none";
-                        return (
-                          <div key={appt.id} className="sched-detail-event"
-                            style={{borderLeftColor:cat.color,background:cat.bg}}
-                            onClick={()=>openEdit(appt)}>
-                            <span className="sched-detail-time">{appt.time||"—"}</span>
-                            <span style={{fontSize:"16px",flexShrink:0}}>{cat.emoji}</span>
-                            <div className="sched-detail-info">
-                              <p className="sched-detail-name" style={{color:cat.color}}>
-                                {appt.title}{isRec&&<span style={{fontSize:"10px",marginLeft:"4px",opacity:0.65}}>↻</span>}
-                              </p>
-                              <p className="sched-detail-cat">{cat.label}{appt.duration?` · ${appt.duration}min`:""}</p>
-                            </div>
-                            <button type="button" className="hogar-sched-event-del" style={{opacity:1}}
-                              onClick={e=>{e.stopPropagation();setAppointments(prev=>prev.filter(a=>a.id!==appt.id));}}>×</button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Modal agregar / editar */}
-              {schedModal&&(
-                <div className="hogar-sched-backdrop" onClick={()=>{setSchedModal(null);setSchedEditId(null);}}>
-                  <div className="hogar-sched-modal" onClick={e=>e.stopPropagation()}>
-                    <div className="hogar-sched-modal-head">
-                      <p className="hogar-sched-modal-title">{schedEditId?"Editar actividad":"Nueva actividad"}</p>
-                      <button type="button" className="hogar-sched-modal-close" onClick={()=>{setSchedModal(null);setSchedEditId(null);}} aria-label="Cerrar">×</button>
-                    </div>
-                    <div className="hogar-sched-modal-body">
-                      <p className="app-form-label">Categoría</p>
-                      <div className="hogar-sched-cat-grid">
-                        {HOGAR_SCHED_CATS.map(cat=>(
-                          <button key={cat.key} type="button"
-                            className={`hogar-sched-cat-btn${schedForm.type===cat.key?" hogar-sched-cat-btn--on":""}`}
-                            style={schedForm.type===cat.key?{borderColor:cat.color,background:cat.bg,color:cat.color}:{}}
-                            onClick={()=>setSchedForm(f=>({...f,type:cat.key}))}>
-                            <span>{cat.emoji}</span><span>{cat.label}</span>
-                          </button>
-                        ))}
-                      </div>
-                      <p className="app-form-label" style={{marginTop:"14px"}}>Nombre / descripción</p>
-                      <input className="app-form-input"
-                        placeholder="Ej: Tarde con los hijos, Limpieza cocina..."
-                        value={schedForm.title}
-                        onChange={e=>setSchedForm(f=>({...f,title:e.target.value}))}
-                        onKeyDown={e=>e.key==="Enter"&&submitSched()} />
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginTop:"10px"}}>
-                        <div>
-                          <p className="app-form-label">Hora inicio</p>
-                          <input type="time" className="app-form-input" value={schedForm.timeStart} onChange={e=>setSchedForm(f=>({...f,timeStart:e.target.value}))}/>
-                        </div>
-                        <div>
-                          <p className="app-form-label">Hora fin</p>
-                          <input type="time" className="app-form-input" value={schedForm.timeEnd} onChange={e=>setSchedForm(f=>({...f,timeEnd:e.target.value}))}/>
-                        </div>
-                      </div>
-                      <p className="app-form-label" style={{marginTop:"12px"}}>¿Se repite?</p>
-                      <div className="app-pill-row">
-                        {[["none","No se repite"],["weekly","Cada semana"],["monthly","Cada mes"]].map(([val,lbl])=>(
-                          <button key={val} type="button"
-                            className={`app-pill-btn${schedForm.recurrence===val?" app-pill-btn--active":""}`}
-                            onClick={()=>setSchedForm(f=>({...f,recurrence:val}))}>
-                            {lbl}
-                          </button>
-                        ))}
-                      </div>
-                      <button type="button" className="hogar-sched-save-btn" style={{marginTop:"18px"}}
-                        disabled={!schedForm.title.trim()} onClick={submitSched}>
-                        {schedEditId?"Guardar cambios":"Agregar actividad"}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
 
         {/* ── TAB 2: MENÚ ── */}
         {homeTab === 2 && (

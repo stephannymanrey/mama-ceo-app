@@ -6382,6 +6382,15 @@ button {
   border-radius: 8px;
   min-width: 0;
 }
+/* Cuando una categoría tiene muchas tareas, la tarjeta no crece sin límite —
+   la lista se queda con altura fija y hace scroll interno ahí adentro. */
+.biz-task-area-list {
+  display: grid;
+  gap: 4px;
+  max-height: 230px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
 
 /* Fuentes de ingreso */
 .biz-sources-card {
