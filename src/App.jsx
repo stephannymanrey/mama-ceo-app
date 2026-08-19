@@ -1155,17 +1155,17 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Guardar email en DynamoDB al abrir precios (para webhook de Hotmart)
+  // Guardar email en DynamoDB al iniciar sesión (y como respaldo al abrir precios)
   useEffect(() => {
-    if (activeView !== "pricing" || !user) return;
-    const email = user.email || profileSetup?.email;
-    if (!email) return;
+    const email = user?.email;
+    const userId = user?.id;
+    if (!email || !userId) return;
     fetch(PAYMENTS_URL, {
       method: "POST", mode: "cors",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "save-email", userId: user.id, email })
+      body: JSON.stringify({ action: "save-email", userId, email })
     }).catch(() => {});
-  }, [activeView, user]);
+  }, [user?.id]); // solo cuando cambia la usuaria (login/cambio de cuenta)
 
 
   const startMPSubscription = async (planId) => {
@@ -3125,7 +3125,10 @@ export default function App() {
           <div>
             <p className="view-label">{activeLabel}</p>
             <h1>{clockNow.getHours() < 12 ? "Buenos días" : clockNow.getHours() < 19 ? "Buenas tardes" : "Buenas noches"}, {(profileSetup?.name || user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Mamá").split(" ")[0]}</h1>
-            <p>Enfocada · Organizada · en Calma</p>
+            <p>
+              {clockNow.toLocaleDateString("es-CO", { weekday: "long", day: "numeric", month: "long" })}
+              {profileSetup?.businessName && <> · <span style={{color:"var(--purple)",fontWeight:600}}>{profileSetup.businessName}</span></>}
+            </p>
           </div>
           <div className="profile-area">
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
@@ -4205,8 +4208,13 @@ export default function App() {
       <section className="panel workspace-panel">
         <div className="db-wrap">
 
-          {/* ── Barra superior con acceso rápido al temporizador ── */}
+          {/* ── Barra superior ── */}
           <div className="db-top-bar">
+            {todayDoneCount > 0 ? (
+              <span className="db-top-done-chip">✓ {todayDoneCount} completada{todayDoneCount !== 1 ? "s" : ""} hoy</span>
+            ) : (
+              <span className="db-top-done-chip db-top-done-chip--empty">Empieza marcando tu primera tarea</span>
+            )}
             <button className="db-focus-shortcut" onClick={() => { setPomodoroOpen(true); setToolsFabOpen(false); }}>
               ⏱ Enfocarme ahora
             </button>
