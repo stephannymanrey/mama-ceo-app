@@ -41,8 +41,20 @@ const initialMovements = [
 ];
 
 // ── Duraciones estimadas (minutos) — usadas para calcular carga del día ──
-const HOME_CATEGORY_DURATION = { "Rutina": 15, "Compras": 45, "Colegio / Ninos": 30, "Salud": 45, "Hogar / Limpieza": 30, "Bienestar": 20 };
+const HOME_CATEGORY_DURATION = { "Rutina": 15, "Compras": 45, "Colegio / Ninos": 30, "Salud": 45, "Hogar / Limpieza": 30, "Bienestar": 20, "Maternidad": 20 };
 const DEFAULT_HOME_DURATION = 25;
+
+// Áreas de tareas del hogar — mismo patrón que BIZ_CAT_CONFIG, para que
+// Mi Hogar use el mismo diseño de tarjetas por área + checkbox que Mi Negocio.
+const HOME_CAT_CONFIG = [
+  { key: "Rutina",           emoji: "🧹", color: "#6B46C1", bg: "#F5F0FC" },
+  { key: "Compras",          emoji: "🛒", color: "#0EA5E9", bg: "#F0F9FF" },
+  { key: "Colegio / Ninos",  emoji: "🎒", color: "#D97706", bg: "#FFFBEB" },
+  { key: "Salud",            emoji: "💊", color: "#DC2626", bg: "#FEF2F2" },
+  { key: "Hogar / Limpieza", emoji: "🏠", color: "#059669", bg: "#F0FDF4" },
+  { key: "Bienestar",        emoji: "💆", color: "#EFA576", bg: "#FDF2F5" },
+  { key: "Maternidad",       emoji: "👶", color: "#DB2777", bg: "#FDF2F8" },
+];
 const APPT_TYPE_DURATION = { "Médico": 45, "Cita": 30, "Colegio": 30, "Dentista": 45, "Extracurricular": 60, "Iglesia": 90, "Pago": 15, "Cumpleaños": 120, "Reunión": 60, "Trabajo": 60, "Familia": 60, "Limpieza": 60, "Arreglos": 90, "Compras": 45 };
 const DEFAULT_APPT_DURATION = 30;
 const APPT_HOME_TYPES = new Set(["Médico","Cita","Colegio","Dentista","Extracurricular","Iglesia","Pago","Cumpleaños","Familia","Limpieza","Arreglos","Compras"]);
@@ -102,6 +114,30 @@ const BIZ_TASK_CATEGORIES = BIZ_CAT_CONFIG.map(c => c.key);
 
 const PRIORITY_MIGRATION = { "Urgente": "Importante", "Puede esperar": "Sin afán" };
 const migratePriorityList = (list) => (list || []).map(item => item.priority && PRIORITY_MIGRATION[item.priority] ? { ...item, priority: PRIORITY_MIGRATION[item.priority] } : item);
+
+// Copia (una sola vez, nunca destructivo) las tareas de maternalTasks/wellnessTasks
+// que aún no existan en homeTasks — así quedan como tareas reales del hogar
+// (agendables, con checkbox, visibles por área) en vez de vivir solo en un
+// arreglo aparte que únicamente alimentaba el selector del Pomodoro. Se
+// identifica por título: si ya se copió antes, no se duplica.
+function mergeMaternalWellnessIntoHome(homeList, maternalList, wellnessList) {
+  const existingTitles = new Set((homeList || []).map(t => t.title));
+  let nextId = Date.now();
+  const extras = [];
+  [
+    ...(maternalList || []).map(t => ({ ...t, category: "Maternidad" })),
+    ...(wellnessList || []).map(t => ({ ...t, category: "Bienestar" })),
+  ].forEach(t => {
+    if (existingTitles.has(t.title)) return;
+    existingTitles.add(t.title);
+    extras.push({
+      id: nextId++, title: t.title, category: t.category, priority: "Normal", delegate: "",
+      duration: HOME_CATEGORY_DURATION[t.category] || DEFAULT_HOME_DURATION,
+      done: !!t.done, completedAt: t.completedAt || null,
+    });
+  });
+  return extras.length ? [...(homeList || []), ...extras] : (homeList || []);
+}
 
 const initialTasks = [
   { id: 1, text: "Cerrar 2 ventas principales", done: true },
@@ -1660,11 +1696,13 @@ export default function App() {
     setClients(normalizeClients(state.clients || []));
     setContentItems(state.contentItems || []);
     setGoals(state.goals || []);
-    setHomeTasks(migratePriorityList(state.homeTasks || []));
+    const _rawMaternal = state.maternalTasks || cloneList(initialHomeMaternalTasks);
+    const _rawWellness = state.wellnessTasks || cloneList(initialHomeWellnessTasks);
+    setHomeTasks(mergeMaternalWellnessIntoHome(migratePriorityList(state.homeTasks || []), _rawMaternal, _rawWellness));
     setTaskTimeLogs(state.taskTimeLogs || []);
     setSystemTasks(state.systemTasks || cloneList(initialSystemTasks));
-    setMaternalTasks(state.maternalTasks || cloneList(initialHomeMaternalTasks));
-    setWellnessTasks(state.wellnessTasks || cloneList(initialHomeWellnessTasks));
+    setMaternalTasks(_rawMaternal);
+    setWellnessTasks(_rawWellness);
     setIncomeSources(state.incomeSources || cloneList(initialIncomeSources));
     setSalesGoal(state.salesGoal || 0);
     setContactLog(state.contactLog || {});
@@ -3192,10 +3230,14 @@ export default function App() {
         {/* Pomodoro — FAB fijo + panel */}
         {(function() {
           const _todayISO = new Date().toISOString().slice(0, 10);
+          // maternalTasks/wellnessTasks ya se copian a homeTasks al cargar
+          // (mergeMaternalWellnessIntoHome) — se filtran aquí por título para
+          // no mostrar la tarea duplicada dos veces en el selector.
+          const _homeFocusTitles = new Set(homeTasks.filter(t => !t.done).map(t => t.title));
           const _focusOptions = [
             ...homeTasks.filter(t => !t.done).map(t => ({ id: t.id, type: "home", title: t.title })),
-            ...maternalTasks.filter(t => !t.done).map(t => ({ id: t.id, type: "maternal", title: t.title })),
-            ...wellnessTasks.filter(t => !t.done).map(t => ({ id: t.id, type: "wellness", title: t.title })),
+            ...maternalTasks.filter(t => !t.done && !_homeFocusTitles.has(t.title)).map(t => ({ id: t.id, type: "maternal", title: t.title })),
+            ...wellnessTasks.filter(t => !t.done && !_homeFocusTitles.has(t.title)).map(t => ({ id: t.id, type: "wellness", title: t.title })),
             ...tasks.filter(t => !t.done && (!t.dueDate || t.dueDate <= _todayISO)).map(t => ({ id: t.id, type: "biz", title: t.text })),
           ];
           const _total = pomodoroMode === "work" ? pomodoroWorkDuration * 60 : pomodoroBreakDuration * 60;
@@ -4175,10 +4217,7 @@ export default function App() {
     const todayDoneBiz  = tasks.filter((t) => t.done && isToday(t.completedAt));
     const todayDoneCount = todayDoneHome.length + todayDoneBiz.length;
     const todayPendingCount = pendingHomeAll.length + pendingBizAll.length;
-    const todayTimeLogs = taskTimeLogs.filter((l) => l.date === todayISO);
-    const avgMinPerTask = todayTimeLogs.length
-      ? Math.round(todayTimeLogs.reduce((s, l) => s + l.durationMin, 0) / todayTimeLogs.length)
-      : null;
+    const weekTimeLogs = taskTimeLogs.filter((l) => timestampFromInputDate(l.date) >= weekStart);
 
     // ── Hogar: "Tus 3 de hoy" ──
     const pendingHome = homeTasks.filter((t) => !t.done);
@@ -4252,10 +4291,10 @@ export default function App() {
             </div>
           </div>
 
-          {/* ── Progreso de hoy + tiempo por tarea ── */}
+          {/* ── Progreso de la semana + tiempo por tarea ── */}
           <div className="db-today-panel">
-            <p className="db-today-heading">Progreso de hoy</p>
-            {taskTimeLogs.length === 0 ? (
+            <p className="db-today-heading">Progreso de la semana</p>
+            {weekTimeLogs.length === 0 ? (
               <div className="db-focus-discover db-focus-discover--compact">
                 <span className="db-focus-discover-ico">⏱️</span>
                 <div className="db-focus-discover-text">
@@ -4267,7 +4306,7 @@ export default function App() {
             ) : (
               <>
                 <p className="db-progress-time-label">Tiempo promedio por tarea</p>
-                <DonutFocusChart logs={taskTimeLogs} />
+                <DonutFocusChart logs={weekTimeLogs} />
               </>
             )}
           </div>
@@ -6214,16 +6253,6 @@ export default function App() {
     if (homeBudgetTotals.income>0&&(homeSpent/homeBudgetTotals.income)>0.9) financeRecs.push({icon:"⚠️",text:"Estás gastando más del 90% de tus ingresos. Busca reducir al menos un gasto hormiga."});
     if (financeRecs.length===0&&homeAvailable>0) financeRecs.push({icon:"✅",text:"Tus finanzas del hogar están equilibradas. Considera aumentar tu porcentaje de ahorro un 5%."});
 
-    // ── Task categories ──
-    const CAT_CONFIG = [
-      {key:"Rutina",emoji:"🧹",color:"#6B46C1",bg:"#F5F0FC"},
-      {key:"Compras",emoji:"🛒",color:"#0EA5E9",bg:"#F0F9FF"},
-      {key:"Colegio / Ninos",emoji:"🎒",color:"#D97706",bg:"#FFFBEB"},
-      {key:"Salud",emoji:"💊",color:"#DC2626",bg:"#FEF2F2"},
-      {key:"Hogar / Limpieza",emoji:"🏠",color:"#059669",bg:"#F0FDF4"},
-      {key:"Bienestar",emoji:"💆",color:"#EFA576",bg:"#FDF2F5"},
-    ];
-
     return (
       <section className="panel workspace-panel">
         <div className="section-title">
@@ -6240,7 +6269,8 @@ export default function App() {
 
         {/* ── TAB 0: HOY ── */}
         {homeTab === 0 && (
-          <div key="tab-0" className="home-today-grid tab-content-anim">
+          <div key="tab-0" className="tab-content-anim">
+          <div className="home-today-grid">
             <div className="home-today-card home-today-card--menu">
               <div className="home-today-card-menu-top">
                 <span className="home-today-card-ico">🍽️</span>
@@ -6292,6 +6322,57 @@ export default function App() {
                 </div>
               </>);
             })()}
+          </div>
+
+          {/* ── Tareas por área (mismo diseño que Mi Negocio) ── */}
+          <div style={{marginTop:"20px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px",flexWrap:"wrap",gap:"8px"}}>
+              <div>
+                <h3 style={{margin:"0 0 2px"}}>Tareas por área</h3>
+                <p className="helper-copy" style={{margin:0}}>Lo que hay que sostener en casa, organizado por área.</p>
+              </div>
+              <button type="button" className="fin-add-btn" onClick={() => setShowTaskModal(true)}>+ Nueva tarea</button>
+            </div>
+
+            {homeTasks.length === 0 ? (
+              <div className="card" style={{padding:"28px",textAlign:"center",background:"linear-gradient(135deg,#fdf9f6,#fef4f0)",border:"2px dashed #e8d5c4"}}>
+                <p style={{fontSize:"32px",margin:"0 0 10px"}}>🌱</p>
+                <h3 style={{margin:"0 0 6px",fontSize:"16px"}}>Sin tareas del hogar todavía</h3>
+                <p style={{margin:"0 0 16px",fontSize:"13px",color:"var(--muted)"}}>Agrega tu primera tarea por área.</p>
+                <button type="button" className="fin-add-btn" onClick={() => setShowTaskModal(true)}>+ Nueva tarea</button>
+              </div>
+            ) : (
+              <div className="biz-task-area-grid">
+                {HOME_CAT_CONFIG.map(cat => {
+                  const catTasks = homeTasks.filter(t => (t.category || "Otro") === cat.key);
+                  if (!catTasks.length) return null;
+                  const catDone = catTasks.filter(t => t.done).length;
+                  return (
+                    <div key={cat.key} className="biz-task-area-card" style={{background:cat.bg, borderColor:`${cat.color}26`}}>
+                      <div className="biz-task-area-head">
+                        <span style={{fontSize:"20px"}}>{cat.emoji}</span>
+                        <span className="biz-task-area-count" style={{color:cat.color, background:`${cat.color}1c`}}>{catDone}/{catTasks.length}</span>
+                      </div>
+                      <p className="biz-task-area-title">{cat.key}</p>
+                      <div style={{display:"grid",gap:"4px"}}>
+                        {catTasks.map(task => (
+                          <div key={task.id} className="biz-task-area-row">
+                            <input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:cat.color, flexShrink:0}} />
+                            <div style={{flex:1, minWidth:0}}>
+                              <span style={{fontSize:"13px", fontWeight:600, color:task.done?"var(--muted)":"var(--ink)", textDecoration:task.done?"line-through":"none"}}>{task.title}</span>
+                              {task.priority === "Importante" && <small style={{color:cat.color,fontWeight:700}}>⭐</small>}
+                            </div>
+                            <button type="button" onClick={() => confirmDelete("¿Eliminar esta tarea?", () => setHomeTasks(cur => cur.filter(t => t.id !== task.id)))}
+                              style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"15px",flexShrink:0,padding:"0 2px"}}>×</button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
           </div>
         )}
 
@@ -7063,7 +7144,7 @@ export default function App() {
                 <div>
                   <label className="app-form-label">Categoría</label>
                   <select value={homeForm.category} onChange={e=>updateHomeForm("category",e.target.value)} className="app-form-input">
-                    <option>Rutina</option><option>Compras</option><option>Colegio / Ninos</option><option>Salud</option><option>Hogar / Limpieza</option><option>Bienestar</option>
+                    {HOME_CAT_CONFIG.map(c => <option key={c.key} value={c.key}>{c.emoji} {c.key}</option>)}
                   </select>
                 </div>
 
@@ -8231,6 +8312,7 @@ function DonutFocusChart({ logs }) {
     .slice(0, 6);
 
   const totalAvg = items.reduce((s, i) => s + i.avg, 0);
+  const totalWeekMinutes = logs.reduce((s, l) => s + l.durationMin, 0);
   const COLORS = ['#EFA576', '#e87b1e', '#1D9E75', '#6B46C1', '#C9A96E', '#0EA5E9'];
   const R = 52, cx = 68, cy = 68;
   const C = 2 * Math.PI * R;
@@ -8261,10 +8343,10 @@ function DonutFocusChart({ logs }) {
           />
         ))}
         <text x={cx} y={cy - 5} textAnchor="middle" style={{ fontSize: '17px', fontWeight: 700, fill: 'var(--text)' }}>
-          {hov ? `${hov.avg}m` : `${items.length}`}
+          {hov ? fmtHrs(hov.avg) : fmtHrs(totalWeekMinutes)}
         </text>
         <text x={cx} y={cy + 13} textAnchor="middle" style={{ fontSize: '10px', fill: 'var(--muted)' }}>
-          {hov ? hov.title.slice(0, 11) : 'tareas'}
+          {hov ? hov.title.slice(0, 11) : 'esta semana'}
         </text>
       </svg>
       <div className="donut-legend">
@@ -8276,7 +8358,7 @@ function DonutFocusChart({ logs }) {
           >
             <span className="donut-legend-dot" style={{ background: s.color }} />
             <span className="donut-legend-title">{s.title}</span>
-            <span className="donut-legend-val">{s.avg} min</span>
+            <span className="donut-legend-val">{fmtHrs(s.avg)}</span>
           </div>
         ))}
       </div>
