@@ -1233,7 +1233,7 @@ button {
 
 .mini-goals {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -1397,7 +1397,12 @@ button {
 
 @media (max-width: 1180px) {
   .app-shell {
-    grid-template-columns: 1fr;
+    /* minmax(0, 1fr), no un "1fr" a secas — un track "1fr" solo (equivalente
+       a minmax(auto, 1fr)) deja que el contenido de adentro (ej. el tablero
+       de Pipeline, hecho para desplazarse horizontal dentro de su propia
+       tarjeta) empuje el ancho de TODA la columna, y con ella toda la
+       página, forzando scroll lateral en cualquier pantalla en móvil. */
+    grid-template-columns: minmax(0, 1fr);
   }
 
   /* El sidebar se oculta en mobile — la navegación la maneja el bottom nav */
@@ -1449,11 +1454,11 @@ button {
   .kpi-grid,
   .donut-wrap,
   .mini-goals {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .excellence-actions {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .goal-box {
@@ -1991,7 +1996,7 @@ button {
   }
 
   .section-layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .section-form {
@@ -2018,7 +2023,7 @@ button {
   .home-budget-row,
   .movement-row,
   .mov-row-2 {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .data-row b,
@@ -2349,7 +2354,7 @@ button {
     grid-column: 1 / -1;
   }
   .business-panel-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -2780,7 +2785,7 @@ button {
   .home-budget-form,
   .bank-form,
   .content-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .clients-pipeline-wrap {
@@ -2799,11 +2804,11 @@ button {
   .paid-client-grid,
   .home-money-insights,
   .purpose-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .cl-kpi-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     border-radius: 12px;
   }
 
@@ -2820,7 +2825,7 @@ button {
   }
 
   .week-checks {
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 
   .week-checks button {
@@ -2971,9 +2976,9 @@ button {
 
 @media (max-width: 1180px) {
   .purpose-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-  .purpose-sections { grid-template-columns: 1fr; }
+  .purpose-sections { grid-template-columns: minmax(0, 1fr); }
   .purpose-block-wide { grid-column: 1; }
-  .purpose-impact-grid { grid-template-columns: 1fr; }
+  .purpose-impact-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 720px) {
@@ -3018,7 +3023,7 @@ button {
 .home-row.maternal { background: rgba(255,240,248,0.6); }
 
 @media (max-width: 1180px) {
-  .home-zones-grid { grid-template-columns: 1fr; }
+  .home-zones-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── Sistemas ── */
@@ -3173,7 +3178,7 @@ button {
 }
 
 @media (max-width: 720px) {
-  .systems-top { grid-template-columns: 1fr; }
+  .systems-top { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── Negocio mejorado ── */
@@ -3243,7 +3248,7 @@ button {
 }
 
 @media (max-width: 1180px) {
-  .business-sources-grid { grid-template-columns: 1fr; }
+  .business-sources-grid { grid-template-columns: minmax(0, 1fr); }
   .source-form { grid-template-columns: 1fr 1fr; }
   .source-form button { grid-column: 1 / -1; }
 }
@@ -3327,7 +3332,7 @@ button {
 .ump-link:hover { opacity:0.88; }
 
 @media (max-width:1180px) {
-  .business-sources-grid { grid-template-columns:1fr; }
+  .business-sources-grid { grid-template-columns: minmax(0, 1fr); }
   .source-form { grid-template-columns:1fr 1fr; }
   .source-form button { grid-column:1/-1; }
 }
@@ -3763,13 +3768,13 @@ button {
 }
 
 @media (max-width: 1180px) {
-  .dash-main-row { grid-template-columns: 1fr; }
+  .dash-main-row { grid-template-columns: minmax(0, 1fr); }
   .dash-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .dash-bottom-row { grid-template-columns: 1fr; }
+  .dash-bottom-row { grid-template-columns: minmax(0, 1fr); }
 }
 
 @media (max-width: 720px) {
-  .dash-summary-grid { grid-template-columns: 1fr; }
+  .dash-summary-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── Negocio reorganizado ── */
@@ -3835,8 +3840,8 @@ button {
 }
 
 @media (max-width: 1180px) {
-  .business-top-grid { grid-template-columns: 1fr; }
-  .business-movements-grid { grid-template-columns: 1fr; }
+  .business-top-grid { grid-template-columns: minmax(0, 1fr); }
+  .business-movements-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── Clientes rediseño ── */
@@ -3844,7 +3849,7 @@ button {
 /* KPIs compactos */
 .cl-kpi-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   background: #fff;
   border: 1px solid var(--line);
   border-radius: 16px;
@@ -3861,7 +3866,7 @@ button {
   align-items: start;
 }
 @media (max-width: 800px) {
-  .cl-week-split { grid-template-columns: 1fr; }
+  .cl-week-split { grid-template-columns: minmax(0, 1fr); }
 }
 .cl-week-metric-card {
   background: linear-gradient(135deg, #EFA576, #BF573C);
@@ -3957,7 +3962,7 @@ button {
 .cl-goal-card-input { max-width: 280px; }
 .cl-goal-card-results {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-top: 16px;
 }
@@ -3971,7 +3976,7 @@ button {
 .cl-goal-result-stat strong { display: block; font-size: 22px; font-weight: 800; color: #EFA576; line-height: 1.2; }
 .cl-goal-result-stat span { font-size: 11px; color: var(--muted); }
 @media (max-width: 600px) {
-  .cl-goal-card-results { grid-template-columns: 1fr; }
+  .cl-goal-card-results { grid-template-columns: minmax(0, 1fr); }
 }
 
 .cl-kpi {
@@ -4408,7 +4413,7 @@ button {
 }
 
 @media (max-width: 1180px) {
-  .clients-main-layout { grid-template-columns: 1fr; }
+  .clients-main-layout { grid-template-columns: minmax(0, 1fr); }
   .clients-form-card { position: static; }
 }
 
@@ -5043,11 +5048,11 @@ button {
   .ck-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 720px) {
-  .ck-kanban, .ck-kanban--5col { grid-template-columns: 1fr; }
+  .ck-kanban, .ck-kanban--5col { grid-template-columns: minmax(0, 1fr); }
   .ck-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .ck-header { flex-direction: column; }
   .ck-header-actions { width: 100%; justify-content: space-between; }
-  .ck-form-grid { grid-template-columns: 1fr; }
+  .ck-form-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── Hogar mejorado ── */
@@ -5144,7 +5149,7 @@ button {
 }
 
 @media (max-width: 1180px) {
-  .home-main-layout { grid-template-columns: 1fr; }
+  .home-main-layout { grid-template-columns: minmax(0, 1fr); }
   .home-left-col { position: static; }
   .home-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -5384,7 +5389,7 @@ button {
   }
 
   .main-menu {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
     gap: 2px;
   }
 
@@ -5750,7 +5755,7 @@ button {
 /* 4 quick cards */
 .db-quick-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 .db-quick-card {
@@ -5883,15 +5888,15 @@ button {
 }
 .db-today-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 20px;
 }
-.db-today-grid--2col { grid-template-columns: repeat(2, 1fr); }
+.db-today-grid--2col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 /* Progreso de hoy: hechas/pendientes/promedio + gráfica de foco */
 .db-progress-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -5907,7 +5912,7 @@ button {
 .db-progress-val { font-size: 22px; font-weight: 800; color: var(--ink); }
 .db-progress-label { font-size: 11px; color: var(--muted); text-align: center; }
 @media (max-width: 640px) {
-  .db-progress-grid { grid-template-columns: 1fr; }
+  .db-progress-grid { grid-template-columns: minmax(0, 1fr); }
 }
 
 .today-focus-empty { font-size: 12px; color: var(--muted); text-align: center; margin: 8px 0 0; display: flex; flex-direction: column; align-items: center; gap: 8px; }
@@ -6136,7 +6141,7 @@ button {
 
 @media (max-width: 700px) {
   .db-today-grid, .db-today-grid--2col {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .db-today-col {
     border-right: none;
@@ -6619,7 +6624,7 @@ button {
 
 .biz-week-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -6787,7 +6792,7 @@ button {
   flex-shrink: 0;
 }
 @media (max-width: 600px) {
-  .db-sustain-grid { grid-template-columns: 1fr; }
+  .db-sustain-grid { grid-template-columns: minmax(0, 1fr); }
   .db-studio-insight { flex-direction: column; align-items: flex-start; }
   .db-studio-insight-right { align-items: flex-start; }
 }
@@ -6796,14 +6801,14 @@ button {
 @media (max-width: 640px) {
   .db-hero { flex-direction: column; gap: 10px; }
   .db-affirmation { text-align: left; max-width: 100%; }
-  .db-meta-row { grid-template-columns: 1fr; }
+  .db-meta-row { grid-template-columns: minmax(0, 1fr); }
   .db-week-card {
     flex-direction: row;
     justify-content: space-between;
     min-width: unset;
   }
-  .db-quick-grid { grid-template-columns: repeat(2, 1fr); }
-  .db-pareto-grid { grid-template-columns: 1fr; }
+  .db-quick-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .db-pareto-grid { grid-template-columns: minmax(0, 1fr); }
   .db-meta-income { font-size: 28px; }
   .db-studio-cta { flex-direction: column; align-items: flex-start; gap: 14px; }
 }
@@ -7203,7 +7208,7 @@ button {
 /* ── Home today cards ── */
 .home-today-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 14px;
 }
 .home-today-card {
@@ -7323,7 +7328,7 @@ button {
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
 }
 @media (max-width: 700px) {
-  .home-today-grid { grid-template-columns: 1fr; }
+  .home-today-grid { grid-template-columns: minmax(0, 1fr); }
   .home-tab-btn { font-size: 12px; padding: 8px 0; }
 }
 
@@ -7609,7 +7614,7 @@ button {
 .db-load-card-val { margin: 0; font-size: 20px; font-weight: 800; color: var(--ink); }
 .db-load-card-msg { margin: 2px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
 @media (max-width: 700px) {
-  .db-load-grid { grid-template-columns: repeat(2, 1fr); }
+  .db-load-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 /* ── Banner de actualización PWA ── */
@@ -7921,7 +7926,7 @@ button {
 
 .db-menu-items {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
   margin-top: 10px;
 }
@@ -7963,11 +7968,11 @@ button {
   font-style: italic;
 }
 @media (max-width: 700px) {
-  .db-menu-items { grid-template-columns: repeat(2, 1fr); }
+  .db-menu-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .db-menu-strip-head { gap: 8px; }
 }
 @media (max-width: 420px) {
-  .db-menu-items { grid-template-columns: 1fr; }
+  .db-menu-items { grid-template-columns: minmax(0, 1fr); }
 }
 
 /* ── Tools hub — colapsa timer/calendario/plan en un solo boton ── */
@@ -8772,7 +8777,7 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
 /* Button grid */
 .calc-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 8px;
 }
 .calc-btn {
@@ -9245,7 +9250,7 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
 /* ── MIS FINANZAS PERSONALES ── */
 .pf-kpi-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 .pf-kpi {
@@ -9275,12 +9280,12 @@ input, select, textarea { transition: border-color 150ms ease, box-shadow 150ms 
 /* Categorías */
 .pf-cat-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 @media (max-width: 720px) {
-  .pf-cat-grid { grid-template-columns: repeat(2, 1fr); }
-  .pf-kpi-row  { grid-template-columns: repeat(3, 1fr); }
+  .pf-cat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pf-kpi-row  { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 400px) {
   .pf-kpi-row  { grid-template-columns: 1fr 1fr; }
