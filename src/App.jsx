@@ -6538,7 +6538,9 @@ export default function App() {
           return (
           <div key="tab-3" className="tab-content-anim" style={{display:"flex",flexDirection:"column",gap:"14px"}}>
 
-            <PendingMovementsPanel money={money} currency={currency} onConfirmToHome={confirmPendingToHome} onConfirmToBusiness={confirmPendingToBusiness} />
+            {/* "Movimientos por correo" oculto hasta desplegar su backend
+                (SES + Lambda) — ver lambda/MOVEMENTS-SYNC-DEPLOY.md. Sin eso
+                el panel solo muestra "Failed to fetch" a la usuaria. */}
 
             {/* ── RESUMEN ── */}
             <div className="card" style={{padding:"18px 20px"}}>
