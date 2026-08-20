@@ -2788,16 +2788,16 @@ button {
     grid-template-columns: minmax(0, 1fr);
   }
 
+  /* En móvil, las 3 etapas se apilan una debajo de otra en vez de un
+     tablero que se desliza a los lados — nada de scroll horizontal
+     dentro de la tarjeta, cada etapa ocupa el ancho completo. */
   .clients-pipeline-wrap {
     width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 8px;
   }
 
   .pipeline-board {
-    grid-template-columns: repeat(3, 240px);
-    min-width: max-content;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
   }
 
   .clients-layout,
@@ -2807,15 +2807,6 @@ button {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .cl-kpi-row {
-    grid-template-columns: minmax(0, 1fr);
-    border-radius: 12px;
-  }
-
-  .cl-kpi-divider {
-    border-left: none;
-    border-top: 1px solid var(--line);
-  }
 
   .purpose-grid > .affirmation-card,
   .purpose-grid > .purpose-card,
@@ -4007,6 +3998,26 @@ button {
 .cl-kpi small {
   font-size: 11px;
   color: var(--muted);
+}
+
+/* 2 columnas en móvil en vez de 1 — números como "Ticket promedio" caben
+   sin cortarse, y no queda una fila larga de 4 tarjetas apiladas. Esta
+   regla debe declararse DESPUÉS de la base (arriba) — un @media antes de
+   la regla que sobreescribe pierde el empate de especificidad en cascada. */
+@media (max-width: 720px) {
+  .cl-kpi-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    border-radius: 12px;
+  }
+  .cl-kpi-divider {
+    border-left: 1px solid var(--line);
+  }
+  .cl-kpi-row .cl-kpi:nth-child(odd) {
+    border-left: none;
+  }
+  .cl-kpi-row .cl-kpi:nth-child(n+3) {
+    border-top: 1px solid var(--line);
+  }
 }
 
 /* Chips de estado en el form */

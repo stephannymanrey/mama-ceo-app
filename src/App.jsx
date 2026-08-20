@@ -3419,6 +3419,9 @@ export default function App() {
                            : allMonthAppts;
           const apptsByDay = {};
           monthAppts.forEach(a => { const d = new Date(a.date+"T00:00:00").getDate(); if (!apptsByDay[d]) apptsByDay[d] = []; apptsByDay[d].push(a); });
+          // Ordenar cada día de mañana a noche — antes quedaban en el orden
+          // en que se crearon (insertion order), no por hora.
+          Object.values(apptsByDay).forEach(list => list.sort((a, b) => (a.time || "").localeCompare(b.time || "")));
           // Mismos colores que las categorías de tareas del hogar (HOGAR_SCHED_COLORS)
           // + los tipos de trabajo, que no aplican en Mi Hogar.
           const TYPE_COLORS = { ...HOGAR_SCHED_COLORS, "Reunión":"#1D9E75", "Trabajo":"#0EA5E9" };
