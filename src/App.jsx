@@ -3484,8 +3484,10 @@ export default function App() {
                 <div className="_cal-panel"
                   style={{background:"#fff",width:"100%",maxWidth:isMobile?"100%":"860px",height:isMobile?"100dvh":"92vh",borderRadius:isMobile?"0":"20px",display:"flex",flexDirection:"column",overflow:"hidden",boxShadow:isMobile?"none":"0 32px 80px rgba(0,0,0,0.22)"}}>
 
-                  {/* Header — pure flex, no absolute */}
-                  <div style={{display:"flex",alignItems:"center",gap:"8px",padding:"14px 16px",borderBottom:"1px solid var(--line)",flexShrink:0}}>
+                  {/* Header — pure flex, no absolute. paddingTop respeta el notch/Dynamic
+                      Island en iPhone: el panel es full-screen (inset:0) en móvil, así
+                      que sin esto las flechas de mes quedaban pegadas al status bar. */}
+                  <div style={{display:"flex",alignItems:"center",gap:"8px",padding:"14px 16px",paddingTop:"calc(14px + env(safe-area-inset-top, 0px))",borderBottom:"1px solid var(--line)",flexShrink:0}}>
                     <button type="button" onClick={() => { setCalendarMonth(new Date(year,month-1,1)); setCalendarAddDate(null); }}
                       style={{border:"none",background:"var(--line)",borderRadius:"10px",width:"38px",height:"38px",cursor:"pointer",fontSize:"20px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>‹</button>
                     <div style={{flex:1,textAlign:"center"}}>
