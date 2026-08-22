@@ -2941,7 +2941,7 @@ export default function App() {
                       setShowProfileModal(false);
                     } catch (err) {
                       console.error("Error eliminando cuenta:", err);
-                      alert("No pudimos eliminar los datos en AWS de forma segura. No se cerró la cuenta; intenta más tarde o contáctanos en hola@umpacademy.co");
+                      alert("No pudimos eliminar los datos en AWS de forma segura. No se cerró la cuenta; intenta más tarde o contáctanos en ayuda@umpacademy.co");
                     }
                   }
                 })}
@@ -8317,11 +8317,10 @@ function DonutFocusChart({ logs }) {
           </ul>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>15. Contacto</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para preguntas sobre estos Términos:</p>
-          <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S — Una Mamá con Propósito</strong></p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App es una extensión de la marca <strong>Una Mamá con Propósito</strong>, operada por UMP S.A.S. Empresa 100% digital — atención exclusivamente a distancia.</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Sitio de la marca madre: <strong>unamamaconproposito.co</strong></p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: ayuda@umpacademy.co</p>
-          <p style={{lineHeight:1.7,marginBottom:"4px"}}>WhatsApp: +57 315 228 4352</p>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Empresa 100% digital — atención exclusivamente a distancia.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>WhatsApp: +57 315 228 4352</p>
         </div>
       </section>
     );
@@ -8338,7 +8337,7 @@ function DonutFocusChart({ logs }) {
           <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 22 de agosto de 2026</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Responsable del tratamiento</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Una Mamá con Propósito S.A.S («UMP S.A.S»), empresa colombiana con domicilio en Bogotá D.C., es responsable del tratamiento de los datos personales recopilados en Mamá CEO App. Somos una empresa 100% digital. Contacto: ayuda@umpacademy.co · +57 315 228 4352. Esta política se rige por la Ley 1581 de 2012 y el Decreto 1377 de 2013.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Una Mamá con Propósito S.A.S («UMP S.A.S»), empresa colombiana con domicilio en Bogotá D.C., es responsable del tratamiento de los datos personales recopilados en Mamá CEO App. UMP S.A.S opera la marca madre <strong>Una Mamá con Propósito</strong> (unamamaconproposito.co) y sus aplicaciones asociadas. Somos una empresa 100% digital — atención exclusivamente a distancia. Contacto: ayuda@umpacademy.co · +57 315 228 4352. Esta política se rige por la Ley 1581 de 2012 y el Decreto 1377 de 2013.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. Información que Recopilamos</h3>
           <p style={{lineHeight:1.7,marginBottom:"8px"}}>Recopilamos la siguiente información cuando usas Mamá CEO App:</p>
@@ -8400,17 +8399,16 @@ function DonutFocusChart({ logs }) {
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>UMP S.A.S administra grupos privados de WhatsApp para clientas activas. Al aceptar la invitación, consientes ser añadida al grupo, recibir mensajes de soporte y seguimiento del servicio, y que tu número sea visible para la administradora. Puedes abandonar el grupo en cualquier momento. Estos grupos no se usan para publicidad de terceros.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Menores de Edad e Información Familiar</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App está dirigida a mayores de 18 años: los menores de edad no pueden crear una cuenta ni usar la aplicación directamente, y no recopilamos información personal proporcionada directamente por un menor. Sin embargo, como parte de las funciones de organización familiar, la titular de la cuenta (una persona adulta) puede registrar voluntariamente información sobre sus hijos u otros menores a su cargo — por ejemplo nombres o apodos y horarios de actividades — con el único fin de organizar su hogar. Esta información es ingresada, controlada y puede ser eliminada en cualquier momento por la titular de la cuenta, se almacena con las mismas medidas de seguridad que el resto de tu información y no se usa para ningún fin distinto a mostrártela a ti dentro de la aplicación. Si eres la titular de una cuenta y deseas eliminar la información de tus hijos o de tu cuenta completa, puedes hacerlo desde la aplicación o escribiéndonos a hola@umpacademy.co.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App está dirigida a mayores de 18 años: los menores de edad no pueden crear una cuenta ni usar la aplicación directamente, y no recopilamos información personal proporcionada directamente por un menor. Sin embargo, como parte de las funciones de organización familiar, la titular de la cuenta (una persona adulta) puede registrar voluntariamente información sobre sus hijos u otros menores a su cargo — por ejemplo nombres o apodos y horarios de actividades — con el único fin de organizar su hogar. Esta información es ingresada, controlada y puede ser eliminada en cualquier momento por la titular de la cuenta, se almacena con las mismas medidas de seguridad que el resto de tu información y no se usa para ningún fin distinto a mostrártela a ti dentro de la aplicación. Si eres la titular de una cuenta y deseas eliminar la información de tus hijos o de tu cuenta completa, puedes hacerlo desde la aplicación o escribiéndonos a ayuda@umpacademy.co.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Cambios a esta Política</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Podemos actualizar esta Política de Privacidad periódicamente. Te notificaremos sobre cambios significativos publicando la nueva Política en la aplicación y actualizará la fecha de "Última actualización" en la parte superior. Te recomendamos revisar esta Política regularmente.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para preguntas sobre esta Política o para ejercer tus derechos:</p>
-          <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S — Una Mamá con Propósito</strong></p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para preguntas sobre esta Política o para ejercer tus derechos, contáctanos. Mamá CEO App es una extensión de la marca <strong>Una Mamá con Propósito</strong> (UMP S.A.S). Empresa 100% digital — atención exclusivamente a distancia.</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Marca madre: <strong>unamamaconproposito.co</strong></p>
           <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: ayuda@umpacademy.co</p>
-          <p style={{lineHeight:1.7,marginBottom:"4px"}}>WhatsApp: +57 315 228 4352</p>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Empresa 100% digital — atención exclusivamente a distancia.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>WhatsApp: +57 315 228 4352</p>
         </div>
       </section>
     );
