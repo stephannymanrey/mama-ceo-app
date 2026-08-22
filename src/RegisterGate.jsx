@@ -51,6 +51,7 @@ export default function RegisterGate({ title, subtitle, ctaLabel = "Crear cuenta
   const [confirmMode, setConfirmMode] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [code, setCode] = useState("");
@@ -77,7 +78,7 @@ export default function RegisterGate({ title, subtitle, ctaLabel = "Crear cuenta
         if (err) setError(translateAuthError(err.message));
         else if (data?.user) onSuccess?.(data.user);
       } else {
-        const { error: err } = await awsAuth.signUp({ email, password, options: { data: { full_name: name.trim() } } });
+        const { error: err } = await awsAuth.signUp({ email, password, options: { data: { full_name: name.trim(), whatsapp: whatsapp.trim() || null } } });
         if (err) setError(translateAuthError(err.message));
         else setConfirmMode(true);
       }
@@ -132,6 +133,9 @@ export default function RegisterGate({ title, subtitle, ctaLabel = "Crear cuenta
 
             {mode === "signup" && (
               <input className="rg-input" type="text" placeholder="Tu nombre" value={name} onChange={e => setName(e.target.value)} required />
+            )}
+            {mode === "signup" && (
+              <input className="rg-input" type="tel" placeholder="WhatsApp con código de país (+57 300 000 0000)" value={whatsapp} onChange={e => setWhatsapp(e.target.value)} />
             )}
             <input className="rg-input" type="email" placeholder="Tu correo electrónico" value={email} onChange={e => setEmail(e.target.value)} required />
             <input className="rg-input" type="password" placeholder="Contraseña" value={password} onChange={e => setPassword(e.target.value)} required />

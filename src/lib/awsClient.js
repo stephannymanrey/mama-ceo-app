@@ -102,11 +102,9 @@ export const awsAuth = {
 
   signUp: async ({ email, password, options }) => {
     try {
-      await signUp({
-        username: email,
-        password,
-        options: { userAttributes: { email, name: options?.data?.full_name || '' } }
-      });
+      const userAttributes = { email, name: options?.data?.full_name || '' };
+      if (options?.data?.whatsapp) userAttributes['custom:whatsapp'] = options.data.whatsapp;
+      await signUp({ username: email, password, options: { userAttributes } });
       return { data: {}, error: null };
     } catch (err) {
       return { data: null, error: { message: err.message } };

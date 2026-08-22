@@ -636,6 +636,10 @@ const HOTMART_LINKS_YEAR = {
   emprendedora: "https://pay.hotmart.com/O106234254M?off=03099551",
   ceo:          "https://pay.hotmart.com/O106234254M?off=sd3qm0jg",
 };
+// Grupo de soporte por WhatsApp — se invita desde el banner de prueba
+// gratis. Vacío a propósito hasta tener el link real (nunca inventar una
+// URL); el botón solo se muestra si esto tiene un valor.
+const WHATSAPP_SUPPORT_URL = "";
 
 const PAYPAL_CLIENT_ID = "AeS56ptU569VQKMGhVeWn1cYsDYTFlq0oxmRPmzcle0g1jxhBjcu4uo29AQofLNHhkzrwRxKYm4tKchS";
 const PAYPAL_PLAN_IDS  = {
@@ -776,6 +780,7 @@ export default function App() {
   const [authMode, setAuthMode] = useState("login");
   const [authEmail, setAuthEmail] = useState("");
   const [authName, setAuthName] = useState("");
+  const [authWhatsapp, setAuthWhatsapp] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authPasswordConfirm, setAuthPasswordConfirm] = useState("");
   const [authNewPassword, setAuthNewPassword] = useState("");
@@ -1271,18 +1276,29 @@ export default function App() {
     }
   };
 
-  const betaDaysLeft = useMemo(() => {
-    if (userPlan !== "premium" || !premiumExpiresAt) return null;
+  // Días restantes de acceso gratis — cubre las dos poblaciones que tienen
+  // un plan pagado con vencimiento: el código de acceso beta (userPlan
+  // "premium", incubadora/Academy) y la prueba normal de 14 días al
+  // registrarse (userPlan "emprendedora"/"ceo" con premiumExpiresAt, ver
+  // selectUserMode). Antes esto solo cubría al primer grupo.
+  const trialDaysLeft = useMemo(() => {
+    const inTrial = premiumExpiresAt && ["premium", "emprendedora", "ceo", "mama"].includes(userPlan);
+    if (!inTrial) return null;
     const days = Math.ceil((premiumExpiresAt - Date.now()) / 86400000);
     return days > 0 ? days : 0;
   }, [userPlan, premiumExpiresAt]);
 
-  const isBetaUser = userPlan === "premium" && premiumExpiresAt !== null;
+  const isTrialActive = premiumExpiresAt !== null && ["premium", "emprendedora", "ceo", "mama"].includes(userPlan);
+
+  // Caso específico: activó un código de acceso (incubadora/Academy) — para
+  // el aviso "Código activo" en Precios, que no debe salirle a quien solo
+  // está en su prueba normal de 14 días (nunca metió ningún código).
+  const isBetaCodeUser = userPlan === "premium" && premiumExpiresAt !== null;
 
   // Cuando el período termina, llevar a elegir plan
   useEffect(() => {
-    if (isBetaUser && betaDaysLeft === 0) setActiveView("pricing");
-  }, [isBetaUser, betaDaysLeft]);
+    if (isTrialActive && trialDaysLeft === 0) setActiveView("pricing");
+  }, [isTrialActive, trialDaysLeft]);
 
   const activateBetaCode = async (e) => {
     e.preventDefault();
@@ -1518,7 +1534,7 @@ export default function App() {
         const { error } = await awsAuth.signUp({
           email: authEmail,
           password: authPassword,
-          options: { data: { full_name: authName.trim() } }
+          options: { data: { full_name: authName.trim(), whatsapp: authWhatsapp?.trim() || null } }
         });
         if (error) setAuthError(translateError(error.message));
         else { setConfirmMode(true); setAuthError(""); }
@@ -2589,6 +2605,12 @@ export default function App() {
                   <input type="text" placeholder="¿Cómo te llamamos?" value={authName} onChange={(event) => setAuthName(event.target.value)} required />
                 </label>
               )}
+              {authMode === "signup" && (
+                <label>
+                  WhatsApp <span style={{ fontWeight: 400, opacity: 0.6, fontSize: '0.85em' }}>(opcional — para seguimiento de tu prueba gratis)</span>
+                  <input type="tel" placeholder="+57 300 000 0000" value={authWhatsapp} onChange={(event) => setAuthWhatsapp(event.target.value)} />
+                </label>
+              )}
               <label>
                 Correo electrónico
                 <input type="email" value={authEmail} onChange={(event) => setAuthEmail(event.target.value)} placeholder="tu@email.com" required />
@@ -3210,17 +3232,47 @@ export default function App() {
           </div>
         )}
 
-        {/* Banner beta motivacional */}
-        {isBetaUser && betaDaysLeft !== null && (
+        {/* Banner de prueba gratis — mismo aviso para ambas poblaciones con
+            plan y vencimiento activo: código beta (incubadora/Academy) y
+            prueba normal de 14 días al registrarse. */}
+        {isTrialActive && trialDaysLeft !== null && (
           <div className="beta-banner">
-            {betaDaysLeft > 30 ? (
-              <><span>🌟</span><div><strong>Bienvenida al grupo beta de Mamá CEO</strong><p>Tienes <b>{betaDaysLeft} días</b> de acceso Premium gratis. ¡Úsalos para construir el hábito de organizar tu negocio y hogar!</p></div></>
-            ) : betaDaysLeft > 7 ? (
-              <><span>⏳</span><div><strong>Ya llevas un buen camino, {profileSetup?.name || "Mamá CEO"}</strong><p>Te quedan <b>{betaDaysLeft} días</b> de Premium gratis. Todo lo que organizaste aquí ya es tuyo • sigue construyendo.</p></div></>
-            ) : betaDaysLeft > 0 ? (
-              <><span>⏰</span><div><strong>Últimos {betaDaysLeft} días de tu acceso beta</strong><p>Has avanzado mucho. Activa tu plan cuando estés lista, sin presión.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Ver planes →</button></div></>
+            {trialDaysLeft > 30 ? (
+              <><span>🌟</span><div>
+                <strong>Bienvenida a Mamá CEO, {profileSetup?.name || "mamá emprendedora"}</strong>
+                <p>Tienes <b>{trialDaysLeft} días</b> de acceso gratis. Si te está gustando, puedes elegir tu plan cuando quieras — no hace falta esperar al final.</p>
+                <div className="beta-banner-actions">
+                  <button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Ver planes →</button>
+                  {WHATSAPP_SUPPORT_URL && <a className="beta-banner-wa-btn" href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noreferrer">💬 Únete al grupo de soporte</a>}
+                </div>
+              </div></>
+            ) : trialDaysLeft > 7 ? (
+              <><span>⏳</span><div>
+                <strong>Ya llevas un buen camino, {profileSetup?.name || "Mamá CEO"}</strong>
+                <p>Te quedan <b>{trialDaysLeft} días</b> de acceso gratis. Todo lo que organizaste aquí ya es tuyo — si la app te está sirviendo, puedes activar tu plan ya mismo, sin esperar a que se acabe.</p>
+                <div className="beta-banner-actions">
+                  <button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Ver planes →</button>
+                  {WHATSAPP_SUPPORT_URL && <a className="beta-banner-wa-btn" href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noreferrer">💬 Únete al grupo de soporte</a>}
+                </div>
+              </div></>
+            ) : trialDaysLeft > 0 ? (
+              <><span>⏰</span><div>
+                <strong>Solo te quedan {trialDaysLeft} día{trialDaysLeft !== 1 ? "s" : ""} de acceso gratis</strong>
+                <p>Elige tu plan ahora para no quedarte sin acceso — tu información se queda guardada, pero necesitas un plan activo para seguir usando la app.</p>
+                <div className="beta-banner-actions">
+                  <button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Ver planes →</button>
+                  {WHATSAPP_SUPPORT_URL && <a className="beta-banner-wa-btn" href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noreferrer">💬 ¿Dudas? Escríbenos por WhatsApp</a>}
+                </div>
+              </div></>
             ) : (
-              <><span>💙</span><div><strong>Tu período beta terminó</strong><p>Tus datos están seguros. Activa tu plan para seguir con acceso ilimitado.</p><button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Activar mi plan →</button></div></>
+              <><span>💙</span><div>
+                <strong>Tu período de prueba terminó</strong>
+                <p>Tus datos están seguros. Activa tu plan para seguir con acceso ilimitado.</p>
+                <div className="beta-banner-actions">
+                  <button className="beta-banner-btn" onClick={() => setActiveView("pricing")}>Activar mi plan →</button>
+                  {WHATSAPP_SUPPORT_URL && <a className="beta-banner-wa-btn" href={WHATSAPP_SUPPORT_URL} target="_blank" rel="noreferrer">💬 ¿Dudas? Escríbenos por WhatsApp</a>}
+                </div>
+              </div></>
             )}
           </div>
         )}
@@ -7743,9 +7795,9 @@ export default function App() {
               {betaCodeError&&<p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
           )}
-          {isBetaUser&&(
+          {isBetaCodeUser&&(
             <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
-              ✅ Código activo • Plan CEO gratis por {betaDaysLeft ?? "..."} días más
+              ✅ Código activo • Plan CEO gratis por {trialDaysLeft ?? "..."} días más
             </div>
           )}
         </div>
@@ -7936,9 +7988,9 @@ export default function App() {
               {betaCodeError && <p style={{gridColumn:"1/-1",margin:0,color:"var(--purple)",fontSize:"13px",fontWeight:700}}>{betaCodeError}</p>}
             </form>
           )}
-          {isBetaUser && (
+          {isBetaCodeUser && (
             <div style={{marginTop:"16px",padding:"12px 16px",background:"var(--green-soft)",borderRadius:"10px",color:"#1a5c3a",fontWeight:700,fontSize:"14px"}}>
-              ✅ Código activo • Plan CEO gratis por {betaDaysLeft ?? "..."} días más
+              ✅ Código activo • Plan CEO gratis por {trialDaysLeft ?? "..."} días más
             </div>
           )}
         </div>
@@ -8202,49 +8254,60 @@ function DonutFocusChart({ logs }) {
           <button type="button" onClick={() => onBack ? onBack() : setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Volver</button>
         </div>
         <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
-          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 18 de julio de 2026</p>
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 22 de agosto de 2026</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Aceptación de los Términos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Al acceder y utilizar Mamá CEO App, aceptas estar sujeto a estos Términos y Condiciones. Si no estás de acuerdo con alguna parte de estos términos, no deberías usar la aplicación.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Al crear una cuenta, activar una prueba gratuita o contratar cualquier plan en Mamá CEO App, aceptas estos Términos y Condiciones, la Política de Privacidad y el Descargo de Responsabilidad de UMP S.A.S. Si no estás de acuerdo, no debes usar la aplicación.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. Descripción del Servicio</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App es una plataforma de gestión integral diseñada para mamás emprendedoras que permite organizar y administrar su negocio, hogar y propósito en un solo lugar. El servicio incluye herramientas para gestión financiera, seguimiento de clientes, planificación de contenido, organización del hogar y seguimiento de objetivos personales.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App es una plataforma digital de gestión integral diseñada para mamás emprendedoras. UMP S.A.S es una empresa 100% digital; todos los servicios se prestan de forma remota y la atención al cliente se realiza exclusivamente a distancia (correo electrónico y WhatsApp).</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. Registro y Cuenta de Usuario</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para utilizar Mamá CEO App, debes crear una cuenta proporcionando información precisa y completa. Eres responsable de mantener la confidencialidad de tu contraseña y de todas las actividades que ocurran bajo tu cuenta. Debes notificarnos inmediatamente sobre cualquier uso no autorizado de tu cuenta.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para utilizar Mamá CEO App debes crear una cuenta con información precisa y completa. Eres responsable de mantener la confidencialidad de tu contraseña y de todas las actividades bajo tu cuenta. Al registrarte puedes proporcionar voluntariamente tu número de WhatsApp para recibir seguimiento personalizado durante tu prueba gratuita.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Uso Aceptable</h3>
-          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Te comprometes a utilizar Mamá CEO App únicamente para fines legales y de acuerdo con estos Términos. No debes:</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Período de Prueba Gratuita</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Al crear tu cuenta recibes acceso gratuito durante catorce (14) días calendario. No se requiere tarjeta de crédito ni se realiza ningún cobro durante este período. Al vencer la prueba, el acceso a funciones premium queda suspendido hasta que actives un plan de pago. No se hacen cargos automáticos al finalizar la prueba.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Conductas Prohibidas</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Mamá CEO App es una herramienta de organización y gestión empresarial. Las siguientes conductas están expresamente prohibidas:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
             <li>Usar la aplicación de manera que viole leyes locales, nacionales o internacionales</li>
-            <li>Intentar acceder sin autorización a otras cuentas, sistemas o redes</li>
-            <li>Interferir o interrumpir el servicio o los servidores conectados al servicio</li>
+            <li>Intentar acceder sin autorización a otras cuentas, sistemas o redes conectadas al servicio</li>
+            <li>Interferir o interrumpir los servidores o la infraestructura del servicio</li>
             <li>Transmitir virus, malware o cualquier código malicioso</li>
-            <li>Usar la aplicación para propósitos comerciales no autorizados</li>
+            <li>Usar la aplicación para fines comerciales distintos a los que la herramienta ofrece</li>
           </ul>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Propiedad Intelectual</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todo el contenido, características y funcionalidad de Mamá CEO App, incluyendo pero no limitado a texto, gráficos, logos, iconos, imágenes y software, son propiedad exclusiva de UMP S.A.S y están protegidos por las leyes de propiedad intelectual de Colombia y tratados internacionales.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Propiedad Intelectual</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todo el contenido, características y funcionalidad de Mamá CEO App son propiedad exclusiva de UMP S.A.S, protegidos por la Ley 23 de 1982 y demás normas colombianas de propiedad intelectual.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Privacidad y Protección de Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu privacidad es importante para nosotros. El uso de tu información personal está regido por nuestra Política de Privacidad, que forma parte integral de estos Términos. Al usar Mamá CEO App, aceptas la recolección y uso de tu información de acuerdo con nuestra Política de Privacidad y la Ley 1581 de 2012 de Protección de Datos Personales de Colombia.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. Privacidad y Protección de Datos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>El tratamiento de tus datos personales se rige por nuestra Política de Privacidad y la Ley 1581 de 2012, el Decreto 1377 de 2013 y demás normas colombianas aplicables. Al usar Mamá CEO App aceptas dicho tratamiento.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. Suscripciones y Pagos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App puede ofrecer diferentes planes de suscripción. Los precios, características y términos de cada plan se especificarán claramente antes de la compra. Las suscripciones se renovarán automáticamente a menos que se cancelen antes de la fecha de renovación. Todos los pagos son procesados de forma segura a través de proveedores de pago certificados.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. Uso de Inteligencia Artificial</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Algunas funcionalidades de Mamá CEO App y los canales de atención de UMP S.A.S utilizan agentes de inteligencia artificial (IA) para orientar a las usuarias y personalizar la experiencia. Estas herramientas son automatizadas y tienen carácter orientativo; no reemplazan el criterio profesional humano. Las conversaciones con agentes de IA pueden almacenarse para mejorar el servicio, conforme a la Política de Privacidad.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. Cancelación y Reembolsos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Puedes cancelar tu suscripción en cualquier momento desde la configuración de tu cuenta. La cancelación será efectiva al final del período de facturación actual. No se ofrecen reembolsos por períodos de suscripción parcialmente utilizados, excepto cuando lo requiera la ley aplicable.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Grupos de Soporte y Comunidad por WhatsApp</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>UMP S.A.S administra grupos privados de WhatsApp para clientas activas de sus programas y aplicaciones. Estos grupos tienen como finalidad brindar soporte, acompañamiento y seguimiento del servicio adquirido — no son grupos de publicidad ni de terceros.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>La participación es voluntaria. Al aceptar la invitación o al unirse al grupo, aceptas: (a) ser añadida a un grupo de WhatsApp administrado por UMP S.A.S; (b) recibir mensajes de soporte y seguimiento del servicio; (c) que tu número sea visible para la administradora del grupo. Puedes abandonar el grupo en cualquier momento desde WhatsApp.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Limitación de Responsabilidad</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App se proporciona "tal cual" y "según disponibilidad". No garantizamos que el servicio será ininterrumpido, seguro o libre de errores. En ningún caso UMP S.A.S será responsable por daños indirectos, incidentales, especiales, consecuentes o punitivos, incluyendo pérdida de beneficios, datos, uso o cualquier otra pérdida intangible.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Suscripciones, Pagos y Facturación</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App ofrece diferentes planes de suscripción. Los precios se especifican claramente antes de la compra. Las suscripciones con renovación automática pueden cancelarse antes de la fecha de renovación para evitar el cobro del siguiente período.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>UMP S.A.S factura electrónicamente en pesos colombianos (COP) conforme a la regulación colombiana vigente. Para clientes en el exterior, el equivalente en dólares se indica en las observaciones del documento fiscal. Cuando el pago se procesa a través de Hotmart, esta plataforma actúa como intermediaria (marketplace) y gestiona los impuestos aplicables en el país del comprador; UMP S.A.S emite la factura en Colombia conforme a la normativa local.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Modificaciones del Servicio y Términos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Nos reservamos el derecho de modificar o discontinuar, temporal o permanentemente, el servicio (o cualquier parte del mismo) con o sin previo aviso. También podemos actualizar estos Términos periódicamente. Te notificaremos sobre cambios significativos publicando los nuevos Términos en la aplicación. Tu uso continuado del servicio despuás de dichos cambios constituye tu aceptación de los nuevos Términos.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Cancelación y Reembolsos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Derecho de retracto (Ley 1480 de 2011, Art. 47): en contratos celebrados a distancia tienes derecho a retractarte dentro de los cinco (5) días hábiles siguientes a la fecha de pago, comunicándolo expresamente a ayuda@umpacademy.co. El reembolso se realiza dentro de los treinta (30) días siguientes por el mismo método de pago. El retracto no aplica cuando has comenzado a consumir el contenido digital con conocimiento de que perdías dicho derecho. Fuera de ese plazo, los pagos ya procesados no son reembolsables. Puedes cancelar futuras renovaciones desde la configuración de tu cuenta.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Ley Aplicable y Jurisdicción</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Estos Términos se regirán e interpretarán de acuerdo con las leyes de la República de Colombia. Cualquier disputa relacionada con estos Términos estará sujeta a la jurisdicción exclusiva del Centro de Arbitraje y Conciliación de la Cámara de Comercio de Bogotá.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Limitación de Responsabilidad</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App se proporciona "tal cual". No garantizamos que el servicio será ininterrumpido o libre de errores. UMP S.A.S no será responsable por daños indirectos, incidentales o consecuentes derivados del uso de la aplicación.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Herramienta de Análisis de Estilo Visual</h3>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>13. Modificaciones del Servicio y Términos</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Nos reservamos el derecho de modificar el servicio o estos Términos. Cambios sustanciales serán notificados al correo registrado con al menos 10 días de anticipación. El uso continuado del servicio tras la notificación constituye aceptación.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>14. Ley Aplicable y Jurisdicción</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Estos Términos se rigen por las leyes de la República de Colombia. Cualquier disputa será sometida a los tribunales competentes de Bogotá D.C., salvo acuerdo de las partes de acudir a mecanismos alternativos de resolución de conflictos.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>15. Herramienta de Análisis de Estilo Visual</h3>
           <p style={{lineHeight:1.7,marginBottom:"8px"}}>Mamá CEO App ofrece una función que permite analizar el estilo visual de edición de un video de referencia mediante inteligencia artificial. Al usar esta función, aceptas lo siguiente:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
             <li><strong>Responsabilidad sobre el contenido cargado:</strong> Eres la única responsable de contar con los permisos, licencias o derechos necesarios sobre cualquier archivo de video que cargues para análisis. UMP S.A.S no se hace responsable por el uso de material de terceros sin autorización.</li>
@@ -8253,11 +8316,12 @@ function DonutFocusChart({ logs }) {
             <li><strong>Uso legítimo:</strong> Esta función está diseñada para inspiración creativa y aprendizaje. No debes usarla para infringir derechos de propiedad intelectual, vulnerar la privacidad de terceros ni para cualquier fin que contravenga las leyes aplicables.</li>
           </ul>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>13. Contacto</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre estos Términos y Condiciones, puedes contactarnos a través de:</p>
-          <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S</strong></p>
-          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Sitio web: www.umpacademy.co</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>15. Contacto</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para preguntas sobre estos Términos:</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S — Una Mamá con Propósito</strong></p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: ayuda@umpacademy.co</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>WhatsApp: +57 315 228 4352</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Empresa 100% digital — atención exclusivamente a distancia.</p>
         </div>
       </section>
     );
@@ -8271,84 +8335,82 @@ function DonutFocusChart({ logs }) {
           <button type="button" onClick={() => onBack ? onBack() : setActiveView('dashboard')} style={{border:"1px solid var(--line)",background:"#fff",borderRadius:"8px",padding:"8px 16px",cursor:"pointer",fontSize:"13px",fontWeight:700}}>← Volver</button>
         </div>
         <div className="card" style={{maxWidth:"900px",margin:"0 auto",padding:"32px"}}>
-          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 18 de julio de 2026</p>
+          <p style={{fontSize:"13px",color:"var(--muted)",marginBottom:"24px"}}>Última actualización: 22 de agosto de 2026</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Introducción</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>En UMP S.A.S, operadores de Mamá CEO App, nos comprometemos a proteger tu privacidad y tus datos personales. Esta Política de Privacidad explica cómo recopilamos, usamos, compartimos y protegemos tu información personal de acuerdo con la Ley 1581 de 2012 de Protección de Datos Personales de Colombia y el Reglamento General de Protección de Datos (GDPR) cuando aplique.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>1. Responsable del tratamiento</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Una Mamá con Propósito S.A.S («UMP S.A.S»), empresa colombiana con domicilio en Bogotá D.C., es responsable del tratamiento de los datos personales recopilados en Mamá CEO App. Somos una empresa 100% digital. Contacto: ayuda@umpacademy.co · +57 315 228 4352. Esta política se rige por la Ley 1581 de 2012 y el Decreto 1377 de 2013.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>2. Información que Recopilamos</h3>
           <p style={{lineHeight:1.7,marginBottom:"8px"}}>Recopilamos la siguiente información cuando usas Mamá CEO App:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li><strong>Información de cuenta:</strong> Nombre, correo electrónico, contraseña (encriptada)</li>
-            <li><strong>Información de perfil:</strong> Nombre del negocio, tipo de negocio, etapa empresarial, metas financieras</li>
-            <li><strong>Datos de uso:</strong> Información sobre cómo usas la aplicación, incluyendo movimientos financieros, clientes, contenido, tareas del hogar y objetivos personales que tú ingresas voluntariamente</li>
-            <li><strong>Información sobre tu familia:</strong> Si usas las funciones de organización familiar, puedes registrar nombres o apodos de tus hijos u otros miembros del hogar y sus horarios de actividades (colegio, extracurriculares, citas médicas), únicamente para tu propia organización personal</li>
-            <li><strong>Información técnica:</strong> Dirección IP, tipo de navegador, sistema operativo, identificadores de dispositivo</li>
-            <li><strong>Cookies y tecnologías similares:</strong> Usamos cookies para mejorar tu experiencia y mantener tu sesión activa</li>
+            <li><strong>Información de cuenta:</strong> Nombre, correo electrónico, contraseña (cifrada), número de WhatsApp (opcional, provisto voluntariamente para seguimiento de prueba gratuita y soporte)</li>
+            <li><strong>Información de perfil y negocio:</strong> Nombre del negocio, tipo, etapa empresarial, metas financieras</li>
+            <li><strong>Datos de uso:</strong> Movimientos financieros, clientes, contenido, tareas del hogar y objetivos personales ingresados voluntariamente por ti</li>
+            <li><strong>Información familiar:</strong> Nombres o apodos de hijos/miembros del hogar y horarios que registres para tu organización personal — solo se muestran a ti dentro de la app</li>
+            <li><strong>Información técnica:</strong> IP, tipo de navegador, sistema operativo, identificadores de dispositivo</li>
+            <li><strong>Cookies:</strong> Usamos cookies para mantener tu sesión activa y mejorar tu experiencia</li>
           </ul>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. Cómo Usamos tu Información</h3>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>3. Finalidad del tratamiento</h3>
           <p style={{lineHeight:1.7,marginBottom:"8px"}}>Utilizamos tu información personal para:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
             <li>Proporcionar, mantener y mejorar Mamá CEO App</li>
-            <li>Crear y gestionar tu cuenta de usuario</li>
+            <li>Crear y gestionar tu cuenta, incluyendo el período de prueba gratuita</li>
+            <li>Hacer seguimiento personalizado a tu período de prueba (usando WhatsApp si lo proporcionaste)</li>
             <li>Procesar transacciones y gestionar suscripciones</li>
-            <li>Enviarte notificaciones importantes sobre el servicio</li>
-            <li>Responder a tus consultas y proporcionar soporte al cliente</li>
-            <li>Personalizar tu experiencia en la aplicación</li>
-            <li>Analizar el uso de la aplicación para mejorar nuestros servicios</li>
-            <li>Cumplir con obligaciones legales y regulatorias</li>
-            <li>Enviarte comunicaciones de marketing (solo con tu consentimiento explícito)</li>
+            <li>Enviarte notificaciones importantes del servicio</li>
+            <li>Brindar soporte al cliente de forma remota</li>
+            <li>Analizar el uso de la aplicación para mejorar el servicio</li>
+            <li>Cumplir con obligaciones legales y regulatorias colombianas</li>
           </ul>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Base Legal para el Procesamiento</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Procesamos tu información personal bajo las siguientes bases legales: (a) Tu consentimiento explícito al crear una cuenta y usar la aplicación; (b) Ejecución del contrato de servicios contigo; (c) Cumplimiento de obligaciones legales; (d) Nuestros intereses legítimos en mejorar y proteger nuestros servicios.</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>4. Número de WhatsApp</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>El número de WhatsApp que proporciones durante el registro se usa exclusivamente para: (a) seguimiento personalizado durante tu período de prueba gratuita; (b) notificaciones relevantes del servicio; (c) atención al cliente a tu solicitud. No lo compartiremos con terceros con fines comerciales ni lo usaremos para publicidad masiva sin tu consentimiento. Puedes solicitar su eliminación escribiendo a ayuda@umpacademy.co.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Compartir tu Información</h3>
-          <p style={{lineHeight:1.7,marginBottom:"8px"}}>No vendemos tu información personal. Podemos compartir tu información con:</p>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>5. Proveedores de servicios (encargados del tratamiento)</h3>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Para operar Mamá CEO App compartimos datos con terceros que actúan como encargados del tratamiento:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li><strong>Proveedores de servicios tecnológicos:</strong> Plataformas de almacenamiento de datos, autenticación y hosting que utilizamos para operar la aplicación</li>
-            <li><strong>Cumplimiento legal:</strong> Cuando sea requerido por ley o para proteger nuestros derechos legales</li>
-            <li><strong>Transferencia de negocio:</strong> En caso de fusión, adquisición o venta de activos</li>
+            <li><strong>Amazon Web Services (AWS):</strong> almacenamiento, autenticación (Cognito) y bases de datos</li>
+            <li><strong>Hotmart:</strong> procesamiento de pagos y gestión de compradores</li>
+            <li><strong>Meta (WhatsApp Business API):</strong> canal de comunicación con usuarias</li>
+            <li><strong>Anthropic (Claude AI):</strong> modelo de IA usado en los asistentes de atención</li>
           </ul>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todos nuestros proveedores de servicios están obligados contractualmente a proteger tu información y solo pueden usarla para los propósitos específicos que les autorizamos.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Todos están sujetos a estrictas obligaciones de confidencialidad y solo procesan datos conforme a las instrucciones de UMP S.A.S.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>6. Seguridad de los Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Implementamos medidas de seguridad técnicas y organizativas apropiadas para proteger tu información personal contra acceso no autorizado, alteración, divulgación o destrucción. Esto incluye encriptación de datos en tránsito y en reposo, controles de acceso estrictos, y auditorías de seguridad regulares. Sin embargo, ningún método de transmisión por Internet o almacenamiento electrónico es 100% seguro.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Implementamos medidas técnicas y administrativas para proteger tu información: cifrado en tránsito y en reposo, autenticación gestionada por Amazon Cognito, controles de acceso estrictos. Sin embargo, ningún sistema es 100% seguro. La autenticación con contraseñas las gestiona AWS Cognito; UMP S.A.S no tiene acceso a tus credenciales en texto claro.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>7. Retención de Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Conservamos tu información personal mientras tu cuenta está activa o según sea necesario para proporcionarte servicios. Si solicitas la eliminación de tu cuenta, eliminaremos o anonimizaremos tu información personal dentro de 30 días, excepto cuando debamos retenerla para cumplir con obligaciones legales, resolver disputas o hacer cumplir nuestros acuerdos.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Conservamos tu información mientras tu cuenta está activa y durante el tiempo que la ley colombiana exija para efectos fiscales, contables o jurídicos. Si solicitas eliminación de tu cuenta, procesaremos la solicitud dentro de 30 días, salvo que debamos retener datos por obligaciones legales.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>8. Tus Derechos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"8px"}}>De acuerdo con la Ley 1581 de 2012 y el GDPR, tienes los siguientes derechos:</p>
+          <p style={{lineHeight:1.7,marginBottom:"8px"}}>Conforme a la Ley 1581 de 2012 tienes derecho a:</p>
           <ul style={{lineHeight:1.7,marginBottom:"16px",paddingLeft:"24px"}}>
-            <li><strong>Acceso:</strong> Solicitar una copia de tu información personal</li>
-            <li><strong>Rectificación:</strong> Corregir información inexacta o incompleta</li>
-            <li><strong>Eliminación:</strong> Solicitar la eliminación de tu información personal</li>
-            <li><strong>Portabilidad:</strong> Recibir tu información en un formato estructurado y de uso común</li>
-            <li><strong>Oposición:</strong> Oponerte al procesamiento de tu información personal</li>
-            <li><strong>Limitación:</strong> Solicitar la limitación del procesamiento de tu información</li>
-            <li><strong>Revocación del consentimiento:</strong> Retirar tu consentimiento en cualquier momento</li>
+            <li><strong>Conocer, actualizar y rectificar</strong> tus datos personales</li>
+            <li><strong>Solicitar la supresión</strong> cuando no exista obligación legal de conservarlos</li>
+            <li><strong>Revocar el consentimiento</strong> otorgado para el tratamiento</li>
+            <li><strong>Presentar quejas</strong> ante la Superintendencia de Industria y Comercio (SIC)</li>
           </ul>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para ejercer estos derechos, contáctanos en hola@umpacademy.co. Responderemos a tu solicitud dentro de 15 días hábiles.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para ejercer estos derechos escríbenos a ayuda@umpacademy.co. Atenderemos tu solicitud en los plazos legales establecidos.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>9. Transferencias Internacionales de Datos</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tu información puede ser transferida y almacenada en servidores ubicados fuera de Colombia. Cuando transferimos datos internacionalmente, nos aseguramos de que existan garantías adecuadas para proteger tu información de acuerdo con esta Política de Privacidad y las leyes aplicables.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Tus datos pueden ser procesados en servidores fuera de Colombia (AWS us-east-1, servidores de Anthropic y Meta). Al aceptar esta política consientes dicha transferencia conforme al Art. 26 de la Ley 1581/2012.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Menores de Edad e Información Familiar</h3>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>10. Grupos de Soporte por WhatsApp</h3>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>UMP S.A.S administra grupos privados de WhatsApp para clientas activas. Al aceptar la invitación, consientes ser añadida al grupo, recibir mensajes de soporte y seguimiento del servicio, y que tu número sea visible para la administradora. Puedes abandonar el grupo en cualquier momento. Estos grupos no se usan para publicidad de terceros.</p>
+
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Menores de Edad e Información Familiar</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Mamá CEO App está dirigida a mayores de 18 años: los menores de edad no pueden crear una cuenta ni usar la aplicación directamente, y no recopilamos información personal proporcionada directamente por un menor. Sin embargo, como parte de las funciones de organización familiar, la titular de la cuenta (una persona adulta) puede registrar voluntariamente información sobre sus hijos u otros menores a su cargo — por ejemplo nombres o apodos y horarios de actividades — con el único fin de organizar su hogar. Esta información es ingresada, controlada y puede ser eliminada en cualquier momento por la titular de la cuenta, se almacena con las mismas medidas de seguridad que el resto de tu información y no se usa para ningún fin distinto a mostrártela a ti dentro de la aplicación. Si eres la titular de una cuenta y deseas eliminar la información de tus hijos o de tu cuenta completa, puedes hacerlo desde la aplicación o escribiéndonos a hola@umpacademy.co.</p>
 
-          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>11. Cambios a esta Política</h3>
+          <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Cambios a esta Política</h3>
           <p style={{lineHeight:1.7,marginBottom:"16px"}}>Podemos actualizar esta Política de Privacidad periódicamente. Te notificaremos sobre cambios significativos publicando la nueva Política en la aplicación y actualizará la fecha de "Última actualización" en la parte superior. Te recomendamos revisar esta Política regularmente.</p>
 
           <h3 style={{marginTop:"24px",marginBottom:"12px",fontSize:"18px"}}>12. Contacto</h3>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Si tienes preguntas sobre esta Política de Privacidad o deseas ejercer tus derechos, puedes contactarnos:</p>
-          <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S</strong></p>
-          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Responsable de Protección de Datos</p>
-          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: hola@umpacademy.co</p>
-          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Sitio web: www.umpacademy.co</p>
-          
-          <p style={{lineHeight:1.7,marginBottom:"16px",marginTop:"24px",padding:"16px",background:"var(--purple-soft)",borderRadius:"12px",border:"1px solid var(--purple)"}}>Para cualquier consulta sobre esta Política de Privacidad, contáctanos en hola@umpacademy.co.</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Para preguntas sobre esta Política o para ejercer tus derechos:</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}><strong>UMP S.A.S — Una Mamá con Propósito</strong></p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>Email: ayuda@umpacademy.co</p>
+          <p style={{lineHeight:1.7,marginBottom:"4px"}}>WhatsApp: +57 315 228 4352</p>
+          <p style={{lineHeight:1.7,marginBottom:"16px"}}>Empresa 100% digital — atención exclusivamente a distancia.</p>
         </div>
       </section>
     );
