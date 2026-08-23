@@ -1,0 +1,79 @@
+.legal-tarjeta {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+}
+
+.legal-volver {
+  background: transparent;
+  border: none;
+  color: var(--ink);
+  opacity: 0.55;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-bottom: 20px;
+  font-family: inherit;
+}
+
+.legal-volver:hover {
+  opacity: 1;
+}
+
+.legal-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.legal-tab {
+  background: var(--purple-soft);
+  border: none;
+  color: var(--ink);
+  opacity: 0.6;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.legal-tab:hover {
+  opacity: 0.85;
+}
+
+.legal-tab--activo {
+  background: var(--ink);
+  color: #fff;
+  opacity: 1;
+}
+
+.legal-titulo {
+  font-size: clamp(20px, 4vw, 26px);
+  font-weight: 800;
+  color: var(--ink);
+  margin-bottom: 24px;
+  letter-spacing: -0.02em;
+}
+
+.legal-seccion {
+  margin-bottom: 20px;
+}
+
+.legal-seccion-titulo {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+
+.legal-seccion-texto {
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+  white-space: pre-line;
+}

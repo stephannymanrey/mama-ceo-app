@@ -9,6 +9,7 @@ import PlanBuilder from "./PlanBuilder";
 import SilenceCutter from "./SilenceCutter";
 import InvoicingTool from "./tools/invoicing/InvoicingTool";
 import PendingMovementsPanel from "./tools/movements-sync/PendingMovementsPanel";
+import Legal from "./Legal";
 import "./App.css";
 
 const STORAGE_KEY = "mama-ceo-app-state-v4";
@@ -2540,10 +2541,10 @@ export default function App() {
       );
     }
     if (preAuthView === "terminos") {
-      return renderTerminos(() => setPreAuthView("landing"));
+      return <Legal documentoInicial="terminos" onVolver={() => setPreAuthView("landing")} />;
     }
     if (preAuthView === "privacidad") {
-      return renderPrivacidad(() => setPreAuthView("landing"));
+      return <Legal documentoInicial="privacidad" onVolver={() => setPreAuthView("landing")} />;
     }
     return (
       <div className="auth-shell">
@@ -3283,8 +3284,8 @@ export default function App() {
         {activeView === "home" && renderHome()}
         {/* report tab merged into business */}
         {activeView === "pricing" && renderPricing()}
-        {activeView === "terminos" && renderTerminos()}
-        {activeView === "privacidad" && renderPrivacidad()}
+        {activeView === "terminos" && <Legal documentoInicial="terminos" onVolver={() => setActiveView('dashboard')} />}
+        {activeView === "privacidad" && <Legal documentoInicial="privacidad" onVolver={() => setActiveView('dashboard')} />}
 
         {/* Backdrop — oscurece el fondo cuando el hub de herramientas está abierto */}
         <div className={`tools-fab-backdrop${toolsFabOpen ? " tools-fab-backdrop--open" : ""}`} onClick={() => setToolsFabOpen(false)} />

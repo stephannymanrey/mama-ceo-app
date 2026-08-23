@@ -5224,6 +5224,32 @@ button {
   background: rgba(201,169,110,0.3);
 }
 
+.beta-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.beta-banner-wa-btn {
+  margin-top: 8px;
+  border: 1px solid rgba(37,150,90,0.4);
+  background: rgba(37,150,90,0.1);
+  color: #1a6b3f;
+  border-radius: 999px;
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  width: fit-content;
+  text-decoration: none;
+  transition: background 180ms;
+}
+
+.beta-banner-wa-btn:hover {
+  background: rgba(37,150,90,0.2);
+}
+
 @media (max-width: 720px) {
   .beta-banner { flex-direction: column; }
 }

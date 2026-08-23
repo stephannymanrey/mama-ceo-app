@@ -57,15 +57,20 @@ export const handler = async (event) => {
   try {
     const items = await scanAllUsers();
 
-    const users = items.map((item) => ({
-      userId: item.user_id,
-      email: item.userEmail || item.hotmartEmail || null,
-      plan: item.userPlan || "free",
-      premiumExpiresAt: item.premiumExpiresAt || null,
-      updatedAt: item.updatedAt || null,
-      usage: item.data?.usage || { views: {}, subtabs: {} },
-      activityCounts: activityCounts(item.data),
-    }));
+    // Separar entradas de sistema (cron/lambda jobs tienen # en el PK)
+    const isSystemEntry = (item) => (item.user_id || '').includes('#');
+
+    const users = items
+      .filter((item) => !isSystemEntry(item))
+      .map((item) => ({
+        userId: item.user_id,
+        email: item.userEmail || item.hotmartEmail || null,
+        plan: item.userPlan || "free",
+        premiumExpiresAt: item.premiumExpiresAt || null,
+        updatedAt: item.updatedAt || null,
+        usage: item.data?.usage || { views: {}, subtabs: {} },
+        activityCounts: activityCounts(item.data),
+      }));
 
     const byPlan = {};
     const viewTotals = {};
