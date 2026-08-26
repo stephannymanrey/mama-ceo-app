@@ -2379,6 +2379,7 @@ button {
   display: grid;
   gap: 10px;
   align-content: start;
+  min-width: 0;
 }
 
 .pipeline-column h3 {
@@ -3975,6 +3976,7 @@ button {
   display: grid;
   gap: 4px;
   text-align: center;
+  min-width: 0;
 }
 
 .cl-kpi-divider {
@@ -7268,6 +7270,11 @@ button {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* min-width:0 — sin esto, un item de grid con texto largo adentro (ej. el
+     nombre de una tarea) puede empujar la tarjeta más ancha que su columna,
+     aunque la columna del grid ya use minmax(0,1fr). El ellipsis del texto
+     interno tampoco funciona si el contenedor no puede achicarse primero. */
+  min-width: 0;
 }
 .home-today-card-ico {
   font-size: 28px;
@@ -7649,6 +7656,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 3px;
+  min-width: 0;
 }
 .db-load-card--free { background: rgba(29, 158, 117, 0.05); border-color: rgba(29, 158, 117, 0.18); }
 .db-load-card-ico { font-size: 24px; margin-bottom: 2px; }
