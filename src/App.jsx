@@ -4867,6 +4867,7 @@ export default function App() {
                 <p className="biz-upcoming-total">Total a cobrar: <strong>{money.format(upcomingPayments.reduce((s,c)=>s+c.amount,0))}</strong></p>
               </div>
             )}
+            <RecentProgressCard doneItems={tasks.filter(t => t.done && t.completedAt)} color="#1D9E75" />
           </div>
         )}
 
@@ -6416,6 +6417,7 @@ export default function App() {
               </>);
             })()}
           </div>
+          <RecentProgressCard doneItems={homeTasks.filter(t => t.done && t.completedAt)} color="var(--purple)" />
           </div>
         )}
 
@@ -8203,6 +8205,61 @@ function TodayFocusChart({ logs, onOpenTimer }) {
           <span className="today-focus-min">{l.durationMin} min</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+// Resumen de lo completado — esta semana vs. la pasada + los últimos 7 días.
+// Recibe solo tareas ya hechas (done && completedAt); se usa una vez para
+// Mi Hogar (homeTasks) y otra para Mi Negocio (tasks), cada una con lo suyo.
+function RecentProgressCard({ doneItems, color }) {
+  const DAY_MS = 86400000;
+  const DAY_NAMES = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const todayStartMs = todayStart.getTime();
+
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const start = todayStartMs - i * DAY_MS;
+    const end = start + DAY_MS;
+    const count = doneItems.filter((t) => t.completedAt >= start && t.completedAt < end).length;
+    const label = i === 0 ? "Hoy" : i === 1 ? "Ayer" : DAY_NAMES[new Date(start).getDay()].slice(0, 3);
+    return { label, count };
+  }).reverse();
+
+  // Semana de lunes a domingo
+  const mondayOffset = (todayStart.getDay() + 6) % 7;
+  const weekStartMs = todayStartMs - mondayOffset * DAY_MS;
+  const lastWeekStartMs = weekStartMs - 7 * DAY_MS;
+  const thisWeekCount = doneItems.filter((t) => t.completedAt >= weekStartMs).length;
+  const lastWeekCount = doneItems.filter((t) => t.completedAt >= lastWeekStartMs && t.completedAt < weekStartMs).length;
+
+  const maxCount = Math.max(1, ...days.map((d) => d.count));
+
+  if (doneItems.length === 0) return null;
+
+  return (
+    <div className="card recent-progress-card">
+      <p className="recent-progress-title">Lo que has logrado</p>
+      <div className="recent-progress-stats">
+        <div>
+          <p className="recent-progress-stat-label">Esta semana</p>
+          <p className="recent-progress-stat-val" style={{ color }}>{thisWeekCount}</p>
+        </div>
+        <div>
+          <p className="recent-progress-stat-label">Semana pasada</p>
+          <p className="recent-progress-stat-val" style={{ color: "var(--muted)" }}>{lastWeekCount}</p>
+        </div>
+      </div>
+      <div className="recent-progress-bars">
+        {days.map((d, i) => (
+          <div key={i} className="recent-progress-bar-col">
+            <div className="recent-progress-bar-track">
+              <div className="recent-progress-bar-fill" style={{ height: `${Math.max(6, (d.count / maxCount) * 100)}%`, background: d.count > 0 ? color : "var(--line)" }} />
+            </div>
+            <span className="recent-progress-bar-label">{d.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
