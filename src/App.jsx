@@ -836,7 +836,8 @@ export default function App() {
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
   const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "", dueDate: "", recurrence: "none", duration: "" });
   const [editingHomeTaskId, setEditingHomeTaskId] = useState(null);
-  const [taskForm, setTaskForm] = useState({ text: "", category: "Ventas y clientes", priority: "Normal", dueDate: "", duration: "" });
+  const [taskForm, setTaskForm] = useState({ text: "", category: "Ventas y clientes", priority: "Normal", dueDate: "", recurrence: "none", duration: "" });
+  const [editingTaskId, setEditingTaskId] = useState(null);
   const [showBizTaskModal, setShowBizTaskModal] = useState(false);
   const [homeFocusOverride, setHomeFocusOverride] = useState(stored?.homeFocusOverride || null);
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
@@ -2147,12 +2148,32 @@ export default function App() {
     setHomeForm(blankHomeForm);
   };
 
+  const blankTaskForm = { text: "", category: "Ventas y clientes", priority: "Normal", dueDate: "", recurrence: "none", duration: "" };
+
+  const openEditTask = (task) => {
+    setEditingTaskId(task.id);
+    setTaskForm({
+      text: task.text, category: task.category || "Ventas y clientes", priority: task.priority || "Normal",
+      dueDate: task.dueDate || "", recurrence: task.recurrence || "none", duration: task.duration || "",
+    });
+    setShowBizTaskModal(true);
+  };
+
   const addTask = (event) => {
     event.preventDefault();
     if (!taskForm.text.trim()) return;
     const duration = Number(taskForm.duration) || DEFAULT_BIZ_TASK_DURATION;
-    setTasks((current) => [{ id: Date.now(), text: taskForm.text.trim(), category: taskForm.category || "Otro", priority: taskForm.priority || "Normal", dueDate: taskForm.dueDate || "", duration, done: false }, ...current]);
-    setTaskForm({ text: "", category: "Ventas y clientes", priority: "Normal", dueDate: "", duration: "" });
+    const fields = {
+      text: taskForm.text.trim(), category: taskForm.category || "Otro", priority: taskForm.priority || "Normal",
+      dueDate: taskForm.dueDate || "", recurrence: taskForm.recurrence || "none", duration,
+    };
+    if (editingTaskId) {
+      setTasks((current) => current.map((t) => (t.id === editingTaskId ? { ...t, ...fields } : t)));
+      setEditingTaskId(null);
+    } else {
+      setTasks((current) => [{ id: Date.now(), ...fields, done: false }, ...current]);
+    }
+    setTaskForm(blankTaskForm);
     setShowBizTaskModal(false);
   };
   const deleteTask = (taskId) => setTasks((current) => current.filter((task) => task.id !== taskId));
@@ -4916,8 +4937,11 @@ export default function App() {
                                 <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
                                   {task.priority === "Importante" && <small style={{color:"#EFA576",fontWeight:700}}>⭐</small>}
                                   {dueLabel && <small style={{color:dueColor,fontWeight:600}}>{dueLabel}</small>}
+                                  {task.recurrence && task.recurrence !== "none" && <small style={{color:"var(--muted)",fontWeight:600}}>↻ {task.recurrence === "weekly" ? "semanal" : "mensual"}</small>}
                                 </div>
                               </div>
+                              <button type="button" onClick={() => openEditTask(task)} title="Editar tarea"
+                                style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"13px",flexShrink:0,padding:"0 2px"}}>✎</button>
                               <button type="button" onClick={() => confirmDelete("¿Eliminar esta tarea?", () => deleteTask(task.id))}
                                 style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"15px",flexShrink:0,padding:"0 2px"}}>×</button>
                             </div>
@@ -4930,16 +4954,16 @@ export default function App() {
               </div>
             )}
 
-            {/* ── Modal: Nueva tarea ── */}
+            {/* ── Modal: Nueva/Editar tarea ── */}
             {showBizTaskModal && (
-              <div className="app-modal-backdrop" onClick={e => e.target===e.currentTarget && setShowBizTaskModal(false)}>
+              <div className="app-modal-backdrop" onClick={e => e.target===e.currentTarget && (setShowBizTaskModal(false),setEditingTaskId(null),setTaskForm(blankTaskForm))}>
                 <div className="app-modal-card" style={{width:"min(440px,100%)"}}>
                   <div className="app-modal-head">
                     <div>
                       <p className="app-modal-head-eyebrow">Mi Negocio</p>
-                      <p className="app-modal-head-title">Nueva tarea</p>
+                      <p className="app-modal-head-title">{editingTaskId ? "Editar tarea" : "Nueva tarea"}</p>
                     </div>
-                    <button type="button" className="app-modal-close" onClick={() => setShowBizTaskModal(false)} aria-label="Cerrar">✕</button>
+                    <button type="button" className="app-modal-close" onClick={() => {setShowBizTaskModal(false);setEditingTaskId(null);setTaskForm(blankTaskForm);}} aria-label="Cerrar">✕</button>
                   </div>
                   <form onSubmit={addTask} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"14px"}}>
                     <div>
@@ -4954,25 +4978,56 @@ export default function App() {
                         {BIZ_CAT_CONFIG.map(c => <option key={c.key} value={c.key}>{c.emoji} {c.key}</option>)}
                       </select>
                     </div>
+
                     <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
                       <div>
-                        <label className="app-form-label">Prioridad</label>
-                        <select value={taskForm.priority} onChange={e => updateTaskForm("priority", e.target.value)} className="app-form-input">
-                          <option>Normal</option><option>Importante</option><option>Sin afán</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="app-form-label">Fecha límite</label>
+                        <label className="app-form-label">Fecha <span style={{fontWeight:400,textTransform:"none"}}>(opcional)</span></label>
                         <input type="date" value={taskForm.dueDate} onChange={e => updateTaskForm("dueDate", e.target.value)} className="app-form-input" />
                       </div>
+                      <div>
+                        <label className="app-form-label">¿Se repite?</label>
+                        <select value={taskForm.recurrence} onChange={e => updateTaskForm("recurrence", e.target.value)} className="app-form-input">
+                          <option value="none">No se repite</option>
+                          <option value="weekly">Cada semana</option>
+                          <option value="monthly">Cada mes</option>
+                        </select>
+                      </div>
                     </div>
+                    {taskForm.recurrence!=="none"&&taskForm.dueDate&&(
+                      <p className="helper-copy" style={{margin:"-8px 0 0"}}>
+                        ↻ Se repite cada {WEEKDAY_NAMES[new Date(taskForm.dueDate+"T12:00:00").getDay()]}{taskForm.recurrence==="monthly"?" del mes":""}.
+                      </p>
+                    )}
+
                     <div>
-                      <label className="app-form-label">Duración estimada <span style={{fontWeight:400,textTransform:"none"}}>(min, opcional)</span></label>
-                      <input type="number" min="0" step="5" placeholder={`Auto: ${DEFAULT_BIZ_TASK_DURATION} min`}
-                        value={taskForm.duration} onChange={e => updateTaskForm("duration", e.target.value)}
-                        className="app-form-input" />
+                      <label className="app-form-label">Prioridad</label>
+                      <div style={{display:"flex",gap:"6px"}}>
+                        {[["Importante","⭐","#EFA576"],["Normal","🟡","#D97706"],["Sin afán","🌿","#1D9E75"]].map(([p,ico,color])=>(
+                          <button key={p} type="button" onClick={()=>updateTaskForm("priority",p)}
+                            style={{flex:1,padding:"9px 4px",borderRadius:"10px",border:`2px solid ${taskForm.priority===p?color:"var(--line)"}`,background:taskForm.priority===p?`${color}14`:"#fff",cursor:"pointer",fontFamily:"inherit",fontSize:"11px",fontWeight:600,display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",transition:"all 0.15s"}}>
+                            <span>{ico}</span><span style={{color:taskForm.priority===p?color:"var(--muted)",textAlign:"center"}}>{p}</span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <button type="submit" className="app-modal-submit">Guardar tarea</button>
+
+                    <div>
+                      <label className="app-form-label">Duración estimada <span style={{fontWeight:400,textTransform:"none"}}>(opcional)</span></label>
+                      <div className="dur-pills">
+                        {[
+                          {label:"15 min",val:15},{label:"30 min",val:30},{label:"45 min",val:45},
+                          {label:"1 h",val:60},{label:"2 h",val:120},
+                        ].map(({label,val})=>(
+                          <button key={label} type="button"
+                            className={`dur-pill${taskForm.duration===val?" dur-pill--sel":""}`}
+                            onClick={()=>updateTaskForm("duration", taskForm.duration===val?"":val)}>
+                            {label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <button type="submit" className="app-modal-submit">{editingTaskId ? "Guardar cambios" : "Guardar tarea"}</button>
                   </form>
                 </div>
               </div>
