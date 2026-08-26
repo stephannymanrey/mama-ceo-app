@@ -54,6 +54,7 @@ const DEFAULT_HOME_DURATION = 25;
 // Mi Hogar use el mismo diseño de tarjetas por área + checkbox que Mi Negocio.
 // Incluye las categorías que antes vivían solo en el modal "Nueva actividad"
 // (Semana), ahora unificadas en un solo formulario de tareas.
+const WEEKDAY_NAMES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"]; // indexado como Date.getDay()
 const HOME_CAT_CONFIG = [
   { key: "Rutina",               emoji: "🧹", color: "#6B46C1", bg: "#F5F0FC" },
   { key: "Tiempo con familia",   emoji: "💛", color: "#B45309", bg: "#FFFBEB" },
@@ -833,7 +834,8 @@ export default function App() {
   const [editingContentId, setEditingContentId] = useState(null);
   const [contentDragOverCol, setContentDragOverCol] = useState(null);
   const [goalForm, setGoalForm] = useState({ title: "", amount: "", period: "Mensual", status: "Activa" });
-  const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "", frequency: "Rutina", customFrequency: "", duration: "" });
+  const [homeForm, setHomeForm] = useState({ title: "", category: "Rutina", priority: "Normal", delegate: "", dueDate: "", recurrence: "none", duration: "" });
+  const [editingHomeTaskId, setEditingHomeTaskId] = useState(null);
   const [taskForm, setTaskForm] = useState({ text: "", category: "Ventas y clientes", priority: "Normal", dueDate: "", duration: "" });
   const [showBizTaskModal, setShowBizTaskModal] = useState(false);
   const [homeFocusOverride, setHomeFocusOverride] = useState(stored?.homeFocusOverride || null);
@@ -2106,22 +2108,43 @@ export default function App() {
     setGoalForm({ title: "", amount: "", period: "Mensual", status: "Activa" });
   };
 
+  const blankHomeForm = { title: "", category: "Rutina", priority: "Normal", delegate: "", dueDate: "", recurrence: "none", duration: "" };
+
+  const openEditHomeTask = (task) => {
+    setEditingHomeTaskId(task.id);
+    setHomeForm({
+      title: task.title, category: task.category || "Rutina", priority: task.priority || "Normal",
+      delegate: task.delegate || "", dueDate: task.dueDate || "", recurrence: task.recurrence || "none",
+      duration: task.duration || "",
+    });
+    setHomeTaskError("");
+    setShowTaskModal(true);
+  };
+
   const addHomeTask = (event) => {
     event.preventDefault();
     if (!homeForm.title.trim()) { setHomeTaskError("Escribe un nombre para la tarea antes de agregar."); return; }
     setHomeTaskError("");
 
-    // Validar límite del plan
-    if (homeTasks.length >= currentLimits.homeTasks) {
+    // Validar límite del plan — solo aplica al crear, no al editar una que ya existe
+    if (!editingHomeTaskId && homeTasks.length >= currentLimits.homeTasks) {
       setUpgradeReason(`Has alcanzado el límite de ${currentLimits.homeTasks} tareas del hogar de tu plan.`);
       setShowUpgradeModal(true);
       return;
     }
 
-    const frequency = homeForm.frequency === "Otro" ? (homeForm.customFrequency.trim() || "Otro") : homeForm.frequency;
     const duration = Number(homeForm.duration) || HOME_CATEGORY_DURATION[homeForm.category] || DEFAULT_HOME_DURATION;
-    setHomeTasks((current) => [{ id: Date.now(), title: homeForm.title.trim(), category: homeForm.category, priority: homeForm.priority || "Normal", delegate: homeForm.delegate || "", frequency, duration, done: false }, ...current]);
-    setHomeForm({ title: "", category: "Rutina", priority: "Normal", delegate: "", frequency: "Rutina", customFrequency: "", duration: "" });
+    const fields = {
+      title: homeForm.title.trim(), category: homeForm.category, priority: homeForm.priority || "Normal",
+      delegate: homeForm.delegate || "", dueDate: homeForm.dueDate || "", recurrence: homeForm.recurrence || "none", duration,
+    };
+    if (editingHomeTaskId) {
+      setHomeTasks((current) => current.map((t) => (t.id === editingHomeTaskId ? { ...t, ...fields } : t)));
+      setEditingHomeTaskId(null);
+    } else {
+      setHomeTasks((current) => [{ id: Date.now(), ...fields, done: false }, ...current]);
+    }
+    setHomeForm(blankHomeForm);
   };
 
   const addTask = (event) => {
@@ -4260,7 +4283,9 @@ export default function App() {
     // ── Carga del día: minutos estimados (sin pedirte nada extra) ──
     const trackWork = userMode !== "mama";
     const trackHome = userMode !== "emprendedora";
-    const pendingHomeAll = homeTasks.filter(t => !t.done && (!t.frequency || t.frequency === "Rutina"));
+    // Sin fecha = rutina de siempre, cuenta para hoy. Con fecha, solo cuenta
+    // si ya se cumplió o está por cumplirse (igual que las tareas de negocio).
+    const pendingHomeAll = homeTasks.filter(t => !t.done && (!t.dueDate || t.dueDate <= todayISO));
     const pendingBizAll = tasks.filter(t => !t.done && t.dueDate && t.dueDate <= todayISO);
     const homeTaskMinutes = pendingHomeAll.reduce((s,t)=>s+homeTaskEstDuration(t),0);
     const bizTaskMinutes = pendingBizAll.reduce((s,t)=>s+bizTaskEstDuration(t),0);
@@ -6426,17 +6451,28 @@ export default function App() {
                       </div>
                       <p className="biz-task-area-title">{cat.key}</p>
                       <div className="biz-task-area-list">
-                        {catTasks.map(task => (
-                          <div key={task.id} className="biz-task-area-row">
-                            <input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:cat.color, flexShrink:0}} />
-                            <div style={{flex:1, minWidth:0}}>
-                              <span style={{fontSize:"13px", fontWeight:600, color:task.done?"var(--muted)":"var(--ink)", textDecoration:task.done?"line-through":"none"}}>{task.title}</span>
-                              {task.priority === "Importante" && <small style={{color:cat.color,fontWeight:700}}>⭐</small>}
+                        {catTasks.map(task => {
+                          const days = task.dueDate ? Math.floor((timestampFromInputDate(task.dueDate) - Date.now()) / 86400000) : null;
+                          const dueColor = days === null ? "var(--muted)" : days < 0 ? "#EFA576" : days === 0 ? "#e87b1e" : "var(--muted)";
+                          const dueLabel = days === null ? null : days < 0 ? `Vencida ${Math.abs(days)}d` : days === 0 ? "Hoy" : days === 1 ? "Mañana" : `En ${days}d`;
+                          return (
+                            <div key={task.id} className="biz-task-area-row">
+                              <input type="checkbox" checked={task.done} onChange={() => toggleHomeTask(task.id)} style={{accentColor:cat.color, flexShrink:0}} />
+                              <div style={{flex:1, minWidth:0}}>
+                                <span style={{fontSize:"13px", fontWeight:600, color:task.done?"var(--muted)":"var(--ink)", textDecoration:task.done?"line-through":"none"}}>{task.title}</span>
+                                <div style={{display:"flex",gap:"6px",flexWrap:"wrap"}}>
+                                  {task.priority === "Importante" && <small style={{color:cat.color,fontWeight:700}}>⭐</small>}
+                                  {dueLabel && <small style={{color:dueColor,fontWeight:600}}>{dueLabel}</small>}
+                                  {task.recurrence && task.recurrence !== "none" && <small style={{color:"var(--muted)",fontWeight:600}}>↻ {task.recurrence === "weekly" ? "semanal" : "mensual"}</small>}
+                                </div>
+                              </div>
+                              <button type="button" onClick={() => openEditHomeTask(task)} title="Editar tarea"
+                                style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"13px",flexShrink:0,padding:"0 2px"}}>✎</button>
+                              <button type="button" onClick={() => confirmDelete("¿Eliminar esta tarea?", () => setHomeTasks(cur => cur.filter(t => t.id !== task.id)))}
+                                style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"15px",flexShrink:0,padding:"0 2px"}}>×</button>
                             </div>
-                            <button type="button" onClick={() => confirmDelete("¿Eliminar esta tarea?", () => setHomeTasks(cur => cur.filter(t => t.id !== task.id)))}
-                              style={{border:"none",background:"none",color:"var(--muted)",cursor:"pointer",fontSize:"15px",flexShrink:0,padding:"0 2px"}}>×</button>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -6993,16 +7029,16 @@ export default function App() {
           </div>
         )}
 
-        {/* ── Modal: Nueva Tarea ── */}
+        {/* ── Modal: Nueva/Editar Tarea ── */}
         {showTaskModal&&(
-          <div className="app-modal-backdrop" onClick={e=>e.target===e.currentTarget&&(setShowTaskModal(false),setHomeTaskError(""))}>
+          <div className="app-modal-backdrop" onClick={e=>e.target===e.currentTarget&&(setShowTaskModal(false),setHomeTaskError(""),setEditingHomeTaskId(null),setHomeForm(blankHomeForm))}>
             <div className="app-modal-card" style={{width:"min(440px,100%)"}}>
               <div className="app-modal-head">
                 <div>
                   <p className="app-modal-head-eyebrow">Mi Hogar</p>
-                  <p className="app-modal-head-title">Nueva tarea</p>
+                  <p className="app-modal-head-title">{editingHomeTaskId ? "Editar tarea" : "Nueva tarea"}</p>
                 </div>
-                <button type="button" className="app-modal-close" onClick={()=>{setShowTaskModal(false);setHomeTaskError("");}} aria-label="Cerrar">✕</button>
+                <button type="button" className="app-modal-close" onClick={()=>{setShowTaskModal(false);setHomeTaskError("");setEditingHomeTaskId(null);setHomeForm(blankHomeForm);}} aria-label="Cerrar">✕</button>
               </div>
               <form onSubmit={e=>{addHomeTask(e);if(!homeTaskError)setShowTaskModal(false);}} style={{padding:"20px 22px",display:"flex",flexDirection:"column",gap:"14px"}}>
                 <div>
@@ -7020,22 +7056,25 @@ export default function App() {
                   </select>
                 </div>
 
-                <div>
-                  <label className="app-form-label">¿Con qué frecuencia?</label>
-                  <div className="app-pill-row">
-                    {["Rutina","Semanal","Mensual","Anual","Otro"].map(f=>(
-                      <button key={f} type="button" onClick={()=>updateHomeForm("frequency",f)}
-                        className={`app-pill-btn${homeForm.frequency===f?" app-pill-btn--active":""}`}>
-                        {f}
-                      </button>
-                    ))}
+                <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                  <div>
+                    <label className="app-form-label">Fecha <span style={{fontWeight:400,textTransform:"none"}}>(opcional)</span></label>
+                    <input type="date" value={homeForm.dueDate} onChange={e=>updateHomeForm("dueDate",e.target.value)} className="app-form-input"/>
                   </div>
-                  {homeForm.frequency==="Otro"&&(
-                    <input placeholder="¿Cada cuánto? Ej: Cada 2 días" value={homeForm.customFrequency}
-                      onChange={e=>updateHomeForm("customFrequency",e.target.value)}
-                      className="app-form-input" style={{marginTop:"8px"}}/>
-                  )}
+                  <div>
+                    <label className="app-form-label">¿Se repite?</label>
+                    <select value={homeForm.recurrence} onChange={e=>updateHomeForm("recurrence",e.target.value)} className="app-form-input">
+                      <option value="none">No se repite</option>
+                      <option value="weekly">Cada semana</option>
+                      <option value="monthly">Cada mes</option>
+                    </select>
+                  </div>
                 </div>
+                {homeForm.recurrence!=="none"&&homeForm.dueDate&&(
+                  <p className="helper-copy" style={{margin:"-8px 0 0"}}>
+                    ↻ Se repite cada {WEEKDAY_NAMES[new Date(homeForm.dueDate+"T12:00:00").getDay()]}{homeForm.recurrence==="monthly"?" del mes":""}.
+                  </p>
+                )}
 
                 <div>
                   <label className="app-form-label">Prioridad</label>
@@ -7071,7 +7110,7 @@ export default function App() {
                     className="app-form-input"/>
                 </div>
 
-                <button type="submit" className="app-modal-submit">Guardar tarea</button>
+                <button type="submit" className="app-modal-submit">{editingHomeTaskId ? "Guardar cambios" : "Guardar tarea"}</button>
               </form>
             </div>
           </div>
