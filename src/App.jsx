@@ -2734,7 +2734,7 @@ export default function App() {
           </div>
           <div style={{display:"grid",gap:"14px"}}>
             {[
-              { mode: "mama",        icon: "🌸", title: "Solo quiero organizarme",        desc: "Hogar, familia, bienestar y tiempo para mí. Sin funciones de negocio." },
+              { mode: "mama",        icon: "🌸", title: "Solo quiero organizar mi hogar", desc: "Hogar, familia, bienestar y tiempo para mí. Sin funciones de negocio." },
               { mode: "emprendedora",icon: "💼", title: "Tengo un negocio o quiero emprender", desc: "Clientes, finanzas, Studio de contenido y todo para hacer crecer mi negocio." },
               { mode: "ambas",       icon: "✨", title: "Las dos cosas",                   desc: "Quiero un hogar organizado Y construir mi negocio al mismo tiempo." },
             ].map(({ mode, icon, title, desc }) => (
@@ -3103,8 +3103,11 @@ export default function App() {
 
         {/* Mini Apps — Studio y Facturas viven acá (siguen en desarrollo,
             se sacaron del menú principal para no competir con lo que ya
-            está terminado: Inicio/Hogar/Negocio/Clientes) */}
+            está terminado: Inicio/Hogar/Negocio/Clientes). Son todas
+            herramientas de negocio — no tienen sentido en plan solo-hogar. */}
         <div className="sidebar-tools">
+          {userMode !== "mama" && (
+          <>
           <div className="sidebar-miniapps-divider">
             <span className="sidebar-miniapps-label">Mini Apps</span>
           </div>
@@ -3175,6 +3178,8 @@ export default function App() {
             </span>
             <span className="sidebar-miniapp-arrow">↗</span>
           </a>
+          </>
+          )}
 
           {/* Herramientas */}
           <div className="sidebar-miniapps-divider">
@@ -4331,7 +4336,10 @@ export default function App() {
     const todayDoneBiz  = tasks.filter((t) => t.done && isToday(t.completedAt));
     const todayDoneCount = todayDoneHome.length + todayDoneBiz.length;
     const todayPendingCount = pendingHomeAll.length + pendingBizAll.length;
-    const weekTimeLogs = taskTimeLogs.filter((l) => timestampFromInputDate(l.date) >= weekStart);
+    // Plan solo-hogar: sin negocio, el progreso de la semana se limita a
+    // tareas del hogar (por si quedó algún registro viejo de negocio de
+    // antes de cambiar de plan, no debería mezclarse aquí).
+    const weekTimeLogs = taskTimeLogs.filter((l) => timestampFromInputDate(l.date) >= weekStart && (userMode !== "mama" || l.taskType !== "biz"));
 
     // ── Hogar: "Tus 3 de hoy" ──
     const pendingHome = homeTasks.filter((t) => !t.done);
