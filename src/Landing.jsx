@@ -154,7 +154,16 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
                 <span className="lhv-dot green" />
                 <span className="lhv-phone-title">Mamá CEO</span>
               </div>
-              <div className="lhv-section-label">Dashboard</div>
+
+              <div className="lhv-section-label">🏠 Mi hogar</div>
+              <div className="lhv-tasks">
+                <div className="lhv-task done">✓ Pagar servicios del mes</div>
+                <div className="lhv-task done">✓ Cita pediatra — martes 10am</div>
+                <div className="lhv-task">○ Lista de mercado semanal</div>
+                <div className="lhv-task">○ Uniforme escolar de Samuel</div>
+              </div>
+
+              <div className="lhv-section-label" style={{ marginTop: 10 }}>💰 Mi negocio</div>
               <div className="lhv-stats">
                 <div className="lhv-stat">
                   <span className="lhv-stat-ico">💰</span>
@@ -170,23 +179,11 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
                     <div className="lhv-stat-val">12</div>
                   </div>
                 </div>
-                <div className="lhv-stat">
-                  <span className="lhv-stat-ico">🎯</span>
-                  <div>
-                    <div className="lhv-stat-label">Meta del mes</div>
-                    <div className="lhv-stat-val">84%</div>
-                  </div>
-                </div>
               </div>
+
               <div className="lhv-pareto">
-                <span className="lhv-pareto-ico">📊</span>
-                <span>3 clientes generan el <strong>80%</strong> de tus ingresos</span>
-              </div>
-              <div className="lhv-tus3-label">Tus 3 de hoy</div>
-              <div className="lhv-tasks">
-                <div className="lhv-task done">✓ Enviar propuesta a Carolina</div>
-                <div className="lhv-task">○ Publicar Reel de ventas</div>
-                <div className="lhv-task">○ Revisar presupuesto semanal</div>
+                <span className="lhv-pareto-ico">✨</span>
+                <span>Todo en un solo lugar — sin apps dispersas</span>
               </div>
             </div>
           )}
@@ -227,11 +224,11 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           <p className="landing-section-sub">Si te identificas con alguna de estas situaciones, Mamá CEO App es lo que necesitas.</p>
           <div className="landing-fw-grid">
             {[
+              { emoji: "🏠", text: "Tu casa nunca está del todo organizada — las tareas del hogar, el mercado y los compromisos de los niños viven en tu cabeza o en chats dispersos." },
+              { emoji: "📅", text: "La cita del pediatra, la reunión del colegio, el pago del recibo — todo lo manejas de memoria y con miedo a olvidar algo importante." },
               { emoji: "👩‍👧‍👦", text: "Eres mamá y emprendedora, y sientes que en ninguno de los dos roles lo estás haciendo completamente bien." },
-              { emoji: "📱", text: "Manejas tu negocio desde el teléfono entre las actividades de los niños, el hogar y las mil cosas del día." },
-              { emoji: "💸", text: "No sabes exactamente cuánto estás ganando ni en qué se fue el dinero a fin de mes." },
-              { emoji: "🔥", text: "Tienes un millón de tareas pendientes pero no sabes por cuál empezar hoy." },
-              { emoji: "📊", text: "Sabes que deberías publicar más contenido pero no tienes ni el tiempo ni las ideas." },
+              { emoji: "💸", text: "No sabes exactamente cuánto estás ganando ni en qué se fue el dinero a fin de mes — en el hogar ni en el negocio." },
+              { emoji: "🔥", text: "Tienes un millón de tareas pendientes entre la casa y el trabajo pero no sabes por cuál empezar hoy." },
               { emoji: "😮‍💨", text: "Llegas a la noche agotada con la sensación de que corriste todo el día pero no avanzaste nada importante." },
             ].map((item, i) => (
               <div key={i} className="landing-fw-card">
@@ -293,12 +290,12 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           <p className="landing-section-sub">Deja de improvisar cada día. Con Mamá CEO tienes claridad, enfoque y control.</p>
           <div className="landing-transform-grid">
             {[
-              { before: "No sabes cuánto ganaste este mes", after: "Ves tus ingresos, gastos y meta en tiempo real" },
+              { before: "La lista del mercado está en 3 chats distintos y siempre falta algo", after: "Una sola lista del hogar, siempre contigo, siempre completa" },
+              { before: "El calendario de los niños lo llevas en la cabeza y vives con miedo de olvidar", after: "Calendario familiar visible en segundos — citas, actividades y recordatorios" },
+              { before: "El hogar y el negocio se mezclan en tu cabeza todo el día", after: "Cada área tiene su espacio: todo separado, todo claro" },
+              { before: "No sabes cuánto ganaste este mes ni en qué se fue el dinero", after: "Ves tus ingresos, gastos y meta del hogar y negocio en tiempo real" },
               { before: "Olvidas hacer seguimiento a clientes potenciales", after: "Tu pipeline te dice quién necesita atención hoy" },
-              { before: "Publicas contenido sin estrategia ni constancia", after: "El Studio IA genera tu guión en 30 segundos" },
-              { before: "El hogar y el negocio se mezclan en tu cabeza", after: "Cada área tiene su espacio: todo separado y claro" },
               { before: "No sabes qué escribirle a una clienta tibia", after: "El Radar IA te sugiere el mensaje exacto de WhatsApp" },
-              { before: "No sabes qué priorizar cada día", after: "Tu Pareto te dice qué 3 cosas importan hoy" },
               { before: "Terminas el día agotada sin claridad de avance", after: "Claridad, enfoque y progreso visible cada día" },
             ].map((t, i) => (
               <div key={i} className="landing-transform-card">
