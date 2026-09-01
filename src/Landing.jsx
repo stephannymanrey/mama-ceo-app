@@ -114,12 +114,12 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
         <div className="landing-hero-text">
           <span className="landing-badge">✨ 14 días gratis · Sin tarjeta de crédito</span>
           <h1 className="landing-h1">
-            Tu negocio, hogar<br />y propósito.
-            <span className="landing-h1-accent"> Todo en un solo lugar.</span>
+            Organiza tu casa<br />y tu negocio
+            <span className="landing-h1-accent"> en un solo lugar.</span>
           </h1>
           <p className="landing-hero-sub">
-            Deja de sentirte abrumada. Mamá CEO App te ayuda a{" "}
-            <strong>vender más, organizar tu hogar y cuidarte</strong> — sin perder el hilo de nada.
+            Deja de sentirte abrumada entre el hogar y el negocio. Mamá CEO App te ayuda a{" "}
+            <strong>organizar tu casa, vender más y cuidarte</strong> — todo desde el teléfono, sin perder el hilo de nada.
           </p>
           <div className="landing-hero-ctas">
             <button className="lbtn-hero" onClick={onSignup}>
@@ -250,13 +250,12 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           <p className="landing-section-sub">Diseñado especialmente para la mamá emprendedora: sin complejidad, sin apps dispersas.</p>
 
           <div className="landing-feat-block">
-            <div className="landing-feat-label">Para tu negocio 💼</div>
+            <div className="landing-feat-label">Para tu hogar 🏠</div>
             <div className="landing-feat-grid">
               {[
-                { icon: "💰", title: "Finanzas claras", desc: "Registra ingresos y gastos, sigue tus metas de venta y entiende el flujo de tu negocio de un vistazo." },
-                { icon: "🤝", title: "Radar de Clientas IA", desc: "Tu pipeline prioriza quién necesita atención hoy y te sugiere el mensaje exacto de WhatsApp para retomar el contacto — con IA." },
-                { icon: "✍️", title: "Studio de contenido IA", desc: "Guiones para Reels, YouTube y Podcast, hooks que detienen el scroll, ideas por categoría y lead magnets — todo con IA en segundos." },
-                { icon: "🎬", title: "Editor de video SilenceCutter", desc: "Sube tu video y elimina los silencios automáticamente. Edita en la línea de tiempo, corta con precisión y exporta listo para publicar." },
+                { icon: "🛒", title: "Todo el hogar organizado", desc: "Lista de compras, tareas del hogar, presupuesto familiar y recordatorios — todo en un panel claro para que no se te escape nada." },
+                { icon: "📅", title: "Calendario familiar", desc: "Citas médicas, actividades de tus hijos, compromisos del hogar — organizados en un solo lugar para toda la familia." },
+                { icon: "🌿", title: "Tu bienestar", desc: "Check-in emocional diario, temporizador Pomodoro y seguimiento de tus metas personales. Porque tú también importas." },
               ].map((f, i) => (
                 <div key={i} className="landing-feat-card">
                   <span className="landing-feat-icon">{f.icon}</span>
@@ -268,12 +267,13 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           </div>
 
           <div className="landing-feat-block">
-            <div className="landing-feat-label">Para tu hogar 🏠</div>
+            <div className="landing-feat-label">Y también para tu negocio 💼</div>
             <div className="landing-feat-grid">
               {[
-                { icon: "🛒", title: "Organización del hogar", desc: "Lista de compras, tareas del hogar y presupuesto familiar todo en un solo panel claro." },
-                { icon: "📅", title: "Calendario familiar", desc: "Citas médicas, actividades de tus hijos, recordatorios — todo organizado para que no se te escape nada." },
-                { icon: "🌿", title: "Tu bienestar", desc: "Check-in emocional diario, temporizador Pomodoro y seguimiento de tus metas personales." },
+                { icon: "💰", title: "Finanzas claras", desc: "Registra ingresos y gastos, sigue tus metas de venta y entiende el flujo de tu negocio de un vistazo." },
+                { icon: "🤝", title: "Radar de Clientas IA", desc: "Tu pipeline prioriza quién necesita atención hoy y te sugiere el mensaje exacto de WhatsApp para retomar el contacto — con IA." },
+                { icon: "✍️", title: "Studio de contenido IA", desc: "Guiones para Reels, YouTube y Podcast, hooks que detienen el scroll, ideas por categoría y lead magnets — todo con IA en segundos." },
+                { icon: "🎬", title: "Editor de video SilenceCutter", desc: "Sube tu video y elimina los silencios automáticamente. Edita en la línea de tiempo, corta con precisión y exporta listo para publicar." },
               ].map((f, i) => (
                 <div key={i} className="landing-feat-card">
                   <span className="landing-feat-icon">{f.icon}</span>
@@ -489,8 +489,8 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
       {/* ── FINAL CTA ── */}
       <section className="landing-final-cta">
         <div className="landing-container landing-final-cta-inner">
-          <h2>¿Lista para ser la CEO de tu vida?</h2>
-          <p>Únete hoy y empieza a organizar tu negocio y tu hogar — gratis por 14 días.</p>
+          <h2>¿Lista para organizar tu casa y tu negocio?</h2>
+          <p>Empieza hoy completamente gratis — 14 días sin tarjeta de crédito.</p>
           <button className="lbtn-cta-white" onClick={onSignup}>
             Crear cuenta gratis — 14 días
           </button>
@@ -502,7 +502,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
       <footer className="landing-footer">
         <div className="landing-container landing-footer-inner">
           <Logo width={130} />
-          <p className="landing-footer-tagline">Tu negocio, hogar y propósito. Todo en un solo lugar.</p>
+          <p className="landing-footer-tagline">Organiza tu casa y tu negocio. Todo en un solo lugar.</p>
           <div className="landing-footer-links">
             <button className="landing-link-btn" onClick={onTerminos}>Términos y Condiciones</button>
             <span>·</span>
