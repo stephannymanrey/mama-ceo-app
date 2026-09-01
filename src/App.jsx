@@ -1541,7 +1541,10 @@ export default function App() {
           options: { data: { full_name: authName.trim(), whatsapp: authWhatsapp?.trim() || null } }
         });
         if (error) setAuthError(translateError(error.message));
-        else { setConfirmMode(true); setAuthError(""); }
+        else {
+          setConfirmMode(true); setAuthError("");
+          if (typeof window.gtag === 'function') window.gtag('event', 'signup_start', { send_to: 'G-E11TL2D3ZW' });
+        }
       }
     } catch (err) {
       setAuthError("Error de conexión. Por favor verifica tu internet e intenta de nuevo.");
@@ -1560,7 +1563,10 @@ export default function App() {
       if (error) { setAuthError(translateError(error.message)); }
       else {
         const { data } = await awsAuth.signInWithPassword({ email: authEmail, password: authPassword });
-        if (data?.user) setUser(data.user);
+        if (data?.user) {
+          setUser(data.user);
+          if (typeof window.gtag === 'function') window.gtag('event', 'signup_complete', { send_to: 'G-E11TL2D3ZW', method: 'email' });
+        }
         setConfirmMode(false);
       }
     } catch (err) {

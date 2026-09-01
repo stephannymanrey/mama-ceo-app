@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Logo from "./Logo";
 import "./Landing.css";
+import { trackEvent } from "./analytics";
 
 const PLANS = [
   {
@@ -81,6 +82,18 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
+  const pricingRef = useRef(null);
+  useEffect(() => {
+    const el = document.getElementById("precios");
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { trackEvent("scroll_pricing"); observer.disconnect(); } },
+      { threshold: 0.2 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
   const isIOS      = /iPad|iPhone|iPod/.test(ua);
   const isAndroid  = /Android/.test(ua);
@@ -104,7 +117,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           <Logo width={150} />
           <div className="landing-nav-actions">
             <button className="lbtn-ghost" onClick={onLogin}>Iniciar sesión</button>
-            <button className="lbtn-primary" onClick={onSignup}>Prueba gratis</button>
+            <button className="lbtn-primary" onClick={() => { trackEvent("cta_click", { location: "navbar" }); onSignup(); }}>Prueba gratis</button>
           </div>
         </div>
       </nav>
@@ -122,7 +135,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             <strong>organizar tu casa, vender más y cuidarte</strong> — todo desde el teléfono, sin perder el hilo de nada.
           </p>
           <div className="landing-hero-ctas">
-            <button className="lbtn-hero" onClick={onSignup}>
+            <button className="lbtn-hero" onClick={() => { trackEvent("cta_click", { location: "hero" }); onSignup(); }}>
               Empieza gratis — 14 días
             </button>
             <button className="lbtn-outline" onClick={() => scrollTo("precios")}>
@@ -355,7 +368,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
                   </ul>
                   <button
                     className={`landing-plan-btn${plan.highlight ? " featured" : ""}`}
-                    onClick={onSignup}
+                    onClick={() => { trackEvent("cta_click", { location: "pricing", plan: plan.id }); onSignup(); }}
                   >
                     Probar gratis — 14 días
                   </button>
@@ -488,7 +501,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
         <div className="landing-container landing-final-cta-inner">
           <h2>¿Lista para organizar tu casa y tu negocio?</h2>
           <p>Empieza hoy completamente gratis — 14 días sin tarjeta de crédito.</p>
-          <button className="lbtn-cta-white" onClick={onSignup}>
+          <button className="lbtn-cta-white" onClick={() => { trackEvent("cta_click", { location: "final_cta" }); onSignup(); }}>
             Crear cuenta gratis — 14 días
           </button>
           <p className="landing-cta-note">Sin tarjeta de crédito · Cancela cuando quieras</p>
