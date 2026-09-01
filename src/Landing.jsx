@@ -82,6 +82,14 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    ["utm_source", "utm_medium", "utm_campaign", "utm_content"].forEach((k) => {
+      const v = params.get(k);
+      if (v) sessionStorage.setItem(k, v);
+    });
+  }, []);
+
   const pricingRef = useRef(null);
   useEffect(() => {
     const el = document.getElementById("precios");

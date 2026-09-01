@@ -621,6 +621,18 @@ const API_URL      = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/def
 const GEMINI_URL   = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-gemini";
 const PAYMENTS_URL = "https://p5ftnawyxe.execute-api.us-east-1.amazonaws.com/default/mamaceo-payments";
 
+function guardarUtms(userId) {
+  const keys = ["utm_source", "utm_medium", "utm_campaign", "utm_content"];
+  const utms = {};
+  keys.forEach((k) => { const v = sessionStorage.getItem(k); if (v) utms[k] = v; });
+  if (!Object.keys(utms).length) return;
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "save-utms", userId, ...utms }),
+  }).catch(() => {});
+}
+
 const VAPID_PUBLIC_KEY = "BINOW9l20bWcrxQrKGise-5tzw5kblFIqskpCTiqeWscNIwp5qoZEnTI45letfo3qXCHnzKzBPQXH9_2ghxDhB4";
 function urlBase64ToUint8Array(b64) {
   const pad = "=".repeat((4 - b64.length % 4) % 4);
@@ -1566,6 +1578,7 @@ export default function App() {
         if (data?.user) {
           setUser(data.user);
           if (typeof window.gtag === 'function') window.gtag('event', 'signup_complete', { send_to: 'G-E11TL2D3ZW', method: 'email' });
+          guardarUtms(data.user.id);
         }
         setConfirmMode(false);
       }
