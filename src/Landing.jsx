@@ -79,6 +79,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
   const [openFaq, setOpenFaq] = useState(null);
   const [imgError, setImgError] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
 
@@ -143,11 +144,8 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             <strong>organizar tu casa, vender más y cuidarte</strong> — todo desde el teléfono, sin perder el hilo de nada.
           </p>
           <div className="landing-hero-ctas">
-            <button className="lbtn-hero" onClick={() => { trackEvent("cta_click", { location: "hero" }); onSignup(); }}>
+            <button className="lbtn-hero" onClick={() => { trackEvent("cta_click", { location: "hero" }); scrollTo("registro"); }}>
               Empieza gratis — 14 días
-            </button>
-            <button className="lbtn-outline" onClick={() => scrollTo("precios")}>
-              Ver planes ↓
             </button>
           </div>
           <p className="landing-hero-trust">Sin tarjeta de crédito · Cancela cuando quieras · Datos seguros</p>
@@ -311,12 +309,9 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           <p className="landing-section-sub">Deja de improvisar cada día. Con Mamá CEO tienes claridad, enfoque y control.</p>
           <div className="landing-transform-grid">
             {[
-              { before: "La lista del mercado está en 3 chats distintos y siempre falta algo", after: "Una sola lista del hogar, siempre contigo, siempre completa" },
-              { before: "El calendario de los niños lo llevas en la cabeza y vives con miedo de olvidar", after: "Calendario familiar visible en segundos — citas, actividades y recordatorios" },
-              { before: "El hogar y el negocio se mezclan en tu cabeza todo el día", after: "Cada área tiene su espacio: todo separado, todo claro" },
-              { before: "No sabes cuánto ganaste este mes ni en qué se fue el dinero", after: "Ves tus ingresos, gastos y meta del hogar y negocio en tiempo real" },
-              { before: "Olvidas hacer seguimiento a clientes potenciales", after: "Tu pipeline te dice quién necesita atención hoy" },
-              { before: "No sabes qué escribirle a una clienta tibia", after: "El Radar IA te sugiere el mensaje exacto de WhatsApp" },
+              { before: "El hogar y el negocio se mezclan en tu cabeza todo el día", after: "Cada área tiene su espacio — todo separado, todo claro" },
+              { before: "No sabes cuánto ganaste este mes ni en qué se fue el dinero", after: "Ves tus ingresos y gastos del hogar y negocio en tiempo real" },
+              { before: "Olvidas hacer seguimiento a clientas y pierdes ventas", after: "Tu pipeline con IA te dice quién necesita atención hoy" },
               { before: "Terminas el día agotada sin claridad de avance", after: "Claridad, enfoque y progreso visible cada día" },
             ].map((t, i) => (
               <div key={i} className="landing-transform-card">
@@ -376,7 +371,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
                   </ul>
                   <button
                     className={`landing-plan-btn${plan.highlight ? " featured" : ""}`}
-                    onClick={() => { trackEvent("cta_click", { location: "pricing", plan: plan.id }); onSignup(); }}
+                    onClick={() => { trackEvent("cta_click", { location: "pricing", plan: plan.id }); scrollTo("registro"); }}
                   >
                     Probar gratis — 14 días
                   </button>
@@ -412,107 +407,28 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
         </div>
       </section>
 
-      {/* ── TENLA SIEMPRE A MANO ── */}
-      <section className="landing-section landing-pwa">
-        <div className="landing-container">
-          <span className="landing-badge">📲 Sin descargas · Sin tienda de apps</span>
-          <h2 className="landing-h2" style={{marginTop:"12px"}}>Tenla siempre a mano</h2>
-          <p className="landing-section-sub">
-            Agrégala a tu pantalla de inicio en segundos y ábrela como cualquier app — sin buscar en el navegador cada vez.
-          </p>
-
-          {/* iOS + Safari → solo tarjeta iPhone */}
-          {isSafariIOS && (
-            <div className="landing-pwa-card lpwa-solo">
-              <div className="lpwa-detected">¡Estás en iPhone! Aquí te explicamos cómo hacerlo 👇</div>
-              <div className="lpwa-steps-visual">
-                {[
-                  { n:"1", icon:"⬆️", text: <span>Toca el ícono de <strong>Compartir</strong> en la barra inferior de Safari <em>(el cuadrado con flechita)</em></span> },
-                  { n:"2", icon:"➕", text: <span>Selecciona <strong>"Agregar a pantalla de inicio"</strong></span> },
-                  { n:"3", icon:"✅", text: <span>Toca <strong>"Agregar"</strong> — ¡listo! Ya aparece en tu pantalla</span> },
-                ].map(s => (
-                  <div key={s.n} className="lpwa-vstep">
-                    <span className="lpwa-num">{s.n}</span>
-                    <span className="lpwa-vstep-ico">{s.icon}</span>
-                    <span className="lpwa-vstep-txt">{s.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* iOS + Chrome → pide abrir en Safari */}
-          {isChromeIOS && (
-            <div className="landing-pwa-card lpwa-solo">
-              <div className="lpwa-detected">Estás en iPhone 🍎</div>
-              <p className="lpwa-chrome-msg">Para agregarla a tu pantalla de inicio, necesitas abrirla en <strong>Safari</strong>. Copia el enlace y pégalo allí:</p>
-              <button className="lpwa-copy-btn" onClick={copyLink}>
-                {urlCopied ? "✅ Enlace copiado" : "📋 Copiar enlace para Safari"}
-              </button>
-            </div>
-          )}
-
-          {/* Android → solo tarjeta Android */}
-          {isAndroid && (
-            <div className="landing-pwa-card lpwa-solo">
-              <div className="lpwa-detected">¡Estás en Android! Aquí te explicamos cómo hacerlo 👇</div>
-              <div className="lpwa-steps-visual">
-                {[
-                  { n:"1", icon:"⋮", text: <span>Toca los <strong>3 puntos</strong> en la esquina superior derecha de Chrome</span> },
-                  { n:"2", icon:"➕", text: <span>Selecciona <strong>"Agregar a pantalla de inicio"</strong></span> },
-                  { n:"3", icon:"✅", text: <span>Confirma — ¡ya aparece en tu pantalla!</span> },
-                ].map(s => (
-                  <div key={s.n} className="lpwa-vstep">
-                    <span className="lpwa-num">{s.n}</span>
-                    <span className="lpwa-vstep-ico">{s.icon}</span>
-                    <span className="lpwa-vstep-txt">{s.text}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Desktop → muestra las dos opciones */}
-          {!isMobileKnown && (
-            <div className="landing-pwa-grid">
-              <div className="landing-pwa-card">
-                <div className="lpwa-os-icon">🍎</div>
-                <h3 className="lpwa-title">En iPhone</h3>
-                <p className="lpwa-sub-note">Ábrela en Safari (no Chrome)</p>
-                <ol className="lpwa-steps">
-                  <li><span className="lpwa-num">1</span><span>Toca el ícono <strong>Compartir ⬆️</strong> en la barra de Safari</span></li>
-                  <li><span className="lpwa-num">2</span><span>Selecciona <strong>"Agregar a pantalla de inicio"</strong></span></li>
-                  <li><span className="lpwa-num">3</span><span>Toca <strong>Agregar</strong> — ¡lista!</span></li>
-                </ol>
-              </div>
-              <div className="landing-pwa-card">
-                <div className="lpwa-os-icon">🤖</div>
-                <h3 className="lpwa-title">En Android</h3>
-                <p className="lpwa-sub-note">Ábrela en Chrome</p>
-                <ol className="lpwa-steps">
-                  <li><span className="lpwa-num">1</span><span>Toca los <strong>3 puntos ⋮</strong> arriba a la derecha</span></li>
-                  <li><span className="lpwa-num">2</span><span>Selecciona <strong>"Agregar a pantalla de inicio"</strong></span></li>
-                  <li><span className="lpwa-num">3</span><span>Confirma — ¡lista!</span></li>
-                </ol>
-              </div>
-            </div>
-          )}
-
-          <div className="lpwa-footer-note">
-            Se abre directamente — como si la hubieras descargado de la tienda. Sin buscar, sin navegador. ✨
-          </div>
-        </div>
-      </section>
-
-      {/* ── FINAL CTA ── */}
-      <section className="landing-final-cta">
+      {/* ── REGISTRO ── */}
+      <section className="landing-final-cta" id="registro">
         <div className="landing-container landing-final-cta-inner">
-          <h2>¿Lista para organizar tu casa y tu negocio?</h2>
-          <p>Empieza hoy completamente gratis — 14 días sin tarjeta de crédito.</p>
-          <button className="lbtn-cta-white" onClick={() => { trackEvent("cta_click", { location: "final_cta" }); onSignup(); }}>
-            Crear cuenta gratis — 14 días
-          </button>
-          <p className="landing-cta-note">Sin tarjeta de crédito · Cancela cuando quieras</p>
+          <h2>Empieza gratis hoy — 14 días sin tarjeta</h2>
+          <p>Ingresa tu correo y en menos de 2 minutos tienes tu cuenta lista.</p>
+          <form
+            className="landing-registro-form"
+            onSubmit={(e) => { e.preventDefault(); trackEvent("cta_click", { location: "registro_form" }); onSignup(); }}
+          >
+            <input
+              className="landing-registro-input"
+              type="email"
+              placeholder="tucorreo@gmail.com"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
+              required
+            />
+            <button type="submit" className="lbtn-cta-white">
+              Crear cuenta gratis →
+            </button>
+          </form>
+          <p className="landing-cta-note">Sin tarjeta de crédito · Cancela cuando quieras · Datos seguros</p>
         </div>
       </section>
 

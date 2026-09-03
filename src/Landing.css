@@ -720,6 +720,27 @@
 .landing-final-cta p { font-size: 17px; opacity: 0.9; margin: 0 0 32px; }
 .landing-cta-note { font-size: 13px; opacity: 0.7; margin: 14px 0 0; }
 
+.landing-registro-form {
+  display: flex;
+  gap: 10px;
+  max-width: 480px;
+  margin: 0 auto 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.landing-registro-input {
+  flex: 1;
+  min-width: 220px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: none;
+  font-size: 16px;
+  font-family: inherit;
+  outline: none;
+  color: #3A3742;
+}
+.landing-registro-input::placeholder { color: #aaa; }
+
 /* ── FOOTER ── */
 .landing-footer { background: #18111e; padding: 40px 20px; }
 .landing-footer-inner {
