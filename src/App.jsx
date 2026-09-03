@@ -2594,7 +2594,7 @@ export default function App() {
       return (
         <Landing
           onLogin={() => { setAuthMode("login"); setPreAuthView("auth"); }}
-          onSignup={() => { setAuthMode("signup"); setPreAuthView("auth"); }}
+          onSignup={(email) => { if (email) setAuthEmail(email); setAuthMode("signup"); setPreAuthView("auth"); }}
           onTerminos={() => setPreAuthView("terminos")}
           onPrivacidad={() => setPreAuthView("privacidad")}
           prices={PLAN_PRICES}

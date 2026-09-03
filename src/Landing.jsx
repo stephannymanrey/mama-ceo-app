@@ -414,7 +414,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           <p>Ingresa tu correo y en menos de 2 minutos tienes tu cuenta lista.</p>
           <form
             className="landing-registro-form"
-            onSubmit={(e) => { e.preventDefault(); trackEvent("cta_click", { location: "registro_form" }); onSignup(); }}
+            onSubmit={(e) => { e.preventDefault(); trackEvent("cta_click", { location: "registro_form" }); onSignup(emailInput); }}
           >
             <input
               className="landing-registro-input"
