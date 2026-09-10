@@ -3189,11 +3189,11 @@ export default function App() {
             href="/editor"
             target="_blank"
             rel="noopener noreferrer"
-            title="Editor de Video — Elimina silencios de tus videos automáticamente">
+            title="ReelCut — Corta silencios y extrae Reels con IA">
             <span className="sidebar-tool-icon">✂️</span>
             <span className="sidebar-tool-label">
-              Editor de Video
-              <span className="sidebar-miniapp-sub">Elimina silencios automáticamente</span>
+              ReelCut
+              <span className="sidebar-miniapp-sub">Corta silencios y saca tus Reels con IA</span>
             </span>
             <span className="sidebar-miniapp-arrow">↗</span>
           </a>
