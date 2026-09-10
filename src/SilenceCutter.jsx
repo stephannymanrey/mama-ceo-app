@@ -1,5 +1,4 @@
-import React, { useState, useRef, useCallback, useEffect, useMemo } from "react";
-import { createPortal } from "react-dom";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import Logo from "./Logo";
 import { getAwsAuthToken, awsAuth } from "./lib/awsClient";
 import RegisterGate from "./RegisterGate";
@@ -14,31 +13,7 @@ const PRESETS = {
   agresiva:     { noise: -28, duration: 0.3 },
 };
 const PADDING = 0.03;
-const FONTS   = ["Poppins", "Montserrat", "Arial"];
-const HL_COLORS = [
-  { label: "Amarillo", c: "#FFE44D" },
-  { label: "Rosa",     c: "#FF6B8A" },
-  { label: "Blanco",   c: "#FFFFFF" },
-  { label: "Verde",    c: "#4ADE80" },
-];
-const SUB_VARIANTS = [
-  { id: "highlight", label: "Caja de color",  desc: "La palabra activa se resalta con una caja de color — el estilo clásico de subtítulos de Reels." },
-  { id: "classic",   label: "Clásico",        desc: "Texto blanco simple con sombra, sin ningún resaltado por palabra — minimalista." },
-  { id: "bold",      label: "Color en texto", desc: "La palabra activa cambia de color (sin caja) — más sutil que la caja de color." },
-  { id: "outline",   label: "Contorno",       desc: "Texto con contorno negro y relleno blanco — la palabra activa toma el color elegido." },
-];
 const CLIP_COLORS   = ["#C4526A","#4A90BF","#5FB87A","#B07FD4","#D4955F","#5FB8B0"];
-const TRANSITIONS   = [
-  { id: "none",       icon: "—", label: "Sin efecto"    },
-  { id: "fade",       icon: "◐", label: "Fundido"       },
-  { id: "flash",      icon: "✦", label: "Flash"         },
-  { id: "zoom",       icon: "⊕", label: "Zoom"          },
-  { id: "slideLeft",  icon: "←", label: "Deslizar ←"   },
-  { id: "slideRight", icon: "→", label: "Deslizar →"   },
-  { id: "slideUp",    icon: "↑", label: "Deslizar ↑"   },
-  { id: "slideDown",  icon: "↓", label: "Deslizar ↓"   },
-  { id: "flash", icon: "✦", label: "Flash blanco"   },
-];
 // Segundo pass de suavizante: overlay borroso semitransparente sobre el frame
 // ya dibujado. El frame original da definición de bordes (ojos, labios, contorno);
 // este overlay solo suaviza texturas finas (poros, líneas pequeñas).
@@ -52,358 +27,7 @@ function applySkinOverlay(ctx, source, x, y, w, h, skin) {
   ctx.drawImage(source, x, y, w, h);
   ctx.restore();
 }
-// bokeh: 0 = apagado, 1–100 → blur de fondo 4–30px
-function bokehBlurPx(bokeh) { return bokeh > 0 ? 4 + (bokeh / 100) * 26 : 0; }
 
-// Biblioteca de música sin derechos de autor (solo instrumental)
-const MUSIC_LIBRARY = [
-  // Motivacional
-  { id: "m1", name: "Impulso",       genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-  { id: "m2", name: "Confianza",     genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3" },
-  { id: "m3", name: "Avanza",        genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3" },
-  { id: "m4", name: "Determinación", genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3" },
-  { id: "m5", name: "Empuje",        genre: "motivacional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-  // Tranquila
-  { id: "t1", name: "Mañana Suave",  genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
-  { id: "t2", name: "Serenidad",     genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3" },
-  { id: "t3", name: "Calma",         genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3" },
-  { id: "t4", name: "Paz Interior",  genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3" },
-  { id: "t5", name: "Descanso",      genre: "tranquila",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" },
-  // Energética
-  { id: "e1", name: "Potencia",      genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
-  { id: "e2", name: "Alta Vibra",    genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" },
-  { id: "e3", name: "Sin Límites",   genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3" },
-  { id: "e4", name: "Chispa",        genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
-  { id: "e5", name: "Fuego",         genre: "energetica",   url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3" },
-  // Enfocada / lo-fi
-  { id: "f1", name: "Modo Foco",     genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
-  { id: "f2", name: "Flujo",         genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3" },
-  { id: "f3", name: "Concentración", genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3" },
-  { id: "f4", name: "Claridad",      genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3" },
-  { id: "f5", name: "Deep Work",     genre: "enfocada",     url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
-  // Inspiracional
-  { id: "i1", name: "Amanecer",      genre: "inspiracional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3" },
-  { id: "i2", name: "Sueños",        genre: "inspiracional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3" },
-  { id: "i3", name: "Esperanza",     genre: "inspiracional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3" },
-  { id: "i4", name: "Posibilidades", genre: "inspiracional", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-  // Emprendedora
-  { id: "p1", name: "CEO Energy",    genre: "emprendedora", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-16.mp3" },
-  { id: "p2", name: "Negocio",       genre: "emprendedora", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3" },
-  { id: "p3", name: "Liderazgo",     genre: "emprendedora", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-  { id: "p4", name: "Éxito",         genre: "emprendedora", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
-  // Contenido
-  { id: "c1", name: "Lifestyle",     genre: "contenido",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-13.mp3" },
-  { id: "c2", name: "Vlog Vibes",    genre: "contenido",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-15.mp3" },
-  { id: "c3", name: "Tutorial",      genre: "contenido",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-17.mp3" },
-  { id: "c4", name: "Behind Scenes", genre: "contenido",    url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3" },
-];
-const MUSIC_GENRES = [
-  { id: "motivacional",  label: "🔥 Motivacional" },
-  { id: "tranquila",     label: "🌙 Tranquila" },
-  { id: "energetica",    label: "⚡ Energética" },
-  { id: "enfocada",      label: "🎯 Lo-fi / Foco" },
-  { id: "inspiracional", label: "✨ Inspiracional" },
-  { id: "emprendedora",  label: "💼 Emprendedora" },
-  { id: "contenido",     label: "📱 Contenido" },
-];
-
-// ── Efectos de sonido (síntesis Web Audio) ────────────────────────────────
-const SFX_CATALOG = [
-  { id: "click",        emoji: "🖱️",  label: "Click",       desc: "Clic de UI rápido" },
-  { id: "ding",         emoji: "🔔",  label: "Ding",        desc: "Campanilla positiva" },
-  { id: "pop",          emoji: "💬",  label: "Pop",         desc: "Burbuja / notificación" },
-  { id: "swoosh",       emoji: "💨",  label: "Swoosh",      desc: "Barrido rápido" },
-  { id: "whoosh",       emoji: "🌪️",  label: "Whoosh",      desc: "Velocidad / transición" },
-  { id: "swing",        emoji: "🌊",  label: "Swing",       desc: "Barrido suave" },
-  { id: "cut",          emoji: "✂️",  label: "Corte",       desc: "Sonido de corte" },
-  { id: "camera",       emoji: "📷",  label: "Cámara",      desc: "Obturador de cámara" },
-  { id: "drum",         emoji: "🥁",  label: "Drum hit",    desc: "Golpe de caja / snare" },
-  { id: "bass",         emoji: "🎵",  label: "Bass hit",    desc: "Golpe de bajo profundo" },
-  { id: "heartbeat",    emoji: "💓",  label: "Latido",      desc: "Corazón / tensión dramática" },
-  { id: "countdown",    emoji: "⏱️",  label: "Tick",        desc: "Tick de cuenta regresiva" },
-  { id: "notification", emoji: "🛎️",  label: "Notif.",      desc: "Notificación suave" },
-  { id: "failure",      emoji: "❌",  label: "Error",       desc: "Fallo / equivocación" },
-  { id: "success",      emoji: "✅",  label: "Éxito",       desc: "Logro / correcto" },
-  { id: "select",       emoji: "⭐",  label: "Selección",   desc: "Seleccionar opción" },
-  { id: "typewriter",   emoji: "⌨️",  label: "Máquina",     desc: "Teclas de máquina de escribir" },
-  { id: "sorry",        emoji: "😬",  label: "Ups",         desc: "Ups / lo siento" },
-  { id: "wind",         emoji: "🍃",  label: "Viento",      desc: "Ráfaga de viento" },
-  { id: "glitch",       emoji: "⚡",  label: "Glitch",      desc: "Efecto digital distorsionado" },
-];
-
-function synthSfx(type, actx, dest, when = 0) {
-  try {
-    const out = dest || actx.destination;
-    const g = actx.createGain();
-    g.connect(out);
-    if (type === "click" || type === "select") {
-      const osc = actx.createOscillator();
-      osc.connect(g);
-      osc.frequency.setValueAtTime(1400, when);
-      osc.frequency.exponentialRampToValueAtTime(600, when + 0.05);
-      g.gain.setValueAtTime(0.45, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.07);
-      osc.start(when); osc.stop(when + 0.08);
-    } else if (type === "ding") {
-      const osc = actx.createOscillator(); osc.type = "sine";
-      osc.connect(g);
-      osc.frequency.setValueAtTime(880, when);
-      g.gain.setValueAtTime(0.55, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 1.1);
-      osc.start(when); osc.stop(when + 1.2);
-    } else if (type === "pop") {
-      const osc = actx.createOscillator();
-      osc.connect(g);
-      osc.frequency.setValueAtTime(280, when);
-      osc.frequency.exponentialRampToValueAtTime(70, when + 0.09);
-      g.gain.setValueAtTime(0.5, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.12);
-      osc.start(when); osc.stop(when + 0.13);
-    } else if (type === "swoosh" || type === "cut") {
-      const bufLen = Math.floor(actx.sampleRate * 0.28);
-      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 1.8);
-      const src = actx.createBufferSource(); src.buffer = buf;
-      const bpf = actx.createBiquadFilter(); bpf.type = "bandpass";
-      bpf.frequency.setValueAtTime(4500, when);
-      bpf.frequency.exponentialRampToValueAtTime(900, when + 0.28);
-      bpf.Q.value = 0.6;
-      src.connect(bpf); bpf.connect(g);
-      g.gain.setValueAtTime(0.38, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.3);
-      src.start(when); src.stop(when + 0.32);
-    } else if (type === "swing") {
-      const bufLen = Math.floor(actx.sampleRate * 0.5);
-      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 2);
-      const src = actx.createBufferSource(); src.buffer = buf;
-      const bpf = actx.createBiquadFilter(); bpf.type = "bandpass";
-      bpf.frequency.setValueAtTime(800, when);
-      bpf.frequency.exponentialRampToValueAtTime(200, when + 0.5);
-      bpf.Q.value = 0.9;
-      src.connect(bpf); bpf.connect(g);
-      g.gain.setValueAtTime(0.35, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.52);
-      src.start(when); src.stop(when + 0.55);
-    } else if (type === "failure" || type === "sorry") {
-      const osc = actx.createOscillator();
-      osc.connect(g);
-      osc.frequency.setValueAtTime(440, when);
-      osc.frequency.setValueAtTime(330, when + 0.15);
-      osc.frequency.setValueAtTime(220, when + 0.3);
-      g.gain.setValueAtTime(0.38, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.5);
-      osc.start(when); osc.stop(when + 0.52);
-    } else if (type === "success") {
-      const osc = actx.createOscillator(); osc.type = "sine";
-      osc.connect(g);
-      osc.frequency.setValueAtTime(660, when);
-      osc.frequency.setValueAtTime(880, when + 0.1);
-      osc.frequency.setValueAtTime(1100, when + 0.2);
-      g.gain.setValueAtTime(0.4, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.5);
-      osc.start(when); osc.stop(when + 0.52);
-    } else if (type === "typewriter") {
-      for (let i = 0; i < 4; i++) {
-        const gg = actx.createGain(); gg.connect(out);
-        const osc = actx.createOscillator();
-        osc.connect(gg);
-        const f = 1800 + Math.random() * 600;
-        osc.frequency.setValueAtTime(f, when + i * 0.09);
-        osc.frequency.exponentialRampToValueAtTime(f * 0.5, when + i * 0.09 + 0.055);
-        gg.gain.setValueAtTime(0.3, when + i * 0.09);
-        gg.gain.exponentialRampToValueAtTime(0.001, when + i * 0.09 + 0.06);
-        osc.start(when + i * 0.09); osc.stop(when + i * 0.09 + 0.07);
-      }
-    } else if (type === "wind") {
-      const bufLen = Math.floor(actx.sampleRate * 0.7);
-      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < bufLen; i++) {
-        const env = Math.sin((i / bufLen) * Math.PI);
-        d[i] = (Math.random() * 2 - 1) * env;
-      }
-      const src = actx.createBufferSource(); src.buffer = buf;
-      const bpf = actx.createBiquadFilter(); bpf.type = "bandpass";
-      bpf.frequency.value = 350; bpf.Q.value = 1.2;
-      src.connect(bpf); bpf.connect(g);
-      g.gain.setValueAtTime(0.32, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.72);
-      src.start(when); src.stop(when + 0.75);
-    } else if (type === "whoosh") {
-      const bufLen = Math.floor(actx.sampleRate * 0.4);
-      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(i / bufLen, 0.4) * Math.pow(1 - i / bufLen, 0.8);
-      const src = actx.createBufferSource(); src.buffer = buf;
-      const hpf = actx.createBiquadFilter(); hpf.type = "highpass";
-      hpf.frequency.setValueAtTime(6000, when);
-      hpf.frequency.exponentialRampToValueAtTime(300, when + 0.4);
-      src.connect(hpf); hpf.connect(g);
-      g.gain.setValueAtTime(0.42, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.42);
-      src.start(when); src.stop(when + 0.44);
-    } else if (type === "camera") {
-      const osc = actx.createOscillator();
-      osc.connect(g);
-      osc.frequency.setValueAtTime(2800, when);
-      osc.frequency.exponentialRampToValueAtTime(400, when + 0.04);
-      g.gain.setValueAtTime(0.55, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.06);
-      osc.start(when); osc.stop(when + 0.07);
-      const bufLen = Math.floor(actx.sampleRate * 0.05);
-      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
-      const bd = buf.getChannelData(0);
-      for (let i = 0; i < bufLen; i++) bd[i] = (Math.random() * 2 - 1) * (1 - i / bufLen);
-      const nsrc = actx.createBufferSource(); nsrc.buffer = buf;
-      const ng = actx.createGain(); ng.gain.value = 0.2;
-      nsrc.connect(ng); ng.connect(out);
-      nsrc.start(when); nsrc.stop(when + 0.06);
-    } else if (type === "drum") {
-      const bufLen = Math.floor(actx.sampleRate * 0.14);
-      const buf = actx.createBuffer(1, bufLen, actx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 1.3);
-      const src = actx.createBufferSource(); src.buffer = buf;
-      src.connect(g);
-      g.gain.setValueAtTime(0.6, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.15);
-      src.start(when); src.stop(when + 0.16);
-      const osc = actx.createOscillator(); osc.type = "sine";
-      const gg = actx.createGain(); gg.connect(out);
-      osc.connect(gg);
-      osc.frequency.setValueAtTime(200, when);
-      osc.frequency.exponentialRampToValueAtTime(60, when + 0.09);
-      gg.gain.setValueAtTime(0.5, when);
-      gg.gain.exponentialRampToValueAtTime(0.001, when + 0.1);
-      osc.start(when); osc.stop(when + 0.12);
-    } else if (type === "bass") {
-      const osc = actx.createOscillator(); osc.type = "sine";
-      osc.connect(g);
-      osc.frequency.setValueAtTime(80, when);
-      osc.frequency.exponentialRampToValueAtTime(35, when + 0.3);
-      g.gain.setValueAtTime(0.75, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.45);
-      osc.start(when); osc.stop(when + 0.5);
-    } else if (type === "heartbeat") {
-      for (let i = 0; i < 2; i++) {
-        const t0 = when + i * 0.38;
-        const gg = actx.createGain(); gg.connect(out);
-        const osc = actx.createOscillator(); osc.type = "sine";
-        osc.connect(gg);
-        osc.frequency.setValueAtTime(65, t0);
-        osc.frequency.exponentialRampToValueAtTime(28, t0 + 0.12);
-        gg.gain.setValueAtTime(0.55, t0);
-        gg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.2);
-        osc.start(t0); osc.stop(t0 + 0.22);
-      }
-    } else if (type === "countdown") {
-      const osc = actx.createOscillator(); osc.type = "square";
-      osc.connect(g);
-      osc.frequency.setValueAtTime(1100, when);
-      g.gain.setValueAtTime(0.22, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.06);
-      osc.start(when); osc.stop(when + 0.07);
-    } else if (type === "notification") {
-      const osc = actx.createOscillator(); osc.type = "sine";
-      osc.connect(g);
-      osc.frequency.setValueAtTime(900, when);
-      osc.frequency.setValueAtTime(1200, when + 0.09);
-      g.gain.setValueAtTime(0.32, when);
-      g.gain.exponentialRampToValueAtTime(0.001, when + 0.38);
-      osc.start(when); osc.stop(when + 0.42);
-    } else if (type === "glitch") {
-      for (let i = 0; i < 5; i++) {
-        const t0 = when + i * 0.048;
-        const gg = actx.createGain(); gg.connect(out);
-        const osc = actx.createOscillator(); osc.type = "sawtooth";
-        osc.connect(gg);
-        osc.frequency.setValueAtTime(200 + Math.random() * 2800, t0);
-        gg.gain.setValueAtTime(0.22, t0);
-        gg.gain.exponentialRampToValueAtTime(0.001, t0 + 0.04);
-        osc.start(t0); osc.stop(t0 + 0.05);
-      }
-    }
-  } catch (_) {}
-}
-
-// Reproduce un SFX real (blob: URL local, ya descargado vía el proxy del
-// Lambda — nunca una URL cross-origin, para no toparse con el problema de
-// CORS/Web Audio API silencioso al exportar). Espejo de cómo se conecta la
-// música de fondo (createMediaElementSource + connect a destination).
-function playSfxAudioUrl(url, actx, dest) {
-  try {
-    const el = new Audio(url);
-    const src = actx.createMediaElementSource(el);
-    src.connect(dest || actx.destination);
-    el.play().catch(() => {});
-  } catch (_) {}
-}
-
-const CARD_BG_OPTIONS = [
-  { idx: 0,  bg: "#C4526A", text: "#FFFFFF", kw: "#FFE44D" },
-  { idx: 1,  bg: "#4A90BF", text: "#FFFFFF", kw: "#FFE44D" },
-  { idx: 2,  bg: "#1a1a2e", text: "#FFFFFF", kw: "#C4526A" },
-  { idx: 3,  bg: "#FFE44D", text: "#1a1a2e", kw: "#C4526A" },
-  { idx: 4,  bg: "#5FB87A", text: "#1a1a2e", kw: "#FFFFFF" },
-  { idx: 5,  bg: "#FF7043", text: "#FFFFFF", kw: "#FFE44D" },
-  { idx: 6,  bg: "#7C3AED", text: "#FFFFFF", kw: "#FFE44D" },
-  { idx: 7,  bg: "#FFFFFF", text: "#1a1a2e", kw: "#C4526A" },
-  { idx: 8,  bg: "#000000", text: "#FFFFFF", kw: "#FFE44D" },
-  { idx: 9,  bg: "#E91E63", text: "#FFFFFF", kw: "#FFFFFF" },
-  { idx: 10, bg: "#00BCD4", text: "#1a1a2e", kw: "#7C3AED" },
-  { idx: 11, bg: "#3D5A80", text: "#FFFFFF", kw: "#FFE44D" },
-];
-const CARD_KW_COLORS = [
-  "#FFE44D", "#C4526A", "#FF7043", "#5FB87A",
-  "#FFFFFF", "#1a1a2e", "#00BCD4", "#7C3AED", "#E91E63",
-];
-const CARD_ANIMS = [
-  { id: "slideUp",    label: "↑ Subir"   },
-  { id: "fade",       label: "◐ Fade"    },
-  { id: "typewriter", label: "⌨ Máquina" },
-  { id: "zoom",       label: "⊕ Zoom"    },
-];
-const CARD_FONTS = [
-  // Bold / display
-  { id: "Anton",            label: "Anton",         weight: 400, cat: "bold" },
-  { id: "Bebas Neue",       label: "Bebas",         weight: 400, cat: "bold" },
-  { id: "Oswald",           label: "Oswald",        weight: 700, cat: "bold" },
-  { id: "Bangers",          label: "Bangers",       weight: 400, cat: "bold" },
-  { id: "Russo One",        label: "Russo",         weight: 400, cat: "bold" },
-  { id: "Alfa Slab One",    label: "Alfa Slab",     weight: 400, cat: "bold" },
-  { id: "Abril Fatface",    label: "Abril",         weight: 400, cat: "bold" },
-  { id: "Righteous",        label: "Righteous",     weight: 400, cat: "bold" },
-  // Clean / modern
-  { id: "Poppins",          label: "Poppins",       weight: 800, cat: "clean" },
-  { id: "Montserrat",       label: "Montserrat",    weight: 800, cat: "clean" },
-  { id: "Raleway",          label: "Raleway",       weight: 900, cat: "clean" },
-  { id: "Fredoka One",      label: "Fredoka",       weight: 400, cat: "clean" },
-  { id: "Boogaloo",         label: "Boogaloo",      weight: 400, cat: "clean" },
-  // Cursiva / caligrafía
-  { id: "Dancing Script",   label: "Dancing",       weight: 700, cat: "cursive" },
-  { id: "Lobster",          label: "Lobster",       weight: 400, cat: "cursive" },
-  { id: "Pacifico",         label: "Pacifico",      weight: 400, cat: "cursive" },
-  { id: "Caveat",           label: "Caveat",        weight: 700, cat: "cursive" },
-  { id: "Indie Flower",     label: "Indie",         weight: 400, cat: "cursive" },
-  { id: "Permanent Marker", label: "Marker",        weight: 400, cat: "cursive" },
-  // Elegante / serif
-  { id: "Playfair Display", label: "Playfair",      weight: 900, cat: "elegant" },
-  { id: "Cinzel",           label: "Cinzel",        weight: 900, cat: "elegant" },
-];
-
-// Formatea transcripción con timestamp cada 8 palabras — formato que espera
-// el prompt del backend para generar tarjetas automáticas.
-function buildTimestampedTranscript(segments) {
-  const parts = [];
-  segments.forEach((s, i) => {
-    if (i % 8 === 0) parts.push(`[${Math.round(s.start)}s]`);
-    parts.push(s.word);
-  });
-  return parts.join(" ");
-}
 
 // Presets de edición automática
 const VIDEO_PRESETS = [
@@ -461,13 +85,6 @@ function buildKeptSegments(clips) {
     });
 }
 
-// Identifica de forma estable un límite entre dos segmentos conservados
-// consecutivos (para poder asignarle una transición aunque el índice del
-// segmento cambie al editar otros clips).
-function segBoundaryKey(seg) {
-  return `${seg.clip.id}::${seg.end.toFixed(3)}`;
-}
-
 function effectiveToNative(keptSegs, et) {
   let elapsed = 0;
   for (const seg of keptSegs) {
@@ -477,17 +94,6 @@ function effectiveToNative(keptSegs, et) {
   }
   const last = keptSegs[keptSegs.length - 1];
   return last ? { clip: last.clip, localTime: last.end } : null;
-}
-
-function nativeToEffective(keptSegs, clipId, lt) {
-  let elapsed = 0;
-  for (const seg of keptSegs) {
-    const d = seg.end - seg.start;
-    if (seg.clip.id === clipId && lt >= seg.start && lt < seg.end)
-      return elapsed + (lt - seg.start);
-    elapsed += d;
-  }
-  return null;
 }
 
 // ── Audio / análisis ──────────────────────────────────────────────────────
@@ -891,26 +497,6 @@ async function transcribeClip(file, silences, onModelProgress, knownDuration) {
   });
 }
 
-// ── Bokeh (MediaPipe Selfie Segmentation) ─────────────────────────────────
-async function loadBokehSegmenter() {
-  if (!window.SelfieSegmentation) {
-    await new Promise((resolve, reject) => {
-      const s = document.createElement("script");
-      s.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/selfie_segmentation.js";
-      s.crossOrigin = "anonymous";
-      s.onload = resolve;
-      s.onerror = () => reject(new Error("No se pudo cargar el modelo de fondo"));
-      document.head.appendChild(s);
-    });
-  }
-  const seg = new window.SelfieSegmentation({
-    locateFile: f => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation@0.1.1675465747/${f}`,
-  });
-  seg.setOptions({ modelSelection: 1 }); // landscape model = mejor calidad
-  await seg.initialize();
-  return seg;
-}
-
 // ── Subtítulos ────────────────────────────────────────────────────────────
 function drawSubtitle(ctx, W, H, time, words, style = {}) {
   if (!words?.length) return;
@@ -998,173 +584,6 @@ function drawSubtitle(ctx, W, H, time, words, style = {}) {
   ctx.restore();
 }
 
-// Envolvente de zoom: entra en "pop" (0.85→1.0) y se contrae un poco antes
-// de salir — imita el estilo "tarjeta editorial".
-function cardZoomScale(elapsed, duration) {
-  const growEase = 1 - (1 - Math.min(1, elapsed / 0.3)) ** 3;
-  const shrinkStart = duration - 0.3;
-  const shrinkT = elapsed > shrinkStart ? Math.min(1, (elapsed - shrinkStart) / 0.3) : 0;
-  return (0.85 + growEase * 0.15) * (1 - shrinkT * 0.08);
-}
-
-function drawCards(ctx, W, H, effectiveTime, cards) {
-  if (!cards?.length) return;
-  for (const card of cards) {
-    const elapsed = effectiveTime - card.startTime;
-    if (elapsed < 0 || elapsed > card.duration + 0.3) continue;
-    const alpha = Math.min(Math.min(1, elapsed / 0.25), Math.min(1, (card.duration - elapsed + 0.25) / 0.25));
-    if (alpha <= 0) continue;
-
-    const colors = CARD_BG_OPTIONS[card.colorIdx ?? 0] ?? CARD_BG_OPTIONS[0];
-    const font = card.font || "Poppins";
-    const fontWeight = CARD_FONTS.find(f => f.id === font)?.weight ?? 800;
-    const kwFont = card.keywordFont || font;
-    const kwFontWeight = CARD_FONTS.find(f => f.id === kwFont)?.weight ?? fontWeight;
-    const kwColor = card.kwColor || colors.kw;
-    const isFullscreen = card.position === "fullscreen";
-    const kw = (card.keyword || "").toLowerCase().trim();
-
-    let visibleText = card.text || "";
-    if (card.animation === "typewriter") visibleText = visibleText.slice(0, Math.floor(elapsed * 28));
-    if (!visibleText.trim()) continue;
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.textBaseline = "middle";
-
-    let slideY = 0, scale = 1;
-    if (card.animation === "slideUp") {
-      const ease = 1 - (1 - Math.min(1, elapsed / 0.35)) ** 3;
-      slideY = (1 - ease) * 50;
-    } else if (card.animation === "zoom") {
-      scale = cardZoomScale(elapsed, card.duration);
-    }
-
-    if (isFullscreen) {
-      ctx.fillStyle = colors.bg;
-      ctx.fillRect(0, 0, W, H);
-
-      const fontScale = card.fontScale ?? 1.0;
-      const marginX = Math.round(W * 0.12);   // 12% margin each side = 76% content width
-      const maxW = W - marginX * 2;
-      const maxBlockH = H * 0.65;
-      let fs = Math.max(18, Math.floor(H / 10 * fontScale));
-      let lines = [];
-      while (fs > 14) {
-        ctx.font = `${fontWeight} ${fs}px "${font}", sans-serif`;
-        const words = visibleText.split(/\s+/).filter(Boolean);
-        lines = []; let line = [], lineW = 0;
-        for (const w of words) {
-          const ww = ctx.measureText(w + " ").width;
-          if (lineW + ww > maxW && line.length) { lines.push(line); line = [w]; lineW = ww; }
-          else { line.push(w); lineW += ww; }
-        }
-        if (line.length) lines.push(line);
-        const lh2 = fs * 1.22;
-        if (lines.length * lh2 <= maxBlockH) break;
-        fs = Math.max(14, fs - 3);
-        if (fs <= 14) break;
-      }
-      if (!lines.length) { ctx.restore(); continue; }
-      const lh = fs * 1.22;
-      const totalH = lines.length * lh;
-      // yPos: 0=arriba, 0.5=centro (default), 1=abajo
-      const yFrac = card.yPos !== undefined ? Math.max(0.1, Math.min(0.9, card.yPos)) : 0.5;
-      const cx = W / 2, cy = H * yFrac + slideY;
-
-      ctx.translate(cx, cy);
-      ctx.scale(scale, scale);
-      ctx.translate(-cx, -cy);
-
-      lines.forEach((lineWords, li) => {
-        const lineText = lineWords.join(" ");
-        const lineW2 = ctx.measureText(lineText).width;
-        let tx = cx - lineW2 / 2;
-        const ty = cy - totalH / 2 + li * lh + lh / 2;
-        for (let wi = 0; wi < lineWords.length; wi++) {
-          const word = lineWords[wi];
-          const clean = word.toLowerCase().replace(/[¿?¡!.,;:]/g, "");
-          const isKw = kw && clean === kw;
-          const wordText = word + (wi < lineWords.length - 1 ? " " : "");
-          if (isKw && kwFont !== font) ctx.font = `${kwFontWeight} ${fs}px "${kwFont}", sans-serif`;
-          const ww = ctx.measureText(wordText).width;
-          ctx.fillStyle = isKw ? kwColor : colors.text;
-          ctx.fillText(wordText, tx, ty);
-          if (isKw && kwFont !== font) ctx.font = `${fontWeight} ${fs}px "${font}", sans-serif`;
-          tx += ww;
-        }
-      });
-      ctx.restore();
-      continue;
-    }
-
-    // Modo píldora flotante
-    const fontScalePill = card.fontScale ?? 1.0;
-    const fs = Math.max(14, Math.floor(H / 11 * fontScalePill));
-    const lh = Math.round(fs * 1.45);
-    const padX = 22, padY = 14, borderR = 14;
-    const maxW = W * 0.86;
-    ctx.font = `${fontWeight} ${fs}px "${font}", sans-serif`;
-
-    const words = visibleText.split(/\s+/).filter(Boolean);
-    const lines = [];
-    let line = [], lineW = 0;
-    for (const w of words) {
-      const ww = ctx.measureText(w + " ").width;
-      if (lineW + ww > maxW && line.length) { lines.push([...line]); line = [w]; lineW = ww; }
-      else { line.push(w); lineW += ww; }
-    }
-    if (line.length) lines.push(line);
-    if (!lines.length) { ctx.restore(); continue; }
-
-    const maxLineW = Math.max(...lines.map(l => ctx.measureText(l.join(" ")).width));
-    const cardW = Math.min(maxW, maxLineW) + padX * 2;
-    const totalH = lines.length * lh + padY * 2;
-    const defaultYFrac = card.position === "top" ? 0.18 : card.position === "center" ? 0.50 : 0.78;
-    const yFracPill = card.yPos !== undefined ? Math.max(0.05, Math.min(0.95, card.yPos)) : defaultYFrac;
-    const yCenter = H * yFracPill;
-    const cardX = (W - cardW) / 2;
-    const cardY = yCenter - totalH / 2 + slideY;
-
-    if (scale !== 1) {
-      const scx = cardX + cardW / 2, scy = cardY + totalH / 2;
-      ctx.translate(scx, scy); ctx.scale(scale, scale); ctx.translate(-scx, -scy);
-    }
-
-    ctx.fillStyle = colors.bg;
-    ctx.beginPath();
-    ctx.roundRect(cardX, cardY, cardW, totalH, borderR);
-    ctx.fill();
-
-    lines.forEach((lineWords, li) => {
-      const lineW2 = ctx.measureText(lineWords.join(" ")).width;
-      let tx = cardX + (cardW - lineW2) / 2;
-      const ty = cardY + padY + li * lh + lh / 2;
-      for (let wi = 0; wi < lineWords.length; wi++) {
-        const word = lineWords[wi];
-        const clean = word.toLowerCase().replace(/[¿?¡!.,;:]/g, "");
-        const isKw = kw && clean === kw;
-        const wordText = word + (wi < lineWords.length - 1 ? " " : "");
-        const ww = ctx.measureText(wordText).width;
-        if (isKw) {
-          const kwPad = 4;
-          if (kwFont !== font) ctx.font = `${kwFontWeight} ${fs}px "${kwFont}", sans-serif`;
-          ctx.fillStyle = kwColor;
-          ctx.beginPath();
-          ctx.roundRect(tx - kwPad, ty - fs / 2 - kwPad + 2, ctx.measureText(word).width + kwPad * 2, fs + kwPad * 2 - 4, 5);
-          ctx.fill();
-          ctx.fillStyle = colors.bg;
-        } else {
-          if (kwFont !== font) ctx.font = `${fontWeight} ${fs}px "${font}", sans-serif`;
-          ctx.fillStyle = colors.text;
-        }
-        ctx.fillText(wordText, tx, ty);
-        tx += ww;
-      }
-    });
-    ctx.restore();
-  }
-}
 
 async function generateThumbnail(file) {
   return new Promise(resolve => {
@@ -1181,18 +600,6 @@ async function generateThumbnail(file) {
     };
     v.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
   });
-}
-
-function groupSegments(words, perLine = 5) {
-  if (!words?.length) return [];
-  const lines = [];
-  for (let i = 0; i < words.length; i += perLine) {
-    const g = words.slice(i, i + perLine);
-    lines.push({ id: i, startIdx: i, endIdx: i + g.length,
-      start: g[0].start, end: g[g.length - 1].end,
-      text: g.map(w => w.word).join(" "), words: g });
-  }
-  return lines;
 }
 
 // ── Mini waveform ─────────────────────────────────────────────────────────
@@ -1292,7 +699,7 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
 }
 
 // ── Grabación multi-clip ──────────────────────────────────────────────────
-async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, format = "landscape", effects = {}, clipTransitions = {}, music = {}, cards = [], sfxList = []) {
+async function recordAllClips(clips, onProgress, abortRef, format = "landscape") {
   const keptSegs = buildKeptSegments(clips);
   const uniqueClipIds = [...new Set(keptSegs.map(s => s.clip.id))];
   const firstClip = keptSegs[0]?.clip || clips[0];
@@ -1318,21 +725,6 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
   const audioCtx = new AudioContext();
   const destination = audioCtx.createMediaStreamDestination();
 
-  // Música de fondo — se mezcla con el audio del video
-  if (music?.url) {
-    try {
-      const musicEl = new Audio(music.url);
-      musicEl.crossOrigin = "anonymous";
-      musicEl.loop = music.loop ?? true;
-      const musicSrc = audioCtx.createMediaElementSource(musicEl);
-      const musicGain = audioCtx.createGain();
-      musicGain.gain.value = music.duck ? (music.volume ?? 0.35) * 0.3 : (music.volume ?? 0.35);
-      musicSrc.connect(musicGain);
-      musicGain.connect(destination);
-      await musicEl.play();
-    } catch (e) { console.warn("Music export:", e); }
-  }
-
   const canvasStream = canvas.captureStream(30);
   const combinedStream = new MediaStream([
     canvasStream.getVideoTracks()[0],
@@ -1340,82 +732,20 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
   ]);
   const mimeType = getSupportedMimeType();
   const recorder = new MediaRecorder(combinedStream, {
-    mimeType, videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 192_000,
+    mimeType, videoBitsPerSecond: 12_000_000, audioBitsPerSecond: 192_000,
   });
   const chunks = [];
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   recorder.start(100);
 
   const totalKept = keptSegs.reduce((t, s) => t + s.end - s.start, 0) || 1;
-  let elapsed = 0;        // tiempo efectivo (post-corte) ya grabado
-  let prevExportEt = 0;   // para saber qué SFX ya dispararon
-  let transZoom = 1.0;    // escala de zoom mientras dura una transición "zoom"
-
-  // Congela el dibujo (fade a negro/blanco o deslizar) dibujando directo sobre
-  // ctx — solo es seguro llamarla cuando ningún drawLoop esté corriendo a la vez.
-  const runOneShotTransition = (transition, transitionSecs) => new Promise(resolve => {
-    if (transition === "fade") {
-      const t0 = performance.now();
-      const dur = transitionSecs / 2;
-      const step = () => {
-        const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
-        ctx.fillStyle = `rgba(0,0,0,${t})`; ctx.fillRect(0, 0, outW, outH);
-        if (t < 1) requestAnimationFrame(step); else resolve();
-      };
-      requestAnimationFrame(step);
-    } else if (transition === "flash") {
-      const t0 = performance.now();
-      const step = () => {
-        const t = Math.min(1, (performance.now() - t0) / 1000 / 0.12);
-        ctx.fillStyle = `rgba(255,255,255,${t})`; ctx.fillRect(0, 0, outW, outH);
-        if (t < 1) requestAnimationFrame(step); else resolve();
-      };
-      requestAnimationFrame(step);
-    } else if (transition.startsWith("slide")) {
-      createImageBitmap(canvas).then(bitmap => {
-        const t0 = performance.now();
-        const dur = transitionSecs * 0.6;
-        const step = () => {
-          const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
-          const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-          ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
-          const ox = transition === "slideLeft" ? -outW * ease : transition === "slideRight" ? outW * ease : 0;
-          const oy = transition === "slideUp"   ? -outH * ease : transition === "slideDown"  ? outH * ease : 0;
-          ctx.drawImage(bitmap, ox, oy, outW, outH);
-          if (t < 1) requestAnimationFrame(step);
-          else { bitmap.close(); resolve(); }
-        };
-        requestAnimationFrame(step);
-      });
-    } else {
-      resolve();
-    }
-  });
-  const startZoomExport = (dur) => {
-    transZoom = 1.08;
-    const t0 = performance.now();
-    const tick = () => {
-      const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
-      transZoom = 1.08 - 0.08 * t;
-      if (t < 1) requestAnimationFrame(tick); else transZoom = 1.0;
-    };
-    requestAnimationFrame(tick);
-  };
-  // Resuelve la transición para el límite después de `seg` — mismo criterio
-  // que en la vista previa: override por punto de corte si existe; si no,
-  // el default global solo aplica entre clips distintos.
-  const resolveTransition = (seg, crossClip) => {
-    const key = segBoundaryKey(seg);
-    const fallback = crossClip ? (effects.transition ?? "none") : "none";
-    return clipTransitions[key] ?? fallback;
-  };
+  let elapsed = 0; // tiempo efectivo (post-corte) ya grabado
 
   for (let ci = 0; ci < uniqueClipIds.length; ci++) {
     if (abortRef.current) break;
     const clipId = uniqueClipIds[ci];
     const clipSegs = keptSegs.filter(s => s.clip.id === clipId);
     const clip = clipSegs[0].clip;
-    const isLastClip = ci === uniqueClipIds.length - 1;
     onProgress(elapsed / totalKept, `Procesando clip ${ci + 1} de ${uniqueClipIds.length}: ${clip.name}`);
 
     await new Promise(resolve => {
@@ -1427,61 +757,29 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
         let source;
         try { source = audioCtx.createMediaElementSource(videoEl); source.connect(destination); } catch {}
         const vW = videoEl.videoWidth || W, vH = videoEl.videoHeight || H;
-        const scale = Math.min(outW / vW, outH / vH);
+        // Recorte a llenar (crop-to-fill): el sujeto ocupa todo el cuadro,
+        // sin barras borrosas arriba/abajo en vertical/cuadrado.
+        const scale = Math.max(outW / vW, outH / vH);
         const dW = vW * scale, dH = vH * scale;
+        const dX = (outW - dW) / 2, dY = (outH - dH) / 2;
 
-        const { autoZoom = false, zoomInterval = 4 } = effects;
         let animId;
-        let currentEt = elapsed;
         const drawLoop = () => {
-          ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
           if (!videoEl.paused && !videoEl.ended) {
-            if (format !== "landscape") {
-              const bgS = Math.max(outW / vW, outH / vH);
-              const bgW = vW * bgS, bgH = vH * bgS;
-              const bgX = (outW - bgW) / 2, bgY = (outH - bgH) / 2;
-              ctx.save(); ctx.filter = "blur(20px) brightness(0.6) saturate(1.4)";
-              ctx.drawImage(videoEl, bgX, bgY, bgW, bgH);
-              ctx.restore();
-            }
-            // Auto-zoom rítmico, o zoom de transición si está activo
-            const z = autoZoom ? 1 + 0.07 * Math.abs(Math.sin(videoEl.currentTime * Math.PI / zoomInterval)) : transZoom;
-            const zdX = (outW - dW * z) / 2, zdY = (outH - dH * z) / 2;
-            // Pass 1: corrección de color
-            const { brightness = 0, contrast = 0, saturation = 0, skin = 0, temperature = 0 } = effects;
-            const vf = buildVidFilter(brightness, contrast, saturation);
-            if (vf) { ctx.save(); ctx.filter = vf; }
-            ctx.drawImage(videoEl, zdX, zdY, dW * z, dH * z);
-            if (vf) ctx.restore();
-            // Pass 2: overlay de suavizante de piel
-            applySkinOverlay(ctx, videoEl, zdX, zdY, dW * z, dH * z, skin);
-            // Temperatura
-            if (temperature !== 0) {
-              ctx.save();
-              ctx.globalCompositeOperation = "overlay";
-              ctx.globalAlpha = Math.abs(temperature) / 250;
-              ctx.fillStyle = temperature > 0 ? "rgb(255,140,0)" : "rgb(30,100,255)";
-              ctx.fillRect(0, 0, outW, outH);
-              ctx.restore();
-            }
-            drawSubtitle(ctx, outW, outH, videoEl.currentTime, clip.segments, subtitleStyle);
-            drawCards(ctx, outW, outH, currentEt, cards);
+            ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
+            ctx.drawImage(videoEl, dX, dY, dW, dH);
           }
           animId = requestAnimationFrame(drawLoop);
         };
         animId = requestAnimationFrame(drawLoop);
 
-        let preSeeked = false; // el segmento ya quedó posicionado por una transición previa
         for (let si = 0; si < clipSegs.length; si++) {
           if (abortRef.current) break;
           const seg = clipSegs[si];
           const segEtStart = elapsed;
 
-          if (!preSeeked) {
-            videoEl.currentTime = seg.start;
-            await new Promise(r => { videoEl.onseeked = r; });
-          }
-          preSeeked = false;
+          videoEl.currentTime = seg.start;
+          await new Promise(r => { videoEl.onseeked = r; });
           if (abortRef.current) break;
           videoEl.playbackRate = 1; videoEl.volume = 1;
           videoEl.play().catch(() => {});
@@ -1491,42 +789,13 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
               if (abortRef.current) { clearInterval(interval); videoEl.pause(); segDone(); return; }
               const ct = videoEl.currentTime;
               const newEt = segEtStart + Math.max(0, ct - seg.start);
-              currentEt = newEt;
               onProgress(newEt / totalKept, `Procesando clip ${ci + 1} de ${uniqueClipIds.length}: ${clip.name}`);
-
-              // Disparar SFX en export
-              for (const sfx of sfxList) {
-                if (sfx.time > prevExportEt && sfx.time <= newEt) {
-                  if (sfx.audioUrl) playSfxAudioUrl(sfx.audioUrl, audioCtx, destination);
-                  else synthSfx(sfx.type, audioCtx, destination, audioCtx.currentTime);
-                }
-              }
-              prevExportEt = newEt;
-
               if (videoEl.ended || ct >= seg.end - 0.05) {
                 clearInterval(interval); videoEl.pause(); segDone();
               }
             }, 60);
           });
           elapsed = segEtStart + (seg.end - seg.start);
-          currentEt = elapsed;
-
-          // Transición en un corte manual dentro del MISMO clip (✂ Dividir)
-          const nextSeg = clipSegs[si + 1];
-          if (nextSeg && !abortRef.current) {
-            const transition = resolveTransition(seg, false);
-            const { transitionSecs = 0.4 } = effects;
-            if (transition === "zoom") {
-              startZoomExport(transitionSecs);
-            } else if (transition !== "none") {
-              cancelAnimationFrame(animId);
-              await runOneShotTransition(transition, transitionSecs);
-              videoEl.currentTime = nextSeg.start;
-              await new Promise(r => { videoEl.onseeked = r; });
-              preSeeked = true;
-              animId = requestAnimationFrame(drawLoop);
-            }
-          }
         }
 
         cancelAnimationFrame(animId);
@@ -1536,15 +805,6 @@ async function recordAllClips(clips, onProgress, abortRef, subtitleStyle = {}, f
       });
       videoEl.onerror = () => { URL.revokeObjectURL(url); resolve(); };
     });
-
-    // Transición hacia el siguiente clip (archivo distinto)
-    const lastSeg = clipSegs[clipSegs.length - 1];
-    const transition = resolveTransition(lastSeg, true);
-    const { transitionSecs = 0.4 } = effects;
-    if (!abortRef.current && transition !== "none" && !isLastClip) {
-      if (transition === "zoom") startZoomExport(transitionSecs);
-      else await runOneShotTransition(transition, transitionSecs);
-    }
   }
 
   await new Promise(r => setTimeout(r, 400));
@@ -1575,7 +835,7 @@ async function recordSingleFragment(clip, start, end, onProgress, subtitleStyle 
   const canvasStream = canvas.captureStream(30);
   const combinedStream = new MediaStream([canvasStream.getVideoTracks()[0], destination.stream.getAudioTracks()[0]]);
   const mimeType = getSupportedMimeType();
-  const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 8_000_000, audioBitsPerSecond: 192_000 });
+  const recorder = new MediaRecorder(combinedStream, { mimeType, videoBitsPerSecond: 12_000_000, audioBitsPerSecond: 192_000 });
   const chunks = [];
   recorder.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
   recorder.start(100);
@@ -1592,20 +852,15 @@ async function recordSingleFragment(clip, start, end, onProgress, subtitleStyle 
       let src;
       try { src = audioCtx.createMediaElementSource(vid); src.connect(destination); } catch {}
       const vW = vid.videoWidth || W, vH = vid.videoHeight || H;
-      const scale = Math.min(outW / vW, outH / vH);
+      // Recorte a llenar (crop-to-fill): el sujeto ocupa todo el cuadro, sin
+      // barras borrosas arriba/abajo — clave en vertical para que no se vea "encogido".
+      const scale = Math.max(outW / vW, outH / vH);
       const dW = vW * scale, dH = vH * scale, dX = (outW - dW) / 2, dY = (outH - dH) / 2;
 
       let animId;
       const drawLoop = () => {
         ctx.fillStyle = "#000"; ctx.fillRect(0, 0, outW, outH);
         if (!vid.paused && !vid.ended) {
-          if (format !== "landscape") {
-            const bgS = Math.max(outW / vW, outH / vH);
-            const bgW = vW * bgS, bgH = vH * bgS;
-            ctx.save(); ctx.filter = "blur(20px) brightness(0.6) saturate(1.4)";
-            ctx.drawImage(vid, (outW - bgW) / 2, (outH - bgH) / 2, bgW, bgH);
-            ctx.restore();
-          }
           if (vf) { ctx.save(); ctx.filter = vf; }
           ctx.drawImage(vid, dX, dY, dW, dH);
           if (vf) ctx.restore();
@@ -1645,524 +900,14 @@ async function recordSingleFragment(clip, start, end, onProgress, subtitleStyle 
   });
 }
 
-// ── SegmentRow ────────────────────────────────────────────────────────────
-function SegmentRow({ line, isActive, onEdit, onSeek }) {
-  const [editing, setEditing] = useState(false);
-  const [val, setVal] = useState(line.text);
-  const ref = useRef(null);
-  useEffect(() => { setVal(line.text); }, [line.text]);
-  useEffect(() => { if (editing) ref.current?.focus(); }, [editing]);
-  const commit = () => {
-    setEditing(false);
-    if (val.trim() && val.trim() !== line.text) onEdit(val.trim());
-  };
-  return (
-    <div className={`sce-seg-row${isActive ? " sce-seg-row--active" : ""}`}>
-      <button className="sce-seg-time" onClick={() => onSeek(line.start)}>{fmtTime(line.start)}</button>
-      {editing ? (
-        <input ref={ref} className="sce-seg-input" value={val}
-          onChange={e => setVal(e.target.value)} onBlur={commit}
-          onKeyDown={e => { if (e.key === "Enter") commit(); if (e.key === "Escape") { setVal(line.text); setEditing(false); } }} />
-      ) : (
-        <button className="sce-seg-text" onClick={() => setEditing(true)}>{line.text}</button>
-      )}
-    </div>
-  );
-}
-
-// ── MusicPanel ────────────────────────────────────────────────────────────
-function MusicPanel({ music, onMusicChange }) {
-  const fileRef    = useRef(null);
-  const previewRef = useRef(null);
-  const [dragOver,    setDragOver]    = useState(false);
-  const [genreFilter, setGenreFilter] = useState("motivacional");
-  const [previewing,  setPreviewing]  = useState(null);
-  const [selecting,   setSelecting]   = useState(null);
-
-  const stopPreview = () => {
-    if (previewRef.current) { previewRef.current.pause(); previewRef.current.src = ""; previewRef.current = null; }
-    setPreviewing(null);
-  };
-  useEffect(() => stopPreview, []);
-
-  const togglePreview = (track) => {
-    if (previewing === track.id) { stopPreview(); return; }
-    stopPreview();
-    const audio = new Audio(track.url);
-    audio.volume = 0.5;
-    audio.play().catch(() => {});
-    audio.onended = () => { setPreviewing(null); previewRef.current = null; };
-    previewRef.current = audio;
-    setPreviewing(track.id);
-  };
-
-  const selectTrack = async (track) => {
-    if (selecting) return;
-    setSelecting(track.id);
-    stopPreview();
-    if (music.url && !music.fromLibrary) URL.revokeObjectURL(music.url);
-    try {
-      const res = await fetch(track.url);
-      if (!res.ok) throw new Error("fetch");
-      const blob = await res.blob();
-      onMusicChange({ ...music, url: URL.createObjectURL(blob), name: track.name, fromLibrary: true });
-    } catch {
-      onMusicChange({ ...music, url: track.url, name: track.name, fromLibrary: true });
-    }
-    setSelecting(null);
-  };
-
-  const handleFile = (file) => {
-    if (!file) return;
-    const ok = file.type.startsWith("audio/") || /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(file.name);
-    if (!ok) return;
-    stopPreview();
-    if (music.url && !music.fromLibrary) URL.revokeObjectURL(music.url);
-    onMusicChange({ ...music, url: URL.createObjectURL(file), name: file.name.replace(/\.[^/.]+$/, ""), fromLibrary: false });
-  };
-
-  const clearMusic = () => {
-    stopPreview();
-    if (music.url && !music.fromLibrary) URL.revokeObjectURL(music.url);
-    onMusicChange({ ...music, url: null, name: "", fromLibrary: false });
-  };
-
-  const filtered = MUSIC_LIBRARY.filter(t => t.genre === genreFilter);
-
-  return (
-    <div className="sce-music-panel">
-      {/* Track activo */}
-      {music.url && (
-        <div className="sce-music-loaded">
-          <span style={{ fontSize: 16 }}>🎵</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p className="sce-music-track-name">{music.name}</p>
-            <p className="sce-music-track-sub">Activa · se mezcla al exportar</p>
-          </div>
-          <button className="sce-music-clear" onClick={clearMusic} title="Quitar">✕</button>
-        </div>
-      )}
-      {music.url && (
-        <div className="sce-music-controls">
-          <div className="sce-music-row">
-            <span className="sce-music-row-label">🔊 Volumen</span>
-            <input type="range" min="0" max="1" step="0.05" className="sce-fx-slider"
-              value={music.volume} onChange={e => onMusicChange({ ...music, volume: +e.target.value })} />
-            <span className="sce-music-row-val">{Math.round(music.volume * 100)}%</span>
-          </div>
-          <div className="sce-music-toggle-row">
-            <div>
-              <p className="sce-fx-section-label" style={{ marginBottom: 2 }}>AUTO-DUCKING</p>
-              <p className="sce-fx-hint" style={{ margin: 0 }}>Baja al hablar</p>
-            </div>
-            <button className={`sce-fx-toggle${music.duck ? " active" : ""}`}
-              onClick={() => onMusicChange({ ...music, duck: !music.duck })}>
-              {music.duck ? "ON" : "OFF"}
-            </button>
-          </div>
-          <div className="sce-music-toggle-row">
-            <p className="sce-fx-section-label">BUCLE</p>
-            <button className={`sce-fx-toggle${music.loop ? " active" : ""}`}
-              onClick={() => onMusicChange({ ...music, loop: !music.loop })}>
-              {music.loop ? "ON" : "OFF"}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Biblioteca */}
-      <div className="sce-music-lib">
-        <p className="sce-music-lib-title">🎧 Sin derechos · Solo instrumentales</p>
-        <div className="sce-genre-tabs">
-          {MUSIC_GENRES.map(g => (
-            <button key={g.id}
-              className={`sce-genre-tab${genreFilter === g.id ? " active" : ""}`}
-              onClick={() => setGenreFilter(g.id)}>{g.label}</button>
-          ))}
-        </div>
-        <div className="sce-track-list">
-          {filtered.map(track => {
-            const isSelected = music.url && music.name === track.name && music.fromLibrary;
-            const isPrev     = previewing === track.id;
-            const isLoading  = selecting === track.id;
-            return (
-              <div key={track.id} className={`sce-track-item${isSelected ? " selected" : ""}`}>
-                <button className="sce-track-preview-btn" onClick={() => togglePreview(track)}
-                  title={isPrev ? "Detener" : "Escuchar"}>
-                  {isPrev ? "⏸" : "▶"}
-                </button>
-                <span className="sce-track-name">{track.name}</span>
-                <button
-                  className={`sce-track-select-btn${isSelected ? " active" : ""}`}
-                  onClick={() => isSelected ? clearMusic() : selectTrack(track)}
-                  disabled={!!selecting && !isLoading}>
-                  {isLoading ? "···" : isSelected ? "✓ Usando" : "Usar"}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Subir audio propio */}
-      <div className="sce-music-upload-section">
-        <p className="sce-music-upload-label">O sube tu propio audio</p>
-        <div
-          className={`sce-music-drop-mini${dragOver ? " over" : ""}`}
-          onClick={() => fileRef.current?.click()}
-          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={e => { e.preventDefault(); setDragOver(false); handleFile(e.dataTransfer.files[0]); }}>
-          ↑ MP3 · WAV · M4A · Arrastra o haz clic
-        </div>
-        <input ref={fileRef} type="file" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
-          style={{ display: "none" }} onChange={e => handleFile(e.target.files[0])} />
-      </div>
-    </div>
-  );
-}
-
-// ── FontCarousel ─────────────────────────────────────────────────────────────
-const FONT_CATS = [
-  { id: "bold",    label: "Negrita" },
-  { id: "clean",   label: "Limpia"  },
-  { id: "cursive", label: "Script"  },
-  { id: "elegant", label: "Elegante"},
-];
-
-function FontCarousel({ value, onChange, label }) {
-  const initCat = CARD_FONTS.find(f => f.id === value)?.cat || "bold";
-  const [cat, setCat] = useState(initCat);
-  const filtered = CARD_FONTS.filter(f => f.cat === cat);
-  return (
-    <div className="sce-font-carousel">
-      {label && <label className="sce-card-label">{label}</label>}
-      <div className="sce-font-cat-tabs">
-        {FONT_CATS.map(c => (
-          <button key={c.id} className={`sce-font-cat-tab${cat === c.id ? " active" : ""}`}
-            onClick={() => setCat(c.id)}>{c.label}</button>
-        ))}
-      </div>
-      <div className="sce-font-scroll">
-        {filtered.map(f => (
-          <button key={f.id} className={`sce-font-card${value === f.id ? " active" : ""}`}
-            onClick={() => onChange(f.id)}>
-            <span className="sce-font-preview" style={{ fontFamily: `"${f.id}", sans-serif`, fontWeight: f.weight }}>Aa</span>
-            <span className="sce-font-name">{f.label}</span>
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ── CardsPanel ────────────────────────────────────────────────────────────
-function CardsPanel({ cards, onCardsChange, currentTime }) {
-  const [expandedId, setExpandedId] = useState(null);
-
-  const addCard = () => {
-    const c = {
-      id: uid(), text: "Escribe tu punto clave aquí", keyword: "",
-      startTime: Math.round((currentTime ?? 0) * 10) / 10,
-      duration: 3, colorIdx: 0, font: "Poppins", position: "bottom", animation: "slideUp",
-    };
-    onCardsChange([...cards, c]);
-    setExpandedId(c.id);
-  };
-  const update = (id, patch) => onCardsChange(cards.map(c => c.id === id ? { ...c, ...patch } : c));
-  const remove = (id) => { onCardsChange(cards.filter(c => c.id !== id)); if (expandedId === id) setExpandedId(null); };
-  const toggle = (id) => setExpandedId(prev => prev === id ? null : id);
-
-  return (
-    <div className="sce-cards-panel">
-      <button className="sce-add-card-btn" onClick={addCard}>＋ Nueva tarjeta</button>
-
-      {cards.length === 0 && (
-        <div className="sce-cards-empty">
-          <p>Crea tarjetas animadas con tus puntos clave</p>
-          <p className="sce-cards-hint">Aparecen sobre el video con transición profesional</p>
-        </div>
-      )}
-
-      {cards.map((card) => {
-        const colors = CARD_BG_OPTIONS[card.colorIdx ?? 0] ?? CARD_BG_OPTIONS[0];
-        const isOpen = expandedId === card.id;
-        const kw = (card.keyword || "").toLowerCase().trim();
-
-        return (
-          <div key={card.id} className={`sce-card-item${isOpen ? " open" : ""}`}>
-
-            {/* Fila colapsada — siempre visible */}
-            <div className="sce-card-collapsed" onClick={() => toggle(card.id)}>
-              <div className="sce-card-color-badge" style={{ background: colors.bg }} />
-              <div className="sce-card-collapsed-info">
-                <span className="sce-card-collapsed-text">{card.text.slice(0, 30)}{card.text.length > 30 ? "…" : ""}</span>
-                <span className="sce-card-collapsed-meta">{fmtTime(card.startTime)} · {card.duration}s · {CARD_ANIMS.find(a => a.id === card.animation)?.label}</span>
-              </div>
-              <span className="sce-card-chevron">{isOpen ? "▲" : "▼"}</span>
-              <button className="sce-card-remove" onClick={e => { e.stopPropagation(); remove(card.id); }}>✕</button>
-            </div>
-
-            {/* Editor expandido */}
-            {isOpen && (
-              <div className="sce-card-editor">
-
-                {/* Preview visual */}
-                <div className={`sce-card-preview-wrap${card.position === "fullscreen" ? " sce-card-preview-wrap--full" : ""}`} style={{ background: colors.bg }}>
-                  <p className="sce-card-preview-text" style={{ color: colors.text, fontFamily: `"${card.font || "Poppins"}", sans-serif`, fontWeight: CARD_FONTS.find(f => f.id === (card.font || "Poppins"))?.weight ?? 800 }}>
-                    {(card.text || "Texto de la tarjeta").split(/\s+/).map((word, i) => {
-                      const clean = word.toLowerCase().replace(/[¿?¡!.,;:]/g, "");
-                      return kw && clean === kw
-                        ? <mark key={i} style={{ background: colors.kw, color: colors.bg, borderRadius: 3, padding: "0 3px" }}>{word}{" "}</mark>
-                        : <span key={i}>{word}{" "}</span>;
-                    })}
-                  </p>
-                </div>
-
-                <div className="sce-card-field">
-                  <label className="sce-card-label">Texto</label>
-                  <textarea className="sce-card-textarea" rows={2} value={card.text}
-                    onChange={e => update(card.id, { text: e.target.value })} />
-                </div>
-
-                <div className="sce-card-field">
-                  <label className="sce-card-label">Palabra clave <span className="sce-card-label--hint">(se resalta en el preview)</span></label>
-                  <input className="sce-card-input" value={card.keyword} placeholder="ej: 3 pasos"
-                    onChange={e => update(card.id, { keyword: e.target.value })} />
-                </div>
-
-                <div className="sce-card-row">
-                  <div className="sce-card-field" style={{ flex: 1 }}>
-                    <label className="sce-card-label">Inicio</label>
-                    <div className="sce-card-time-row">
-                      <input type="number" className="sce-card-input-num" step="0.1" min="0"
-                        value={card.startTime.toFixed(1)} onChange={e => update(card.id, { startTime: +e.target.value })} />
-                      <button className="sce-card-now-btn" title="Capturar tiempo actual"
-                        onClick={() => update(card.id, { startTime: Math.round((currentTime ?? 0) * 10) / 10 })}>⊙</button>
-                    </div>
-                  </div>
-                  <div className="sce-card-field" style={{ flex: 1 }}>
-                    <label className="sce-card-label">Duración (s)</label>
-                    <input type="number" className="sce-card-input-num" step="0.5" min="0.5" max="10"
-                      value={card.duration} onChange={e => update(card.id, { duration: +e.target.value })} />
-                  </div>
-                </div>
-
-                <div className="sce-card-field">
-                  <label className="sce-card-label">Tamaño del texto — {Math.round((card.fontScale ?? 1) * 100)}%</label>
-                  <input type="range" min="0.4" max="2.0" step="0.05" className="sce-fx-slider"
-                    value={card.fontScale ?? 1}
-                    onChange={e => update(card.id, { fontScale: +e.target.value })} />
-                </div>
-
-                <div className="sce-card-field">
-                  <label className="sce-card-label">Posición vertical — {Math.round((card.yPos ?? 0.5) * 100)}%</label>
-                  <input type="range" min="0.08" max="0.92" step="0.01" className="sce-fx-slider"
-                    value={card.yPos ?? 0.5}
-                    onChange={e => update(card.id, { yPos: +e.target.value })} />
-                  <p className="sce-fx-hint" style={{marginTop:2}}>También arrastra directamente en el video ↕</p>
-                </div>
-
-                <div className="sce-card-field">
-                  <label className="sce-card-label">Color</label>
-                  <div className="sce-card-colors">
-                    {CARD_BG_OPTIONS.map(opt => (
-                      <button key={opt.idx}
-                        className={`sce-card-color-dot${card.colorIdx === opt.idx ? " active" : ""}`}
-                        style={{ "--dot-bg": opt.bg }}
-                        onClick={() => update(card.id, { colorIdx: opt.idx })} />
-                    ))}
-                  </div>
-                </div>
-
-                <FontCarousel
-                  label="Tipografía principal"
-                  value={card.font || "Poppins"}
-                  onChange={v => update(card.id, { font: v })} />
-
-                <FontCarousel
-                  label="Tipografía de la palabra clave"
-                  value={card.keywordFont || card.font || "Poppins"}
-                  onChange={v => update(card.id, { keywordFont: v })} />
-
-                <div className="sce-card-field">
-                  <label className="sce-card-label">Color de resaltado</label>
-                  <div className="sce-card-colors">
-                    {CARD_KW_COLORS.map(color => (
-                      <button key={color}
-                        className={`sce-card-color-dot${(card.kwColor || (CARD_BG_OPTIONS[card.colorIdx ?? 0]?.kw)) === color ? " active" : ""}`}
-                        style={{ "--dot-bg": color }}
-                        onClick={() => update(card.id, { kwColor: color })} />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="sce-card-2col">
-                  <div className="sce-card-field">
-                    <label className="sce-card-label">Animación</label>
-                    <div className="sce-card-pills">
-                      {CARD_ANIMS.map(a => (
-                        <button key={a.id} className={`sce-card-pill${card.animation === a.id ? " active" : ""}`}
-                          onClick={() => update(card.id, { animation: a.id })}>{a.label}</button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="sce-card-field">
-                    <label className="sce-card-label">Posición</label>
-                    <div className="sce-card-pills">
-                      {[["top","↑"],["center","·"],["bottom","↓"],["fullscreen","⛶ Completa"]].map(([p, l]) => (
-                        <button key={p} className={`sce-card-pill${card.position === p ? " active" : ""}`}
-                          onClick={() => update(card.id, { position: p })}>{l}</button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <button className="sce-card-done-btn" onClick={() => setExpandedId(null)}>✓ Listo</button>
-              </div>
-            )}
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ── SubtitlePanel ─────────────────────────────────────────────────────────
-function SubtitlePanel({ clips, setClips, currentClipId, localTime, subtitleStyle, onStyleChange,
-    onTranscribe, onSeekInClip, listRef, transcribing, transcribeMsg }) {
-  const hasSubtitles = clips.some(c => c.segments?.length > 0);
-  const failedClips  = clips.filter(c => c.transcribed && c.transcribeError);
-  const handleEdit = (clip, line, newText) => {
-    const words = newText.trim().split(/\s+/);
-    const dur   = line.end - line.start;
-    const newWords = words.map((w, i) => ({
-      word: w, start: line.start + (i / words.length) * dur, end: line.start + ((i + 1) / words.length) * dur,
-    }));
-    setClips(prev => prev.map(c => c.id !== clip.id ? c : {
-      ...c, segments: [...(c.segments || []).slice(0, line.startIdx), ...newWords, ...(c.segments || []).slice(line.endIdx)],
-    }));
-  };
-  const transcribedClips = clips.filter(c => c.segments?.length > 0);
-
-  return (
-    <div className="sce-sub-panel">
-      <div className="sce-panel-header">
-        <span className="sce-panel-title">Subtítulos</span>
-        {!transcribing && (
-          <button className={`sc-btn-subs sc-btn-sm sc-btn-outline${hasSubtitles ? " sce-regen-btn" : ""}`}
-            onClick={onTranscribe}>
-            {hasSubtitles ? "↺ Re-generar" : "💬 Generar"}
-          </button>
-        )}
-      </div>
-
-      {transcribing ? (
-        <div className="sce-transcribing">
-          <div className="sce-trans-spinner" />
-          <p className="sce-trans-msg">{transcribeMsg || "Generando subtítulos..."}</p>
-          <p className="sce-trans-hint">Whisper Tiny · Español · Primera vez ~40 MB</p>
-        </div>
-      ) : (
-        <>
-          {hasSubtitles && (
-            <div className="sce-sub-style">
-              <div className="sce-sub-pos-row">
-                <span className="sce-sub-pos-label">Efecto</span>
-                <div className="sce-sub-pos-btns sce-sub-variant-btns">
-                  {SUB_VARIANTS.map(v => (
-                    <button key={v.id}
-                      className={`sce-sub-pos-btn${(subtitleStyle.variant || "highlight") === v.id ? " active" : ""}`}
-                      title={v.desc}
-                      onClick={() => onStyleChange({ ...subtitleStyle, variant: v.id })}>{v.label}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="sc-font-pills">
-                {FONTS.map(f => (
-                  <button key={f} className={`sc-font-pill${subtitleStyle.font === f ? " active" : ""}`}
-                    style={{ fontFamily: f }} onClick={() => onStyleChange({ ...subtitleStyle, font: f })}>{f}</button>
-                ))}
-              </div>
-              <div className="sc-color-swatches">
-                {HL_COLORS.map(opt => (
-                  <button key={opt.c} className={`sc-color-swatch${subtitleStyle.hlColor === opt.c ? " active" : ""}`}
-                    style={{ "--sw": opt.c }} onClick={() => onStyleChange({ ...subtitleStyle, hlColor: opt.c })} title={opt.label}>
-                    <span className="sc-swatch-dot" />{opt.label}
-                  </button>
-                ))}
-              </div>
-              <div className="sce-sub-pos-row">
-                <span className="sce-sub-pos-label">Posición</span>
-                <div className="sce-sub-pos-btns">
-                  {[["top","↑ Arriba"],["bottom","↓ Abajo"]].map(([pos, lbl]) => (
-                    <button key={pos}
-                      className={`sce-sub-pos-btn${(subtitleStyle.position || "bottom") === pos ? " active" : ""}`}
-                      onClick={() => onStyleChange({ ...subtitleStyle, position: pos })}>{lbl}</button>
-                  ))}
-                </div>
-              </div>
-              <div className="sce-sub-pos-row">
-                <span className="sce-sub-pos-label">Tamaño</span>
-                <div className="sce-sub-pos-btns">
-                  {[["small","Chico"],["medium","Normal"],["large","Grande"]].map(([s, l]) => (
-                    <button key={s}
-                      className={`sce-sub-pos-btn${(subtitleStyle.size || "medium") === s ? " active" : ""}`}
-                      onClick={() => onStyleChange({ ...subtitleStyle, size: s })}>{l}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-          {failedClips.length > 0 && (
-            <div className="sce-trans-error">
-              <p>⚠ No se pudo transcribir {failedClips.length > 1 ? `${failedClips.length} clips` : `"${failedClips[0].name.replace(/\.[^/.]+$/, "")}"`}</p>
-              <p className="sce-trans-error-hint">Asegúrate de usar Chrome en escritorio. El video debe tener audio. <button className="sce-trans-retry-btn" onClick={onTranscribe}>Reintentar</button></p>
-            </div>
-          )}
-          <div className="sce-seg-list" ref={listRef}>
-            {transcribedClips.map(clip => {
-              const lines = groupSegments(clip.segments);
-              return (
-                <React.Fragment key={clip.id}>
-                  {transcribedClips.length > 1 && (
-                    <p className="sce-seg-clip-label">{clip.name.replace(/\.[^/.]+$/, "")}</p>
-                  )}
-                  {lines.map((line, li) => {
-                    const isActive = clip.id === currentClipId && localTime >= line.start && localTime <= line.end;
-                    return (
-                      <SegmentRow key={li} line={line} isActive={isActive}
-                        onSeek={t => onSeekInClip(clip.id, t)}
-                        onEdit={newText => handleEdit(clip, line, newText)} />
-                    );
-                  })}
-                </React.Fragment>
-              );
-            })}
-            {!hasSubtitles && (
-              <div className="sce-no-subs">
-                <p>Genera subtítulos automáticos con IA</p>
-                <p className="sce-no-subs-hint">Whisper Tiny · sincronizado palabra por palabra</p>
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
 
 // ── Timeline contraído ────────────────────────────────────────────────────
-function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, clipTransitions = {}, onSetClipTransition, activePreset, defaultTransition = "none", music = null, sfxList = [], onSfxChange, cards = [], onCardsChange, selectedSeg = null, onSelectSeg, onClearSubtitles }) {
+function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, onMoveClip, onRemoveClip, onAddFiles, onCutSeg, selectedSeg = null, onSelectSeg }) {
   const pct = totalKept > 0 ? Math.min(100, (effectiveTime / totalKept) * 100) : 0;
   const [hoveredSeg, setHoveredSeg] = useState(null);
-  const [transPickerClipId, setTransPickerClipId] = useState(null);
-  const [transPickerPos, setTransPickerPos] = useState(null); // {left, top} en coords de viewport
   const [zoom, setZoom] = useState(1);
   const trackWrapRef = useRef(null);
   const seekDragRef  = useRef(false);
-  const cardDragRef  = useRef(null);
-  const sfxDragRef   = useRef(null);
 
   useEffect(() => {
     const el = trackWrapRef.current;
@@ -2178,7 +923,7 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
   }, []);
 
   // Scrubber drag — se arrastra en tiempo real con el puntero
-  const SKIP_DRAG = [".sce-tl-seg-del",".sce-tl-trans-btn",".sce-tl-card-block",".sce-tl-sfx-dot",".sce-tl-trans-marker",".sce-tl-seg-toolbar",".sce-tl-trans-picker"];
+  const SKIP_DRAG = [".sce-tl-seg-del",".sce-tl-seg-toolbar"];
   const doSeek = (e) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const p = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
@@ -2193,76 +938,11 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
   const handleSeekMove = (e) => { if (seekDragRef.current) doSeek(e); };
   const handleSeekUp   = ()  => { seekDragRef.current = false; };
 
-  // Card drag — arrastra tarjetas para reposicionarlas en el timeline
-  const handleCardDragStart = (e, card) => {
-    e.stopPropagation();
-    cardDragRef.current = {
-      cardId: card.id, startX: e.clientX, startTime: card.startTime,
-      trackWidth: e.currentTarget.parentElement.getBoundingClientRect().width,
-    };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-  const handleCardDragMove = (e) => {
-    const d = cardDragRef.current;
-    if (!d) return;
-    const dt = ((e.clientX - d.startX) / d.trackWidth) * totalKept;
-    const t  = Math.max(0, Math.min(totalKept - 0.5, d.startTime + dt));
-    onCardsChange(cards.map(c => c.id === d.cardId ? { ...c, startTime: Math.round(t * 10) / 10 } : c));
-  };
-  const handleCardDragEnd = () => { cardDragRef.current = null; };
-
-  // SFX drag
-  const handleSfxDragStart = (e, sfx) => {
-    e.stopPropagation();
-    sfxDragRef.current = {
-      sfxId: sfx.id, startX: e.clientX, startTime: sfx.time,
-      trackWidth: e.currentTarget.parentElement.getBoundingClientRect().width,
-    };
-    e.currentTarget.setPointerCapture(e.pointerId);
-  };
-  const handleSfxDragMove = (e) => {
-    const d = sfxDragRef.current;
-    if (!d) return;
-    const dt = ((e.clientX - d.startX) / d.trackWidth) * totalKept;
-    const t  = Math.max(0, Math.min(totalKept, d.startTime + dt));
-    onSfxChange?.(prev => prev.map(s => s.id === d.sfxId ? { ...s, time: Math.round(t * 10) / 10 } : s));
-  };
-  const handleSfxDragEnd = () => { sfxDragRef.current = null; };
-
-  // Límites donde se puede poner una transición: entre dos clips distintos,
-  // o en un punto donde la usuaria dividió manualmente con "✂ Dividir"
-  // (los cortes automáticos de silencio NO cuentan — serían decenas de
-  // marcadores sin sentido para transiciones).
-  const clipBoundaries = useMemo(() => {
-    const bounds = [];
-    let cumW = 0;
-    for (let i = 0; i < keptSegs.length; i++) {
-      const seg = keptSegs[i];
-      const w = (seg.end - seg.start) / (totalKept || 1) * 100;
-      const nextSeg = keptSegs[i + 1];
-      if (nextSeg) {
-        const crossClip = nextSeg.clip.id !== seg.clip.id;
-        const manualSplit = !crossClip &&
-          (seg.clip.silences || []).some(s => s.cut && s.manual && Math.abs(s.start - seg.end) < 0.05);
-        if (crossClip || manualSplit) {
-          bounds.push({ key: segBoundaryKey(seg), leftPct: cumW + w, crossClip });
-        }
-      }
-      cumW += w;
-    }
-    return bounds;
-  }, [keptSegs, totalKept]);
-
-  const presetInfo = VIDEO_PRESETS.find(p => p.id === activePreset);
-
   return (
     <div className="sce-timeline">
       <div className="sce-tl-header">
         <span className="sce-tl-label">TIMELINE</span>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {presetInfo && activePreset !== "none" && (
-            <span className="sce-tl-preset-badge">{presetInfo.icon} {presetInfo.label}</span>
-          )}
           <span className="sce-tl-duration">{fmtTime(effectiveTime)} / {fmtTime(totalKept)}</span>
           <div className="sce-tl-zoom-controls">
             <button className="sce-tl-zoom-btn" title="Alejar (Ctrl + rueda del mouse)"
@@ -2278,10 +958,6 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
         {/* Labels de pista — fijos, no scrollean */}
         <div className="sce-tl-labels">
           <div className="sce-tl-label-row"><span>🎬</span><span>Video</span></div>
-          <div className="sce-tl-label-row"><span>💬</span><span>Subtítulos</span></div>
-          <div className="sce-tl-label-row"><span>🎵</span><span>Música</span></div>
-          <div className="sce-tl-label-row"><span>🔊</span><span>SFX</span></div>
-          <div className="sce-tl-label-row"><span>📝</span><span>Tarjetas</span></div>
         </div>
 
         {/* Pistas — scroll horizontal + zoom trackpad */}
@@ -2296,7 +972,7 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
           {/* Playhead que atraviesa todas las pistas */}
           {totalKept > 0 && <div className="sce-tl-ph-all" style={{ left: `${pct}%` }} />}
 
-          {/* Pista 1 — Video */}
+          {/* Pista — Video */}
           <div className="sce-tl-track">
             {keptSegs.length === 0 && (
               <div className="sce-tl-empty">Analiza los clips para ver el timeline</div>
@@ -2330,125 +1006,6 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
               );
             })}
           </div>
-
-          {/* Pista 2 — Subtítulos */}
-          <div className="sce-tl-subs-track">
-            {keptSegs.length === 0 ? null : !keptSegs.some(s => s.clip.segments?.length > 0)
-              ? <span className="sce-tl-track-hint">Los subtítulos aparecen aquí una vez generados →</span>
-              : keptSegs.map((seg, i) => {
-                  if (!seg.clip.segments?.length) return null;
-                  const w = (seg.end - seg.start) / (totalKept || 1) * 100;
-                  const leftPct = keptSegs.slice(0, i).reduce((t, s) => t + (s.end - s.start) / (totalKept || 1) * 100, 0);
-                  return (
-                    <div key={i} className="sce-tl-subs-bar" style={{ left: `${leftPct}%`, width: `${w}%` }}
-                      title={`Subtítulos: ${seg.clip.name.replace(/\.[^/.]+$/, "")} — clic en 🗑 para quitarlos`}>
-                      <span className="sce-tl-subs-label">💬 {seg.clip.name.replace(/\.[^/.]+$/, "").slice(0, 16)}</span>
-                      <button className="sce-tl-subs-del" title="Quitar subtítulos de este clip"
-                        onClick={e => { e.stopPropagation(); onClearSubtitles?.(seg.clip.id); }}>🗑</button>
-                    </div>
-                  );
-                })
-            }
-          </div>
-
-          {/* Pista 3 — Música */}
-          <div className="sce-tl-music-track">
-            {music?.url
-              ? <div className="sce-tl-music-bar" title={music.name}>
-                  <span className="sce-tl-music-wave">♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫♫</span>
-                  <span className="sce-tl-music-name">{music.name}</span>
-                </div>
-              : <span className="sce-tl-track-hint">Agrega música en el panel →</span>
-            }
-          </div>
-
-          {/* Pista 3 — SFX (arrastrables) */}
-          <div className="sce-tl-sfx-track">
-            {sfxList.length === 0
-              ? <span className="sce-tl-track-hint">Agrega SFX en el panel 🔊 →</span>
-              : sfxList.map(sfx => {
-                  const pctPos = totalKept > 0 ? Math.min(99, (sfx.time / totalKept) * 100) : 0;
-                  return (
-                    <span key={sfx.id} className="sce-tl-sfx-dot"
-                      style={{ left: `${pctPos}%` }}
-                      title={`${sfx.emoji} ${sfx.label} @ ${sfx.time.toFixed(1)}s — arrastra para mover`}
-                      onPointerDown={e => handleSfxDragStart(e, sfx)}
-                      onPointerMove={handleSfxDragMove}
-                      onPointerUp={handleSfxDragEnd}
-                      onPointerCancel={handleSfxDragEnd}
-                    >{sfx.emoji}</span>
-                  );
-                })
-            }
-          </div>
-
-          {/* Pista 4 — Tarjetas (arrastrables) */}
-          <div className="sce-tl-cards-track">
-            {cards.length === 0
-              ? <span className="sce-tl-track-hint">Las tarjetas aparecen aquí — arrástralas para moverlas</span>
-              : cards.map(card => {
-                  const leftPct = totalKept > 0 ? Math.min(97, (card.startTime / totalKept) * 100) : 0;
-                  const widPct  = totalKept > 0 ? Math.max(1.5, (card.duration / totalKept) * 100) : 2;
-                  const clr     = CARD_BG_OPTIONS[card.colorIdx ?? 0] ?? CARD_BG_OPTIONS[0];
-                  return (
-                    <div key={card.id} className="sce-tl-card-block"
-                      style={{ left: `${leftPct}%`, width: `${widPct}%`, background: clr.bg, color: clr.text }}
-                      title={`${card.text.slice(0, 50)} @ ${card.startTime}s — arrastra para mover`}
-                      onPointerDown={e => handleCardDragStart(e, card)}
-                      onPointerMove={handleCardDragMove}
-                      onPointerUp={handleCardDragEnd}
-                      onPointerCancel={handleCardDragEnd}
-                    >
-                      <span className="sce-tl-card-label">{card.text.slice(0, 22)}</span>
-                    </div>
-                  );
-                })
-            }
-          </div>
-
-          {/* Marcadores de transición: entre clips distintos o en un corte manual */}
-          {clipBoundaries.map(({ key, leftPct, crossClip }) => {
-            const fallback = crossClip ? defaultTransition : "none";
-            const transType = clipTransitions[key] ?? fallback;
-            const transInfo = TRANSITIONS.find(t => t.id === transType) || TRANSITIONS[0];
-            const showPicker = transPickerClipId === key;
-            return (
-              <div key={key} className="sce-tl-trans-marker" style={{ left: `${leftPct}%` }}>
-                <button
-                  className={`sce-tl-trans-btn${transType !== "none" ? " has-trans" : ""}`}
-                  title={`Transición ${crossClip ? "entre clips" : "en el corte"}: ${transInfo.label} — clic para cambiar`}
-                  onClick={e => {
-                    e.stopPropagation();
-                    if (showPicker) { setTransPickerClipId(null); setTransPickerPos(null); return; }
-                    const r = e.currentTarget.getBoundingClientRect();
-                    setTransPickerPos({ left: r.left + r.width / 2, top: r.top - 8 });
-                    setTransPickerClipId(key);
-                  }}>
-                  {transInfo.icon}
-                </button>
-                {showPicker && transPickerPos && createPortal(
-                  <div className="sce-tl-trans-picker" onClick={e => e.stopPropagation()} onPointerDown={e => e.stopPropagation()}
-                    style={{ position: "fixed", left: transPickerPos.left, top: transPickerPos.top, transform: "translate(-50%, -100%)" }}>
-                    <p className="sce-tl-trans-picker-title">Transición aquí</p>
-                    <div className="sce-tl-trans-picker-grid">
-                      {TRANSITIONS.filter((t,i,a) => a.findIndex(x=>x.id===t.id)===i).map(t => (
-                        <button key={t.id}
-                          className={`sce-tl-trans-option${transType === t.id ? " active" : ""}`}
-                          onClick={() => { onSetClipTransition(key, t.id); setTransPickerClipId(null); setTransPickerPos(null); }}>
-                          <span>{t.icon}</span>
-                          <span>{t.label}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>,
-                  // Portal dentro de #root (no document.body): React 17+ delega
-                  // eventos desde el contenedor raíz, así que portalear fuera de
-                  // él rompe el burbujeo de clics aunque el elemento sea visible.
-                  document.getElementById("root") || document.body
-                )}
-              </div>
-            );
-          })}
           </div>{/* /inner zoom div */}
         </div>{/* /scroll-wrap */}
 
@@ -2474,633 +1031,72 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
   );
 }
 
-// ── SfxPanel ─────────────────────────────────────────────────────────────
-function SfxPanel({ sfxList, onSfxChange, currentTime, onPreview }) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState("");
-  const [playingId, setPlayingId] = useState(null);
-  const [addingId, setAddingId] = useState(null);
-  const previewAudioRef = useRef(null);
 
-  const fmtT = (t) => {
-    const m = Math.floor(t / 60), s = (t % 60).toFixed(1).padStart(4, "0");
-    return `${m}:${s}`;
-  };
-  const addSfx = (type, e) => {
-    e.stopPropagation();
-    const cat = SFX_CATALOG.find(c => c.id === type);
-    if (!cat) return;
-    const id = `sfx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-    onSfxChange(prev => [...prev, { id, type, time: currentTime, label: cat.label, emoji: cat.emoji }]);
-  };
-  const removeSfx = (id) => onSfxChange(prev => {
-    const target = prev.find(s => s.id === id);
-    if (target?.audioUrl) { try { URL.revokeObjectURL(target.audioUrl); } catch {} }
-    return prev.filter(s => s.id !== id);
-  });
-
-  const runSearch = async (e) => {
-    e?.preventDefault();
-    const q = query.trim();
-    if (!q || searching) return;
-    setSearching(true); setSearchError(""); setResults([]);
-    try {
-      const token = await getAwsAuthToken();
-      if (!token) { setSearchError("Tu sesión expiró. Recarga la página e inicia sesión de nuevo."); return; }
-      const res = await fetch(REELS_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type: "searchSfx", query: q }),
-      });
-      if (res.status === 401) {
-        setSearchError("Tu sesión expiró (pasó demasiado tiempo). Recarga la página, inicia sesión de nuevo e intenta otra vez.");
-        return;
-      }
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { setSearchError(data.error || "No se pudo buscar. Intenta de nuevo."); return; }
-      setResults(data.results || []);
-      if (!data.results?.length) setSearchError("Sin resultados — prueba con otra palabra.");
-    } catch (err) {
-      setSearchError("No se pudo conectar. Revisa tu conexión.");
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const togglePreview = (result) => {
-    const el = previewAudioRef.current;
-    if (!el) return;
-    if (playingId === result.id) { el.pause(); setPlayingId(null); return; }
-    el.src = result.previewUrl;
-    el.play().catch(() => {});
-    setPlayingId(result.id);
-  };
-
-  const addFreesoundResult = async (result) => {
-    if (addingId) return;
-    setAddingId(result.id);
-    try {
-      const token = await getAwsAuthToken();
-      if (!token) { setSearchError("Tu sesión expiró. Recarga la página e inicia sesión de nuevo."); return; }
-      const res = await fetch(REELS_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type: "fetchSfxAudio", previewUrl: result.previewUrl }),
-      });
-      if (res.status === 401) {
-        setSearchError("Tu sesión expiró (pasó demasiado tiempo). Recarga la página, inicia sesión de nuevo e intenta otra vez.");
-        return;
-      }
-      if (!res.ok) { setSearchError("No se pudo agregar ese sonido. Intenta de nuevo."); return; }
-      const blob = await res.blob();
-      const audioUrl = URL.createObjectURL(blob);
-      const id = `sfx_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-      onSfxChange(prev => [...prev, {
-        id, time: currentTime, label: result.name.slice(0, 24), emoji: "🔊", audioUrl,
-      }]);
-    } catch (err) {
-      setSearchError("No se pudo agregar ese sonido. Intenta de nuevo.");
-    } finally {
-      setAddingId(null);
-    }
-  };
-
+// ── GuidePanel: siguiente paso + flujo Cortar → Reels → Claude Code → CapCut
+function GuidePanel({ onExtractReels, hasCuts }) {
+  const [videoOk, setVideoOk] = useState(true);
   return (
-    <div className="sfx-panel">
-      <audio ref={previewAudioRef} onEnded={() => setPlayingId(null)} style={{ display: "none" }} />
-
-      <div className="sfx-search-section">
-        <p className="sfx-section-title">Buscar más efectos (Freesound · licencia libre)</p>
-        <form className="sfx-search-row" onSubmit={runSearch}>
-          <input type="text" className="sfx-search-input" placeholder="ej: aplausos, notificación, risa..."
-            value={query} onChange={e => setQuery(e.target.value)} />
-          <button type="submit" className="sfx-search-btn" disabled={searching || !query.trim()}>
-            {searching ? "Buscando..." : "Buscar"}
-          </button>
-        </form>
-        {searchError && <p className="sfx-search-error">{searchError}</p>}
-        {results.length > 0 && (
-          <div className="sfx-search-results">
-            {results.map(r => (
-              <div key={r.id} className="sfx-search-row-item">
-                <button type="button" className="sfx-search-play" onClick={() => togglePreview(r)} title="Escuchar">
-                  {playingId === r.id ? "⏸" : "▶"}
-                </button>
-                <div className="sfx-search-meta">
-                  <span className="sfx-search-name">{r.name}</span>
-                  <span className="sfx-search-sub">{r.author} · {r.duration?.toFixed(1)}s · CC0</span>
-                </div>
-                <button type="button" className="sfx-search-add" disabled={addingId === r.id}
-                  onClick={() => addFreesoundResult(r)} title={`Agregar en ${fmtT(currentTime)}`}>
-                  {addingId === r.id ? "..." : "+"}
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="sfx-catalog">
-        <p className="sfx-hint">Toca para escuchar · presiona <strong>+</strong> para agregar en el scrubber</p>
-        <div className="sfx-grid">
-          {SFX_CATALOG.map(sfx => (
-            <button key={sfx.id} className="sfx-btn" onClick={() => onPreview(sfx.id)} title={sfx.desc}>
-              <span className="sfx-emoji">{sfx.emoji}</span>
-              <span className="sfx-label">{sfx.label}</span>
-              <span className="sfx-add-btn" title={`Agregar ${sfx.label} en ${fmtT(currentTime)}`}
-                onClick={(e) => addSfx(sfx.id, e)}>+</span>
-            </button>
-          ))}
-        </div>
-      </div>
-      {sfxList.length > 0 && (
-        <div className="sfx-timeline-list">
-          <p className="sfx-section-title">En la línea de tiempo</p>
-          {[...sfxList].sort((a, b) => a.time - b.time).map(sfx => (
-            <div key={sfx.id} className="sfx-row">
-              <span className="sfx-row-emoji">{sfx.emoji}</span>
-              <span className="sfx-row-name">{sfx.label}</span>
-              <span className="sfx-row-time">{fmtT(sfx.time)}</span>
-              <button className="sfx-row-del" onClick={() => removeSfx(sfx.id)} title="Eliminar">×</button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── TransitionsPanel ─────────────────────────────────────────────────────
-function TransitionsPanel({ effects, onEffectChange }) {
-  const [hovered, setHovered] = useState(null);
-  return (
-    <div className="sce-effects-panel">
-      <div className="sce-fx-section">
-        <p className="sce-fx-section-label">TRANSICIÓN ENTRE CLIPS</p>
-        <div className="sce-trans-cards-grid">
-          {TRANSITIONS.map(t => (
-            <button key={t.id}
-              className={`sce-trans-card${effects.transition === t.id ? " active" : ""}`}
-              onClick={() => onEffectChange({ ...effects, transition: t.id })}
-              onMouseEnter={() => setHovered(t.id)} onMouseLeave={() => setHovered(null)}>
-              <div className={`sce-trans-preview sce-trans-prev--${t.id}${hovered === t.id ? " play" : ""}`}>
-                <div className="sce-tprev-a">A</div>
-                <div className="sce-tprev-b">B</div>
-              </div>
-              <span className="sce-trans-card-label">{t.icon} {t.label}</span>
-            </button>
-          ))}
-        </div>
-        {effects.transition !== "none" && (
-          <div className="sce-fx-slider-row" style={{ marginTop: 10 }}>
-            <span>Duración</span>
-            <input type="range" min="0.2" max="1.5" step="0.1" className="sce-fx-slider"
-              value={effects.transitionSecs}
-              onChange={e => onEffectChange({ ...effects, transitionSecs: +e.target.value })} />
-            <span>{effects.transitionSecs}s</span>
-          </div>
-        )}
-      </div>
-
-      {/* Auto-zoom de retención */}
-      <div className="sce-fx-section">
-        <div className="sce-fx-row">
-          <div>
-            <p className="sce-fx-section-label" style={{ marginBottom: 2 }}>AUTO-ZOOM DE RETENCIÓN</p>
-            <p className="sce-fx-hint" style={{ margin: 0 }}>
-              Zoom sutil cada {effects.zoomInterval || 4}s · Aumenta la retención del espectador
-            </p>
-          </div>
-          <button className={`sce-fx-toggle${effects.autoZoom ? " active" : ""}`}
-            onClick={() => onEffectChange({ ...effects, autoZoom: !effects.autoZoom })}>
-            {effects.autoZoom ? "ON" : "OFF"}
-          </button>
-        </div>
-        {effects.autoZoom && (
-          <div className="sce-fx-slider-row" style={{ marginTop: 8 }}>
-            <span style={{ minWidth: 64 }}>Intervalo</span>
-            <input type="range" min="2" max="8" step="1" className="sce-fx-slider"
-              value={effects.zoomInterval || 4}
-              onChange={e => onEffectChange({ ...effects, zoomInterval: +e.target.value })} />
-            <span>cada {effects.zoomInterval || 4}s</span>
-          </div>
-        )}
-        <div className="sce-trans-zoom-demo">
-          <div className={`sce-tzoom-box${effects.autoZoom ? " active" : ""}`}>
-            <span>Vista previa del zoom</span>
-          </div>
-        </div>
-      </div>
-      <p className="sce-fx-footer">Las transiciones y el auto-zoom se exportan automáticamente.</p>
-    </div>
-  );
-}
-
-// ── EffectsPanel ─────────────────────────────────────────────────────────
-function EffectsPanel({ effects, onEffectChange, bokehLoading, onToggleBokeh, bokehReady }) {
-  const [showFine, setShowFine] = useState(false);
-
-  const applyPreset = (preset) => {
-    onEffectChange({
-      transition: effects.transition, transitionSecs: effects.transitionSecs,
-      bokeh: effects.bokeh,
-      ...preset.values,
-      skin: effects.skin,              // piel es independiente del preset — el preset nunca la pisa
-      _preset: preset.id,
-    });
-  };
-
-  const setFine = (key, val) => onEffectChange({ ...effects, [key]: val, _preset: "custom" });
-  const setSkin = (val) => onEffectChange({ ...effects, skin: val }); // no cambia _preset
-
-  return (
-    <div className="sce-effects-panel">
-
-      {/* Presets de estilo */}
-      <div className="sce-fx-section">
-        <p className="sce-fx-section-label">ESTILO DE VIDEO</p>
-        <div className="sce-preset-grid">
-          {VIDEO_PRESETS.map(p => (
-            <button key={p.id}
-              className={`sce-preset-card${effects._preset === p.id ? " active" : ""}`}
-              onClick={() => applyPreset(p)}>
-              <span className="sce-preset-icon">{p.icon}</span>
-              <span className="sce-preset-label">{p.label}</span>
-            </button>
-          ))}
-        </div>
-        {effects._preset === "natural" && (
-          <p className="sce-fx-hint" style={{ color: "#5FB87A" }}>✓ Edición base aplicada — listo para exportar</p>
-        )}
-      </div>
-
-      {/* Suavizante de piel — independiente del estilo */}
-      <div className="sce-fx-section">
-        <div className="sce-fx-row">
-          <p className="sce-fx-section-label">✨ SUAVIZANTE DE PIEL</p>
-          <span style={{fontSize:"12px",fontWeight:700,color:effects.skin>0?"#C4526A":"#999",minWidth:"34px",textAlign:"right"}}>
-            {effects.skin > 0 ? `${effects.skin}%` : "—"}
-          </span>
-        </div>
-        <div className="sce-fx-slider-row" style={{marginTop:8}}>
-          <span style={{fontSize:10,color:"#aaa",flexShrink:0}}>0</span>
-          <input type="range" min="0" max="100" step="1"
-            value={effects.skin}
-            onChange={e => setSkin(Number(e.target.value))}
-            className="sce-fx-slider"/>
-          <span style={{fontSize:10,color:"#aaa",flexShrink:0}}>100</span>
-        </div>
-        <p className="sce-fx-hint">
-          {effects.skin === 0
-            ? "Sin efecto · desliza para activar"
-            : effects.skin < 30 ? "Toque natural"
-            : effects.skin < 55 ? "Piel suavizada"
-            : effects.skin < 78 ? "Alta definición"
-            : "Máximo airbrush"}
+    <div className="sce-guide-panel">
+      <div className="sce-guide-card">
+        <h3 className="sce-guide-title">🎯 Siguiente paso: tus Reels</h3>
+        <p className="sce-guide-text">
+          Cuando termines de cortar, la IA lee tu video y encuentra tus mejores
+          consejos, momentos de inspiración y oportunidades de venta — listos
+          en vertical para Reels y TikTok.
         </p>
-      </div>
-
-      {/* Bokeh */}
-      <div className="sce-fx-section">
-        <div className="sce-fx-row">
-          <p className="sce-fx-section-label">BOKEH DE FONDO</p>
-          <button className={`sce-fx-toggle${effects.bokeh ? " active" : ""}${bokehLoading ? " loading" : ""}`}
-            onClick={onToggleBokeh} disabled={bokehLoading}>
-            {bokehLoading ? "..." : effects.bokeh ? "ON" : "OFF"}
-          </button>
-        </div>
-        {effects.bokeh > 0 && (
-          <div className="sce-fx-slider-row" style={{marginTop:8}}>
-            <span style={{fontSize:10,color:"#aaa",flexShrink:0}}>0</span>
-            <input type="range" min="1" max="100" step="1"
-              value={effects.bokeh}
-              onChange={e => onEffectChange({ ...effects, bokeh: Number(e.target.value) })}
-              className="sce-fx-slider"/>
-            <span style={{fontSize:10,color:"#aaa",flexShrink:0,minWidth:34,textAlign:"right"}}>{effects.bokeh}%</span>
-          </div>
-        )}
-        {!bokehReady && !bokehLoading && <p className="sce-fx-hint">Primera activación descarga modelo IA (~2 MB)</p>}
-        {bokehLoading && <p className="sce-fx-hint">Cargando modelo...</p>}
-      </div>
-
-      {/* Ajuste fino (colapsable) */}
-      <div className="sce-fx-section">
-        <button className="sce-fine-toggle" onClick={() => setShowFine(v => !v)}>
-          🎛 Ajuste fino {showFine ? "▲" : "▼"}
+        <button className="sc-btn-primary sce-guide-cta" onClick={onExtractReels} disabled={!hasCuts}>
+          ✨ Extraer Reels con IA
         </button>
-        {showFine && (
-          <div style={{ marginTop: 10 }}>
-            {[
-              ["brightness", "Brillo",     -100, 100],
-              ["contrast",   "Contraste",  -100, 100],
-              ["saturation", "Saturación", -100, 100],
-              ["temperature","Temperatura",-100, 100],
-            ].map(([key, label, min, max]) => (
-              <div key={key} className="sce-fx-slider-row" style={{ marginTop: 7 }}>
-                <span style={{ minWidth: 76 }}>{label}</span>
-                <input type="range" min={min} max={max} step="1" className="sce-fx-slider"
-                  value={effects[key] ?? 0}
-                  onChange={e => setFine(key, +e.target.value)} />
-                <span style={{ minWidth: 30, textAlign: "right", color: effects[key] ? "#C4526A" : "#bbb" }}>
-                  {(effects[key] ?? 0) > 0 ? "+" : ""}{effects[key] ?? 0}
-                </span>
-              </div>
-            ))}
-            <div className="sce-fx-temp-labels"><span>❄ Frío</span><span>☀ Cálido</span></div>
-          </div>
-        )}
+        {!hasCuts && <p className="sce-guide-hint">Analiza y corta un clip primero.</p>}
       </div>
 
-      <p className="sce-fx-footer">Los efectos se ven en preview y se exportan automáticamente.</p>
-    </div>
-  );
-}
-
-// ── Panel guiado de Abi: qué hacer después de cortar ───────────────────────
-function AbiGuidePanel({ hasSubtitles, hasCards, hasSections, onGoTo, onCreateCards, onCreateSections, busy }) {
-  const steps = [
-    {
-      id: "subs", emoji: "💬", title: "Subtítulos",
-      desc: "Elige tipografía y estilo, y genera subtítulos minimalistas sincronizados palabra por palabra — se entiende todo aunque vean el video sin sonido.",
-      cta: "Elegir estilo y generar →", done: hasSubtitles,
-      onClick: () => onGoTo("subs"), // solo navega — no dispara nada, se puede hacer aunque otra tarea esté corriendo
-      lockable: false,
-    },
-    {
-      id: "cards", emoji: "🃏", title: "Tarjetas de texto",
-      desc: "Leo todo lo que dices y coloco tarjetas en los momentos con las ideas más importantes — como titulares de revista.",
-      cta: "Crear tarjetas automáticas →", done: hasCards,
-      onClick: onCreateCards, // un clic — no necesita elegir nada antes
-      lockable: true,
-    },
-    {
-      id: "sfx", emoji: "🔊", title: "Efectos de sonido por sección",
-      desc: "Detecto los cambios de sección de tu video (intro, contenido, cierre) y pongo un efecto de sonido en cada uno — el remate que aplicaría una editora profesional.",
-      cta: "Detectar y aplicar →", done: hasSections,
-      onClick: onCreateSections, // un clic — no necesita elegir nada antes
-      lockable: true,
-    },
-  ];
-  return (
-    <div className="sce-abi-panel">
-      <p className="sce-abi-title">✨ ¿Qué quieres hacer con tu video?</p>
-      <p className="sce-abi-sub">Ya cortaste los silencios — ahora déjame ayudarte con lo que haría una editora profesional: comunicación clara, rapidez y un acabado que se ve cuidado. Mientras trabajo puedes seguir viendo o ajustando tu video normalmente.</p>
-      <div className="sce-abi-steps">
-        {steps.map(s => {
-          const locked = s.lockable && busy && !s.done;
-          return (
-            <div key={s.id} className={`sce-abi-step${s.done ? " sce-abi-step--done" : ""}`}>
-              <div className="sce-abi-step-head">
-                <span className="sce-abi-step-emoji">{s.emoji}</span>
-                <span className="sce-abi-step-title">{s.title}</span>
-                {s.done && <span className="sce-abi-step-badge">✓ Hecho</span>}
-              </div>
-              <p className="sce-abi-step-desc">{s.desc}</p>
-              <button className="sce-abi-step-cta" disabled={locked}
-                onClick={s.done ? () => onGoTo(s.id) : s.onClick}>
-                {locked ? "Espera a que termine lo anterior…" : s.done ? "Revisar / ajustar →" : s.cta}
-              </button>
-            </div>
-          );
-        })}
+      <div className="sce-guide-card">
+        <h3 className="sce-guide-title">📚 Cómo usar esta herramienta</h3>
+        <ol className="sce-guide-steps">
+          <li><strong>Corta</strong> silencios y muletillas aquí.</li>
+          <li><strong>Extrae tus Reels</strong> con IA (consejos, inspiración, venta).</li>
+          <li>Lleva esos clips a <strong>Claude Code</strong> para pulir la edición.</li>
+          <li>Dale el acabado final en <strong>CapCut</strong> antes de publicar.</li>
+        </ol>
+        <div className="sce-guide-video-wrap">
+          {videoOk ? (
+            <video className="sce-guide-video" src="/tutorial-editor.mp4" controls
+              onError={() => setVideoOk(false)} />
+          ) : (
+            <div className="sce-guide-video-empty">🎬 Video tutorial próximamente</div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg }) {
+function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg }) {
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem("sce-theme") || "dark"; } catch { return "dark"; }
   });
   useEffect(() => { try { localStorage.setItem("sce-theme", theme); } catch {} }, [theme]);
   const canvasRef    = useRef(null);
   const playRef      = useRef(false);
-  const subListRef   = useRef(null);
   const fileInputRef = useRef(null);
-
-  // Efectos — refs para que drawFrame/runPlay lean siempre el valor actual sin re-crearse
-  const segRef      = useRef(null);   // MediaPipe SelfieSegmentation instance
-  const maskRef     = useRef(null);   // último segmentation mask
-  const maskCbRef   = useRef(null);   // resolve pendiente para drawFrame blocking
-  const _nat        = VIDEO_PRESETS[0].values;
-  const effectsRef  = useRef({ transition: "none", transitionSecs: 0.4, bokeh: 0, autoZoom: false, zoomInterval: 4, ..._nat, _preset: "natural" });
-  const formatRef   = useRef("landscape");
-  const transAlpha  = useRef(0);      // 0-1 overlay negro/blanco para transiciones
-  const transColor  = useRef("0,0,0");
-  const zoomFactor  = useRef(1.0);    // >1 = zoom out from, animates to 1.0
 
   const [isPlaying,    setIsPlaying]    = useState(false);
   const [effectiveTime, setEffectiveTime] = useState(0);
   const [done,         setDone]         = useState(false);
   const [seeking,      setSeeking]      = useState(false);
-  const [transcribing, setTranscribing] = useState(false);
-  const [transcribeMsg, setTranscribeMsg] = useState("");
   const [selectedSeg,  setSelectedSeg]  = useState(null); // {clipId, start, end} del fragmento seleccionado
   const [dims,         setDims]         = useState({ W: 1280, H: 720 });
-  const [tab,          setTab]          = useState("abi");
-  const [effects,      setEffects]      = useState(() => ({ transition: "none", transitionSecs: 0.4, bokeh: 0, autoZoom: false, zoomInterval: 4, ...VIDEO_PRESETS[0].values, _preset: "natural" }));
-  const [bokehLoading, setBokehLoading] = useState(false);
-  const [clipTransitions, setClipTransitions] = useState({});
-  const clipTransitionsRef = useRef({});
-  useEffect(() => { clipTransitionsRef.current = clipTransitions; }, [clipTransitions]);
-  const [music, setMusic] = useState({ url: null, name: "", volume: 0.35, duck: true, loop: true, fromLibrary: false });
-  const musicRef = useRef({ url: null, name: "", volume: 0.35, duck: true, loop: true, fromLibrary: false });
-  useEffect(() => { musicRef.current = music; }, [music]);
-  const [cards, setCards] = useState([]);
-  const cardsRef = useRef([]);
-  useEffect(() => { cardsRef.current = cards; }, [cards]);
-
-  const [sfxList, setSfxList] = useState([]); // [{id, type, time}]
-  const sfxRef = useRef([]);
-  useEffect(() => { sfxRef.current = sfxList; }, [sfxList]);
-  const [sfxPanelOpen, setSfxPanelOpen] = useState(false);
-  const sfxActxRef = useRef(null);
-
-  // Estado de generación automática de tarjetas (estilo editorial)
-  const autoCardTriedRef = useRef(false);
-  const prevKeptLenRef  = useRef(0); // para el primer dibujado al abrir editor
-  const [autoCardState, setAutoCardState] = useState("idle"); // idle|needsAuth|working|done|error
-  const [autoCardMsg, setAutoCardMsg] = useState("");
-
-  // Estado de detección automática de secciones (SFX en cambios de tema)
-  const autoSectionTriedRef = useRef(false);
-  const [autoSectionState, setAutoSectionState] = useState("idle"); // idle|needsAuth|working|done|error
-  const [autoSectionMsg, setAutoSectionMsg] = useState("");
-
-  // Sync effects state → ref (para que callbacks estables lo lean sin deps)
-  useEffect(() => { effectsRef.current = effects; }, [effects]);
-  useEffect(() => { formatRef.current = format; }, [format]);
 
   // Refs para atajos de teclado — evitan re-registrar el listener en cada render
   const effectiveTimeRef = useRef(0);
   const totalKeptRef     = useRef(0);
   const selectedSegRef   = useRef(null);
   const playbarScrubDrag = useRef(false);
-  const cardYDragRef     = useRef(null); // { cardId, startY, startYPos, canvasH, moved }
-  const dragVideoRef     = useRef(null); // { vid, url, clip, localTime } — video cargado UNA vez al iniciar el arrastre, reusado en cada pointermove
   const togglePlayRef       = useRef(null); // sincronizado durante render — evita TDZ en deps del useEffect de teclado
-  const seekToEffectiveRef  = useRef(null); // ídem — seekToEffective se declara más abajo (línea ~2762)
+  const seekToEffectiveRef  = useRef(null); // ídem
   useEffect(() => { effectiveTimeRef.current = effectiveTime; }, [effectiveTime]);
   useEffect(() => { selectedSegRef.current = selectedSeg; }, [selectedSeg]);
-
-  // Tarjeta activa en el tiempo actual (para drag Y y cursor)
-  const activeCard = useMemo(() => {
-    return cards.find(c => {
-      const el = effectiveTime - c.startTime;
-      return el >= 0 && el <= c.duration + 0.3;
-    }) || null;
-  }, [cards, effectiveTime]);
-
-  // Renderiza un frame de `vid` al canvas ctx con todos los efectos activos.
-  // blocking=true → espera el mask de bokeh (para seekTo); false → usa último mask (animation loop).
-  const applyFrame = useCallback(async (ctx, vid, dX, dY, dW, dH, W, H, blocking = false) => {
-    const { skin, bokeh, brightness = 0, contrast = 0, saturation = 0, temperature = 0 } = effectsRef.current;
-    const vidFilter  = buildVidFilter(brightness, contrast, saturation);
-    const bgBlur     = bokehBlurPx(bokeh);
-    const seg        = segRef.current;
-
-    ctx.fillStyle = "#000";
-    ctx.fillRect(0, 0, W, H);
-
-    // Portrait / square: blur-fill de fondo antes del foreground
-    if (formatRef.current !== "landscape") {
-      const vW = vid.videoWidth || W, vH = vid.videoHeight || H;
-      const bgS = Math.max(W / vW, H / vH);
-      const bgW = vW * bgS, bgH = vH * bgS;
-      const bgX = (W - bgW) / 2, bgY = (H - bgH) / 2;
-      ctx.save();
-      ctx.filter = "blur(20px) brightness(0.6) saturate(1.4)";
-      ctx.drawImage(vid, bgX, bgY, bgW, bgH);
-      ctx.restore();
-    }
-
-    // Zoom (transición zoom-in: zoomFactor va de 1.08 → 1.0)
-    const z = zoomFactor.current;
-    const [zdX, zdY, zdW, zdH] = z !== 1
-      ? [(W - dW * z) / 2, (H - dH * z) / 2, dW * z, dH * z]
-      : [dX, dY, dW, dH];
-
-    if (bgBlur && seg) {
-      // Fondo desenfocado
-      ctx.save(); ctx.filter = `blur(${bgBlur}px)`;
-      ctx.drawImage(vid, zdX, zdY, zdW, zdH);
-      ctx.restore();
-
-      // Obtener mask
-      let mask;
-      if (blocking) {
-        mask = await new Promise(res => {
-          maskCbRef.current = res;
-          try { seg.send({ image: vid }); } catch { res(null); }
-        });
-      } else {
-        mask = maskRef.current;
-        try { seg.send({ image: vid }); } catch {}
-      }
-
-      // Persona (sharp + color) + overlay de piel, todo recortado con mask
-      const mc = new OffscreenCanvas(W, H);
-      const mctx = mc.getContext("2d");
-      if (vidFilter) { mctx.save(); mctx.filter = vidFilter; }
-      mctx.drawImage(vid, zdX, zdY, zdW, zdH);
-      if (vidFilter) mctx.restore();
-      applySkinOverlay(mctx, vid, zdX, zdY, zdW, zdH, skin);
-      if (mask) {
-        mctx.globalCompositeOperation = "destination-in";
-        mctx.drawImage(mask, 0, 0, W, H);
-        mctx.globalCompositeOperation = "source-over";
-      }
-      ctx.drawImage(mc, 0, 0);
-
-      // Glow cinemático en el foreground (estilo CapCut bokeh):
-      // version borrosa + brillante del sujeto en modo "screen" → los brillos
-      // se expanden ligeramente y dan aureola/halación de lente de cine.
-      const glowIntensity = (bokeh / 100) * 0.22;
-      if (glowIntensity > 0) {
-        const gc = new OffscreenCanvas(W, H);
-        const gctx = gc.getContext("2d");
-        gctx.filter = `blur(14px) brightness(1.7) saturate(1.25)`;
-        gctx.drawImage(mc, 0, 0);
-        ctx.save();
-        ctx.globalCompositeOperation = "screen";
-        ctx.globalAlpha = glowIntensity;
-        ctx.drawImage(gc, 0, 0);
-        ctx.restore();
-      }
-
-    } else {
-      if (vidFilter) { ctx.save(); ctx.filter = vidFilter; }
-      ctx.drawImage(vid, zdX, zdY, zdW, zdH);
-      if (vidFilter) ctx.restore();
-      applySkinOverlay(ctx, vid, zdX, zdY, zdW, zdH, skin);
-    }
-
-    // Temperatura: tinte cálido/frío sobre el frame ya dibujado
-    if (temperature !== 0) {
-      ctx.save();
-      ctx.globalCompositeOperation = "overlay";
-      ctx.globalAlpha = Math.abs(temperature) / 250;
-      ctx.fillStyle = temperature > 0 ? "rgb(255,140,0)" : "rgb(30,100,255)";
-      ctx.fillRect(0, 0, W, H);
-      ctx.restore();
-    }
-
-    // Overlay de transición (fade/flash)
-    if (transAlpha.current > 0) {
-      ctx.fillStyle = `rgba(${transColor.current},${transAlpha.current})`;
-      ctx.fillRect(0, 0, W, H);
-    }
-  }, []); // sin deps — lee refs siempre actualizados
-
-  // Inicializar / toggle bokeh
-  const initBokeh = useCallback(async () => {
-    if (effects.bokeh) { setEffects(e => ({ ...e, bokeh: 0 })); return; }
-    if (segRef.current) { setEffects(e => ({ ...e, bokeh: 50 })); return; }
-    setBokehLoading(true);
-    try {
-      const seg = await loadBokehSegmenter();
-      seg.onResults(r => {
-        maskRef.current = r.segmentationMask;
-        if (maskCbRef.current) { maskCbRef.current(r.segmentationMask); maskCbRef.current = null; }
-      });
-      segRef.current = seg;
-      setEffects(e => ({ ...e, bokeh: 50 }));
-    } catch (err) {
-      console.error("Bokeh:", err);
-    } finally {
-      setBokehLoading(false);
-    }
-  }, [effects.bokeh]);
-
-  // Anima el overlay de transición (await = bloquea hasta completar)
-  const animFade = useCallback((from, to, dur, color = "0,0,0") => {
-    transColor.current = color;
-    return new Promise(resolve => {
-      const t0 = performance.now();
-      const tick = () => {
-        const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
-        transAlpha.current = from + (to - from) * (t < 0.5 ? 2*t*t : 1-(-2*t+2)**2/2);
-        if (t < 1) requestAnimationFrame(tick);
-        else { transAlpha.current = to; resolve(); }
-      };
-      requestAnimationFrame(tick);
-    });
-  }, []);
-
-  // Inicia animación de zoom-in no bloqueante (1.08 → 1.0)
-  const startZoom = useCallback((dur) => {
-    zoomFactor.current = 1.08;
-    const t0 = performance.now();
-    const tick = () => {
-      const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
-      zoomFactor.current = 1.08 - 0.08 * t;
-      if (t < 1) requestAnimationFrame(tick); else zoomFactor.current = 1.0;
-    };
-    requestAnimationFrame(tick);
-  }, []);
 
   // Valores derivados
   const keptSegs   = useMemo(() => buildKeptSegments(clips), [clips]);
@@ -3156,29 +1152,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     return { W: vW, H: vH };
   }, [format, dims]);
 
-  // Slide: congela canvas actual y lo anima saliendo en la dirección indicada
-  const animSlide = useCallback((dir, dur) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return Promise.resolve();
-    const ctx = canvas.getContext("2d");
-    const { W, H } = outDims;
-    return createImageBitmap(canvas).then(bitmap => new Promise(resolve => {
-      const t0 = performance.now();
-      const tick = () => {
-        const t = Math.min(1, (performance.now() - t0) / 1000 / dur);
-        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-        ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
-        const ox = dir === "slideLeft" ? -W * ease : dir === "slideRight" ? W * ease : 0;
-        const oy = dir === "slideUp"   ? -H * ease : dir === "slideDown"  ? H * ease : 0;
-        ctx.drawImage(bitmap, ox, oy, W, H);
-        if (t < 1) requestAnimationFrame(tick);
-        else { bitmap.close(); resolve(); }
-      };
-      requestAnimationFrame(tick);
-    }));
-  }, [outDims]);
   const currentClipId = nativePos?.clip.id ?? null;
-  const localTime     = nativePos?.localTime ?? 0;
   const pct = Math.min(100, (effectiveTime / totalKept) * 100);
 
   const analyzedClips = useMemo(() => clips.filter(c => c.analyzed && !c.error), [clips]);
@@ -3197,14 +1171,18 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
   // Parar reproducción al desmontar
   useEffect(() => () => { playRef.current = false; }, []);
 
-  // Auto-scroll subtítulos al activo
-  useEffect(() => {
-    const el = subListRef.current?.querySelector(".sce-seg-row--active");
-    if (el) el.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }, [effectiveTime]);
+  // Dibuja un frame de `vid` recortado a llenar (crop-to-fill) el cuadro de
+  // salida — el sujeto ocupa todo el cuadro, sin barras borrosas arriba/abajo.
+  const drawVideoFrame = useCallback((ctx, vid, W, H) => {
+    const vW = vid.videoWidth || dims.W, vH = vid.videoHeight || dims.H;
+    const scale = Math.max(W / vW, H / vH);
+    const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
+    ctx.drawImage(vid, dX, dY, dW, dH);
+  }, [dims]);
 
-  // Dibujar un frame estático (seek) — aplica efectos en modo blocking
-  const drawFrame = useCallback(async (clip, lt, et = 0) => {
+  // Dibujar un frame estático (seek)
+  const drawFrame = useCallback(async (clip, lt) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -3216,19 +1194,14 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
       vid.src = url;
       vid.onloadedmetadata = () => {
         vid.currentTime = Math.min(lt, vid.duration - 0.01);
-        vid.onseeked = async () => {
-          const vW = vid.videoWidth || dims.W, vH = vid.videoHeight || dims.H;
-          const scale = Math.min(W / vW, H / vH);
-          const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
-          await applyFrame(ctx, vid, dX, dY, dW, dH, W, H, true);
-          drawSubtitle(ctx, W, H, lt, clip.segments, subtitleStyle);
-          drawCards(ctx, W, H, et, cardsRef.current);
+        vid.onseeked = () => {
+          drawVideoFrame(ctx, vid, W, H);
           URL.revokeObjectURL(url); resolve();
         };
       };
       vid.onerror = () => { URL.revokeObjectURL(url); resolve(); };
     });
-  }, [outDims, dims, subtitleStyle, applyFrame]);
+  }, [outDims, drawVideoFrame]);
 
   // Seek a effective time
   const seekToEffective = useCallback(async (et) => {
@@ -3237,285 +1210,13 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     if (!native) return;
     setSeeking(true);
     setEffectiveTime(clamped);
-    await drawFrame(native.clip, native.localTime, clamped);
+    await drawFrame(native.clip, native.localTime);
     setSeeking(false);
   }, [keptSegs, totalKept, drawFrame]);
   seekToEffectiveRef.current = seekToEffective; // sync ref durante render
 
-  // Redibuja el frame actual cuando cambia el estilo de subtítulos (fuente,
-  // color, tamaño, posición, efecto) mientras el video está en pausa — sin
-  // esto el cambio solo se veía reflejado al darle play de nuevo.
-  const firstSubtitleStyleRender = useRef(true);
-  useEffect(() => {
-    if (firstSubtitleStyleRender.current) { firstSubtitleStyleRender.current = false; return; }
-    if (!isPlaying) seekToEffective(effectiveTimeRef.current || 0);
-  }, [subtitleStyle]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Seek desde panel de subtítulos (clip + localTime)
-  const handleSeekInClip = useCallback((clipId, lt) => {
-    if (isPlaying) { playRef.current = false; setIsPlaying(false); }
-    const et = nativeToEffective(keptSegs, clipId, lt);
-    if (et !== null) seekToEffective(et);
-  }, [isPlaying, keptSegs, seekToEffective]);
-
-  // Transcripción inline (sin salir del editor)
-  const handleTranscribeInline = useCallback(async () => {
-    playRef.current = false;
-    setIsPlaying(false);
-    await new Promise(r => setTimeout(r, 120));
-    setTranscribing(true);
-    const ready = clips.filter(c => c.analyzed && !c.error);
-    for (let i = 0; i < ready.length; i++) {
-      const clip = ready[i];
-      setTranscribeMsg(`Clip ${i + 1}/${ready.length}: ${clip.name.slice(0, 30)}...`);
-      try {
-        const segments = await transcribeClip(clip.file, clip.silences, info => {
-          if (info.status === "extracting") {
-            setTranscribeMsg(`Extrayendo audio del video... ${info.progress}%`);
-          } else if (info.status === "downloading") {
-            const p = info.progress ? Math.round(info.progress) : 0;
-            setTranscribeMsg(`Descargando modelo Whisper... ${p}% (solo la primera vez)`);
-          } else if (info.status === "loading") {
-            setTranscribeMsg("Cargando modelo en memoria...");
-          } else if (info.status === "ready") {
-            setTranscribeMsg(`Transcribiendo clip ${i + 1}/${ready.length}...`);
-          }
-        }, clip.duration);
-        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
-      } catch (err) {
-        setClips(prev => prev.map(c => c.id === clip.id
-          ? { ...c, segments: [], transcribed: true, transcribeError: err?.message || "Error desconocido" } : c));
-      }
-    }
-    setTranscribing(false);
-    setTranscribeMsg("");
-  }, [clips, setClips]);
-
-  // Genera tarjetas automáticas con IA según el estilo elegido
-  const runAutoCards = useCallback(async () => {
-    autoCardTriedRef.current = true;
-    setAutoCardState("working"); setAutoCardMsg("Comprobando tu sesión...");
-    const token = await getAwsAuthToken();
-    if (!token) { setAutoCardState("needsAuth"); setAutoCardMsg(""); return; }
-
-    const ready = clips.filter(c => c.analyzed && !c.error);
-    if (!ready.length) { autoCardTriedRef.current = false; setAutoCardState("idle"); return; }
-
-    // Si el usuario está previsualizando, esperar a que pare antes de cargar Whisper en memoria
-    if (playRef.current) {
-      setAutoCardMsg("Previsualiza el video — generamos las tarjetas automáticamente cuando pares ⏸");
-      await new Promise(resolve => {
-        const id = setInterval(() => { if (!playRef.current) { clearInterval(id); resolve(); } }, 600);
-      });
-    }
-
-    const generated = [];
-    let lastError = null;
-    for (const clip of ready) {
-      let segments = clip.segments?.length ? clip.segments : null;
-      if (!segments) {
-        setAutoCardMsg(`Transcribiendo ${clip.name.slice(0, 30)}...`);
-        try {
-          segments = await transcribeClip(clip.file, clip.silences || [], info => {
-            if (info.status === "extracting") setAutoCardMsg(`Extrayendo audio... ${info.progress}%`);
-            else if (info.status === "downloading") setAutoCardMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
-            else if (info.status === "loading") setAutoCardMsg("Cargando modelo en memoria...");
-            else if (info.status === "ready") setAutoCardMsg(`Transcribiendo ${clip.name.slice(0, 30)}...`);
-          }, clip.duration);
-          setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
-        } catch (err) {
-          console.error("[autoCards] transcription failed:", err?.message || err);
-          lastError = `Error al transcribir: ${err?.message || "verifica tu conexión"}`;
-          continue;
-        }
-      }
-      if (!segments?.length) {
-        console.warn("[autoCards] segments vacíos para clip", clip.id);
-        continue;
-      }
-
-      setAutoCardMsg("Generando tarjetas con IA...");
-      try {
-        const res = await fetch(REELS_API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            type: "generateCards",
-            transcription: buildTimestampedTranscript(segments),
-            duration: clip.duration || 0,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.status === 429) {
-          setAutoCardState("error");
-          setAutoCardMsg(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
-          return;
-        }
-        if (res.status === 401) {
-          setAutoCardState("error");
-          setAutoCardMsg("Tu sesión expiró (pasó demasiado tiempo). Recarga la página, inicia sesión de nuevo e intenta otra vez.");
-          return;
-        }
-        if (!res.ok) {
-          console.error("[autoCards] Lambda error", res.status, data);
-          lastError = `Error del servidor (${res.status}${data?.error ? `: ${data.error}` : ""}).`;
-          continue;
-        }
-        for (const t of data.tarjetas || []) {
-          // nativeToEffective puede fallar si el timestamp cae en un silencio cortado —
-          // en ese caso buscamos el segmento más cercano para no perder la tarjeta.
-          let et = nativeToEffective(keptSegs, clip.id, t.startTime);
-          if (et === null) {
-            let elapsed = 0;
-            for (const seg of keptSegs) {
-              const d = seg.end - seg.start;
-              if (seg.clip.id === clip.id && t.startTime <= seg.end) {
-                et = elapsed + Math.max(0, Math.min(d, t.startTime - seg.start));
-                break;
-              }
-              elapsed += d;
-            }
-          }
-          if (et === null) continue;
-          generated.push({
-            id: uid(), text: t.texto, keyword: t.keyword || "",
-            startTime: Math.round(et * 10) / 10,
-            duration: 3,
-            colorIdx: 0,
-            font: "Poppins",
-            position: "bottom",
-            animation: "slideUp",
-          });
-        }
-      } catch (err) {
-        console.error("[autoCards] fetch error:", err?.message || err);
-        lastError = `Error de conexión: ${err?.message || "verifica tu internet"}`;
-      }
-    }
-
-    if (generated.length) {
-      generated.sort((a, b) => a.startTime - b.startTime);
-      setCards(generated);
-      // Efecto de sonido automático en cada tarjeta — así se siente editado
-      // por una profesional, no solo texto pegado encima del video.
-      const cat = SFX_CATALOG.find(c => c.id === "pop");
-      if (cat) {
-        setSfxList(prev => [
-          ...prev,
-          ...generated.map(c => ({
-            id: `sfx_${c.id}`, type: "pop", time: c.startTime,
-            label: cat.label, emoji: cat.emoji,
-          })),
-        ]);
-      }
-      setAutoCardState("done");
-      setAutoCardMsg(`✨ ${generated.length} tarjeta${generated.length !== 1 ? "s" : ""} generada${generated.length !== 1 ? "s" : ""} — revísalas antes de exportar.`);
-    } else {
-      setAutoCardState("error");
-      setAutoCardMsg(lastError || "No se pudieron generar tarjetas. Puedes crearlas manualmente.");
-    }
-  }, [clips, keptSegs, setClips]);
-
-  // Detecta cambios de sección (intro/contenido/cierre) y pone un efecto de
-  // sonido en cada uno — el mismo remate que aplicaría una editora profesional
-  // cuando el video cambia de tema. (Las transiciones automáticas en un solo
-  // video largo quedan para más adelante — hoy solo existen entre clips
-  // distintos que subiste por separado.)
-  const runAutoSections = useCallback(async () => {
-    autoSectionTriedRef.current = true;
-    setAutoSectionState("working"); setAutoSectionMsg("Comprobando tu sesión...");
-    const token = await getAwsAuthToken();
-    if (!token) { setAutoSectionState("needsAuth"); setAutoSectionMsg(""); return; }
-
-    const ready = clips.filter(c => c.analyzed && !c.error);
-    if (!ready.length) { autoSectionTriedRef.current = false; setAutoSectionState("idle"); return; }
-
-    const newSfx = [];
-    let lastError = null;
-    for (const clip of ready) {
-      let segments = clip.segments?.length ? clip.segments : null;
-      if (!segments) {
-        setAutoSectionMsg(`Transcribiendo ${clip.name.slice(0, 30)}...`);
-        try {
-          segments = await transcribeClip(clip.file, clip.silences || [], info => {
-            if (info.status === "extracting") setAutoSectionMsg(`Extrayendo audio... ${info.progress}%`);
-            else if (info.status === "downloading") setAutoSectionMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
-            else if (info.status === "loading") setAutoSectionMsg("Cargando modelo en memoria...");
-            else if (info.status === "ready") setAutoSectionMsg(`Transcribiendo ${clip.name.slice(0, 30)}...`);
-          }, clip.duration);
-          setClips(prev => prev.map(c => c.id === clip.id ? { ...c, segments, transcribed: true } : c));
-        } catch (err) {
-          console.error("[autoSections] transcription failed:", err?.message || err);
-          lastError = `Error al transcribir: ${err?.message || "verifica tu conexión"}`;
-          continue;
-        }
-      }
-      if (!segments?.length) continue;
-
-      setAutoSectionMsg("Detectando cambios de sección con IA...");
-      try {
-        const res = await fetch(REELS_API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            type: "generateSections",
-            transcription: buildTimestampedTranscript(segments),
-            duration: clip.duration || 0,
-          }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (res.status === 429) {
-          setAutoSectionState("error");
-          setAutoSectionMsg(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
-          return;
-        }
-        if (res.status === 401) {
-          setAutoSectionState("error");
-          setAutoSectionMsg("Tu sesión expiró (pasó demasiado tiempo). Recarga la página, inicia sesión de nuevo e intenta otra vez.");
-          return;
-        }
-        if (!res.ok) {
-          console.error("[autoSections] Lambda error", res.status, data);
-          lastError = `Error del servidor (${res.status}${data?.error ? `: ${data.error}` : ""}).`;
-          continue;
-        }
-        const cat = SFX_CATALOG.find(c => c.id === "whoosh");
-        for (const s of data.sections || []) {
-          let et = nativeToEffective(keptSegs, clip.id, s.startTime);
-          if (et === null) {
-            let elapsed = 0;
-            for (const seg of keptSegs) {
-              const d = seg.end - seg.start;
-              if (seg.clip.id === clip.id && s.startTime <= seg.end) {
-                et = elapsed + Math.max(0, Math.min(d, s.startTime - seg.start));
-                break;
-              }
-              elapsed += d;
-            }
-          }
-          if (et === null || !cat) continue;
-          newSfx.push({
-            id: uid(), type: "whoosh", time: Math.round(et * 10) / 10,
-            label: cat.label, emoji: cat.emoji,
-          });
-        }
-      } catch (err) {
-        console.error("[autoSections] fetch error:", err?.message || err);
-        lastError = `Error de conexión: ${err?.message || "verifica tu internet"}`;
-      }
-    }
-
-    if (newSfx.length) {
-      setSfxList(prev => [...prev, ...newSfx]);
-      setAutoSectionState("done");
-      setAutoSectionMsg(`✨ ${newSfx.length} cambio${newSfx.length !== 1 ? "s" : ""} de sección detectado${newSfx.length !== 1 ? "s" : ""} — se agregó un efecto de sonido en cada uno.`);
-    } else {
-      setAutoSectionState("error");
-      setAutoSectionMsg(lastError || "No se detectaron cambios de sección claros en este video.");
-    }
-  }, [clips, keptSegs, setClips]);
-
   // Dibujar primer frame cuando los segmentos están listos → evita canvas negro al abrir editor
+  const prevKeptLenRef = useRef(0);
   useEffect(() => {
     if (keptSegs.length > 0 && prevKeptLenRef.current === 0 && !isPlaying) {
       seekToEffective(0);
@@ -3523,92 +1224,11 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     prevKeptLenRef.current = keptSegs.length;
   }, [keptSegs.length, isPlaying, seekToEffective]);
 
-  // Cortador manual
   // Borrar fragmento seleccionado desde el timeline
   const deleteSelectedSeg = useCallback(() => {
     const sel = selectedSegRef.current;
     if (sel) { onCutSeg(sel.clipId, sel.start, sel.end); setSelectedSeg(null); }
   }, [onCutSeg]);
-
-  // Drag vertical de tarjetas en el canvas
-  // Redibuja usando el video YA cargado en dragVideoRef (sin recrearlo) — solo
-  // el overlay (tarjetas/subtítulos) cambia durante el arrastre, el frame de
-  // video de fondo es el mismo todo el tiempo.
-  const redrawDragFrame = useCallback(() => {
-    const d = dragVideoRef.current;
-    const canvas = canvasRef.current;
-    if (!d || !canvas) return;
-    const ctx = canvas.getContext("2d");
-    const { W, H } = outDims;
-    const vW = d.vid.videoWidth || dims.W, vH = d.vid.videoHeight || dims.H;
-    const scale = Math.min(W / vW, H / vH);
-    const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
-    applyFrame(ctx, d.vid, dX, dY, dW, dH, W, H, false);
-    drawSubtitle(ctx, W, H, d.localTime, d.clip.segments, subtitleStyle);
-    drawCards(ctx, W, H, effectiveTimeRef.current, cardsRef.current);
-  }, [outDims, dims, subtitleStyle, applyFrame]);
-
-  const handleCanvasPointerDown = useCallback((e) => {
-    const ac = cardsRef.current.find(c => {
-      const el = effectiveTimeRef.current - c.startTime;
-      return el >= 0 && el <= c.duration + 0.3;
-    });
-    if (!ac) return; // sin tarjeta activa — click = play/pause
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    cardYDragRef.current = {
-      cardId: ac.id,
-      startY: e.clientY,
-      startYPos: ac.yPos ?? 0.5,
-      canvasH: rect.height,
-      moved: false,
-    };
-    // Cargar el video UNA sola vez al iniciar el arrastre — antes se recreaba
-    // en cada pointermove (docenas de veces por segundo), lo que hacía que el
-    // canvas se pusiera en negro y "cargando" mientras se arrastraba la tarjeta.
-    const native = effectiveToNative(keptSegs, effectiveTimeRef.current);
-    if (native) {
-      const vid = document.createElement("video");
-      const url = URL.createObjectURL(native.clip.file);
-      vid.src = url;
-      vid.onloadedmetadata = () => {
-        vid.currentTime = Math.min(native.localTime, Math.max(0, vid.duration - 0.01));
-        vid.onseeked = () => {
-          dragVideoRef.current = { vid, url, clip: native.clip, localTime: native.localTime };
-          redrawDragFrame();
-        };
-      };
-      vid.onerror = () => { URL.revokeObjectURL(url); };
-    }
-    e.currentTarget.setPointerCapture(e.pointerId);
-    e.stopPropagation();
-  }, [keptSegs, redrawDragFrame]);
-
-  const handleCanvasPointerMove = useCallback((e) => {
-    const d = cardYDragRef.current;
-    if (!d) return;
-    const delta = e.clientY - d.startY;
-    if (Math.abs(delta) > 4) d.moved = true;
-    if (!d.moved) return;
-    const newY = Math.max(0.08, Math.min(0.92, d.startYPos + delta / d.canvasH));
-    setCards(prev => prev.map(c => c.id === d.cardId ? { ...c, yPos: newY } : c));
-    redrawDragFrame(); // liviano: reusa el video ya cargado, no lo recrea
-  }, [setCards, redrawDragFrame]);
-
-  const cleanupDragVideo = () => {
-    if (dragVideoRef.current) {
-      try { URL.revokeObjectURL(dragVideoRef.current.url); } catch {}
-      dragVideoRef.current = null;
-    }
-  };
-
-  const handleCanvasPointerUp = useCallback((e) => {
-    const d = cardYDragRef.current;
-    cardYDragRef.current = null;
-    cleanupDragVideo();
-    if (!d?.moved) togglePlayRef.current?.(); // tap sin movimiento → play/pause
-  }, []); // togglePlay removido — accedido via togglePlayRef para evitar TDZ
 
   // Reproducción
   const runPlay = useCallback(async () => {
@@ -3622,188 +1242,67 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
     canvas.width = W; canvas.height = H;
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, H);
 
-    // Agrupar keptSegs por clip manteniendo orden global
     const uniqueClipIds = [...new Set(keptSegs.map(s => s.clip.id))];
     let etOffset = 0;
-
-    // Posición desde la que reproducir (respeta scrubbing)
     const totalEt = keptSegs.reduce((s, seg) => s + seg.end - seg.start, 0);
     const startEt = effectiveTime >= totalEt ? 0 : effectiveTime;
-
-    // Música de fondo en preview
-    let musicEl = null;
-    const mu = musicRef.current;
-    if (mu?.url) {
-      musicEl = new Audio(mu.url);
-      musicEl.loop = mu.loop ?? true;
-      musicEl.volume = mu.duck ? (mu.volume ?? 0.35) * 0.22 : (mu.volume ?? 0.35);
-      if (startEt > 0 && musicEl.duration) musicEl.currentTime = startEt % musicEl.duration;
-      musicEl.play().catch(() => {});
-    }
-
-    // Resuelve la transición para el límite justo después de `seg`. El
-    // override por punto de corte (clipTransitionsRef) manda; si no hay uno,
-    // el default global solo aplica entre clips distintos — los cortes de
-    // silencio automáticos nunca llevan transición aunque haya un default.
-    const resolveTransition = (seg, crossClip) => {
-      const key = segBoundaryKey(seg);
-      const fallback = crossClip ? effectsRef.current.transition : "none";
-      return clipTransitionsRef.current[key] ?? fallback;
-    };
 
     for (const clipId of uniqueClipIds) {
       if (!playRef.current) break;
       const clipSegs = keptSegs.filter(s => s.clip.id === clipId);
       const clip = clipSegs[0].clip;
-      const clipIdx = uniqueClipIds.indexOf(clipId);
-      const isLastClip = clipIdx === uniqueClipIds.length - 1;
 
-      // Saltar clips que están completamente antes del punto de inicio
       const clipDur = clipSegs.reduce((sum, s) => sum + s.end - s.start, 0);
-      if (etOffset + clipDur <= startEt) {
-        etOffset += clipDur;
-        continue;
-      }
+      if (etOffset + clipDur <= startEt) { etOffset += clipDur; continue; }
 
       await new Promise(resolve => {
         const vid = document.createElement("video");
         const url = URL.createObjectURL(clip.file);
         vid.src = url;
         vid.addEventListener("loadedmetadata", async () => {
-          const vW = vid.videoWidth || dims.W, vH = vid.videoHeight || dims.H;
-          const scale = Math.min(W / vW, H / vH);
-          const dW = vW * scale, dH = vH * scale, dX = (W - dW) / 2, dY = (H - dH) / 2;
           let animId;
-          let currentEt = etOffset;
           const draw = () => {
-            const efx = effectsRef.current;
-            if (efx.autoZoom) {
-              zoomFactor.current = 1 + 0.07 * Math.abs(Math.sin(vid.currentTime * Math.PI / (efx.zoomInterval || 4)));
-            }
-            applyFrame(ctx, vid, dX, dY, dW, dH, W, H, false); // no-await, non-blocking
-            drawSubtitle(ctx, W, H, vid.currentTime, clip.segments, subtitleStyle);
-            drawCards(ctx, W, H, currentEt, cardsRef.current);
+            drawVideoFrame(ctx, vid, W, H);
             animId = requestAnimationFrame(draw);
           };
           animId = requestAnimationFrame(draw);
 
-          let preSeeked = false; // el segmento ya quedó posicionado por una transición previa
           for (let si = 0; si < clipSegs.length; si++) {
             if (!playRef.current) break;
             const seg = clipSegs[si];
             const segEtStart = etOffset;
             const segDur = seg.end - seg.start;
+            if (segEtStart + segDur <= startEt) { etOffset += segDur; continue; }
 
-            // Saltar segmentos completamente antes del punto de inicio
-            if (segEtStart + segDur <= startEt) {
-              etOffset += segDur;
-              continue;
-            }
-
-            if (!preSeeked) {
-              // Si startEt cae dentro de este segmento, buscar ahí
-              const skipInSeg = Math.max(0, startEt - segEtStart);
-              vid.currentTime = seg.start + skipInSeg;
-              await new Promise(r => { vid.onseeked = r; });
-            }
-            preSeeked = false;
+            const skipInSeg = Math.max(0, startEt - segEtStart);
+            vid.currentTime = seg.start + skipInSeg;
+            await new Promise(r => { vid.onseeked = r; });
             if (!playRef.current) break;
             vid.playbackRate = 1;
             vid.play().catch(() => {});
-            let prevEt = segEtStart + Math.max(0, startEt - segEtStart);
             await new Promise(segDone => {
               const tick = setInterval(() => {
                 if (!playRef.current) { clearInterval(tick); vid.pause(); segDone(); return; }
                 const ct = vid.currentTime;
                 const newEt = segEtStart + Math.max(0, ct - seg.start);
                 setEffectiveTime(newEt);
-                currentEt = newEt;
-
-                // Disparar SFX si alguno cae entre prevEt y newEt
-                const sfxes = sfxRef.current;
-                if (sfxes.length) {
-                  for (const sfx of sfxes) {
-                    if (sfx.time > prevEt && sfx.time <= newEt) {
-                      if (!sfxActxRef.current) sfxActxRef.current = new AudioContext();
-                      const a = sfxActxRef.current;
-                      const fire = () => {
-                        if (sfx.audioUrl) playSfxAudioUrl(sfx.audioUrl, a, null);
-                        else synthSfx(sfx.type, a, null, a.currentTime);
-                      };
-                      if (a.state === "suspended") a.resume().then(fire);
-                      else fire();
-                    }
-                  }
-                }
-                prevEt = newEt;
-
-                if (ct >= seg.end - 0.04 || vid.ended) {
-                  clearInterval(tick); vid.pause(); segDone();
-                }
+                if (ct >= seg.end - 0.04 || vid.ended) { clearInterval(tick); vid.pause(); segDone(); }
               }, 50);
             });
             etOffset += segDur;
-
-            // Transición en un corte manual dentro del MISMO clip (✂ Dividir)
-            const nextSeg = clipSegs[si + 1];
-            if (nextSeg && playRef.current) {
-              const transition = resolveTransition(seg, false);
-              if (transition !== "none") {
-                const { transitionSecs } = effectsRef.current;
-                if (transition === "zoom") {
-                  startZoom(transitionSecs); // se anima en vivo, sin pausar el dibujo
-                } else {
-                  cancelAnimationFrame(animId);
-                  if (transition === "fade") await animFade(0, 1, transitionSecs / 2);
-                  else if (transition === "flash") await animFade(0, 1, 0.08, "255,255,255");
-                  else if (transition.startsWith("slide")) await animSlide(transition, transitionSecs * 0.6);
-
-                  vid.currentTime = nextSeg.start;
-                  await new Promise(r => { vid.onseeked = r; });
-                  preSeeked = true;
-                  animId = requestAnimationFrame(draw);
-
-                  if (transition === "fade") await animFade(1, 0, transitionSecs / 2);
-                  else if (transition === "flash") await animFade(1, 0, 0.08, "255,255,255");
-                }
-              }
-            }
           }
 
           cancelAnimationFrame(animId);
-
-          // Transición de salida hacia el siguiente clip (archivo distinto)
-          const lastSeg = clipSegs[clipSegs.length - 1];
-          const transition = resolveTransition(lastSeg, true);
-          const { transitionSecs } = effectsRef.current;
-          if (playRef.current && transition !== "none" && !isLastClip) {
-            if (transition === "fade") await animFade(0, 1, transitionSecs / 2);
-            else if (transition === "flash") await animFade(0, 1, 0.08, "255,255,255");
-            else if (transition.startsWith("slide")) await animSlide(transition, transitionSecs * 0.6);
-          }
-
           URL.revokeObjectURL(url);
           resolve();
         });
         vid.onerror = () => { URL.revokeObjectURL(url); resolve(); };
       });
-
-      // Transición de entrada al clip siguiente
-      const lastSeg = clipSegs[clipSegs.length - 1];
-      const transition = resolveTransition(lastSeg, true);
-      const { transitionSecs } = effectsRef.current;
-      if (playRef.current && transition !== "none" && !isLastClip) {
-        if (transition === "fade") await animFade(1, 0, transitionSecs / 2);
-        else if (transition === "flash") await animFade(1, 0, 0.08, "255,255,255");
-        else if (transition === "zoom") startZoom(transitionSecs);
-        // slides: canvas ya está negro tras animSlide, el nuevo clip arranca directo
-      }
     }
 
-    if (musicEl) { musicEl.pause(); musicEl.src = ""; }
     if (playRef.current) { setDone(true); setEffectiveTime(totalKept); }
     setIsPlaying(false); playRef.current = false;
-  }, [keptSegs, outDims, dims, subtitleStyle, totalKept, isPlaying, animFade, startZoom, animSlide, effectiveTime]);
+  }, [keptSegs, outDims, totalKept, isPlaying, effectiveTime, drawVideoFrame]);
 
   const togglePlay = useCallback(() => {
     if (isPlaying) { playRef.current = false; } else { runPlay(); }
@@ -3847,10 +1346,7 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
             title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
             {theme === "dark" ? "☀️" : "🌙"}
           </button>
-          {onExtractReels && (
-            <button className="sce-reel-pill" onClick={onExtractReels} title="Extractor de Reels">🎯 Reels</button>
-          )}
-          <button className="sc-btn-primary sc-btn-sm" onClick={() => onExport(effects, clipTransitions, music, cards, sfxList)}>✂️ Exportar</button>
+          <button className="sc-btn-primary sc-btn-sm" onClick={onExport}>✂️ Exportar</button>
         </div>
       </div>
 
@@ -3859,22 +1355,14 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         {/* Canvas + controles */}
         <div className="sce-canvas-col">
           <div className="sce-canvas-wrap"
-            style={{ cursor: !isPlaying && activeCard ? "ns-resize" : "pointer" }}
-            onPointerDown={!isPlaying && !seeking ? handleCanvasPointerDown : undefined}
-            onPointerMove={!isPlaying && !seeking ? handleCanvasPointerMove : undefined}
-            onPointerUp={!isPlaying && !seeking ? handleCanvasPointerUp : undefined}
-            onPointerCancel={() => { cardYDragRef.current = null; cleanupDragVideo(); }}
-            onClick={!isPlaying && !seeking && !activeCard ? togglePlay : undefined}>
+            onClick={!isPlaying && !seeking ? togglePlay : undefined}>
             <canvas ref={canvasRef} className="sce-canvas" width={dims.W} height={dims.H} />
-            {!isPlaying && !seeking && !activeCard && (
+            {!isPlaying && !seeking && (
               <div className="sce-canvas-overlay">
                 <button className="sc-play-big-btn" onClick={e => { e.stopPropagation(); togglePlay(); }}>
                   {done ? "↺" : "▶"}
                 </button>
               </div>
-            )}
-            {!isPlaying && !seeking && activeCard && (
-              <div className="sce-canvas-drag-hint">↕ arrastra para mover</div>
             )}
             {seeking && (
               <div className="sce-canvas-overlay"><div className="sce-seeking-spinner" /></div>
@@ -3931,98 +1419,9 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
           </div>
         </div>
 
-        {/* Panel derecho con tabs: Subtítulos | Transiciones | Efectos */}
+        {/* Panel derecho: siguiente paso (Reels) + guía de uso */}
         <div className="sce-right-panel">
-          <div className="sce-tab-bar">
-            <button className={`sce-tab${tab === "abi"   ? " active" : ""}`} onClick={() => setTab("abi")}   title="Abi">✨ Abi</button>
-            <button className={`sce-tab${tab === "subs"  ? " active" : ""}`} onClick={() => setTab("subs")}  title="Subtítulos">💬 Texto</button>
-            <button className={`sce-tab${tab === "music" ? " active" : ""}`} onClick={() => setTab("music")} title="Música">
-              🎵 Música{music.url && tab !== "music" && <span className="sce-tab-dot" />}
-            </button>
-            <button className={`sce-tab${tab === "cards" ? " active" : ""}`} onClick={() => setTab("cards")} title="Tarjetas IA">🃏 Cards</button>
-            <button className={`sce-tab${tab === "sfx"   ? " active" : ""}`} onClick={() => setTab("sfx")}   title="Efectos de sonido">🔊 SFX</button>
-            <button className={`sce-tab${tab === "trans" ? " active" : ""}`} onClick={() => setTab("trans")} title="Transiciones">🎬 Trans.</button>
-            <button className={`sce-tab${tab === "fx"    ? " active" : ""}`} onClick={() => setTab("fx")}    title="Efectos visuales">✨ FX</button>
-          </div>
-          {tab === "abi"
-            ? <AbiGuidePanel
-                hasSubtitles={clips.some(c => c.segments?.length > 0)}
-                hasCards={cards.length > 0}
-                hasSections={autoSectionState === "done"}
-                busy={transcribing || autoCardState === "working" || autoSectionState === "working"}
-                onGoTo={setTab}
-                onCreateCards={() => { runAutoCards(); setTab("cards"); }}
-                onCreateSections={() => { runAutoSections(); setTab("sfx"); }}
-              />
-            : tab === "subs"
-            ? <SubtitlePanel
-                clips={clips} setClips={setClips}
-                currentClipId={currentClipId} localTime={localTime}
-                subtitleStyle={subtitleStyle} onStyleChange={onStyleChange}
-                onTranscribe={handleTranscribeInline}
-                onSeekInClip={handleSeekInClip}
-                listRef={subListRef}
-                transcribing={transcribing} transcribeMsg={transcribeMsg}
-              />
-            : tab === "music"
-            ? <MusicPanel music={music} onMusicChange={setMusic} />
-            : tab === "cards"
-            ? <>
-                {autoCardState !== "idle" && (
-                  <div className={`sce-autocards-banner sce-autocards-banner--${autoCardState}`}>
-                    {autoCardState === "working" && <><span className="sce-autocards-spinner" />{autoCardMsg}</>}
-                    {autoCardState === "done" && <span>{autoCardMsg}</span>}
-                    {autoCardState === "error" && <span>{autoCardMsg}</span>}
-                    {autoCardState === "needsAuth" && (
-                      <span>
-                        ✨ Las tarjetas automáticas con IA requieren una cuenta — inicia sesión para generarlas.{" "}
-                        <a href="/" target="_blank" rel="noopener noreferrer">Iniciar sesión →</a>
-                        {" · "}
-                        <button className="sce-autocards-retry" onClick={() => { autoCardTriedRef.current = false; runAutoCards(); }}>Ya inicié sesión, reintentar</button>
-                      </span>
-                    )}
-                  </div>
-                )}
-                <CardsPanel cards={cards} onCardsChange={setCards} currentTime={effectiveTime} />
-              </>
-            : tab === "sfx"
-            ? <>
-                {autoSectionState !== "idle" && (
-                  <div className={`sce-autocards-banner sce-autocards-banner--${autoSectionState}`}>
-                    {autoSectionState === "working" && <><span className="sce-autocards-spinner" />{autoSectionMsg}</>}
-                    {autoSectionState === "done" && <span>{autoSectionMsg}</span>}
-                    {autoSectionState === "error" && <span>{autoSectionMsg}</span>}
-                    {autoSectionState === "needsAuth" && (
-                      <span>
-                        ✨ La detección automática de secciones requiere una cuenta — inicia sesión para usarla.{" "}
-                        <a href="/" target="_blank" rel="noopener noreferrer">Iniciar sesión →</a>
-                        {" · "}
-                        <button className="sce-autocards-retry" onClick={() => { autoSectionTriedRef.current = false; runAutoSections(); }}>Ya inicié sesión, reintentar</button>
-                      </span>
-                    )}
-                  </div>
-                )}
-                <SfxPanel
-                  sfxList={sfxList}
-                  onSfxChange={setSfxList}
-                  currentTime={effectiveTime}
-                  onPreview={(type) => {
-                    if (!sfxActxRef.current) sfxActxRef.current = new AudioContext();
-                    const a = sfxActxRef.current;
-                    if (a.state === "suspended") a.resume();
-                    synthSfx(type, a, null, a.currentTime + 0.05);
-                  }}
-                />
-              </>
-            : tab === "trans"
-            ? <TransitionsPanel effects={effects} onEffectChange={setEffects} />
-            : <EffectsPanel
-                effects={effects} onEffectChange={setEffects}
-                bokehLoading={bokehLoading}
-                bokehReady={!!segRef.current}
-                onToggleBokeh={initBokeh}
-              />
-          }
+          <GuidePanel onExtractReels={onExtractReels} hasCuts={analyzedClips.length > 0} />
         </div>
       </div>
 
@@ -4033,18 +1432,8 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
         allClips={clips} onMoveClip={moveClip} onRemoveClip={removeClip}
         onAddFiles={() => fileInputRef.current?.click()}
         onCutSeg={onCutSeg}
-        clipTransitions={clipTransitions}
-        onSetClipTransition={(clipId, type) => setClipTransitions(p => ({ ...p, [clipId]: type }))}
-        activePreset={effects._preset}
-        defaultTransition={effects.transition}
-        music={music}
-        sfxList={sfxList}
-        onSfxChange={setSfxList}
-        cards={cards}
-        onCardsChange={setCards}
         selectedSeg={selectedSeg}
         onSelectSeg={setSelectedSeg}
-        onClearSubtitles={(clipId) => setClips(prev => prev.map(c => c.id === clipId ? { ...c, segments: [], transcribed: false } : c))}
       />
     </div>
   );
@@ -4053,8 +1442,17 @@ function EditorScreen({ clips, setClips, subtitleStyle, onStyleChange, onExport,
 // ── Extractor de Reels ───────────────────────────────────────────────────
 const REELS_FMT_DEFAULT = "portrait";
 const REELS_EFFECTS_DEFAULT = { ...VIDEO_PRESETS[0].values };
+const REEL_MAX_SECONDS = 60;
+// Estilo de subtítulos fijo para los Reels — ya no hay panel de personalización
+// en el editor, así que los clips salen siempre con captions legibles por defecto.
+const REEL_SUBTITLE_STYLE = { font: "Poppins", hlColor: "#FFE44D", size: "small" };
+const REEL_CATEGORIES = {
+  consejo:     { label: "Consejo",     emoji: "💡" },
+  inspiracion: { label: "Inspiración", emoji: "✨" },
+  venta:       { label: "Venta",       emoji: "🛒" },
+};
 
-function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
+function ReelsExtractorScreen({ clips, onBack }) {
   const [phase,       setPhase]       = useState("idle");
   const [msg,         setMsg]         = useState("");
   const [fragments,   setFragments]   = useState([]);
@@ -4063,6 +1461,7 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
   const [exporting,   setExporting]   = useState(null); // idx | null
   const [progMap,     setProgMap]     = useState({});
   const [urlMap,      setUrlMap]      = useState({});
+  const [catFilter,   setCatFilter]   = useState("todas");
 
   const clip = clips.find(c => c.analyzed && !c.error);
 
@@ -4115,13 +1514,16 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
       const data = await res.json();
       if (res.status === 429) throw new Error(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
       if (!data.fragmentos?.length) throw new Error("Sin fragmentos");
-      // Clamp timestamps to clip duration
+      // Clamp timestamps a la duración del clip y a un máximo de 60s — no
+      // confiamos solo en que la IA respete el límite pedido en el prompt.
       const dur = clip.duration || Infinity;
-      setFragments(data.fragmentos.map(f => ({
-        ...f,
-        inicio: Math.max(0, Math.min(f.inicio, dur - 5)),
-        fin:    Math.max(f.inicio + 5, Math.min(f.fin, dur)),
-      })));
+      setFragments(data.fragmentos.map(f => {
+        const inicio = Math.max(0, Math.min(f.inicio, dur - 5));
+        const finRaw = Math.max(inicio + 5, Math.min(f.fin, dur));
+        const fin = Math.min(finRaw, inicio + REEL_MAX_SECONDS);
+        const categoria = REEL_CATEGORIES[f.categoria] ? f.categoria : "consejo";
+        return { ...f, inicio, fin, categoria };
+      }));
       setPhase("ready"); setMsg("");
     } catch (err) {
       setPhase("error"); setMsg(err.message || "Error al analizar. Intenta de nuevo.");
@@ -4138,19 +1540,19 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
       const blob = await recordSingleFragment(
         clip, f.inicio, f.fin,
         p => setProgMap(prev => ({ ...prev, [idx]: Math.round(p * 100) })),
-        subtitleStyle, reelFmt, reelEffects
+        REEL_SUBTITLE_STYLE, reelFmt, reelEffects
       );
       setUrlMap(u => ({ ...u, [idx]: URL.createObjectURL(blob) }));
     } catch (e) { console.error(e); }
     setExporting(null);
     setProgMap(p => { const n = { ...p }; delete n[idx]; return n; });
-  }, [exporting, fragments, clip, subtitleStyle, reelFmt, reelEffects]);
+  }, [exporting, fragments, clip, reelFmt, reelEffects]);
 
   return (
     <div className="sce-reel-screen">
       {/* Top bar */}
       <div className="sce-reel-topbar">
-        <button className="sce-reel-back" onClick={onBack}>← Editor</button>
+        <button className="sce-reel-back" onClick={onBack}>← ReelCut</button>
         <h2 className="sce-reel-title">🎯 Extractor de Reels</h2>
         <div className="sce-fmt-group" style={{ marginLeft: "auto" }}>
           {[["portrait","9:16 ▲"],["landscape","16:9 ▷"],["square","1:1 □"]].map(([f, label]) => (
@@ -4166,7 +1568,8 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
           <div className="sce-reel-intro-icon">🎯</div>
           <h3 className="sce-reel-intro-h">Convierte tu video largo en Reels virales</h3>
           <p className="sce-reel-intro-p">
-            La IA transcribe tu video, detecta los 6 momentos más valiosos y te los entrega listos para descargar uno a uno.
+            La IA lee tu video ya cortado y encuentra tus mejores 💡 consejos, ✨ momentos de inspiración
+            y 🛒 oportunidades de venta — clips de máximo 60s en vertical, listos para descargar.
           </p>
           <div className="sce-reel-preset-row">
             {VIDEO_PRESETS.slice(0,4).map(p => (
@@ -4225,16 +1628,27 @@ function ReelsExtractorScreen({ clips, onBack, subtitleStyle }) {
       {phase === "ready" && (
         <div className="sce-reel-results">
           <p className="sce-reel-results-subtitle">
-            Se encontraron {fragments.length} fragmentos · Exporta los que te gusten en {reelFmt === "portrait" ? "9:16 (Reels)" : reelFmt === "square" ? "1:1 (Feed)" : "16:9 (YouTube)"}
+            Se encontraron {fragments.length} fragmentos (máx. 60s) · Exporta los que te gusten en {reelFmt === "portrait" ? "9:16 (Reels)" : reelFmt === "square" ? "1:1 (Feed)" : "16:9 (YouTube)"}
           </p>
+          <div className="sce-reel-cat-filter">
+            <button className={`sce-reel-cat-btn${catFilter === "todas" ? " active" : ""}`} onClick={() => setCatFilter("todas")}>Todas</button>
+            {Object.entries(REEL_CATEGORIES).map(([id, c]) => (
+              <button key={id} className={`sce-reel-cat-btn${catFilter === id ? " active" : ""}`} onClick={() => setCatFilter(id)}>
+                {c.emoji} {c.label}
+              </button>
+            ))}
+          </div>
           <div className="sce-reel-grid">
             {fragments.map((f, idx) => {
+              if (catFilter !== "todas" && f.categoria !== catFilter) return null;
               const dur = f.fin - f.inicio;
               const prog = progMap[idx];
               const url = urlMap[idx];
+              const cat = REEL_CATEGORIES[f.categoria] || REEL_CATEGORIES.consejo;
               return (
                 <div key={idx} className="sce-reel-card">
                   <div className="sce-reel-num">#{idx + 1}</div>
+                  <span className={`sce-reel-cat-badge sce-reel-cat-badge--${f.categoria}`}>{cat.emoji} {cat.label}</span>
                   <div className="sce-reel-card-title">{f.titulo}</div>
                   <div className="sce-reel-meta">
                     {fmtTime(f.inicio)} → {fmtTime(f.fin)} · <strong>{fmtTime(dur)}</strong>
@@ -4280,7 +1694,6 @@ export default function SilenceCutter() {
   const [result, setResult]         = useState(null);
   const [error, setError]           = useState("");
   const [dragOver, setDragOver]     = useState(false);
-  const [subtitleStyle, setSubtitleStyle] = useState({ font: "Poppins", hlColor: "#FFE44D", size: "small" });
   const [format, setFormat] = useState("landscape"); // "landscape" | "portrait" | "square"
   const [showReels, setShowReels] = useState(false);
   const [sensitivity, setSensitivity] = useState("conservadora");
@@ -4292,7 +1705,6 @@ export default function SilenceCutter() {
   // solo al EXPORTAR se pide crear cuenta si no hay sesión iniciada.
   const [hasAccount, setHasAccount] = useState(false);
   const [showRegisterGate, setShowRegisterGate] = useState(false);
-  const pendingExportArgsRef = useRef(null);
   useEffect(() => {
     awsAuth.getSession().then(({ data }) => setHasAccount(!!data?.session));
   }, []);
@@ -4378,20 +1790,19 @@ export default function SilenceCutter() {
   const removeClip = id => setClips(prev => prev.filter(c => c.id !== id));
   const onDrop = (e) => { e.preventDefault(); setDragOver(false); addFiles(e.dataTransfer.files); };
 
-  const exportar = async (effects = {}, clipTransitions = {}, music = {}, cards = [], sfxList = []) => {
+  const exportar = async () => {
     const ready = clips.filter(c => c.analyzed && !c.error);
     if (!ready.length) { setError("Analiza los clips primero."); return; }
     if (!hasAccount) {
       // Cortar y previsualizar es libre — el gate solo aparece al querer
       // exportar de verdad, para no perder a quien solo está probando.
-      pendingExportArgsRef.current = [effects, clipTransitions, music, cards, sfxList];
       setShowRegisterGate(true);
       return;
     }
     abortRef.current = false;
     setFase("cutting"); setProgress(0); setError("");
     try {
-      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, subtitleStyle, format, effects, clipTransitions, music, cards, sfxList);
+      const blob = await recordAllClips(ready, (p, msg) => { setProgress(Math.round(p * 100)); setProgressMsg(msg); }, abortRef, format);
       const totalOriginal = ready.reduce((t, c) => t + (c.duration || 0), 0);
       const totalCut = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).reduce((s, si) => s + si.end - si.start, 0), 0);
       const totalCuts = ready.reduce((t, c) => t + c.silences.filter(s => s.cut).length, 0);
@@ -4460,7 +1871,6 @@ export default function SilenceCutter() {
   if (fase === "editor" && analyzedCount > 0 && showReels) return (
     <ReelsExtractorScreen
       clips={clips}
-      subtitleStyle={subtitleStyle}
       onBack={() => setShowReels(false)}
     />
   );
@@ -4468,7 +1878,6 @@ export default function SilenceCutter() {
   if (fase === "editor" && analyzedCount > 0) return (
     <>
       <EditorScreen clips={clips} setClips={setClips}
-        subtitleStyle={subtitleStyle} onStyleChange={setSubtitleStyle}
         onExport={exportar} onAddFiles={addFiles}
         moveClip={moveClip} removeClip={removeClip} toggleSilence={toggleSilence}
         onAnalyze={analizarTodos}
@@ -4484,9 +1893,7 @@ export default function SilenceCutter() {
           onClose={() => setShowRegisterGate(false)}
           onSuccess={() => {
             setHasAccount(true); setShowRegisterGate(false);
-            const args = pendingExportArgsRef.current;
-            pendingExportArgsRef.current = null;
-            if (args) exportar(...args);
+            exportar();
           }}
         />
       )}
@@ -4500,8 +1907,8 @@ export default function SilenceCutter() {
       <div className="sc-editor-wrap">
         <div className="sc-editor-header">
           <div>
-            <h1 className="sc-editor-title">Editor de video</h1>
-            <p className="sc-editor-sub">Agrega tus clips, detecta silencios automáticamente y exporta un solo video limpio.</p>
+            <h1 className="sc-editor-title">ReelCut</h1>
+            <p className="sc-editor-sub">Agrega tus clips, corta silencios automáticamente y extrae tus mejores Reels con IA.</p>
           </div>
           <span className="sc-badge">Herramienta gratuita · En tu dispositivo</span>
         </div>

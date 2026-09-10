@@ -28,17 +28,6 @@ const PLAN_LIMITS = { free: 50, mama: 50, emprendedora: 60, ceo: 200, premium: 2
 const MAX_TEXT_LEN     = 20000;  // ~ una sección larga de plan de negocio
 const MAX_TRANSCRIPT_LEN = 150000; // ~ transcripción con timestamps de un video de hasta ~1h
 
-// ─── Freesound (búsqueda de efectos de sonido CC0) ────────────────────────
-const FREESOUND_API_KEY = process.env.FREESOUND_API_KEY;
-const MAX_SFX_QUERY_LEN = 100;
-// El preview de audio se re-descarga acá (no se manda la URL de Freesound
-// directo al navegador) porque el CDN de Freesound tiene problemas conocidos
-// de CORS con Web Audio API: el audio SE ESCUCHA bien en el editor pero queda
-// en silencio en el video exportado (MediaRecorder no puede capturar una
-// fuente cross-origin sin CORS correcto). Al pasar los bytes por acá y
-// devolverlos como blob propio, se evita ese problema de raíz.
-const FREESOUND_HOSTS = ["cdn.freesound.org", "freesound.org"];
-
 const ALLOWED_ORIGINS = [
   "https://www.mamaceoapp.co",
   "https://mamaceoapp.co",
@@ -861,18 +850,21 @@ Video de ${durMin} minuto${durMin !== 1 ? "s" : ""}. Transcripción con timestam
 
 ${transcription}
 
-Extrae exactamente 6 fragmentos para Reels. Criterios de selección:
-- Momentos con gancho emocional fuerte o revelación personal
-- Tips accionables y directos
-- Historias o testimonios concretos
-- Frases memorables que generen identificación
-- Cada fragmento: entre 25 y 90 segundos, coherente y completo
+Extrae exactamente 6 fragmentos para Reels, y clasifica cada uno en UNA de estas 3 categorías:
+- "consejo": un tip accionable y directo que la audiencia puede aplicar ya
+- "inspiracion": un momento emocional, motivacional o una historia/testimonio que inspira
+- "venta": una mención de oferta, producto, servicio o llamado a la acción de compra
+
+Criterios de selección:
+- Prioriza variedad de categorías — no elijas 6 fragmentos del mismo tipo si el video lo permite
+- Momentos con gancho emocional fuerte, revelación personal o frase memorable
+- Cada fragmento: entre 15 y 60 segundos, NUNCA más de 60 — coherente y completo
 - No cortes en medio de una oración — el fragmento debe tener inicio y cierre claros
 - Añade 2 segundos de margen al inicio y 2 al final
 - Variedad: evita fragmentos consecutivos o muy similares en tema
 
 Responde SOLO JSON válido, sin texto extra, sin markdown:
-[{"titulo":"string (4-6 palabras)","inicio":number,"fin":number,"hook":"string (gancho en máx 12 palabras)","por_que":"string (razón viral en máx 10 palabras)"}]`;
+[{"titulo":"string (4-6 palabras)","categoria":"consejo|inspiracion|venta","inicio":number,"fin":number,"hook":"string (gancho en máx 12 palabras)","por_que":"string (razón viral en máx 10 palabras)"}]`;
 
   let rawText;
   try {
@@ -888,9 +880,10 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
     const si = txt.indexOf("["), ei = txt.lastIndexOf("]");
     if (si === -1 || ei === -1) throw new Error("No JSON array");
     fragmentos = JSON.parse(txt.slice(si, ei + 1));
-    fragmentos = fragmentos.filter(f =>
-      typeof f.inicio === "number" && typeof f.fin === "number" && f.fin > f.inicio + 5
-    );
+    const CATEGORIAS_VALIDAS = new Set(["consejo", "inspiracion", "venta"]);
+    fragmentos = fragmentos
+      .filter(f => typeof f.inicio === "number" && typeof f.fin === "number" && f.fin > f.inicio + 5)
+      .map(f => ({ ...f, categoria: CATEGORIAS_VALIDAS.has(f.categoria) ? f.categoria : "consejo" }));
     if (!fragmentos.length) throw new Error("Sin fragmentos válidos");
   } catch (err) {
     console.error("[extractReels] parse error:", err.message, rawText?.slice(0, 300));
@@ -904,210 +897,6 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
   return respond(200, { fragmentos, usage: currentCount + 1, limit, plan }, event);
 }
 
-async function handleGenerateCards(body, event, userId) {
-  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
-  const { transcription, duration } = body;
-  if (!transcription?.trim()) return respond(400, { error: "Falta transcripción" }, event);
-  if (transcription.length > MAX_TRANSCRIPT_LEN) return respond(400, { error: "Transcripción demasiado larga" }, event);
-
-  const { plan, usage } = await getUserPlanAndUsage(userId);
-  const mk = monthKey();
-  const currentCount = usage[mk] || 0;
-  const limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
-  if (currentCount >= limit) {
-    return respond(429, { error: "limite_alcanzado", usage: currentCount, limit, plan,
-      message: `Llegaste al límite de ${limit} generaciones este mes.` }, event);
-  }
-
-  const durSec = Math.round(duration || 0);
-  const maxCards = durSec < 60 ? 3 : durSec < 180 ? 4 : 6;
-
-  const prompt = `Eres editora de video experta en el estilo "editorial/documental" para Reels y TikTok: video de una persona hablando a cámara, interrumpido por tarjetas de texto a pantalla completa que marcan cada punto o capítulo clave (como un titular de revista).
-
-Video de ${durSec} segundos. Transcripción con timestamps en segundos:
-
-${transcription}
-
-Sugiere entre 3 y ${maxCards} tarjetas de texto para este video. Criterios:
-- Cada tarjeta marca el inicio de un punto, idea o capítulo nuevo — no un resumen genérico
-- Texto corto y directo: máximo 6 palabras, como un titular
-- keyword: UNA palabra o frase corta dentro de "texto" que se debe destacar visualmente (o "" si no aplica)
-- startTime: el segundo exacto (según los timestamps) donde debe aparecer la tarjeta, coincidiendo con el inicio de esa idea
-- Deja al menos 4 segundos entre el startTime de una tarjeta y la siguiente
-- No pongas una tarjeta en los primeros 2 segundos del video
-
-Responde SOLO JSON válido, sin texto extra, sin markdown:
-[{"texto":"string (máx 6 palabras)","keyword":"string o vacío","startTime":number}]`;
-
-  let rawText;
-  try {
-    rawText = await callClaude(prompt, 800, "[", "generateCards");
-  } catch (err) {
-    console.error("[generateCards] callClaude error:", err.message);
-    return respond(502, { error: "Error al generar las tarjetas. Intenta de nuevo." }, event);
-  }
-
-  let tarjetas;
-  try {
-    let txt = rawText.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
-    const si = txt.indexOf("["), ei = txt.lastIndexOf("]");
-    if (si === -1 || ei === -1) throw new Error("No JSON array");
-    tarjetas = JSON.parse(txt.slice(si, ei + 1));
-    tarjetas = tarjetas.filter(t =>
-      typeof t.texto === "string" && t.texto.trim() &&
-      typeof t.startTime === "number" && t.startTime >= 0 &&
-      (!duration || t.startTime < duration)
-    ).map(t => ({
-      texto: t.texto.trim().slice(0, 80),
-      keyword: typeof t.keyword === "string" ? t.keyword.trim().slice(0, 40) : "",
-      startTime: Math.round(t.startTime * 10) / 10,
-    }));
-    if (!tarjetas.length) throw new Error("Sin tarjetas válidas");
-  } catch (err) {
-    console.error("[generateCards] parse error:", err.message, rawText?.slice(0, 300));
-    return respond(502, { error: "No se pudo interpretar la respuesta. Intenta de nuevo." }, event);
-  }
-
-  const updatedUsage = { ...usage, [mk]: currentCount + 1 };
-  try { await saveUsage(userId, updatedUsage); }
-  catch (err) { console.warn("No se pudo guardar contador:", err); }
-
-  return respond(200, { tarjetas, usage: currentCount + 1, limit, plan }, event);
-}
-
-// ─── Handler: Detectar secciones (intro/contenido/cierre) para colocar SFX ─
-async function handleGenerateSections(body, event, userId) {
-  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
-  const { transcription, duration } = body;
-  if (!transcription?.trim()) return respond(400, { error: "Falta transcripción" }, event);
-  if (transcription.length > MAX_TRANSCRIPT_LEN) return respond(400, { error: "Transcripción demasiado larga" }, event);
-
-  const { plan, usage } = await getUserPlanAndUsage(userId);
-  const mk = monthKey();
-  const currentCount = usage[mk] || 0;
-  const limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
-  if (currentCount >= limit) {
-    return respond(429, { error: "limite_alcanzado", usage: currentCount, limit, plan,
-      message: `Llegaste al límite de ${limit} generaciones este mes.` }, event);
-  }
-
-  const durSec = Math.round(duration || 0);
-  const maxSections = durSec < 60 ? 2 : durSec < 180 ? 3 : 5;
-
-  const prompt = `Eres editora de video experta identificando la estructura narrativa de un video para redes sociales (intro, desarrollo de contenido, cierre/llamada a la acción).
-
-Video de ${durSec} segundos. Transcripción con timestamps en segundos:
-
-${transcription}
-
-Identifica entre 1 y ${maxSections} cambios de sección — momentos donde el video pasa de una parte narrativa a otra (ej: termina el saludo/gancho y empieza el contenido, cambia de un tip a otro, empieza el cierre). No marques el segundo 0.
-
-Responde SOLO JSON válido, sin texto extra, sin markdown:
-[{"label":"string corto (2-4 palabras, ej: 'Empieza el tip 1', 'Cierre')","startTime":number}]`;
-
-  let rawText;
-  try {
-    rawText = await callClaude(prompt, 500, "[", "generateSections");
-  } catch (err) {
-    console.error("[generateSections] callClaude error:", err.message);
-    return respond(502, { error: "Error al analizar las secciones. Intenta de nuevo." }, event);
-  }
-
-  let sections;
-  try {
-    let txt = rawText.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
-    const si = txt.indexOf("["), ei = txt.lastIndexOf("]");
-    if (si === -1 || ei === -1) throw new Error("No JSON array");
-    sections = JSON.parse(txt.slice(si, ei + 1));
-    sections = sections.filter(s =>
-      typeof s.startTime === "number" && s.startTime > 1 &&
-      (!duration || s.startTime < duration)
-    ).map(s => ({
-      label: typeof s.label === "string" ? s.label.trim().slice(0, 40) : "Sección",
-      startTime: Math.round(s.startTime * 10) / 10,
-    }));
-  } catch (err) {
-    console.error("[generateSections] parse error:", err.message, rawText?.slice(0, 300));
-    return respond(502, { error: "No se pudo interpretar la respuesta. Intenta de nuevo." }, event);
-  }
-
-  const updatedUsage = { ...usage, [mk]: currentCount + 1 };
-  try { await saveUsage(userId, updatedUsage); }
-  catch (err) { console.warn("No se pudo guardar contador:", err); }
-
-  return respond(200, { sections, usage: currentCount + 1, limit, plan }, event);
-}
-
-// ─── Handler: Buscar efectos de sonido reales en Freesound (licencia CC0) ──
-async function handleSearchSfx(body, event) {
-  if (!FREESOUND_API_KEY) return respond(500, { error: "Freesound no configurado" }, event);
-  const q = String(body.query || "").trim().slice(0, MAX_SFX_QUERY_LEN);
-  if (!q) return respond(400, { error: "Falta el término de búsqueda" }, event);
-
-  const params = new URLSearchParams({
-    query: q,
-    filter: 'license:"Creative Commons 0" duration:[0.1 TO 20]',
-    fields: "id,name,previews,duration,license,username",
-    page_size: "12",
-    token: FREESOUND_API_KEY,
-  });
-
-  let res;
-  try {
-    res = await fetch(`https://freesound.org/apiv2/search/text/?${params}`);
-  } catch (err) {
-    console.error("[searchSfx] fetch error:", err.message);
-    return respond(502, { error: "No se pudo conectar con Freesound. Intenta de nuevo." }, event);
-  }
-  if (!res.ok) {
-    console.error("[searchSfx] Freesound respondió", res.status, (await res.text().catch(() => "")).slice(0, 300));
-    return respond(502, { error: "Freesound no respondió correctamente." }, event);
-  }
-  const data = await res.json();
-  const results = (data.results || [])
-    .map(s => ({
-      id: s.id,
-      name: s.name,
-      duration: s.duration,
-      previewUrl: s.previews?.["preview-hq-mp3"] || s.previews?.["preview-lq-mp3"] || null,
-      author: s.username,
-    }))
-    .filter(s => s.previewUrl);
-
-  return respond(200, { results }, event);
-}
-
-// ─── Handler: Traer los bytes de un preview de Freesound (evita el problema
-// de CORS del CDN — ver comentario junto a FREESOUND_HOSTS) ────────────────
-async function handleFetchSfxAudio(body, event) {
-  const url = String(body.previewUrl || "");
-  let parsed;
-  try { parsed = new URL(url); } catch { return respond(400, { error: "URL inválida" }, event); }
-  if (!FREESOUND_HOSTS.includes(parsed.hostname)) {
-    return respond(400, { error: "Origen no permitido" }, event);
-  }
-
-  let res;
-  try {
-    res = await fetch(url);
-  } catch (err) {
-    console.error("[fetchSfxAudio] fetch error:", err.message);
-    return respond(502, { error: "No se pudo descargar el audio." }, event);
-  }
-  if (!res.ok) return respond(502, { error: "Freesound no respondió correctamente." }, event);
-
-  const contentType = res.headers.get("content-type") || "audio/mpeg";
-  const buf = Buffer.from(await res.arrayBuffer());
-  // Techo de seguridad — un preview de Freesound normal pesa unos cientos de KB.
-  if (buf.length > 5 * 1024 * 1024) return respond(413, { error: "Audio demasiado grande" }, event);
-
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": contentType, ...corsHeaders(event) },
-    body: buf.toString("base64"),
-    isBase64Encoded: true,
-  };
-}
 
 // ─── Handler ──────────────────────────────────────────────────────────────
 export const handler = async (event) => {
@@ -1137,20 +926,6 @@ export const handler = async (event) => {
   // real del plan de la usuaria en vez de un tope genérico compartido.
   if (body.type === "extractReels") {
     return handleExtractReels(body, event, userId);
-  }
-  if (body.type === "generateCards") {
-    return handleGenerateCards(body, event, userId);
-  }
-  if (body.type === "generateSections") {
-    return handleGenerateSections(body, event, userId);
-  }
-  // searchSfx/fetchSfxAudio no consumen la cuota mensual de IA — es una
-  // búsqueda en una librería, no una generación con Claude.
-  if (body.type === "searchSfx") {
-    return handleSearchSfx(body, event);
-  }
-  if (body.type === "fetchSfxAudio") {
-    return handleFetchSfxAudio(body, event);
   }
 
   const { type, context } = body;

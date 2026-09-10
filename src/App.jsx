@@ -3144,6 +3144,19 @@ export default function App() {
             </span>
             {isToolLocked(effectivePlan, "studio") ? <span className="menu-lock">🔒</span> : <span className="sidebar-miniapp-arrow">↗</span>}
           </button>
+          <a
+            className="sidebar-tool-btn sidebar-miniapp-btn"
+            href="/editor"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="ReelCut — Corta silencios y extrae Reels con IA">
+            <span className="sidebar-tool-icon">✂️</span>
+            <span className="sidebar-tool-label">
+              ReelCut
+              <span className="sidebar-miniapp-sub">Corta silencios y saca tus Reels con IA</span>
+            </span>
+            <span className="sidebar-miniapp-arrow">↗</span>
+          </a>
           <button
             className="sidebar-tool-btn sidebar-miniapp-btn"
             onClick={() => {
@@ -3181,19 +3194,6 @@ export default function App() {
             <span className="sidebar-tool-label">
               UMP Business Plan
               <span className="sidebar-miniapp-sub">Construye tu plan de negocio gratis</span>
-            </span>
-            <span className="sidebar-miniapp-arrow">↗</span>
-          </a>
-          <a
-            className="sidebar-tool-btn sidebar-miniapp-btn"
-            href="/editor"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Editor de Video — Elimina silencios de tus videos automáticamente">
-            <span className="sidebar-tool-icon">✂️</span>
-            <span className="sidebar-tool-label">
-              Editor de Video
-              <span className="sidebar-miniapp-sub">Elimina silencios automáticamente</span>
             </span>
             <span className="sidebar-miniapp-arrow">↗</span>
           </a>
