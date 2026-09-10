@@ -1732,7 +1732,8 @@ export default function SilenceCutter() {
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
       } catch (err) {
         console.error("Error analizando audio:", err);
-        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, analyzed: true, error: "No se pudo analizar el audio" } : c));
+        const detail = err?.message ? `: ${err.message}` : "";
+        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, analyzed: true, error: `No se pudo analizar el audio${detail}` } : c));
       }
     }
     setFase("editor");
