@@ -1072,7 +1072,7 @@ function GuidePanel({ onExtractReels, hasCuts }) {
 }
 
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg }) {
+function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg, sensitivity, onReanalyze }) {
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem("sce-theme") || "dark"; } catch { return "dark"; }
   });
@@ -1327,6 +1327,18 @@ function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeC
               {analyzedClips.length} clip{analyzedClips.length !== 1 ? "s" : ""} · {fmtTime(totalKept)} final
             </span>
           )}
+        </div>
+
+        {/* Sensibilidad del corte de silencios */}
+        <div className="sce-sens-group">
+          {[["conservadora","Suave"],["normal","Normal"],["agresiva","Agresiva"]].map(([s, label]) => (
+            <button key={s} className={`sce-sens-btn${sensitivity === s ? " active" : ""}`}
+              onClick={() => onReanalyze(s)} title={
+                s === "conservadora" ? "Corta solo silencios largos y muy claros — más seguro, menos corte"
+              : s === "normal"      ? "Balance entre cortar silencios y no perder palabras"
+              :                       "Corta silencios más cortos y sutiles — más agresivo, revisa el resultado"
+              }>{label}</button>
+          ))}
         </div>
 
         {/* Selector de formato de salida */}
