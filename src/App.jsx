@@ -2535,8 +2535,12 @@ export default function App() {
   // Rutas públicas — sin autenticación, antes de cualquier chequeo de sesión.
   // "/plan-de-negocio" se mantiene como alias por si ya quedó compartido en
   // algún lado — la URL nueva para lead magnets es "/businessplan".
-  if (window.location.pathname === "/businessplan" || window.location.pathname === "/plan-de-negocio") return <PlanBuilder />;
-  if (window.location.pathname === "/editor") return <SilenceCutter />;
+  // Quitamos la barra final antes de comparar: Amplify/CloudFront redirige
+  // "/editor" → "/editor/" (301), y sin esto la comparación exacta nunca
+  // coincidía y la app caía de vuelta al dashboard normal.
+  const cleanPath = window.location.pathname.replace(/\/$/, "");
+  if (cleanPath === "/businessplan" || cleanPath === "/plan-de-negocio") return <PlanBuilder />;
+  if (cleanPath === "/editor") return <SilenceCutter />;
 
   if (!ready || isRestoringRemote) {
     return (
