@@ -1711,7 +1711,6 @@ export default function SilenceCutter() {
   const [sensitivity, setSensitivity] = useState("conservadora");
   const inputRef = useRef(null);
   const abortRef = useRef(false);
-  const { noise: noiseDb, duration: minDur } = PRESETS[sensitivity];
 
   // Gate de cuenta: cortar/previsualizar es libre (gancho de lead magnet);
   // solo al EXPORTAR se pide crear cuenta si no hay sesión iniciada.
@@ -1723,10 +1722,17 @@ export default function SilenceCutter() {
 
   const analyzingRef = useRef(false);
 
-  const analizarClips = useCallback(async (toAnalyze) => {
+  // Recibe el preset explícito (en vez de leer noiseDb/minDur del cierre) —
+  // reanalizar() cambia la sensibilidad y re-analiza en el mismo tick, y
+  // setSensitivity es asíncrono: si esta función leyera el estado en vez de
+  // un parámetro, la primera vez que se cambiaba de sensibilidad se
+  // analizaba igual con el umbral VIEJO (el cambio solo se notaba al
+  // volver a hacer clic una segunda vez).
+  const analizarClips = useCallback(async (toAnalyze, preset = PRESETS[sensitivity]) => {
     if (analyzingRef.current || !toAnalyze.length) return;
     analyzingRef.current = true;
     setFase("analyzing"); setError("");
+    const { noise: noiseDb, duration: minDur } = preset;
     for (let i = 0; i < toAnalyze.length; i++) {
       const clip = toAnalyze[i];
       const baseProgress = Math.round((i / toAnalyze.length) * 100);
@@ -1750,7 +1756,7 @@ export default function SilenceCutter() {
     }
     setFase("editor");
     analyzingRef.current = false;
-  }, [noiseDb, minDur]);
+  }, [sensitivity]);
 
   const analizarTodos = useCallback(() =>
     analizarClips(clips.filter(c => !c.analyzed)), [clips, analizarClips]);
@@ -1759,7 +1765,9 @@ export default function SilenceCutter() {
     setSensitivity(newSensitivity);
     const reset = clips.map(c => ({ ...c, analyzed: false, silences: [], waveform: null }));
     setClips(reset);
-    analizarClips(reset);
+    // Pasa el preset explícito — setSensitivity aún no se refleja en este
+    // mismo tick, así que analizarClips no puede depender de leerlo del estado.
+    analizarClips(reset, PRESETS[newSensitivity]);
   }, [clips, analizarClips]);
 
   const cutSeg = useCallback((clipId, segStart, segEnd) => {
