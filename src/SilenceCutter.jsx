@@ -149,8 +149,23 @@ async function detectSilences(channelData, sampleRate, noiseDb, minDuration, dur
     silences.push({ id: uid(), start: Math.max(0, silenceStart + PADDING), end: duration, cut: true });
   return silences;
 }
+// Por encima de este tamaño, file.arrayBuffer() falla en Chrome con "The
+// requested file could not be read, typically due to permission problems
+// that have occurred after a reference to a file was acquired" — y lo peor:
+// una vez falla, deja la referencia al File dañada para CUALQUIER lectura
+// posterior del mismo objeto (incluido el respaldo, que también depende de
+// leer el mismo archivo vía <video>+blob URL). Por eso archivos muy pesados
+// deben ir directo al respaldo, sin tocar arrayBuffer() nunca.
+const FAST_PATH_MAX_BYTES = 500 * 1024 * 1024; // 500MB
+
 async function analyzeClip(file, noiseDb, minDuration, onProgress) {
   console.log(`[analyzeClip] iniciando: file=${file.name} size=${(file.size/1e6).toFixed(1)}MB noiseDb=${noiseDb} minDuration=${minDuration}`);
+  if (file.size > FAST_PATH_MAX_BYTES) {
+    console.log(`[analyzeClip] archivo > ${FAST_PATH_MAX_BYTES/1e6}MB, va directo al respaldo (arrayBuffer() rompe archivos así de grandes)`);
+    const r = await analyzeViaVideoElement(file, noiseDb, minDuration, onProgress);
+    console.log(`[analyzeClip] PATH RESPALDO ok: duration=${r.duration.toFixed(1)}s ${r.silences.length} silencios encontrados`, r.silences.slice(0, 5));
+    return r;
+  }
   // PATH RÁPIDO: decodeAudioData (desktop, Android Chrome, FF)
   // Falla en iOS Safari porque no puede extraer audio de un contenedor de video
   try {
