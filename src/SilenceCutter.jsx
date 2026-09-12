@@ -974,7 +974,7 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
 
 
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg, sensitivity, onReanalyze }) {
+function EditorScreen({ clips, setClips, onExport, onExportAll, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg, sensitivity, onReanalyze }) {
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem("sce-theme") || "dark"; } catch { return "dark"; }
   });
@@ -1248,10 +1248,16 @@ function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeC
             title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
             {theme === "dark" ? "☀️" : "🌙"}
           </button>
-          <button className="sce-reel-cta" onClick={onExtractReels} disabled={analyzedClips.length === 0}>
-            ✨ Extraer Reels con IA
+          <button className="sce-mini-link" onClick={onExport} disabled={analyzedClips.length === 0} title="Exporta solo el video completo, sin Reels">
+            Solo video
           </button>
-          <button className="sc-btn-primary sc-btn-sm" onClick={onExport}>✂️ Exportar</button>
+          <button className="sce-mini-link" onClick={onExtractReels} disabled={analyzedClips.length === 0} title="Solo analiza y extrae Reels, sin exportar el video completo">
+            Solo Reels
+          </button>
+          <button className="sce-reel-cta" onClick={onExportAll} disabled={analyzedClips.length === 0}
+            title="Exporta el video completo y, apenas termina, prepara tus Reels con IA">
+            ✨ Exportar todo (video + Reels)
+          </button>
         </div>
       </div>
 
@@ -1366,10 +1372,49 @@ const REEL_CATEGORIES = {
   venta:       { label: "Venta",       emoji: "🛒" },
 };
 
-function ReelsExtractorScreen({ clips, onBack }) {
-  const [phase,       setPhase]       = useState("idle");
+// Transcribe (si hace falta) y llama a la IA para extraer los fragmentos de
+// Reels — compartido entre el botón manual de ReelsExtractorScreen y el
+// flujo automático de "Exportar todo".
+async function fetchReelFragments(clip, token, onMsg) {
+  let segments = clip.segments?.length ? clip.segments : null;
+  if (!segments) {
+    onMsg?.("Transcribiendo...");
+    segments = await transcribeClip(clip.file, clip.silences || [], info => {
+      if (info.status === "extracting") onMsg?.(`Extrayendo audio... ${info.progress}%`);
+      else if (info.status === "downloading") onMsg?.(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
+    }, clip.duration);
+  }
+  if (!segments?.length) throw new Error("No se pudo transcribir el video.");
+
+  onMsg?.("Analizando con IA para encontrar los mejores momentos para Reels...");
+  const parts = [];
+  segments.forEach((s, i) => {
+    if (i % 8 === 0) parts.push(`[${Math.round(s.start)}s]`);
+    parts.push(s.word);
+  });
+
+  const res = await fetch(REELS_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ type: "extractReels", transcription: parts.join(" "), duration: clip.duration || 0 }),
+  });
+  const data = await res.json();
+  if (res.status === 429) throw new Error(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
+  if (!data.fragmentos?.length) throw new Error("Sin fragmentos");
+  const dur = clip.duration || Infinity;
+  return data.fragmentos.map(f => {
+    const inicio = Math.max(0, Math.min(f.inicio, dur - 5));
+    const finRaw = Math.max(inicio + 5, Math.min(f.fin, dur));
+    const fin = Math.min(finRaw, inicio + REEL_MAX_SECONDS);
+    const categoria = REEL_CATEGORIES[f.categoria] ? f.categoria : "consejo";
+    return { ...f, inicio, fin, categoria };
+  });
+}
+
+function ReelsExtractorScreen({ clips, onBack, initialFragments }) {
+  const [phase,       setPhase]       = useState(initialFragments?.length ? "ready" : "idle");
   const [msg,         setMsg]         = useState("");
-  const [fragments,   setFragments]   = useState([]);
+  const [fragments,   setFragments]   = useState(initialFragments || []);
   const [reelFmt,     setReelFmt]     = useState(REELS_FMT_DEFAULT);
   const [reelEffects, setReelEffects] = useState(REELS_EFFECTS_DEFAULT);
   const [exporting,   setExporting]   = useState(null); // idx | null
@@ -1389,55 +1434,12 @@ function ReelsExtractorScreen({ clips, onBack }) {
     const token = await getAwsAuthToken();
     if (!token) { setPhase("needsAuth"); return; }
     setPhase("transcribing"); setMsg("Transcribiendo video con IA...");
-
-    // 1. Transcribir si no hay segmentos
-    let segments = clip.segments?.length ? clip.segments : null;
-    if (!segments) {
-      try {
-        setMsg("Transcribiendo...");
-        segments = await transcribeClip(clip.file, clip.silences || [], info => {
-          if (info.status === "extracting") setMsg(`Extrayendo audio... ${info.progress}%`);
-          else if (info.status === "downloading")
-            setMsg(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
-        }, clip.duration);
-      } catch {
-        setPhase("error"); setMsg("Error en la transcripción. Intenta de nuevo."); return;
-      }
-    }
-    if (!segments.length) { setPhase("error"); setMsg("No se pudo transcribir el video."); return; }
-
-    // 2. Formatear transcripción con timestamps cada 8 palabras
-    setPhase("analyzing"); setMsg("Analizando con IA para encontrar los mejores momentos para Reels...");
-    const parts = [];
-    segments.forEach((s, i) => {
-      if (i % 8 === 0) parts.push(`[${Math.round(s.start)}s]`);
-      parts.push(s.word);
-    });
-
-    // 3. Llamar a la lambda
     try {
-      const res = await fetch(REELS_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({
-          type: "extractReels",
-          transcription: parts.join(" "),
-          duration: clip.duration || 0,
-        }),
+      const frags = await fetchReelFragments(clip, token, (m) => {
+        setMsg(m);
+        if (m.startsWith("Analizando")) setPhase("analyzing");
       });
-      const data = await res.json();
-      if (res.status === 429) throw new Error(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
-      if (!data.fragmentos?.length) throw new Error("Sin fragmentos");
-      // Clamp timestamps a la duración del clip y a un máximo de 60s — no
-      // confiamos solo en que la IA respete el límite pedido en el prompt.
-      const dur = clip.duration || Infinity;
-      setFragments(data.fragmentos.map(f => {
-        const inicio = Math.max(0, Math.min(f.inicio, dur - 5));
-        const finRaw = Math.max(inicio + 5, Math.min(f.fin, dur));
-        const fin = Math.min(finRaw, inicio + REEL_MAX_SECONDS);
-        const categoria = REEL_CATEGORIES[f.categoria] ? f.categoria : "consejo";
-        return { ...f, inicio, fin, categoria };
-      }));
+      setFragments(frags);
       setPhase("ready"); setMsg("");
     } catch (err) {
       setPhase("error"); setMsg(err.message || "Error al analizar. Intenta de nuevo.");
@@ -1610,9 +1612,17 @@ export default function SilenceCutter() {
   const [dragOver, setDragOver]     = useState(false);
   const [format, setFormat] = useState("landscape"); // "landscape" | "portrait" | "square"
   const [showReels, setShowReels] = useState(false);
+  const [reelsInitialFragments, setReelsInitialFragments] = useState(null);
   const [sensitivity, setSensitivity] = useState("conservadora");
   const inputRef = useRef(null);
   const abortRef = useRef(false);
+
+  // "Exportar todo" — exporta el video completo y, apenas termina, prepara
+  // los Reels en segundo plano sin que la usuaria tenga que volver a hacer clic.
+  const [autoReelsState, setAutoReelsState] = useState("idle"); // idle|working|done|error|needsAuth
+  const [autoReelsMsg, setAutoReelsMsg] = useState("");
+  const [autoReelsFragments, setAutoReelsFragments] = useState([]);
+  const pendingActionRef = useRef(null); // "export" | "exportAll" — para el gate de cuenta
 
   // Gate de cuenta: cortar/previsualizar es libre (gancho de lead magnet);
   // solo al EXPORTAR se pide crear cuenta si no hay sesión iniciada.
@@ -1716,12 +1726,13 @@ export default function SilenceCutter() {
 
   const exportar = async () => {
     const ready = clips.filter(c => c.analyzed && !c.error);
-    if (!ready.length) { setError("Analiza los clips primero."); return; }
+    if (!ready.length) { setError("Analiza los clips primero."); return false; }
     if (!hasAccount) {
       // Cortar y previsualizar es libre — el gate solo aparece al querer
       // exportar de verdad, para no perder a quien solo está probando.
+      pendingActionRef.current = "export";
       setShowRegisterGate(true);
-      return;
+      return false;
     }
     abortRef.current = false;
     setFase("cutting"); setProgress(0); setError("");
@@ -1733,10 +1744,38 @@ export default function SilenceCutter() {
       setResult({ url: URL.createObjectURL(blob), filename: (clips[0]?.name.replace(/\.[^/.]+$/, "") || "video") + "_editado.webm",
         totalOriginal, totalKept: totalOriginal - totalCut, totalCut, totalCuts, clipsCount: ready.length });
       setFase("done");
+      return true;
     } catch (err) {
       if (err.message !== "Cancelado") setError("Error al exportar: " + err.message);
       setFase("editor");
+      return false;
     }
+  };
+
+  // Analiza los Reels en segundo plano (sin bloquear la pantalla de "listo")
+  // — usada por "Exportar todo" apenas termina de exportar el video completo.
+  const runAutoReels = useCallback(async () => {
+    const clip = clips.find(c => c.analyzed && !c.error);
+    if (!clip) return;
+    setAutoReelsState("working"); setAutoReelsMsg("Preparando tus Reels con IA...");
+    const token = await getAwsAuthToken();
+    if (!token) { setAutoReelsState("needsAuth"); return; }
+    try {
+      const fragments = await fetchReelFragments(clip, token, setAutoReelsMsg);
+      setAutoReelsFragments(fragments);
+      setAutoReelsState("done");
+    } catch (err) {
+      setAutoReelsState("error");
+      setAutoReelsMsg(err.message || "No se pudieron preparar los Reels.");
+    }
+  }, [clips]);
+
+  // "Exportar todo": exporta el video completo y, si sale bien, encadena
+  // automáticamente la preparación de Reels sin pedirle otro clic.
+  const exportarTodo = async () => {
+    if (!hasAccount) { pendingActionRef.current = "exportAll"; setShowRegisterGate(true); return; }
+    const ok = await exportar();
+    if (ok) runAutoReels();
   };
 
   const analyzedCount = clips.filter(c => c.analyzed && !c.error).length;
@@ -1783,6 +1822,27 @@ export default function SilenceCutter() {
         </div>
         <a className="sc-btn-primary sc-btn-download" href={result.url} download={result.filename}>⬇ Descargar video editado</a>
         <p className="sc-done-hint">Formato WebM · Compatible con YouTube, Instagram y WhatsApp</p>
+
+        {/* Estado de "Exportar todo" — Reels preparándose o listos en segundo plano */}
+        {autoReelsState !== "idle" && (
+          <div className="sc-done-reels">
+            {autoReelsState === "working" && (
+              <p className="sc-done-reels-working"><span className="sc-done-reels-spinner" />{autoReelsMsg}</p>
+            )}
+            {autoReelsState === "done" && (
+              <button className="sc-btn-primary" onClick={() => { setReelsInitialFragments(autoReelsFragments); setShowReels(true); }}>
+                🎯 {autoReelsFragments.length} Reels listos → Ver Reels
+              </button>
+            )}
+            {autoReelsState === "needsAuth" && (
+              <p className="sc-done-reels-error">Inicia sesión para preparar tus Reels con IA.</p>
+            )}
+            {autoReelsState === "error" && (
+              <p className="sc-done-reels-error">{autoReelsMsg}</p>
+            )}
+          </div>
+        )}
+
         <button className="sc-btn-outline" onClick={() => { if (result?.url) URL.revokeObjectURL(result.url); setResult(null); setFase("editor"); }}>✂️ Editar más clips</button>
         <div className="sc-done-cta">
           <p>¿Quieres gestionar tu negocio, contenido y clientes en un solo lugar?</p>
@@ -1795,18 +1855,19 @@ export default function SilenceCutter() {
   if (fase === "editor" && analyzedCount > 0 && showReels) return (
     <ReelsExtractorScreen
       clips={clips}
-      onBack={() => setShowReels(false)}
+      onBack={() => { setShowReels(false); setReelsInitialFragments(null); }}
+      initialFragments={reelsInitialFragments}
     />
   );
 
   if (fase === "editor" && analyzedCount > 0) return (
     <>
       <EditorScreen clips={clips} setClips={setClips}
-        onExport={exportar} onAddFiles={addFiles}
+        onExport={exportar} onExportAll={exportarTodo} onAddFiles={addFiles}
         moveClip={moveClip} removeClip={removeClip} toggleSilence={toggleSilence}
         onAnalyze={analizarTodos}
         format={format} onFormatChange={setFormat}
-        onExtractReels={() => setShowReels(true)}
+        onExtractReels={() => { setReelsInitialFragments(null); setShowReels(true); }}
         sensitivity={sensitivity} onReanalyze={reanalizar}
         onCutSeg={cutSeg} />
       {showRegisterGate && (
@@ -1817,7 +1878,9 @@ export default function SilenceCutter() {
           onClose={() => setShowRegisterGate(false)}
           onSuccess={() => {
             setHasAccount(true); setShowRegisterGate(false);
-            exportar();
+            if (pendingActionRef.current === "exportAll") exportarTodo();
+            else exportar();
+            pendingActionRef.current = null;
           }}
         />
       )}
