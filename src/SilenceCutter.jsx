@@ -925,7 +925,9 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
                     onSelectSeg?.(isSel ? null : { clipId: seg.clip.id, start: seg.start, end: seg.end });
                   }}
                   onMouseEnter={() => setHoveredSeg(i)} onMouseLeave={() => setHoveredSeg(null)}>
-                  <span className="sce-tl-seg-label">{seg.clip.name.replace(/\.[^/.]+$/, "").slice(0, 14)}</span>
+                  {w > 3 && (
+                    <span className="sce-tl-seg-label">{seg.clip.name.replace(/\.[^/.]+$/, "").slice(0, 14)}</span>
+                  )}
                   {(isHov || isSel) && onCutSeg && (
                     <div className="sce-tl-seg-toolbar">
                       <button className="sce-tl-seg-del" title="Eliminar fragmento (Delete)"
