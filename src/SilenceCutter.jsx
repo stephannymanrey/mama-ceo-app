@@ -12,6 +12,13 @@ const PRESETS = {
   normal:       { noise: -35, duration: 0.5 },
   agresiva:     { noise: -28, duration: 0.3 },
 };
+// Mismas 3 intensidades que PRESETS, en lenguaje simple para alguien que
+// recién está aprendiendo a editar — sin dB ni tecnicismos.
+const SENSITIVITY_LEVELS = [
+  { id: "conservadora", label: "Suave",    desc: "Corta solo las pausas más largas y claras. La opción más segura." },
+  { id: "normal",       label: "Normal",   desc: "Corta pausas medianas también. Buen balance para la mayoría de videos." },
+  { id: "agresiva",     label: "Agresiva", desc: "Corta hasta las pausas cortas. Revisa el resultado antes de exportar." },
+];
 const PADDING = 0.03;
 const CLIP_COLORS   = ["#C4526A","#4A90BF","#5FB87A","#B07FD4","#D4955F","#5FB8B0"];
 // Segundo pass de suavizante: overlay borroso semitransparente sobre el frame
@@ -966,45 +973,6 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
 }
 
 
-// ── GuidePanel: siguiente paso + flujo Cortar → Reels → Claude Code → CapCut
-function GuidePanel({ onExtractReels, hasCuts }) {
-  const [videoOk, setVideoOk] = useState(true);
-  return (
-    <div className="sce-guide-panel">
-      <div className="sce-guide-card">
-        <h3 className="sce-guide-title">🎯 Siguiente paso: tus Reels</h3>
-        <p className="sce-guide-text">
-          Cuando termines de cortar, la IA lee tu video y encuentra tus mejores
-          consejos, momentos de inspiración y oportunidades de venta — listos
-          en vertical para Reels y TikTok.
-        </p>
-        <button className="sc-btn-primary sce-guide-cta" onClick={onExtractReels} disabled={!hasCuts}>
-          ✨ Extraer Reels con IA
-        </button>
-        {!hasCuts && <p className="sce-guide-hint">Analiza y corta un clip primero.</p>}
-      </div>
-
-      <div className="sce-guide-card">
-        <h3 className="sce-guide-title">📚 Cómo usar esta herramienta</h3>
-        <ol className="sce-guide-steps">
-          <li><strong>Corta</strong> silencios y muletillas aquí.</li>
-          <li><strong>Extrae tus Reels</strong> con IA (consejos, inspiración, venta).</li>
-          <li>Lleva esos clips a <strong>Claude Code</strong> para pulir la edición.</li>
-          <li>Dale el acabado final en <strong>CapCut</strong> antes de publicar.</li>
-        </ol>
-        <div className="sce-guide-video-wrap">
-          {videoOk ? (
-            <video className="sce-guide-video" src="/tutorial-editor.mp4" controls
-              onError={() => setVideoOk(false)} />
-          ) : (
-            <div className="sce-guide-video-empty">🎬 Video tutorial próximamente</div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── EditorScreen ──────────────────────────────────────────────────────────
 function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg, sensitivity, onReanalyze }) {
   const [theme, setTheme] = useState(() => {
@@ -1263,18 +1231,6 @@ function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeC
           )}
         </div>
 
-        {/* Sensibilidad del corte de silencios */}
-        <div className="sce-sens-group">
-          {[["conservadora","Suave"],["normal","Normal"],["agresiva","Agresiva"]].map(([s, label]) => (
-            <button key={s} className={`sce-sens-btn${sensitivity === s ? " active" : ""}`}
-              onClick={() => onReanalyze(s)} title={
-                s === "conservadora" ? "Corta solo silencios largos y muy claros — más seguro, menos corte"
-              : s === "normal"      ? "Balance entre cortar silencios y no perder palabras"
-              :                       "Corta silencios más cortos y sutiles — más agresivo, revisa el resultado"
-              }>{label}</button>
-          ))}
-        </div>
-
         {/* Selector de formato de salida */}
         <div className="sce-fmt-group">
           {[["landscape","16:9"],["portrait","9:16"],["square","1:1"]].map(([f, label]) => (
@@ -1292,8 +1248,25 @@ function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeC
             title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
             {theme === "dark" ? "☀️" : "🌙"}
           </button>
+          <button className="sce-reel-cta" onClick={onExtractReels} disabled={analyzedClips.length === 0}>
+            ✨ Extraer Reels con IA
+          </button>
           <button className="sc-btn-primary sc-btn-sm" onClick={onExport}>✂️ Exportar</button>
         </div>
+      </div>
+
+      {/* Intensidad del corte — en lenguaje simple, no técnico */}
+      <div className="sce-sens-bar">
+        <span className="sce-sens-label">Intensidad del corte:</span>
+        <div className="sce-sens-group">
+          {SENSITIVITY_LEVELS.map(({ id, label }) => (
+            <button key={id} className={`sce-sens-btn${sensitivity === id ? " active" : ""}`}
+              onClick={() => onReanalyze(id)}>{label}</button>
+          ))}
+        </div>
+        <span className="sce-sens-desc">
+          {SENSITIVITY_LEVELS.find(l => l.id === sensitivity)?.desc}
+        </span>
       </div>
 
       {/* Cuerpo */}
@@ -1363,11 +1336,6 @@ function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeC
           <div className="sce-shortcuts-hint">
             <kbd>Espacio</kbd> play · <kbd>Ctrl+B</kbd> dividir · clic en fragmento y <kbd>Delete</kbd> eliminar · <kbd>← →</kbd> saltar 5s
           </div>
-        </div>
-
-        {/* Panel derecho: siguiente paso (Reels) + guía de uso */}
-        <div className="sce-right-panel">
-          <GuidePanel onExtractReels={onExtractReels} hasCuts={analyzedClips.length > 0} />
         </div>
       </div>
 
