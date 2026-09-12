@@ -150,6 +150,7 @@ async function detectSilences(channelData, sampleRate, noiseDb, minDuration, dur
   return silences;
 }
 async function analyzeClip(file, noiseDb, minDuration, onProgress) {
+  console.log(`[analyzeClip] iniciando: file=${file.name} size=${(file.size/1e6).toFixed(1)}MB noiseDb=${noiseDb} minDuration=${minDuration}`);
   // PATH RÁPIDO: decodeAudioData (desktop, Android Chrome, FF)
   // Falla en iOS Safari porque no puede extraer audio de un contenedor de video
   try {
@@ -160,18 +161,23 @@ async function analyzeClip(file, noiseDb, minDuration, onProgress) {
     const audioBuf = await new Promise((res, rej) => audioCtx.decodeAudioData(arrayBuffer, res, rej));
     audioCtx.close();
     const channelData = audioBuf.getChannelData(0);
+    console.log(`[analyzeClip] PATH RÁPIDO ok: duration=${audioBuf.duration.toFixed(1)}s sampleRate=${audioBuf.sampleRate} channels=${audioBuf.numberOfChannels} samples=${channelData.length}`);
     onProgress?.(0.1);
     const silences = await detectSilences(
       channelData, audioBuf.sampleRate, noiseDb, minDuration, audioBuf.duration,
       (p) => onProgress?.(0.1 + p * 0.55)
     );
+    console.log(`[analyzeClip] PATH RÁPIDO detectSilences: ${silences.length} silencios encontrados`, silences.slice(0, 5));
     const waveform = await buildWaveform(channelData, 900, (p) => onProgress?.(0.65 + p * 0.35));
     onProgress?.(1);
     return { duration: audioBuf.duration, waveform, silences };
-  } catch {
+  } catch (err) {
+    console.warn("[analyzeClip] PATH RÁPIDO falló, usando respaldo:", err?.message || err);
     // PATH MOBILE: análisis en tiempo real vía <video> + AnalyserNode
     // Funciona en iOS Safari — el video.muted=true permite autoplay sin gesto adicional
-    return analyzeViaVideoElement(file, noiseDb, minDuration, onProgress);
+    const r = await analyzeViaVideoElement(file, noiseDb, minDuration, onProgress);
+    console.log(`[analyzeClip] PATH RESPALDO ok: duration=${r.duration.toFixed(1)}s ${r.silences.length} silencios encontrados`, r.silences.slice(0, 5));
+    return r;
   }
 }
 
@@ -215,6 +221,13 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
       processor.connect(silentGain);
       silentGain.connect(audioCtx.destination);
 
+      // iOS max playbackRate = 2; Chrome permite más
+      video.playbackRate = Math.min(
+        typeof video.playbackRate !== "undefined" ? 16 : 2,
+        2   // seguro en iOS
+      );
+      const rate = video.playbackRate; // para convertir tiempo de reloj real → tiempo de contenido
+
       const WIN = Math.floor(audioCtx.sampleRate * 0.04); // mismas ventanas de 40ms que detectSilences
       const sampleRms = [];   // [{ t, rms }]
       let sampleCount = 0;
@@ -226,19 +239,16 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
           const count = Math.min(WIN, data.length - i);
           let sumSq = 0;
           for (let j = 0; j < count; j++) sumSq += data[i + j] * data[i + j];
-          const t = sampleCount / audioCtx.sampleRate;
+          // Las muestras llegan a ritmo de reloj real, pero el contenido está
+          // acelerado por playbackRate — sin este factor, los tiempos (y por
+          // tanto las duraciones de cada silencio) salían a la mitad de lo real.
+          const t = (sampleCount / audioCtx.sampleRate) * rate;
           sampleRms.push({ t, rms: Math.sqrt(sumSq / count) });
           sampleCount += count;
         }
-        const t = sampleCount / audioCtx.sampleRate;
+        const t = (sampleCount / audioCtx.sampleRate) * rate;
         if (onProgress && t - lastProgressT > 0.2) { lastProgressT = t; onProgress(Math.min(1, t / duration)); }
       };
-
-      // iOS max playbackRate = 2; Chrome permite más
-      video.playbackRate = Math.min(
-        typeof video.playbackRate !== "undefined" ? 16 : 2,
-        2   // seguro en iOS
-      );
 
       video.play().catch(err => {
         processor.disconnect(); source.disconnect();
@@ -1764,6 +1774,7 @@ export default function SilenceCutter() {
             setProgress(Math.round(baseProgress + p * clipSlice));
           }
         );
+        console.log(`[analizarClips] clip "${clip.name}" analizado: duration=${duration.toFixed(1)}s, ${silences.length} silencios guardados`);
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
       } catch (err) {
         console.error("Error analizando audio:", err);
