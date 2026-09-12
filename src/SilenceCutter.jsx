@@ -197,24 +197,41 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
 
       try { await audioCtx.resume(); } catch {}
 
-      // Conectar video → AnalyserNode (silencioso, sin speakers)
+      // Conectar video → ScriptProcessorNode (silencioso, sin speakers, gain 0).
+      // Antes se usaba un AnalyserNode muestreado con requestAnimationFrame —
+      // pero rAF (y setInterval) se frena drásticamente cuando la pestaña
+      // pasa a segundo plano (algo muy probable durante los ~12 min que
+      // toma reproducir un video de 24 min al doble de velocidad), y como
+      // esta ruta nunca reproduce audio real, Chrome no la exime del
+      // throttling — el resultado era casi sin muestras y "0 silencios"
+      // aunque el video sí los tuviera. onaudioprocess corre en el hilo de
+      // audio, that keeps firing sí la pestaña está oculta.
       const source = audioCtx.createMediaElementSource(video);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 2048;
-      source.connect(analyser);
-      // NO conectar a audioCtx.destination → análisis mudo
+      const BUFFER_SIZE = 4096;
+      const processor = audioCtx.createScriptProcessor(BUFFER_SIZE, 1, 1);
+      const silentGain = audioCtx.createGain();
+      silentGain.gain.value = 0;
+      source.connect(processor);
+      processor.connect(silentGain);
+      silentGain.connect(audioCtx.destination);
 
-      const fftData = new Float32Array(analyser.fftSize);
+      const WIN = Math.floor(audioCtx.sampleRate * 0.04); // mismas ventanas de 40ms que detectSilences
       const sampleRms = [];   // [{ t, rms }]
+      let sampleCount = 0;
+      let lastProgressT = 0;
 
-      let raf;
-      const collect = () => {
-        analyser.getFloatTimeDomainData(fftData);
-        let sumSq = 0;
-        for (let i = 0; i < fftData.length; i++) sumSq += fftData[i] * fftData[i];
-        sampleRms.push({ t: video.currentTime, rms: Math.sqrt(sumSq / fftData.length) });
-        if (onProgress) onProgress(video.currentTime / duration);
-        raf = requestAnimationFrame(collect);
+      processor.onaudioprocess = (e) => {
+        const data = e.inputBuffer.getChannelData(0);
+        for (let i = 0; i < data.length; i += WIN) {
+          const count = Math.min(WIN, data.length - i);
+          let sumSq = 0;
+          for (let j = 0; j < count; j++) sumSq += data[i + j] * data[i + j];
+          const t = sampleCount / audioCtx.sampleRate;
+          sampleRms.push({ t, rms: Math.sqrt(sumSq / count) });
+          sampleCount += count;
+        }
+        const t = sampleCount / audioCtx.sampleRate;
+        if (onProgress && t - lastProgressT > 0.2) { lastProgressT = t; onProgress(Math.min(1, t / duration)); }
       };
 
       // iOS max playbackRate = 2; Chrome permite más
@@ -223,15 +240,15 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
         2   // seguro en iOS
       );
 
-      video.play().then(() => { collect(); }).catch(err => {
-        cancelAnimationFrame(raf);
+      video.play().catch(err => {
+        processor.disconnect(); source.disconnect();
         audioCtx.close();
         URL.revokeObjectURL(url);
         reject(err);
       });
 
       video.onended = () => {
-        cancelAnimationFrame(raf);
+        processor.disconnect(); source.disconnect();
         audioCtx.close();
         URL.revokeObjectURL(url);
 
@@ -267,7 +284,7 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
       };
 
       video.onerror = () => {
-        cancelAnimationFrame(raf);
+        processor.disconnect(); source.disconnect();
         audioCtx.close();
         URL.revokeObjectURL(url);
         reject(new Error("Error cargando el video"));
