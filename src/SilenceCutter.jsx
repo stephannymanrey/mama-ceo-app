@@ -12,6 +12,13 @@ const PRESETS = {
   normal:       { noise: -35, duration: 0.5 },
   agresiva:     { noise: -28, duration: 0.3 },
 };
+// Mismas 3 intensidades que PRESETS, en lenguaje simple para alguien que
+// recién está aprendiendo a editar — sin dB ni tecnicismos.
+const SENSITIVITY_LEVELS = [
+  { id: "conservadora", label: "Suave",    desc: "Corta solo las pausas más largas y claras. La opción más segura." },
+  { id: "normal",       label: "Normal",   desc: "Corta pausas medianas también. Buen balance para la mayoría de videos." },
+  { id: "agresiva",     label: "Agresiva", desc: "Corta hasta las pausas cortas. Revisa el resultado antes de exportar." },
+];
 const PADDING = 0.03;
 const CLIP_COLORS   = ["#C4526A","#4A90BF","#5FB87A","#B07FD4","#D4955F","#5FB8B0"];
 // Segundo pass de suavizante: overlay borroso semitransparente sobre el frame
@@ -149,7 +156,42 @@ async function detectSilences(channelData, sampleRate, noiseDb, minDuration, dur
     silences.push({ id: uid(), start: Math.max(0, silenceStart + PADDING), end: duration, cut: true });
   return silences;
 }
+// Por encima de este tamaño, file.arrayBuffer() falla en Chrome con "The
+// requested file could not be read, typically due to permission problems
+// that have occurred after a reference to a file was acquired" — y lo peor:
+// una vez falla, deja la referencia al File dañada para CUALQUIER lectura
+// posterior del mismo objeto (incluido el respaldo, que también depende de
+// leer el mismo archivo vía <video>+blob URL). Por eso archivos muy pesados
+// deben ir directo al respaldo, sin tocar arrayBuffer() nunca.
+const FAST_PATH_MAX_BYTES = 500 * 1024 * 1024; // 500MB
+
+// Respaldo para cuando decodeAudioData directo no sirve (archivo demasiado
+// grande para arrayBuffer(), o el navegador no puede decodificar el
+// contenedor original): graba el audio reproduciendo el video una vez
+// (extractAudioViaPlayback, el mismo mecanismo ya probado que usa la
+// transcripción) y decodifica ESE archivo pequeño resultante — mucho más
+// confiable que intentar leer muestras en vivo mientras se reproduce.
+async function analyzeViaRecording(file, noiseDb, minDuration, onProgress) {
+  const decoded = await extractAudioViaPlayback(file, (pct) => onProgress?.(Math.min(1, pct / 100) * 0.5), null);
+  const channelData = decoded.getChannelData(0);
+  console.log(`[analyzeViaRecording] grabado y decodificado: duration=${decoded.duration.toFixed(1)}s sampleRate=${decoded.sampleRate} samples=${channelData.length}`);
+  const silences = await detectSilences(
+    channelData, decoded.sampleRate, noiseDb, minDuration, decoded.duration,
+    (p) => onProgress?.(0.5 + p * 0.35)
+  );
+  const waveform = await buildWaveform(channelData, 900, (p) => onProgress?.(0.85 + p * 0.15));
+  onProgress?.(1);
+  return { duration: decoded.duration, waveform, silences };
+}
+
 async function analyzeClip(file, noiseDb, minDuration, onProgress) {
+  console.log(`[analyzeClip] iniciando: file=${file.name} size=${(file.size/1e6).toFixed(1)}MB noiseDb=${noiseDb} minDuration=${minDuration}`);
+  if (file.size > FAST_PATH_MAX_BYTES) {
+    console.log(`[analyzeClip] archivo > ${FAST_PATH_MAX_BYTES/1e6}MB, va directo al respaldo (arrayBuffer() rompe archivos así de grandes)`);
+    const r = await analyzeViaRecording(file, noiseDb, minDuration, onProgress);
+    console.log(`[analyzeClip] PATH RESPALDO ok: duration=${r.duration.toFixed(1)}s ${r.silences.length} silencios encontrados`, r.silences.slice(0, 5));
+    return r;
+  }
   // PATH RÁPIDO: decodeAudioData (desktop, Android Chrome, FF)
   // Falla en iOS Safari porque no puede extraer audio de un contenedor de video
   try {
@@ -160,125 +202,22 @@ async function analyzeClip(file, noiseDb, minDuration, onProgress) {
     const audioBuf = await new Promise((res, rej) => audioCtx.decodeAudioData(arrayBuffer, res, rej));
     audioCtx.close();
     const channelData = audioBuf.getChannelData(0);
+    console.log(`[analyzeClip] PATH RÁPIDO ok: duration=${audioBuf.duration.toFixed(1)}s sampleRate=${audioBuf.sampleRate} channels=${audioBuf.numberOfChannels} samples=${channelData.length}`);
     onProgress?.(0.1);
     const silences = await detectSilences(
       channelData, audioBuf.sampleRate, noiseDb, minDuration, audioBuf.duration,
       (p) => onProgress?.(0.1 + p * 0.55)
     );
+    console.log(`[analyzeClip] PATH RÁPIDO detectSilences: ${silences.length} silencios encontrados`, silences.slice(0, 5));
     const waveform = await buildWaveform(channelData, 900, (p) => onProgress?.(0.65 + p * 0.35));
     onProgress?.(1);
     return { duration: audioBuf.duration, waveform, silences };
-  } catch {
-    // PATH MOBILE: análisis en tiempo real vía <video> + AnalyserNode
-    // Funciona en iOS Safari — el video.muted=true permite autoplay sin gesto adicional
-    return analyzeViaVideoElement(file, noiseDb, minDuration, onProgress);
+  } catch (err) {
+    console.warn("[analyzeClip] PATH RÁPIDO falló, usando respaldo:", err?.message || err);
+    const r = await analyzeViaRecording(file, noiseDb, minDuration, onProgress);
+    console.log(`[analyzeClip] PATH RESPALDO ok: duration=${r.duration.toFixed(1)}s ${r.silences.length} silencios encontrados`, r.silences.slice(0, 5));
+    return r;
   }
-}
-
-function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const video = document.createElement("video");
-    video.src = url;
-    video.muted = true;          // muted permite autoplay en iOS sin gesto
-    video.playsInline = true;
-    video.preload = "auto";
-
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    const audioCtx = new AudioCtx();
-
-    video.onloadedmetadata = async () => {
-      const duration = video.duration;
-      if (!isFinite(duration) || duration <= 0) {
-        URL.revokeObjectURL(url);
-        reject(new Error("Video sin duración válida"));
-        return;
-      }
-
-      try { await audioCtx.resume(); } catch {}
-
-      // Conectar video → AnalyserNode (silencioso, sin speakers)
-      const source = audioCtx.createMediaElementSource(video);
-      const analyser = audioCtx.createAnalyser();
-      analyser.fftSize = 2048;
-      source.connect(analyser);
-      // NO conectar a audioCtx.destination → análisis mudo
-
-      const fftData = new Float32Array(analyser.fftSize);
-      const sampleRms = [];   // [{ t, rms }]
-
-      let raf;
-      const collect = () => {
-        analyser.getFloatTimeDomainData(fftData);
-        let sumSq = 0;
-        for (let i = 0; i < fftData.length; i++) sumSq += fftData[i] * fftData[i];
-        sampleRms.push({ t: video.currentTime, rms: Math.sqrt(sumSq / fftData.length) });
-        if (onProgress) onProgress(video.currentTime / duration);
-        raf = requestAnimationFrame(collect);
-      };
-
-      // iOS max playbackRate = 2; Chrome permite más
-      video.playbackRate = Math.min(
-        typeof video.playbackRate !== "undefined" ? 16 : 2,
-        2   // seguro en iOS
-      );
-
-      video.play().then(() => { collect(); }).catch(err => {
-        cancelAnimationFrame(raf);
-        audioCtx.close();
-        URL.revokeObjectURL(url);
-        reject(err);
-      });
-
-      video.onended = () => {
-        cancelAnimationFrame(raf);
-        audioCtx.close();
-        URL.revokeObjectURL(url);
-
-        const n = sampleRms.length;
-        if (n === 0) { reject(new Error("Sin muestras de audio")); return; }
-
-        // Waveform normalizado de 900 puntos
-        const waveform = Array.from({ length: 900 }, (_, wi) => {
-          const idx = Math.min(n - 1, Math.floor(wi / 900 * n));
-          return sampleRms[idx]?.rms ?? 0;
-        });
-        const maxR = Math.max(...waveform, 1e-6);
-        const waveformNorm = waveform.map(v => v / maxR);
-
-        // Detectar silencios desde muestras rms
-        const silences = [];
-        let inSilence = false, silStart = 0;
-        for (const { t, rms } of sampleRms) {
-          const db = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
-          if (db < noiseDb) {
-            if (!inSilence) { inSilence = true; silStart = t; }
-          } else if (inSilence) {
-            inSilence = false;
-            const dur = t - silStart;
-            if (dur >= minDuration)
-              silences.push({ id: uid(), start: Math.max(0, silStart + PADDING), end: Math.min(duration, t - PADDING), cut: true });
-          }
-        }
-        if (inSilence && duration - silStart >= minDuration)
-          silences.push({ id: uid(), start: Math.max(0, silStart + PADDING), end: duration, cut: true });
-
-        resolve({ duration, waveform: waveformNorm, silences });
-      };
-
-      video.onerror = () => {
-        cancelAnimationFrame(raf);
-        audioCtx.close();
-        URL.revokeObjectURL(url);
-        reject(new Error("Error cargando el video"));
-      };
-    };
-
-    video.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("No se pudo abrir el archivo de video"));
-    };
-  });
 }
 
 // ── Transcripción (Whisper Tiny — Web Worker) ─────────────────────────────
@@ -993,7 +932,9 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
                     onSelectSeg?.(isSel ? null : { clipId: seg.clip.id, start: seg.start, end: seg.end });
                   }}
                   onMouseEnter={() => setHoveredSeg(i)} onMouseLeave={() => setHoveredSeg(null)}>
-                  <span className="sce-tl-seg-label">{seg.clip.name.replace(/\.[^/.]+$/, "").slice(0, 14)}</span>
+                  {w > 3 && (
+                    <span className="sce-tl-seg-label">{seg.clip.name.replace(/\.[^/.]+$/, "").slice(0, 14)}</span>
+                  )}
                   {(isHov || isSel) && onCutSeg && (
                     <div className="sce-tl-seg-toolbar">
                       <button className="sce-tl-seg-del" title="Eliminar fragmento (Delete)"
@@ -1032,47 +973,8 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
 }
 
 
-// ── GuidePanel: siguiente paso + flujo Cortar → Reels → Claude Code → CapCut
-function GuidePanel({ onExtractReels, hasCuts }) {
-  const [videoOk, setVideoOk] = useState(true);
-  return (
-    <div className="sce-guide-panel">
-      <div className="sce-guide-card">
-        <h3 className="sce-guide-title">🎯 Siguiente paso: tus Reels</h3>
-        <p className="sce-guide-text">
-          Cuando termines de cortar, la IA lee tu video y encuentra tus mejores
-          consejos, momentos de inspiración y oportunidades de venta — listos
-          en vertical para Reels y TikTok.
-        </p>
-        <button className="sc-btn-primary sce-guide-cta" onClick={onExtractReels} disabled={!hasCuts}>
-          ✨ Extraer Reels con IA
-        </button>
-        {!hasCuts && <p className="sce-guide-hint">Analiza y corta un clip primero.</p>}
-      </div>
-
-      <div className="sce-guide-card">
-        <h3 className="sce-guide-title">📚 Cómo usar esta herramienta</h3>
-        <ol className="sce-guide-steps">
-          <li><strong>Corta</strong> silencios y muletillas aquí.</li>
-          <li><strong>Extrae tus Reels</strong> con IA (consejos, inspiración, venta).</li>
-          <li>Lleva esos clips a <strong>Claude Code</strong> para pulir la edición.</li>
-          <li>Dale el acabado final en <strong>CapCut</strong> antes de publicar.</li>
-        </ol>
-        <div className="sce-guide-video-wrap">
-          {videoOk ? (
-            <video className="sce-guide-video" src="/tutorial-editor.mp4" controls
-              onError={() => setVideoOk(false)} />
-          ) : (
-            <div className="sce-guide-video-empty">🎬 Video tutorial próximamente</div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg }) {
+function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg, sensitivity, onReanalyze }) {
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem("sce-theme") || "dark"; } catch { return "dark"; }
   });
@@ -1346,8 +1248,25 @@ function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeC
             title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
             {theme === "dark" ? "☀️" : "🌙"}
           </button>
+          <button className="sce-reel-cta" onClick={onExtractReels} disabled={analyzedClips.length === 0}>
+            ✨ Extraer Reels con IA
+          </button>
           <button className="sc-btn-primary sc-btn-sm" onClick={onExport}>✂️ Exportar</button>
         </div>
+      </div>
+
+      {/* Intensidad del corte — en lenguaje simple, no técnico */}
+      <div className="sce-sens-bar">
+        <span className="sce-sens-label">Intensidad del corte:</span>
+        <div className="sce-sens-group">
+          {SENSITIVITY_LEVELS.map(({ id, label }) => (
+            <button key={id} className={`sce-sens-btn${sensitivity === id ? " active" : ""}`}
+              onClick={() => onReanalyze(id)}>{label}</button>
+          ))}
+        </div>
+        <span className="sce-sens-desc">
+          {SENSITIVITY_LEVELS.find(l => l.id === sensitivity)?.desc}
+        </span>
       </div>
 
       {/* Cuerpo */}
@@ -1417,11 +1336,6 @@ function EditorScreen({ clips, setClips, onExport, onAddFiles, moveClip, removeC
           <div className="sce-shortcuts-hint">
             <kbd>Espacio</kbd> play · <kbd>Ctrl+B</kbd> dividir · clic en fragmento y <kbd>Delete</kbd> eliminar · <kbd>← →</kbd> saltar 5s
           </div>
-        </div>
-
-        {/* Panel derecho: siguiente paso (Reels) + guía de uso */}
-        <div className="sce-right-panel">
-          <GuidePanel onExtractReels={onExtractReels} hasCuts={analyzedClips.length > 0} />
         </div>
       </div>
 
@@ -1699,7 +1613,6 @@ export default function SilenceCutter() {
   const [sensitivity, setSensitivity] = useState("conservadora");
   const inputRef = useRef(null);
   const abortRef = useRef(false);
-  const { noise: noiseDb, duration: minDur } = PRESETS[sensitivity];
 
   // Gate de cuenta: cortar/previsualizar es libre (gancho de lead magnet);
   // solo al EXPORTAR se pide crear cuenta si no hay sesión iniciada.
@@ -1711,10 +1624,17 @@ export default function SilenceCutter() {
 
   const analyzingRef = useRef(false);
 
-  const analizarClips = useCallback(async (toAnalyze) => {
+  // Recibe el preset explícito (en vez de leer noiseDb/minDur del cierre) —
+  // reanalizar() cambia la sensibilidad y re-analiza en el mismo tick, y
+  // setSensitivity es asíncrono: si esta función leyera el estado en vez de
+  // un parámetro, la primera vez que se cambiaba de sensibilidad se
+  // analizaba igual con el umbral VIEJO (el cambio solo se notaba al
+  // volver a hacer clic una segunda vez).
+  const analizarClips = useCallback(async (toAnalyze, preset = PRESETS[sensitivity]) => {
     if (analyzingRef.current || !toAnalyze.length) return;
     analyzingRef.current = true;
     setFase("analyzing"); setError("");
+    const { noise: noiseDb, duration: minDur } = preset;
     for (let i = 0; i < toAnalyze.length; i++) {
       const clip = toAnalyze[i];
       const baseProgress = Math.round((i / toAnalyze.length) * 100);
@@ -1729,15 +1649,17 @@ export default function SilenceCutter() {
             setProgress(Math.round(baseProgress + p * clipSlice));
           }
         );
+        console.log(`[analizarClips] clip "${clip.name}" analizado: duration=${duration.toFixed(1)}s, ${silences.length} silencios guardados`);
         setClips(prev => prev.map(c => c.id === clip.id ? { ...c, duration, waveform, silences, analyzed: true, error: null } : c));
       } catch (err) {
         console.error("Error analizando audio:", err);
-        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, analyzed: true, error: "No se pudo analizar el audio" } : c));
+        const detail = err?.message ? `: ${err.message}` : "";
+        setClips(prev => prev.map(c => c.id === clip.id ? { ...c, analyzed: true, error: `No se pudo analizar el audio${detail}` } : c));
       }
     }
     setFase("editor");
     analyzingRef.current = false;
-  }, [noiseDb, minDur]);
+  }, [sensitivity]);
 
   const analizarTodos = useCallback(() =>
     analizarClips(clips.filter(c => !c.analyzed)), [clips, analizarClips]);
@@ -1746,7 +1668,9 @@ export default function SilenceCutter() {
     setSensitivity(newSensitivity);
     const reset = clips.map(c => ({ ...c, analyzed: false, silences: [], waveform: null }));
     setClips(reset);
-    analizarClips(reset);
+    // Pasa el preset explícito — setSensitivity aún no se refleja en este
+    // mismo tick, así que analizarClips no puede depender de leerlo del estado.
+    analizarClips(reset, PRESETS[newSensitivity]);
   }, [clips, analizarClips]);
 
   const cutSeg = useCallback((clipId, segStart, segEnd) => {
