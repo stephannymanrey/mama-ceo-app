@@ -236,12 +236,12 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
       processor.connect(silentGain);
       silentGain.connect(audioCtx.destination);
 
-      // iOS max playbackRate = 2; Chrome permite más
-      video.playbackRate = Math.min(
-        typeof video.playbackRate !== "undefined" ? 16 : 2,
-        2   // seguro en iOS
-      );
-      const rate = video.playbackRate; // para convertir tiempo de reloj real → tiempo de contenido
+      // Velocidad normal (1x) — a 2x el navegador aplica un algoritmo de
+      // "estirado" de audio para no cambiar el tono, y eso introducía
+      // suficiente ruido/artefactos en los tramos silenciosos como para que
+      // casi ningún silencio real se detectara (confirmado: en un video de
+      // 24 min con ~135 silencios reales, a 2x solo se detectaba 1).
+      video.playbackRate = 1;
 
       const WIN = Math.floor(audioCtx.sampleRate * 0.04); // mismas ventanas de 40ms que detectSilences
       const sampleRms = [];   // [{ t, rms }]
@@ -254,14 +254,11 @@ function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
           const count = Math.min(WIN, data.length - i);
           let sumSq = 0;
           for (let j = 0; j < count; j++) sumSq += data[i + j] * data[i + j];
-          // Las muestras llegan a ritmo de reloj real, pero el contenido está
-          // acelerado por playbackRate — sin este factor, los tiempos (y por
-          // tanto las duraciones de cada silencio) salían a la mitad de lo real.
-          const t = (sampleCount / audioCtx.sampleRate) * rate;
+          const t = sampleCount / audioCtx.sampleRate;
           sampleRms.push({ t, rms: Math.sqrt(sumSq / count) });
           sampleCount += count;
         }
-        const t = (sampleCount / audioCtx.sampleRate) * rate;
+        const t = sampleCount / audioCtx.sampleRate;
         if (onProgress && t - lastProgressT > 0.2) { lastProgressT = t; onProgress(Math.min(1, t / duration)); }
       };
 
