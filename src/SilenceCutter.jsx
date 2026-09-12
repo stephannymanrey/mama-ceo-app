@@ -158,11 +158,30 @@ async function detectSilences(channelData, sampleRate, noiseDb, minDuration, dur
 // deben ir directo al respaldo, sin tocar arrayBuffer() nunca.
 const FAST_PATH_MAX_BYTES = 500 * 1024 * 1024; // 500MB
 
+// Respaldo para cuando decodeAudioData directo no sirve (archivo demasiado
+// grande para arrayBuffer(), o el navegador no puede decodificar el
+// contenedor original): graba el audio reproduciendo el video una vez
+// (extractAudioViaPlayback, el mismo mecanismo ya probado que usa la
+// transcripción) y decodifica ESE archivo pequeño resultante — mucho más
+// confiable que intentar leer muestras en vivo mientras se reproduce.
+async function analyzeViaRecording(file, noiseDb, minDuration, onProgress) {
+  const decoded = await extractAudioViaPlayback(file, (pct) => onProgress?.(Math.min(1, pct / 100) * 0.5), null);
+  const channelData = decoded.getChannelData(0);
+  console.log(`[analyzeViaRecording] grabado y decodificado: duration=${decoded.duration.toFixed(1)}s sampleRate=${decoded.sampleRate} samples=${channelData.length}`);
+  const silences = await detectSilences(
+    channelData, decoded.sampleRate, noiseDb, minDuration, decoded.duration,
+    (p) => onProgress?.(0.5 + p * 0.35)
+  );
+  const waveform = await buildWaveform(channelData, 900, (p) => onProgress?.(0.85 + p * 0.15));
+  onProgress?.(1);
+  return { duration: decoded.duration, waveform, silences };
+}
+
 async function analyzeClip(file, noiseDb, minDuration, onProgress) {
   console.log(`[analyzeClip] iniciando: file=${file.name} size=${(file.size/1e6).toFixed(1)}MB noiseDb=${noiseDb} minDuration=${minDuration}`);
   if (file.size > FAST_PATH_MAX_BYTES) {
     console.log(`[analyzeClip] archivo > ${FAST_PATH_MAX_BYTES/1e6}MB, va directo al respaldo (arrayBuffer() rompe archivos así de grandes)`);
-    const r = await analyzeViaVideoElement(file, noiseDb, minDuration, onProgress);
+    const r = await analyzeViaRecording(file, noiseDb, minDuration, onProgress);
     console.log(`[analyzeClip] PATH RESPALDO ok: duration=${r.duration.toFixed(1)}s ${r.silences.length} silencios encontrados`, r.silences.slice(0, 5));
     return r;
   }
@@ -188,136 +207,10 @@ async function analyzeClip(file, noiseDb, minDuration, onProgress) {
     return { duration: audioBuf.duration, waveform, silences };
   } catch (err) {
     console.warn("[analyzeClip] PATH RÁPIDO falló, usando respaldo:", err?.message || err);
-    // PATH MOBILE: análisis en tiempo real vía <video> + AnalyserNode
-    // Funciona en iOS Safari — el video.muted=true permite autoplay sin gesto adicional
-    const r = await analyzeViaVideoElement(file, noiseDb, minDuration, onProgress);
+    const r = await analyzeViaRecording(file, noiseDb, minDuration, onProgress);
     console.log(`[analyzeClip] PATH RESPALDO ok: duration=${r.duration.toFixed(1)}s ${r.silences.length} silencios encontrados`, r.silences.slice(0, 5));
     return r;
   }
-}
-
-function analyzeViaVideoElement(file, noiseDb, minDuration, onProgress) {
-  return new Promise((resolve, reject) => {
-    const url = URL.createObjectURL(file);
-    const video = document.createElement("video");
-    video.src = url;
-    video.muted = true;          // muted permite autoplay en iOS sin gesto
-    video.playsInline = true;
-    video.preload = "auto";
-
-    const AudioCtx = window.AudioContext || window.webkitAudioContext;
-    const audioCtx = new AudioCtx();
-
-    video.onloadedmetadata = async () => {
-      const duration = video.duration;
-      if (!isFinite(duration) || duration <= 0) {
-        URL.revokeObjectURL(url);
-        reject(new Error("Video sin duración válida"));
-        return;
-      }
-
-      try { await audioCtx.resume(); } catch {}
-
-      // Conectar video → ScriptProcessorNode (silencioso, sin speakers, gain 0).
-      // Antes se usaba un AnalyserNode muestreado con requestAnimationFrame —
-      // pero rAF (y setInterval) se frena drásticamente cuando la pestaña
-      // pasa a segundo plano (algo muy probable durante los ~12 min que
-      // toma reproducir un video de 24 min al doble de velocidad), y como
-      // esta ruta nunca reproduce audio real, Chrome no la exime del
-      // throttling — el resultado era casi sin muestras y "0 silencios"
-      // aunque el video sí los tuviera. onaudioprocess corre en el hilo de
-      // audio, that keeps firing sí la pestaña está oculta.
-      const source = audioCtx.createMediaElementSource(video);
-      const BUFFER_SIZE = 4096;
-      const processor = audioCtx.createScriptProcessor(BUFFER_SIZE, 1, 1);
-      const silentGain = audioCtx.createGain();
-      silentGain.gain.value = 0;
-      source.connect(processor);
-      processor.connect(silentGain);
-      silentGain.connect(audioCtx.destination);
-
-      // Velocidad normal (1x) — a 2x el navegador aplica un algoritmo de
-      // "estirado" de audio para no cambiar el tono, y eso introducía
-      // suficiente ruido/artefactos en los tramos silenciosos como para que
-      // casi ningún silencio real se detectara (confirmado: en un video de
-      // 24 min con ~135 silencios reales, a 2x solo se detectaba 1).
-      video.playbackRate = 1;
-
-      const WIN = Math.floor(audioCtx.sampleRate * 0.04); // mismas ventanas de 40ms que detectSilences
-      const sampleRms = [];   // [{ t, rms }]
-      let sampleCount = 0;
-      let lastProgressT = 0;
-
-      processor.onaudioprocess = (e) => {
-        const data = e.inputBuffer.getChannelData(0);
-        for (let i = 0; i < data.length; i += WIN) {
-          const count = Math.min(WIN, data.length - i);
-          let sumSq = 0;
-          for (let j = 0; j < count; j++) sumSq += data[i + j] * data[i + j];
-          const t = sampleCount / audioCtx.sampleRate;
-          sampleRms.push({ t, rms: Math.sqrt(sumSq / count) });
-          sampleCount += count;
-        }
-        const t = sampleCount / audioCtx.sampleRate;
-        if (onProgress && t - lastProgressT > 0.2) { lastProgressT = t; onProgress(Math.min(1, t / duration)); }
-      };
-
-      video.play().catch(err => {
-        processor.disconnect(); source.disconnect();
-        audioCtx.close();
-        URL.revokeObjectURL(url);
-        reject(err);
-      });
-
-      video.onended = () => {
-        processor.disconnect(); source.disconnect();
-        audioCtx.close();
-        URL.revokeObjectURL(url);
-
-        const n = sampleRms.length;
-        if (n === 0) { reject(new Error("Sin muestras de audio")); return; }
-
-        // Waveform normalizado de 900 puntos
-        const waveform = Array.from({ length: 900 }, (_, wi) => {
-          const idx = Math.min(n - 1, Math.floor(wi / 900 * n));
-          return sampleRms[idx]?.rms ?? 0;
-        });
-        const maxR = Math.max(...waveform, 1e-6);
-        const waveformNorm = waveform.map(v => v / maxR);
-
-        // Detectar silencios desde muestras rms
-        const silences = [];
-        let inSilence = false, silStart = 0;
-        for (const { t, rms } of sampleRms) {
-          const db = rms > 0 ? 20 * Math.log10(rms) : -Infinity;
-          if (db < noiseDb) {
-            if (!inSilence) { inSilence = true; silStart = t; }
-          } else if (inSilence) {
-            inSilence = false;
-            const dur = t - silStart;
-            if (dur >= minDuration)
-              silences.push({ id: uid(), start: Math.max(0, silStart + PADDING), end: Math.min(duration, t - PADDING), cut: true });
-          }
-        }
-        if (inSilence && duration - silStart >= minDuration)
-          silences.push({ id: uid(), start: Math.max(0, silStart + PADDING), end: duration, cut: true });
-
-        resolve({ duration, waveform: waveformNorm, silences });
-      };
-
-      video.onerror = () => {
-        processor.disconnect(); source.disconnect();
-        audioCtx.close();
-        URL.revokeObjectURL(url);
-        reject(new Error("Error cargando el video"));
-      };
-    };
-
-    video.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("No se pudo abrir el archivo de video"));
-    };
-  });
 }
 
 // ── Transcripción (Whisper Tiny — Web Worker) ─────────────────────────────
