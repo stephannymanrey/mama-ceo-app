@@ -1928,17 +1928,19 @@ export default function SilenceCutter() {
           </div>
         </div>
 
-        <div className={`sc-drop sc-drop--compact${dragOver ? " sc-drop--over" : ""}`}
-          onClick={() => inputRef.current?.click()}
-          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)} onDrop={onDrop}>
-          <span className="sc-drop-icon" style={{ fontSize: 28 }}>＋</span>
-          <div>
-            <p className="sc-drop-title" style={{ fontSize: 16, margin: 0 }}>Agrega clips de video</p>
-            <p className="sc-drop-formats" style={{ margin: "4px 0 0" }}>Arrastra o haz clic · .mp4, .mov, .webm · Múltiples archivos</p>
+        {clips.length === 0 && (
+          <div className={`sc-drop sc-drop--compact${dragOver ? " sc-drop--over" : ""}`}
+            onClick={() => inputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)} onDrop={onDrop}>
+            <span className="sc-drop-icon" style={{ fontSize: 28 }}>＋</span>
+            <div>
+              <p className="sc-drop-title" style={{ fontSize: 16, margin: 0 }}>Agrega tu primer clip</p>
+              <p className="sc-drop-formats" style={{ margin: "4px 0 0" }}>Arrastra o haz clic · .mp4, .mov, .webm</p>
+            </div>
           </div>
-        </div>
-        <input ref={inputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple
+        )}
+        <input ref={inputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm"
           style={{ display: "none" }} onChange={e => addFiles(e.target.files)} />
         {clips.length > 0 && (
           <div className="sc-toolbar">
@@ -1947,16 +1949,14 @@ export default function SilenceCutter() {
           </div>
         )}
         {error && <p className="sc-error">{error}</p>}
-        {clips.length === 0 ? (
-          <div className="sc-empty-state"><span>🎬</span><p>Agrega tus clips arriba para empezar</p><p className="sc-empty-hint">Puedes agregar múltiples videos y se combinarán en el orden que definas</p></div>
-        ) : (
+        {clips.length === 0 ? null : (
           <div className="sc-clips-list">
             {clips.map((clip, i) => (
               <ClipCard key={clip.id} clip={clip} index={i} total={clips.length}
                 onMove={moveClip} onRemove={removeClip} onToggle={toggleSilence} />
             ))}
             <button type="button" className="sc-add-more-btn" onClick={() => inputRef.current?.click()}>
-              ＋ Agregar otro clip
+              ＋ Agregar Clip {clips.length + 1}
             </button>
           </div>
         )}
