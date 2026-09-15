@@ -954,10 +954,10 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
         {/* Sidebar de clips */}
         <div className="sce-tl-mgmt">
           {allClips.map((clip, i) => (
-            <div key={clip.id} className="sce-tl-clip-row">
+            <div key={clip.id} className="sce-tl-clip-row" title={`Clip ${i + 1} de ${allClips.length}`}>
               <span className="sce-tl-clip-idx"
                 style={{ "--ci-color": CLIP_COLORS[i % CLIP_COLORS.length] }}>{i + 1}</span>
-              <span className="sce-tl-clip-title">{clip.name.replace(/\.[^/.]+$/, "")}</span>
+              <span className="sce-tl-clip-title"><strong>Clip {i + 1}:</strong> {clip.name.replace(/\.[^/.]+$/, "")}</span>
               {clip.duration && <span className="sce-tl-clip-dur">{fmtTime(clip.duration)}</span>}
               <div className="sce-tl-btns">
                 <button disabled={i === 0} onClick={e => { e.stopPropagation(); onMoveClip(clip.id, -1); }}>↑</button>
@@ -1792,6 +1792,19 @@ export default function SilenceCutter() {
         <p className="sc-proc-note" style={{ fontSize: 12, color: "#bbb", marginTop: 6 }}>
           En móvil el análisis corre en tiempo real — por favor espera sin cerrar la pantalla
         </p>
+        {clips.length > 1 && (
+          <div className="sc-proc-cliplist">
+            {clips.map((c, i) => (
+              <div key={c.id} className="sc-proc-clipitem">
+                <span className="sc-proc-clipitem-num">Clip {i + 1}</span>
+                <span className="sc-proc-clipitem-name">{c.name}</span>
+                <span className="sc-proc-clipitem-status">
+                  {c.analyzed ? (c.error ? "⚠ error" : "✓ listo") : "⏳"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

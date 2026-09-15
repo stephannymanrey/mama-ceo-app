@@ -547,6 +547,28 @@
 }
 .sc-proc-note--small { font-size: 12px; }
 
+.sc-proc-cliplist {
+  width: min(380px, 80vw);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  text-align: left;
+}
+.sc-proc-clipitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.sc-proc-clipitem-num { font-weight: 700; color: #C4526A; white-space: nowrap; }
+.sc-proc-clipitem-name { flex: 1; min-width: 0; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-proc-clipitem-status { white-space: nowrap; color: #999; font-size: 11px; }
+
 .sc-progress-bar-wrap {
   height: 6px;
   background: rgba(196,82,106,0.12);
