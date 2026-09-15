@@ -1899,6 +1899,21 @@ export default function SilenceCutter() {
           </div>
           <span className="sc-badge">Herramienta gratuita · En tu dispositivo</span>
         </div>
+
+        <div className="sc-sens-picker">
+          <p className="sc-sens-picker-title">¿Qué tanto quieres cortar?</p>
+          <div className="sc-sens-picker-group">
+            {SENSITIVITY_LEVELS.map(({ id, label, desc }) => (
+              <button key={id} type="button"
+                className={`sc-sens-picker-btn${sensitivity === id ? " active" : ""}`}
+                onClick={() => setSensitivity(id)}>
+                <span className="sc-sens-picker-label">{label}</span>
+                <span className="sc-sens-picker-desc">{desc}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className={`sc-drop sc-drop--compact${dragOver ? " sc-drop--over" : ""}`}
           onClick={() => inputRef.current?.click()}
           onDragOver={e => { e.preventDefault(); setDragOver(true); }}

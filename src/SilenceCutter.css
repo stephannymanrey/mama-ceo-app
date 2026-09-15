@@ -73,6 +73,49 @@
   margin-top: 4px;
 }
 
+/* Elegir intensidad de corte antes de subir */
+.sc-sens-picker { margin-bottom: 16px; }
+.sc-sens-picker-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+  margin: 0 0 8px;
+}
+.sc-sens-picker-group {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.sc-sens-picker-btn {
+  text-align: left;
+  background: #fff;
+  border: 1.5px solid rgba(0,0,0,0.08);
+  border-radius: 12px;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sc-sens-picker-btn:hover { border-color: rgba(196,82,106,0.4); }
+.sc-sens-picker-btn.active {
+  border-color: #C4526A;
+  background: rgba(196,82,106,0.05);
+  box-shadow: 0 0 0 1px #C4526A;
+}
+.sc-sens-picker-label {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1a1a2e;
+}
+.sc-sens-picker-btn.active .sc-sens-picker-label { color: #C4526A; }
+.sc-sens-picker-desc {
+  font-size: 11.5px;
+  color: #888;
+  line-height: 1.4;
+}
+
 /* Zona de drop */
 .sc-drop {
   background: #fff;
@@ -807,6 +850,7 @@
 /* ─ Responsive (fase de subida) ────────────────────────────────────────── */
 @media (max-width: 600px) {
   .sc-editor-wrap { padding: 20px 14px 80px; }
+  .sc-sens-picker-group { grid-template-columns: 1fr; }
   .sc-toolbar { flex-direction: column; align-items: flex-start; }
   .sc-export-footer { flex-direction: column; align-items: stretch; padding: 14px 16px; }
   .sc-btn-export { width: 100%; justify-content: center; }
