@@ -586,14 +586,15 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
     <div className={`sc-clip-card${clip.error ? " sc-clip-card--error" : ""}`}>
       <div className="sc-clip-header">
         <div className="sc-clip-order">
-          <button className="sc-order-btn" disabled={index === 0} onClick={() => onMove(clip.id, -1)}>↑</button>
+          <button className="sc-order-btn" disabled={index === 0} onClick={() => onMove(clip.id, -1)} title="Mover antes">↑</button>
           <span className="sc-order-num">{index + 1}</span>
-          <button className="sc-order-btn" disabled={index === total - 1} onClick={() => onMove(clip.id, 1)}>↓</button>
+          <button className="sc-order-btn" disabled={index === total - 1} onClick={() => onMove(clip.id, 1)} title="Mover después">↓</button>
         </div>
         {clip.thumbnail
           ? <img className="sc-clip-thumb" src={clip.thumbnail} alt="" />
           : <div className="sc-clip-thumb sc-clip-thumb--placeholder">🎬</div>}
         <div className="sc-clip-info">
+          <p className="sc-clip-order-label">Clip {index + 1}{total > 1 ? ` de ${total}` : ""}{index === 0 && total > 1 ? " · primero en el video final" : ""}</p>
           <p className="sc-clip-name">{clip.name}</p>
           <p className="sc-clip-meta">{fmtSize(clip.size)}{clip.duration ? ` · ${fmtTime(clip.duration)}` : " · Cargando..."}</p>
           {clip.analyzed && !clip.error && (
@@ -1941,6 +1942,9 @@ export default function SilenceCutter() {
               <ClipCard key={clip.id} clip={clip} index={i} total={clips.length}
                 onMove={moveClip} onRemove={removeClip} onToggle={toggleSilence} />
             ))}
+            <button type="button" className="sc-add-more-btn" onClick={() => inputRef.current?.click()}>
+              ＋ Agregar otro clip
+            </button>
           </div>
         )}
       </div>

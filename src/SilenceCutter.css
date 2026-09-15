@@ -235,6 +235,18 @@
   gap: 12px;
   margin-bottom: 24px;
 }
+.sc-add-more-btn {
+  background: transparent;
+  border: 1.5px dashed rgba(196,82,106,0.35);
+  border-radius: 10px;
+  padding: 12px;
+  color: #C4526A;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sc-add-more-btn:hover { background: rgba(196,82,106,0.05); border-color: #C4526A; }
 
 /* Clip card */
 .sc-clip-card {
@@ -302,6 +314,14 @@
 .sc-clip-info {
   flex: 1;
   min-width: 0;
+}
+.sc-clip-order-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #C4526A;
+  margin: 0 0 2px;
 }
 .sc-clip-name {
   font-size: 14px;
