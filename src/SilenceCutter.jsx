@@ -586,14 +586,15 @@ function ClipCard({ clip, index, total, onMove, onRemove, onToggle }) {
     <div className={`sc-clip-card${clip.error ? " sc-clip-card--error" : ""}`}>
       <div className="sc-clip-header">
         <div className="sc-clip-order">
-          <button className="sc-order-btn" disabled={index === 0} onClick={() => onMove(clip.id, -1)}>↑</button>
+          <button className="sc-order-btn" disabled={index === 0} onClick={() => onMove(clip.id, -1)} title="Mover antes">↑</button>
           <span className="sc-order-num">{index + 1}</span>
-          <button className="sc-order-btn" disabled={index === total - 1} onClick={() => onMove(clip.id, 1)}>↓</button>
+          <button className="sc-order-btn" disabled={index === total - 1} onClick={() => onMove(clip.id, 1)} title="Mover después">↓</button>
         </div>
         {clip.thumbnail
           ? <img className="sc-clip-thumb" src={clip.thumbnail} alt="" />
           : <div className="sc-clip-thumb sc-clip-thumb--placeholder">🎬</div>}
         <div className="sc-clip-info">
+          <p className="sc-clip-order-label">Clip {index + 1}{total > 1 ? ` de ${total}` : ""}{index === 0 && total > 1 ? " · primero en el video final" : ""}</p>
           <p className="sc-clip-name">{clip.name}</p>
           <p className="sc-clip-meta">{fmtSize(clip.size)}{clip.duration ? ` · ${fmtTime(clip.duration)}` : " · Cargando..."}</p>
           {clip.analyzed && !clip.error && (
@@ -953,10 +954,10 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
         {/* Sidebar de clips */}
         <div className="sce-tl-mgmt">
           {allClips.map((clip, i) => (
-            <div key={clip.id} className="sce-tl-clip-row">
+            <div key={clip.id} className="sce-tl-clip-row" title={`Clip ${i + 1} de ${allClips.length}`}>
               <span className="sce-tl-clip-idx"
                 style={{ "--ci-color": CLIP_COLORS[i % CLIP_COLORS.length] }}>{i + 1}</span>
-              <span className="sce-tl-clip-title">{clip.name.replace(/\.[^/.]+$/, "")}</span>
+              <span className="sce-tl-clip-title"><strong>Clip {i + 1}:</strong> {clip.name.replace(/\.[^/.]+$/, "")}</span>
               {clip.duration && <span className="sce-tl-clip-dur">{fmtTime(clip.duration)}</span>}
               <div className="sce-tl-btns">
                 <button disabled={i === 0} onClick={e => { e.stopPropagation(); onMoveClip(clip.id, -1); }}>↑</button>
@@ -1791,6 +1792,19 @@ export default function SilenceCutter() {
         <p className="sc-proc-note" style={{ fontSize: 12, color: "#bbb", marginTop: 6 }}>
           En móvil el análisis corre en tiempo real — por favor espera sin cerrar la pantalla
         </p>
+        {clips.length > 1 && (
+          <div className="sc-proc-cliplist">
+            {clips.map((c, i) => (
+              <div key={c.id} className="sc-proc-clipitem">
+                <span className="sc-proc-clipitem-num">Clip {i + 1}</span>
+                <span className="sc-proc-clipitem-name">{c.name}</span>
+                <span className="sc-proc-clipitem-status">
+                  {c.analyzed ? (c.error ? "⚠ error" : "✓ listo") : "⏳"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1914,17 +1928,19 @@ export default function SilenceCutter() {
           </div>
         </div>
 
-        <div className={`sc-drop sc-drop--compact${dragOver ? " sc-drop--over" : ""}`}
-          onClick={() => inputRef.current?.click()}
-          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
-          onDragLeave={() => setDragOver(false)} onDrop={onDrop}>
-          <span className="sc-drop-icon" style={{ fontSize: 28 }}>＋</span>
-          <div>
-            <p className="sc-drop-title" style={{ fontSize: 16, margin: 0 }}>Agrega clips de video</p>
-            <p className="sc-drop-formats" style={{ margin: "4px 0 0" }}>Arrastra o haz clic · .mp4, .mov, .webm · Múltiples archivos</p>
+        {clips.length === 0 && (
+          <div className={`sc-drop sc-drop--compact${dragOver ? " sc-drop--over" : ""}`}
+            onClick={() => inputRef.current?.click()}
+            onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)} onDrop={onDrop}>
+            <span className="sc-drop-icon" style={{ fontSize: 28 }}>＋</span>
+            <div>
+              <p className="sc-drop-title" style={{ fontSize: 16, margin: 0 }}>Agrega tu primer clip</p>
+              <p className="sc-drop-formats" style={{ margin: "4px 0 0" }}>Arrastra o haz clic · .mp4, .mov, .webm</p>
+            </div>
           </div>
-        </div>
-        <input ref={inputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm" multiple
+        )}
+        <input ref={inputRef} type="file" accept="video/*,.mov,.mp4,.m4v,.webm"
           style={{ display: "none" }} onChange={e => addFiles(e.target.files)} />
         {clips.length > 0 && (
           <div className="sc-toolbar">
@@ -1933,14 +1949,15 @@ export default function SilenceCutter() {
           </div>
         )}
         {error && <p className="sc-error">{error}</p>}
-        {clips.length === 0 ? (
-          <div className="sc-empty-state"><span>🎬</span><p>Agrega tus clips arriba para empezar</p><p className="sc-empty-hint">Puedes agregar múltiples videos y se combinarán en el orden que definas</p></div>
-        ) : (
+        {clips.length === 0 ? null : (
           <div className="sc-clips-list">
             {clips.map((clip, i) => (
               <ClipCard key={clip.id} clip={clip} index={i} total={clips.length}
                 onMove={moveClip} onRemove={removeClip} onToggle={toggleSilence} />
             ))}
+            <button type="button" className="sc-add-more-btn" onClick={() => inputRef.current?.click()}>
+              ＋ Agregar Clip {clips.length + 1}
+            </button>
           </div>
         )}
       </div>

@@ -235,6 +235,18 @@
   gap: 12px;
   margin-bottom: 24px;
 }
+.sc-add-more-btn {
+  background: transparent;
+  border: 1.5px dashed rgba(196,82,106,0.35);
+  border-radius: 10px;
+  padding: 12px;
+  color: #C4526A;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.sc-add-more-btn:hover { background: rgba(196,82,106,0.05); border-color: #C4526A; }
 
 /* Clip card */
 .sc-clip-card {
@@ -302,6 +314,14 @@
 .sc-clip-info {
   flex: 1;
   min-width: 0;
+}
+.sc-clip-order-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #C4526A;
+  margin: 0 0 2px;
 }
 .sc-clip-name {
   font-size: 14px;
@@ -526,6 +546,28 @@
   max-width: 380px;
 }
 .sc-proc-note--small { font-size: 12px; }
+
+.sc-proc-cliplist {
+  width: min(380px, 80vw);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+  text-align: left;
+}
+.sc-proc-clipitem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.07);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+}
+.sc-proc-clipitem-num { font-weight: 700; color: #C4526A; white-space: nowrap; }
+.sc-proc-clipitem-name { flex: 1; min-width: 0; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sc-proc-clipitem-status { white-space: nowrap; color: #999; font-size: 11px; }
 
 .sc-progress-bar-wrap {
   height: 6px;
