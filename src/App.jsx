@@ -4366,9 +4366,15 @@ export default function App() {
 
     // ── Hogar: "Tus 3 de hoy" ──
     const pendingHome = homeTasks.filter((t) => !t.done);
+    // Las sugeridas automáticamente sí deben respetar la fecha (igual que
+    // Negocio) — si no, "Tus 3 de hoy" mostraba las 3 de más prioridad de
+    // TODA la lista, sin importar si su fecha era futura. El swap manual y
+    // el override siguen viendo pendingHome completo a propósito, porque ahí
+    // la usuaria elige explícitamente qué mostrar hoy sin importar la fecha.
+    const pendingHomeDueToday = pendingHome.filter((t) => !t.dueDate || t.dueDate <= todayISO);
     const homePriorityRank = { "Importante": 0, "Normal": 1, "Sin afán": 2 };
     const sortHomePool = (list) => [...list].sort((a, b) => (homePriorityRank[a.priority || "Normal"] - homePriorityRank[b.priority || "Normal"]) || (a.id - b.id));
-    const autoTop3 = sortHomePool(pendingHome).slice(0, 3);
+    const autoTop3 = sortHomePool(pendingHomeDueToday).slice(0, 3);
     const validOverrideIds = (homeFocusOverride && homeFocusOverride.date === todayISO)
       ? homeFocusOverride.ids.filter((id) => pendingHome.some((t) => t.id === id))
       : [];
