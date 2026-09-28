@@ -974,8 +974,112 @@ function ClipTimeline({ keptSegs, totalKept, effectiveTime, onSeek, allClips, on
 }
 
 
+// ── Panel de Abi: detecta muletillas y repeticiones para aprobar el corte ──
+function AbiFillerPanel({ clip, onApply, onClose }) {
+  const [phase, setPhase] = useState("idle"); // idle|needsAuth|working|ready|error|applied
+  const [msg,   setMsg]   = useState("");
+  const [items, setItems] = useState([]); // {inicio, fin, texto, tipo, approved}
+
+  const run = useCallback(async () => {
+    if (!clip) return;
+    const token = await getAwsAuthToken();
+    if (!token) { setPhase("needsAuth"); return; }
+    setPhase("working"); setMsg("Transcribiendo video...");
+    try {
+      const found = await fetchFillers(clip, token, setMsg);
+      setItems(found.map(f => ({ ...f, approved: true })));
+      setPhase("ready");
+    } catch (err) {
+      setPhase("error"); setMsg(err.message || "Error al analizar. Intenta de nuevo.");
+    }
+  }, [clip]);
+
+  const toggleItem = (idx) => setItems(prev => prev.map((it, i) => i === idx ? { ...it, approved: !it.approved } : it));
+  const approvedCount = items.filter(it => it.approved).length;
+
+  const applyApproved = () => {
+    const approved = items.filter(it => it.approved).map(it => ({ start: it.inicio, end: it.fin }));
+    if (approved.length) onApply(approved);
+    setPhase("applied");
+  };
+
+  return (
+    <div className="sce-abi-panel">
+      <div className="sce-abi-header">
+        <h3 className="sce-abi-title">✨ Abi</h3>
+        <button className="sce-abi-close" onClick={onClose} title="Cerrar">✕</button>
+      </div>
+
+      {phase === "idle" && (
+        <div className="sce-abi-body">
+          <p className="sce-abi-desc">
+            Abi lee la transcripción de tu video y busca muletillas ("eh", "o sea", "este"...) y repeticiones al hablar — tú apruebas cuáles cortar.
+          </p>
+          <button className="sce-abi-run-btn" onClick={run} disabled={!clip}>🔍 Buscar muletillas</button>
+          {!clip && <p className="sce-abi-hint">Analiza un clip primero.</p>}
+        </div>
+      )}
+
+      {phase === "needsAuth" && (
+        <div className="sce-abi-body">
+          <p className="sce-abi-desc">Inicia sesión para que Abi analice tu video (se abre en una pestaña nueva, no pierdes tu edición).</p>
+          <a className="sce-abi-run-btn sce-abi-run-btn--link" href="/" target="_blank" rel="noopener noreferrer">Iniciar sesión →</a>
+          <button className="sce-mini-link" onClick={() => setPhase("idle")}>Volver</button>
+        </div>
+      )}
+
+      {phase === "working" && (
+        <div className="sce-abi-body">
+          <div className="sce-abi-spinner" />
+          <p className="sce-abi-desc">{msg}</p>
+        </div>
+      )}
+
+      {phase === "error" && (
+        <div className="sce-abi-body">
+          <p className="sce-abi-desc sce-abi-desc--error">{msg}</p>
+          <button className="sce-abi-run-btn" onClick={run}>Intentar de nuevo</button>
+        </div>
+      )}
+
+      {phase === "ready" && (
+        items.length === 0 ? (
+          <div className="sce-abi-body">
+            <p className="sce-abi-desc">✅ No encontré muletillas claras en este video.</p>
+          </div>
+        ) : (
+          <div className="sce-abi-body">
+            <p className="sce-abi-desc">Encontré {items.length} — desmarca las que quieras conservar:</p>
+            <div className="sce-abi-list">
+              {items.map((it, i) => (
+                <label key={i} className={`sce-abi-item${it.approved ? "" : " sce-abi-item--off"}`}>
+                  <input type="checkbox" checked={it.approved} onChange={() => toggleItem(i)} />
+                  <span className="sce-abi-item-type">{it.tipo === "repeticion" ? "🔁" : "💬"}</span>
+                  <span className="sce-abi-item-text">"{it.texto}"</span>
+                  <span className="sce-abi-item-time">{fmtTime(it.inicio)}</span>
+                </label>
+              ))}
+            </div>
+            <button className="sce-abi-run-btn" onClick={applyApproved} disabled={approvedCount === 0}>
+              ✂ Cortar {approvedCount} seleccionada{approvedCount !== 1 ? "s" : ""}
+            </button>
+          </div>
+        )
+      )}
+
+      {phase === "applied" && (
+        <div className="sce-abi-body">
+          <p className="sce-abi-desc">✅ Listo — se aplicaron los cortes aprobados a tu video.</p>
+          <button className="sce-mini-link" onClick={() => { setPhase("idle"); setItems([]); }}>Buscar de nuevo</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── EditorScreen ──────────────────────────────────────────────────────────
-function EditorScreen({ clips, setClips, onExport, onExportAll, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg, sensitivity, onReanalyze }) {
+function EditorScreen({ clips, setClips, onExport, onExportAll, onAddFiles, moveClip, removeClip, onAnalyze, format, onFormatChange, onExtractReels, onCutSeg, sensitivity, onReanalyze, onAddSilences }) {
+  const [showAbi, setShowAbi] = useState(false);
   const [theme, setTheme] = useState(() => {
     try { return localStorage.getItem("sce-theme") || "dark"; } catch { return "dark"; }
   });
@@ -1249,6 +1353,10 @@ function EditorScreen({ clips, setClips, onExport, onExportAll, onAddFiles, move
             title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}>
             {theme === "dark" ? "☀️" : "🌙"}
           </button>
+          <button className={`sce-abi-toggle${showAbi ? " active" : ""}`} onClick={() => setShowAbi(v => !v)}
+            disabled={analyzedClips.length === 0} title="Abi: detecta muletillas y repeticiones para que apruebes el corte">
+            ✨ Abi
+          </button>
           <button className="sce-mini-link" onClick={onExport} disabled={analyzedClips.length === 0} title="Exporta solo el video completo, sin Reels">
             Solo video
           </button>
@@ -1344,6 +1452,14 @@ function EditorScreen({ clips, setClips, onExport, onExportAll, onAddFiles, move
             <kbd>Espacio</kbd> play · <kbd>Ctrl+B</kbd> dividir · clic en fragmento y <kbd>Delete</kbd> eliminar · <kbd>← →</kbd> saltar 5s
           </div>
         </div>
+
+        {showAbi && (
+          <AbiFillerPanel
+            clip={analyzedClips[0]}
+            onClose={() => setShowAbi(false)}
+            onApply={(ranges) => onAddSilences(analyzedClips[0].id, ranges)}
+          />
+        )}
       </div>
 
       {/* Timeline contraído */}
@@ -1410,6 +1526,40 @@ async function fetchReelFragments(clip, token, onMsg) {
     const categoria = REEL_CATEGORIES[f.categoria] ? f.categoria : "consejo";
     return { ...f, inicio, fin, categoria };
   });
+}
+
+// Transcribe (si hace falta) y le pide a Abi que detecte muletillas y
+// repeticiones — a diferencia de fetchReelFragments, acá el timestamp va
+// antes de CADA palabra (no cada 8) porque las muletillas duran menos de
+// un segundo y necesitan ubicarse con precisión.
+async function fetchFillers(clip, token, onMsg) {
+  let segments = clip.segments?.length ? clip.segments : null;
+  if (!segments) {
+    onMsg?.("Transcribiendo...");
+    segments = await transcribeClip(clip.file, clip.silences || [], info => {
+      if (info.status === "extracting") onMsg?.(`Extrayendo audio... ${info.progress}%`);
+      else if (info.status === "downloading") onMsg?.(`Descargando modelo Whisper... ${Math.round(info.progress || 0)}%`);
+    }, clip.duration);
+  }
+  if (!segments?.length) throw new Error("No se pudo transcribir el video.");
+
+  onMsg?.("Abi está buscando muletillas y repeticiones...");
+  const parts = [];
+  segments.forEach(s => { parts.push(`[${s.start.toFixed(1)}s]${s.word}`); });
+
+  const res = await fetch(REELS_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ type: "detectFillers", transcription: parts.join(" "), duration: clip.duration || 0 }),
+  });
+  const data = await res.json();
+  if (res.status === 429) throw new Error(data.message || "Llegaste al límite de generaciones de tu plan este mes.");
+  if (!data.items) throw new Error("Respuesta inesperada de Abi.");
+  const dur = clip.duration || Infinity;
+  return data.items
+    .map(f => ({ ...f, inicio: Math.max(0, f.inicio), fin: Math.min(f.fin, dur) }))
+    .filter(f => f.fin > f.inicio)
+    .sort((a, b) => a.inicio - b.inicio);
 }
 
 function ReelsExtractorScreen({ clips, onBack, initialFragments }) {
@@ -1693,6 +1843,17 @@ export default function SilenceCutter() {
     }));
   }, []);
 
+  // Igual que cutSeg pero para varios rangos a la vez — usado por Abi al
+  // aprobar de una sola vez las muletillas/repeticiones detectadas.
+  const addSilences = useCallback((clipId, ranges) => {
+    setClips(prev => prev.map(c => {
+      if (c.id !== clipId) return c;
+      const newSilences = [...(c.silences || []), ...ranges.map(r => ({ start: r.start, end: r.end, cut: true }))]
+        .sort((a, b) => a.start - b.start);
+      return { ...c, silences: newSilences };
+    }));
+  }, []);
+
   const addFiles = useCallback(async (files) => {
     const isVideo = f => /\.(mp4|mov|m4v|webm|avi)$/i.test(f.name) || f.type.startsWith("video/");
     const valid = Array.from(files).filter(isVideo);
@@ -1883,7 +2044,7 @@ export default function SilenceCutter() {
         format={format} onFormatChange={setFormat}
         onExtractReels={() => { setReelsInitialFragments(null); setShowReels(true); }}
         sensitivity={sensitivity} onReanalyze={reanalizar}
-        onCutSeg={cutSeg} />
+        onCutSeg={cutSeg} onAddSilences={addSilences} />
       {showRegisterGate && (
         <RegisterGate
           title="Crea tu cuenta para exportar tu video"
