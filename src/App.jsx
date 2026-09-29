@@ -2526,10 +2526,7 @@ export default function App() {
 
   const selectUserMode = (mode) => {
     setUserMode(mode);
-    const trialEnd = Date.now() + 14 * 24 * 60 * 60 * 1000;
-    setPremiumExpiresAt(trialEnd);
-    const plan = mode === "mama" ? "emprendedora" : "ceo";
-    setUserPlan(plan);
+    // Sin trial — el plan free da acceso básico hasta que se suscribe
   };
 
   // Rutas públicas — sin autenticación, antes de cualquier chequeo de sesión.
