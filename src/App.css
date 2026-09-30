@@ -19,7 +19,7 @@
   --orange: #E8836E;
   --orange-soft: #fdf0ec;
   --shadow: 0 20px 50px rgba(180, 140, 120, 0.08);
-  font-family: Montserrat, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: 'Raleway', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
   background: #FFFAF4;
 }
@@ -171,27 +171,27 @@ button {
 
 .brand-script {
   color: #EFA576;
-  font-family: "Segoe Script", "Brush Script MT", cursive;
-  font-size: 32px;
-  line-height: 1;
-  text-shadow: 0 2px 8px rgba(239,165,118,0.2);
+  font-family: 'Poppins', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
 }
 
 .brand-ceo {
   color: #C9A96E;
-  font-family: Georgia, serif;
-  font-size: 22px;
-  letter-spacing: 10px;
-  margin-left: 8px;
-  font-weight: 800;
-  text-shadow: 0 2px 12px rgba(201,169,110,0.4);
+  font-family: 'Poppins', sans-serif;
+  font-size: 13px;
+  letter-spacing: 4px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 .brand-app {
-  font-size: 11px;
-  letter-spacing: 6px;
+  font-size: 10px;
+  letter-spacing: 4px;
   color: var(--muted);
-  margin: 4px 0 0;
+  margin: 2px 0 0;
+  text-transform: uppercase;
 }
 
 
@@ -254,16 +254,15 @@ button {
 }
 
 .menu-item.active {
-  color: #fff;
-  background: linear-gradient(135deg, #EFA576 0%, #BF573C 100%);
-  border-left-color: transparent;
+  color: var(--accent);
+  background: var(--purple-soft);
+  border-left-color: var(--accent);
   border-radius: 10px;
-  box-shadow: 0 4px 14px rgba(239, 165, 118, 0.25);
   font-weight: 700;
 }
 
 .menu-item.active span {
-  color: #fff;
+  color: var(--accent);
 }
 
 .quote-card {

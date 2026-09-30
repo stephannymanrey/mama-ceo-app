@@ -53,8 +53,8 @@ const PLANS = [
 
 const FAQS = [
   {
-    q: "¿Necesito tarjeta de crédito para los 14 días gratis?",
-    a: "No. Prueba Mamá CEO App completamente gratis durante 14 días sin ingresar ningún dato de pago. Solo cuando quieras continuar, eliges tu plan.",
+    q: "¿Cómo elijo mi plan?",
+    a: "Creas tu cuenta, eliges el plan que más se ajusta a tu etapa actual y te lleva al pago de forma segura. En cualquier momento puedes cambiarlo desde tu perfil.",
   },
   {
     q: "¿Puedo cancelar cuando quiera?",
@@ -126,7 +126,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           <Logo width={150} />
           <div className="landing-nav-actions">
             <button className="lbtn-ghost" onClick={onLogin}>Iniciar sesión</button>
-            <button className="lbtn-primary" onClick={() => { trackEvent("cta_click", { location: "navbar" }); onSignup(); }}>Prueba gratis</button>
+            <button className="lbtn-primary" onClick={() => { trackEvent("cta_click", { location: "navbar" }); onSignup(); }}>Comenzar</button>
           </div>
         </div>
       </nav>
@@ -134,7 +134,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
       {/* ── HERO ── */}
       <section className="landing-hero">
         <div className="landing-hero-text">
-          <span className="landing-badge">✨ 14 días gratis · Sin tarjeta de crédito</span>
+          <span className="landing-badge">✨ Organiza tu hogar y tu negocio · En un solo lugar</span>
           <h1 className="landing-h1">
             Organiza tu casa<br />y tu negocio
             <span className="landing-h1-accent"> en un solo lugar.</span>
@@ -144,11 +144,11 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             <strong>organizar tu casa, vender más y cuidarte</strong> — todo desde el teléfono, sin perder el hilo de nada.
           </p>
           <div className="landing-hero-ctas">
-            <button className="lbtn-hero" onClick={() => { trackEvent("cta_click", { location: "hero" }); scrollTo("registro"); }}>
-              Empieza gratis — 14 días
+            <button className="lbtn-hero" onClick={() => { trackEvent("cta_click", { location: "hero" }); onSignup(); }}>
+              Empieza ahora
             </button>
           </div>
-          <p className="landing-hero-trust">Sin tarjeta de crédito · Cancela cuando quieras · Datos seguros</p>
+          <p className="landing-hero-trust">Cancela cuando quieras · Datos seguros</p>
         </div>
 
         {/* VISUAL HERO
@@ -219,8 +219,8 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             </div>
             <div className="lstat-divider" />
             <div className="lstat-item">
-              <span className="lstat-num">14</span>
-              <span className="lstat-label">días gratis sin límites</span>
+              <span className="lstat-num">💳</span>
+              <span className="lstat-label">cancela cuando quieras</span>
             </div>
             <div className="lstat-divider" />
             <div className="lstat-item">
@@ -334,7 +334,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
       <section className="landing-section landing-pricing" id="precios">
         <div className="landing-container">
           <h2 className="landing-h2">Elige tu plan</h2>
-          <p className="landing-section-sub">Empieza con 14 días gratis. Sin tarjeta de crédito. Cancela cuando quieras.</p>
+          <p className="landing-section-sub">Planes flexibles para cada etapa. Cancela cuando quieras.</p>
 
           <div className="landing-toggle">
             <button className={`ltoggle-btn${!isYearly ? " active" : ""}`} onClick={() => setIsYearly(false)}>
@@ -373,9 +373,8 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
                     className={`landing-plan-btn${plan.highlight ? " featured" : ""}`}
                     onClick={() => { trackEvent("cta_click", { location: "pricing", plan: plan.id }); scrollTo("registro"); }}
                   >
-                    Probar gratis — 14 días
+                    Comenzar con este plan
                   </button>
-                  <p className="landing-plan-trial">Sin tarjeta · Elige tu plan al terminar</p>
                 </div>
               );
             })}
@@ -410,6 +409,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
       {/* ── REGISTRO ── */}
       <section className="landing-final-cta" id="registro">
         <div className="landing-container landing-final-cta-inner">
+<<<<<<< HEAD
           <h2>Empieza gratis hoy — 14 días sin tarjeta</h2>
           <p>Ingresa tu correo y en menos de 2 minutos tienes tu cuenta lista.</p>
           <form
@@ -429,6 +429,14 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             </button>
           </form>
           <p className="landing-cta-note">Sin tarjeta de crédito · Cancela cuando quieras · Datos seguros</p>
+=======
+          <h2>¿Lista para organizar tu casa y tu negocio?</h2>
+          <p>Empieza hoy — elige tu plan y accede de inmediato.</p>
+          <button className="lbtn-cta-white" onClick={() => { trackEvent("cta_click", { location: "final_cta" }); onSignup(); }}>
+            Crear mi cuenta
+          </button>
+          <p className="landing-cta-note">Cancela cuando quieras · Datos seguros</p>
+>>>>>>> staging
         </div>
       </section>
 
@@ -446,6 +454,36 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
         </div>
       </footer>
 
+      {/* ── BOTÓN WA FLOTANTE ── */}
+      <WaFloat />
+
+    </div>
+  );
+}
+
+function WaFloat() {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setVisible(true), 3500);
+    return () => clearTimeout(t);
+  }, []);
+  return (
+    <div className="lwa-wrapper">
+      {visible && (
+        <div className="lwa-bubble">¿Tienes dudas sobre Mamá CEO App? Escríbenos 💬</div>
+      )}
+      <a
+        className="lwa-float"
+        href="https://wa.me/573181751966?text=Hola%21+Me+interesa+Mam%C3%A1+CEO+App+%C2%BFme+pueden+orientar%3F"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Escríbenos por WhatsApp"
+      >
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+          <path d="M12 0C5.373 0 0 5.373 0 12c0 2.125.558 4.122 1.532 5.856L.057 23.882l6.198-1.625A11.938 11.938 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.818a9.794 9.794 0 01-5.001-1.374l-.358-.214-3.722.976.994-3.629-.233-.372A9.794 9.794 0 012.182 12C2.182 6.57 6.57 2.182 12 2.182S21.818 6.57 21.818 12 17.43 21.818 12 21.818z"/>
+        </svg>
+      </a>
     </div>
   );
 }

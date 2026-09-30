@@ -2526,10 +2526,7 @@ export default function App() {
 
   const selectUserMode = (mode) => {
     setUserMode(mode);
-    const trialEnd = Date.now() + 14 * 24 * 60 * 60 * 1000;
-    setPremiumExpiresAt(trialEnd);
-    const plan = mode === "mama" ? "emprendedora" : "ceo";
-    setUserPlan(plan);
+    // Sin trial — el plan free da acceso básico hasta que se suscribe
   };
 
   // Rutas públicas — sin autenticación, antes de cualquier chequeo de sesión.
@@ -2664,8 +2661,7 @@ export default function App() {
           ) : (
             <form className="auth-form" onSubmit={handleAuthSubmit}>
               <div className="auth-form-header">
-                {authMode === "signup" && <span className="auth-trial-badge">✨ 14 días gratis · Sin tarjeta de crédito</span>}
-                <h2 className="auth-form-title">{authMode === "login" ? "Bienvenida de vuelta" : "Crea tu cuenta gratis"}</h2>
+                <h2 className="auth-form-title">{authMode === "login" ? "Bienvenida de vuelta" : "Crea tu cuenta"}</h2>
               </div>
               {authMode === "signup" && (
                 <label>
@@ -2675,7 +2671,7 @@ export default function App() {
               )}
               {authMode === "signup" && (
                 <label>
-                  WhatsApp <span style={{ fontWeight: 400, opacity: 0.6, fontSize: '0.85em' }}>(opcional — para seguimiento de tu prueba gratis)</span>
+                  WhatsApp <span style={{ fontWeight: 400, opacity: 0.6, fontSize: '0.85em' }}>(opcional)</span>
                   <input type="tel" placeholder="+57 300 000 0000" value={authWhatsapp} onChange={(event) => setAuthWhatsapp(event.target.value)} />
                 </label>
               )}
@@ -2727,7 +2723,7 @@ export default function App() {
               </button>
               <p className="auth-switch-row">
                 {authMode === "login"
-                  ? <>¿No tienes cuenta?{" "}<button type="button" className="auth-link-btn" onClick={() => setAuthMode("signup")}>Créala gratis</button></>
+                  ? <>¿No tienes cuenta?{" "}<button type="button" className="auth-link-btn" onClick={() => setAuthMode("signup")}>Créala aquí</button></>
                   : <>¿Ya tienes cuenta?{" "}<button type="button" className="auth-link-btn" onClick={() => setAuthMode("login")}>Inicia sesión</button></>
                 }
               </p>
@@ -2774,7 +2770,7 @@ export default function App() {
             ))}
           </div>
           <p style={{textAlign:"center",marginTop:"24px",fontSize:"12px",color:"var(--muted)"}}>
-            Prueba gratuita de 14 días con acceso completo. Puedes cambiar esto desde tu perfil en cualquier momento.
+            Puedes cambiar tu vista desde tu perfil en cualquier momento.
           </p>
         </div>
       </div>
@@ -4366,9 +4362,15 @@ export default function App() {
 
     // ── Hogar: "Tus 3 de hoy" ──
     const pendingHome = homeTasks.filter((t) => !t.done);
+    // Las sugeridas automáticamente sí deben respetar la fecha (igual que
+    // Negocio) — si no, "Tus 3 de hoy" mostraba las 3 de más prioridad de
+    // TODA la lista, sin importar si su fecha era futura. El swap manual y
+    // el override siguen viendo pendingHome completo a propósito, porque ahí
+    // la usuaria elige explícitamente qué mostrar hoy sin importar la fecha.
+    const pendingHomeDueToday = pendingHome.filter((t) => !t.dueDate || t.dueDate <= todayISO);
     const homePriorityRank = { "Importante": 0, "Normal": 1, "Sin afán": 2 };
     const sortHomePool = (list) => [...list].sort((a, b) => (homePriorityRank[a.priority || "Normal"] - homePriorityRank[b.priority || "Normal"]) || (a.id - b.id));
-    const autoTop3 = sortHomePool(pendingHome).slice(0, 3);
+    const autoTop3 = sortHomePool(pendingHomeDueToday).slice(0, 3);
     const validOverrideIds = (homeFocusOverride && homeFocusOverride.date === todayISO)
       ? homeFocusOverride.ids.filter((id) => pendingHome.some((t) => t.id === id))
       : [];
@@ -6274,15 +6276,24 @@ export default function App() {
     const MD=(d,a,c,s)=>({desayuno:d,almuerzo:a,cena:c,snack:s});
     const ABI_MENU_DB = {
       colombia:{
+        // Rediseñado con base en las Guías Alimentarias Basadas en Alimentos
+        // (GABA) del ICBF/Min. Salud: plato saludable con abundantes frutas y
+        // verduras, proteína variada (pollo, pescado, huevo, leguminosas —
+        // menos carne roja/embutidos), carbohidratos (arroz/papa/arepa) en
+        // porción moderada y sin repetirse en la misma comida, lácteos
+        // moderados, y azúcar/frituras como excepción semanal, no diaria.
         normal:[
-          {L:MD("Arepa con huevo y café","Arroz con pollo y ensalada verde","Sopa de lentejas","Fruta picada"),M:MD("Avena con fruta","Pasta boloñesa con pan","Huevos revueltos con plátano","Yogur natural"),X:MD("Changua con pan","Sopa de lentejas y aguacate","Arroz con atún","Nueces y banano"),J:MD("Huevos fritos con arepa","Pescado al horno con papas","Crema de verduras","Mango con limón"),V:MD("Chocolate con pandebono","Pollo a la plancha con fríjoles","Mazamorra con leche","Maní tostado"),S:MD("Calentado con café","Bandeja paisa","Sancocho ligero","Helado de paila"),D:MD("Changua especial","Sancocho de gallina","Fríjoles con arroz","Brevas con arequipe")},
-          {L:MD("Tostadas con queso y jugo","Fríjoles con arroz y chicharrón","Sopa de pasta","Fruta de temporada"),M:MD("Huevos perico con arepa","Carne asada con yuca y ensalada","Crema de tomate","Galletas con queso"),X:MD("Avena caliente con pan","Arroz con atún y vegetales","Huevos tibios con pan","Manzana"),J:MD("Arepas con mantequilla","Sudado de pollo con papas","Sopa de fideos","Chontaduro"),V:MD("Granola con leche","Chuletas con arroz y ensalada","Arroz con huevo","Bocadillo con queso"),S:MD("Changua con almojábanas","Arroz con pollo guisado","Lentejas rápidas","Fruta de temporada"),D:MD("Huevos con arepa y café","Estofado de res con verduras","Caldo de costilla","Arequipe con galletas")},
+          {L:MD("Huevos revueltos con arepa, tomate y jugo de fruta","Pollo a la plancha con arroz, ensalada de repollo y aguacate","Sopa de verduras con costilla","Yogur natural con fruta picada"),M:MD("Avena con fruta y canela","Lentejas guisadas con arroz y ensalada fresca","Pescado al horno con papa criolla y ensalada","Kumis con banano"),X:MD("Changua con huevo y pan integral","Sudado de pollo con papa, arveja y ensalada","Crema de ahuyama con costilla de res","Fruta con nueces"),J:MD("Huevos pericos con arepa y jugo natural","Fríjoles con arroz (porción moderada), aguacate y ensalada","Sopa de lentejas con verduras","Fruta de temporada"),V:MD("Tostadas integrales con huevo y queso","Carne asada con yuca, ensalada abundante y limón","Crema de tomate con pollo desmechado","Yogur natural con granola"),S:MD("Calentado con huevo y fruta","Bandeja paisa ligera (poco chicharrón, más ensalada y aguacate)","Sancocho de pollo con verduras","Helado de fruta natural"),D:MD("Arepa con queso y fruta picada","Sancocho de gallina con yuca, plátano y ensalada","Crema de verduras","Brevas con queso campesino")},
+          {L:MD("Huevos con espinaca y arepa","Pescado a la plancha con arroz y ensalada de aguacate","Sopa de verduras con pollo","Fruta picada"),M:MD("Yogur con granola y fruta","Garbanzos guisados con arroz y ensalada","Pollo al horno con puré de papa y ensalada","Kumis con fruta"),X:MD("Changua con pan integral","Carne molida con arroz, arveja y ensalada","Crema de brócoli con pollo","Nueces y fruta"),J:MD("Huevos revueltos con tomate y arepa","Lentejas con plátano maduro y ensalada","Sopa de pescado con verduras","Fruta de temporada"),V:MD("Avena con fruta y semillas","Pechuga a la plancha con arroz integral y ensalada","Crema de ahuyama","Yogur natural"),S:MD("Tostadas con huevo y aguacate","Sancocho de pescado costeño con verduras","Sopa de verduras con costilla","Fruta con queso"),D:MD("Arepa con huevo y jugo","Asado de res con papa criolla y ensalada abundante","Crema de tomate","Arequipe con fruta (porción pequeña)")},
+          {L:MD("Huevos con arepa y fruta","Lentejas con arroz, aguacate y ensalada","Sopa de verduras con pollo desmechado","Yogur con fruta"),M:MD("Avena con fruta picada","Pollo guisado con papa, arveja y ensalada","Pescado al horno con ensalada","Kumis con banano"),X:MD("Changua con huevo","Fríjoles con arroz moderado y ensalada","Crema de zapallo con costilla","Fruta y nueces"),J:MD("Tostadas con huevo y queso","Carne asada con yuca y ensalada fresca","Sopa de lentejas","Fruta de temporada"),V:MD("Huevos pericos con arepa","Garbanzos con verduras salteadas y arroz","Crema de tomate con pollo","Yogur natural"),S:MD("Calentado ligero con huevo","Sancocho de gallina con verduras","Sopa de pasta con pollo","Helado de fruta"),D:MD("Arepa con queso y fruta","Pescado sudado con arroz y ensalada abundante","Crema de verduras","Fruta con queso campesino")},
         ],
         vegetariano:[
-          {L:MD("Avena con fruta","Arroz con vegetales salteados","Sopa de verduras","Galletas integrales"),M:MD("Tostadas con queso","Pasta primavera con queso","Crema de brócoli","Fruta"),X:MD("Jugo con pan","Sopa de verduras con pan","Huevos revueltos","Yogur"),J:MD("Granola con leche","Lentejas con arroz y plátano","Ensalada con queso","Maní"),V:MD("Avena con banano","Quesadillas de espinaca","Arroz con verduras","Fruta"),S:MD("Tostadas con aguacate","Pizza de vegetales","Sopa de tomate","Galletas"),D:MD("Huevos benedictinos","Crema de zapallo con ensalada","Pasta al pesto","Yogur con granola")},
+          {L:MD("Avena con fruta y semillas","Arroz con lentejas y ensalada de verduras","Crema de verduras con queso","Galletas integrales con fruta"),M:MD("Tostadas con aguacate y huevo","Pasta integral con salsa de tomate y queso","Crema de brócoli","Fruta"),X:MD("Jugo natural con pan integral y huevo","Garbanzos guisados con arroz y ensalada","Huevos revueltos con espinaca","Yogur"),J:MD("Granola con leche y fruta","Lentejas con arroz, plátano y ensalada","Ensalada de quinua con queso","Maní"),V:MD("Avena con banano y semillas","Quesadillas de espinaca y queso con ensalada","Arroz con verduras salteadas","Fruta"),S:MD("Tostadas con aguacate y huevo","Pizza casera de vegetales con queso","Sopa de tomate con huevo","Galletas integrales"),D:MD("Huevos benedictinos con espinaca","Crema de zapallo con ensalada y queso","Pasta integral al pesto","Yogur con granola")},
+          {L:MD("Huevos con espinaca y tostadas","Garbanzos con arroz y ensalada de tomate","Crema de ahuyama con queso","Fruta"),M:MD("Yogur con granola y fruta","Lentejas con plátano y ensalada fresca","Tortilla española con ensalada","Nueces"),X:MD("Avena con fruta picada","Arroz con vegetales salteados y huevo","Crema de brócoli con queso","Fruta"),J:MD("Tostadas con queso y tomate","Quinua con verduras y aguacate","Sopa de lentejas","Yogur natural"),V:MD("Huevos revueltos con champiñones","Berenjenas rellenas de vegetales y queso","Arroz con ensalada","Fruta"),S:MD("Panqueques integrales con fruta","Pasta primavera con queso","Crema de espinaca","Maní"),D:MD("Arepa de queso con fruta","Falafel casero con ensalada y hummus","Sopa de verduras","Fruta con yogur")},
         ],
         economico:[
-          {L:MD("Arepa con café","Fríjoles con arroz y plátano","Sopa de papa","Fruta"),M:MD("Huevos con pan","Sopa de pasta con pollo","Arroz con huevo","Galletas"),X:MD("Avena","Revuelto de huevos con papa","Fríjoles","Banano"),J:MD("Pan con mantequilla","Arroz con atún","Sopa de fideos","Maní"),V:MD("Chocolate con pan","Lentejas con aguacate","Arroz con pollo","Fruta"),S:MD("Calentado","Estofado económico","Sopa de arroz","Galletas"),D:MD("Changua","Sancocho de papa","Fríjoles","Fruta de temporada")},
+          {L:MD("Huevo con arepa y fruta","Fríjoles con arroz y plátano, ensalada","Sopa de papa con verduras","Fruta de temporada"),M:MD("Huevos con pan integral","Sopa de pasta con pollo desmechado","Arroz con huevo y ensalada","Galletas con fruta"),X:MD("Avena con fruta","Revuelto de huevos con papa y verduras","Fríjoles con arroz","Banano"),J:MD("Pan integral con huevo","Arroz con atún y ensalada","Sopa de fideos con verduras","Maní"),V:MD("Chocolate con pan y huevo","Lentejas con aguacate y arroz","Crema de tomate","Fruta"),S:MD("Calentado con huevo","Estofado económico de verduras y carne","Sopa de arroz con verduras","Galletas integrales"),D:MD("Changua con huevo","Sancocho de papa con verduras y pollo","Fríjoles con arroz","Fruta de temporada")},
+          {L:MD("Arepa con huevo y fruta","Lentejas con arroz y ensalada de repollo","Sopa de verduras con papa","Fruta"),M:MD("Avena con fruta","Huevos con papa y verduras salteadas","Fríjoles con plátano","Banano"),X:MD("Pan integral con huevo","Arroz con verduras y pollo desmechado","Sopa de lentejas","Fruta"),J:MD("Changua con pan","Garbanzos guisados con arroz","Crema de ahuyama","Maní"),V:MD("Huevos con arepa","Arroz con atún y ensalada fresca","Sopa de papa con verduras","Fruta"),S:MD("Calentado ligero","Sudado de pollo con papa y verduras","Sopa de arroz","Galletas con fruta"),D:MD("Huevo con arepa y jugo","Sancocho de verduras con pollo","Fríjoles con arroz","Fruta de temporada")},
         ],
       },
       mexico:{
@@ -6388,22 +6399,33 @@ export default function App() {
       [/papa|papas|patata|batata/i,"Papas (kg)"],[/tomate/i,"Tomates (kg)"],[/aguacate|palta|abacate/i,"Aguacates"],
       [/plátano|banana|banano|cambur/i,"Plátanos"],[/queso|queijo/i,"Queso (250g)"],[/pan|pão|arepa|tortilla|tostada/i,"Pan"],
       [/yuca|mandioca/i,"Yuca (kg)"],[/quinua|quinoa/i,"Quinua (500g)"],[/leche|leite/i,"Leche (lt)"],[/fruta/i,"Frutas variadas"],
+      [/espinaca/i,"Espinaca"],[/garbanzo/i,"Garbanzos (500g)"],[/kumis|yogur|iogurte/i,"Yogur/kumis"],[/brócoli/i,"Brócoli"],
+      [/champiñon|champiñón/i,"Champiñones"],[/berenjena/i,"Berenjenas"],[/arveja/i,"Arvejas"],[/repollo/i,"Repollo"],
+      [/ahuyama|zapallo|calabaza|auyama/i,"Ahuyama/zapallo"],[/hummus|garbanzo/i,"Garbanzos (500g)"],[/granola/i,"Granola"],
     ];
-    const suggestedGrocery = (() => {
+    // Extraída aparte para poder calcularla tanto del menú YA guardado
+    // (weekMenu, botón manual "Importar del menú") como de una sugerencia que
+    // AÚN no se ha guardado (abiMenuSuggestion) — este segundo caso es el que
+    // permite armar la lista de mercado en el mismo clic de "Usar este menú",
+    // sin esperar a que weekMenu se actualice en el próximo render.
+    const computeSuggestedGrocery = (menuObj) => {
       const found = new Set();
-      Object.values(weekMenu).forEach(dayMenu => {
+      Object.values(menuObj || {}).forEach(dayMenu => {
         if (!dayMenu) return;
         const meals = typeof dayMenu==="string" ? [dayMenu] : Object.values(dayMenu).filter(Boolean);
         meals.forEach(meal => INGREDIENT_HINTS.forEach(([rx,item]) => { if (rx.test(meal)) found.add(item); }));
       });
       found.add("Aceite de cocina"); found.add("Sal y condimentos");
       return [...found];
-    })();
-    const addSuggestedToList = () => {
-      const existing = groceryList.map(g => g.text);
-      const newItems = suggestedGrocery.filter(s => !existing.includes(s)).map(text => ({id:Date.now()+Math.random(),text,done:false,fromMenu:true}));
-      if (newItems.length) setGroceryList(c => [...c,...newItems]);
     };
+    const suggestedGrocery = computeSuggestedGrocery(weekMenu);
+    const addGroceryItems = (items) => {
+      const existing = groceryList.map(g => g.text);
+      const newItems = items.filter(s => !existing.includes(s)).map(text => ({id:Date.now()+Math.random(),text,done:false,fromMenu:true}));
+      if (newItems.length) setGroceryList(c => [...c,...newItems]);
+      return newItems.length;
+    };
+    const addSuggestedToList = () => addGroceryItems(suggestedGrocery);
 
     // ── Family presence this week ──
     const parseMinutes = t => t==="15 min"?15:t==="30 min"?30:t==="1 hora"?60:t?.includes("Más")?90:30;
@@ -7105,9 +7127,16 @@ export default function App() {
                         style={{padding:"11px",background:"#fff",color:"var(--ink)",border:"1px solid var(--line)",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:600}}>
                         🔄 Otra sugerencia
                       </button>
-                      <button type="button" onClick={()=>{setWeekMenu(abiMenuSuggestion);setAbiMenuSuggestion(null);setShowMenuModal(false);}}
+                      <button type="button" onClick={()=>{
+                        setWeekMenu(abiMenuSuggestion);
+                        // Arma la lista de mercado de una vez, sin esperar al
+                        // clic manual de "Importar del menú" — pedido explícito:
+                        // que la lista salga apenas se aprueba la sugerencia.
+                        addGroceryItems(computeSuggestedGrocery(abiMenuSuggestion));
+                        setAbiMenuSuggestion(null);setShowMenuModal(false);
+                      }}
                         style={{padding:"11px",background:"#EFA576",color:"#fff",border:"none",borderRadius:"10px",cursor:"pointer",fontFamily:"inherit",fontSize:"13px",fontWeight:700}}>
-                        ✓ Usar este menú
+                        ✓ Usar este menú y armar lista de mercado
                       </button>
                     </div>
                   </div>
@@ -7839,7 +7868,7 @@ export default function App() {
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Elige tu plan</h2>
-          <p>Empieza gratis 14 días · Sin tarjeta · Sin compromiso · Cancela cuando quieras</p>
+          <p>Planes flexibles · Sin compromiso · Cancela cuando quieras</p>
         </div>
 
         {/* Toggle mensual / anual */}
@@ -7888,9 +7917,9 @@ export default function App() {
                         onClick={()=>window.open(isYearly ? HOTMART_LINKS_YEAR[plan.id] : HOTMART_LINKS[plan.id],"_blank")}
                         style={{width:"100%",padding:"13px 0",borderRadius:"10px",border:"none",background:"var(--pink)",color:"#fff",fontWeight:700,fontSize:"15px",cursor:"pointer",transition:"opacity 0.2s"}}
                       >
-                        Empezar gratis 14 días →
+                        Comenzar con este plan →
                       </button>
-                      <p style={{margin:"8px 0 0",fontSize:"11px",color:"var(--muted)",textAlign:"center"}}>Sin tarjeta · Cancela cuando quieras</p>
+                      <p style={{margin:"8px 0 0",fontSize:"11px",color:"var(--muted)",textAlign:"center"}}>Cancela cuando quieras</p>
                     </>
                   )}
                 </div>

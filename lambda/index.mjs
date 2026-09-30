@@ -897,6 +897,79 @@ Responde SOLO JSON válido, sin texto extra, sin markdown:
   return respond(200, { fragmentos, usage: currentCount + 1, limit, plan }, event);
 }
 
+// ─── Handler: Abi detecta muletillas y repeticiones para aprobar el corte ──
+// A diferencia de extractReels (timestamp cada 8 palabras, suficiente para
+// ubicar fragmentos de 15-60s), acá se necesita un timestamp por CADA
+// palabra — las muletillas duran menos de un segundo, así que un timestamp
+// disperso no alcanza para ubicarlas con precisión.
+async function handleDetectFillers(body, event, userId) {
+  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
+  const { transcription, duration } = body;
+  if (!transcription?.trim()) return respond(400, { error: "Falta transcripción" }, event);
+  if (transcription.length > MAX_TRANSCRIPT_LEN) return respond(400, { error: "Transcripción demasiado larga" }, event);
+
+  const { plan, usage } = await getUserPlanAndUsage(userId);
+  const mk = monthKey();
+  const currentCount = usage[mk] || 0;
+  const limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;
+  if (currentCount >= limit) {
+    return respond(429, {
+      error: "limite_alcanzado",
+      usage: currentCount,
+      limit,
+      plan,
+      message: `Llegaste al límite de ${limit} generaciones este mes.`,
+    }, event);
+  }
+
+  const durMin = Math.round((duration || 0) / 60);
+
+  const prompt = `Eres Abi, experta en edición de video en español, especializada en detectar muletillas y repeticiones al hablar.
+
+Video de ${durMin} minuto${durMin !== 1 ? "s" : ""}. Transcripción con un timestamp en segundos antes de CADA palabra:
+
+${transcription}
+
+Identifica cada muletilla o repetición que se debería cortar:
+- Muletillas: "eh", "este", "o sea", "bueno" usado como relleno, "digamos", "como que", "entonces" de relleno, "pues", sonidos de duda ("mmm", "ehh")
+- Repeticiones: cuando la persona se traba y repite la misma palabra o frase completa (ej. "vamos a — vamos a hablar de")
+- Marca SOLO casos claros que no cambian el sentido si se cortan — nunca marques palabras que son parte normal y necesaria de una oración
+- No marques más de 40 en total — si hay muchas, prioriza las más obvias y repetidas
+
+Para cada una, da el inicio y fin EXACTOS según los timestamps que rodean esas palabras (usa el timestamp de la palabra siguiente como referencia de fin si esa palabra no lo tiene), el texto exacto a cortar, y el tipo.
+
+Responde SOLO JSON válido, sin texto extra, sin markdown:
+[{"inicio":number,"fin":number,"texto":"palabras a cortar","tipo":"muletilla|repeticion"}]`;
+
+  let rawText;
+  try {
+    rawText = await callClaude(prompt, 3000, "[", "detectFillers");
+  } catch (err) {
+    console.error("[detectFillers] callClaude error:", err.message);
+    return respond(502, { error: "Error al analizar el video. Intenta de nuevo." }, event);
+  }
+
+  let items;
+  try {
+    let txt = rawText.replace(/```(?:json)?/gi, "").replace(/```/g, "").trim();
+    const si = txt.indexOf("["), ei = txt.lastIndexOf("]");
+    if (si === -1 || ei === -1) throw new Error("No JSON array");
+    items = JSON.parse(txt.slice(si, ei + 1));
+    const TIPOS_VALIDOS = new Set(["muletilla", "repeticion"]);
+    items = items
+      .filter(f => typeof f.inicio === "number" && typeof f.fin === "number" && f.fin > f.inicio && f.fin - f.inicio < 8)
+      .map(f => ({ ...f, tipo: TIPOS_VALIDOS.has(f.tipo) ? f.tipo : "muletilla" }));
+  } catch (err) {
+    console.error("[detectFillers] parse error:", err.message, rawText?.slice(0, 300));
+    return respond(502, { error: "No se pudo interpretar la respuesta. Intenta de nuevo." }, event);
+  }
+
+  const updatedUsage = { ...usage, [mk]: currentCount + 1 };
+  try { await saveUsage(userId, updatedUsage); }
+  catch (err) { console.warn("No se pudo guardar contador:", err); }
+
+  return respond(200, { items, usage: currentCount + 1, limit, plan }, event);
+}
 
 // ─── Handler ──────────────────────────────────────────────────────────────
 export const handler = async (event) => {
@@ -926,6 +999,9 @@ export const handler = async (event) => {
   // real del plan de la usuaria en vez de un tope genérico compartido.
   if (body.type === "extractReels") {
     return handleExtractReels(body, event, userId);
+  }
+  if (body.type === "detectFillers") {
+    return handleDetectFillers(body, event, userId);
   }
 
   const { type, context } = body;
