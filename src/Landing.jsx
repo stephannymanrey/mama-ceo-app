@@ -371,7 +371,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
                   </ul>
                   <button
                     className={`landing-plan-btn${plan.highlight ? " featured" : ""}`}
-                    onClick={() => { trackEvent("cta_click", { location: "pricing", plan: plan.id }); scrollTo("registro"); }}
+                    onClick={() => { trackEvent("cta_click", { location: "pricing", plan: plan.id }); onSignup(); }}
                   >
                     Comenzar con este plan
                   </button>
