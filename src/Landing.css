@@ -63,6 +63,25 @@
 }
 .lbtn-primary:hover { background: var(--l-brand-dark); transform: translateY(-1px); }
 
+/* Nav: botón WA verde */
+.lbtn-wa-nav {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #25d366;
+  color: #fff;
+  border: none;
+  border-radius: 30px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.lbtn-wa-nav:hover { background: #1ebe5d; }
+
 /* Hero main CTA — dorado */
 .lbtn-hero {
   background: var(--l-gold);
