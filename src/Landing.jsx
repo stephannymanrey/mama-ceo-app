@@ -53,8 +53,8 @@ const PLANS = [
 
 const FAQS = [
   {
-    q: "¿Necesito tarjeta de crédito para los 14 días gratis?",
-    a: "No. Prueba Mamá CEO App completamente gratis durante 14 días sin ingresar ningún dato de pago. Solo cuando quieras continuar, eliges tu plan.",
+    q: "¿Cómo elijo mi plan?",
+    a: "Creas tu cuenta, eliges el plan que más se ajusta a tu etapa actual y te lleva al pago de forma segura. En cualquier momento puedes cambiarlo desde tu perfil.",
   },
   {
     q: "¿Puedo cancelar cuando quiera?",
@@ -125,7 +125,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           <Logo width={150} />
           <div className="landing-nav-actions">
             <button className="lbtn-ghost" onClick={onLogin}>Iniciar sesión</button>
-            <button className="lbtn-primary" onClick={() => { trackEvent("cta_click", { location: "navbar" }); onSignup(); }}>Prueba gratis</button>
+            <button className="lbtn-primary" onClick={() => { trackEvent("cta_click", { location: "navbar" }); onSignup(); }}>Comenzar</button>
           </div>
         </div>
       </nav>
@@ -133,7 +133,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
       {/* ── HERO ── */}
       <section className="landing-hero">
         <div className="landing-hero-text">
-          <span className="landing-badge">✨ 14 días gratis · Sin tarjeta de crédito</span>
+          <span className="landing-badge">✨ Organiza tu hogar y tu negocio · En un solo lugar</span>
           <h1 className="landing-h1">
             Organiza tu casa<br />y tu negocio
             <span className="landing-h1-accent"> en un solo lugar.</span>
@@ -144,13 +144,13 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
           </p>
           <div className="landing-hero-ctas">
             <button className="lbtn-hero" onClick={() => { trackEvent("cta_click", { location: "hero" }); onSignup(); }}>
-              Empieza gratis — 14 días
+              Empieza ahora
             </button>
             <button className="lbtn-outline" onClick={() => scrollTo("precios")}>
               Ver planes ↓
             </button>
           </div>
-          <p className="landing-hero-trust">Sin tarjeta de crédito · Cancela cuando quieras · Datos seguros</p>
+          <p className="landing-hero-trust">Cancela cuando quieras · Datos seguros</p>
         </div>
 
         {/* VISUAL HERO
@@ -221,8 +221,8 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             </div>
             <div className="lstat-divider" />
             <div className="lstat-item">
-              <span className="lstat-num">14</span>
-              <span className="lstat-label">días gratis sin límites</span>
+              <span className="lstat-num">💳</span>
+              <span className="lstat-label">cancela cuando quieras</span>
             </div>
             <div className="lstat-divider" />
             <div className="lstat-item">
@@ -339,7 +339,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
       <section className="landing-section landing-pricing" id="precios">
         <div className="landing-container">
           <h2 className="landing-h2">Elige tu plan</h2>
-          <p className="landing-section-sub">Empieza con 14 días gratis. Sin tarjeta de crédito. Cancela cuando quieras.</p>
+          <p className="landing-section-sub">Planes flexibles para cada etapa. Cancela cuando quieras.</p>
 
           <div className="landing-toggle">
             <button className={`ltoggle-btn${!isYearly ? " active" : ""}`} onClick={() => setIsYearly(false)}>
@@ -378,9 +378,8 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
                     className={`landing-plan-btn${plan.highlight ? " featured" : ""}`}
                     onClick={() => { trackEvent("cta_click", { location: "pricing", plan: plan.id }); onSignup(); }}
                   >
-                    Probar gratis — 14 días
+                    Comenzar con este plan
                   </button>
-                  <p className="landing-plan-trial">Sin tarjeta · Elige tu plan al terminar</p>
                 </div>
               );
             })}
@@ -508,11 +507,11 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
       <section className="landing-final-cta">
         <div className="landing-container landing-final-cta-inner">
           <h2>¿Lista para organizar tu casa y tu negocio?</h2>
-          <p>Empieza hoy completamente gratis — 14 días sin tarjeta de crédito.</p>
+          <p>Empieza hoy — elige tu plan y accede de inmediato.</p>
           <button className="lbtn-cta-white" onClick={() => { trackEvent("cta_click", { location: "final_cta" }); onSignup(); }}>
-            Crear cuenta gratis — 14 días
+            Crear mi cuenta
           </button>
-          <p className="landing-cta-note">Sin tarjeta de crédito · Cancela cuando quieras</p>
+          <p className="landing-cta-note">Cancela cuando quieras · Datos seguros</p>
         </div>
       </section>
 

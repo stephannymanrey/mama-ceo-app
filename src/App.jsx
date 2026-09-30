@@ -2661,8 +2661,7 @@ export default function App() {
           ) : (
             <form className="auth-form" onSubmit={handleAuthSubmit}>
               <div className="auth-form-header">
-                {authMode === "signup" && <span className="auth-trial-badge">✨ 14 días gratis · Sin tarjeta de crédito</span>}
-                <h2 className="auth-form-title">{authMode === "login" ? "Bienvenida de vuelta" : "Crea tu cuenta gratis"}</h2>
+                <h2 className="auth-form-title">{authMode === "login" ? "Bienvenida de vuelta" : "Crea tu cuenta"}</h2>
               </div>
               {authMode === "signup" && (
                 <label>
@@ -2672,7 +2671,7 @@ export default function App() {
               )}
               {authMode === "signup" && (
                 <label>
-                  WhatsApp <span style={{ fontWeight: 400, opacity: 0.6, fontSize: '0.85em' }}>(opcional — para seguimiento de tu prueba gratis)</span>
+                  WhatsApp <span style={{ fontWeight: 400, opacity: 0.6, fontSize: '0.85em' }}>(opcional)</span>
                   <input type="tel" placeholder="+57 300 000 0000" value={authWhatsapp} onChange={(event) => setAuthWhatsapp(event.target.value)} />
                 </label>
               )}
@@ -2724,7 +2723,7 @@ export default function App() {
               </button>
               <p className="auth-switch-row">
                 {authMode === "login"
-                  ? <>¿No tienes cuenta?{" "}<button type="button" className="auth-link-btn" onClick={() => setAuthMode("signup")}>Créala gratis</button></>
+                  ? <>¿No tienes cuenta?{" "}<button type="button" className="auth-link-btn" onClick={() => setAuthMode("signup")}>Créala aquí</button></>
                   : <>¿Ya tienes cuenta?{" "}<button type="button" className="auth-link-btn" onClick={() => setAuthMode("login")}>Inicia sesión</button></>
                 }
               </p>
@@ -2771,7 +2770,7 @@ export default function App() {
             ))}
           </div>
           <p style={{textAlign:"center",marginTop:"24px",fontSize:"12px",color:"var(--muted)"}}>
-            Prueba gratuita de 14 días con acceso completo. Puedes cambiar esto desde tu perfil en cualquier momento.
+            Puedes cambiar tu vista desde tu perfil en cualquier momento.
           </p>
         </div>
       </div>
@@ -7869,7 +7868,7 @@ export default function App() {
       <section className="panel workspace-panel">
         <div className="section-title">
           <h2>Elige tu plan</h2>
-          <p>Empieza gratis 14 días · Sin tarjeta · Sin compromiso · Cancela cuando quieras</p>
+          <p>Planes flexibles · Sin compromiso · Cancela cuando quieras</p>
         </div>
 
         {/* Toggle mensual / anual */}
@@ -7918,9 +7917,9 @@ export default function App() {
                         onClick={()=>window.open(isYearly ? HOTMART_LINKS_YEAR[plan.id] : HOTMART_LINKS[plan.id],"_blank")}
                         style={{width:"100%",padding:"13px 0",borderRadius:"10px",border:"none",background:"var(--pink)",color:"#fff",fontWeight:700,fontSize:"15px",cursor:"pointer",transition:"opacity 0.2s"}}
                       >
-                        Empezar gratis 14 días →
+                        Comenzar con este plan →
                       </button>
-                      <p style={{margin:"8px 0 0",fontSize:"11px",color:"var(--muted)",textAlign:"center"}}>Sin tarjeta · Cancela cuando quieras</p>
+                      <p style={{margin:"8px 0 0",fontSize:"11px",color:"var(--muted)",textAlign:"center"}}>Cancela cuando quieras</p>
                     </>
                   )}
                 </div>
