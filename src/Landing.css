@@ -774,3 +774,51 @@
   .lstat-item { padding: 6px 16px; width: 50%; }
   .lstat-divider { display: none; }
 }
+
+/* ── Botón WA flotante ── */
+.lwa-wrapper {
+  position: fixed;
+  bottom: 22px;
+  right: 22px;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.lwa-bubble {
+  background: #fff;
+  color: #333;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.45;
+  padding: 10px 14px;
+  border-radius: 16px 16px 4px 16px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+  max-width: 210px;
+  animation: lwa-fade-in 0.4s ease;
+}
+@keyframes lwa-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.lwa-float {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #25d366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 18px rgba(37,211,102,0.45);
+  animation: lwa-pulso 2.4s ease-in-out infinite;
+  text-decoration: none;
+}
+@keyframes lwa-pulso {
+  0%, 100% { box-shadow: 0 6px 18px rgba(37,211,102,0.45); }
+  50%       { box-shadow: 0 6px 18px rgba(37,211,102,0.75), 0 0 0 8px rgba(37,211,102,0.15); }
+}
+@media (prefers-reduced-motion: reduce) { .lwa-float { animation: none; } }
+@media (max-width: 420px) {
+  .lwa-bubble { max-width: 170px; font-size: 12px; }
+}
