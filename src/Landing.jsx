@@ -409,34 +409,12 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
       {/* ── REGISTRO ── */}
       <section className="landing-final-cta" id="registro">
         <div className="landing-container landing-final-cta-inner">
-<<<<<<< HEAD
-          <h2>Empieza gratis hoy — 14 días sin tarjeta</h2>
-          <p>Ingresa tu correo y en menos de 2 minutos tienes tu cuenta lista.</p>
-          <form
-            className="landing-registro-form"
-            onSubmit={(e) => { e.preventDefault(); trackEvent("cta_click", { location: "registro_form" }); onSignup(emailInput); }}
-          >
-            <input
-              className="landing-registro-input"
-              type="email"
-              placeholder="tucorreo@gmail.com"
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
-              required
-            />
-            <button type="submit" className="lbtn-cta-white">
-              Crear cuenta gratis →
-            </button>
-          </form>
-          <p className="landing-cta-note">Sin tarjeta de crédito · Cancela cuando quieras · Datos seguros</p>
-=======
           <h2>¿Lista para organizar tu casa y tu negocio?</h2>
           <p>Empieza hoy — elige tu plan y accede de inmediato.</p>
           <button className="lbtn-cta-white" onClick={() => { trackEvent("cta_click", { location: "final_cta" }); onSignup(); }}>
             Crear mi cuenta
           </button>
           <p className="landing-cta-note">Cancela cuando quieras · Datos seguros</p>
->>>>>>> staging
         </div>
       </section>
 
