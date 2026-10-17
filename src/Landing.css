@@ -194,8 +194,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
 }
-.landing-nav-actions { display: flex; align-items: center; gap: 10px; }
+.landing-nav-actions { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.landing-nav-logo { flex-shrink: 0; }
 
 /* ── HERO ── */
 .landing-hero {
@@ -809,10 +811,29 @@
   .lbtn-hero, .lbtn-outline { text-align: center; }
   .landing-transform-card { flex-direction: column; gap: 8px; text-align: center; }
   .ltc-arrow { transform: rotate(90deg); align-self: center; }
-  .landing-nav-actions .lbtn-ghost { display: none; }
   .landing-stats-inner { gap: 0; }
   .lstat-item { padding: 6px 16px; width: 50%; }
   .lstat-divider { display: none; }
+
+  /* Navbar: logo más chico y acciones compactas para que quepan las 3 en una fila */
+  .landing-nav-inner { padding: 10px 14px; }
+  .landing-nav-logo { width: 110px !important; }
+  .landing-nav-actions { gap: 6px; }
+  .landing-nav-actions .lbtn-ghost {
+    background: none;
+    border: none;
+    padding: 8px 4px;
+    font-size: 12.5px;
+    white-space: nowrap;
+  }
+  .landing-nav-actions .lbtn-primary { padding: 9px 14px; font-size: 13px; }
+  .landing-nav-actions .lbtn-wa-nav {
+    padding: 9px;
+    width: 36px;
+    height: 36px;
+    justify-content: center;
+  }
+  .lbtn-wa-nav-label { display: none; }
 }
 
 /* ── Botón WA flotante ── */
