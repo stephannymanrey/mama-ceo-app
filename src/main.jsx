@@ -1,8 +1,48 @@
-import { StrictMode } from 'react'
+import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import './index.css'
 import App from './App.jsx'
+
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error, info) {
+    console.error('Error de render capturado por ErrorBoundary:', error, info);
+  }
+  render() {
+    if (!this.state.hasError) return this.props.children;
+    return (
+      <div style={{
+        minHeight: '100vh', display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+        padding: '32px', fontFamily: 'Inter, ui-sans-serif, sans-serif',
+        background: '#FFF8F6', color: '#1A1A1A',
+      }}>
+        <div style={{ fontSize: '40px', marginBottom: '12px' }}>😮‍💨</div>
+        <h1 style={{ fontSize: '20px', marginBottom: '8px' }}>Algo falló al mostrar la app</h1>
+        <p style={{ fontSize: '15px', color: '#555', maxWidth: '360px', marginBottom: '20px' }}>
+          Tus datos guardados están a salvo. Solo necesitamos recargar la página para que vuelva a funcionar.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          style={{
+            background: '#D4687A', color: '#fff', border: 'none',
+            borderRadius: '10px', padding: '12px 24px', cursor: 'pointer',
+            fontSize: '15px', fontWeight: 700, fontFamily: 'inherit',
+          }}
+        >
+          Recargar la app
+        </button>
+      </div>
+    );
+  }
+}
 
 function UpdatePrompt() {
   const { needRefresh: [needRefresh], updateServiceWorker } = useRegisterSW({
@@ -32,7 +72,9 @@ function UpdatePrompt() {
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
-    <UpdatePrompt />
+    <ErrorBoundary>
+      <App />
+      <UpdatePrompt />
+    </ErrorBoundary>
   </StrictMode>,
 )

@@ -472,7 +472,14 @@ function loadState() {
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     return raw ? JSON.parse(raw) : null;
-  } catch {
+  } catch (err) {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      try {
+        window.localStorage.setItem(`${STORAGE_KEY}-corrupt-backup-${Date.now()}`, raw);
+      } catch {}
+    }
+    console.error("No se pudo leer el estado guardado (se respaldó el valor crudo):", err);
     return null;
   }
 }
