@@ -647,6 +647,20 @@ function urlBase64ToUint8Array(b64) {
   return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
 }
 
+// ── Detección de plataforma para notificaciones push ──────────────────────
+// En iPhone, Apple solo permite Web Push si la app está instalada
+// ("Agregar a inicio") y abierta desde ese ícono — nunca en Safari normal.
+const isIOSDevice = () =>
+  /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+  (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isStandaloneApp = () =>
+  (window.matchMedia?.("(display-mode: standalone)")?.matches) || window.navigator.standalone === true;
+function pushDeviceState() {
+  if (isIOSDevice() && !isStandaloneApp()) return "ios-install";
+  if (!("serviceWorker" in navigator) || !("Notification" in window) || !("PushManager" in window)) return "unsupported";
+  return Notification.permission; // "default" | "granted" | "denied"
+}
+
 const HOTMART_LINKS = {
   mama:         "https://pay.hotmart.com/O106234254M?off=x324h3to",
   emprendedora: "https://pay.hotmart.com/O106234254M?off=p2i17fh0",
@@ -811,6 +825,7 @@ export default function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
+  const [pushNotice, setPushNotice] = useState(null);
   const [authError, setAuthError] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
   const [resetPassword, setResetPassword] = useState(false);
@@ -1104,27 +1119,46 @@ export default function App() {
   }, []);
 
   async function togglePushSubscription() {
-    if (!("Notification" in window) || !("serviceWorker" in navigator)) return;
-    setPushLoading(true);
-    try {
-      const reg = await navigator.serviceWorker.ready;
-      if (pushEnabled) {
+    if (pushEnabled) {
+      setPushLoading(true);
+      try {
+        const reg = await navigator.serviceWorker.ready;
         const sub = await reg.pushManager.getSubscription();
         if (sub) await sub.unsubscribe();
         const headers = await getRemoteAuthHeaders(true);
         await fetch(API_URL, { method: "POST", headers, body: JSON.stringify({ action: "delete-push" }) });
         setPushEnabled(false);
-      } else {
-        const permission = await Notification.requestPermission();
-        if (permission !== "granted") { setPushLoading(false); return; }
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-        const headers = await getRemoteAuthHeaders(true);
-        await fetch(API_URL, { method: "POST", headers, body: JSON.stringify({ action: "save-push", subscription: sub.toJSON() }) });
-        setPushEnabled(true);
+      } catch (e) {
+        console.error("Push error:", e);
       }
+      setPushLoading(false);
+      return;
+    }
+    const state = pushDeviceState();
+    if (state === "ios-install") {
+      setPushNotice("iphone-instalar");
+      return;
+    }
+    if (state === "unsupported") {
+      setPushNotice("no-soportado");
+      return;
+    }
+    if (state === "denied") {
+      setPushNotice("bloqueado");
+      return;
+    }
+    setPushLoading(true);
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      const permission = await Notification.requestPermission();
+      if (permission !== "granted") { setPushLoading(false); return; }
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+      const headers = await getRemoteAuthHeaders(true);
+      await fetch(API_URL, { method: "POST", headers, body: JSON.stringify({ action: "save-push", subscription: sub.toJSON() }) });
+      setPushEnabled(true);
     } catch (e) {
       console.error("Push error:", e);
     }
@@ -4115,6 +4149,21 @@ export default function App() {
                 onClick={() => { confirmModal.onConfirm(); setConfirmModal(null); }}>
                 {confirmModal.danger ? "Sí, eliminar" : "Eliminar"}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {pushNotice && (
+        <div className="confirm-overlay" onClick={() => setPushNotice(null)}>
+          <div className="confirm-modal" onClick={e => e.stopPropagation()}>
+            <div className="confirm-icon">{pushNotice === "iphone-instalar" ? "📲" : "🔕"}</div>
+            <p className="confirm-msg">
+              {pushNotice === "iphone-instalar" && "En iPhone, Apple solo permite activar notificaciones si instalas la app primero: toca el botón Compartir de Safari → \"Agregar a inicio\", abre Mamá CEO desde ese ícono y vuelve aquí para activarlas."}
+              {pushNotice === "no-soportado" && "Tu navegador no admite notificaciones push. Probá desde Chrome, Edge o Safari actualizado."}
+              {pushNotice === "bloqueado" && "Tienes las notificaciones bloqueadas para este sitio. Actívalas desde los ajustes de permisos de tu navegador y vuelve a intentar."}
+            </p>
+            <div className="confirm-actions">
+              <button className="confirm-ok" onClick={() => setPushNotice(null)}>Entendido</button>
             </div>
           </div>
         </div>
