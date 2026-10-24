@@ -1,6 +1,13 @@
 /**
  * Lambda: mamaceo-push-daily
- * Trigger: EventBridge cron  cron(0 13 * * ? *)  = 8:00 AM Colombia (UTC-5)
+ * Trigger: EventBridge cron  cron(0/15 * * * ? *)  = cada 15 minutos
+ *
+ * Cambio de frecuencia (antes 1x al día a las 8am fijas para todas):
+ * ahora corre cada 15 min y cada usuaria recibe su recordatorio en la
+ * hora que ELLA configuró (reminderTime), con contenido real (sus citas
+ * de hoy/mañana) en vez de un mensaje genérico igual para todas — igual
+ * que en Creanautas. Colombia no tiene horario de verano, así que se usa
+ * un offset fijo de UTC-5 para calcular "hoy" y "ahora" de cada usuaria.
  *
  * Env vars requeridas:
  *   TABLE_NAME        — igual que mamaceo-user-data (default: user_states)
@@ -22,9 +29,13 @@ const VAPID_PUBLIC  = process.env.VAPID_PUBLIC_KEY;
 const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY;
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:hola@mamaceo.co';
 
-const NOTIF_TITLE = 'Mamá CEO 🌸';
-const NOTIF_BODY  = 'Hola mamá CEO, hoy es un nuevo día para continuar con tu propósito.';
-const NOTIF_URL   = '/';
+const WINDOW_MIN = 15; // debe coincidir con la frecuencia del cron
+
+const FALLBACK_GREETINGS = [
+  '¡Hoy es un gran día para tu negocio! 🌸',
+  'Un paso a la vez — hoy también cuenta. 💪',
+  'Respira, organiza, avanza. Tu día te espera. 🌼',
+];
 
 // ── VAPID JWT (ES256) sin dependencias externas ──────────────────────────────
 
@@ -36,7 +47,6 @@ function vapidJwt(endpoint) {
   })).toString('base64url');
   const sigInput = `${header}.${payload}`;
 
-  // Construir JWK desde los bytes raw de las claves VAPID
   const pubBytes = Buffer.from(VAPID_PUBLIC, 'base64url');
   const x = pubBytes.slice(1, 33).toString('base64url');
   const y = pubBytes.slice(33, 65).toString('base64url');
@@ -48,23 +58,64 @@ function vapidJwt(endpoint) {
   return `${sigInput}.${sig.toString('base64url')}`;
 }
 
-// ── Enviar push vacío (sin payload cifrado) ───────────────────────────────────
-// El service worker muestra el mensaje hardcodeado en sw.js
-async function sendPush(sub) {
-  const { endpoint } = sub;
+// ── Cifrado del contenido (RFC 8291 — aes128gcm), sin dependencias ──────────
+
+function hkdfExtract(salt, ikm) {
+  return crypto.createHmac('sha256', salt).update(ikm).digest();
+}
+function hkdfExpand(prk, info, len) {
+  return crypto.createHmac('sha256', prk).update(Buffer.concat([info, Buffer.from([1])])).digest().subarray(0, len);
+}
+
+function encryptPayload(p256dh, authSecretB64, plaintext) {
+  const uaPublic = Buffer.from(p256dh, 'base64url');
+  const authSecret = Buffer.from(authSecretB64, 'base64url');
+
+  const ecdh = crypto.createECDH('prime256v1');
+  ecdh.generateKeys();
+  const asPublic = ecdh.getPublicKey();
+  const sharedSecret = ecdh.computeSecret(uaPublic);
+
+  const salt = crypto.randomBytes(16);
+
+  const prkKey = hkdfExtract(authSecret, sharedSecret);
+  const keyInfo = Buffer.concat([Buffer.from('WebPush: info'), Buffer.from([0x00]), uaPublic, asPublic]);
+  const ikm = hkdfExpand(prkKey, keyInfo, 32);
+
+  const prk = hkdfExtract(salt, ikm);
+  const cek   = hkdfExpand(prk, Buffer.concat([Buffer.from('Content-Encoding: aes128gcm'), Buffer.from([0x00])]), 16);
+  const nonce = hkdfExpand(prk, Buffer.concat([Buffer.from('Content-Encoding: nonce'),      Buffer.from([0x00])]), 12);
+
+  const padded = Buffer.concat([plaintext, Buffer.from([0x02])]); // delimitador, sin padding extra
+  const cipher = crypto.createCipheriv('aes-128-gcm', cek, nonce);
+  const ciphertext = Buffer.concat([cipher.update(padded), cipher.final(), cipher.getAuthTag()]);
+
+  const recordSize = Buffer.alloc(4);
+  recordSize.writeUInt32BE(4096, 0);
+  const header = Buffer.concat([salt, recordSize, Buffer.from([asPublic.length]), asPublic]);
+
+  return Buffer.concat([header, ciphertext]);
+}
+
+// ── Enviar push con contenido cifrado ─────────────────────────────────────────
+
+async function sendPush(sub, payloadObj) {
+  const { endpoint, keys } = sub;
   const jwt = vapidJwt(endpoint);
+  const body = encryptPayload(keys.p256dh, keys.auth, Buffer.from(JSON.stringify(payloadObj)));
   const res = await fetch(endpoint, {
     method: 'POST',
     headers: {
       Authorization: `vapid t=${jwt},k=${VAPID_PUBLIC}`,
+      'Content-Encoding': 'aes128gcm',
+      'Content-Type': 'application/octet-stream',
       TTL: '86400',
-      'Content-Length': '0',
     },
+    body,
   });
   return res.status;
 }
 
-// ── Eliminar suscripción vencida ──────────────────────────────────────────────
 async function removeSub(userId) {
   await dynamo.send(new UpdateItemCommand({
     TableName: TABLE,
@@ -73,41 +124,119 @@ async function removeSub(userId) {
   }));
 }
 
+async function markSentToday(userId, todayISO) {
+  await dynamo.send(new UpdateItemCommand({
+    TableName: TABLE,
+    Key: marshall({ user_id: userId }),
+    UpdateExpression: 'SET push_last_sent = :d',
+    ExpressionAttributeValues: marshall({ ':d': todayISO }),
+  }));
+}
+
+// ── Hora de Colombia (UTC-5 fijo, sin horario de verano) ─────────────────────
+
+function colombiaParts(d = new Date()) {
+  const shifted = new Date(d.getTime() - 5 * 3600 * 1000);
+  return {
+    dateISO: shifted.toISOString().slice(0, 10),
+    minutesSinceMidnight: shifted.getUTCHours() * 60 + shifted.getUTCMinutes(),
+    dayOfYear: Math.floor((shifted - new Date(Date.UTC(shifted.getUTCFullYear(), 0, 0))) / 86400000),
+  };
+}
+
+function daysBetweenISO(dateStrA, dateStrB) {
+  const [ya, ma, da] = dateStrA.split('-').map(Number);
+  const [yb, mb, db] = dateStrB.split('-').map(Number);
+  return Math.round((Date.UTC(ya, ma - 1, da) - Date.UTC(yb, mb - 1, db)) / 86400000);
+}
+
+function parseTimeToMinutes(hhmm) {
+  const [h, m] = String(hhmm || '08:00').split(':').map(Number);
+  return (Number.isFinite(h) ? h : 8) * 60 + (Number.isFinite(m) ? m : 0);
+}
+
+// ── Construir el contenido real de la notificación ────────────────────────────
+
+// Recorta una lista de títulos a máximo `max` nombres, agregando "+N más" si sobran.
+function joinCapped(titles, max = 3) {
+  const clean = titles.filter(Boolean);
+  if (clean.length <= max) return clean.join(', ');
+  return `${clean.slice(0, max).join(', ')} +${clean.length - max} más`;
+}
+
+function buildContent(data, todayISO, dayOfYear) {
+  const appts = Array.isArray(data?.appointments) ? data.appointments : [];
+  const relevantAppts = appts.filter((a) => a?.date && (daysBetweenISO(a.date, todayISO) === 0 || daysBetweenISO(a.date, todayISO) === 1));
+  const hoyAppts    = relevantAppts.filter((a) => daysBetweenISO(a.date, todayISO) === 0).map((a) => a.title);
+  const mananaAppts = relevantAppts.filter((a) => daysBetweenISO(a.date, todayISO) === 1).map((a) => a.title);
+
+  const bizTasks  = (Array.isArray(data?.tasks) ? data.tasks : []).filter((t) => !t?.done && t?.dueDate === todayISO).map((t) => t.text);
+  const homeTasks = (Array.isArray(data?.homeTasks) ? data.homeTasks : []).filter((t) => !t?.done && t?.dueDate === todayISO).map((t) => t.title);
+
+  const hasAnything = hoyAppts.length || mananaAppts.length || bizTasks.length || homeTasks.length;
+  if (!hasAnything) {
+    return {
+      title: 'Mamá CEO 🌸',
+      body: FALLBACK_GREETINGS[dayOfYear % FALLBACK_GREETINGS.length],
+      url: '/',
+    };
+  }
+
+  const parts = [];
+  if (hoyAppts.length)  parts.push(`Hoy: ${joinCapped(hoyAppts)}`);
+  if (bizTasks.length)  parts.push(`Tareas: ${joinCapped(bizTasks)}`);
+  if (homeTasks.length) parts.push(`Hogar: ${joinCapped(homeTasks)}`);
+  if (mananaAppts.length) parts.push(`Mañana: ${joinCapped(mananaAppts)}`);
+
+  return { title: 'Mamá CEO 🌸 — Tu día', body: parts.join(' · '), url: '/' };
+}
+
 // ── Handler ───────────────────────────────────────────────────────────────────
+
 export const handler = async () => {
   if (!VAPID_PUBLIC || !VAPID_PRIVATE) {
     console.error('Faltan VAPID_PUBLIC_KEY o VAPID_PRIVATE_KEY en las variables de entorno');
     return { statusCode: 500, body: 'VAPID keys not configured' };
   }
 
-  // Escanear tabla buscando usuarios con push_sub
+  const { dateISO: todayISO, minutesSinceMidnight: nowMin, dayOfYear } = colombiaParts();
+
   let lastKey;
-  const subscriptions = [];
+  const rows = [];
   do {
     const res = await dynamo.send(new ScanCommand({
       TableName: TABLE,
       FilterExpression: 'attribute_exists(push_sub)',
-      ProjectionExpression: 'user_id, push_sub',
+      ProjectionExpression: 'user_id, push_sub, #d, push_last_sent',
+      ExpressionAttributeNames: { '#d': 'data' },
       ExclusiveStartKey: lastKey,
     }));
     for (const item of res.Items || []) {
-      const row = unmarshall(item);
-      subscriptions.push({ userId: row.user_id, sub: row.push_sub });
+      rows.push(unmarshall(item));
     }
     lastKey = res.LastEvaluatedKey;
   } while (lastKey);
 
-  console.log(`Enviando a ${subscriptions.length} suscripciones`);
+  const due = rows.filter((row) => {
+    const data = row.data || {};
+    if (data.reminderEnabled === false) return false;
+    if (row.push_last_sent === todayISO) return false; // ya se le envió hoy
+    const targetMin = parseTimeToMinutes(data.reminderTime);
+    return nowMin >= targetMin && nowMin < targetMin + WINDOW_MIN;
+  });
+
+  console.log(`${rows.length} suscripciones totales, ${due.length} dentro de su ventana horaria ahora`);
 
   let ok = 0, expired = 0, errors = 0;
   await Promise.allSettled(
-    subscriptions.map(async ({ userId, sub }) => {
+    due.map(async ({ user_id: userId, push_sub: sub, data }) => {
       try {
-        const status = await sendPush(sub);
+        const payload = buildContent(data, todayISO, dayOfYear);
+        const status = await sendPush(sub, payload);
         if (status === 201 || status === 202 || status === 200) {
           ok++;
+          await markSentToday(userId, todayISO);
         } else if (status === 404 || status === 410) {
-          // Suscripción vencida — eliminar de la BD
           await removeSub(userId);
           expired++;
         } else {
@@ -121,6 +250,6 @@ export const handler = async () => {
     })
   );
 
-  console.log(JSON.stringify({ ok, expired, errors, total: subscriptions.length }));
+  console.log(JSON.stringify({ ok, expired, errors, checked: rows.length, due: due.length }));
   return { statusCode: 200, body: JSON.stringify({ ok, expired, errors }) };
 };

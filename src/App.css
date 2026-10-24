@@ -2035,6 +2035,18 @@ button {
   .home-budget-row input {
     width: 100%;
   }
+
+  .business-panel-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .home-budget-form {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .home-budget-form > *:last-child {
+    grid-column: 1 / -1;
+  }
 }
 
 .helper-copy {
