@@ -157,15 +157,24 @@ function parseTimeToMinutes(hhmm) {
 
 // ── Construir el contenido real de la notificación ────────────────────────────
 
+// Recorta una lista de títulos a máximo `max` nombres, agregando "+N más" si sobran.
+function joinCapped(titles, max = 3) {
+  const clean = titles.filter(Boolean);
+  if (clean.length <= max) return clean.join(', ');
+  return `${clean.slice(0, max).join(', ')} +${clean.length - max} más`;
+}
+
 function buildContent(data, todayISO, dayOfYear) {
   const appts = Array.isArray(data?.appointments) ? data.appointments : [];
-  const relevant = appts.filter((a) => {
-    if (!a?.date) return false;
-    const diff = daysBetweenISO(a.date, todayISO);
-    return diff === 0 || diff === 1;
-  });
+  const relevantAppts = appts.filter((a) => a?.date && (daysBetweenISO(a.date, todayISO) === 0 || daysBetweenISO(a.date, todayISO) === 1));
+  const hoyAppts    = relevantAppts.filter((a) => daysBetweenISO(a.date, todayISO) === 0).map((a) => a.title);
+  const mananaAppts = relevantAppts.filter((a) => daysBetweenISO(a.date, todayISO) === 1).map((a) => a.title);
 
-  if (!relevant.length) {
+  const bizTasks  = (Array.isArray(data?.tasks) ? data.tasks : []).filter((t) => !t?.done && t?.dueDate === todayISO).map((t) => t.text);
+  const homeTasks = (Array.isArray(data?.homeTasks) ? data.homeTasks : []).filter((t) => !t?.done && t?.dueDate === todayISO).map((t) => t.title);
+
+  const hasAnything = hoyAppts.length || mananaAppts.length || bizTasks.length || homeTasks.length;
+  if (!hasAnything) {
     return {
       title: 'Mamá CEO 🌸',
       body: FALLBACK_GREETINGS[dayOfYear % FALLBACK_GREETINGS.length],
@@ -173,13 +182,13 @@ function buildContent(data, todayISO, dayOfYear) {
     };
   }
 
-  const hoy    = relevant.filter((a) => daysBetweenISO(a.date, todayISO) === 0).map((a) => a.title).filter(Boolean);
-  const manana = relevant.filter((a) => daysBetweenISO(a.date, todayISO) === 1).map((a) => a.title).filter(Boolean);
-  let body = '';
-  if (hoy.length)    body += `Hoy: ${hoy.join(', ')}. `;
-  if (manana.length) body += `Mañana: ${manana.join(', ')}.`;
+  const parts = [];
+  if (hoyAppts.length)  parts.push(`Hoy: ${joinCapped(hoyAppts)}`);
+  if (bizTasks.length)  parts.push(`Tareas: ${joinCapped(bizTasks)}`);
+  if (homeTasks.length) parts.push(`Hogar: ${joinCapped(homeTasks)}`);
+  if (mananaAppts.length) parts.push(`Mañana: ${joinCapped(mananaAppts)}`);
 
-  return { title: 'Mamá CEO 🌸 — Tu día', body: body.trim() || FALLBACK_GREETINGS[dayOfYear % FALLBACK_GREETINGS.length], url: '/' };
+  return { title: 'Mamá CEO 🌸 — Tu día', body: parts.join(' · '), url: '/' };
 }
 
 // ── Handler ───────────────────────────────────────────────────────────────────
