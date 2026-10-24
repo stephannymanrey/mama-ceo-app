@@ -640,7 +640,7 @@ function guardarUtms(userId) {
   }).catch(() => {});
 }
 
-const VAPID_PUBLIC_KEY = "BINOW9l20bWcrxQrKGise-5tzw5kblFIqskpCTiqeWscNIwp5qoZEnTI45letfo3qXCHnzKzBPQXH9_2ghxDhB4";
+const VAPID_PUBLIC_KEY = "BButmcQn0JWIwrEtAkhvSuSBkcxRZSH-i7VcSn4-z1AI_pVA6OLyN8QJ3iFwDs0JyZOFKPxAo47o8CT5_wN4MuA";
 function urlBase64ToUint8Array(b64) {
   const pad = "=".repeat((4 - b64.length % 4) % 4);
   const raw = atob((b64 + pad).replace(/-/g, "+").replace(/_/g, "/"));
