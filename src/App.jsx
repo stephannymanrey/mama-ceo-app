@@ -1167,6 +1167,7 @@ export default function App() {
 
   useEffect(() => {
     if (!("Notification" in window)) return;
+    if (pushEnabled) return; // con push real activo, el servidor ya la avisa aunque la pestaña esté cerrada
     const askAndNotify = async () => {
       if (Notification.permission === "default") await Notification.requestPermission();
       if (Notification.permission !== "granted") return;
@@ -1224,6 +1225,7 @@ export default function App() {
     const delay = Math.max(0, ms);
     const timer = setTimeout(() => {
       playChime();
+      if (pushEnabled) return; // evita duplicar: el push real del servidor ya trae el contenido
       if (Notification.permission !== "granted") return;
       const t0 = new Date(); t0.setHours(0,0,0,0);
       const soon = appointments.filter(a => {
@@ -1241,7 +1243,7 @@ export default function App() {
       new Notification("MamaCEO 🌸 — Buenos días", { body, icon: "/logo.png" });
     }, delay);
     return () => clearTimeout(timer);
-  }, [reminderEnabled, reminderTime, appointments]);
+  }, [reminderEnabled, reminderTime, appointments, pushEnabled]);
 
   // Detectar redirect de Mercado Pago después de que usuaria aprueba suscripción
   useEffect(() => {
