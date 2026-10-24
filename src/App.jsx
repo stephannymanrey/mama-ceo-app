@@ -1148,9 +1148,10 @@ export default function App() {
       return;
     }
     setPushLoading(true);
+    const timeout = (ms) => new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), ms));
     try {
-      const reg = await navigator.serviceWorker.ready;
-      const permission = await Notification.requestPermission();
+      const reg = await Promise.race([navigator.serviceWorker.ready, timeout(10000)]);
+      const permission = await Promise.race([Notification.requestPermission(), timeout(30000)]);
       if (permission !== "granted") { setPushLoading(false); return; }
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
@@ -1161,6 +1162,7 @@ export default function App() {
       setPushEnabled(true);
     } catch (e) {
       console.error("Push error:", e);
+      setPushNotice(e?.message === "timeout" ? "no-soportado" : "error-generico");
     }
     setPushLoading(false);
   }
@@ -4163,6 +4165,7 @@ export default function App() {
               {pushNotice === "iphone-instalar" && "En iPhone, Apple solo permite activar notificaciones si instalas la app primero: toca el botón Compartir de Safari → \"Agregar a inicio\", abre Mamá CEO desde ese ícono y vuelve aquí para activarlas."}
               {pushNotice === "no-soportado" && "Tu navegador no admite notificaciones push. Probá desde Chrome, Edge o Safari actualizado."}
               {pushNotice === "bloqueado" && "Tienes las notificaciones bloqueadas para este sitio. Actívalas desde los ajustes de permisos de tu navegador y vuelve a intentar."}
+              {pushNotice === "error-generico" && "No pudimos activar las notificaciones. Revisa que tu navegador permita notificaciones para este sitio y vuelve a intentar."}
             </p>
             <div className="confirm-actions">
               <button className="confirm-ok" onClick={() => setPushNotice(null)}>Entendido</button>
