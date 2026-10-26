@@ -1450,6 +1450,14 @@ export default function App() {
   const activeClients = clients.filter((client) => ["Lead tibio", "Lead caliente", "Venta ganada"].includes(client.status)).length;
   const publishedContent = contentItems.filter((item) => item.status === "Publicado").length;
   const pendingHomeTasks = homeTasks.filter((task) => !task.done);
+  // Bitácora de avance por cliente — reemplaza el campo suelto de notas.
+  // Si un cliente viejo solo tiene `notes` (texto plano, sin log), se muestra
+  // como primera entrada de la bitácora sin necesidad de migrar datos.
+  const getProgressLog = (client) => {
+    if (Array.isArray(client.progressLog)) return client.progressLog;
+    if (client.notes) return [{ id: "legacy", date: client.lastContactDate || getTodayInputValue(), text: client.notes }];
+    return [];
+  };
   const followUpClients = clients.filter((client) => ["Lead frio", "Lead tibio", "Lead caliente"].includes(client.status));
   const wonSalesTotal = clients.filter((client) => client.status === "Venta ganada").reduce((sum, client) => sum + client.amount, 0);
   const topClient = [...clients].sort((a, b) => b.amount - a.amount)[0];
@@ -2480,14 +2488,6 @@ export default function App() {
   };
   const updateContentCaption = (contentId, value) => {
     setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, caption: value } : item));
-  };
-  // Bitácora de avance por cliente — reemplaza el campo suelto de notas.
-  // Si un cliente viejo solo tiene `notes` (texto plano, sin log), se muestra
-  // como primera entrada de la bitácora sin necesidad de migrar datos.
-  const getProgressLog = (client) => {
-    if (Array.isArray(client.progressLog)) return client.progressLog;
-    if (client.notes) return [{ id: "legacy", date: client.lastContactDate || getTodayInputValue(), text: client.notes }];
-    return [];
   };
   const addProgressEntry = (clientId, text) => {
     const trimmed = text.trim();
