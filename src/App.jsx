@@ -2499,6 +2499,13 @@ export default function App() {
       ? { ...item, guion: value, status: (item.status === "Idea" && value.trim()) ? "Por grabar" : item.status, ...(caption !== undefined ? { caption } : {}) }
       : item));
   };
+  // Se usa al terminar el teleprompter y marcar "sí lo grabé" — pasa directo
+  // a "Por editar", sin importar en qué columna estaba antes.
+  const markContentRecorded = (contentId, guionText) => {
+    setContentItems((current) => current.map((item) => item.id === contentId
+      ? { ...item, guion: guionText, status: "Por editar" }
+      : item));
+  };
   const updateContentCaption = (contentId, value) => {
     setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, caption: value } : item));
   };
@@ -2620,7 +2627,7 @@ export default function App() {
   if (activeView === "studio") {
     return (
       <>
-        <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} onAddToContent={addContentFromIdea} onUpdateContentGuion={updateContentGuion} contentBoard={renderContent} />
+        <Studio onBack={() => setActiveView("dashboard")} brandProfile={brandProfile} onSaveBrandProfile={(data) => { setBrandProfile(data); setBrandForm(data); }} callGemini={callGemini} plan={effectivePlan} onAddToContent={addContentFromIdea} onUpdateContentGuion={updateContentGuion} onMarkRecorded={markContentRecorded} contentBoard={renderContent} />
         {confirmModal && (
           <div className="confirm-overlay" onClick={() => setConfirmModal(null)}>
             <div className="confirm-modal" onClick={e => e.stopPropagation()}>

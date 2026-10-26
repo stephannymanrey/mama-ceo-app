@@ -1,4 +1,5 @@
 ﻿import { useState, useEffect, useRef } from "react";
+import TeleprompterView from "./TeleprompterView";
 import "./Studio.css";
 
 const STUDIO_KEY = "mama-ceo-studio-v1";
@@ -1959,7 +1960,7 @@ function HooksTab({ saved, onSave, onCrearGuion, brandProfile = {}, callGemini, 
 }
 
 // ── GUIÓN ──────────────────────────────────────────────────────
-function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {}, callGemini, plan = "free", onAiUsed, onAddToContent, linkedContentId, onUpdateContentGuion, onLinkedSaved }) {
+function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile = {}, callGemini, plan = "free", onAiUsed, onAddToContent, linkedContentId, onUpdateContentGuion, onMarkRecorded, onLinkedSaved }) {
   const GUION_SK = "studio-guion-session";
   const _gs = seed ? {} : (() => { try { return JSON.parse(sessionStorage.getItem(GUION_SK)) || {}; } catch { return {}; } })();
   const [subTab,       setSubTab]       = useState("guion");
@@ -1977,6 +1978,7 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
   const [chatLoading,    setChatLoading]    = useState(false);
   const [captionInline,  setCaptionInline]  = useState(null);
   const [headerSaved,    setHeaderSaved]    = useState(false);
+  const [teleprompterSeed, setTeleprompterSeed] = useState(null); // string cuando el teleprompter está abierto, null cuando está cerrado
   const chatEndRef = useRef(null);
 
   useEffect(() => {
@@ -2010,6 +2012,22 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
     if (!onAddToContent) return;
     const meta = { ...(FORMATO_TO_CONTENT[formato] || {}), guion: scriptTexto, status: "Por grabar", ...(captionText ? { caption: captionText } : {}) };
     onAddToContent(script?.titulo || topic, meta);
+  };
+
+  // Al confirmar "sí lo grabé" en el teleprompter: igual que arriba, pero
+  // siempre cae en "Por editar" (ya se grabó, lo que sigue es editarlo).
+  const enviarATeleprompterContenido = (finalText) => {
+    if (linkedContentId && onMarkRecorded) {
+      onMarkRecorded(linkedContentId, finalText);
+      onLinkedSaved?.();
+      setTeleprompterSeed(null);
+      return;
+    }
+    if (onAddToContent) {
+      const meta = { ...(FORMATO_TO_CONTENT[formato] || {}), guion: finalText, status: "Por editar" };
+      onAddToContent(script?.titulo || topic || "Guión grabado", meta);
+    }
+    setTeleprompterSeed(null);
   };
 
   const generar = async () => {
@@ -2127,6 +2145,10 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                 ✨ Generar guión
               </button>
 
+              <button type="button" className="gn2-teleprompter-link" onClick={() => setTeleprompterSeed("")}>
+                🎥 ¿Ya tienes un guión? Pégalo y úsalo como teleprompter →
+              </button>
+
               {saved?.guiones?.length > 0 && (
                 <div className="studio-bank" style={{marginTop:"20px"}}>
                   <h4>Guiones guardados ({saved.guiones.length})</h4>
@@ -2175,6 +2197,9 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
                   <div style={{display:"flex",gap:"6px"}}>
                     <button className="mpm-wizard-back-btn" onClick={() => copiar(scriptTexto, "script")} title="Copiar guión completo">
                       {copiado === "script" ? "✓ Copiado" : "📋 Copiar"}
+                    </button>
+                    <button className="mpm-wizard-back-btn" onClick={() => setTeleprompterSeed(scriptTexto)} title="Usar este guión como teleprompter">
+                      🎥 Teleprompter
                     </button>
                     <button className="mpm-wizard-back-btn" onClick={() => {
                       onSave("guiones", { id: Date.now(), tema: topic, tipo: FORMATO_LABEL[formato], formato, scriptTexto, fecha: new Date().toLocaleDateString("es") });
@@ -2404,6 +2429,14 @@ function GuionTab({ saved, onSave, onDelete, seed, onSeedConsumed, brandProfile 
             </div>
           )}
         </div>
+      )}
+
+      {teleprompterSeed !== null && (
+        <TeleprompterView
+          initialText={teleprompterSeed}
+          onClose={() => setTeleprompterSeed(null)}
+          onMarkRecorded={enviarATeleprompterContenido}
+        />
       )}
     </div>
   );
@@ -3850,7 +3883,7 @@ function BrandProfileForm({ initial = {}, onSave, onCancel, isOnboarding = false
   );
 }
 
-export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, callGemini, plan = "free", onAddToContent, onUpdateContentGuion, contentBoard }) {
+export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, callGemini, plan = "free", onAddToContent, onUpdateContentGuion, onMarkRecorded, contentBoard }) {
   const [activeTab, setActiveTab] = useState("contenido");
   const [data, setData] = useState(() => loadStudio());
   const [guionSeed, setGuionSeed] = useState("");
@@ -3961,6 +3994,7 @@ export default function Studio({ onBack, brandProfile = {}, onSaveBrandProfile, 
         {activeTab === "hooks"    && <HooksTab      {...tabProps} onCrearGuion={handleCrearGuion} />}
         {activeTab === "guion"    && <GuionTab      {...tabProps} seed={guionSeed} onSeedConsumed={() => setGuionSeed("")}
                                        linkedContentId={guionLinkedContentId} onUpdateContentGuion={onUpdateContentGuion}
+                                       onMarkRecorded={onMarkRecorded}
                                        onLinkedSaved={() => setGuionLinkedContentId(null)} />}
         {activeTab === "carrusel"    && <CarruselTab     {...tabProps} />}
         {activeTab === "reproposito" && <RepropositoTab  {...tabProps} />}

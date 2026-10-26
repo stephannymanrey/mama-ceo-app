@@ -2321,6 +2321,13 @@
 }
 .gn2-save-caption-btn:hover { opacity: 0.9; transform: translateY(-1px); }
 
+.gn2-teleprompter-link {
+  display: block; width: 100%; text-align: center; margin-top: 10px;
+  background: none; border: none; cursor: pointer; font-family: inherit;
+  font-size: 13px; font-weight: 700; color: #C4526A; padding: 6px;
+}
+.gn2-teleprompter-link:hover { text-decoration: underline; }
+
 .gn2-caption-inline {
   background: #fff; border: 1.5px solid rgba(196,82,106,0.2);
   border-radius: 12px; overflow: hidden; margin-top: 4px;
