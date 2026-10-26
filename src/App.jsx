@@ -489,6 +489,7 @@ const initialProfileForm = {
   photo: "",
   businessName: "",
   businessType: "Servicios 1:1",
+  businessTypeOther: "",
   stage: "Creciendo",
   monthlyGoalSetup: "",
   mainChallenge: "Conseguir clientes"
@@ -3009,6 +3010,14 @@ export default function App() {
                       <option>Otro</option>
                     </select>
                   </label>
+                  {profileForm.businessType === "Otro" && (
+                    <label>
+                      ¿A qué se dedica tu negocio?
+                      <input placeholder="Cuéntanos a qué te dedicas" value={profileForm.businessTypeOther || ""}
+                        onChange={(e) => setProfileForm((c) => ({ ...c, businessTypeOther: e.target.value }))}
+                        required={userMode !== "mama"} />
+                    </label>
+                  )}
                   <label>
                     ¿En qué etapa está tu negocio?
                     <select value={profileForm.stage} onChange={(e) => setProfileForm((c) => ({ ...c, stage: e.target.value }))}>
