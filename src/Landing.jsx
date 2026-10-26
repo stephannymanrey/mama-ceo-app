@@ -29,7 +29,7 @@ const PLANS = [
       "Hasta 50 clientes con pipeline",
       "100 movimientos financieros al mes",
       "Studio IA: guiones, hooks e ideas",
-      "Radar de Clientas — seguimiento con IA",
+      "Seguimiento de clientas con mensajes sugeridos por IA",
       "Análisis Pareto de negocio",
     ],
     highlight: true,
@@ -44,7 +44,7 @@ const PLANS = [
       "Clientes y movimientos ilimitados",
       "200 generaciones de IA al mes",
       "Guiones largos YouTube y Podcast",
-      "Editor de video SilenceCutter",
+      "Editor de video ReelCut",
       "Reproposición de contenido con IA",
     ],
     highlight: false,
@@ -314,9 +314,9 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             <div className="landing-feat-grid">
               {[
                 { icon: "💰", title: "Finanzas claras", desc: "Registra ingresos y gastos, sigue tus metas de venta y entiende el flujo de tu negocio de un vistazo." },
-                { icon: "🤝", title: "Radar de Clientas IA", desc: "Tu pipeline prioriza quién necesita atención hoy y te sugiere el mensaje exacto de WhatsApp para retomar el contacto — con IA." },
+                { icon: "🤝", title: "Seguimiento de Clientas IA", desc: "Organiza tus leads de frío a cerrado y deja que la IA te sugiera el mensaje exacto de WhatsApp para retomar cada conversación." },
                 { icon: "✍️", title: "Studio de contenido IA", desc: "Guiones para Reels, YouTube y Podcast, hooks que detienen el scroll, ideas por categoría y lead magnets — todo con IA en segundos." },
-                { icon: "🎬", title: "Editor de video SilenceCutter", desc: "Sube tu video y elimina los silencios automáticamente. Edita en la línea de tiempo, corta con precisión y exporta listo para publicar." },
+                { icon: "🎬", title: "Editor de video ReelCut", desc: "Sube tu video, elimina los silencios automáticamente y extrae tus mejores Reels verticales con IA — listo para publicar." },
               ].map((f, i) => (
                 <div key={i} className="landing-feat-card">
                   <span className="landing-feat-icon">{f.icon}</span>
