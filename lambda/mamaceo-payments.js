@@ -19,7 +19,8 @@ import https from "https";
 import crypto from "crypto";
 import { DynamoDBClient, UpdateItemCommand, ScanCommand, GetItemCommand } from "@aws-sdk/client-dynamodb";
 import { respond } from "./_shared/respond.mjs";
-import { getMethod, getUserId } from "./_shared/auth.mjs";
+import { getMethod } from "./_shared/auth.mjs";
+import { verifyIdToken } from "./_shared/verifyJwt.mjs";
 import { checkAndIncrUserDailyLimit } from "./_shared/rateLimit.mjs";
 
 const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION || "us-east-1" });
@@ -103,17 +104,24 @@ export const handler = async (event) => {
   try { body = JSON.parse(event.body || "{}"); } catch {}
 
   const action = body.action;
-  const userId = getUserId(event);
+  // Esta ruta de API Gateway no tiene authorizer JWT (también la llama el
+  // webhook de Hotmart, que no manda token) — así que el JWT se verifica a
+  // mano aquí. Nunca uses un userId/email que venga suelto en el body para
+  // decidir a qué cuenta escribir.
+  const identity = await verifyIdToken(event);
+  const userId = identity?.sub || null;
+  const verifiedEmail = identity?.email || null;
 
   // ── 1. Guardar email del usuario (llamado desde el frontend al abrir precios) ─
   if (action === "save-email") {
-    const { userId: uid, email } = body;
-    if (!uid || !email)
+    const { email } = body;
+    if (!userId) return respond(401, { error: "No autorizada. Inicia sesión de nuevo." }, event, METHODS);
+    if (!email)
       return respond(400, { error: "Faltan campos" }, event, METHODS);
     try {
       await dynamo.send(new UpdateItemCommand({
         TableName: TABLE,
-        Key: { user_id: { S: uid } },
+        Key: { user_id: { S: userId } },
         UpdateExpression: "SET userEmail = :e",
         ExpressionAttributeValues: { ":e": { S: email.toLowerCase() } },
       }));
@@ -219,6 +227,7 @@ export const handler = async (event) => {
 
   // ── 3. Verificar suscripción PayPal (backup) ───────────────────────────────
   if (action === "verify-paypal") {
+    if (!userId) return respond(401, { error: "No autorizada. Inicia sesión de nuevo." }, event, METHODS);
     const { subscriptionId, planType } = body;
     if (!subscriptionId || !planType)
       return respond(400, { error: "Faltan campos" }, event, METHODS);
@@ -244,15 +253,16 @@ export const handler = async (event) => {
 
     const premiumExpiresAt = Date.now() + 35 * 24 * 60 * 60 * 1000;
 
-    if (userId) {
-      try {
-        await dynamo.send(new UpdateItemCommand({
-          TableName: TABLE,
-          Key: { user_id: { S: userId } },
-          UpdateExpression: "SET userPlan = :p, premiumExpiresAt = :e, ppSubscriptionId = :s",
-          ExpressionAttributeValues: { ":p": { S: planType }, ":e": { N: String(premiumExpiresAt) }, ":s": { S: subscriptionId } },
-        }));
-      } catch (e) { console.error("DynamoDB:", e.message); }
+    try {
+      await dynamo.send(new UpdateItemCommand({
+        TableName: TABLE,
+        Key: { user_id: { S: userId } },
+        UpdateExpression: "SET userPlan = :p, premiumExpiresAt = :e, ppSubscriptionId = :s",
+        ExpressionAttributeValues: { ":p": { S: planType }, ":e": { N: String(premiumExpiresAt) }, ":s": { S: subscriptionId } },
+      }));
+    } catch (e) {
+      console.error("DynamoDB:", e.message);
+      return respond(500, { success: false, error: "El pago se verificó pero no pudimos activar tu plan. Escríbenos para activarlo a mano." }, event, METHODS);
     }
 
     return respond(200, { success: true, planType, premiumExpiresAt }, event, METHODS);
@@ -260,9 +270,13 @@ export const handler = async (event) => {
 
   // ── 4. Activar plan pendiente de Hotmart al iniciar sesión ─────────────────
   if (action === "check-pending-hotmart") {
-    const { userId: uid, email } = body;
-    if (!uid || !email)
-      return respond(400, { error: "Faltan campos" }, event, METHODS);
+    if (!userId) return respond(401, { error: "No autorizada. Inicia sesión de nuevo." }, event, METHODS);
+    // El email SIEMPRE sale del token verificado, nunca del body — si no, con
+    // solo cambiar un campo cualquiera podría robarse la activación pendiente
+    // de otra persona que sí pagó.
+    const email = verifiedEmail;
+    if (!email)
+      return respond(200, { pending: false }, event, METHODS);
 
     try {
       const result = await dynamo.send(new GetItemCommand({
@@ -282,7 +296,7 @@ export const handler = async (event) => {
       // Mover activación pendiente al usuario real
       await dynamo.send(new UpdateItemCommand({
         TableName: TABLE,
-        Key: { user_id: { S: uid } },
+        Key: { user_id: { S: userId } },
         UpdateExpression: "SET userPlan = :p, premiumExpiresAt = :e, userEmail = :em",
         ExpressionAttributeValues: {
           ":p":  { S: planType },

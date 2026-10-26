@@ -1879,7 +1879,22 @@ export default function App() {
           applyLoadedState(remoteState || createBlankUserState());
           setCloudReadyUserId(user.id);
           setSyncError("");
-          // check-pending-hotmart temporalmente desactivado
+          // Activación pendiente de Hotmart (si pagó antes de crear la cuenta).
+          // La Lambda verifica el JWT a mano — no manda userId/email sueltos.
+          try {
+            const headers = await getRemoteAuthHeaders(true);
+            const res = await fetch(PAYMENTS_URL, {
+              method: "POST", mode: "cors", headers,
+              body: JSON.stringify({ action: "check-pending-hotmart" }),
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!cancelled && json.pending && json.planType) {
+              setUserPlan(json.planType);
+              setPremiumExpiresAt(json.premiumExpiresAt);
+            }
+          } catch (err) {
+            console.error("Error verificando activación pendiente de Hotmart:", err);
+          }
         } else {
           const storedState = loadState();
           if (!cancelled) applyLoadedState(storedState || createBlankUserState());
