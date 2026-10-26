@@ -3235,7 +3235,7 @@ export default function App() {
           </a>
           <a
             className="sidebar-tool-btn sidebar-miniapp-btn"
-            href="https://www.umpacademy.co"
+            href="https://academy.unamamaconproposito.co"
             target="_blank"
             rel="noopener noreferrer"
             title="UMP Academy — Aprende a monetizar tu negocio">

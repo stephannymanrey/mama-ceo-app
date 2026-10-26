@@ -426,13 +426,14 @@ export default function InvoicingTool({ onBack, clients = [], currency = "USD", 
 
 function DocumentPrintView({ doc, settings, profileSetup, money, currency, onClose }) {
   const fmt = (n) => (money ? money.format(n) : `${currency} ${Number(n || 0).toFixed(2)}`);
+  const businessName = profileSetup?.businessName || "Tu negocio";
   return (
     <div className="inv-print-wrap">
       <div className="inv-print-toolbar">
         <button type="button" onClick={onClose}>← Volver</button>
         <div style={{ textAlign: "right" }}>
-          <button type="button" className="inv-btn inv-btn--primary" onClick={() => window.print()}>Descargar PDF</button>
-          <p className="inv-print-hint">Se abrirá para imprimir — elige "Guardar como PDF".</p>
+          <button type="button" className="inv-btn inv-btn--primary inv-btn--download" onClick={() => window.print()}>⬇ Descargar PDF</button>
+          <p className="inv-print-hint">Se abrirá el diálogo de impresión. Elige <strong>"Guardar como PDF"</strong>, y en "Más ajustes" <strong>desmarca "Encabezados y pies de página"</strong> — así no sale la dirección web, solo tu información.</p>
         </div>
       </div>
       <div className="inv-print-doc">
@@ -500,6 +501,7 @@ function DocumentPrintView({ doc, settings, profileSetup, money, currency, onClo
           </div>
         )}
       </div>
+      <div className="inv-print-footer">{businessName} · {doc.issueDate}</div>
     </div>
   );
 }

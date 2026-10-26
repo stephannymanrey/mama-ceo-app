@@ -208,7 +208,7 @@
                           <>
                             {suggestion.auto && <p>⚡ <strong>Automatizar:</strong> {suggestion.auto}</p>}
                             {suggestion.delegate && <p>🤝 <strong>Delegar:</strong> {suggestion.delegate}</p>}
-                            <a href="https://www.umpacademy.co/membresia" target="_blank" rel="noreferrer" className="ump-link">🎓 Aprende cómo en UMP Academy →</a>
+                            <a href="https://academy.unamamaconproposito.co" target="_blank" rel="noreferrer" className="ump-link">🎓 Aprende cómo en UMP Academy →</a>
                           </>
                         )}
                       </div>
