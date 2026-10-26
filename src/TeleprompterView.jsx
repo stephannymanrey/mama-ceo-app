@@ -133,9 +133,9 @@ export default function TeleprompterView({ initialText = "", onClose, onMarkReco
       <div className="tp-bar">
         <button type="button" className="tp-bar-btn" onClick={() => setPaused((p) => !p)}>{paused ? "▶ Reanudar" : "⏸ Pausar"}</button>
         <div className="tp-speed">
-          <button type="button" className="tp-bar-btn" onClick={() => setSpeed((s) => Math.max(0.3, +(s - 0.1).toFixed(1)))}>− Más lento</button>
+          <button type="button" className="tp-bar-btn" onClick={() => setSpeed((s) => Math.max(0.3, +(s - 0.25).toFixed(2)))}>− Más lento</button>
           <span>{Math.round(speed * 100)}%</span>
-          <button type="button" className="tp-bar-btn" onClick={() => setSpeed((s) => Math.min(2.5, +(s + 0.1).toFixed(1)))}>+ Más rápido</button>
+          <button type="button" className="tp-bar-btn" onClick={() => setSpeed((s) => Math.min(5, +(s + 0.25).toFixed(2)))}>+ Más rápido</button>
         </div>
         <button type="button" className="tp-bar-btn tp-bar-btn--end" onClick={finish}>⏹ Terminar</button>
       </div>
