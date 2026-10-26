@@ -35,7 +35,7 @@
 .tp-confirm-actions { display: flex; flex-direction: column; gap: 10px; }
 
 /* ── Modo pantalla completa ── */
-.tp-overlay--full { padding: 0; flex-direction: column; background: #0A0806; }
+.tp-overlay--full { padding: 0; flex-direction: column; align-items: stretch; justify-content: flex-start; background: #0A0806; }
 .tp-bar {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
   padding: 12px 20px; background: rgba(0,0,0,0.6); flex-wrap: wrap;
@@ -47,7 +47,7 @@
 .tp-bar-btn--end { background: var(--pink); border-color: var(--pink); }
 .tp-speed { display: flex; align-items: center; gap: 10px; color: #fff; font-size: 13px; font-weight: 700; }
 
-.tp-scroll { flex: 1; overflow-y: auto; scrollbar-width: none; position: relative; }
+.tp-scroll { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; position: relative; }
 .tp-scroll::-webkit-scrollbar { display: none; }
 .tp-spacer-top { height: 45vh; }
 .tp-spacer-bottom { height: 70vh; }
