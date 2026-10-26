@@ -80,8 +80,22 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
   const [imgError, setImgError] = useState(false);
   const [urlCopied, setUrlCopied] = useState(false);
   const [emailInput, setEmailInput] = useState("");
+  const [trm, setTrm] = useState(null);
 
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: "smooth" });
+
+  // TRM oficial del día (datos.gov.co — Superfinanciera) para mostrar el precio en
+  // USD real, no una conversión vieja hardcodeada. Si falla, se usan los valores
+  // de respaldo fijos en PLANS (nunca se rompe el precio por un fetch fallido).
+  useEffect(() => {
+    fetch("https://www.datos.gov.co/resource/32sa-8pi3.json?$order=vigenciadesde%20DESC&$limit=1")
+      .then((r) => r.json())
+      .then((data) => {
+        const v = Number(data?.[0]?.valor);
+        if (Number.isFinite(v) && v > 0) setTrm(v);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -362,7 +376,10 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             {PLANS.map((plan) => {
               const p = prices[plan.id];
               const priceLabel = isYearly ? p.copYear : p.cop;
-              const usdLabel   = isYearly ? p.usdYear : p.usd;
+              const copNumber  = Number(priceLabel.replace(/\D/g, ""));
+              const usdLabel   = trm && copNumber
+                ? `~$${Math.round(copNumber / trm).toLocaleString("en-US")}`
+                : (isYearly ? p.usdYear : p.usd); // respaldo si la TRM no cargó
               const link       = isYearly ? hotmartLinksYear[plan.id] : hotmartLinks[plan.id];
               return (
                 <div key={plan.id} className={`landing-plan-card${plan.highlight ? " landing-plan-featured" : ""}`}>

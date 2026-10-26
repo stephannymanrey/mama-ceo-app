@@ -749,6 +749,19 @@ export default function App() {
   const [paymentMessage, setPaymentMessage] = useState(null);
   const [upgradeModal, setUpgradeModal] = useState(null);
   const [pricingCycle, setPricingCycle] = useState("monthly");
+  const [trm, setTrm] = useState(null);
+  // TRM oficial del día (datos.gov.co — Superfinanciera) para el precio en USD
+  // real en la pantalla de planes. Si falla, se usan los valores de respaldo
+  // fijos en PLAN_PRICES — nunca se rompe el precio por un fetch fallido.
+  useEffect(() => {
+    fetch("https://www.datos.gov.co/resource/32sa-8pi3.json?$order=vigenciadesde%20DESC&$limit=1")
+      .then((r) => r.json())
+      .then((data) => {
+        const v = Number(data?.[0]?.valor);
+        if (Number.isFinite(v) && v > 0) setTrm(v);
+      })
+      .catch(() => {});
+  }, []);
   const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
   const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/chrome|crios|fxios/i.test(navigator.userAgent);
 
@@ -7977,11 +7990,20 @@ export default function App() {
                   <h3 style={{margin:"0 0 4px",fontSize:"18px",color:"var(--ink)",fontWeight:700}}>{plan.name}</h3>
                   <p style={{margin:"0 0 8px",fontSize:"13px",color:"var(--muted)",lineHeight:1.5}}>{plan.desc}</p>
                   {plan.forYou && <p style={{margin:"0 0 14px",fontSize:"12px",color:"var(--purple)",fontWeight:600,lineHeight:1.4,fontStyle:"italic"}}>{plan.forYou}</p>}
-                  <div style={{marginBottom:"16px"}}>
-                    <span style={{fontSize:"30px",fontWeight:800,color:"var(--ink)"}}>{isYearly ? PLAN_PRICES[plan.id].copYear : plan.price}</span>
-                    <span style={{fontSize:"14px",color:"var(--muted)",marginLeft:"4px"}}>{isYearly?"COP/año":"COP/mes"}</span>
-                    <div style={{fontSize:"12px",color:"var(--muted)",marginTop:"2px"}}>{isYearly ? PLAN_PRICES[plan.id].usdYear : plan.priceUsd} USD</div>
-                  </div>
+                  {(() => {
+                    const copLabel = isYearly ? PLAN_PRICES[plan.id].copYear : plan.price;
+                    const copNumber = Number(copLabel.replace(/\D/g, ""));
+                    const usdLabel = trm && copNumber
+                      ? `~$${Math.round(copNumber / trm).toLocaleString("en-US")}`
+                      : (isYearly ? PLAN_PRICES[plan.id].usdYear : plan.priceUsd); // respaldo si la TRM no cargó
+                    return (
+                      <div style={{marginBottom:"16px"}}>
+                        <span style={{fontSize:"30px",fontWeight:800,color:"var(--ink)"}}>{copLabel}</span>
+                        <span style={{fontSize:"14px",color:"var(--muted)",marginLeft:"4px"}}>{isYearly?"COP/año":"COP/mes"}</span>
+                        <div style={{fontSize:"12px",color:"var(--muted)",marginTop:"2px"}}>{usdLabel} USD</div>
+                      </div>
+                    );
+                  })()}
                   <div style={{display:"grid",gap:"8px",marginBottom:"20px"}}>
                     {plan.features.map((f)=>(<div key={f} style={{display:"flex",alignItems:"flex-start",gap:"8px",fontSize:"13px",lineHeight:1.4}}><span style={{color:"var(--pink)",flexShrink:0,marginTop:"1px"}}>✓</span><span style={{color:"var(--ink)"}}>{f}</span></div>))}
                   </div>
