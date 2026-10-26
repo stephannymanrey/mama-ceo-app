@@ -4,7 +4,9 @@ import "./InvoicingTool.css";
 
 const EMPTY_ITEM = { description: "", quantity: 1, unitPrice: "" };
 
-function blankForm() {
+const DEFAULT_TERMS = "Este precio aplica por 30 días a partir de la fecha de emisión de esta cotización.";
+
+function blankForm(terms = DEFAULT_TERMS) {
   return {
     clientId: "",
     clientName: "",
@@ -12,6 +14,7 @@ function blankForm() {
     clientPhone: "",
     issueDate: new Date().toISOString().slice(0, 10),
     notes: "",
+    terms,
     items: [],
   };
 }
@@ -46,13 +49,14 @@ function resizeImage(file, size = 320) {
  */
 export default function InvoicingTool({ onBack, clients = [], currency = "USD", money, profileSetup }) {
   const [documents, setDocuments] = useState([]);
-  const [settings, setSettings] = useState({ logo: "", catalog: [] });
+  const [settings, setSettings] = useState({ logo: "", catalog: [], nit: "", businessEmail: "", businessPhone: "", terms: "" });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showSetup, setShowSetup] = useState(false);
   const [setupStep, setSetupStep] = useState(1);
   const [setupSaving, setSetupSaving] = useState(false);
   const [logoDraft, setLogoDraft] = useState("");
+  const [contactDraft, setContactDraft] = useState({ nit: "", businessEmail: "", businessPhone: "", terms: DEFAULT_TERMS });
   const [catalogDraft, setCatalogDraft] = useState([{ name: "", price: "" }]);
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
@@ -67,10 +71,11 @@ export default function InvoicingTool({ onBack, clients = [], currency = "USD", 
     if (docsRes.error) setError(docsRes.error);
     else setDocuments(docsRes.documents || []);
     if (!settingsRes.error) {
-      const s = settingsRes.settings || { logo: "", catalog: [] };
+      const s = settingsRes.settings || { logo: "", catalog: [], nit: "", businessEmail: "", businessPhone: "", terms: "" };
       setSettings(s);
       if (!s.logo && (!s.catalog || s.catalog.length === 0)) {
         setLogoDraft("");
+        setContactDraft({ nit: "", businessEmail: "", businessPhone: "", terms: DEFAULT_TERMS });
         setCatalogDraft([{ name: "", price: "" }]);
         setShowSetup(true);
         setSetupStep(1);
@@ -84,9 +89,15 @@ export default function InvoicingTool({ onBack, clients = [], currency = "USD", 
 
   const fmt = (n) => (money ? money.format(n) : `${currency} ${Number(n || 0).toFixed(2)}`);
 
-  // ── Configuración: logo + catálogo ──────────────────────────────────────
+  // ── Configuración: logo + datos de contacto + catálogo ──────────────────
   const openSetup = () => {
     setLogoDraft(settings.logo || "");
+    setContactDraft({
+      nit: settings.nit || "",
+      businessEmail: settings.businessEmail || "",
+      businessPhone: settings.businessPhone || "",
+      terms: settings.terms || DEFAULT_TERMS,
+    });
     setCatalogDraft(settings.catalog?.length ? settings.catalog.map((c) => ({ ...c })) : [{ name: "", price: "" }]);
     setSetupStep(1);
     setShowSetup(true);
@@ -115,7 +126,7 @@ export default function InvoicingTool({ onBack, clients = [], currency = "USD", 
     const catalog = catalogDraft
       .filter((c) => c.name.trim())
       .map((c, i) => ({ id: `cat-${Date.now()}-${i}`, name: c.name.trim(), price: Number(c.price) || 0 }));
-    const res = await saveSettings({ logo: logoDraft, catalog });
+    const res = await saveSettings({ logo: logoDraft, catalog, ...contactDraft });
     setSetupSaving(false);
     if (res.error) { setError(res.error); return; }
     setSettings(res.settings);
@@ -124,7 +135,7 @@ export default function InvoicingTool({ onBack, clients = [], currency = "USD", 
 
   // ── Asistente de nueva cotización ───────────────────────────────────────
   const openWizard = () => {
-    setForm(blankForm());
+    setForm(blankForm(settings.terms || DEFAULT_TERMS));
     setWizardStep(1);
     setError("");
     setShowWizard(true);
@@ -174,7 +185,7 @@ export default function InvoicingTool({ onBack, clients = [], currency = "USD", 
   };
 
   if (viewingDoc) {
-    return <DocumentPrintView doc={viewingDoc} logo={settings.logo} profileSetup={profileSetup} money={money} currency={currency} onClose={() => setViewingDoc(null)} />;
+    return <DocumentPrintView doc={viewingDoc} settings={settings} profileSetup={profileSetup} money={money} currency={currency} onClose={() => setViewingDoc(null)} />;
   }
 
   return (
@@ -226,7 +237,7 @@ export default function InvoicingTool({ onBack, clients = [], currency = "USD", 
         <div className="inv-modal-overlay" onClick={(e) => e.target === e.currentTarget && setShowSetup(false)}>
           <div className="inv-modal">
             <div className="inv-modal-head">
-              <p>Tu negocio ({setupStep}/2)</p>
+              <p>Tu negocio ({setupStep}/3)</p>
               <button type="button" onClick={() => setShowSetup(false)} aria-label="Cerrar">✕</button>
             </div>
             <div className="inv-form">
@@ -248,6 +259,34 @@ export default function InvoicingTool({ onBack, clients = [], currency = "USD", 
 
               {setupStep === 2 && (
                 <>
+                  <p className="inv-setup-hint">Datos de contacto y condiciones que aparecen en tus cotizaciones. Todo opcional, puedes dejarlo en blanco y completarlo después.</p>
+                  <label className="inv-label">NIT o identificación de la empresa</label>
+                  <input className="inv-input" placeholder="Ej: 900.123.456-7" value={contactDraft.nit}
+                    onChange={(e) => setContactDraft((c) => ({ ...c, nit: e.target.value }))} />
+                  <div className="inv-form-row">
+                    <div>
+                      <label className="inv-label">Correo del negocio</label>
+                      <input className="inv-input" type="email" placeholder="hola@tunegocio.com" value={contactDraft.businessEmail}
+                        onChange={(e) => setContactDraft((c) => ({ ...c, businessEmail: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="inv-label">Teléfono del negocio</label>
+                      <input className="inv-input" placeholder="Ej: 573001234567" value={contactDraft.businessPhone}
+                        onChange={(e) => setContactDraft((c) => ({ ...c, businessPhone: e.target.value }))} />
+                    </div>
+                  </div>
+                  <label className="inv-label">Términos y condiciones (aparece al final del PDF)</label>
+                  <textarea className="inv-input" rows={3} value={contactDraft.terms}
+                    onChange={(e) => setContactDraft((c) => ({ ...c, terms: e.target.value }))} />
+                  <div className="inv-form-actions">
+                    <button type="button" className="inv-btn inv-btn--ghost" onClick={() => setSetupStep(1)}>← Atrás</button>
+                    <button type="button" className="inv-btn inv-btn--primary" onClick={() => setSetupStep(3)}>Siguiente →</button>
+                  </div>
+                </>
+              )}
+
+              {setupStep === 3 && (
+                <>
                   <p className="inv-setup-hint">Agrega los servicios o productos que más cotizas, con su precio. Así, al armar una cotización, solo tocas y listo — no vuelves a escribirlo.</p>
                   <div className="inv-items">
                     {catalogDraft.map((it, idx) => (
@@ -262,7 +301,7 @@ export default function InvoicingTool({ onBack, clients = [], currency = "USD", 
                   </div>
                   <button type="button" className="inv-btn inv-btn--ghost inv-add-item" onClick={addCatalogRow}>+ Agregar otro</button>
                   <div className="inv-form-actions">
-                    <button type="button" className="inv-btn inv-btn--ghost" onClick={() => setSetupStep(1)}>← Atrás</button>
+                    <button type="button" className="inv-btn inv-btn--ghost" onClick={() => setSetupStep(2)}>← Atrás</button>
                     <button type="button" className="inv-btn inv-btn--primary" disabled={setupSaving} onClick={finishSetup}>
                       {setupSaving ? "Guardando..." : "Guardar"}
                     </button>
@@ -363,8 +402,11 @@ export default function InvoicingTool({ onBack, clients = [], currency = "USD", 
                       <p key={i} className="inv-review-item">{it.description} × {it.quantity} — {fmt((Number(it.quantity) || 0) * (Number(it.unitPrice) || 0))}</p>
                     ))}
                   </div>
-                  <textarea className="inv-input" rows={2} placeholder="Notas (opcional — ej: validez de la oferta, forma de pago)" value={form.notes}
+                  <textarea className="inv-input" rows={2} placeholder="Notas (opcional — ej: forma de pago)" value={form.notes}
                     onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
+                  <label className="inv-label">Términos y condiciones</label>
+                  <textarea className="inv-input" rows={2} value={form.terms}
+                    onChange={(e) => setForm((f) => ({ ...f, terms: e.target.value }))} />
                   <div className="inv-form-total">Total: <strong>{fmt(formTotal)}</strong></div>
                   <div className="inv-form-actions">
                     <button type="button" className="inv-btn inv-btn--ghost" onClick={() => setWizardStep(2)}>← Atrás</button>
@@ -382,7 +424,7 @@ export default function InvoicingTool({ onBack, clients = [], currency = "USD", 
   );
 }
 
-function DocumentPrintView({ doc, logo, profileSetup, money, currency, onClose }) {
+function DocumentPrintView({ doc, settings, profileSetup, money, currency, onClose }) {
   const fmt = (n) => (money ? money.format(n) : `${currency} ${Number(n || 0).toFixed(2)}`);
   return (
     <div className="inv-print-wrap">
@@ -396,10 +438,13 @@ function DocumentPrintView({ doc, logo, profileSetup, money, currency, onClose }
       <div className="inv-print-doc">
         <div className="inv-print-head">
           <div className="inv-print-brand">
-            {logo && <img src={logo} alt="" className="inv-print-logo" />}
+            {settings?.logo && <img src={settings.logo} alt="" className="inv-print-logo" />}
             <div>
               <p className="inv-print-business">{profileSetup?.businessName || "Tu negocio"}</p>
               <p className="inv-print-owner">{profileSetup?.name || ""}</p>
+              {settings?.nit && <p className="inv-print-owner">NIT {settings.nit}</p>}
+              {settings?.businessEmail && <p className="inv-print-owner">{settings.businessEmail}</p>}
+              {settings?.businessPhone && <p className="inv-print-owner">{settings.businessPhone}</p>}
             </div>
           </div>
           <div className="inv-print-doc-info">
@@ -446,6 +491,12 @@ function DocumentPrintView({ doc, logo, profileSetup, money, currency, onClose }
           <div className="inv-print-notes">
             <p className="inv-print-meta-label">Notas</p>
             <p>{doc.notes}</p>
+          </div>
+        )}
+
+        {doc.terms && (
+          <div className="inv-print-terms">
+            <p>{doc.terms}</p>
           </div>
         )}
       </div>

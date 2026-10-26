@@ -117,7 +117,7 @@ export const handler = async (event) => {
 
     // ── Crear factura o cotización ────────────────────────────────────────
     if (action === "create") {
-      const { type, clientId, clientName, clientEmail, clientPhone, issueDate, dueDate, notes, currency } = body;
+      const { type, clientId, clientName, clientEmail, clientPhone, issueDate, dueDate, notes, terms, currency } = body;
       if (!["quote", "invoice"].includes(type))
         return respond(400, { error: "type debe ser 'quote' o 'invoice'" }, event, METHODS);
       if (!isNonEmptyString(clientName, 200))
@@ -148,6 +148,7 @@ export const handler = async (event) => {
         dueDate: dueDate || "",
         items,
         notes: clampString(notes || "", 2000),
+        terms: clampString(terms || "", 1000),
         currency: isNonEmptyString(currency, 10) ? currency : "USD",
         total: computeTotal(items),
         createdAt: now,
@@ -205,10 +206,12 @@ export const handler = async (event) => {
       return respond(200, { ok: true }, event, METHODS);
     }
 
-    // ── Config del negocio para cotizaciones: logo + catálogo de precios ──
+    // ── Config del negocio para cotizaciones: logo, datos de contacto,
+    // catálogo de precios y términos por defecto ──
+    const SETTINGS_DEFAULTS = { logo: "", catalog: [], nit: "", businessEmail: "", businessPhone: "", terms: "" };
     if (action === "get-settings") {
       const existing = await getOwnedDoc(userId, "_settings");
-      return respond(200, { settings: { logo: existing?.logo || "", catalog: existing?.catalog || [] } }, event, METHODS);
+      return respond(200, { settings: { ...SETTINGS_DEFAULTS, ...existing } }, event, METHODS);
     }
     if (action === "save-settings") {
       if (body.logo !== undefined && typeof body.logo === "string" && body.logo.length > MAX_LOGO_CHARS)
@@ -217,15 +220,19 @@ export const handler = async (event) => {
       if (body.catalog !== undefined && !catalog)
         return respond(400, { error: "El catálogo no es válido (nombre y precio ≥ 0)" }, event, METHODS);
 
-      const existing = await getOwnedDoc(userId, "_settings") || { user_id: userId, doc_id: "_settings", logo: "", catalog: [] };
+      const existing = await getOwnedDoc(userId, "_settings") || { user_id: userId, doc_id: "_settings", ...SETTINGS_DEFAULTS };
       const updated = {
         ...existing,
         logo: body.logo !== undefined ? clampString(body.logo, MAX_LOGO_CHARS) : existing.logo || "",
         catalog: catalog !== undefined ? catalog : existing.catalog || [],
+        nit: body.nit !== undefined ? clampString(body.nit, 60) : existing.nit || "",
+        businessEmail: body.businessEmail !== undefined ? clampString(body.businessEmail, 254) : existing.businessEmail || "",
+        businessPhone: body.businessPhone !== undefined ? clampString(body.businessPhone, 40) : existing.businessPhone || "",
+        terms: body.terms !== undefined ? clampString(body.terms, 1000) : existing.terms || "",
         updatedAt: Date.now(),
       };
       await dynamo.send(new PutItemCommand({ TableName: TABLE, Item: marshall(updated) }));
-      return respond(200, { settings: { logo: updated.logo, catalog: updated.catalog } }, event, METHODS);
+      return respond(200, { settings: { ...SETTINGS_DEFAULTS, ...updated } }, event, METHODS);
     }
 
     // ── Eliminar ────────────────────────────────────────────────────────
