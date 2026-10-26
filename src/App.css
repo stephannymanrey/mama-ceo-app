@@ -4273,6 +4273,8 @@ button {
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 20px;
+  color: var(--muted);
+  background: var(--line);
 }
 
 .cl-card-actions {

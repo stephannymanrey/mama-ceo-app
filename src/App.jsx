@@ -166,9 +166,9 @@ const initialTasks = [
 ];
 
 const initialClients = [
-  { id: 1, name: "Andrea Lopez", service: "Mentoria", status: "Lead caliente", amount: 180, nextAction: "Enviar propuesta" },
-  { id: 2, name: "Carolina Diaz", service: "Curso", status: "Lead tibio", amount: 97, nextAction: "Escribir por WhatsApp" },
-  { id: 3, name: "Laura Ruiz", service: "Asesoria 1:1", status: "Venta ganada", amount: 240, nextAction: "Onboarding" }
+  { id: 1, name: "Andrea Lopez", service: "Mentoria", status: "Lead caliente", amount: 180, progressLog: [{ id: 1, date: "2026-01-01", text: "Enviar propuesta" }] },
+  { id: 2, name: "Carolina Diaz", service: "Curso", status: "Lead tibio", amount: 97, progressLog: [{ id: 2, date: "2026-01-01", text: "Escribir por WhatsApp" }] },
+  { id: 3, name: "Laura Ruiz", service: "Asesoria 1:1", status: "Venta ganada", amount: 240, progressLog: [{ id: 3, date: "2026-01-01", text: "Onboarding" }] }
 ];
 
 const initialContent = [
@@ -851,7 +851,7 @@ export default function App() {
   const [form, setForm] = useState({ type: "income", classification: "Servicios", description: "", category: "", categoryOther: "", amount: "", bank: banks[0] || "", date: getTodayInputValue(), linkedBizDebtId: "" });
   const [showMovementModal, setShowMovementModal] = useState(false);
   const [formErrors, setFormErrors] = useState({});
-  const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue(), paymentType: "unico", paymentDay: "" });
+  const [clientForm, setClientForm] = useState({ name: "", service: "", status: "Lead tibio", amount: "", firstNote: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue(), paymentType: "unico", paymentDay: "" });
   const [clientFormErrors, setClientFormErrors] = useState({});
   const [contentFilter, setContentFilter] = useState("");
   const [salesGoal, setSalesGoal] = useState(stored?.salesGoal || 0);
@@ -859,9 +859,9 @@ export default function App() {
   const [clientSearch, setClientSearch] = useState("");
   const [showClientDetails, setShowClientDetails] = useState(false);
   const [clientsTab, setClientsTab] = useState(0);
-  const [clientGoalInput, setClientGoalInput] = useState("");
   const [showClientFormModal, setShowClientFormModal] = useState(false);
   const [editingClientId, setEditingClientId] = useState(null);
+  const [newProgressNote, setNewProgressNote] = useState("");
   const [weekBlocks, setWeekBlocks] = useState(stored?.weekBlocks || {});
   const [contentForm, setContentForm] = useState({ title: "", hook: "", format: "Reel", network: "Instagram", customNetwork: "", week: "Semana 1", status: "Idea", goal: "Vender", publishDate: "", responsable: "" });
   const [showContentForm, setShowContentForm] = useState(false);
@@ -1510,7 +1510,7 @@ export default function App() {
   const familyDaysCount = Object.values(purpose.familyDays || {}).filter(Boolean).length;
   const todayAffirmation = affirmations[new Date().getDate() % affirmations.length];
   const excellenceActions = [
-    topClient ? `Contactar a ${topClient.name}: ${topClient.nextAction || "hacer seguimiento"}.` : "Registrar tu cliente de mayor potencial.",
+    topClient ? `Contactar a ${topClient.name}: ${(() => { const log = getProgressLog(topClient); return log.length ? log[log.length - 1].text : "hacer seguimiento"; })()}.` : "Registrar tu cliente de mayor potencial.",
     nextContent ? `Mover contenido clave: ${nextContent.title}.` : "Crear una pieza de contenido enfocada en venta.",
     totals.profit >= 0 ? `Separar ${money.format(reinvestmentAmount)} para reinversión antes de gastar.` : "Reducir un gasto no esencial esta semana.",
     pendingHomeTasks[0] ? `Resolver o delegar: ${pendingHomeTasks[0].title}.` : "Proteger un bloque de descanso real."
@@ -2098,7 +2098,7 @@ export default function App() {
       service: clientForm.service.trim(),
       status: clientForm.status,
       amount,
-      nextAction: clientForm.nextAction.trim() || "Hacer seguimiento",
+      progressLog: clientForm.firstNote.trim() ? [{ id: now, date: contactDate, text: clientForm.firstNote.trim() }] : [],
       lastContact: contactTimestamp,
       lastContactDate: contactDate,
       source: clientForm.source === "Otra" ? clientForm.customSource.trim() || "Otra" : clientForm.source,
@@ -2110,7 +2110,7 @@ export default function App() {
       createdAt: now,
       updatedAt: now
     }, ...current]);
-    setClientForm({ name: "", service: "", status: "Lead frio", amount: "", nextAction: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue(), paymentType: "unico", paymentDay: "" });
+    setClientForm({ name: "", service: "", status: "Lead frio", amount: "", firstNote: "", source: "", customSource: "", phone: "", lastContactDate: getTodayInputValue(), paymentType: "unico", paymentDay: "" });
     setShowClientFormModal(false);
   };
 
@@ -2432,27 +2432,17 @@ export default function App() {
   const weekStart = (() => { const d = new Date(); d.setDate(d.getDate() - (d.getDay() === 0 ? 6 : d.getDay() - 1)); d.setHours(0,0,0,0); return d.getTime(); })();
   const contactsThisWeek = Object.values(contactLog).filter((e) => timestampFromInputDate(e.date) >= weekStart).length;
 
-  // ── Radar de Clientas: a quién contactar hoy, en orden de prioridad ──
-  const priorityClients = useMemo(() => {
-    const today = Date.now();
-    const daysSinceContact = (ts) => ts ? Math.floor((today - ts) / 86400000) : 999;
-    const stageScore = { "Lead caliente": 3, "Lead tibio": 2, "Lead frio": 1 };
-    return [...clients]
-      .filter((c) => c.status !== "Venta ganada")
-      .sort((a, b) => ((stageScore[b.status] || 0) * 100 + daysSinceContact(b.lastContact)) - ((stageScore[a.status] || 0) * 100 + daysSinceContact(a.lastContact)))
-      .slice(0, 3)
-      .map((c) => ({ ...c, daysSinceContact: daysSinceContact(c.lastContact) }));
-  }, [clients]);
-
   const [followupSuggestions, setFollowupSuggestions] = useState({});
   const suggestFollowup = async (client) => {
     setFollowupSuggestions((prev) => ({ ...prev, [client.id]: { loading: true } }));
+    const diasSinContacto = client.lastContact ? Math.floor((Date.now() - client.lastContact) / 86400000) : null;
+    const notasRecientes = getProgressLog(client).slice(-3).map((e) => `${e.date}: ${e.text}`).join(" | ");
     const res = await callGemini("followup", {
       nombre: client.name,
       negocio: client.service,
       etapa: client.status,
-      diasSinContacto: client.daysSinceContact,
-      notas: client.nextAction || "",
+      diasSinContacto,
+      notas: notasRecientes,
     });
     if (res?.error === "rate_limit") { setFollowupSuggestions((p) => ({ ...p, [client.id]: { error: "Muchas solicitudes en este momento. Intenta en 1 minuto." } })); return; }
     if (res?.error === "limite_alcanzado") { setFollowupSuggestions((p) => ({ ...p, [client.id]: { error: "Llegaste al límite de generaciones IA del mes." } })); return; }
@@ -2491,8 +2481,22 @@ export default function App() {
   const updateContentCaption = (contentId, value) => {
     setContentItems((current) => current.map((item) => item.id === contentId ? { ...item, caption: value } : item));
   };
-  const updateClientNotes = (clientId, notes) => {
-    setClients((current) => current.map((client) => client.id === clientId ? { ...client, notes, updatedAt: Date.now() } : client));
+  // Bitácora de avance por cliente — reemplaza el campo suelto de notas.
+  // Si un cliente viejo solo tiene `notes` (texto plano, sin log), se muestra
+  // como primera entrada de la bitácora sin necesidad de migrar datos.
+  const getProgressLog = (client) => {
+    if (Array.isArray(client.progressLog)) return client.progressLog;
+    if (client.notes) return [{ id: "legacy", date: client.lastContactDate || getTodayInputValue(), text: client.notes }];
+    return [];
+  };
+  const addProgressEntry = (clientId, text) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setClients((current) => current.map((client) => {
+      if (client.id !== clientId) return client;
+      const log = getProgressLog(client);
+      return { ...client, progressLog: [...log, { id: Date.now(), date: getTodayInputValue(), text: trimmed }], updatedAt: Date.now() };
+    }));
   };
   const toggleClientFlag = (clientId, field) => {
     setClients((current) => current.map((client) => client.id === clientId ? { ...client, [field]: !client[field] } : client));
@@ -4719,10 +4723,11 @@ export default function App() {
           {hasAlerts && (
             <div className="db-nudges">
               {urgentLeads.length > 0 && (() => {
-                const topHotLead = priorityClients.find((c) => c.status === "Lead caliente");
+                const topHotLead = [...urgentLeads].sort((a, b) => (a.lastContact || 0) - (b.lastContact || 0))[0];
+                const days = topHotLead.lastContact ? Math.floor((Date.now() - topHotLead.lastContact) / 86400000) : null;
                 return (
                   <button className="db-nudge db-nudge--purple" onClick={() => setActiveView("clients")}>
-                    🔥 {topHotLead.name} lleva {topHotLead.daysSinceContact} día{topHotLead.daysSinceContact === 1 ? "" : "s"} sin contacto — ábrelo en tu Radar de Clientas
+                    🔥 {topHotLead.name}{days !== null ? ` lleva ${days} día${days === 1 ? "" : "s"} sin contacto` : ""} — ábrelo en Mis Clientes
                   </button>
                 );
               })()}
@@ -5557,21 +5562,10 @@ export default function App() {
   }
   function renderClients() {
     const stages = ["Lead frio", "Lead tibio", "Lead caliente", "Venta ganada"];
-    const alertDays = { "Lead frio": [7, 14], "Lead tibio": [3, 7], "Lead caliente": [1, 3], "Venta ganada": [14, 30] };
     const today = Date.now();
     const daysSince = (ts) => ts ? Math.floor((today - ts) / 86400000) : 999;
-    const getAlert = (client) => {
-      const days = daysSince(client.lastContact);
-      const [warn, danger] = alertDays[client.status] || [7, 14];
-      if (days >= danger) return "red";
-      if (days >= warn) return "yellow";
-      return "green";
-    };
-    const urgentClients = clients.filter((c) => getAlert(c) !== "green" && c.status !== "Venta ganada");
-    const urgentSubscriptions = clients.filter((c) => getAlert(c) !== "green" && c.status === "Venta ganada");
     const stageTotal = (stage) => clients.filter((c) => c.status === stage).reduce((sum, c) => sum + (c.amount || 0), 0);
     const paidClients = clients.filter((c) => c.status === "Venta ganada");
-    const pipelineTotal = clients.filter((c) => c.status !== "Venta ganada").reduce((sum, c) => sum + (c.amount || 0), 0);
     const totalLeads = clients.length;
     const totalWon = clients.filter((c) => c.status === "Venta ganada").length;
     const conversionRate = totalLeads > 0 ? Math.round((totalWon / totalLeads) * 100) : 0;
@@ -5582,45 +5576,35 @@ export default function App() {
     const sourceCounts = clients.reduce((acc, c) => { const src = c.source || "Sin fuente"; acc[src] = (acc[src] || 0) + 1; return acc; }, {});
     const topSource = Object.entries(sourceCounts).sort((a, b) => b[1] - a[1])[0];
     const defaultSources = ["Instagram", "Referido", "Contenido / Reel", "WhatsApp", "TikTok", "Email", "Otra"];
-    const filteredClients = (stage) => clients.filter((c) => c.status === stage && (clientSearch === "" || c.name.toLowerCase().includes(clientSearch.toLowerCase())));
+    const filteredClients = (stage) => clients
+      .filter((c) => c.status === stage && (clientSearch === "" || c.name.toLowerCase().includes(clientSearch.toLowerCase())))
+      .sort((a, b) => daysSince(b.lastContact) - daysSince(a.lastContact)); // más atrasados primero
 
-    // ── Pulso semanal ──
-    const newLeadsThisWeek = clients.filter((c) => (c.createdAt || 0) >= weekStart).length;
-    const wonThisWeek = clients.filter((c) => c.status === "Venta ganada" && (c.updatedAt || 0) >= weekStart).length;
     const avgTicket = paidClients.length > 0 ? Math.round(wonSalesTotal / paidClients.length) : 0;
     const TABS_CLIENTS = ["Pipeline", "Ganados"];
 
-    // ── A quién contactar esta semana + proyección ──
-    const toContactClients = [...urgentClients, ...urgentSubscriptions].sort((a, b) => {
-      const order = { red: 0, yellow: 1, green: 2 };
-      return (order[getAlert(a)] ?? 2) - (order[getAlert(b)] ?? 2);
-    });
-    const projectedSales = conversionRate > 0 ? Math.round(toContactClients.length * (conversionRate / 100)) : 0;
-    const projectedRevenue = projectedSales * avgTicket;
+    // ── Cuánto podrías ganar si cierras todos tus leads tibios y calientes ──
+    const potentialRevenue = clients
+      .filter((c) => c.status === "Lead tibio" || c.status === "Lead caliente")
+      .reduce((sum, c) => sum + (c.amount || 0), 0);
 
-    // ── Listado completo con cuenta atrás para contactar (vencidos primero) ──
-    const dueInDays = (client) => {
-      const [warn] = alertDays[client.status] || [7, 14];
-      return warn - daysSince(client.lastContact);
-    };
-    const weekContactList = clients.filter((c) => c.status !== "Venta ganada")
-      .sort((a, b) => dueInDays(a) - dueInDays(b));
-
-    // ── Calculadora: ¿cuántos contactos necesito para vender $X? ──
-    const goalAmount = Number(clientGoalInput) || 0;
-    const goalSalesNeeded = goalAmount > 0 && avgTicket > 0 ? Math.ceil(goalAmount / avgTicket) : 0;
-    const goalContactsNeeded = goalSalesNeeded > 0
-      ? (conversionRate > 0 ? Math.ceil(goalSalesNeeded / (conversionRate / 100)) : goalSalesNeeded)
-      : 0;
+    // ── Ganado por servicio/producto (solo ventas ya cerradas) ──
+    const wonByService = Object.entries(
+      paidClients.reduce((acc, c) => {
+        const key = (c.service || "Sin servicio").trim();
+        acc[key] = (acc[key] || 0) + (c.amount || 0);
+        return acc;
+      }, {})
+    ).sort((a, b) => b[1] - a[1]);
 
     const waMsg = (client) => {
       const msgs = {
-        "Lead frio": `Hola ${client.name}! Noo queria dejar nuestra conversacion en el aire. Aqui estoy para retomarla cuando sea un buen momento para ti. Sigues interesada en ${client.service}?`,
-        "Lead tibio": `Hola ${client.name}! Pense en ti hoy. No queria que nuestra conversacion quedara pendiente. Que ha sido lo que te ha frenado para dar el siguiente paso?`,
-        "Lead caliente": `Hola ${client.name}! Queria retomar lo que conversamos sobre ${client.service}. Tienes 5 minutos hoy para que te cuente como podemos empezar?`,
-        "Venta ganada": `Hola ${client.name}! Solo queria saber como vas con ${client.service}. Que resultado has notado hasta ahora?`
+        "Lead frio": `¡Hola ${client.name}! No quería dejar nuestra conversación en el aire. Aquí estoy para retomarla cuando sea buen momento para ti. ¿Sigues interesada en ${client.service}?`,
+        "Lead tibio": `¡Hola ${client.name}! Pensé en ti hoy, no quería que nuestra conversación quedara pendiente. ¿Qué ha sido lo que te ha frenado para dar el siguiente paso?`,
+        "Lead caliente": `¡Hola ${client.name}! Quería retomar lo que conversamos sobre ${client.service}. ¿Tienes 5 minutos hoy para que te cuente cómo podemos empezar?`,
+        "Venta ganada": `¡Hola ${client.name}! Solo quería saber cómo vas con ${client.service}. ¿Qué resultado has notado hasta ahora?`
       };
-      return encodeURIComponent(msgs[client.status] || `Hola ${client.name}, queria hacer seguimiento sobre ${client.service}.`);
+      return encodeURIComponent(msgs[client.status] || `Hola ${client.name}, quería hacer seguimiento sobre ${client.service}.`);
     };
 
     const waLink = (client, customMsg) => {
@@ -5658,50 +5642,20 @@ export default function App() {
         {/* ── PIPELINE ── */}
         {clientsTab === 0 && (
           <>
-            {priorityClients.length > 0 && (
+            {potentialRevenue > 0 && (
               <div className="radar-card">
                 <div className="radar-card-head">
-                  <span className="radar-card-title">✦ Radar de Clientas</span>
+                  <span className="radar-card-title">✦ Si cierras todos tus leads tibios y calientes</span>
                   <div style={{textAlign:"right"}}>
-                    <strong style={{fontSize:"20px",color:"var(--green)",display:"block",lineHeight:1}}>{contactsThisWeek}</strong>
-                    <small style={{color:"var(--muted)",fontSize:"10px",textTransform:"uppercase",fontWeight:800}}>contactos esta semana</small>
+                    <strong style={{fontSize:"20px",color:"var(--green)",display:"block",lineHeight:1}}>{money.format(potentialRevenue)}</strong>
+                    <small style={{color:"var(--muted)",fontSize:"10px",textTransform:"uppercase",fontWeight:800}}>contactos esta semana: {contactsThisWeek}</small>
                   </div>
                 </div>
-
-                {priorityClients.map((client, i) => {
-                  const suggestion = followupSuggestions[client.id] || {};
-                  return (
-                    <div className={`radar-lead-row${i === 0 ? " radar-lead-row--top" : ""}`} key={client.id}>
-                      <div className="radar-lead-info">
-                        {i === 0 && <span className="radar-lead-flag">A quién contactar hoy</span>}
-                        <strong>{client.name}</strong>
-                        <span>{client.status} · {money.format(client.amount)} · hace {client.daysSinceContact} día{client.daysSinceContact === 1 ? "" : "s"} sin contacto</span>
-                        {client.nextAction && <small>{client.nextAction}</small>}
-                      </div>
-                      <div className="radar-lead-actions">
-                        <button type="button" className="contact-today-btn" style={{width:"auto",padding:"0 14px"}} onClick={() => logContact(client.id, client.name)}>✓ Contacté hoy</button>
-                        <button type="button" className="radar-suggest-btn" disabled={suggestion.loading} onClick={() => suggestFollowup(client)}>
-                          {suggestion.loading ? "Pensando…" : "✦ Sugerir mensaje con IA"}
-                        </button>
-                        {!suggestion.message && (
-                          <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-wa-btn">WhatsApp</a>
-                        )}
-                      </div>
-                      {suggestion.message && (
-                        <div className="radar-suggestion">
-                          <p>{suggestion.message}</p>
-                          <a href={waLink(client, suggestion.message)} target="_blank" rel="noreferrer" className="cl-wa-btn">Enviar por WhatsApp</a>
-                        </div>
-                      )}
-                      {suggestion.error && <small className="radar-suggestion-error">{suggestion.error}</small>}
-                    </div>
-                  );
-                })}
               </div>
             )}
 
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",margin:"16px 0",flexWrap:"wrap",gap:"8px"}}>
-              <p className="helper-copy" style={{margin:0}}>Gestiona cada lead, de frío a cerrado.</p>
+              <p className="helper-copy" style={{margin:0}}>Gestiona cada lead, de frío a cerrado — ordenados por quien lleva más tiempo sin contacto.</p>
               <button type="button" className="fin-add-btn" onClick={() => setShowClientFormModal(true)}>+ Nuevo cliente</button>
             </div>
 
@@ -5717,26 +5671,39 @@ export default function App() {
                       <small>{filteredClients(stage).length} · {money.format(stageTotal(stage))}</small>
                     </div>
                     {filteredClients(stage).map((client) => {
-                      const alert = getAlert(client);
                       const days = daysSince(client.lastContact);
-                      const daysColor = days > 7 ? "#EFA576" : days > 3 ? "#e87b1e" : "#1D9E75";
+                      const log = getProgressLog(client);
+                      const lastNote = log[log.length - 1];
+                      const suggestion = followupSuggestions[client.id] || {};
                       return (
-                        <div className={`lead-card lead-alert-${alert}`} key={client.id}>
+                        <div className="lead-card" key={client.id}>
                           <div className="lead-card-top">
                             <strong>{client.name}</strong>
                             <span className="cl-amount-chip">{money.format(client.amount)}</span>
                           </div>
                           <p className="cl-service-text">{client.service}</p>
-                          {client.nextAction && <p className="cl-next-action">→ {client.nextAction}</p>}
+                          {lastNote && <p className="cl-next-action">→ {lastNote.text}</p>}
                           <div className="cl-days-row">
-                            <span className="cl-days-badge" style={{color:daysColor,background:daysColor+"18"}}>
+                            <span className="cl-days-badge">
                               {client.lastContact ? `Hace ${days} día${days !== 1 ? "s" : ""}` : "Sin contacto"}
                             </span>
                           </div>
                           <div className="cl-card-actions">
                             <button type="button" className="contact-today-btn" style={{flex:1}} onClick={() => logContact(client.id, client.name)}>✓ Contacté</button>
-                            <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-wa-btn">WA</a>
+                            {!suggestion.message && (
+                              <a href={waLink(client)} target="_blank" rel="noreferrer" className="cl-wa-btn">WA</a>
+                            )}
                           </div>
+                          <button type="button" className="radar-suggest-btn" style={{width:"100%"}} disabled={suggestion.loading} onClick={() => suggestFollowup(client)}>
+                            {suggestion.loading ? "Pensando…" : "✦ Sugerir mensaje con IA"}
+                          </button>
+                          {suggestion.message && (
+                            <div className="radar-suggestion">
+                              <p>{suggestion.message}</p>
+                              <a href={waLink(client, suggestion.message)} target="_blank" rel="noreferrer" className="cl-wa-btn">Enviar por WhatsApp</a>
+                            </div>
+                          )}
+                          {suggestion.error && <small className="radar-suggestion-error">{suggestion.error}</small>}
                           <div className="lead-stage-btns">
                             {pipelineStages.filter(s => s !== stage).map(s => (
                               <button type="button" key={s} onClick={() => moveClientStatus(client.id, s)}>{stageEmoji[s]} {s.replace("Lead ","")}</button>
@@ -5779,6 +5746,20 @@ export default function App() {
               </div>
             </div>
 
+            {wonByService.length > 0 && (
+              <div className="card" style={{marginBottom:"16px",padding:"16px 18px"}}>
+                <p className="app-form-label" style={{marginBottom:"10px"}}>Ganado por servicio/producto</p>
+                <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+                  {wonByService.map(([service, total]) => (
+                    <div key={service} style={{display:"flex",justifyContent:"space-between",fontSize:"13px"}}>
+                      <span style={{color:"var(--muted)"}}>{service}</span>
+                      <strong>{money.format(total)}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="paid-clients-section card">
               <div className="section-title compact-title">
                 <h2>Tus clientes ganados</h2>
@@ -5788,7 +5769,8 @@ export default function App() {
               <div className="paid-client-grid">
                 {paidClients.map((client) => {
                   const days = daysSince(client.lastContact);
-                  const daysColor = days > 30 ? "#EFA576" : days > 14 ? "#e87b1e" : "#1D9E75";
+                  const log = getProgressLog(client);
+                  const lastNote = log[log.length - 1];
                   return (
                     <article className="paid-client-card" key={client.id} onClick={() => setEditingClientId(client.id)} style={{cursor:"pointer"}}>
                       <div className="paid-client-header">
@@ -5796,7 +5778,7 @@ export default function App() {
                           <strong>{client.name}</strong>
                           <small>{client.service} · {money.format(client.amount)}</small>
                         </div>
-                        <span className="cl-days-badge" style={{color:daysColor,background:daysColor+"18",fontSize:"11px"}}>
+                        <span className="cl-days-badge" style={{fontSize:"11px"}}>
                           {client.lastContact ? `Hace ${days}d` : "Sin contacto"}
                         </span>
                       </div>
@@ -5804,7 +5786,7 @@ export default function App() {
                         <span className={`cl-pending-badge${client.facturaEnviada ? " done" : ""}`}>{client.facturaEnviada ? "✓ Factura enviada" : "⏳ Factura pendiente"}</span>
                         <span className={`cl-pending-badge${client.contratoEnviado ? " done" : ""}`}>{client.contratoEnviado ? "✓ Contrato enviado" : "⏳ Contrato pendiente"}</span>
                       </div>
-                      {client.notes && <p className="cl-card-notes">"{client.notes}"</p>}
+                      {lastNote && <p className="cl-card-notes">"{lastNote.text}"</p>}
                       <p className="cl-edit-hint">Editar →</p>
                     </article>
                   );
@@ -5906,12 +5888,12 @@ export default function App() {
                 </div>
 
                 <button type="button" className="cl-details-toggle" onClick={() => setShowClientDetails(v => !v)}>
-                  {showClientDetails ? "▲ Menos detalles" : "▼ Agregar detalles (fuente, próxima acción)"}
+                  {showClientDetails ? "▲ Menos detalles" : "▼ Agregar detalles (fuente, cómo vamos)"}
                 </button>
 
                 {showClientDetails && (
                   <>
-                    <input placeholder="Próxima acción (opcional)" value={clientForm.nextAction} onChange={(e) => updateClientForm("nextAction", e.target.value)} className="app-form-input" />
+                    <input placeholder="¿Cómo vamos? (opcional)" value={clientForm.firstNote} onChange={(e) => updateClientForm("firstNote", e.target.value)} className="app-form-input" />
                     <select value={clientForm.source} onChange={(e) => updateClientForm("source", e.target.value)} className="app-form-input">
                       <option value="">¿De dónde llegó?</option>
                       {defaultSources.map((s) => <option key={s}>{s}</option>)}
@@ -6012,9 +5994,43 @@ export default function App() {
                 </div>
 
                 <div>
-                  <label className="app-form-label">Notas <span style={{fontWeight:400,textTransform:"none"}}>(entrega, resultados, recompra)</span></label>
-                  <textarea placeholder="Notas..." value={editingClient.notes || ""} onChange={(e) => updateClientNotes(editingClient.id, e.target.value)}
-                    className="app-form-input" style={{minHeight:"70px",resize:"vertical"}} />
+                  <label className="app-form-label">¿Cómo vamos? <span style={{fontWeight:400,textTransform:"none"}}>(bitácora de avance)</span></label>
+                  <div style={{display:"flex",gap:"8px",marginBottom:"10px"}}>
+                    <input placeholder="Ej: le interesó el paquete premium, falta confirmar fecha..." value={newProgressNote}
+                      onChange={(e) => setNewProgressNote(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addProgressEntry(editingClient.id, newProgressNote); setNewProgressNote(""); } }}
+                      className="app-form-input" style={{flex:1}} />
+                    <button type="button" className="fin-add-btn" onClick={() => { addProgressEntry(editingClient.id, newProgressNote); setNewProgressNote(""); }}>Agregar</button>
+                  </div>
+                  {getProgressLog(editingClient).length === 0 && <p className="helper-copy" style={{margin:0}}>Aún no hay avances registrados.</p>}
+                  <div style={{display:"flex",flexDirection:"column",gap:"6px",maxHeight:"160px",overflowY:"auto"}}>
+                    {[...getProgressLog(editingClient)].reverse().map((entry) => (
+                      <div key={entry.id} style={{fontSize:"13px",background:"var(--line)",borderRadius:"8px",padding:"8px 10px"}}>
+                        <strong style={{fontSize:"11px",color:"var(--muted)",display:"block",marginBottom:"2px"}}>{entry.date}</strong>
+                        {entry.text}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  {(() => {
+                    const suggestion = followupSuggestions[editingClient.id] || {};
+                    return (
+                      <>
+                        <button type="button" className="radar-suggest-btn" style={{width:"100%"}} disabled={suggestion.loading} onClick={() => suggestFollowup(editingClient)}>
+                          {suggestion.loading ? "Pensando…" : "✦ Sugerir mensaje con IA"}
+                        </button>
+                        {suggestion.message && (
+                          <div className="radar-suggestion" style={{marginTop:"8px"}}>
+                            <p>{suggestion.message}</p>
+                            <a href={waLink(editingClient, suggestion.message)} target="_blank" rel="noreferrer" className="cl-wa-btn">Enviar por WhatsApp</a>
+                          </div>
+                        )}
+                        {suggestion.error && <small className="radar-suggestion-error">{suggestion.error}</small>}
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div style={{display:"flex",gap:"8px"}}>
@@ -7831,7 +7847,7 @@ export default function App() {
               <div key={client.id} style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"8px",alignItems:"center",padding:"10px 0",borderBottom:"1px solid var(--line)"}}>
                 <div>
                   <strong style={{fontSize:"14px"}}>{client.name}</strong>
-                  <small style={{display:"block",color:"var(--muted)"}}>{client.status} • {client.nextAction || "Hacer seguimiento"}</small>
+                  <small style={{display:"block",color:"var(--muted)"}}>{client.status} • {(() => { const log = getProgressLog(client); return log.length ? log[log.length - 1].text : "Hacer seguimiento"; })()}</small>
                 </div>
                 <a href={`https://wa.me/?text=${whatsappMsg(client)}`} target="_blank" rel="noreferrer"
                   style={{display:"inline-flex",alignItems:"center",gap:"6px",padding:"8px 12px",borderRadius:"8px",background:"#25d366",color:"#fff",fontSize:"12px",fontWeight:700,textDecoration:"none",whiteSpace:"nowrap"}}>
