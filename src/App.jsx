@@ -3255,6 +3255,19 @@ export default function App() {
           </a>
           <a
             className="sidebar-tool-btn sidebar-miniapp-btn"
+            href="https://www.creanautas.co"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Creanautas — Organiza el homeschool y las rutinas de tus hijos">
+            <span className="sidebar-tool-icon">🧑‍🚀</span>
+            <span className="sidebar-tool-label">
+              Creanautas
+              <span className="sidebar-miniapp-sub">Organiza el homeschool y las rutinas de tus hijos</span>
+            </span>
+            <span className="sidebar-miniapp-arrow">↗</span>
+          </a>
+          <a
+            className="sidebar-tool-btn sidebar-miniapp-btn"
             href="https://academy.unamamaconproposito.co"
             target="_blank"
             rel="noopener noreferrer"
