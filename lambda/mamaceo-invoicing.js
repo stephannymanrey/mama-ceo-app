@@ -25,6 +25,21 @@ const METHODS = "POST,OPTIONS";
 const MAX_ITEMS = 200;
 const CREATE_DAILY_LIMIT = 50; // tope generoso para uso real, bajo para frenar un script con bug/abuso
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_CATALOG_ITEMS = 60;
+const MAX_LOGO_CHARS = 400_000; // data URL base64 — de sobra para un logo redimensionado a ~240px en el cliente
+
+function validateCatalog(catalog) {
+  if (!Array.isArray(catalog) || catalog.length > MAX_CATALOG_ITEMS) return null;
+  const clean = [];
+  for (const raw of catalog) {
+    if (!isPlainObject(raw)) return null;
+    if (!isNonEmptyString(raw.name, 200)) return null;
+    const price = Number(raw.price);
+    if (!Number.isFinite(price) || price < 0) return null;
+    clean.push({ id: isNonEmptyString(raw.id, 100) ? clampString(String(raw.id), 100) : `item-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: clampString(raw.name, 200), price });
+  }
+  return clean;
+}
 
 const TYPE_PREFIX = { quote: "COT", invoice: "FAC" };
 const STATUS_BY_TYPE = {
@@ -95,7 +110,7 @@ export const handler = async (event) => {
       }));
       const docs = (result.Items || [])
         .map(unmarshall)
-        .filter((d) => d.doc_id !== "_counter")
+        .filter((d) => d.doc_id !== "_counter" && d.doc_id !== "_settings")
         .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       return respond(200, { documents: docs }, event, METHODS);
     }
@@ -188,6 +203,29 @@ export const handler = async (event) => {
         ExpressionAttributeValues: marshall({ ":s": status, ":u": Date.now() }),
       }));
       return respond(200, { ok: true }, event, METHODS);
+    }
+
+    // ── Config del negocio para cotizaciones: logo + catálogo de precios ──
+    if (action === "get-settings") {
+      const existing = await getOwnedDoc(userId, "_settings");
+      return respond(200, { settings: { logo: existing?.logo || "", catalog: existing?.catalog || [] } }, event, METHODS);
+    }
+    if (action === "save-settings") {
+      if (body.logo !== undefined && typeof body.logo === "string" && body.logo.length > MAX_LOGO_CHARS)
+        return respond(400, { error: "El logo es muy pesado" }, event, METHODS);
+      const catalog = body.catalog !== undefined ? validateCatalog(body.catalog) : undefined;
+      if (body.catalog !== undefined && !catalog)
+        return respond(400, { error: "El catálogo no es válido (nombre y precio ≥ 0)" }, event, METHODS);
+
+      const existing = await getOwnedDoc(userId, "_settings") || { user_id: userId, doc_id: "_settings", logo: "", catalog: [] };
+      const updated = {
+        ...existing,
+        logo: body.logo !== undefined ? clampString(body.logo, MAX_LOGO_CHARS) : existing.logo || "",
+        catalog: catalog !== undefined ? catalog : existing.catalog || [],
+        updatedAt: Date.now(),
+      };
+      await dynamo.send(new PutItemCommand({ TableName: TABLE, Item: marshall(updated) }));
+      return respond(200, { settings: { logo: updated.logo, catalog: updated.catalog } }, event, METHODS);
     }
 
     // ── Eliminar ────────────────────────────────────────────────────────

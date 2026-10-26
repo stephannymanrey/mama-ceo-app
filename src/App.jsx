@@ -2570,7 +2570,7 @@ export default function App() {
   // Studio/Facturas ya no están en ALL_MENU_ITEMS (viven como botones en
   // Mini Apps), pero activeView sí puede tomar esos valores — sin esto la
   // etiqueta de la vista activa mostraba "Inicio" por error al entrar ahí.
-  const EXTRA_VIEW_LABELS = { studio: "Studio ✦", invoicing: "Facturas ✦" };
+  const EXTRA_VIEW_LABELS = { studio: "Studio ✦", invoicing: "Cotizaciones ✦" };
   const activeLabel = menu.find((item) => item.id === activeView)?.label || EXTRA_VIEW_LABELS[activeView] || "Inicio";
 
   const selectUserMode = (mode) => {
@@ -3209,30 +3209,17 @@ export default function App() {
           <button
             className="sidebar-tool-btn sidebar-miniapp-btn"
             onClick={() => {
-              if (isToolLocked(effectivePlan, "invoicing")) { setUpgradeModal({ feature: "Facturas ✦", plan: planLabel(toolMinPlan("invoicing")) }); return; }
+              if (isToolLocked(effectivePlan, "invoicing")) { setUpgradeModal({ feature: "Cotizaciones ✦", plan: planLabel(toolMinPlan("invoicing")) }); return; }
               setActiveView("invoicing"); setMobileMenuOpen(false);
             }}
-            title="Facturas — Crea y envía facturas a tus clientas">
+            title="Cotizaciones — Crea cotizaciones con tu logo y descárgalas en PDF">
             <span className="sidebar-tool-icon">🧾</span>
             <span className="sidebar-tool-label">
-              Facturas ✦
-              <span className="sidebar-miniapp-sub">Crea y envía facturas a tus clientas</span>
+              Cotizaciones ✦
+              <span className="sidebar-miniapp-sub">Crea cotizaciones con tu logo en PDF</span>
             </span>
             {isToolLocked(effectivePlan, "invoicing") ? <span className="menu-lock">🔒</span> : <span className="sidebar-miniapp-arrow">↗</span>}
           </button>
-          <a
-            className="sidebar-tool-btn sidebar-miniapp-btn"
-            href="https://www.umpacademy.co"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="UMP Academy — Aprende a monetizar tu negocio">
-            <span className="sidebar-tool-icon">🎓</span>
-            <span className="sidebar-tool-label">
-              UMP Academy
-              <span className="sidebar-miniapp-sub">Aprende a monetizar tu conocimiento</span>
-            </span>
-            <span className="sidebar-miniapp-arrow">↗</span>
-          </a>
           <a
             className="sidebar-tool-btn sidebar-miniapp-btn"
             href="/businessplan"
@@ -3243,6 +3230,19 @@ export default function App() {
             <span className="sidebar-tool-label">
               UMP Business Plan
               <span className="sidebar-miniapp-sub">Construye tu plan de negocio gratis</span>
+            </span>
+            <span className="sidebar-miniapp-arrow">↗</span>
+          </a>
+          <a
+            className="sidebar-tool-btn sidebar-miniapp-btn"
+            href="https://www.umpacademy.co"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="UMP Academy — Aprende a monetizar tu negocio">
+            <span className="sidebar-tool-icon">🎓</span>
+            <span className="sidebar-tool-label">
+              UMP Academy
+              <span className="sidebar-miniapp-sub">Aprende a monetizar tu conocimiento</span>
             </span>
             <span className="sidebar-miniapp-arrow">↗</span>
           </a>
