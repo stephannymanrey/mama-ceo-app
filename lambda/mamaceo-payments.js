@@ -31,8 +31,8 @@ const METHODS = "POST,OPTIONS";
 // leer los hashes en el JS público y atacarlos offline sin límite de intentos.
 let BETA_CODES = [
   { hash: "1df2627e3ac0f8268c070acdbf13b0d354f16f2c38bf873dee2d54b86af13440", days: 90, expiry: new Date("2026-12-31T23:59:59").getTime() },
-  { hash: "42f8fdb0a7354c04e994970759b87588906eccb7741c9bc5a7dd52471f7961bf", days: 60, expiry: new Date("2027-12-31T23:59:59").getTime() },
-  { hash: "e838734981031ac5ebe63fc160b956a2b17c3e34768c34d73c4f3b2ff20d71d9", days: 60, expiry: new Date("2027-12-31T23:59:59").getTime() },
+  { hash: "42f8fdb0a7354c04e994970759b87588906eccb7741c9bc5a7dd52471f7961bf", days: 30, expiry: new Date("2027-12-31T23:59:59").getTime() },
+  { hash: "e838734981031ac5ebe63fc160b956a2b17c3e34768c34d73c4f3b2ff20d71d9", days: 30, expiry: new Date("2027-12-31T23:59:59").getTime() },
 ];
 try { if (process.env.BETA_CODES) BETA_CODES = JSON.parse(process.env.BETA_CODES); } catch {}
 const BETA_ATTEMPTS_PER_DAY = 20; // tope generoso para typos, bajo para bloquear fuerza bruta del hash
