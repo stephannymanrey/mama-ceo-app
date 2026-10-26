@@ -21,6 +21,11 @@ export default function TeleprompterView({ initialText = "", onClose, onMarkReco
   const lastTsRef = useRef(null);
   const pxPerMsRef = useRef(0);
   const tickRef = useRef(null); // guarda la última versión de `tick` para que pueda reprogramarse a sí misma sin referenciarse en su propia declaración
+  // El navegador redondea scrollTop a enteros, así que un avance menor a 1px
+  // por cuadro (normal en lecturas de varios minutos) se pierde si se lee y
+  // se vuelve a escribir scrollTop cada vez. Este acumulador guarda el valor
+  // exacto con decimales por fuera, y solo se escribe el redondeado.
+  const scrollAccumRef = useRef(0);
 
   const stopLoop = () => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -34,8 +39,9 @@ export default function TeleprompterView({ initialText = "", onClose, onMarkReco
     if (lastTsRef.current == null) lastTsRef.current = ts;
     const dt = ts - lastTsRef.current;
     lastTsRef.current = ts;
-    el.scrollTop += pxPerMsRef.current * speed * dt;
-    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 2) {
+    scrollAccumRef.current += pxPerMsRef.current * speed * dt;
+    el.scrollTop = Math.round(scrollAccumRef.current);
+    if (scrollAccumRef.current + el.clientHeight >= el.scrollHeight - 2) {
       setFinished(true);
       setRunning(false);
       stopLoop();
@@ -56,6 +62,7 @@ export default function TeleprompterView({ initialText = "", onClose, onMarkReco
     const totalMs = Math.max(10, Number(minutes) || 2) * 60 * 1000;
     const distance = Math.max(1, el.scrollHeight - el.clientHeight);
     pxPerMsRef.current = distance / totalMs;
+    scrollAccumRef.current = 0;
     el.scrollTop = 0;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- solo debe medir una vez al arrancar, no en cada cambio de minutes
   }, [running]);
