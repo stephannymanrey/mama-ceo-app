@@ -14,8 +14,10 @@ const PLANS = [
       "Calendario y citas familiares",
       "Presupuesto del hogar",
       "Check-in de bienestar diario",
+      "Recordatorios push con tus citas y tareas",
       "Hasta 15 clientes con pipeline",
       "30 movimientos financieros al mes",
+      "Cotizaciones con tu logo en PDF",
     ],
     highlight: false,
   },
@@ -29,6 +31,7 @@ const PLANS = [
       "Hasta 50 clientes con pipeline",
       "100 movimientos financieros al mes",
       "Studio IA: guiones, hooks e ideas",
+      "Teleprompter para grabar tus guiones",
       "Seguimiento de clientas con mensajes sugeridos por IA",
       "Análisis Pareto de negocio",
     ],
@@ -299,6 +302,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
                 { icon: "🛒", title: "Todo el hogar organizado", desc: "Lista de compras, tareas del hogar, presupuesto familiar y recordatorios — todo en un panel claro para que no se te escape nada." },
                 { icon: "📅", title: "Calendario familiar", desc: "Citas médicas, actividades de tus hijos, compromisos del hogar — organizados en un solo lugar para toda la familia." },
                 { icon: "🌿", title: "Tu bienestar", desc: "Check-in emocional diario, temporizador Pomodoro y seguimiento de tus metas personales. Porque tú también importas." },
+                { icon: "🔔", title: "Recordatorios que sí llegan", desc: "Notificaciones push a la hora que elijas, con tus citas y tareas de hoy — en el celular, la tablet o el computador, con o sin la app abierta." },
               ].map((f, i) => (
                 <div key={i} className="landing-feat-card">
                   <span className="landing-feat-icon">{f.icon}</span>
@@ -315,8 +319,9 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
               {[
                 { icon: "💰", title: "Finanzas claras", desc: "Registra ingresos y gastos, sigue tus metas de venta y entiende el flujo de tu negocio de un vistazo." },
                 { icon: "🤝", title: "Seguimiento de Clientas IA", desc: "Organiza tus leads de frío a cerrado y deja que la IA te sugiera el mensaje exacto de WhatsApp para retomar cada conversación." },
-                { icon: "✍️", title: "Studio de contenido IA", desc: "Guiones para Reels, YouTube y Podcast, hooks que detienen el scroll, ideas por categoría y lead magnets — todo con IA en segundos." },
+                { icon: "✍️", title: "Studio de contenido IA", desc: "Guiones para Reels, YouTube y Podcast, hooks que detienen el scroll, ideas por categoría y lead magnets — todo con IA en segundos. Después, grábalos con el teleprompter integrado." },
                 { icon: "🎬", title: "Editor de video ReelCut", desc: "Sube tu video, elimina los silencios automáticamente y extrae tus mejores Reels verticales con IA — listo para publicar." },
+                { icon: "🧾", title: "Cotizaciones profesionales", desc: "Sube tu logo, guarda tu catálogo de servicios con precios, y arma una cotización en PDF lista para enviar en menos de 2 minutos." },
               ].map((f, i) => (
                 <div key={i} className="landing-feat-card">
                   <span className="landing-feat-icon">{f.icon}</span>
