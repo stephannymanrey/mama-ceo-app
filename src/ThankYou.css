@@ -1,0 +1,60 @@
+.ty-wrap {
+  min-height: 100vh;
+  display: flex; align-items: center; justify-content: center;
+  padding: 32px 16px;
+  background: linear-gradient(160deg, #FDF9F6 0%, #FCEADD 100%);
+}
+
+.ty-card {
+  width: min(480px, 100%);
+  background: #fff;
+  border-radius: 20px;
+  padding: 36px 28px;
+  text-align: center;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.08);
+}
+
+.ty-emoji { font-size: 44px; margin: 14px 0 4px; }
+.ty-title { font-size: 26px; font-weight: 900; color: var(--l-text); margin: 0 0 10px; }
+.ty-sub { font-size: 15px; color: var(--l-muted); line-height: 1.6; margin: 0 0 28px; }
+
+.ty-steps { display: flex; flex-direction: column; gap: 16px; text-align: left; margin-bottom: 28px; }
+.ty-step { display: flex; gap: 12px; align-items: flex-start; }
+.ty-step-num {
+  flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%;
+  background: var(--l-border); color: var(--l-muted);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 13px;
+}
+.ty-step--done .ty-step-num { background: #1D9E75; color: #fff; }
+.ty-step strong { display: block; font-size: 14.5px; color: var(--l-text); margin-bottom: 2px; }
+.ty-step p { margin: 0; font-size: 13px; color: var(--l-muted); line-height: 1.5; }
+.ty-step u { text-decoration-color: var(--l-gold); }
+
+.ty-cta {
+  width: 100%; padding: 15px 0; border: none; border-radius: 30px;
+  background: var(--l-gold); color: #1a1a1a; font-size: 16px; font-weight: 800;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 4px 20px rgba(201, 162, 39, 0.4);
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.ty-cta:hover { transform: translateY(-2px); box-shadow: 0 7px 28px rgba(201, 162, 39, 0.5); }
+
+.ty-login-link {
+  display: block; width: 100%; margin-top: 12px; padding: 8px;
+  background: none; border: none; cursor: pointer; font-family: inherit;
+  font-size: 13px; font-weight: 600; color: var(--l-muted); text-decoration: underline;
+}
+
+.ty-support { margin-top: 28px; padding-top: 20px; border-top: 1px solid var(--l-border); }
+.ty-support p { font-size: 13px; color: var(--l-muted); margin: 0 0 12px; }
+.ty-wa-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 11px 20px; border-radius: 30px; background: #25d366; color: #fff;
+  font-size: 13.5px; font-weight: 700; text-decoration: none;
+}
+.ty-wa-btn:hover { background: #1ebe5d; }
+
+@media (max-width: 480px) {
+  .ty-card { padding: 28px 20px; }
+}

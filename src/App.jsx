@@ -5,6 +5,7 @@ import { getUsageLimits, planMeetsMinimum, isToolLocked, toolMinPlan, planLabel 
 import Logo from "./Logo";
 import Studio from "./Studio";
 import Landing from "./Landing";
+import ThankYou from "./ThankYou";
 import PlanBuilder from "./PlanBuilder";
 import SilenceCutter from "./SilenceCutter";
 import InvoicingTool from "./tools/invoicing/InvoicingTool";
@@ -2623,6 +2624,14 @@ export default function App() {
   const cleanPath = window.location.pathname.replace(/\/$/, "");
   if (cleanPath === "/businessplan" || cleanPath === "/plan-de-negocio") return <PlanBuilder />;
   if (cleanPath === "/editor") return <SilenceCutter />;
+  if (cleanPath === "/gracias" && !user && preAuthView === "landing") {
+    return (
+      <ThankYou
+        onCreateAccount={() => { setAuthMode("signup"); setPreAuthView("auth"); }}
+        onLogin={() => { setAuthMode("login"); setPreAuthView("auth"); }}
+      />
+    );
+  }
 
   if (!ready || isRestoringRemote) {
     return (
@@ -2680,7 +2689,6 @@ export default function App() {
       return (
         <Landing
           onLogin={() => { setAuthMode("login"); setPreAuthView("auth"); }}
-          onSignup={(email) => { if (email) setAuthEmail(email); setAuthMode("signup"); setPreAuthView("auth"); }}
           onTerminos={() => setPreAuthView("terminos")}
           onPrivacidad={() => setPreAuthView("privacidad")}
           prices={PLAN_PRICES}

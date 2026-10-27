@@ -81,7 +81,7 @@ const FAQS = [
   },
 ];
 
-export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, prices, hotmartLinks, hotmartLinksYear }) {
+export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hotmartLinks, hotmartLinksYear }) {
   const [isYearly, setIsYearly] = useState(false);
   const [openFaq, setOpenFaq] = useState(null);
   const [imgError, setImgError] = useState(false);
@@ -160,7 +160,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
               </svg>
               <span className="lbtn-wa-nav-label">Solicitar acceso</span>
             </a>
-            <button className="lbtn-primary" onClick={() => { trackEvent("cta_click", { location: "navbar" }); onSignup(); }}>Comenzar</button>
+            <button className="lbtn-primary" onClick={() => { trackEvent("cta_click", { location: "navbar" }); scrollTo("precios"); }}>Comenzar</button>
           </div>
         </div>
       </nav>
@@ -178,7 +178,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
             <strong>organizar tu casa, vender más y cuidarte</strong> — todo desde el teléfono, sin perder el hilo de nada.
           </p>
           <div className="landing-hero-ctas">
-            <button className="lbtn-hero" onClick={() => { trackEvent("cta_click", { location: "hero" }); onSignup(); }}>
+            <button className="lbtn-hero" onClick={() => { trackEvent("cta_click", { location: "hero" }); scrollTo("precios"); }}>
               Empieza ahora
             </button>
           </div>
@@ -409,9 +409,9 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
                   </ul>
                   <button
                     className={`landing-plan-btn${plan.highlight ? " featured" : ""}`}
-                    onClick={() => { trackEvent("cta_click", { location: "pricing", plan: plan.id }); onSignup(); }}
+                    onClick={() => { trackEvent("cta_click", { location: "pricing", plan: plan.id }); window.open(link, "_blank"); }}
                   >
-                    Comenzar con este plan
+                    Comenzar con este plan →
                   </button>
                 </div>
               );
@@ -449,8 +449,8 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
         <div className="landing-container landing-final-cta-inner">
           <h2>¿Lista para organizar tu casa y tu negocio?</h2>
           <p>Empieza hoy — elige tu plan y accede de inmediato.</p>
-          <button className="lbtn-cta-white" onClick={() => { trackEvent("cta_click", { location: "final_cta" }); onSignup(); }}>
-            Crear mi cuenta
+          <button className="lbtn-cta-white" onClick={() => { trackEvent("cta_click", { location: "final_cta" }); scrollTo("precios"); }}>
+            Ver planes y comenzar
           </button>
           <p className="landing-cta-note">Cancela cuando quieras · Datos seguros</p>
         </div>
