@@ -56,6 +56,10 @@ const PLANS = [
 
 const FAQS = [
   {
+    q: "¿Es solo para mamás con negocio, o también para las que quieren organizar su casa?",
+    a: "Para las dos. Si solo quieres organizar tu hogar — tareas, calendario familiar, presupuesto, bienestar — el plan Mamá es 100% para ti, sin nada de negocio de por medio. Y si además emprendes, los planes Emprendedora y CEO suman todo lo de tu negocio (clientas, finanzas, contenido, cotizaciones) sin que tengas que usar otra app aparte para tu casa.",
+  },
+  {
     q: "¿Cómo elijo mi plan?",
     a: "Creas tu cuenta, eliges el plan que más se ajusta a tu etapa actual y te lleva al pago de forma segura. En cualquier momento puedes cambiarlo desde tu perfil.",
   },
@@ -319,8 +323,7 @@ export default function Landing({ onLogin, onSignup, onTerminos, onPrivacidad, p
               {[
                 { icon: "💰", title: "Finanzas claras", desc: "Registra ingresos y gastos, sigue tus metas de venta y entiende el flujo de tu negocio de un vistazo." },
                 { icon: "🤝", title: "Seguimiento de Clientas IA", desc: "Organiza tus leads de frío a cerrado y deja que la IA te sugiera el mensaje exacto de WhatsApp para retomar cada conversación." },
-                { icon: "✍️", title: "Studio de contenido IA", desc: "Guiones para Reels, YouTube y Podcast, hooks que detienen el scroll, ideas por categoría y lead magnets — todo con IA en segundos. Después, grábalos con el teleprompter integrado." },
-                { icon: "🎬", title: "Editor de video ReelCut", desc: "Sube tu video, elimina los silencios automáticamente y extrae tus mejores Reels verticales con IA — listo para publicar." },
+                { icon: "✍️", title: "Studio de contenido IA", desc: "Guiones con IA, teleprompter para grabarlos, y ReelCut para cortar silencios y sacar tus mejores Reels — todo el proceso, de la idea al video listo para publicar." },
                 { icon: "🧾", title: "Cotizaciones profesionales", desc: "Sube tu logo, guarda tu catálogo de servicios con precios, y arma una cotización en PDF lista para enviar en menos de 2 minutos." },
               ].map((f, i) => (
                 <div key={i} className="landing-feat-card">
