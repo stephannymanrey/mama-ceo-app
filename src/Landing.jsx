@@ -337,6 +337,87 @@ export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hot
         </div>
       </section>
 
+      {/* ── MOCKUPS ── */}
+      <section className="landing-section landing-mockups">
+        <div className="landing-container">
+          <h2 className="landing-h2">Así se ve por dentro</h2>
+          <p className="landing-section-sub">Dos cosas que vas a usar todos los días, en vivo.</p>
+          <div className="lmk-grid">
+            <div className="lmk-card">
+              <div className="lmk-phone">
+                <div className="lmk-notch" />
+                <div className="lmk-screen lmk-tp-screen">
+                  <div className="lmk-tp-rec"><span className="lmk-tp-dot" />REC · 0:48</div>
+                  <div className="lmk-tp-scroll">
+                    <p>Hola mamás, hoy quiero contarles</p>
+                    <p>cómo organizo mi negocio</p>
+                    <p className="lmk-tp-current">sin perder el control de mi casa.</p>
+                    <p>Por eso empecé a usar Mamá CEO App</p>
+                    <p>y la verdad, todo cambió para mí.</p>
+                    <p>Pégalo, dale play y grábate sin trabarte.</p>
+                  </div>
+                  <div className="lmk-tp-guide" />
+                </div>
+              </div>
+              <h3>🎥 Teleprompter para tus reels</h3>
+              <p>Pega tu guión, pon la duración y graba viéndolo pasar a tu ritmo — sin memorizar, sin trabarte.</p>
+            </div>
+            <div className="lmk-card">
+              <div className="lmk-phone">
+                <div className="lmk-notch" />
+                <div className="lmk-screen lmk-hogar-screen">
+                  <div className="lmk-push">
+                    <span className="lmk-push-icon">🔔</span>
+                    <div className="lmk-push-text">
+                      <strong>Mamá CEO App</strong>
+                      <p>Cita del pediatra en 1 hora — Juan</p>
+                    </div>
+                  </div>
+                  <div className="lmk-menu">
+                    <span className="lmk-menu-label">Hoy comemos</span>
+                    <strong>🍲 Sancocho de pollo</strong>
+                    <p>Lista de mercado lista con 6 ingredientes</p>
+                  </div>
+                </div>
+              </div>
+              <h3>🔔 Recordatorios y menú del día</h3>
+              <p>Notificaciones push a la hora que elijas, con tus citas, tareas y qué vas a cocinar hoy.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── TESTIMONIOS ── */}
+      <section className="landing-section landing-testimonials">
+        <div className="landing-container">
+          <h2 className="landing-h2">Lo que están viviendo otras mamás</h2>
+          <p className="landing-section-sub">Mensajes reales, directo de WhatsApp.</p>
+          <div className="ltst-grid">
+            {[
+              { name: "Catalina R.", avatar: "👩🏽", time: "10:42 a.m.", text: "Ya no se me olvida nada 😭🙏 las citas del pediatra, el mercado, hasta lo que vamos a comer... todo me llega al celular a la hora que yo elegí. Sentí que me quité un peso de encima." },
+              { name: "Juliana M.", avatar: "👩🏻", time: "8:15 p.m.", text: "El teleprompter me cambió la vida para grabar reels 🎥✨ ya no se me traba la lengua ni se me olvida el guión. Y las cotizaciones en PDF se ven súper profesionales, mis clientas lo notaron." },
+              { name: "Paola S.", avatar: "👩🏼", time: "6:03 p.m.", text: "Por fin sé cuánto me queda de ganancia real cada mes 💰 y el seguimiento de clientas con la IA me dice exactamente qué mandarles por WhatsApp. He cerrado ventas que se me iban a perder." },
+            ].map((t, i) => (
+              <div key={i} className="ltst-card">
+                <div className="ltst-header">
+                  <span className="ltst-avatar">{t.avatar}</span>
+                  <div className="ltst-headertext">
+                    <strong>{t.name}</strong>
+                    <span className="ltst-status">en línea</span>
+                  </div>
+                </div>
+                <div className="ltst-body">
+                  <div className="ltst-bubble">
+                    <p>{t.text}</p>
+                    <span className="ltst-meta">{t.time} <span className="ltst-check">✓✓</span></span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── TRANSFORMACIÓN ── */}
       <section className="landing-section landing-transform">
         <div className="landing-container">
