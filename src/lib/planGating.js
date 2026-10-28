@@ -51,7 +51,7 @@ export const TOOL_MIN_PLAN = {
   business: "emprendedora",
   clients: "emprendedora",
   studio: "emprendedora",
-  invoicing: "emprendedora",
+  invoicing: "ceo",
   editor: "emprendedora",
 };
 
