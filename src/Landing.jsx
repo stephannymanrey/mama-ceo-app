@@ -341,48 +341,33 @@ export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hot
       <section className="landing-section landing-mockups">
         <div className="landing-container">
           <h2 className="landing-h2">Así se ve por dentro</h2>
-          <p className="landing-section-sub">Dos cosas que vas a usar todos los días, en vivo.</p>
+          <p className="landing-section-sub">Lo que vas a usar todos los días, en vivo.</p>
           <div className="lmk-grid">
-            <div className="lmk-card">
-              <div className="lmk-phone">
-                <div className="lmk-notch" />
-                <div className="lmk-screen lmk-tp-screen">
-                  <div className="lmk-tp-rec"><span className="lmk-tp-dot" />REC · 0:48</div>
-                  <div className="lmk-tp-scroll">
-                    <p>Hola mamás, hoy quiero contarles</p>
-                    <p>cómo organizo mi negocio</p>
-                    <p className="lmk-tp-current">sin perder el control de mi casa.</p>
-                    <p>Por eso empecé a usar Mamá CEO App</p>
-                    <p>y la verdad, todo cambió para mí.</p>
-                    <p>Pégalo, dale play y grábate sin trabarte.</p>
-                  </div>
-                  <div className="lmk-tp-guide" />
-                </div>
-              </div>
-              <h3>🎥 Teleprompter para tus reels</h3>
-              <p>Pega tu guión, pon la duración y graba viéndolo pasar a tu ritmo — sin memorizar, sin trabarte.</p>
-            </div>
-            <div className="lmk-card">
-              <div className="lmk-phone">
-                <div className="lmk-notch" />
-                <div className="lmk-screen lmk-hogar-screen">
-                  <div className="lmk-push">
-                    <span className="lmk-push-icon">🔔</span>
-                    <div className="lmk-push-text">
-                      <strong>Mamá CEO App</strong>
-                      <p>Cita del pediatra en 1 hora — Juan</p>
-                    </div>
-                  </div>
-                  <div className="lmk-menu">
-                    <span className="lmk-menu-label">Hoy comemos</span>
-                    <strong>🍲 Sancocho de pollo</strong>
-                    <p>Lista de mercado lista con 6 ingredientes</p>
+            {[
+              { src: "/videos/mockups/finanzas.mp4", title: "💰 Finanzas de tu negocio", desc: "Meta de ventas, ingresos, gastos y conversión — todo claro de un vistazo." },
+              { src: "/videos/mockups/ideas.mp4", title: "💡 Ideas de contenido con IA", desc: "Escribe un tema y la IA te arma ideas de reels, emails y mensajes de WhatsApp." },
+              { src: "/videos/mockups/teleprompter.mp4", title: "🎥 Teleprompter para tus reels", desc: "Pega tu guión, pon la duración y graba viéndolo pasar a tu ritmo — sin memorizar." },
+              { src: "/videos/mockups/hogar.mp4", title: "🔔 Recordatorios y menú del día", desc: "Notificaciones push a la hora que elijas, con tus citas, tareas y qué vas a cocinar hoy." },
+            ].map((m, i) => (
+              <div key={i} className="lmk-card">
+                <div className="lmk-phone">
+                  <div className="lmk-notch" />
+                  <div className="lmk-screen">
+                    <video
+                      src={m.src}
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      preload="metadata"
+                      className="lmk-video"
+                    />
                   </div>
                 </div>
+                <h3>{m.title}</h3>
+                <p>{m.desc}</p>
               </div>
-              <h3>🔔 Recordatorios y menú del día</h3>
-              <p>Notificaciones push a la hora que elijas, con tus citas, tareas y qué vas a cocinar hoy.</p>
-            </div>
+            ))}
           </div>
         </div>
       </section>

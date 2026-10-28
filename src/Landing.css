@@ -884,139 +884,55 @@
   .lwa-bubble { max-width: 170px; font-size: 12px; }
 }
 
-/* ── Mockups animados (Teleprompter / Hogar) ── */
+/* ── Mockups en video (Finanzas / Ideas / Teleprompter / Hogar) ── */
 .lmk-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 32px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px;
   margin-top: 36px;
 }
 .lmk-card { text-align: center; }
-.lmk-card h3 { margin: 18px 0 6px; font-size: 17px; }
-.lmk-card p { color: var(--l-muted); font-size: 14px; line-height: 1.5; max-width: 300px; margin: 0 auto; }
+.lmk-card h3 { margin: 18px 0 6px; font-size: 16px; }
+.lmk-card p { color: var(--l-muted); font-size: 13.5px; line-height: 1.5; max-width: 260px; margin: 0 auto; }
 
 .lmk-phone {
-  width: 220px;
-  height: 440px;
+  width: 190px;
+  height: 380px;
   margin: 0 auto;
   background: #1c1b1f;
-  border-radius: 34px;
-  padding: 10px;
+  border-radius: 30px;
+  padding: 9px;
   box-shadow: 0 16px 40px rgba(0,0,0,0.18);
   position: relative;
 }
 .lmk-notch {
   position: absolute;
-  top: 10px; left: 50%;
+  top: 9px; left: 50%;
   transform: translateX(-50%);
-  width: 70px; height: 16px;
+  width: 62px; height: 14px;
   background: #1c1b1f;
-  border-radius: 0 0 12px 12px;
+  border-radius: 0 0 10px 10px;
   z-index: 2;
 }
 .lmk-screen {
   width: 100%; height: 100%;
   background: #0f0e12;
-  border-radius: 24px;
+  border-radius: 21px;
   overflow: hidden;
   position: relative;
 }
-
-/* Teleprompter mockup */
-.lmk-tp-screen { background: #000; display: flex; flex-direction: column; }
-.lmk-tp-rec {
-  display: flex; align-items: center; gap: 6px;
-  color: #ff5b5b; font-size: 11px; font-weight: 700;
-  padding: 14px 14px 8px;
-  letter-spacing: 0.3px;
+.lmk-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
-.lmk-tp-dot {
-  width: 7px; height: 7px; border-radius: 50%;
-  background: #ff5b5b;
-  animation: lmk-rec-blink 1.1s ease-in-out infinite;
+@media (max-width: 900px) {
+  .lmk-grid { grid-template-columns: repeat(2, 1fr); gap: 36px; }
 }
-@keyframes lmk-rec-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
-.lmk-tp-scroll {
-  flex: 1;
-  color: #e9e9ee;
-  font-size: 13px;
-  line-height: 1.9;
-  font-weight: 600;
-  padding: 0 16px;
-  animation: lmk-tp-autoscroll 9s linear infinite;
-}
-.lmk-tp-scroll p { margin: 10px 0; opacity: 0.45; transition: opacity 0.2s; }
-.lmk-tp-scroll p.lmk-tp-current { opacity: 1; color: #fff; }
-@keyframes lmk-tp-autoscroll {
-  0%   { transform: translateY(40px); }
-  85%  { transform: translateY(-190px); }
-  100% { transform: translateY(-190px); }
-}
-.lmk-tp-guide {
-  position: absolute;
-  left: 0; right: 0; top: 50%;
-  height: 2px;
-  background: repeating-linear-gradient(90deg, var(--l-gold) 0 8px, transparent 8px 16px);
-  opacity: 0.8;
-}
-
-/* Hogar mockup */
-.lmk-hogar-screen {
-  background: linear-gradient(180deg, #fff 0%, var(--l-bg) 100%);
-  padding: 18px 14px;
-}
-.lmk-push {
-  display: flex; gap: 10px;
-  background: #fff;
-  border-radius: 14px;
-  padding: 10px 12px;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-  opacity: 0;
-  animation: lmk-push-in 9s ease-in-out infinite;
-}
-.lmk-push-icon { font-size: 20px; line-height: 1; }
-.lmk-push-text strong { display: block; font-size: 12px; color: var(--l-text); }
-.lmk-push-text p { margin: 2px 0 0; font-size: 11.5px; color: var(--l-muted); }
-@keyframes lmk-push-in {
-  0%   { opacity: 0; transform: translateY(-14px); }
-  8%   { opacity: 1; transform: translateY(0); }
-  40%  { opacity: 1; transform: translateY(0); }
-  48%  { opacity: 0; transform: translateY(-6px); }
-  100% { opacity: 0; transform: translateY(-6px); }
-}
-.lmk-menu {
-  margin-top: 22px;
-  background: var(--l-gold-light);
-  border: 1px solid var(--l-border);
-  border-radius: 14px;
-  padding: 16px;
-  opacity: 0;
-  animation: lmk-menu-in 9s ease-in-out infinite;
-}
-.lmk-menu-label {
-  display: inline-block;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--l-gold-hover);
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  margin-bottom: 6px;
-}
-.lmk-menu strong { display: block; font-size: 15px; color: var(--l-text); }
-.lmk-menu p { margin: 6px 0 0; font-size: 12px; color: var(--l-muted); }
-@keyframes lmk-menu-in {
-  0%   { opacity: 0; transform: translateY(10px); }
-  45%  { opacity: 0; transform: translateY(10px); }
-  55%  { opacity: 1; transform: translateY(0); }
-  95%  { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(0); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .lmk-tp-scroll, .lmk-push, .lmk-menu, .lmk-tp-dot { animation: none; }
-}
-@media (max-width: 700px) {
+@media (max-width: 520px) {
   .lmk-grid { grid-template-columns: 1fr; gap: 40px; }
-  .lmk-phone { width: 190px; height: 380px; }
+  .lmk-phone { width: 200px; height: 400px; }
 }
 
 /* ── Testimonios estilo WhatsApp ── */
