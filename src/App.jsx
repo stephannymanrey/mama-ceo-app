@@ -3261,19 +3261,21 @@ export default function App() {
             </span>
             {isToolLocked(effectivePlan, "studio") ? <span className="menu-lock">🔒</span> : <span className="sidebar-miniapp-arrow">↗</span>}
           </button>
-          <a
+          <button
             className="sidebar-tool-btn sidebar-miniapp-btn"
-            href="/editor"
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={() => {
+              if (isToolLocked(effectivePlan, "editor")) { setUpgradeModal({ feature: "ReelCut ✦", plan: planLabel(toolMinPlan("editor")) }); return; }
+              window.open("/editor", "_blank", "noopener,noreferrer");
+              setMobileMenuOpen(false);
+            }}
             title="ReelCut — Corta silencios y extrae Reels con IA">
             <span className="sidebar-tool-icon">✂️</span>
             <span className="sidebar-tool-label">
-              ReelCut
+              ReelCut ✦
               <span className="sidebar-miniapp-sub">Corta silencios y saca tus Reels con IA</span>
             </span>
-            <span className="sidebar-miniapp-arrow">↗</span>
-          </a>
+            {isToolLocked(effectivePlan, "editor") ? <span className="menu-lock">🔒</span> : <span className="sidebar-miniapp-arrow">↗</span>}
+          </button>
           <button
             className="sidebar-tool-btn sidebar-miniapp-btn"
             onClick={() => {
