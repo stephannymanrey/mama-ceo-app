@@ -353,10 +353,11 @@ export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hot
                   loop
                   muted
                   playsInline
-                  preload="metadata"
+                  preload="auto"
                   className="lmk-video"
+                  onLoadedData={(e) => { if (e.currentTarget.currentTime === 0) e.currentTarget.currentTime = 0.1; }}
                   onMouseEnter={(e) => e.currentTarget.play()}
-                  onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
+                  onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0.1; }}
                   onClick={(e) => { e.currentTarget.paused ? e.currentTarget.play() : e.currentTarget.pause(); }}
                 />
                 <h3>{m.title}</h3>
