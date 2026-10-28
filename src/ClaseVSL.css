@@ -66,6 +66,20 @@
   outline: none;
   border-color: var(--l-brand);
 }
+.clase-phone-row {
+  display: flex;
+  gap: 10px;
+}
+.clase-country-select {
+  width: auto;
+  flex: 0 0 92px;
+  padding: 14px 8px;
+  cursor: pointer;
+}
+.clase-phone-input {
+  flex: 1;
+  min-width: 0;
+}
 .clase-error {
   color: #c0392b;
   font-size: 13.5px;

@@ -824,8 +824,9 @@ Responde SOLO JSON válido:
 // está configurado el contacto igual se crea en Brevo, solo queda sin lista
 // asignada hasta que se defina (un solo env var, sin redeploy).
 async function handleCaptureLead(body, event) {
-  const email  = String(body.email || "").trim().toLowerCase();
-  const nombre = String(body.nombre || "").trim().slice(0, 200);
+  const email    = String(body.email || "").trim().toLowerCase();
+  const nombre   = String(body.nombre || "").trim().slice(0, 200);
+  const whatsapp = String(body.whatsapp || "").replace(/[^\d+]/g, "").slice(0, 20);
   if (!email || !email.includes("@")) return respond(400, { error: "Correo inválido" }, event);
 
   const brevoKey = process.env.BREVO_API_KEY;
@@ -838,7 +839,7 @@ async function handleCaptureLead(body, event) {
       headers: { "api-key": brevoKey, "Content-Type": "application/json" },
       body: JSON.stringify({
         email,
-        attributes: { NOMBRE: nombre },
+        attributes: { NOMBRE: nombre, ...(whatsapp ? { SMS: whatsapp } : {}) },
         updateEnabled: true,
         ...(listId ? { listIds: [Number(listId)] } : {}),
       }),
