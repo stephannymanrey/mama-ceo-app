@@ -15,9 +15,11 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const [coveringTitle, setCoveringTitle] = useState(false);
 
   const playerHostRef = useRef(null);
   const playerRef = useRef(null);
+  const endCheckRef = useRef(null);
 
   useEffect(() => {
     const prevTitle = document.title;
@@ -50,6 +52,13 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
     if (step !== "video") return;
     let cancelled = false;
 
+    const finishVideo = () => {
+      if (endCheckRef.current) { clearInterval(endCheckRef.current); endCheckRef.current = null; }
+      try { playerRef.current?.pauseVideo?.(); } catch { /* noop */ }
+      trackEvent("clase_video_ended");
+      setVideoEnded(true);
+    };
+
     const createPlayer = () => {
       if (cancelled || !playerHostRef.current || playerRef.current) return;
       playerRef.current = new window.YT.Player(playerHostRef.current, {
@@ -63,12 +72,34 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
           playsinline: 1,
           fs: 0,
           iv_load_policy: 3,
+          vq: "hd1080",
         },
         events: {
+          onReady: (ev) => {
+            try { ev.target.setPlaybackQuality("hd1080"); } catch { /* noop */ }
+            // El overlay de título de YouTube aparece ~3s al iniciar; lo tapamos con un div propio.
+            setCoveringTitle(true);
+            setTimeout(() => setCoveringTitle(false), 3200);
+          },
           onStateChange: (ev) => {
+            if (ev.data === window.YT.PlayerState.PLAYING) {
+              try { ev.target.setPlaybackQuality("hd1080"); } catch { /* noop */ }
+              // Se detiene justo antes del final real para que nunca se dispare
+              // la pantalla nativa de "videos sugeridos" de YouTube.
+              if (!endCheckRef.current) {
+                endCheckRef.current = setInterval(() => {
+                  const player = playerRef.current;
+                  if (!player?.getDuration) return;
+                  const duration = player.getDuration();
+                  const current = player.getCurrentTime();
+                  if (duration > 0 && duration - current <= 0.6) {
+                    finishVideo();
+                  }
+                }, 250);
+              }
+            }
             if (ev.data === window.YT.PlayerState.ENDED) {
-              trackEvent("clase_video_ended");
-              setVideoEnded(true);
+              finishVideo();
             }
           },
         },
@@ -91,7 +122,10 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
       };
     }
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+      if (endCheckRef.current) { clearInterval(endCheckRef.current); endCheckRef.current = null; }
+    };
   }, [step]);
 
   return (
@@ -136,10 +170,14 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
       {step === "video" && (
         <>
           <div className={`clase-backdrop${videoEnded ? " clase-backdrop--hidden" : ""}`} />
+          {!videoEnded && (
+            <p className="clase-backdrop-msg">✨ Esta clase te va a cambiar la vida — dura solo 5 minutos</p>
+          )}
           {!pipClosed && (
             <div className={`clase-video-wrap${videoEnded ? " clase-video-wrap--pip" : ""}`}>
               <div className="clase-video-inner">
                 <div ref={playerHostRef} className="clase-video-el" />
+                {coveringTitle && !videoEnded && <div className="clase-title-cover" />}
               </div>
               {videoEnded && (
                 <button
