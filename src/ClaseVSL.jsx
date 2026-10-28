@@ -7,10 +7,11 @@ const API_URL = "https://lq3avrfazlfuyaakkt5iwz54ym0aqxvv.lambda-url.us-east-1.o
 const YT_VIDEO_ID = "GpUXT5VfTk8";
 const WHATSAPP_URL = "https://wa.me/573181751966?text=Hola%21+Tengo+una+duda+sobre+la+clase+gratuita";
 
-export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, hotmartLinks, hotmartLinksYear }) {
-  const [step, setStep] = useState("form"); // "form" | "video"
+export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, hotmartLinks, hotmartLinksYear, startAtVideo = false }) {
+  const [step, setStep] = useState(startAtVideo ? "video" : "form"); // "form" | "video"
   const [videoEnded, setVideoEnded] = useState(false);
   const [pipClosed, setPipClosed] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(true);
   const [nombre, setNombre] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -54,7 +55,13 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
 
     const finishVideo = () => {
       if (endCheckRef.current) { clearInterval(endCheckRef.current); endCheckRef.current = null; }
-      try { playerRef.current?.pauseVideo?.(); } catch { /* noop */ }
+      // Se destruye el reproductor por completo (no solo se pausa): YouTube
+      // muestra su propia pantalla con el logo y videos sugeridos cada vez
+      // que el iframe queda en pausa, sin importar los parámetros usados —
+      // la única forma de quitarla es que el iframe deje de existir.
+      try { playerRef.current?.destroy?.(); } catch { /* noop */ }
+      playerRef.current = null;
+      setShowPlayer(false);
       trackEvent("clase_video_ended");
       setVideoEnded(true);
     };
@@ -188,7 +195,14 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
           {!pipClosed && (
             <div className={`clase-video-wrap${videoEnded ? " clase-video-wrap--pip" : ""}`}>
               <div className="clase-video-inner">
-                <div ref={playerHostRef} className="clase-video-el" />
+                {showPlayer ? (
+                  <div ref={playerHostRef} className="clase-video-el" />
+                ) : (
+                  <div className="clase-video-done">
+                    <span className="clase-video-done-icon">✓</span>
+                    <span>Clase completada</span>
+                  </div>
+                )}
                 {coveringTitle && !videoEnded && <div className="clase-title-cover" />}
               </div>
               {videoEnded && (

@@ -2625,7 +2625,7 @@ export default function App() {
   const cleanPath = window.location.pathname.replace(/\/$/, "");
   if (cleanPath === "/businessplan" || cleanPath === "/plan-de-negocio") return <PlanBuilder />;
   if (cleanPath === "/editor") return <SilenceCutter />;
-  if (cleanPath === "/clase") {
+  if (cleanPath === "/clase" || cleanPath === "/video") {
     return (
       <ClaseVSL
         onLogin={() => { setAuthMode("login"); setPreAuthView("auth"); }}
@@ -2634,6 +2634,7 @@ export default function App() {
         prices={PLAN_PRICES}
         hotmartLinks={HOTMART_LINKS}
         hotmartLinksYear={HOTMART_LINKS_YEAR}
+        startAtVideo={cleanPath === "/video"}
       />
     );
   }
