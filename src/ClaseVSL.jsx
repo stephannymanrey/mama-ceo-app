@@ -4,8 +4,8 @@ import { trackEvent } from "./analytics";
 import "./ClaseVSL.css";
 
 const API_URL = "https://lq3avrfazlfuyaakkt5iwz54ym0aqxvv.lambda-url.us-east-1.on.aws/";
-const BUNNY_LIBRARY_ID = "689817";
-const BUNNY_VIDEO_ID = "8e495465-8857-4b53-9927-eb7920c3c627";
+const BUNNY_LIBRARY_ID = "792198";
+const BUNNY_VIDEO_ID = "a1620f2b-587c-4d67-8d2a-8b292561768c";
 const BUNNY_EMBED_URL = `https://player.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${BUNNY_VIDEO_ID}?autoplay=true&muted=false&loop=false&preload=true`;
 const WHATSAPP_URL = "https://wa.me/573181751966?text=Hola%21+Tengo+una+duda+sobre+la+clase+gratuita";
 
