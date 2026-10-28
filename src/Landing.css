@@ -239,6 +239,14 @@
   color: #999;
   margin: 0;
 }
+.landing-hero-secondary {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--l-brand-dark);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.landing-hero-secondary:hover { color: var(--l-brand); }
 
 /* Hero visual */
 .landing-hero-visual {
@@ -574,7 +582,18 @@
 .landing-plan-btn.featured { background: var(--l-brand); color: #fff; border-color: var(--l-brand); }
 .landing-plan-btn.featured:hover { background: var(--l-brand-dark); border-color: var(--l-brand-dark); }
 .landing-plan-trial { text-align: center; font-size: 12px; color: #888; margin: 8px 0 0; }
-.landing-pricing-note { text-align: center; margin-top: 32px; font-size: 14px; color: var(--l-muted); }
+.landing-guarantee-badge {
+  text-align: center;
+  margin: 32px auto 0;
+  padding: 12px 22px;
+  max-width: fit-content;
+  background: var(--l-gold-light);
+  color: var(--l-gold-hover);
+  border-radius: 30px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.landing-pricing-note { text-align: center; margin-top: 16px; font-size: 14px; color: var(--l-muted); }
 
 /* ── FAQ ── */
 .landing-faq { background: var(--l-bg-alt); }
@@ -738,7 +757,18 @@
 }
 .landing-final-cta-inner { max-width: 600px; margin: 0 auto; }
 .landing-final-cta h2 { font-size: clamp(24px, 5vw, 38px); font-weight: 900; margin: 0 0 12px; }
-.landing-final-cta p { font-size: 17px; opacity: 0.9; margin: 0 0 32px; }
+.landing-final-cta p { font-size: 17px; opacity: 0.9; margin: 0 0 20px; }
+.landing-final-quote {
+  font-size: 14.5px;
+  font-style: italic;
+  line-height: 1.6;
+  opacity: 0.85;
+  max-width: 460px;
+  margin: 0 auto 28px;
+  padding: 0;
+  border: none;
+}
+.landing-final-quote span { display: block; margin-top: 8px; font-style: normal; font-weight: 700; opacity: 0.8; }
 .landing-cta-note { font-size: 13px; opacity: 0.7; margin: 14px 0 0; }
 
 .landing-registro-form {

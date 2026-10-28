@@ -28,9 +28,18 @@ export default function ThankYou({ isLoggedIn, onCreateAccount, onLogin, onGoToA
         </p>
 
         {isLoggedIn ? (
-          <p className="ty-sub" style={{ marginBottom: 28 }}>
-            Como ya tienes sesión iniciada, tu plan {planName || "nuevo"} debería estar activo — si acabas de pagar, puede tardar unos segundos. Si no se ve activo, cierra sesión y vuelve a entrar.
-          </p>
+          <div className="ty-steps">
+            <p className="ty-sub" style={{ marginBottom: 20 }}>
+              Como ya tienes sesión iniciada, tu plan {planName || "nuevo"} debería estar activo — si acabas de pagar, puede tardar unos segundos.
+            </p>
+            <div className="ty-step ty-step--warn">
+              <span className="ty-step-num">⚠️</span>
+              <div>
+                <strong>¿Pagaste con un correo distinto al de esta sesión?</strong>
+                <p>La activación automática solo funciona si inicias sesión con el <u>mismo correo</u> del pago. Cierra sesión y crea (o entra a) la cuenta con ese correo exacto.</p>
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="ty-steps">
             <div className="ty-step ty-step--done">

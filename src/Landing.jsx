@@ -180,8 +180,11 @@ export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hot
             <button className="lbtn-hero" onClick={() => { trackEvent("cta_click", { location: "hero" }); scrollTo("precios"); }}>
               Empieza ahora
             </button>
+            <a className="landing-hero-secondary" href="/clase" onClick={() => trackEvent("cta_click", { location: "hero_secondary" })}>
+              ¿Prefieres verlo primero? Mira la clase gratis →
+            </a>
           </div>
-          <p className="landing-hero-trust">Cancela cuando quieras · Datos seguros</p>
+          <p className="landing-hero-trust">🛡️ Garantía de 7 días · Cancela cuando quieras · Datos seguros</p>
         </div>
 
         {/* VISUAL HERO
@@ -252,8 +255,8 @@ export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hot
             </div>
             <div className="lstat-divider" />
             <div className="lstat-item">
-              <span className="lstat-num">💳</span>
-              <span className="lstat-label">cancela cuando quieras</span>
+              <span className="lstat-num">+100</span>
+              <span className="lstat-label">mamás en nuestra comunidad</span>
             </div>
             <div className="lstat-divider" />
             <div className="lstat-item">
@@ -480,6 +483,8 @@ export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hot
             })}
           </div>
 
+          <p className="landing-guarantee-badge">🛡️ Garantía de 7 días — si no es para ti, te devolvemos tu dinero.</p>
+
           <p className="landing-pricing-note">
             ¿Ya tienes cuenta?{" "}
             <button className="landing-link-btn" onClick={onLogin}>Inicia sesión aquí</button>
@@ -510,11 +515,14 @@ export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hot
       <section className="landing-final-cta" id="registro">
         <div className="landing-container landing-final-cta-inner">
           <h2>¿Lista para organizar tu casa y tu negocio?</h2>
-          <p>Empieza hoy — elige tu plan y accede de inmediato.</p>
+          <p>Pruébalo con total tranquilidad — si en 7 días sientes que no es para ti, te devolvemos tu dinero, sin preguntas.</p>
+          <blockquote className="landing-final-quote">
+            "Por fin sé cuánto me queda de ganancia real cada mes 💰 y el seguimiento de clientas con la IA me dice exactamente qué mandarles por WhatsApp. He cerrado ventas que se me iban a perder." <span>— Paola S.</span>
+          </blockquote>
           <button className="lbtn-cta-white" onClick={() => { trackEvent("cta_click", { location: "final_cta" }); scrollTo("precios"); }}>
             Ver planes y comenzar
           </button>
-          <p className="landing-cta-note">Cancela cuando quieras · Datos seguros</p>
+          <p className="landing-cta-note">🛡️ Garantía de 7 días · Cancela cuando quieras · Datos seguros</p>
         </div>
       </section>
 
