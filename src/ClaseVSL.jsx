@@ -98,6 +98,7 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
     <div className="clase-page">
       {step === "form" && (
         <div className="clase-gate">
+          <img src="/stephanny.png" alt="Stephanny" className="clase-photo" />
           <p className="clase-eyebrow">Una mamá con propósito</p>
           <h1 className="clase-title">Mi sistema diario para organizar hogar, hijos y negocio</h1>
           <p className="clase-sub">Regístrate con tu correo y la ves ahora mismo, sin costo.</p>
