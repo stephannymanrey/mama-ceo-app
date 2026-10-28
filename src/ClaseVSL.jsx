@@ -87,15 +87,7 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
               // Se detiene justo antes del final real para que nunca se dispare
               // la pantalla nativa de "videos sugeridos" de YouTube.
               if (!endCheckRef.current) {
-                endCheckRef.current = setInterval(() => {
-                  const player = playerRef.current;
-                  if (!player?.getDuration) return;
-                  const duration = player.getDuration();
-                  const current = player.getCurrentTime();
-                  if (duration > 0 && duration - current <= 0.6) {
-                    finishVideo();
-                  }
-                }, 250);
+                endCheckRef.current = setInterval(checkNearEnd, 250);
               }
             }
             if (ev.data === window.YT.PlayerState.ENDED) {
@@ -105,6 +97,25 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
         },
       });
     };
+
+    const checkNearEnd = () => {
+      const player = playerRef.current;
+      if (!player?.getDuration) return;
+      const duration = player.getDuration();
+      const current = player.getCurrentTime();
+      if (duration > 0 && duration - current <= 0.6) {
+        finishVideo();
+      }
+    };
+
+    // Los navegadores limitan mucho los setInterval en pestañas en segundo
+    // plano (a veces a 1 vez por minuto), así que el encogimiento podía
+    // quedar "atascado" hasta volver a la pestaña. Al recuperar el foco,
+    // revisamos de inmediato en vez de esperar al siguiente tick del timer.
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") checkNearEnd();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
 
     if (window.YT && window.YT.Player) {
       createPlayer();
@@ -124,6 +135,7 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
 
     return () => {
       cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibilityChange);
       if (endCheckRef.current) { clearInterval(endCheckRef.current); endCheckRef.current = null; }
     };
   }, [step]);
