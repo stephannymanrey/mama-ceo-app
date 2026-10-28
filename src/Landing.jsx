@@ -344,10 +344,10 @@ export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hot
           <p className="landing-section-sub">Lo que vas a usar todos los días, en vivo.</p>
           <div className="lmk-grid">
             {[
-              { src: "/videos/mockups/finanzas.mp4", title: "💰 Finanzas de tu negocio", desc: "Meta de ventas, ingresos, gastos y conversión — todo claro de un vistazo." },
-              { src: "/videos/mockups/ideas.mp4", title: "💡 Ideas de contenido con IA", desc: "Escribe un tema y la IA te arma ideas de reels, emails y mensajes de WhatsApp." },
-              { src: "/videos/mockups/teleprompter.mp4", title: "🎥 Teleprompter para tus reels", desc: "Pega tu guión, pon la duración y graba viéndolo pasar a tu ritmo — sin memorizar." },
-              { src: "/videos/mockups/hogar.mp4", title: "🔔 Recordatorios y menú del día", desc: "Notificaciones push a la hora que elijas, con tus citas, tareas y qué vas a cocinar hoy." },
+              { src: "/videos/mockups/finanzas.mp4", title: "💰 Finanzas de tu negocio", desc: "Meta de ventas, ingresos, gastos y ganancia real — todo claro de un vistazo." },
+              { src: "/videos/mockups/ideas.mp4", title: "✍️ Guiones con IA en Studio", desc: "Escribe el tema, elige la plataforma y la IA te arma el guión completo — o pégalo y úsalo como teleprompter." },
+              { src: "/videos/mockups/hogar.mp4", title: "🏠 Tu día, de un vistazo", desc: "Agenda, menú del día y pagos próximos — todo tu hogar organizado en una sola pantalla." },
+              { src: "/videos/mockups/finanzas-hogar.mp4", title: "💳 Finanzas de tu hogar", desc: "Ingresos, gastos y deudas del hogar, separados del negocio y siempre claros." },
             ].map((m, i) => (
               <div key={i} className="lmk-card">
                 <div className="lmk-phone">
