@@ -4,7 +4,9 @@ import { trackEvent } from "./analytics";
 import "./ClaseVSL.css";
 
 const API_URL = "https://lq3avrfazlfuyaakkt5iwz54ym0aqxvv.lambda-url.us-east-1.on.aws/";
-const YT_VIDEO_ID = "GpUXT5VfTk8";
+const BUNNY_LIBRARY_ID = "689817";
+const BUNNY_VIDEO_ID = "8e495465-8857-4b53-9927-eb7920c3c627";
+const BUNNY_EMBED_URL = `https://player.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${BUNNY_VIDEO_ID}?autoplay=true&muted=false&loop=false&preload=true`;
 const WHATSAPP_URL = "https://wa.me/573181751966?text=Hola%21+Tengo+una+duda+sobre+la+clase+gratuita";
 
 export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, hotmartLinks, hotmartLinksYear, startAtVideo = false }) {
@@ -16,11 +18,9 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
-  const [coveringTitle, setCoveringTitle] = useState(false);
 
   const playerHostRef = useRef(null);
   const playerRef = useRef(null);
-  const endCheckRef = useRef(null);
 
   useEffect(() => {
     const prevTitle = document.title;
@@ -54,96 +54,38 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
     let cancelled = false;
 
     const finishVideo = () => {
-      if (endCheckRef.current) { clearInterval(endCheckRef.current); endCheckRef.current = null; }
-      // Se destruye el reproductor por completo (no solo se pausa): YouTube
-      // muestra su propia pantalla con el logo y videos sugeridos cada vez
-      // que el iframe queda en pausa, sin importar los parámetros usados —
-      // la única forma de quitarla es que el iframe deje de existir.
-      try { playerRef.current?.destroy?.(); } catch { /* noop */ }
-      playerRef.current = null;
       setShowPlayer(false);
       trackEvent("clase_video_ended");
       setVideoEnded(true);
     };
 
-    const createPlayer = () => {
+    const attachPlayer = () => {
       if (cancelled || !playerHostRef.current || playerRef.current) return;
-      playerRef.current = new window.YT.Player(playerHostRef.current, {
-        videoId: YT_VIDEO_ID,
-        playerVars: {
-          autoplay: 1,
-          controls: 0,
-          disablekb: 1,
-          modestbranding: 1,
-          rel: 0,
-          playsinline: 1,
-          fs: 0,
-          iv_load_policy: 3,
-          vq: "hd1080",
-        },
-        events: {
-          onReady: (ev) => {
-            try { ev.target.setPlaybackQuality("hd1080"); } catch { /* noop */ }
-            // El overlay de título de YouTube aparece ~3s al iniciar; lo tapamos con un div propio.
-            setCoveringTitle(true);
-            setTimeout(() => setCoveringTitle(false), 3200);
-          },
-          onStateChange: (ev) => {
-            if (ev.data === window.YT.PlayerState.PLAYING) {
-              try { ev.target.setPlaybackQuality("hd1080"); } catch { /* noop */ }
-              // Se detiene justo antes del final real para que nunca se dispare
-              // la pantalla nativa de "videos sugeridos" de YouTube.
-              if (!endCheckRef.current) {
-                endCheckRef.current = setInterval(checkNearEnd, 250);
-              }
-            }
-            if (ev.data === window.YT.PlayerState.ENDED) {
-              finishVideo();
-            }
-          },
-        },
+      const player = new window.playerjs.Player(playerHostRef.current);
+      playerRef.current = player;
+      player.on("ready", () => {
+        player.on("ended", finishVideo);
       });
     };
 
-    const checkNearEnd = () => {
-      const player = playerRef.current;
-      if (!player?.getDuration) return;
-      const duration = player.getDuration();
-      const current = player.getCurrentTime();
-      if (duration > 0 && duration - current <= 0.6) {
-        finishVideo();
-      }
-    };
-
-    // Los navegadores limitan mucho los setInterval en pestañas en segundo
-    // plano (a veces a 1 vez por minuto), así que el encogimiento podía
-    // quedar "atascado" hasta volver a la pestaña. Al recuperar el foco,
-    // revisamos de inmediato en vez de esperar al siguiente tick del timer.
-    const onVisibilityChange = () => {
-      if (document.visibilityState === "visible") checkNearEnd();
-    };
-    document.addEventListener("visibilitychange", onVisibilityChange);
-
-    if (window.YT && window.YT.Player) {
-      createPlayer();
+    if (window.playerjs) {
+      attachPlayer();
     } else {
-      if (!document.getElementById("yt-iframe-api")) {
+      const existing = document.getElementById("bunny-playerjs");
+      if (existing) {
+        existing.addEventListener("load", attachPlayer, { once: true });
+      } else {
         const tag = document.createElement("script");
-        tag.id = "yt-iframe-api";
-        tag.src = "https://www.youtube.com/iframe_api";
+        tag.id = "bunny-playerjs";
+        tag.src = "https://assets.mediadelivery.net/playerjs/playerjs-latest.min.js";
+        tag.onload = attachPlayer;
         document.head.appendChild(tag);
       }
-      const prevCallback = window.onYouTubeIframeAPIReady;
-      window.onYouTubeIframeAPIReady = () => {
-        prevCallback?.();
-        createPlayer();
-      };
     }
 
     return () => {
       cancelled = true;
-      document.removeEventListener("visibilitychange", onVisibilityChange);
-      if (endCheckRef.current) { clearInterval(endCheckRef.current); endCheckRef.current = null; }
+      playerRef.current = null;
     };
   }, [step]);
 
@@ -196,14 +138,21 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
             <div className={`clase-video-wrap${videoEnded ? " clase-video-wrap--pip" : ""}`}>
               <div className="clase-video-inner">
                 {showPlayer ? (
-                  <div ref={playerHostRef} className="clase-video-el" />
+                  <iframe
+                    ref={playerHostRef}
+                    src={BUNNY_EMBED_URL}
+                    className="clase-video-el"
+                    allow="autoplay; fullscreen"
+                    allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    title="Clase: Mi sistema diario para organizar hogar, hijos y negocio"
+                  />
                 ) : (
                   <div className="clase-video-done">
                     <span className="clase-video-done-icon">✓</span>
                     <span>Clase completada</span>
                   </div>
                 )}
-                {coveringTitle && !videoEnded && <div className="clase-title-cover" />}
               </div>
               {videoEnded && (
                 <button
