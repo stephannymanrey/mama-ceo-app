@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from "react";
-import Logo from "./Logo";
 import Landing from "./Landing";
 import { trackEvent } from "./analytics";
 import "./ClaseVSL.css";
 
 const API_URL = "https://lq3avrfazlfuyaakkt5iwz54ym0aqxvv.lambda-url.us-east-1.on.aws/";
 const YT_VIDEO_ID = "GpUXT5VfTk8";
+const WHATSAPP_URL = "https://wa.me/573181751966?text=Hola%21+Tengo+una+duda+sobre+la+clase+gratuita";
 
 export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, hotmartLinks, hotmartLinksYear }) {
   const [step, setStep] = useState("form"); // "form" | "video"
@@ -92,7 +92,6 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
     <div className="clase-page">
       {step === "form" && (
         <div className="clase-gate">
-          <Logo width={150} />
           <p className="clase-eyebrow">Clase gratuita</p>
           <h1 className="clase-title">Cómo organizarte siendo mamá y emprendedora</h1>
           <p className="clase-sub">Regístrate con tu correo y la ves ahora mismo, sin costo.</p>
@@ -116,7 +115,14 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
               {sending ? "Un momento..." : "Ver la clase gratis →"}
             </button>
           </form>
-          <p className="clase-privacy">No spam. Solo te escribimos sobre esta clase y Mamá CEO App.</p>
+          <p className="clase-privacy">No spam, solo te aviso sobre esta clase.</p>
+          <div className="clase-legal-footer">
+            <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer">¿Dudas? Escríbenos por WhatsApp</a>
+            <span className="clase-legal-sep">·</span>
+            <button type="button" onClick={onTerminos}>Términos y Condiciones</button>
+            <span className="clase-legal-sep">·</span>
+            <button type="button" onClick={onPrivacidad}>Política de Privacidad</button>
+          </div>
         </div>
       )}
 
