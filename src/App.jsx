@@ -7,6 +7,7 @@ import Studio from "./Studio";
 import Landing from "./Landing";
 import ThankYou from "./ThankYou";
 import PlanBuilder from "./PlanBuilder";
+import ClaseVSL from "./ClaseVSL";
 import SilenceCutter from "./SilenceCutter";
 import InvoicingTool from "./tools/invoicing/InvoicingTool";
 import PendingMovementsPanel from "./tools/movements-sync/PendingMovementsPanel";
@@ -2624,6 +2625,18 @@ export default function App() {
   const cleanPath = window.location.pathname.replace(/\/$/, "");
   if (cleanPath === "/businessplan" || cleanPath === "/plan-de-negocio") return <PlanBuilder />;
   if (cleanPath === "/editor") return <SilenceCutter />;
+  if (cleanPath === "/clase") {
+    return (
+      <ClaseVSL
+        onLogin={() => { setAuthMode("login"); setPreAuthView("auth"); }}
+        onTerminos={() => setPreAuthView("terminos")}
+        onPrivacidad={() => setPreAuthView("privacidad")}
+        prices={PLAN_PRICES}
+        hotmartLinks={HOTMART_LINKS}
+        hotmartLinksYear={HOTMART_LINKS_YEAR}
+      />
+    );
+  }
   if (cleanPath === "/gracias" && (user || preAuthView === "landing")) {
     return (
       <ThankYou

@@ -819,6 +819,39 @@ Responde SOLO JSON válido:
   return respond(200, { dofa }, event);
 }
 
+// ─── Handler: Captura de leads (formulario pre-VSL) — ruta pública ────────
+// Agrega/actualiza el contacto en Brevo. BREVO_LEAD_LIST_ID es opcional: si no
+// está configurado el contacto igual se crea en Brevo, solo queda sin lista
+// asignada hasta que se defina (un solo env var, sin redeploy).
+async function handleCaptureLead(body, event) {
+  const email  = String(body.email || "").trim().toLowerCase();
+  const nombre = String(body.nombre || "").trim().slice(0, 200);
+  if (!email || !email.includes("@")) return respond(400, { error: "Correo inválido" }, event);
+
+  const brevoKey = process.env.BREVO_API_KEY;
+  if (!brevoKey) return respond(500, { error: "Brevo no configurado" }, event);
+
+  const listId = process.env.BREVO_LEAD_LIST_ID;
+  try {
+    const res = await fetch("https://api.brevo.com/v3/contacts", {
+      method: "POST",
+      headers: { "api-key": brevoKey, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        attributes: { NOMBRE: nombre },
+        updateEnabled: true,
+        ...(listId ? { listIds: [Number(listId)] } : {}),
+      }),
+    });
+    if (res.ok || res.status === 204) return respond(200, { ok: true }, event);
+    console.error("[captureLead] Brevo error:", res.status, await res.text().catch(() => ""));
+    return respond(502, { error: "No se pudo guardar el contacto" }, event);
+  } catch (err) {
+    console.error("[captureLead] error:", err.message);
+    return respond(502, { error: "Error de conexión" }, event);
+  }
+}
+
 // ─── Handler: Extraer fragmentos virales para Reels ───────────────────────
 // Ruta autenticada (ver dispatch en handler): cuenta contra el límite mensual
 // de generaciones de IA del plan real de la usuaria, igual que guion/hooks/ideas.
@@ -989,6 +1022,9 @@ export const handler = async (event) => {
   }
   if (body.type === "dofa" && body.publicEmail) {
     return handleDofa(body, event);
+  }
+  if (body.type === "captureLead") {
+    return handleCaptureLead(body, event);
   }
   const userId = getUserId(event);
   if (!userId) return respond(401, { error: "No autorizada" }, event);
