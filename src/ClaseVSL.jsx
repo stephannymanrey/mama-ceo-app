@@ -19,6 +19,12 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
   const playerHostRef = useRef(null);
   const playerRef = useRef(null);
 
+  useEffect(() => {
+    const prevTitle = document.title;
+    document.title = "Mi sistema diario para organizar hogar, hijos y negocio | Una mamá con propósito";
+    return () => { document.title = prevTitle; };
+  }, []);
+
   const submitForm = async (e) => {
     e.preventDefault();
     const emailClean = email.trim().toLowerCase();
@@ -92,8 +98,8 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
     <div className="clase-page">
       {step === "form" && (
         <div className="clase-gate">
-          <p className="clase-eyebrow">Clase gratuita</p>
-          <h1 className="clase-title">Cómo organizarte siendo mamá y emprendedora</h1>
+          <p className="clase-eyebrow">Una mamá con propósito</p>
+          <h1 className="clase-title">Mi sistema diario para organizar hogar, hijos y negocio</h1>
           <p className="clase-sub">Regístrate con tu correo y la ves ahora mismo, sin costo.</p>
           <form className="clase-form" onSubmit={submitForm}>
             <input
