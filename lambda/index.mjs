@@ -833,19 +833,39 @@ async function handleCaptureLead(body, event) {
   if (!brevoKey) return respond(500, { error: "Brevo no configurado" }, event);
 
   const listId = process.env.BREVO_LEAD_LIST_ID;
+  const buildPayload = (includePhone) => JSON.stringify({
+    email,
+    attributes: { NOMBRE: nombre, ...(includePhone && whatsapp ? { SMS: whatsapp } : {}) },
+    updateEnabled: true,
+    ...(listId ? { listIds: [Number(listId)] } : {}),
+  });
+
+  const sendToBrevo = (includePhone) => fetch("https://api.brevo.com/v3/contacts", {
+    method: "POST",
+    headers: { "api-key": brevoKey, "Content-Type": "application/json" },
+    body: buildPayload(includePhone),
+  });
+
   try {
-    const res = await fetch("https://api.brevo.com/v3/contacts", {
-      method: "POST",
-      headers: { "api-key": brevoKey, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email,
-        attributes: { NOMBRE: nombre, ...(whatsapp ? { SMS: whatsapp } : {}) },
-        updateEnabled: true,
-        ...(listId ? { listIds: [Number(listId)] } : {}),
-      }),
-    });
+    let res = await sendToBrevo(true);
     if (res.ok || res.status === 204) return respond(200, { ok: true }, event);
-    console.error("[captureLead] Brevo error:", res.status, await res.text().catch(() => ""));
+
+    // Brevo exige que el número de WhatsApp sea único entre contactos — si
+    // ya está asociado a otro contacto (otra prueba, otro lead, etc.) la
+    // creación entera fallaba y se perdía el lead completo. Reintentamos
+    // sin el teléfono para no perder nunca el correo/nombre por un choque
+    // de número.
+    const errText = await res.text().catch(() => "");
+    const isDuplicatePhone = res.status === 400 && /duplicate_parameter/.test(errText) && /SMS/.test(errText);
+    if (isDuplicatePhone && whatsapp) {
+      console.error("[captureLead] WhatsApp duplicado en Brevo, reintentando sin teléfono:", errText);
+      res = await sendToBrevo(false);
+      if (res.ok || res.status === 204) return respond(200, { ok: true }, event);
+      console.error("[captureLead] Brevo error (reintento):", res.status, await res.text().catch(() => ""));
+      return respond(502, { error: "No se pudo guardar el contacto" }, event);
+    }
+
+    console.error("[captureLead] Brevo error:", res.status, errText);
     return respond(502, { error: "No se pudo guardar el contacto" }, event);
   } catch (err) {
     console.error("[captureLead] error:", err.message);
