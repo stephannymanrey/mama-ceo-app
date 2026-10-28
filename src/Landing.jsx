@@ -344,26 +344,22 @@ export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hot
           <p className="landing-section-sub">Lo que vas a usar todos los días, en vivo.</p>
           <div className="lmk-grid">
             {[
-              { src: "/videos/mockups/finanzas.mp4", title: "💰 Finanzas de tu negocio", desc: "Meta de ventas, ingresos, gastos y ganancia real — todo claro de un vistazo." },
               { src: "/videos/mockups/ideas.mp4", title: "✍️ Guiones con IA en Studio", desc: "Escribe el tema, elige la plataforma y la IA te arma el guión completo — o pégalo y úsalo como teleprompter." },
               { src: "/videos/mockups/hogar.mp4", title: "🏠 Tu día, de un vistazo", desc: "Agenda, menú del día y pagos próximos — todo tu hogar organizado en una sola pantalla." },
               { src: "/videos/mockups/finanzas-hogar.mp4", title: "💳 Finanzas de tu hogar", desc: "Ingresos, gastos y deudas del hogar, separados del negocio y siempre claros." },
             ].map((m, i) => (
               <div key={i} className="lmk-card">
-                <div className="lmk-phone">
-                  <div className="lmk-notch" />
-                  <div className="lmk-screen">
-                    <video
-                      src={m.src}
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                      preload="metadata"
-                      className="lmk-video"
-                    />
-                  </div>
-                </div>
+                <video
+                  src={m.src}
+                  loop
+                  muted
+                  playsInline
+                  preload="metadata"
+                  className="lmk-video"
+                  onMouseEnter={(e) => e.currentTarget.play()}
+                  onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
+                  onClick={(e) => { e.currentTarget.paused ? e.currentTarget.play() : e.currentTarget.pause(); }}
+                />
                 <h3>{m.title}</h3>
                 <p>{m.desc}</p>
               </div>

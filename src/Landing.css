@@ -884,10 +884,10 @@
   .lwa-bubble { max-width: 170px; font-size: 12px; }
 }
 
-/* ── Mockups en video (Finanzas / Ideas / Teleprompter / Hogar) ── */
+/* ── Mockups en video (capturas reales de la app, con su propio marco) ── */
 .lmk-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 28px;
   margin-top: 36px;
 }
@@ -895,44 +895,23 @@
 .lmk-card h3 { margin: 18px 0 6px; font-size: 16px; }
 .lmk-card p { color: var(--l-muted); font-size: 13.5px; line-height: 1.5; max-width: 260px; margin: 0 auto; }
 
-.lmk-phone {
-  width: 190px;
-  height: 380px;
-  margin: 0 auto;
-  background: #1c1b1f;
-  border-radius: 30px;
-  padding: 9px;
-  box-shadow: 0 16px 40px rgba(0,0,0,0.18);
-  position: relative;
-}
-.lmk-notch {
-  position: absolute;
-  top: 9px; left: 50%;
-  transform: translateX(-50%);
-  width: 62px; height: 14px;
-  background: #1c1b1f;
-  border-radius: 0 0 10px 10px;
-  z-index: 2;
-}
-.lmk-screen {
-  width: 100%; height: 100%;
-  background: #0f0e12;
-  border-radius: 21px;
-  overflow: hidden;
-  position: relative;
-}
 .lmk-video {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  max-width: 220px;
+  aspect-ratio: 1080 / 1920;
   display: block;
+  margin: 0 auto;
+  border-radius: 16px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.14);
+  cursor: pointer;
+  background: var(--l-bg-alt);
 }
 @media (max-width: 900px) {
   .lmk-grid { grid-template-columns: repeat(2, 1fr); gap: 36px; }
 }
 @media (max-width: 520px) {
   .lmk-grid { grid-template-columns: 1fr; gap: 40px; }
-  .lmk-phone { width: 200px; height: 400px; }
+  .lmk-video { max-width: 240px; }
 }
 
 /* ── Testimonios estilo WhatsApp ── */
