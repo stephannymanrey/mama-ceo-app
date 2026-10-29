@@ -19,6 +19,18 @@ const REGION        = process.env.AWS_REGION      || "us-east-1";
 // en vez de tener su propio límite.
 const PLAN_LIMITS = { free: 50, mama: 50, emprendedora: 60, ceo: 200, premium: 200 };
 
+// Mismo PLAN_ORDER que src/lib/planGating.js — el candado real de "esta
+// herramienta requiere plan X" tiene que vivir aquí también: el límite de
+// PLAN_LIMITS de arriba solo cuenta CUÁNTAS generaciones lleva la usuaria,
+// no si su plan tiene derecho a usar Studio/ReelCut en absoluto. Sin esto,
+// una cuenta free/mama podía generar guiones o cortar reels llamando el
+// endpoint directo, hasta agotar su cupo — aunque el menú se lo bloqueara.
+const PLAN_ORDER = { free: 0, mama: 1, emprendedora: 2, ceo: 3, premium: 3 };
+const STUDIO_MIN_PLAN = "emprendedora";
+function planMeetsMinimum(plan, minPlan) {
+  return (PLAN_ORDER[plan] ?? 0) >= (PLAN_ORDER[minPlan] ?? 0);
+}
+
 // Techos de tamaño para texto libre que se interpola en prompts de Claude.
 // Sin esto, una sola request dentro de la cuota permitida podía mandar
 // megabytes de texto (costo desproporcionado + superficie de prompt injection
@@ -1054,11 +1066,14 @@ export const handler = async (event) => {
   // público de plan de negocio, sin cuenta), extractReels se usa desde el
   // editor de video con sesión iniciada — cuenta contra el límite mensual
   // real del plan de la usuaria en vez de un tope genérico compartido.
-  if (body.type === "extractReels") {
-    return handleExtractReels(body, event, userId);
-  }
-  if (body.type === "detectFillers") {
-    return handleDetectFillers(body, event, userId);
+  if (body.type === "extractReels" || body.type === "detectFillers") {
+    const { plan: reelcutPlan } = await getUserPlanAndUsage(userId);
+    if (!planMeetsMinimum(reelcutPlan, STUDIO_MIN_PLAN)) {
+      return respond(403, { error: "plan_insuficiente", message: "ReelCut es exclusivo del plan Emprendedora en adelante.", requiredPlan: STUDIO_MIN_PLAN, plan: reelcutPlan }, event);
+    }
+    return body.type === "extractReels"
+      ? handleExtractReels(body, event, userId)
+      : handleDetectFillers(body, event, userId);
   }
 
   const { type, context } = body;
@@ -1067,6 +1082,9 @@ export const handler = async (event) => {
   if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
 
   const { plan, usage } = await getUserPlanAndUsage(userId);
+  if (!planMeetsMinimum(plan, STUDIO_MIN_PLAN)) {
+    return respond(403, { error: "plan_insuficiente", message: "Studio es exclusivo del plan Emprendedora en adelante.", requiredPlan: STUDIO_MIN_PLAN, plan }, event);
+  }
   const mk = monthKey();
   const currentCount = usage[mk] || 0;
   const limit = PLAN_LIMITS[plan] || PLAN_LIMITS.free;

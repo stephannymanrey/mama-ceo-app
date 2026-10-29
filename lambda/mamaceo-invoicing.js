@@ -17,6 +17,9 @@ import { respond } from "./_shared/respond.mjs";
 import { getMethod, getUserId } from "./_shared/auth.mjs";
 import { checkAndIncrUserDailyLimit } from "./_shared/rateLimit.mjs";
 import { isNonEmptyString, isPositiveNumber, isPlainObject, clampString } from "./_shared/validate.mjs";
+import { getUserPlan, planMeetsMinimum } from "./_shared/planGating.mjs";
+
+const MIN_PLAN = "ceo";
 
 const dynamo = new DynamoDBClient({ region: process.env.AWS_REGION || "us-east-1" });
 const TABLE = process.env.DYNAMODB_TABLE || "mamaceo_invoicing";
@@ -95,6 +98,11 @@ export const handler = async (event) => {
 
   const userId = getUserId(event);
   if (!userId) return respond(401, { error: "No autorizada" }, event, METHODS);
+
+  const userPlan = await getUserPlan(dynamo, userId);
+  if (!planMeetsMinimum(userPlan, MIN_PLAN)) {
+    return respond(403, { error: "plan_insuficiente", message: "Cotizaciones es exclusivo del plan CEO.", requiredPlan: MIN_PLAN, plan: userPlan }, event, METHODS);
+  }
 
   let body = {};
   try { body = JSON.parse(event.body || "{}"); } catch { return respond(400, { error: "Body inválido" }, event, METHODS); }

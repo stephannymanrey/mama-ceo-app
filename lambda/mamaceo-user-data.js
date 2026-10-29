@@ -10,6 +10,20 @@ import { marshall, unmarshall } from "@aws-sdk/util-dynamodb";
 import { respond } from "./_shared/respond.mjs";
 import { getMethod, getUserId } from "./_shared/auth.mjs";
 
+// Espejo de USAGE_LIMITS en src/lib/planGating.js — el candado real de
+// "cuántas clientas/movimientos caben en tu plan" vive aquí, no en la app.
+// La app solo avisa antes de guardar; esto es lo que de verdad lo impide.
+const PLAN_ITEM_LIMITS = {
+  free:         { clients: 15,       movements: 30 },
+  mama:         { clients: 15,       movements: 30 },
+  emprendedora: { clients: 50,       movements: 100 },
+  ceo:          { clients: Infinity, movements: Infinity },
+  premium:      { clients: Infinity, movements: Infinity },
+};
+function itemLimitsFor(plan) {
+  return PLAN_ITEM_LIMITS[plan] || PLAN_ITEM_LIMITS.free;
+}
+
 const dynamo = new DynamoDBClient({ region: "us-east-1" });
 const TABLE = process.env.TABLE_NAME || "user_states";
 const METHODS = "GET,POST,DELETE,OPTIONS";
@@ -83,6 +97,21 @@ export const handler = async (event) => {
         return respond(200, { ok: true }, event, METHODS);
       }
 
+      if (body.action === "save-utms") {
+        const { utm_source, utm_medium, utm_campaign, utm_content } = body;
+        const vals = { utm_source, utm_medium, utm_campaign, utm_content };
+        const sets = Object.entries(vals).filter(([, v]) => v).map(([k]) => `${k} = :${k}`).join(", ");
+        if (!sets) return respond(200, { ok: true }, event, METHODS);
+        const exprVals = Object.fromEntries(Object.entries(vals).filter(([, v]) => v).map(([k, v]) => [`:${k}`, v]));
+        await dynamo.send(new UpdateItemCommand({
+          TableName: TABLE,
+          Key: marshall({ user_id: userId }),
+          UpdateExpression: `SET ${sets}`,
+          ExpressionAttributeValues: marshall(exprVals),
+        }));
+        return respond(200, { ok: true }, event, METHODS);
+      }
+
       if (!body.data || typeof body.data !== "object" || Array.isArray(body.data) || Object.keys(body.data).length === 0) {
         return respond(400, { error: "data inválido o vacío" }, event, METHODS);
       }
@@ -98,11 +127,16 @@ export const handler = async (event) => {
       // registro ni cambia lo que se guarda; si falla, seguimos sin bloquear
       // el guardado (mejor guardar sin la validación que no guardar nada).
       let previousData = null;
+      let currentPlan = "free";
       try {
         const existing = await dynamo.send(
           new GetItemCommand({ TableName: TABLE, Key: marshall({ user_id: userId }) })
         );
-        if (existing.Item) previousData = unmarshall(existing.Item).data ?? null;
+        if (existing.Item) {
+          const item = unmarshall(existing.Item);
+          previousData = item.data ?? null;
+          currentPlan = item.userPlan || "free";
+        }
       } catch (err) {
         console.warn("[mamaceo-user-data] No se pudo leer el estado anterior:", err.message);
       }
@@ -113,6 +147,25 @@ export const handler = async (event) => {
           error: "guardado_sospechoso",
           message: "Este guardado borraría de golpe datos existentes (finanzas, clientes, tareas). Por seguridad no se guardó — recarga la página e intenta de nuevo. Si de verdad quieres borrar todo, contáctanos.",
         }, event, METHODS);
+      }
+
+      // Tope real de clientas/movimientos según el plan pagado. Solo bloquea
+      // si la usuaria está AUMENTANDO la lista más allá de su plan — si ya
+      // tenía más (ej. bajó de plan), puede seguir editando/borrando sin
+      // quedar bloqueada de golpe.
+      const limits = itemLimitsFor(currentPlan);
+      for (const [key, limit] of Object.entries(limits)) {
+        const newLen = Array.isArray(safeData[key]) ? safeData[key].length : 0;
+        const oldLen = Array.isArray(previousData?.[key]) ? previousData[key].length : 0;
+        if (newLen > limit && newLen > oldLen) {
+          return respond(403, {
+            error: "limite_plan",
+            message: `Tu plan permite hasta ${limit} ${key === "clients" ? "clientas" : "movimientos financieros al mes"}. Mejora tu plan para agregar más.`,
+            field: key,
+            limit,
+            plan: currentPlan,
+          }, event, METHODS);
+        }
       }
 
       await dynamo.send(
