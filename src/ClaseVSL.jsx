@@ -3,7 +3,8 @@ import Landing from "./Landing";
 import { trackEvent } from "./analytics";
 import "./ClaseVSL.css";
 
-const API_URL = "https://lq3avrfazlfuyaakkt5iwz54ym0aqxvv.lambda-url.us-east-1.on.aws/";
+const API_URL     = "https://lq3avrfazlfuyaakkt5iwz54ym0aqxvv.lambda-url.us-east-1.on.aws/";
+const VSL_REG_URL = "https://q1163njt2b.execute-api.us-east-1.amazonaws.com/mamaceo-vsl-register";
 const BUNNY_LIBRARY_ID = "792198";
 const BUNNY_VIDEO_ID = "a1620f2b-587c-4d67-8d2a-8b292561768c";
 const BUNNY_EMBED_URL = `https://player.mediadelivery.net/embed/${BUNNY_LIBRARY_ID}/${BUNNY_VIDEO_ID}?autoplay=true&muted=false&loop=false&preload=true`;
@@ -54,18 +55,30 @@ export default function ClaseVSL({ onLogin, onTerminos, onPrivacidad, prices, ho
     setSending(true);
     trackEvent("clase_lead_submit");
     try {
-      await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "captureLead",
-          email: emailClean,
-          nombre: nombre.trim(),
-          whatsapp: countryCode + phoneDigits,
+      await Promise.allSettled([
+        fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            type: "captureLead",
+            email: emailClean,
+            nombre: nombre.trim(),
+            whatsapp: countryCode + phoneDigits,
+          }),
         }),
-      });
+        fetch(VSL_REG_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nombre: nombre.trim(),
+            email: emailClean,
+            whatsapp: countryCode + phoneDigits,
+            origen: "clase",
+          }),
+        }),
+      ]);
     } catch {
-      // No bloquea el acceso a la clase si falla el registro en Brevo.
+      // No bloquea el acceso a la clase si falla el registro.
     }
     setSending(false);
     setStep("video");
