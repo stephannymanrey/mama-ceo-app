@@ -885,6 +885,81 @@ async function handleCaptureLead(body, event) {
   }
 }
 
+// ─── Handler: Descarga mental semanal / dictado a Abi ──────────────────────
+// Disponible para TODOS los planes (incluido gratis) — es organización
+// básica del hogar, no una función de Studio. Nunca crea nada directamente:
+// solo devuelve la lista clasificada para que la usuaria la revise y
+// confirme en el frontend (mismo principio que el sync de movimientos por
+// correo — la IA puede equivocarse, nunca escribe en su agenda sin que ella
+// lo vea primero).
+const WEEKDAYS_ES = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+async function handleOrganizeWeek(body, event, userId) {
+  if (!ANTHROPIC_KEY) return respond(500, { error: "API key no configurada" }, event);
+  const context = body.context || {};
+  const text = String(context.text || "").trim();
+  if (!text) return respond(400, { error: "Falta texto" }, event);
+  if (text.length > 4000) return respond(400, { error: "Texto demasiado largo" }, event);
+
+  if (!(await checkAndIncrDailyLimit(`organizeWeek#${userId}`, 30))) {
+    return respond(429, { error: "limite_diario", message: "Llegaste al límite de hoy. Intenta mañana." }, event);
+  }
+
+  const todayISO = /^\d{4}-\d{2}-\d{2}$/.test(context.today || "") ? context.today : new Date().toISOString().slice(0, 10);
+  const weekday = WEEKDAYS_ES[new Date(`${todayISO}T12:00:00`).getDay()];
+
+  const prompt = `Eres Abi, el asistente de Mamá CEO App. Una mamá te dicta o escribe todo lo que tiene pendiente, sin orden ni estructura. Identifica cada pendiente individual y clasifícalo.
+
+Hoy es ${todayISO} (${weekday}).
+
+Texto de la usuaria:
+"""
+${text}
+"""
+
+Para cada pendiente que identifiques, determina:
+- category: "hogar" (tareas del hogar, mercado, rutinas — sin hora fija), "negocio" (tareas de su negocio — sin hora fija), o "cita" (algo con día y/o hora específica: citas médicas, reuniones, compromisos, vengan de hogar o negocio)
+- title: descripción corta y clara (máx 12 palabras, sin fecha/hora dentro del texto)
+- date: "YYYY-MM-DD" si mencionó o se puede inferir un día (resuelve "el miércoles", "mañana", "pasado mañana" contra la fecha de hoy), o null
+- time: "HH:MM" en formato 24h si mencionó una hora, o null
+
+Responde SOLO un JSON array, sin texto adicional ni markdown: [{"category":"...","title":"...","date":"..."|null,"time":"..."|null}]
+Si no hay ningún pendiente identificable, responde: []`;
+
+  let rawText;
+  try {
+    rawText = await callClaude(prompt, 1200, "[", "organizeWeek");
+  } catch (err) {
+    console.error("[organizeWeek] error:", err.message);
+    return respond(502, { error: "Error al organizar. Intenta de nuevo." }, event);
+  }
+
+  let items;
+  try {
+    const start = rawText.indexOf("[");
+    const end = rawText.lastIndexOf("]");
+    if (start === -1 || end === -1) throw new Error("Sin JSON");
+    items = JSON.parse(rawText.slice(start, end + 1));
+  } catch (err) {
+    console.error("[organizeWeek] JSON parse error:", err.message, rawText?.slice(0, 300));
+    return respond(502, { error: "Respuesta no válida. Intenta de nuevo." }, event);
+  }
+  if (!Array.isArray(items)) return respond(502, { error: "Respuesta no válida." }, event);
+
+  const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+  const TIME_RE = /^\d{2}:\d{2}$/;
+  const clean = items
+    .filter((it) => it && typeof it === "object" && ["hogar", "negocio", "cita"].includes(it.category) && typeof it.title === "string" && it.title.trim())
+    .slice(0, 40)
+    .map((it) => ({
+      category: it.category,
+      title: String(it.title).trim().slice(0, 200),
+      date: DATE_RE.test(it.date || "") ? it.date : null,
+      time: TIME_RE.test(it.time || "") ? it.time : null,
+    }));
+
+  return respond(200, { items: clean }, event);
+}
+
 // ─── Handler: Extraer fragmentos virales para Reels ───────────────────────
 // Ruta autenticada (ver dispatch en handler): cuenta contra el límite mensual
 // de generaciones de IA del plan real de la usuaria, igual que guion/hooks/ideas.
@@ -1074,6 +1149,12 @@ export const handler = async (event) => {
     return body.type === "extractReels"
       ? handleExtractReels(body, event, userId)
       : handleDetectFillers(body, event, userId);
+  }
+
+  // Descarga mental / dictado a Abi — disponible en todos los planes,
+  // nunca pasa por el candado de Studio ni cuenta contra ese cupo.
+  if (body.type === "organizeWeek") {
+    return handleOrganizeWeek(body, event, userId);
   }
 
   const { type, context } = body;

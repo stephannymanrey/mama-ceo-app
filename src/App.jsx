@@ -8,6 +8,7 @@ import Landing from "./Landing";
 import ThankYou from "./ThankYou";
 import PlanBuilder from "./PlanBuilder";
 import ClaseVSL from "./ClaseVSL";
+import WeeklyDump from "./WeeklyDump";
 import SilenceCutter from "./SilenceCutter";
 import InvoicingTool from "./tools/invoicing/InvoicingTool";
 import PendingMovementsPanel from "./tools/movements-sync/PendingMovementsPanel";
@@ -892,6 +893,7 @@ export default function App() {
   const [homeFocusOverride, setHomeFocusOverride] = useState(stored?.homeFocusOverride || null);
   const [groceryList, setGroceryList] = useState(stored?.groceryList || []);
   const [appointments, setAppointments] = useState(stored?.appointments || []);
+  const [showWeeklyDump, setShowWeeklyDump] = useState(false);
   const [weekMenu, setWeekMenu] = useState(() => {
     const wm = stored?.weekMenu;
     const mg = v => !v ? {desayuno:"",almuerzo:"",cena:"",snack:""} : typeof v==="string" ? {desayuno:"",almuerzo:v,cena:"",snack:""} : {desayuno:"",almuerzo:"",cena:"",snack:"",...v};
@@ -1352,6 +1354,50 @@ export default function App() {
       return { error: err.message || "Error de red. Intenta de nuevo." };
     }
   };
+
+  // Reparte los pendientes confirmados de la Descarga Mental en cada
+  // sección real de la app — nunca se guarda nada que la usuaria no haya
+  // visto y confirmado en WeeklyDump (ver ese componente).
+  const distributeWeeklyDump = (items) => {
+    const homeAdds = [], taskAdds = [], apptAdds = [];
+    items.forEach((it, i) => {
+      const uid = `${Date.now()}-${i}`;
+      if (it.category === "cita") {
+        apptAdds.push({
+          id: uid,
+          title: it.title,
+          date: it.date || new Date().toISOString().slice(0, 10),
+          time: it.time || "",
+          type: "Cita",
+          recurrence: "none",
+          duration: APPT_TYPE_DURATION["Cita"] || DEFAULT_APPT_DURATION,
+        });
+      } else if (it.category === "negocio") {
+        taskAdds.push({ id: uid, text: it.title, done: false });
+      } else {
+        homeAdds.push({ id: uid, title: it.title, category: "Semana", done: false });
+      }
+    });
+    if (homeAdds.length) setHomeTasks((cur) => [...cur, ...homeAdds]);
+    if (taskAdds.length) setTasks((cur) => [...cur, ...taskAdds]);
+    if (apptAdds.length) setAppointments((cur) => [...cur, ...apptAdds]);
+  };
+
+  const dismissWeeklyDump = () => {
+    setShowWeeklyDump(false);
+    try { localStorage.setItem("mama-ceo-weeklydump-dismissed", new Date().toISOString().slice(0, 10)); } catch { /* noop */ }
+  };
+
+  // Aparece sola los domingos (una vez al día, se puede cerrar sin usarla).
+  useEffect(() => {
+    if (!user) return;
+    if (new Date().getDay() !== 0) return; // domingo
+    const todayKey = new Date().toISOString().slice(0, 10);
+    try {
+      if (localStorage.getItem("mama-ceo-weeklydump-dismissed") === todayKey) return;
+    } catch { /* noop */ }
+    setShowWeeklyDump(true);
+  }, [user]);
 
   // Días restantes de acceso gratis — cubre las dos poblaciones que tienen
   // un plan pagado con vencimiento: el código de acceso beta (userPlan
@@ -3197,6 +3243,14 @@ export default function App() {
         </div>
       )}
 
+      {showWeeklyDump && (
+        <WeeklyDump
+          onClose={dismissWeeklyDump}
+          callGemini={callGemini}
+          onDistribute={distributeWeeklyDump}
+        />
+      )}
+
       <aside className="sidebar">
         <div className="brand">
           <Logo width={120} />
@@ -3402,6 +3456,9 @@ export default function App() {
             </p>
           </div>
           <div className="profile-area">
+            <button type="button" className="profile-avatar-btn" title="Descarga mental con Abi" onClick={() => setShowWeeklyDump(true)} style={{fontSize:"18px"}}>
+              🧠
+            </button>
             {isSyncing && <div className="status-chip syncing">Guardando…</div>}
             {(!awsActive || !remoteStorageEnabled) && !isSyncing && <div className="status-chip" title="Tus datos se guardan en este dispositivo">Solo en este dispositivo</div>}
             <button className="profile-avatar-btn" onClick={() => { if (profileSetup) setProfileForm(profileSetup); setShowProfileModal(true); }} title="Editar perfil">
