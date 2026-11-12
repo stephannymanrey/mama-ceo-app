@@ -8,6 +8,7 @@ import Landing from "./Landing";
 import ThankYou from "./ThankYou";
 import PlanBuilder from "./PlanBuilder";
 import ClaseVSL from "./ClaseVSL";
+import Consultoria from "./Consultoria";
 import WeeklyDump from "./WeeklyDump";
 import SilenceCutter from "./SilenceCutter";
 import InvoicingTool from "./tools/invoicing/InvoicingTool";
@@ -2671,6 +2672,7 @@ export default function App() {
   const cleanPath = window.location.pathname.replace(/\/$/, "");
   if (cleanPath === "/businessplan" || cleanPath === "/plan-de-negocio") return <PlanBuilder />;
   if (cleanPath === "/editor") return <SilenceCutter />;
+  if (cleanPath === "/consultoria") return <Consultoria />;
   if (cleanPath === "/clase" || cleanPath === "/video") {
     return (
       <ClaseVSL
