@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://www.mamaceoapp.co/</loc>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://www.mamaceoapp.co/clase</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.mamaceoapp.co/blog/</loc>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.mamaceoapp.co/blog/organizar-casa-y-negocio-en-una-sola-app/</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.mamaceoapp.co/blog/cuanto-cobrar-por-tus-servicios/</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.mamaceoapp.co/blog/seguimiento-de-clientas-sin-perder-ninguna/</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.mamaceoapp.co/blog/crear-contenido-sin-pasar-horas-editando/</loc>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.mamaceoapp.co/blog/plan-de-negocio-en-un-dia/</loc>
+    <priority>0.6</priority>
+  </url>
+</urlset>

@@ -532,6 +532,8 @@ export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hot
           <Logo width={130} />
           <p className="landing-footer-tagline">Organiza tu casa y tu negocio. Todo en un solo lugar.</p>
           <div className="landing-footer-links">
+            <a className="landing-link-btn" href="/blog/">Blog</a>
+            <span>·</span>
             <button className="landing-link-btn" onClick={onTerminos}>Términos y Condiciones</button>
             <span>·</span>
             <button className="landing-link-btn" onClick={onPrivacidad}>Política de Privacidad</button>
