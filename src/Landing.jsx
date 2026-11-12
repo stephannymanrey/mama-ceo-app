@@ -493,6 +493,26 @@ export default function Landing({ onLogin, onTerminos, onPrivacidad, prices, hot
         </div>
       </section>
 
+      {/* ── INVITACIÓN A ASESORÍA DE CONFIGURACIÓN ── */}
+      <section className="landing-section landing-consultoria">
+        <div className="landing-container">
+          <div className="landing-consultoria-card">
+            <span className="lcons-ico" aria-hidden="true">🗓️</span>
+            <div className="lcons-text">
+              <h2>¿Prefieres que te ayudemos a configurarla?</h2>
+              <p>Agenda una asesoría conmigo y dejamos tu cuenta lista para tu negocio — tus clientas, tus finanzas y tu contenido — desde el primer día.</p>
+            </div>
+            <a
+              className="lbtn-outline lcons-btn"
+              href="/consultoria"
+              onClick={() => trackEvent("cta_click", { location: "consultoria_banner" })}
+            >
+              Agendar mi asesoría →
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ── FAQ ── */}
       <section className="landing-section landing-faq">
         <div className="landing-container landing-container--narrow">

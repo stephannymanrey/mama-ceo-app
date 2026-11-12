@@ -748,6 +748,27 @@
   color: var(--l-brand);
 }
 
+/* ── INVITACIÓN A ASESORÍA ── */
+.landing-consultoria { padding-top: 0; }
+.landing-consultoria-card {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  background: var(--l-gold-light, #FBF3E3);
+  border: 1px solid var(--l-border);
+  border-radius: 22px;
+  padding: 28px 32px;
+}
+.lcons-ico { font-size: 40px; flex-shrink: 0; }
+.lcons-text { flex: 1; }
+.lcons-text h2 { font-size: 20px; font-weight: 800; color: var(--l-text); margin: 0 0 6px; }
+.lcons-text p { font-size: 14.5px; color: var(--l-muted); line-height: 1.55; margin: 0; max-width: 56ch; }
+a.lcons-btn { display: inline-block; text-decoration: none; flex-shrink: 0; }
+
+@media (max-width: 720px) {
+  .landing-consultoria-card { flex-direction: column; text-align: center; padding: 26px 22px; }
+}
+
 /* ── FINAL CTA ── */
 .landing-final-cta {
   background: linear-gradient(135deg, #EFA576 0%, #8B3049 100%);
